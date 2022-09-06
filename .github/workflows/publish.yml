@@ -18,5 +18,4 @@ jobs:
       - name: Use tag as version
         run: echo "${GITHUB_REF#refs/*/}" > version.txt
       - name: Build and Publish
-        env:
         run: ./gradlew build publish -PciBuild=true -Partifacts.itemis.cloud.user=${{secrets.ARTIFACTS_ITEMIS_CLOUD_USER}} -Partifacts.itemis.cloud.pw=${{secrets.ARTIFACTS_ITEMIS_CLOUD_PW}}

@@ -1,7 +1,6 @@
 rootProject.name = 'modelix.core'
 
 include 'editor-runtime'
-include 'kernelf-editor'
 include 'metamodel-generator'
 include 'metamodel-runtime'
 include 'model-api'

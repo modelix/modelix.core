@@ -1,8 +1,0 @@
-name: "com.mbeddr.mpsutil.jung"
-concepts:
-- name: "IJGraphProvider"
-  abstract: true
-  properties: []
-  children: []
-  references: []
-  extends: []

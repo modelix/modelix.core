@@ -1,8 +1,0 @@
-name: "com.mbeddr.mpsutil.plantuml.node"
-concepts:
-- name: "IVisualizable"
-  abstract: true
-  properties: []
-  children: []
-  references: []
-  extends: []

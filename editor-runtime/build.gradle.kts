@@ -7,7 +7,6 @@ val kotlinVersion: String by rootProject
 val kotlinCoroutinesVersion: String by rootProject
 val ktorVersion: String by rootProject
 val kotlinLoggingVersion: String by rootProject
-val modelApiVersion: String by rootProject
 
 kotlin {
     jvm()
@@ -25,7 +24,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api("org.modelix:metamodel-runtime:$modelApiVersion")
+                api(project(":model-api"))
                 implementation(kotlin("stdlib-common"))
                 implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")

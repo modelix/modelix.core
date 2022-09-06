@@ -4,4 +4,4 @@ include 'editor-runtime'
 include 'metamodel-generator'
 include 'metamodel-runtime'
 include 'model-api'
-
+include 'model-client'

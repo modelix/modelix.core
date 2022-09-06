@@ -5,6 +5,7 @@ plugins {
     `maven-publish`
     id("com.palantir.git-version") version "0.13.0"
     id("org.jlleitschuh.gradle.ktlint") version "10.3.0" apply false
+    id("com.diffplug.gradle.spotless") version "4.5.1" apply false
 }
 
 group = "org.modelix"

@@ -1,0 +1,777 @@
+name: "com.mbeddr.core.base"
+concepts:
+- name: "IIdentifierNamedConcept"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "jetbrains.mps.lang.core.IResolveInfo"
+- name: "ICommentable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ICommentedCode"
+  abstract: true
+  properties: []
+  children:
+  - name: "commentedCode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+  - "com.mbeddr.mpsutil.blutil.IDeprecatedLangConcept"
+- name: "ElementDocumentation"
+  abstract: false
+  properties: []
+  children:
+  - name: "text"
+    type: "com.mbeddr.core.base.TextBlock"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+  - "com.mbeddr.core.base.ITextBlockOwner"
+  - "com.mbeddr.core.base.ISearchSupport"
+  - "com.mbeddr.core.base.IIsDocumentationComment"
+  - "jetbrains.mps.lang.core.IWrapper"
+- name: "IDocumentable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IConfigurationItem"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.ILOCCountProvider"
+  - "com.mbeddr.core.base.IDocumentable"
+- name: "IConfigurationContainer"
+  abstract: true
+  properties: []
+  children:
+  - name: "configurationItems"
+    type: "com.mbeddr.core.base.IConfigurationItem"
+    multiple: true
+    optional: true
+  references: []
+  extends: []
+- name: "INameFirstCharLowerCase"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IIdentifierNamedConcept"
+- name: "INameFirstCharUpperCase"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IIdentifierNamedConcept"
+- name: "INameAllUpperCase"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IIdentifierNamedConcept"
+- name: "IContainerOfUniqueNames"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IConfigurationItemWithProcessor"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IConfigurationItem"
+- name: "IIsDocumentationComment"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IEmpty"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+  - "com.mbeddr.core.base.IHideFromOutline"
+- name: "IRequiresConfigItem"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IConfigurationItemWithImport"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IConfigurationItem"
+- name: "ILOCCountProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IModuleContentRef"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IReference"
+- name: "IShowUpInOutline"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IOutlineRoot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IHideFromOutline"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IGeneratesCodeForIDE"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IKeepAliveInGeneration"
+- name: "VisibilityControllingAttribute"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "IVisualizationParticipant"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "CDocWord"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "de.slisson.mps.richtext.IWord"
+- name: "TextBlock"
+  abstract: false
+  properties: []
+  children:
+  - name: "text"
+    type: "de.slisson.mps.richtext.Text"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ITextBlockOwner"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ISearchSupport"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IKeepAliveInGeneration"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "AssessmentContainer"
+  abstract: false
+  properties: []
+  children:
+  - name: "assessments"
+    type: "com.mbeddr.core.base.Assessment"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.core.base.Chunk"
+  - "com.mbeddr.core.base.IIdentifierNamedConcept"
+  - "com.mbeddr.core.base.IMbeddrIDERoot"
+  - "com.mbeddr.core.base.IKeepAliveInGeneration"
+- name: "Assessment"
+  abstract: false
+  properties:
+  - name: "mustBeOk"
+    type: "STRING"
+  - name: "hideOkOnes"
+    type: "STRING"
+  - name: "sorted"
+    type: "STRING"
+  - name: "lastUpdatedOn"
+    type: "STRING"
+  - name: "lastUdpatedBy"
+    type: "STRING"
+  - name: "exportAsXML"
+    type: "STRING"
+  children:
+  - name: "query"
+    type: "com.mbeddr.core.base.AssessmentQuery"
+    multiple: false
+    optional: false
+  - name: "results"
+    type: "com.mbeddr.core.base.AssessmentResultEntry"
+    multiple: true
+    optional: true
+  - name: "summaries"
+    type: "com.mbeddr.core.base.AssessmentSummary"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "com.mbeddr.core.base.IIdentifierNamedConcept"
+  - "com.mbeddr.core.base.IDocumentable"
+- name: "AssessmentQuery"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AssessmentResultEntry"
+  abstract: false
+  properties:
+  - name: "status"
+    type: "STRING"
+  - name: "markedOk"
+    type: "STRING"
+  - name: "isNew"
+    type: "STRING"
+  - name: "lastFound"
+    type: "STRING"
+  children:
+  - name: "result"
+    type: "com.mbeddr.core.base.AssessmentResult"
+    multiple: false
+    optional: false
+  - name: "comment"
+    type: "com.mbeddr.core.base.TextBlock"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AssessmentResult"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "VisualizationQuery"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentQuery"
+- name: "VisualizationResult"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "visualizable"
+    type: "com.mbeddr.mpsutil.plantuml.node.IVisualizable"
+    optional: false
+  extends:
+  - "com.mbeddr.core.base.AssessmentResult"
+  - "com.mbeddr.mpsutil.plantuml.node.IVisualizable"
+- name: "AssessmentSummary"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "DefaultAssessmentSummary"
+  abstract: false
+  properties:
+  - name: "totalCount"
+    type: "STRING"
+  - name: "ok"
+    type: "STRING"
+  - name: "newlyAdded"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentSummary"
+- name: "IMbeddrIDERoot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "IReference"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IVisibleElementProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "Chunk"
+  abstract: true
+  properties: []
+  children:
+  - name: "constraints"
+    type: "com.mbeddr.core.base.ChunkDependencyConstraint"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "com.mbeddr.core.base.IIdentifierNamedConcept"
+  - "com.mbeddr.core.base.IVisibleElementProvider"
+  - "com.mbeddr.core.base.ILOCCountProvider"
+  - "com.mbeddr.core.base.ITreeViewRoot"
+  - "com.mbeddr.core.base.IDetectCycle"
+  - "com.mbeddr.mpsutil.jung.IJGraphProvider"
+- name: "IChunkDependency"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.ILOCCountProvider"
+- name: "IVisibleElementAdapter"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IRequiresHeaderImport"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IControlledNamedConcept"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IIdentifierNamedConcept"
+- name: "ControlledNameAttribute"
+  abstract: false
+  properties: []
+  children:
+  - name: "suffix"
+    type: "com.mbeddr.core.base.NameSuffix"
+    multiple: false
+    optional: true
+  references:
+  - name: "nameController"
+    type: "com.mbeddr.core.base.IControlledName"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.PropertyAttribute"
+- name: "IControlledName"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IIdentifierNamedConcept"
+- name: "IControlledNameProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ControlledNameAssQuery"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentQuery"
+- name: "ControlledNameAssResult"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "cnc"
+    type: "com.mbeddr.core.base.IControlledNamedConcept"
+    optional: false
+  extends:
+  - "com.mbeddr.core.base.AssessmentResult"
+- name: "NameSuffix"
+  abstract: false
+  properties:
+  - name: "suffix"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "DefaultGenericChunkDependency"
+  abstract: false
+  properties:
+  - name: "reexport"
+    type: "STRING"
+  children: []
+  references:
+  - name: "chunk"
+    type: "com.mbeddr.core.base.Chunk"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "com.mbeddr.core.base.IChunkDependency"
+- name: "EmptyChunkDependency"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "com.mbeddr.core.base.IEmpty"
+  - "com.mbeddr.core.base.IChunkDependency"
+- name: "IValueDebuggable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ChunkDependencyConstraint"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "DebugKey"
+  abstract: false
+  properties:
+  - name: "value"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ITreeViewable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ITreeViewRoot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.ITreeViewable"
+- name: "CheckHashAssessmentQuery"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentQuery"
+- name: "CheckHashAssessmentResult"
+  abstract: false
+  properties:
+  - name: "kind"
+    type: "STRING"
+  children: []
+  references:
+  - name: "exref"
+    type: "com.mbeddr.core.base.IExtRef"
+    optional: false
+  extends:
+  - "com.mbeddr.core.base.AssessmentResult"
+- name: "IExtRef"
+  abstract: true
+  properties:
+  - name: "extID"
+    type: "STRING"
+  - name: "hash"
+    type: "STRING"
+  - name: "lastUpdated"
+    type: "STRING"
+  children: []
+  references: []
+  extends: []
+- name: "IDetectCycle"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "IInstantiatedOnlyInGenerators"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ITemporaryConcept"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IHierarchicalStructure"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IHierarchicalStructureBase"
+- name: "IHierarchicalStructureRoot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IHierarchicalStructureBase"
+  - "com.mbeddr.core.base.ITreeViewRoot"
+- name: "IHierarchicalStructureBase"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.ITreeViewable"
+- name: "AssessmentScope"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "CurrentModelScope"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentScope"
+- name: "CurrentModelScopeAndImported"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentScope"
+- name: "ChunkScope"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "chunk"
+    type: "com.mbeddr.core.base.Chunk"
+    optional: false
+  extends:
+  - "com.mbeddr.core.base.AssessmentScope"
+- name: "SolutionRelativeHashedFilePicker"
+  abstract: false
+  properties:
+  - name: "descr"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.SolutionRelativeFilePicker"
+  - "com.mbeddr.core.base.IExtRef"
+- name: "ProjectScope"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentScope"
+- name: "Metric"
+  abstract: true
+  properties:
+  - name: "data"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ISuppressStaticEvalWarnings"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ITriggerCommenting"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "KeepAliveInGeneration"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "GenericUnitProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "SuppressAllWarnings"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.SuppressWarningKind"
+- name: "SuppressWarningKind"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "SuppressWarnings"
+  abstract: false
+  properties: []
+  children:
+  - name: "kinds"
+    type: "com.mbeddr.core.base.SuppressWarningKind"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "ICallable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "ICannotLiveInDocModel"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IHasQualifiedName"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "ISupportsLocalLanguage"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ListOfModelsScope"
+  abstract: false
+  properties: []
+  children:
+  - name: "models_old"
+    type: "jetbrains.mps.lang.smodel.ModelReferenceExpression"
+    multiple: true
+    optional: true
+  - name: "models"
+    type: "jetbrains.mps.lang.modelapi.ModelIdentity"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentScope"
+- name: "ModuleScope"
+  abstract: false
+  properties: []
+  children:
+  - name: "module"
+    type: "jetbrains.mps.lang.smodel.ModuleRefExpression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentScope"
+- name: "VirtualFolderScope"
+  abstract: false
+  properties: []
+  children:
+  - name: "filter"
+    type: "com.mbeddr.core.base.VirtualFolderFilter"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentScope"
+- name: "VirtualFolderFilter"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "StartsWithFilter"
+  abstract: false
+  properties:
+  - name: "string"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.VirtualFolderFilter"
+- name: "RegExFilter"
+  abstract: false
+  properties:
+  - name: "regEx"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.VirtualFolderFilter"

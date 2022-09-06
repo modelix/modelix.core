@@ -1,0 +1,16 @@
+name: "org.iets3.core.expr.tracing"
+concepts:
+- name: "TracerIconConcept"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GhostIconConcept"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"

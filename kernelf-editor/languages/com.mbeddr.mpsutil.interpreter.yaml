@@ -1,0 +1,526 @@
+name: "com.mbeddr.mpsutil.interpreter"
+concepts:
+- name: "Interpreter"
+  abstract: false
+  properties:
+  - name: "category"
+    type: "STRING"
+  children:
+  - name: "relationships"
+    type: "com.mbeddr.mpsutil.interpreter.AbstractInterpreterRelationship"
+    multiple: true
+    optional: true
+  - name: "applicableLanguages"
+    type: "com.mbeddr.mpsutil.interpreter.ApplicableLanguage"
+    multiple: true
+    optional: true
+  - name: "typeMappings"
+    type: "com.mbeddr.mpsutil.interpreter.AbstractTypeMapping"
+    multiple: true
+    optional: true
+  - name: "evaluators"
+    type: "com.mbeddr.mpsutil.interpreter.DummyEvaluator"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "TypeMapping"
+  abstract: false
+  properties: []
+  children:
+  - name: "mapping"
+    type: "jetbrains.mps.baseLanguage.BlockStatement"
+    multiple: false
+    optional: false
+  - name: "toType"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractTypeMapping"
+- name: "ConceptEvaluator"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractEvaluator"
+- name: "TypedChildConstraint"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "child"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractConceptEvaluatorConstraint"
+- name: "InterpretExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "trace"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractRecursionExpression"
+- name: "ConceptEvaluatorBody"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.BlockStatement"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractConceptEvaluatorImplementation"
+- name: "AbstractConceptEvaluatorConstraint"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "NodeExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "ContextExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "AbstractTypeMapping"
+  abstract: true
+  properties: []
+  children:
+  - name: "fromType"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "BaseLanguageTypeMapping"
+  abstract: false
+  properties: []
+  children:
+  - name: "toType"
+    type: "jetbrains.mps.baseLanguage.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractTypeMapping"
+- name: "InterpretConstraintExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractConstraintRecursionExpression"
+- name: "ConceptTypeExpression"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "AbstractConceptEvaluatorImplementation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ConceptEvaluatorInline"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractConceptEvaluatorImplementation"
+- name: "AbstractEvaluator"
+  abstract: true
+  properties:
+  - name: "cacheValues"
+    type: "STRING"
+  children:
+  - name: "constraints"
+    type: "com.mbeddr.mpsutil.interpreter.AbstractConceptEvaluatorConstraint"
+    multiple: true
+    optional: true
+  - name: "evaluator"
+    type: "com.mbeddr.mpsutil.interpreter.AbstractConceptEvaluatorImplementation"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.DummyEvaluator"
+- name: "FromTypeExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "EnvExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "InterpreterCreator"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "interpreter"
+    type: "com.mbeddr.mpsutil.interpreter.Interpreter"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.AbstractCreator"
+- name: "ApplicableLanguage"
+  abstract: false
+  properties: []
+  children:
+  - name: "language"
+    type: "jetbrains.mps.lang.smodel.ModelReferenceExpression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "DummyEvaluator"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AbstractInterpreterRelationship"
+  abstract: true
+  properties: []
+  children: []
+  references:
+  - name: "target"
+    type: "com.mbeddr.mpsutil.interpreter.Interpreter"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "InterpretBeforeRelationship"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractInterpreterRelationship"
+- name: "InterpretAfterRelationship"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractInterpreterRelationship"
+- name: "OperationCallExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "actuals"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "formals"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "operation"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "EnvExpressionType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.IType"
+- name: "ConditionalInterpreter"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.Interpreter"
+- name: "EvaluatorConditionInline"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractEvaluatorCondition"
+- name: "IsEvaluableExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractRecursionExpression"
+- name: "EvaluatorConditionBody"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.BlockStatement"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractEvaluatorCondition"
+- name: "AbstractEvaluatorCondition"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ConditionalConceptEvaluator"
+  abstract: false
+  properties: []
+  children:
+  - name: "condition"
+    type: "com.mbeddr.mpsutil.interpreter.AbstractEvaluatorCondition"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.ConceptEvaluator"
+- name: "AbstractConstraintRecursionExpression"
+  abstract: true
+  properties: []
+  children: []
+  references:
+  - name: "child"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "IsEvaluableConstraintExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.AbstractConstraintRecursionExpression"
+- name: "AbstractRecursionExpression"
+  abstract: true
+  properties: []
+  children:
+  - name: "node"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "CastUpExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "type"
+    type: "jetbrains.mps.baseLanguage.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "DelegateToNextInterpreterExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "CoverageExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "RegisterBranchesStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "branches"
+    type: "com.mbeddr.mpsutil.interpreter.BranchID"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "BranchID"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+  - "jetbrains.mps.lang.core.IResolveInfo"
+- name: "VisitBranchStatement"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "branch"
+    type: "com.mbeddr.mpsutil.interpreter.BranchID"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "DeclareListCoverage"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "ICanHaveTestCoverage"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IExcludeFromCoverage"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ExprOperationCallExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "actuals"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "formals"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "operation"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "StopExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "IInterpreterWrapperType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ITrivialNode"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "TraceExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "ITracerFrame"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IReveal"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "CoverConceptStatement"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "conc"
+    type: "jetbrains.mps.lang.structure.ConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "ValueInspector"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "EvaluatorExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"

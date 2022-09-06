@@ -1,0 +1,42 @@
+name: "org.iets3.core.expr.path"
+concepts:
+- name: "ICanHaveMembersType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IMember"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.base.IValidNamedConcept"
+- name: "PathElement"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "member"
+    type: "org.iets3.core.expr.path.IMember"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IRef"
+  - "org.iets3.core.expr.path.IComparablePathPart"
+  - "org.iets3.core.expr.base.ICanBeLValue"
+- name: "IComparablePathPart"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.path.IPathPart"
+- name: "IPathPart"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []

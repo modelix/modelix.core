@@ -1,0 +1,47 @@
+name: "jetbrains.mps.lang.checkedName"
+concepts:
+- name: "ICheckedNamePolicy"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "PropertyRefExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "nodeExpr"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "propertyDeclaration"
+    type: "jetbrains.mps.lang.structure.PropertyDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "PropertyRefType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Type"
+- name: "PropertyPointerValueOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IOperation"
+- name: "PropertyPointerType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "dataType"
+    type: "jetbrains.mps.lang.structure.DataTypeDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Type"

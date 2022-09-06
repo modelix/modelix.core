@@ -1,0 +1,362 @@
+name: "jetbrains.mps.lang.pattern"
+concepts:
+- name: "AsPattern"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.PatternVariableDeclaration"
+- name: "Pattern"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "PatternExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "pattern"
+    type: "jetbrains.mps.lang.quotation.Quotation"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+  - "jetbrains.mps.lang.core.InterfacePart"
+- name: "PatternVariableDeclaration"
+  abstract: false
+  properties:
+  - name: "varName"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.Pattern"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "PropertyPatternVariableDeclaration"
+  abstract: false
+  properties:
+  - name: "varName"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.PropertyAttribute"
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "jetbrains.mps.lang.quotation.StringToTypedValueMigrationInfo"
+- name: "WildcardPattern"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.Pattern"
+- name: "ListPattern"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.AsPattern"
+- name: "LinkPatternVariableDeclaration"
+  abstract: false
+  properties:
+  - name: "varName"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.LinkAttribute"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "ActionAsPattern"
+  abstract: false
+  properties: []
+  children:
+  - name: "position"
+    type: "jetbrains.mps.lang.pattern.InsertPosition"
+    multiple: false
+    optional: false
+  - name: "action"
+    type: "jetbrains.mps.lang.pattern.ActionStatement"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.AsPattern"
+- name: "ActionStatement"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "PatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "variable"
+    type: "jetbrains.mps.lang.pattern.PatternVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "OrPattern"
+  abstract: false
+  properties: []
+  children:
+  - name: "clause"
+    type: "jetbrains.mps.lang.pattern.OrPatternClause"
+    multiple: true
+    optional: false
+  - name: "variable"
+    type: "jetbrains.mps.lang.pattern.PatternVariableDeclaration"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.Pattern"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+- name: "OrPatternClause"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.PatternExpression"
+- name: "OrPatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.pattern.PatternVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "InsertAfterPosition"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.InsertPosition"
+- name: "InsertBeforePosition"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.InsertPosition"
+- name: "InsertPosition"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GeneratorInternal_ChildDescriptor"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "childLinkDeclaration"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  - name: "mainNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GeneratorInternal_ReferenceDescriptor"
+  abstract: false
+  properties:
+  - name: "id"
+    type: "STRING"
+  - name: "model"
+    type: "STRING"
+  children: []
+  references:
+  - name: "referenceLinkDeclaration"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  - name: "mainNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GeneratorInternal_PropertyDescriptor"
+  abstract: false
+  properties:
+  - name: "value"
+    type: "STRING"
+  children: []
+  references:
+  - name: "property"
+    type: "jetbrains.mps.lang.structure.PropertyDeclaration"
+    optional: false
+  - name: "mainNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "PatternBuilder"
+  abstract: false
+  properties: []
+  children:
+  - name: "builder"
+    type: "jetbrains.mps.lang.quotation.NodeBuilderNode"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+  - "jetbrains.mps.lang.quotation.INodeBuilderContainer"
+- name: "PatternVariableNode"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitLinkValue"
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitValueChild"
+  - "jetbrains.mps.lang.pattern.PatternBuilderVariable"
+- name: "PatternBuilderClassifierMember"
+  abstract: false
+  properties: []
+  children:
+  - name: "pattern"
+    type: "jetbrains.mps.lang.pattern.PatternBuilder"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "jetbrains.mps.baseLanguage.ClassifierMember"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+- name: "PatternVariableProperty"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitPropertyValue"
+  - "jetbrains.mps.lang.pattern.PatternBuilderVariable"
+- name: "PatternSwitchStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "case"
+    type: "jetbrains.mps.lang.pattern.PatternSwitchCase"
+    multiple: true
+    optional: true
+  - name: "defaultBlock"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "PatternSwitchCase"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  - name: "pattern"
+    type: "jetbrains.mps.lang.pattern.AbstractPatternProvider"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+- name: "AbstractPatternProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "LocalPatternReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.pattern.PatternBuilderClassifierMember"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.pattern.AbstractPatternProvider"
+- name: "InlinePatternProvider"
+  abstract: false
+  properties: []
+  children:
+  - name: "pattern"
+    type: "jetbrains.mps.lang.pattern.PatternBuilder"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.AbstractPatternProvider"
+- name: "PatternBuilderVariable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+- name: "PatternBuilderVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.pattern.PatternBuilderVariable"
+    optional: true
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "LabeledNode"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderNode"
+  - "jetbrains.mps.lang.pattern.PatternBuilderVariable"
+- name: "ExpressionPatternProvider"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.pattern.AbstractPatternProvider"
+- name: "QualifiedPatternReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "classifier"
+    type: "jetbrains.mps.baseLanguage.Classifier"
+    optional: false
+  - name: "pattern"
+    type: "jetbrains.mps.lang.pattern.PatternBuilderClassifierMember"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "jetbrains.mps.baseLanguage.QualifiedReference"

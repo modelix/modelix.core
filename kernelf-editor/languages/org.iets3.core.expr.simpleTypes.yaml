@@ -1,0 +1,310 @@
+name: "org.iets3.core.expr.simpleTypes"
+concepts:
+- name: "BooleanType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.PrimitiveType"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+- name: "BooleanLiteral"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.PrimitiveLiteral"
+- name: "TrueLiteral"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.BooleanLiteral"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "FalseLiteral"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.BooleanLiteral"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "NumericType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.PrimitiveType"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+- name: "IntegerType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.NumericType"
+- name: "NumberLiteral"
+  abstract: false
+  properties:
+  - name: "value"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.PrimitiveLiteral"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+  - "org.iets3.core.expr.base.INeverAllowDot"
+- name: "RealType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.NumericType"
+- name: "StringType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.PrimitiveType"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+- name: "StringLiteral"
+  abstract: false
+  properties:
+  - name: "value"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.PrimitiveLiteral"
+- name: "OtherwiseLiteral"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.BooleanLiteral"
+- name: "NumberRangeSpec"
+  abstract: false
+  properties:
+  - name: "min"
+    type: "STRING"
+  - name: "max"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "NumberType"
+  abstract: false
+  properties: []
+  children:
+  - name: "range"
+    type: "org.iets3.core.expr.simpleTypes.NumberRangeSpec"
+    multiple: false
+    optional: true
+  - name: "prec"
+    type: "org.iets3.core.expr.simpleTypes.NumberPrecSpec"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.PrimitiveType"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+- name: "NumberPrecSpec"
+  abstract: false
+  properties:
+  - name: "prec"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ConvertPrecisionNumberExpression"
+  abstract: false
+  properties:
+  - name: "targetPrecision"
+    type: "STRING"
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "rounding"
+    type: "org.iets3.core.expr.simpleTypes.RoundingMode"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+- name: "RoundingMode"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TruncateRoundingMode"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.RoundingMode"
+- name: "RoundDownRoundingMode"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.RoundingMode"
+- name: "RoundUpRoundingMode"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.RoundingMode"
+- name: "LimitExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "StringLengthTarget"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.AbstractStringDotTarget"
+- name: "AbstractStringDotTarget"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "StringContainsTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.AbstractStringDotTarget"
+- name: "StringInterpolationExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "text"
+    type: "de.slisson.mps.richtext.Text"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IReducableExpression"
+- name: "InterpolExprWord"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "de.slisson.mps.richtext.IWord"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "StringStartsWithTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.AbstractStringDotTarget"
+- name: "BoundsExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "lower"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  - name: "upper"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "StringToIntTarget"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.AbstractStringDotTarget"
+- name: "ToleranceExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "tolerance"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "RoundHalfUpRoundingMode"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.RoundingMode"
+- name: "StringEndsWithTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.simpleTypes.AbstractStringDotTarget"

@@ -1,0 +1,1291 @@
+name: "jetbrains.mps.lang.typesystem"
+concepts:
+- name: "ApplicableNodeCondition"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+  - "jetbrains.mps.lang.core.InterfacePart"
+- name: "ConceptReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+- name: "PatternCondition"
+  abstract: false
+  properties: []
+  children:
+  - name: "pattern"
+    type: "jetbrains.mps.lang.pattern.PatternExpression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+- name: "InferenceRule"
+  abstract: false
+  properties: []
+  children:
+  - name: "supersedesFun"
+    type: "jetbrains.mps.lang.typesystem.SupersedeConceptFunction"
+    multiple: false
+    optional: true
+  - name: "applicableFun"
+    type: "jetbrains.mps.lang.typesystem.IsApplicableConceptFunction"
+    multiple: false
+    optional: true
+  - name: "overridesFun"
+    type: "jetbrains.mps.lang.typesystem.OverridesConceptFunction"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractCheckingRule"
+  - "jetbrains.mps.lang.typesystem.IRuleWithOneNode"
+- name: "AbstractRule"
+  abstract: true
+  properties: []
+  children:
+  - name: "applicableNode"
+    type: "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+  - "jetbrains.mps.lang.structure.IConceptAspect"
+- name: "ApplicableNodeReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "applicableNode"
+    type: "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "TypeOfExpression"
+  abstract: false
+  properties:
+  - name: "skipDependencyOnCurrent"
+    type: "STRING"
+  children:
+  - name: "term"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+- name: "CreateEquationStatement"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractEquationStatement"
+- name: "AbstractEquationStatement"
+  abstract: true
+  properties:
+  - name: "checkOnly"
+    type: "STRING"
+  children:
+  - name: "leftExpression"
+    type: "jetbrains.mps.lang.typesystem.TypeClause"
+    multiple: false
+    optional: false
+  - name: "rightExpression"
+    type: "jetbrains.mps.lang.typesystem.TypeClause"
+    multiple: false
+    optional: false
+  - name: "nodeToCheck"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "errorString"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "helginsIntention"
+    type: "jetbrains.mps.lang.typesystem.TypesystemIntention"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+  - "jetbrains.mps.lang.typesystem.MessageStatement"
+- name: "CreateLessThanInequationStatement"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractInequationStatement"
+- name: "CreateGreaterThanInequationStatement"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractInequationStatement"
+- name: "CreateComparableEquationStatement"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractComparableStatement"
+- name: "TypeVarDeclaration"
+  abstract: false
+  properties:
+  - name: "nullable"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "TypeVarReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "typeVarDeclaration"
+    type: "jetbrains.mps.lang.typesystem.TypeVarDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+- name: "PatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "patternVarDecl"
+    type: "jetbrains.mps.lang.pattern.PatternVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "LinkPatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "patternVarDecl"
+    type: "jetbrains.mps.lang.pattern.LinkPatternVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "PropertyPatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "patternVarDecl"
+    type: "jetbrains.mps.lang.pattern.PropertyPatternVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "AbstractSubtypingRule"
+  abstract: true
+  properties:
+  - name: "isWeak"
+    type: "STRING"
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractRule"
+  - "jetbrains.mps.baseLanguage.IMethodLike"
+  - "jetbrains.mps.lang.core.InterfacePart"
+- name: "SubtypingRule"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractSubtypingRule"
+  - "jetbrains.mps.lang.typesystem.IRuleWithOneNode"
+- name: "AssertStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "condition"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.ReportErrorStatement"
+- name: "ReportErrorStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "errorString"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractReportStatement"
+- name: "TypeCheckerAccessExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "IsSubtypeExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "subtypeExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "supertypeExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "Node_TypeOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.smodel.SNodeOperation"
+- name: "CoerceStatement"
+  abstract: false
+  properties:
+  - name: "strong"
+    type: "STRING"
+  children:
+  - name: "pattern"
+    type: "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+    multiple: false
+    optional: false
+  - name: "nodeToCoerce"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  - name: "elseClause"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "ImmediateSupertypesExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "subtypeExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "IsStrongSubtypeExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.IsSubtypeExpression"
+- name: "MatchStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "item"
+    type: "jetbrains.mps.lang.typesystem.MatchStatementItem"
+    multiple: true
+    optional: false
+  - name: "ifFalseStatement"
+    type: "jetbrains.mps.baseLanguage.Statement"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "MatchStatementItem"
+  abstract: false
+  properties: []
+  children:
+  - name: "condition"
+    type: "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+    multiple: false
+    optional: false
+  - name: "ifTrue"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "CoerceExpression"
+  abstract: false
+  properties:
+  - name: "strong"
+    type: "STRING"
+  children:
+  - name: "pattern"
+    type: "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+    multiple: false
+    optional: false
+  - name: "nodeToCoerce"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "CoerceStrongExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.CoerceExpression"
+- name: "JoinType"
+  abstract: false
+  properties: []
+  children:
+  - name: "argument"
+    type: "jetbrains.mps.lang.core.IType"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.IType"
+  - "jetbrains.mps.baseLanguage.IGenericType"
+- name: "CreateStrongLessThanInequationStatement"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractInequationStatement"
+- name: "CreateComparableEquationStatementStrong"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractComparableStatement"
+- name: "RuntimeErrorType"
+  abstract: false
+  properties:
+  - name: "errorText"
+    type: "STRING"
+  - name: "nodeId"
+    type: "STRING"
+  - name: "nodeModel"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.RuntimeTypeVariable"
+- name: "RuntimeTypeVariable"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Type"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "TypeClause"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "NormalTypeClause"
+  abstract: false
+  properties: []
+  children:
+  - name: "normalType"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.TypeClause"
+- name: "WhenConcreteStatement"
+  abstract: false
+  properties:
+  - name: "isShallow"
+    type: "STRING"
+  - name: "skipsError"
+    type: "STRING"
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  - name: "argument"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "argumentRepresentator"
+    type: "jetbrains.mps.lang.typesystem.WhenConcreteVariableDeclaration"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+  - "jetbrains.mps.baseLanguage.Closureoid"
+  - "jetbrains.mps.baseLanguage.IControlFlowInterrupter"
+- name: "MeetType"
+  abstract: false
+  properties: []
+  children:
+  - name: "argument"
+    type: "jetbrains.mps.lang.core.IType"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.IType"
+  - "jetbrains.mps.baseLanguage.IGenericType"
+- name: "ComparisonRule"
+  abstract: false
+  properties: []
+  children:
+  - name: "anotherNode"
+    type: "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractSubtypingRule"
+  - "jetbrains.mps.lang.typesystem.IRuleWithTwoNodes"
+- name: "AbstractCheckingRule"
+  abstract: true
+  properties:
+  - name: "overrides"
+    type: "STRING"
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  - name: "overridesFun_old"
+    type: "jetbrains.mps.lang.typesystem.OverridesConceptFunction"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractRule"
+  - "jetbrains.mps.lang.core.InterfacePart"
+- name: "NonTypesystemRule"
+  abstract: false
+  properties:
+  - name: "doNotApplyOnTheFly"
+    type: "STRING"
+  children:
+  - name: "overridenRules"
+    type: "jetbrains.mps.lang.typesystem.CheckingRuleReference"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractCheckingRule"
+  - "jetbrains.mps.lang.typesystem.IRuleWithOneNode"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+- name: "InequationReplacementRule"
+  abstract: false
+  properties: []
+  children:
+  - name: "supertypeNode"
+    type: "jetbrains.mps.lang.typesystem.ApplicableNodeCondition"
+    multiple: false
+    optional: false
+  - name: "isApplicableClause"
+    type: "jetbrains.mps.lang.typesystem.IsReplacementRuleApplicable_ConceptFunction"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractSubtypingRule"
+  - "jetbrains.mps.lang.typesystem.IRuleWithTwoNodes"
+- name: "ErrorInfoExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "RuntimeListVariable"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "WhenConcreteVariableDeclaration"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.VariableDeclaration"
+- name: "WhenConcreteVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "whenConcreteVar"
+    type: "jetbrains.mps.lang.typesystem.WhenConcreteVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "WarningStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "warningText"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractReportStatement"
+- name: "TypesystemIntention"
+  abstract: false
+  properties:
+  - name: "applyImmediately"
+    type: "STRING"
+  children:
+  - name: "actualArgument"
+    type: "jetbrains.mps.lang.typesystem.TypesystemIntentionArgument"
+    multiple: true
+    optional: true
+  references:
+  - name: "quickFix"
+    type: "jetbrains.mps.lang.typesystem.TypesystemQuickFix"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TypesystemIntentionArgument"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "quickFixArgument"
+    type: "jetbrains.mps.lang.typesystem.QuickFixArgument"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AbstractInequationStatement"
+  abstract: true
+  properties:
+  - name: "inequationPriority"
+    type: "STRING"
+  - name: "label"
+    type: "STRING"
+  - name: "strong"
+    type: "STRING"
+  - name: "orientation"
+    type: "STRING"
+  children:
+  - name: "afterEquations"
+    type: "jetbrains.mps.lang.typesystem.InequationReference"
+    multiple: true
+    optional: true
+  - name: "beforeEquations"
+    type: "jetbrains.mps.lang.typesystem.InequationReference"
+    multiple: true
+    optional: true
+  - name: "afterGroups"
+    type: "jetbrains.mps.lang.typesystem.DefaultGroupReference"
+    multiple: true
+    optional: true
+  - name: "beforeGroups"
+    type: "jetbrains.mps.lang.typesystem.DefaultGroupReference"
+    multiple: true
+    optional: true
+  - name: "inequationGroup"
+    type: "jetbrains.mps.lang.typesystem.DefaultGroupReference"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractEquationStatement"
+- name: "TypesystemQuickFix"
+  abstract: false
+  properties: []
+  children:
+  - name: "executeBlock"
+    type: "jetbrains.mps.lang.typesystem.QuickFixExecuteBlock"
+    multiple: false
+    optional: false
+  - name: "descriptionBlock"
+    type: "jetbrains.mps.lang.typesystem.QuickFixDescriptionBlock"
+    multiple: false
+    optional: true
+  - name: "setSelectionBlock"
+    type: "jetbrains.mps.lang.typesystem.QuickFixSetSelectionBlock"
+    multiple: false
+    optional: true
+  - name: "quickFixArgument"
+    type: "jetbrains.mps.lang.typesystem.QuickFixArgument"
+    multiple: true
+    optional: true
+  - name: "quickFixField"
+    type: "jetbrains.mps.lang.typesystem.QuickFixField"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+- name: "QuickFixExecuteBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ConceptFunctionParameter_node"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "QuickFixArgument"
+  abstract: false
+  properties: []
+  children:
+  - name: "argumentType"
+    type: "jetbrains.mps.baseLanguage.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "QuickFixArgumentReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "quickFixArgument"
+    type: "jetbrains.mps.lang.typesystem.QuickFixArgument"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "QuickFixDescriptionBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "AddDependencyStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "dependency"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "Processed"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "InfoStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "infoText"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractReportStatement"
+- name: "MessageTarget"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "PropertyMessageTarget"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "propertyDeclaration"
+    type: "jetbrains.mps.lang.structure.PropertyDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.typesystem.MessageTarget"
+- name: "ReferenceMessageTarget"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "linkDeclaration"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.typesystem.MessageTarget"
+- name: "MessageStatement"
+  abstract: true
+  properties: []
+  children:
+  - name: "nodeToReport_old"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "helginsIntention_old"
+    type: "jetbrains.mps.lang.typesystem.TypesystemIntention"
+    multiple: true
+    optional: true
+  - name: "messageTarget_old"
+    type: "jetbrains.mps.lang.typesystem.MessageTarget"
+    multiple: false
+    optional: true
+  - name: "foreignMessageSource_old"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends: []
+- name: "PropertyNameTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "propertySpec"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.MessageTarget"
+- name: "ReferenceRoleTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "referenceRole"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.MessageTarget"
+- name: "VariableConverterItem"
+  abstract: false
+  properties: []
+  children:
+  - name: "applicableBlock"
+    type: "jetbrains.mps.lang.typesystem.VariableConverterItem_ApplicableBlock"
+    multiple: false
+    optional: false
+  - name: "convertBlock"
+    type: "jetbrains.mps.lang.typesystem.VariableConverterItem_ConvertBlock"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "VariableConverterItem_ApplicableBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ConceptFunctionParameter_var"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "VariableConverterItem_ConvertBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "VariableConvertersContainer"
+  abstract: false
+  properties: []
+  children:
+  - name: "converterItem"
+    type: "jetbrains.mps.lang.typesystem.VariableConverterItem"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ConceptFunctionParameter_Role"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "ConceptFunctionParameter_isAggregation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "ConceptFunctionParameter_ContextNode"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "RuntimeHoleType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "OverloadedOperatorTypeRule"
+  abstract: false
+  properties:
+  - name: "leftIsExact"
+    type: "STRING"
+  - name: "rightIsExact"
+    type: "STRING"
+  - name: "rightIsStrong"
+    type: "STRING"
+  - name: "leftIsStrong"
+    type: "STRING"
+  children:
+  - name: "leftOperandType"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "rightOperandType"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractOverloadedOpsTypeRule"
+- name: "OverloadedOperatorTypeFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "LeftOperandType_parameter"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "Operation_parameter"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "RightOperandType_parameter"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "GetOperationType"
+  abstract: false
+  properties: []
+  children:
+  - name: "operation"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "leftOperandType"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "rightOperandType"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "OverloadedOpRulesContainer"
+  abstract: false
+  properties: []
+  children:
+  - name: "rule"
+    type: "jetbrains.mps.lang.typesystem.AbstractOverloadedOpsTypeRule"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "MeetContainer"
+  abstract: false
+  properties: []
+  children:
+  - name: "meetType"
+    type: "jetbrains.mps.lang.typesystem.MeetType"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "JoinContainer"
+  abstract: false
+  properties: []
+  children:
+  - name: "joinType"
+    type: "jetbrains.mps.lang.typesystem.JoinType"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "OverloadedOpTypeRule_OneTypeSpecified"
+  abstract: false
+  properties:
+  - name: "isExact"
+    type: "STRING"
+  - name: "isStrong"
+    type: "STRING"
+  children:
+  - name: "operandType"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractOverloadedOpsTypeRule"
+- name: "AbstractOverloadedOpsTypeRule"
+  abstract: true
+  properties: []
+  children:
+  - name: "operationConcept"
+    type: "jetbrains.mps.lang.smodel.ConceptReference"
+    multiple: true
+    optional: false
+  - name: "function"
+    type: "jetbrains.mps.lang.typesystem.OverloadedOperatorTypeFunction"
+    multiple: false
+    optional: false
+  - name: "isApplicable"
+    type: "jetbrains.mps.lang.typesystem.OverloadedOpIsApplicableFunction"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IsReplacementRuleApplicable_ConceptFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "InequationReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "inequation"
+    type: "jetbrains.mps.lang.typesystem.AbstractInequationStatement"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "DefaultGroupReference"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "Node_InferTypeOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.smodel.SNodeOperation"
+- name: "OriginalNodeId"
+  abstract: false
+  properties:
+  - name: "nodeId"
+    type: "STRING"
+  - name: "modelId"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "OverloadedOpIsApplicableFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "QuickFixSetSelectionBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ConceptFunctionParameter_EditorContext"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "QuickFixField"
+  abstract: false
+  properties: []
+  children:
+  - name: "fieldType"
+    type: "jetbrains.mps.baseLanguage.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "QuickFixFieldReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "quickFixField"
+    type: "jetbrains.mps.lang.typesystem.QuickFixField"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "SelectionType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Type"
+- name: "ConceptFunctionParameter_Selection"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "IRuleWithOneNode"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IRuleWithTwoNodes"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "CreateStrongGreaterThanInequationStatement"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractInequationStatement"
+- name: "AbstractComparableStatement"
+  abstract: true
+  properties:
+  - name: "infer"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractEquationStatement"
+- name: "OrStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "orClause"
+    type: "jetbrains.mps.lang.typesystem.AbstractEquationStatement"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "PrintToTrace"
+  abstract: false
+  properties: []
+  children:
+  - name: "message"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "MessageStatementAnnotation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "ReportErrorStatementAnnotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.MessageStatementAnnotation"
+- name: "InfoStatementAnnotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.MessageStatementAnnotation"
+- name: "WarningStatementAnnotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.MessageStatementAnnotation"
+- name: "SubstituteTypeRule"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.AbstractRule"
+  - "jetbrains.mps.lang.typesystem.IRuleWithOneNode"
+  - "jetbrains.mps.baseLanguage.IMethodLike"
+  - "jetbrains.mps.lang.core.InterfacePart"
+- name: "OverridesConceptFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "AttributedNodeExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "SupersedeConceptFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "IsApplicableConceptFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "CheckingRuleReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.typesystem.NonTypesystemRule"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TypesystemEquationStatementAnnotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.typesystem.MessageStatementAnnotation"
+- name: "AbstractReportStatement"
+  abstract: true
+  properties: []
+  children:
+  - name: "nodeToReport"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "helginsIntention"
+    type: "jetbrains.mps.lang.typesystem.TypesystemIntention"
+    multiple: true
+    optional: true
+  - name: "messageTarget"
+    type: "jetbrains.mps.lang.typesystem.MessageTarget"
+    multiple: false
+    optional: true
+  - name: "foreignMessageSource"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+  - "jetbrains.mps.lang.typesystem.MessageStatement"

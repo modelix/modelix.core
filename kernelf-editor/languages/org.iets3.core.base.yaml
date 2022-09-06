@@ -1,0 +1,118 @@
+name: "org.iets3.core.base"
+concepts:
+- name: "ISpecRoot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.base.IValidNamedConcept"
+- name: "IETS3DummyIcon16"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IOptionallyNamed"
+  abstract: true
+  properties: []
+  children:
+  - name: "optionalName"
+    type: "org.iets3.core.base.OptionalNameSpecifier"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "jetbrains.mps.lang.core.ISmartReferent"
+- name: "OptionalNameSpecifier"
+  abstract: false
+  properties:
+  - name: "optionalName"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IValidNamedConcept"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "jetbrains.mps.lang.core.IResolveInfo"
+- name: "ICustomRemoteCreateSupport"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ICanStoreCheckResult"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ICanRunCheckManually"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.base.ICanStoreCheckResult"
+- name: "IDetectNeedToRunManually"
+  abstract: true
+  properties:
+  - name: "__hash"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.base.ICanRunCheckManually"
+- name: "ICanStorePersistentResult"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.base.ICanReadPersistentResult"
+- name: "ICanReadPersistentResult"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IETS3DummyIcon32"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IETS3DummyIcon24"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IContainsStuffToRunManually"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ITypeWithTarget"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IControlAdvancedFeatures"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []

@@ -1,0 +1,760 @@
+name: "org.iets3.core.expr.tests"
+concepts:
+- name: "TestOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "EqualsTestOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.TestOp"
+- name: "TestCase"
+  abstract: false
+  properties: []
+  children:
+  - name: "setup"
+    type: "org.iets3.core.expr.lambda.BlockExpression"
+    multiple: false
+    optional: true
+  - name: "items"
+    type: "org.iets3.core.expr.tests.AbstractTestItem"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.base.IContainsStuffToRunManually"
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "org.iets3.core.expr.tests.ITestItemContainer"
+- name: "AssertTestItem"
+  abstract: false
+  properties:
+  - name: "strict"
+    type: "STRING"
+  children:
+  - name: "actual"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "expected"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "op"
+    type: "org.iets3.core.expr.tests.TestOp"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+- name: "TestSuite"
+  abstract: false
+  properties:
+  - name: "executeAutomatically"
+    type: "STRING"
+  - name: "referenceOnlyLocalStuff"
+    type: "STRING"
+  - name: "showTypes"
+    type: "STRING"
+  children:
+  - name: "contents"
+    type: "org.iets3.core.expr.toplevel.IToplevelExprContent"
+    multiple: true
+    optional: true
+  references:
+  - name: "scoper"
+    type: "com.mbeddr.core.base.IVisibleElementProvider"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "org.iets3.core.expr.base.IContainmentStackMember"
+  - "org.iets3.core.expr.base.IIgnoreTrivialErrorsContext"
+  - "org.iets3.core.expr.base.IDocumentableWordContainer"
+  - "com.mbeddr.core.base.IVisibleElementProvider"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "jetbrains.mps.baseLanguage.unitTest.ITestCase"
+  - "org.iets3.analysis.base.IUseSolver"
+  - "org.iets3.core.expr.base.ITypeOverridingContext"
+  - "org.iets3.core.expr.tests.ITestItemContainer"
+  - "com.mbeddr.core.base.IMbeddrIDERoot"
+- name: "NamedAssertRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "item"
+    type: "org.iets3.core.expr.tests.AssertTestItem"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "AbstractTestItem"
+  abstract: true
+  properties:
+  - name: "isIgnored"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+  - "org.iets3.core.base.ICanRunCheckManually"
+  - "org.iets3.core.base.IOptionallyNamed"
+  - "org.iets3.core.expr.base.IContainmentStackMember"
+  - "com.mbeddr.core.base.IDocumentable"
+  - "org.iets3.core.expr.base.ITraceRoot"
+  - "com.mbeddr.core.base.ICommentable"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "ConstraintFailedTestItem"
+  abstract: false
+  properties:
+  - name: "errmsg"
+    type: "STRING"
+  children:
+  - name: "actual"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+  - "jetbrains.mps.lang.core.ICanSuppressErrors"
+- name: "RealEqualsTestOp"
+  abstract: false
+  properties:
+  - name: "decimals"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.TestOp"
+- name: "EmptyTestItem"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+  - "com.mbeddr.core.base.IEmpty"
+- name: "InterpreterCoverageAssQuery"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractCoverageQuery"
+- name: "InterpreterCoverageAssResult"
+  abstract: false
+  properties:
+  - name: "comment"
+    type: "STRING"
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.core.base.AssessmentResult"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+- name: "LanguageRef"
+  abstract: false
+  properties: []
+  children:
+  - name: "lang"
+    type: "jetbrains.mps.lang.smodel.LanguageIdentity"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IgnoredConcept"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "com.mbeddr.core.base.IDocumentable"
+- name: "InterpreterCoverageAssSummary"
+  abstract: false
+  properties:
+  - name: "coverageRatio"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentSummary"
+- name: "AbstractCoverageQuery"
+  abstract: true
+  properties:
+  - name: "hideOK"
+    type: "STRING"
+  children:
+  - name: "languages"
+    type: "org.iets3.core.expr.tests.LanguageRef"
+    multiple: true
+    optional: true
+  - name: "scope"
+    type: "com.mbeddr.core.base.AssessmentScope"
+    multiple: false
+    optional: false
+  - name: "ignoredConcepts"
+    type: "org.iets3.core.expr.tests.IgnoredConcept"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentQuery"
+- name: "StructuralCoverageAssQuery"
+  abstract: false
+  properties:
+  - name: "highlightErrors"
+    type: "STRING"
+  - name: "minTestCount"
+    type: "STRING"
+  - name: "minTestVolume"
+    type: "STRING"
+  - name: "maximalMinHetero"
+    type: "STRING"
+  - name: "minimumMaxHetero"
+    type: "STRING"
+  - name: "lookOutsideTestSuites"
+    type: "STRING"
+  - name: "trackProperties"
+    type: "STRING"
+  children:
+  - name: "nodesFilter"
+    type: "org.iets3.core.expr.tests.StructuralCoverageNodesFilter"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractCoverageQuery"
+- name: "StructuralCoverageAssResult"
+  abstract: false
+  properties:
+  - name: "comment"
+    type: "STRING"
+  - name: "testCount"
+    type: "STRING"
+  - name: "testVolume"
+    type: "STRING"
+  - name: "minH"
+    type: "STRING"
+  - name: "maxH"
+    type: "STRING"
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.core.base.AssessmentResult"
+- name: "InterpreterValueSummary"
+  abstract: false
+  properties: []
+  children:
+  - name: "valueStats"
+    type: "org.iets3.core.expr.tests.InterpreterValueStat"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentSummary"
+- name: "InterpreterValueStat"
+  abstract: false
+  properties:
+  - name: "label"
+    type: "STRING"
+  - name: "value"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "StackTraceElement"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "node"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ModelsCoverageAssResult"
+  abstract: false
+  properties:
+  - name: "comment"
+    type: "STRING"
+  children: []
+  references:
+  - name: "coveredNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "com.mbeddr.core.base.AssessmentResult"
+- name: "TestCoverageAssQuery"
+  abstract: false
+  properties: []
+  children:
+  - name: "measureFor"
+    type: "org.iets3.core.expr.tests.MeasureCoverageFor"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractCoverageQuery"
+- name: "InvalidValueTestItem"
+  abstract: false
+  properties:
+  - name: "errmsg"
+    type: "STRING"
+  children:
+  - name: "actual"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+- name: "StructuralCoverageNodesFilter"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ModelsCoverageAssSummary"
+  abstract: false
+  properties:
+  - name: "coverageRatio"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentSummary"
+- name: "OptExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "NoneExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "AssertOptionTestItem"
+  abstract: false
+  properties:
+  - name: "what"
+    type: "STRING"
+  children:
+  - name: "actual"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+- name: "TestVector"
+  abstract: false
+  properties: []
+  children:
+  - name: "values"
+    type: "org.iets3.core.expr.tests.InputValue"
+    multiple: true
+    optional: true
+  - name: "results"
+    type: "org.iets3.core.expr.tests.OutputValue"
+    multiple: true
+    optional: true
+  - name: "outcome"
+    type: "org.iets3.core.expr.tests.Outcome"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.base.ICanStoreCheckResult"
+- name: "AbstractVectorCollection"
+  abstract: true
+  properties: []
+  children:
+  - name: "vectors"
+    type: "org.iets3.core.expr.tests.TestVector"
+    multiple: true
+    optional: true
+  - name: "producer"
+    type: "org.iets3.core.expr.tests.TestDataProducer"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "InputValue"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "argument"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TestDataProducer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "EmptyProducer"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.TestDataProducer"
+- name: "Outcome"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ValidOutcome"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.Outcome"
+- name: "InvalidInputOutcome"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.Outcome"
+- name: "TestSubjectAdapter"
+  abstract: true
+  properties:
+  - name: "internalUniqueID"
+    type: "STRING"
+  children:
+  - name: "mutator"
+    type: "org.iets3.core.expr.tests.MutationEngine"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "FunctionSubjectAdapter"
+  abstract: false
+  properties:
+  - name: "checkResults"
+    type: "STRING"
+  children: []
+  references:
+  - name: "fun"
+    type: "org.iets3.core.expr.toplevel.Function"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.tests.TestSubjectAdapter"
+- name: "OutputValue"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "out"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "VectorTestItem"
+  abstract: false
+  properties: []
+  children:
+  - name: "subject"
+    type: "org.iets3.core.expr.tests.TestSubjectAdapter"
+    multiple: false
+    optional: false
+  - name: "vectors"
+    type: "org.iets3.core.expr.tests.TestItemVectorCollection"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+- name: "TestItemVectorCollection"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractVectorCollection"
+- name: "MutationEngine"
+  abstract: false
+  properties:
+  - name: "numberOfMutations"
+    type: "STRING"
+  - name: "keepAll"
+    type: "STRING"
+  children:
+  - name: "logs"
+    type: "org.iets3.core.expr.tests.MutationLog"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "MutationLog"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "newNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+- name: "OldNodeAnnotation"
+  abstract: false
+  properties: []
+  children:
+  - name: "oldNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "MuteEffect"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.core.expr.base.IMainSlot"
+- name: "AllExpressionsFilter"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.StructuralCoverageNodesFilter"
+- name: "NotEqualsTestOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.TestOp"
+- name: "ForceCastExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "targetType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "ReportTestItem"
+  abstract: false
+  properties: []
+  children:
+  - name: "actual"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+- name: "AssertThatTestItem"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "matcher"
+    type: "org.iets3.core.expr.tests.AbstractValueMatcher"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+- name: "AbstractValueMatcher"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IsValidRecord"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractValueMatcher"
+- name: "IsInvalid"
+  abstract: false
+  properties: []
+  children:
+  - name: "messageMatcher"
+    type: "org.iets3.core.expr.tests.AbstractValueMatcher"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractValueMatcher"
+- name: "ContainsString"
+  abstract: false
+  properties: []
+  children:
+  - name: "text"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractValueMatcher"
+- name: "MatcherType"
+  abstract: false
+  properties: []
+  children:
+  - name: "forType"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractMatcherType"
+- name: "MatcherForAnyType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractMatcherType"
+- name: "MatcherForAnyRecordType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractMatcherType"
+- name: "AbstractMatcherType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AndMatcher"
+  abstract: false
+  properties: []
+  children:
+  - name: "left"
+    type: "org.iets3.core.expr.tests.AbstractValueMatcher"
+    multiple: false
+    optional: false
+  - name: "right"
+    type: "org.iets3.core.expr.tests.AbstractValueMatcher"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractValueMatcher"
+- name: "AllNodesFilter"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.StructuralCoverageNodesFilter"
+- name: "StructuralCoverageAssSummary"
+  abstract: false
+  properties:
+  - name: "coverageRatio"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.AssessmentSummary"
+- name: "MeasureCoverageFor"
+  abstract: false
+  properties:
+  - name: "completeSubtree"
+    type: "STRING"
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "EvalAnythingExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "anything"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "ITestItemContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []

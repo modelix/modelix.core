@@ -1,0 +1,425 @@
+name: "org.iets3.core.expr.repl"
+concepts:
+- name: "REPL"
+  abstract: false
+  properties:
+  - name: "updateDownstream"
+    type: "STRING"
+  - name: "showDiffs"
+    type: "STRING"
+  children:
+  - name: "entries"
+    type: "org.iets3.core.expr.repl.IReplEntry"
+    multiple: true
+    optional: true
+  references:
+  - name: "sourceNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: true
+  - name: "sourceScope"
+    type: "com.mbeddr.core.base.IVisibleElementProvider"
+    optional: true
+  extends:
+  - "com.mbeddr.core.base.Chunk"
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "org.iets3.core.expr.base.IRunningInterpreterContext"
+- name: "DefaultEntry"
+  abstract: false
+  properties:
+  - name: "hasBeenEvaled"
+    type: "STRING"
+  - name: "hasError"
+    type: "STRING"
+  - name: "referenceable"
+    type: "STRING"
+  children:
+  - name: "expression"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "org.iets3.core.expr.repl.IReplEntry"
+  - "org.iets3.core.base.ICanRunCheckManually"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "IReplEntry"
+  abstract: true
+  properties:
+  - name: "optionalName"
+    type: "STRING"
+  children: []
+  references: []
+  extends: []
+- name: "ReplEntryRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "entry"
+    type: "org.iets3.core.expr.repl.IReplEntry"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IRef"
+- name: "ReplEntryRefByName"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "entry"
+    type: "org.iets3.core.expr.repl.IReplEntry"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IRef"
+- name: "LeftBorderCellStyle"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.BorderCellStyle"
+- name: "BottomBorderCellStyle"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.BorderCellStyle"
+- name: "RightBorderCellStyle"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.BorderCellStyle"
+- name: "QuoteExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "cell"
+    type: "org.iets3.core.expr.repl.AbstractCellRef"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.AbstractSheetExpr"
+- name: "BorderCellStyle"
+  abstract: true
+  properties:
+  - name: "width"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.CellStyle"
+- name: "CellConstraint"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  - name: "constraint"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "SheetTestItem"
+  abstract: false
+  properties:
+  - name: "cols"
+    type: "STRING"
+  - name: "rows"
+    type: "STRING"
+  children:
+  - name: "sheet"
+    type: "org.iets3.core.expr.repl.Sheet"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.AbstractTestItem"
+- name: "TopBorderCellStyle"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.BorderCellStyle"
+- name: "AbstractRangeExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "from"
+    type: "org.iets3.core.expr.repl.AbstractCellRef"
+    multiple: false
+    optional: false
+  - name: "to"
+    type: "org.iets3.core.expr.repl.AbstractCellRef"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.AbstractSheetExpr"
+- name: "Sheet"
+  abstract: false
+  properties:
+  - name: "NUM_COLS"
+    type: "STRING"
+  - name: "NUM_ROWS"
+    type: "STRING"
+  - name: "booleansAreChecks"
+    type: "STRING"
+  - name: "showValues"
+    type: "STRING"
+  - name: "templateMode"
+    type: "STRING"
+  children:
+  - name: "cells"
+    type: "org.iets3.core.expr.repl.Cell"
+    multiple: true
+    optional: true
+  references:
+  - name: "template"
+    type: "org.iets3.core.expr.repl.Sheet"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "org.iets3.core.base.ICanRunCheckManually"
+  - "org.iets3.core.base.IValidNamedConcept"
+- name: "AbstractCellRef"
+  abstract: true
+  properties: []
+  children:
+  - name: "finder"
+    type: "org.iets3.core.expr.repl.AbstractSheetFinder"
+    multiple: false
+    optional: true
+  - name: "actuals"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "LabelExpression"
+  abstract: false
+  properties:
+  - name: "text"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.AbstractSheetExpr"
+- name: "Cell"
+  abstract: false
+  properties:
+  - name: "result"
+    type: "STRING"
+  - name: "locked"
+    type: "STRING"
+  - name: "template"
+    type: "STRING"
+  - name: "internal"
+    type: "STRING"
+  children:
+  - name: "constraint"
+    type: "org.iets3.core.expr.repl.CellConstraint"
+    multiple: false
+    optional: true
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  - name: "label"
+    type: "org.iets3.core.expr.repl.CellLabel"
+    multiple: false
+    optional: true
+  - name: "args"
+    type: "org.iets3.core.expr.repl.CellArg"
+    multiple: true
+    optional: true
+  - name: "styles"
+    type: "org.iets3.core.expr.repl.CellStyle"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "SheetType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "template"
+    type: "org.iets3.core.expr.repl.TopLevelSheet"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "CellArg"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.base.IValidNamedConcept"
+- name: "FontStyle"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.CellStyle"
+- name: "MakeListExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.AbstractRangeExpr"
+- name: "CellArgRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "arg"
+    type: "org.iets3.core.expr.repl.CellArg"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "SheetEmbedExpr"
+  abstract: false
+  properties:
+  - name: "cols"
+    type: "STRING"
+  - name: "rows"
+    type: "STRING"
+  children:
+  - name: "sheet"
+    type: "org.iets3.core.expr.repl.Sheet"
+    multiple: false
+    optional: true
+  references:
+  - name: "template"
+    type: "org.iets3.core.expr.repl.TopLevelSheet"
+    optional: true
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "FontBoldStyle"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.FontStyle"
+- name: "NamedSheetFinder"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "sheet"
+    type: "org.iets3.core.expr.repl.TopLevelSheet"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.repl.AbstractSheetFinder"
+- name: "TopLevelSheet"
+  abstract: false
+  properties:
+  - name: "template"
+    type: "STRING"
+  - name: "hideTitle"
+    type: "STRING"
+  children:
+  - name: "sheet"
+    type: "org.iets3.core.expr.repl.SheetEmbedExpr"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+- name: "AbstractSheetExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "NamedCellRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "label"
+    type: "org.iets3.core.expr.repl.CellLabel"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.repl.AbstractCellRef"
+- name: "CellConstraintIt"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "AbstractSheetFinder"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "CellStyle"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "CoordCellRef"
+  abstract: false
+  properties:
+  - name: "cell"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.AbstractCellRef"
+- name: "UpwardsSheetFinder"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.AbstractSheetFinder"
+- name: "MakeRecordExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "record"
+    type: "org.iets3.core.expr.toplevel.RecordType"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.repl.AbstractRangeExpr"
+- name: "CellLabel"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"

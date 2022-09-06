@@ -1,0 +1,722 @@
+name: "com.mbeddr.mpsutil.blutil"
+concepts:
+- name: "DispatchExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "jetbrains.mps.baseLanguage.Type"
+    multiple: false
+    optional: false
+  - name: "candidate"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "matches"
+    type: "com.mbeddr.mpsutil.blutil.DisptachMatch"
+    multiple: true
+    optional: true
+  - name: "defaultResult"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "DisptachMatch"
+  abstract: false
+  properties: []
+  children:
+  - name: "typeguards"
+    type: "com.mbeddr.mpsutil.blutil.TypeGuard"
+    multiple: true
+    optional: true
+  - name: "result"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "CastedCandidateExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "CallRecursivelyExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "resultType"
+    type: "jetbrains.mps.baseLanguage.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "IsInstanceOfExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "context"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.ConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "BuilderExpression"
+  abstract: false
+  properties:
+  - name: "partial"
+    type: "STRING"
+  children:
+  - name: "root"
+    type: "com.mbeddr.mpsutil.blutil.ChildStep"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "com.mbeddr.mpsutil.blutil.IDeprecatedLangConcept"
+- name: "ChildStep"
+  abstract: false
+  properties:
+  - name: "optionalName"
+    type: "STRING"
+  children:
+  - name: "value"
+    type: "com.mbeddr.mpsutil.blutil.AbstractChildValue"
+    multiple: false
+    optional: false
+  - name: "children"
+    type: "com.mbeddr.mpsutil.blutil.AbstractStep"
+    multiple: true
+    optional: true
+  references:
+  - name: "childLink"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.blutil.AbstractStep"
+- name: "AbstractStep"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "SimplePropertyStep"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "property"
+    type: "jetbrains.mps.lang.structure.PropertyDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.blutil.AbstractStep"
+- name: "ConceptRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.blutil.AbstractChildValue"
+- name: "RefStep"
+  abstract: false
+  properties: []
+  children:
+  - name: "target"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "refLink"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.blutil.AbstractStep"
+- name: "ChildRefExpr"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "child"
+    type: "com.mbeddr.mpsutil.blutil.ChildStep"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "IBuilderStep"
+  abstract: true
+  properties: []
+  children:
+  - name: "ref"
+    type: "com.mbeddr.mpsutil.blutil.ConceptRef"
+    multiple: false
+    optional: false
+  references: []
+  extends: []
+- name: "AbstractChildValue"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ExpressionChildValue"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.AbstractChildValue"
+- name: "MatchStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.BlockStatement"
+    multiple: false
+    optional: false
+  - name: "alternative"
+    type: "jetbrains.mps.baseLanguage.BlockStatement"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+  - "com.mbeddr.mpsutil.blutil.IMatcher"
+- name: "MatchClause"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "NodeRoleClause"
+  abstract: true
+  properties: []
+  children:
+  - name: "criteria"
+    type: "com.mbeddr.mpsutil.blutil.NodeRoleCriterion"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.MatchClause"
+- name: "ParentRoleClause"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleClause"
+- name: "AncestorRoleClause"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleClause"
+- name: "NodeRoleCriterion"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IsConceptCriterion"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.ConceptDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleCriterion"
+- name: "EqualsNodeCriterion"
+  abstract: false
+  properties: []
+  children:
+  - name: "otherNode"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleCriterion"
+- name: "ThisRoleClause"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleClause"
+- name: "ThisRefExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.MatchClauseExpr"
+- name: "MatchClauseExpr"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "ParentRefExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.MatchClauseExpr"
+- name: "AncestorRefExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.MatchClauseExpr"
+- name: "GuardCriterion"
+  abstract: false
+  properties: []
+  children:
+  - name: "condition"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleCriterion"
+- name: "LinkRoleClause"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "link"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleClause"
+- name: "LinkRefExpr"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "link"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.blutil.MatchClauseExpr"
+- name: "TypeIsConceptCriterion"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.ConceptDeclaration"
+    optional: false
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleCriterion"
+- name: "TypeSubtypeCriterion"
+  abstract: false
+  properties: []
+  children:
+  - name: "typeNode"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.NodeRoleCriterion"
+- name: "IMatcher"
+  abstract: true
+  properties: []
+  children:
+  - name: "candidate"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "clauses"
+    type: "com.mbeddr.mpsutil.blutil.MatchClause"
+    multiple: true
+    optional: true
+  references: []
+  extends: []
+- name: "MatchExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.BlockStatement"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "com.mbeddr.mpsutil.blutil.IMatcher"
+- name: "FilterOperation"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.collections.SequenceOperation"
+- name: "TypeSwitch"
+  abstract: false
+  properties: []
+  children:
+  - name: "it"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "cases"
+    type: "com.mbeddr.mpsutil.blutil.TypeSwitchCase"
+    multiple: true
+    optional: false
+  - name: "default"
+    type: "com.mbeddr.mpsutil.blutil.TypeSwitchDefault"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "TypeSwitchCase"
+  abstract: false
+  properties: []
+  children:
+  - name: "statements"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  - name: "classifierType"
+    type: "jetbrains.mps.baseLanguage.ClassifierType"
+    multiple: false
+    optional: false
+  - name: "variable"
+    type: "com.mbeddr.mpsutil.blutil.TypeSwitchBaseVariable"
+    multiple: false
+    optional: false
+  - name: "mappings"
+    type: "com.mbeddr.mpsutil.blutil.TypeSwitchCaseMappingContainer"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TypeSwitchBaseVariable"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.TypeSwitchVariable"
+- name: "TypeSwitchVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "variable"
+    type: "com.mbeddr.mpsutil.blutil.TypeSwitchVariable"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "TypeSwitchDefault"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GridConstraintsNextColumOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.GridConstraintsOperation"
+- name: "GridConstraintsNextRowOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.GridConstraintsOperation"
+- name: "GridConstraintsOperation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IOperation"
+- name: "LogStatement"
+  abstract: true
+  properties:
+  - name: "disabled"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "LogContextStatement"
+  abstract: false
+  properties:
+  - name: "label"
+    type: "STRING"
+  - name: "onChange"
+    type: "STRING"
+  children:
+  - name: "expr"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.LogStatement"
+- name: "LogExpr"
+  abstract: false
+  properties:
+  - name: "label"
+    type: "STRING"
+  children:
+  - name: "expr"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.LogStatement"
+- name: "ConceptSwitchStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "default"
+    type: "com.mbeddr.mpsutil.blutil.CSDefault"
+    multiple: false
+    optional: false
+  - name: "cases"
+    type: "com.mbeddr.mpsutil.blutil.CSCase"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "CSCase"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.BlockStatement"
+    multiple: false
+    optional: false
+  - name: "guard"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "it"
+    type: "com.mbeddr.mpsutil.blutil.ItExpr"
+    multiple: false
+    optional: false
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ItExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "CSDefault"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.BlockStatement"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TypeGuard"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "link"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  - name: "typeconcept"
+    type: "jetbrains.mps.lang.structure.ConceptDeclaration"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "BLDoc"
+  abstract: false
+  properties: []
+  children:
+  - name: "text"
+    type: "de.slisson.mps.richtext.Text"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "ShortStaticMethodCall"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.StaticMethodCall"
+- name: "MethodLineDoc"
+  abstract: false
+  properties:
+  - name: "text"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "IDeprecatedLangConcept"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "PerformanceProfiler"
+  abstract: false
+  properties:
+  - name: "name"
+    type: "STRING"
+  children:
+  - name: "profiledStatements"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "SafeReadAction"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.Statement"
+    multiple: false
+    optional: false
+  - name: "repo"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "SafeWriteAction"
+  abstract: false
+  properties: []
+  children:
+  - name: "body"
+    type: "jetbrains.mps.baseLanguage.Statement"
+    multiple: false
+    optional: false
+  - name: "repo"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "TypeSwitchCaseMapping"
+  abstract: false
+  properties: []
+  children:
+  - name: "variable"
+    type: "com.mbeddr.mpsutil.blutil.TypeSwitchNestedVariable"
+    multiple: false
+    optional: false
+  - name: "method"
+    type: "com.mbeddr.mpsutil.blutil.TypeSwitchCaseMappingMethodCall"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TypeSwitchCaseMappingContainer"
+  abstract: false
+  properties: []
+  children:
+  - name: "mappings"
+    type: "com.mbeddr.mpsutil.blutil.TypeSwitchCaseMapping"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TypeSwitchNestedVariable"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.blutil.TypeSwitchVariable"
+- name: "TypeSwitchCaseMappingMethodCall"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IMethodCall"
+- name: "TypeSwitchVariable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.IResolveInfo"
+  - "jetbrains.mps.lang.core.INamedConcept"

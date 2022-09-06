@@ -1,0 +1,29 @@
+name: "de.slisson.mps.richtext"
+concepts:
+- name: "Text"
+  abstract: false
+  properties: []
+  children:
+  - name: "words"
+    type: "de.slisson.mps.richtext.IWord"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IWord"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "Word"
+  abstract: false
+  properties:
+  - name: "escapedValue"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "de.slisson.mps.richtext.IWord"

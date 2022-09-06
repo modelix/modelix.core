@@ -1,0 +1,761 @@
+name: "org.iets3.core.expr.collections"
+concepts:
+- name: "CollectionType"
+  abstract: false
+  properties: []
+  children:
+  - name: "sizeConstraint"
+    type: "org.iets3.core.expr.collections.CollectionSizeSpec"
+    multiple: false
+    optional: true
+  - name: "baseType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "org.iets3.core.expr.base.ICollectionType"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+- name: "ListType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.CollectionType"
+  - "org.iets3.core.expr.collections.IOrderedCollection"
+  - "org.iets3.core.expr.base.IParameterizedTypeSupportsEquals"
+- name: "ListLiteral"
+  abstract: false
+  properties: []
+  children:
+  - name: "typeConstraint"
+    type: "org.iets3.core.expr.collections.ElementTypeConstraintSingle"
+    multiple: false
+    optional: true
+  - name: "elements"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "ICollectionOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "NoArgCollectionOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.ICollectionOp"
+- name: "SizeOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+- name: "IsEmptyOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+- name: "IOrderedCollection"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ICollectionType"
+- name: "IOrderedCollectionOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.ICollectionOp"
+- name: "FirstOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IElementTyped"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"
+- name: "IElementTyped"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.ICollectionOp"
+- name: "LastOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IElementTyped"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"
+- name: "AtOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.collections.IElementTyped"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "OneArgCollectionOp"
+  abstract: true
+  properties: []
+  children:
+  - name: "arg"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.ICollectionOp"
+- name: "IContextTypedCollOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.ICollectionOp"
+- name: "MapOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.lambda.IShortLambdaContainer"
+  - "org.iets3.core.expr.collections.IProvideIndex"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "WhereOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgPredicateCollectionOp"
+  - "org.iets3.core.expr.collections.IContextTypedCollOp"
+  - "org.iets3.core.expr.collections.IProvideIndex"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "DistinctOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IContextTypedCollOp"
+- name: "AsImmutableListOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+- name: "ContainsOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneCollBaseTypedArgCollectionOp"
+- name: "OneCollBaseTypedArgCollectionOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "OneArgPredicateCollectionOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.lambda.IShortLambdaContainer"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "AnyOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgPredicateCollectionOp"
+- name: "AllOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgPredicateCollectionOp"
+- name: "SetType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.CollectionType"
+- name: "SetLiteral"
+  abstract: false
+  properties: []
+  children:
+  - name: "typeConstraint"
+    type: "org.iets3.core.expr.collections.ElementTypeConstraintSingle"
+    multiple: false
+    optional: true
+  - name: "elements"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IStructuredSyntax"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "AsImmutableSetOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+- name: "BracketOp"
+  abstract: false
+  properties: []
+  children:
+  - name: "index"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.UnaryExpression"
+- name: "MapType"
+  abstract: false
+  properties: []
+  children:
+  - name: "keyType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  - name: "valueType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.MapLikeType"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+- name: "MapLiteral"
+  abstract: false
+  properties: []
+  children:
+  - name: "typeConstraint"
+    type: "org.iets3.core.expr.collections.ElementTypeConstraintMap"
+    multiple: false
+    optional: true
+  - name: "elements"
+    type: "org.iets3.core.expr.collections.KeyValuePair"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IStructuredSyntax"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "KeyValuePair"
+  abstract: false
+  properties: []
+  children:
+  - name: "key"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "val"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "MapWithOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.IMapOneArgOp"
+- name: "MapWithoutOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.IMapOneArgOp"
+- name: "MaxOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IElementTyped"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+- name: "SumOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IElementTyped"
+- name: "FirstNOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.collections.IContextTypedCollOp"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"
+- name: "LastNOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.collections.IContextTypedCollOp"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"
+- name: "SimpleSortOp"
+  abstract: false
+  properties:
+  - name: "order"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"
+- name: "MinOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IElementTyped"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+- name: "ListWithOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.IListOneArgOp"
+- name: "SetWithOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.ISetOneArgOp"
+- name: "ElementTypeConstraintSingle"
+  abstract: false
+  properties: []
+  children:
+  - name: "typeConstraint"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ElementTypeConstraintMap"
+  abstract: false
+  properties: []
+  children:
+  - name: "typeConstraint1"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  - name: "typeConstraint2"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "CollectionSizeSpec"
+  abstract: false
+  properties:
+  - name: "min"
+    type: "STRING"
+  - name: "max"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "UpToTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "max"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "UnpackOptionsOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IContextTypedCollOp"
+- name: "IndexExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "IProvideIndex"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ForeachOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.collections.IContextTypedCollOp"
+  - "org.iets3.core.expr.lambda.IShortLambdaContainer"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "FlattenOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+- name: "AsSingletonList"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "AbstractStringListJoiner"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneCollBaseTypedArgCollectionOp"
+- name: "StringJoinOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.AbstractStringListJoiner"
+- name: "StringTerminateOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.AbstractStringListJoiner"
+- name: "SetWithoutOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.ISetOneArgOp"
+- name: "IsNotEmptyOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+- name: "FoldLeftOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.FoldOp"
+  - "org.iets3.core.expr.collections.IProvideIndex"
+- name: "FoldOp"
+  abstract: true
+  properties: []
+  children:
+  - name: "seed"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "combiner"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.ICollectionOp"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "AsMapOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+- name: "MapSizeOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "FindFirstOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgPredicateCollectionOp"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "ListWithAllOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.collections.IListOneArgOp"
+- name: "MapLikeType"
+  abstract: true
+  properties: []
+  children:
+  - name: "keyType_DEPRECATED"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  - name: "valueType_DEPRECATED"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "ListInsertOp"
+  abstract: false
+  properties: []
+  children:
+  - name: "index"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "arg"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "MapKeysOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "MapValuesOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "ListWithoutOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.IListOneArgOp"
+- name: "MapContainsKeyOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.IMapOneArgOp"
+- name: "IMapOneArgOp"
+  abstract: true
+  properties: []
+  children:
+  - name: "arg"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "ISetOneArgOp"
+  abstract: true
+  properties: []
+  children:
+  - name: "arg"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "IListOneArgOp"
+  abstract: true
+  properties: []
+  children:
+  - name: "arg"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "AllWithIndexOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.TwoArgPredicateCollectionOp"
+- name: "TwoArgPredicateCollectionOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+- name: "AnyWithIndexOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.TwoArgPredicateCollectionOp"
+- name: "TailOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IContextTypedCollOp"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"
+- name: "ReverseOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.NoArgCollectionOp"
+  - "org.iets3.core.expr.collections.IContextTypedCollOp"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"
+- name: "SetUnionOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.ISetOneArgOp"
+- name: "SetDiffOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.ISetOneArgOp"
+- name: "ListPickOp"
+  abstract: false
+  properties: []
+  children:
+  - name: "selectorList"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "IndexOfOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.collections.IOrderedCollectionOp"

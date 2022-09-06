@@ -1,0 +1,739 @@
+name: "org.iets3.core.expr.toplevel"
+concepts:
+- name: "Function"
+  abstract: false
+  properties:
+  - name: "ext_old"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.lambda.IFunctionLike"
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+  - "org.iets3.core.expr.base.IDocumentableWordProvider"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.ITraceRoot"
+  - "org.iets3.core.expr.lambda.IJoinedBlockContext"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.core.expr.base.IVoidContext"
+  - "org.iets3.analysis.base.ISolvable"
+  - "org.iets3.core.expr.lambda.IAllowLocalVariables"
+  - "org.iets3.core.expr.base.IProgramLocationProvider"
+- name: "FunctionCall"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.ISSConstrainedValueRef"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+  - "org.iets3.core.expr.lambda.IFunctionCall"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.ITraceRoot"
+  - "org.iets3.analysis.base.ISolvable"
+- name: "FunRef"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.lambda.IFunctionRef"
+- name: "IFunctionScopeProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IToplevelExprContent"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "org.iets3.core.expr.base.IContainmentStackMember"
+  - "com.mbeddr.core.base.IDocumentable"
+  - "com.mbeddr.core.base.ICommentable"
+  - "com.mbeddr.core.base.IHasQualifiedName"
+- name: "ExtensionFunctionCall"
+  abstract: false
+  properties: []
+  children:
+  - name: "args"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references:
+  - name: "extFun"
+    type: "org.iets3.core.expr.lambda.IFunctionLike"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+  - "org.iets3.analysis.base.ISolvable"
+- name: "Constant"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+  - "org.iets3.core.expr.base.IOptionallyTyped"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+  - "com.mbeddr.core.base.IDetectCycle"
+  - "org.iets3.core.expr.base.ITraceRoot"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.analysis.base.ISolvable"
+  - "jetbrains.mps.lang.core.ISmartReferent"
+- name: "IConstantScopeProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ConstantRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "constant"
+    type: "org.iets3.core.expr.toplevel.Constant"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IIsSingleSymbol"
+  - "org.iets3.core.expr.base.ISSConstrainedValueRef"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.IRef"
+- name: "EmptyToplevelContent"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+  - "com.mbeddr.core.base.IEmpty"
+- name: "RecordDeclaration"
+  abstract: false
+  properties: []
+  children:
+  - name: "members_old"
+    type: "org.iets3.core.expr.toplevel.IRecordMember"
+    multiple: true
+    optional: true
+  - name: "refFlag"
+    type: "org.iets3.core.expr.toplevel.ReferenceableFlag"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.toplevel.AbstractTypeDeclaration"
+  - "org.iets3.core.expr.toplevel.IRecordDeclaration"
+- name: "RecordMember"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.toplevel.IRecordMember"
+  - "org.iets3.core.expr.base.ITyped"
+  - "com.mbeddr.core.base.IDocumentable"
+- name: "RecordType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "record"
+    type: "org.iets3.core.expr.toplevel.IRecordDeclaration"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "org.iets3.core.expr.toplevel.IRecordType"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+- name: "IRecordScopeProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "RecordLiteral"
+  abstract: false
+  properties: []
+  children:
+  - name: "memberValues"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IStructuredSyntax"
+  - "org.iets3.core.expr.base.ITyped"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+  - "org.iets3.core.expr.base.ILiteral"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "SectionMarker"
+  abstract: false
+  properties:
+  - name: "label"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+- name: "Typedef"
+  abstract: false
+  properties: []
+  children:
+  - name: "originalType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.toplevel.AbstractTypeDeclaration"
+  - "org.iets3.core.expr.base.IContracted"
+  - "com.mbeddr.core.base.IDetectCycle"
+  - "org.iets3.core.expr.toplevel.IRecordMemberScopeProvider"
+  - "com.mbeddr.core.base.IVisibleElementProvider"
+  - "org.iets3.analysis.base.ISolvable"
+- name: "ITypedefScopeProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "TypedefType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "typedef"
+    type: "org.iets3.core.expr.toplevel.Typedef"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "org.iets3.core.expr.base.ISSDelegatingType"
+- name: "TypedefContractValExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.ISSItValueRef"
+- name: "RecordMemberRefInConstraint"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "member"
+    type: "org.iets3.core.expr.toplevel.IRecordMember"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "RecordChangeTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "setters"
+    type: "org.iets3.core.expr.toplevel.NewValueSetter"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "NewValueSetter"
+  abstract: false
+  properties: []
+  children:
+  - name: "newValue"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "member"
+    type: "org.iets3.core.expr.toplevel.IRecordMember"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "OldValueExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "OldMemberRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "member"
+    type: "org.iets3.core.expr.toplevel.IRecordMember"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "EnumDeclaration"
+  abstract: false
+  properties:
+  - name: "qualified"
+    type: "STRING"
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  - name: "literals"
+    type: "org.iets3.core.expr.toplevel.EnumLiteral"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.toplevel.AbstractTypeDeclaration"
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "jetbrains.mps.lang.core.ISmartReferent"
+- name: "EnumLiteral"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.base.IValidNamedConcept"
+- name: "EnumType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "enum"
+    type: "org.iets3.core.expr.toplevel.EnumDeclaration"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+  - "org.iets3.core.expr.base.ITypeSupportsProposals"
+- name: "IEnumScopeProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "EnumLiteralRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "literal"
+    type: "org.iets3.core.expr.toplevel.EnumLiteral"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "EnumValueAccessor"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "IRecordMember"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.path.IMember"
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "org.iets3.core.expr.base.ITypeable"
+  - "com.mbeddr.core.base.ICommentable"
+  - "org.iets3.core.expr.base.IContracted"
+  - "com.mbeddr.core.base.IDocumentable"
+  - "org.iets3.core.expr.base.IProgramLocationProvider"
+- name: "IRecordDeclaration"
+  abstract: true
+  properties: []
+  children:
+  - name: "members"
+    type: "org.iets3.core.expr.toplevel.IRecordMember"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "org.iets3.core.expr.base.IContracted"
+  - "org.iets3.core.expr.toplevel.IRecordMemberScopeProvider"
+  - "com.mbeddr.core.base.IVisibleElementProvider"
+  - "com.mbeddr.core.base.IDetectCycle"
+  - "org.iets3.core.expr.base.IDocumentableWordProvider"
+  - "org.iets3.core.expr.base.IProgramLocationProvider"
+- name: "AbstractTypeDeclaration"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+  - "org.iets3.core.expr.base.IDocumentableWordProvider"
+- name: "IRecordMemberScopeProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "EnumIsTarget"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "literal"
+    type: "org.iets3.core.expr.toplevel.EnumLiteral"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "Library"
+  abstract: false
+  properties: []
+  children:
+  - name: "contents"
+    type: "org.iets3.core.expr.toplevel.IToplevelExprContent"
+    multiple: true
+    optional: true
+  - name: "imports"
+    type: "com.mbeddr.core.base.DefaultGenericChunkDependency"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.core.base.Chunk"
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "org.iets3.core.expr.base.IContainmentStackMember"
+  - "org.iets3.core.expr.base.IDocumentableWordContainer"
+  - "com.mbeddr.core.base.IVisibleElementProvider"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.analysis.base.IUseSolver"
+- name: "ReferenceableFlag"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "idMember"
+    type: "org.iets3.core.expr.toplevel.IRecordMember"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GroupType"
+  abstract: false
+  properties: []
+  children:
+  - name: "keyType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  - name: "memberType"
+    type: "org.iets3.core.expr.toplevel.IRecordType"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "GroupByOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.collections.OneArgCollectionOp"
+  - "org.iets3.core.expr.lambda.IShortLambdaContainer"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "GroupKeyTarget"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "GroupMembersTarget"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "InlineRecordType"
+  abstract: false
+  properties: []
+  children:
+  - name: "members"
+    type: "org.iets3.core.expr.toplevel.IRecordMember"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "ProjectOp"
+  abstract: false
+  properties: []
+  children:
+  - name: "members"
+    type: "org.iets3.core.expr.toplevel.ProjectMember"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.collections.ICollectionOp"
+- name: "ProjectMember"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.base.IValidNamedConcept"
+- name: "ProjectIt"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "InlineRecordMemberAccess"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.base.IValidNamedConcept"
+- name: "BuilderExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "adapted"
+    type: "org.iets3.core.expr.toplevel.BuilderAdapter"
+    multiple: false
+    optional: false
+  - name: "elements"
+    type: "org.iets3.core.expr.toplevel.BuilderElement"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "BuilderElement"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "FieldSetter"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "field"
+    type: "jetbrains.mps.lang.core.INamedConcept"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.toplevel.BuilderElement"
+- name: "BuilderAdapter"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "RecordTypeAdapter"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.toplevel.IRecordType"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.toplevel.BuilderAdapter"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+- name: "IFunctionContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IVisibleElementProvider"
+- name: "AbstractFunctionAdapter"
+  abstract: true
+  properties: []
+  children:
+  - name: "fun"
+    type: "org.iets3.core.expr.toplevel.Function"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "ITopLevelContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.toplevel.IToplevelExprContent"
+- name: "IRecordType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.path.ICanHaveMembersType"
+  - "org.iets3.core.expr.base.IReferenceableType"
+  - "org.iets3.core.expr.base.IComplexTypeSupportsEquals"
+- name: "IToplevelExprContentContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IVisibleElementProvider"
+- name: "AbstractToplevelExprAdapter"
+  abstract: true
+  properties: []
+  children:
+  - name: "toplevelExprContent"
+    type: "org.iets3.core.expr.toplevel.IToplevelExprContent"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "IFunctionLikeContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IVisibleElementProvider"
+- name: "AbstractFunctionLikeAdapter"
+  abstract: true
+  properties: []
+  children:
+  - name: "functionLike"
+    type: "org.iets3.core.expr.lambda.IFunctionLike"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "EmptyMember"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.toplevel.IRecordMember"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+  - "com.mbeddr.core.base.IEmpty"
+- name: "EnumIsInTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "selectors"
+    type: "org.iets3.core.expr.toplevel.EnumIsInSelector"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "EnumIsInSelector"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "literal"
+    type: "org.iets3.core.expr.toplevel.EnumLiteral"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IDeclarationExtensionContext"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "QualifierRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "enum"
+    type: "org.iets3.core.expr.toplevel.EnumDeclaration"
+    optional: false
+  - name: "lit"
+    type: "org.iets3.core.expr.toplevel.EnumLiteral"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "AllLitList"
+  abstract: false
+  properties: []
+  children:
+  - name: "enumType"
+    type: "org.iets3.core.expr.toplevel.EnumType"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "EnumIndexOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"

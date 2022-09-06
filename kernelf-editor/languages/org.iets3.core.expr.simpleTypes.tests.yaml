@@ -1,0 +1,20 @@
+name: "org.iets3.core.expr.simpleTypes.tests"
+concepts:
+- name: "RandomVectorProducer"
+  abstract: false
+  properties:
+  - name: "count"
+    type: "STRING"
+  - name: "onlyInteresing"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.TestDataProducer"
+- name: "EqClassProducer"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.tests.TestDataProducer"

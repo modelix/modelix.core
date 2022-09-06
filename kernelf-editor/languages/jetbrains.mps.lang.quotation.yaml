@@ -1,0 +1,296 @@
+name: "jetbrains.mps.lang.quotation"
+concepts:
+- name: "AbstractAntiquotation"
+  abstract: true
+  properties:
+  - name: "label"
+    type: "STRING"
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.IMetaLevelChanger"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+- name: "Antiquotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+  - "jetbrains.mps.lang.quotation.AbstractAntiquotation"
+- name: "Quotation"
+  abstract: false
+  properties: []
+  children:
+  - name: "quotedNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  - name: "modelToCreate"
+    type: "jetbrains.mps.lang.quotation.ModelNodeInitializer"
+    multiple: false
+    optional: true
+  - name: "modelToCreate_old"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "nodeId_old"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "jetbrains.mps.lang.core.IMetaLevelChanger"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+- name: "ReferenceAntiquotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.LinkAttribute"
+  - "jetbrains.mps.lang.quotation.AbstractAntiquotation"
+- name: "ListAntiquotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+  - "jetbrains.mps.lang.quotation.AbstractAntiquotation"
+- name: "PropertyAntiquotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.PropertyAttribute"
+  - "jetbrains.mps.lang.quotation.AbstractAntiquotation"
+  - "jetbrains.mps.lang.quotation.StringToTypedValueMigrationInfo"
+- name: "NodeBuilderInitProperty"
+  abstract: false
+  properties: []
+  children:
+  - name: "initValue"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "property"
+    type: "jetbrains.mps.lang.structure.PropertyDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitPart"
+- name: "NodeBuilderList"
+  abstract: false
+  properties: []
+  children:
+  - name: "nodes"
+    type: "jetbrains.mps.lang.quotation.NodeBuilderInitLinkValue"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitLinkValue"
+- name: "NodeBuilder"
+  abstract: false
+  properties: []
+  children:
+  - name: "quotedNode"
+    type: "jetbrains.mps.lang.quotation.NodeBuilderNode"
+    multiple: false
+    optional: false
+  - name: "modelToCreate_old"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "modelToCreate"
+    type: "jetbrains.mps.lang.quotation.ModelNodeInitializer"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+  - "jetbrains.mps.lang.quotation.INodeBuilderContainer"
+- name: "NodeBuilderInitLink"
+  abstract: false
+  properties: []
+  children:
+  - name: "initValue"
+    type: "jetbrains.mps.lang.quotation.NodeBuilderInitLinkValue"
+    multiple: false
+    optional: false
+  references:
+  - name: "link"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitPart"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+- name: "NodeBuilderRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "target"
+    type: "jetbrains.mps.lang.core.INamedConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitLinkValue"
+- name: "NodeBuilderExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitLinkValue"
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitValueChild"
+- name: "NodeBuilderNode"
+  abstract: false
+  properties: []
+  children:
+  - name: "values"
+    type: "jetbrains.mps.lang.quotation.NodeBuilderInitPart"
+    multiple: true
+    optional: true
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.ConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitLinkValue"
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitValueChild"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+- name: "NodeBuilderInitPart"
+  abstract: true
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GeneratorInternal_PropertyDescriptor"
+  abstract: false
+  properties:
+  - name: "propertyValue"
+    type: "STRING"
+  children:
+  - name: "propertyIdentity"
+    type: "jetbrains.mps.lang.smodel.PropertyId"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GeneratorInternal_ReferenceDescriptor"
+  abstract: false
+  properties:
+  - name: "targetNodeId"
+    type: "STRING"
+  - name: "targetModel"
+    type: "STRING"
+  children:
+  - name: "linkId"
+    type: "jetbrains.mps.lang.smodel.ReferenceLinkId"
+    multiple: false
+    optional: false
+  references:
+  - name: "role"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GeneratorInternal_InternalReferenceHolder"
+  abstract: false
+  properties: []
+  children:
+  - name: "linkId"
+    type: "jetbrains.mps.lang.smodel.ReferenceLinkId"
+    multiple: false
+    optional: false
+  references:
+  - name: "role"
+    type: "jetbrains.mps.lang.structure.LinkDeclaration"
+    optional: true
+  - name: "sourceNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  - name: "targetNode"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "StringToTypedValueMigrationInfo"
+  abstract: true
+  properties:
+  - name: "stringValueMigrated"
+    type: "STRING"
+  children: []
+  references: []
+  extends: []
+- name: "NodeBuilderInitLinkValue"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ModelNodeInitializer"
+  abstract: false
+  properties: []
+  children:
+  - name: "modelToCreate"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "nodeId"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "NodeBuilderInitValueChild"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "NodeBuilderInitPropertyValue"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "NodeBuilderPropertyExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.quotation.NodeBuilderInitPropertyValue"
+  - "jetbrains.mps.lang.core.IWrapper"
+- name: "INodeBuilderContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []

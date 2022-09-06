@@ -1,0 +1,422 @@
+name: "org.iets3.core.expr.lambda"
+concepts:
+- name: "FunctionType"
+  abstract: false
+  properties: []
+  children:
+  - name: "argumentTypes"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: true
+    optional: true
+  - name: "returnType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  - name: "effect"
+    type: "org.iets3.core.expr.lambda.EffectTag"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.lambda.GenericFunctionType"
+- name: "LambdaExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "args"
+    type: "org.iets3.core.expr.lambda.LambdaArg"
+    multiple: true
+    optional: true
+  - name: "expression"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+  - "org.iets3.core.expr.lambda.ILambdaLike"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "IArgument"
+  abstract: true
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+- name: "LambdaArg"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.lambda.IArgument"
+- name: "LambdaArgRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "arg"
+    type: "org.iets3.core.expr.lambda.LambdaArg"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.ISingleSymbolRef"
+- name: "ILambdaDotTarget"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "ExecOp"
+  abstract: false
+  properties: []
+  children:
+  - name: "args"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.lambda.ILambdaDotTarget"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "IShortLambdaContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "ShortLambdaExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.lambda.ILambdaLike"
+- name: "ShortLambdaItExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "IFunctionLike"
+  abstract: true
+  properties:
+  - name: "ext"
+    type: "STRING"
+  children:
+  - name: "args"
+    type: "org.iets3.core.expr.lambda.FunctionArgument"
+    multiple: true
+    optional: true
+  - name: "body"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "effect"
+    type: "org.iets3.core.expr.lambda.EffectTag"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "org.iets3.core.expr.base.IOptionallyTyped"
+  - "org.iets3.core.expr.base.IContainmentStackMember"
+  - "org.iets3.core.expr.base.IContracted"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "com.mbeddr.core.base.IDetectCycle"
+  - "org.iets3.core.expr.base.IDocumentableWordProvider"
+  - "com.mbeddr.core.base.ICommentable"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+  - "com.mbeddr.core.base.ITreeViewRoot"
+- name: "FunctionArgument"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.lambda.IArgument"
+- name: "ArgRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "arg"
+    type: "org.iets3.core.expr.lambda.IArgument"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.ISingleSymbolRef"
+  - "org.iets3.core.expr.base.ISSConstrainedValueRef"
+- name: "IFunctionCall"
+  abstract: true
+  properties: []
+  children:
+  - name: "args"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references:
+  - name: "function"
+    type: "org.iets3.core.expr.lambda.IFunctionLike"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.IRef"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "IFunctionRef"
+  abstract: true
+  properties: []
+  children: []
+  references:
+  - name: "fun"
+    type: "org.iets3.core.expr.lambda.IFunctionLike"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.IRef"
+  - "org.iets3.core.expr.lambda.ILambdaLike"
+- name: "BlockExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expressions"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IBlockLike"
+  - "com.mbeddr.core.base.IContainerOfUniqueNames"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.IAllowsDocInChildExpressions"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+  - "org.iets3.core.expr.base.ISSConstrainedValueRef"
+  - "com.mbeddr.mpsutil.varscope.IScopeProvider"
+  - "org.iets3.core.expr.base.IBigExpression"
+- name: "ValExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "org.iets3.core.expr.base.IOptionallyTyped"
+  - "org.iets3.core.expr.base.IContracted"
+  - "org.iets3.core.expr.base.IDocumentableWordProvider"
+  - "org.iets3.core.expr.base.IContainmentStackMember"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+  - "com.mbeddr.mpsutil.varscope.IScopeElement"
+  - "org.iets3.analysis.base.ISolvable"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.core.expr.lambda.IDeclaration"
+- name: "ValRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "val"
+    type: "org.iets3.core.expr.lambda.ValExpression"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.ISingleSymbolRef"
+  - "org.iets3.core.expr.base.ISSConstrainedValueRef"
+- name: "BindOp"
+  abstract: false
+  properties: []
+  children:
+  - name: "args"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.lambda.ILambdaDotTarget"
+- name: "CapturedValue"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "ValValueInContractExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ExprInContract"
+  - "org.iets3.core.expr.base.ISSItValueRef"
+- name: "FunResExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ExprInContract"
+- name: "EffectTag"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ILambdaLike"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+- name: "IJoinedBlockContext"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "FunCompose"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryExpression"
+- name: "GenericFunctionType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "FunctionStyleExecOp"
+  abstract: false
+  properties: []
+  children:
+  - name: "fun"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "args"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "AssertExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IAssertConstraints"
+- name: "ReadEffectTag"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.lambda.EffectTag"
+- name: "ModifyEffectTag"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.lambda.EffectTag"
+- name: "ReadModifyEffectTag"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.lambda.EffectTag"
+- name: "AttachedConstraint"
+  abstract: false
+  properties: []
+  children:
+  - name: "constraints"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "LocalVarDeclExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.base.IValidNamedConcept"
+  - "org.iets3.core.expr.base.IOptionallyTyped"
+  - "org.iets3.core.expr.base.IContracted"
+  - "jetbrains.mps.lang.core.ISmartReferent"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.core.expr.lambda.IDeclaration"
+- name: "IAllowLocalVariables"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "LocalVarRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "var"
+    type: "org.iets3.core.expr.lambda.LocalVarDeclExpr"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.ICanBeLValue"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "IDeclaration"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []

@@ -1,0 +1,98 @@
+name: "com.mbeddr.mpsutil.filepicker"
+concepts:
+- name: "AbstractFilePicker"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.AbstractPicker"
+- name: "AbstractFolderPicker"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.AbstractPicker"
+- name: "AbstractPicker"
+  abstract: true
+  properties:
+  - name: "path"
+    type: "STRING"
+  - name: "pointOnlyToExistingFile"
+    type: "STRING"
+  - name: "mayBeEmpty"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "FileSystemDirPicker"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.AbstractFolderPicker"
+- name: "FileSystemFilePicker"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.AbstractFilePicker"
+- name: "MacroFilePicker"
+  abstract: false
+  properties:
+  - name: "macro"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.AbstractFilePicker"
+- name: "MacroFolderPicker"
+  abstract: false
+  properties:
+  - name: "macro"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.AbstractFolderPicker"
+- name: "SolutionRelativeDirPicker"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.AbstractFolderPicker"
+- name: "SolutionRelativeFilePicker"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.filepicker.AbstractFilePicker"
+- name: "IPathVariableProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "SourceModelInfo"
+  abstract: false
+  properties:
+  - name: "longName"
+    type: "STRING"
+  - name: "modelId"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "IOutputLocationProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []

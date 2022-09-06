@@ -1,0 +1,896 @@
+name: "jetbrains.mps.lang.test"
+concepts:
+- name: "TestNodeAnnotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractTestNodeAnnotation"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "TestNodeReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.test.TestNodeAnnotation"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "AssertMatch"
+  abstract: false
+  properties: []
+  children:
+  - name: "before"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: true
+    optional: true
+  - name: "after"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+  - "jetbrains.mps.baseLanguage.unitTest.MessageHolder"
+- name: "AbstractNodeAssert"
+  abstract: true
+  properties: []
+  children:
+  - name: "nodeToCheck"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "CheckNodeForErrors"
+  abstract: false
+  properties:
+  - name: "includeSelf"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeAssert"
+- name: "NodeErrorCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "errorRef"
+    type: "jetbrains.mps.lang.test.ReportErrorStatementReference"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeErrorCheckOperation"
+- name: "NodeWarningCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "warningRef"
+    type: "jetbrains.mps.lang.test.WarningStatementReference"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeWarningCheckOperation"
+- name: "NodeReachable"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+- name: "NodeTypeCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+- name: "NodeCheckOperation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.test.INodesTestMethod"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "NodeOperationsContainer"
+  abstract: false
+  properties: []
+  children:
+  - name: "nodeOperations"
+    type: "jetbrains.mps.lang.test.NodeCheckOperation"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractTestNodeAnnotation"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+- name: "CheckNodeForErrorMessagesOperation"
+  abstract: false
+  properties:
+  - name: "allowErrors"
+    type: "STRING"
+  - name: "allowWarnings"
+    type: "STRING"
+  - name: "includeSelf"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+- name: "CheckDataFlowOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+- name: "NodeUnreachable"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+- name: "VariableInitialized"
+  abstract: false
+  properties: []
+  children:
+  - name: "var"
+    type: "jetbrains.mps.baseLanguage.VariableReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+- name: "VariableAlive"
+  abstract: false
+  properties: []
+  children:
+  - name: "var"
+    type: "jetbrains.mps.baseLanguage.VariableReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+- name: "NodesTestCase"
+  abstract: false
+  properties:
+  - name: "needsNoWriteAction"
+    type: "STRING"
+  children:
+  - name: "nodesToCheck"
+    type: "jetbrains.mps.lang.test.TestNode"
+    multiple: true
+    optional: true
+  - name: "beforeTests"
+    type: "jetbrains.mps.lang.test.BeforeTestsMethod"
+    multiple: false
+    optional: true
+  - name: "afterTests"
+    type: "jetbrains.mps.lang.test.AfterTestsMethod"
+    multiple: false
+    optional: true
+  - name: "testMethods"
+    type: "jetbrains.mps.lang.test.NodesTestMethod"
+    multiple: true
+    optional: true
+  - name: "methods"
+    type: "jetbrains.mps.baseLanguage.classifiers.DefaultClassifierMethodDeclaration"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.unitTest.ITestCase"
+  - "jetbrains.mps.baseLanguage.classifiers.IClassifier"
+  - "jetbrains.mps.lang.test.TestProjectAware"
+  - "jetbrains.mps.lang.core.ImplementationPart"
+- name: "NodesTestMethod"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.BaseMethodDeclaration"
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "jetbrains.mps.baseLanguage.unitTest.ITestMethod"
+- name: "TestNode"
+  abstract: false
+  properties: []
+  children:
+  - name: "nodeToCheck"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.test.ITestAnnotationsContainer"
+  - "jetbrains.mps.lang.core.ICanSuppressErrors"
+- name: "CheckNodeDataflow"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeAssert"
+- name: "ProjectExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "ModelExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "SimpleNodeTest"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodesTestMethod"
+- name: "InvokeIntentionStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "parameter"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references:
+  - name: "intention"
+    type: "jetbrains.mps.lang.intentions.IntentionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "EditorOperation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IOperation"
+- name: "AbstractTestNodeAnnotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "TypeKeyStatement"
+  abstract: false
+  properties:
+  - name: "keys"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "PressKeyStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "keyStrokes"
+    type: "jetbrains.mps.lang.plugin.KeyMapKeystroke"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "EditorTestCase"
+  abstract: false
+  properties:
+  - name: "description"
+    type: "STRING"
+  children:
+  - name: "testNodeBefore"
+    type: "jetbrains.mps.lang.test.TestNode"
+    multiple: false
+    optional: true
+  - name: "testNodeResult"
+    type: "jetbrains.mps.lang.test.TestNode"
+    multiple: false
+    optional: true
+  - name: "nodeToEdit"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: true
+  - name: "result"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: true
+  - name: "code"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: true
+  - name: "logEvents"
+    type: "jetbrains.mps.lang.test.LogEvent"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "jetbrains.mps.baseLanguage.unitTest.ITestMethod"
+  - "jetbrains.mps.baseLanguage.unitTest.ITestCase"
+  - "jetbrains.mps.lang.core.ISuppressErrors"
+  - "jetbrains.mps.lang.core.ICanSuppressErrors"
+  - "jetbrains.mps.lang.core.ImplementationPart"
+  - "jetbrains.mps.baseLanguage.IStatementListContainer"
+  - "jetbrains.mps.baseLanguage.IMethodLike"
+  - "jetbrains.mps.lang.test.TestProjectAware"
+- name: "AnonymousCellAnnotation"
+  abstract: false
+  properties:
+  - name: "cellId"
+    type: "STRING"
+  - name: "caretPosition"
+    type: "STRING"
+  - name: "isLastPosition"
+    type: "STRING"
+  - name: "useLabelSelection"
+    type: "STRING"
+  - name: "selectionStart"
+    type: "STRING"
+  - name: "selectionEnd"
+    type: "STRING"
+  - name: "isInInspector"
+    type: "STRING"
+  children: []
+  references:
+  - name: "nodeRangeSelectionStart"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: true
+  - name: "nodeRangeSelectionEnd"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.test.AbstractTestNodeAnnotation"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "MockAnnotation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractTestNodeAnnotation"
+- name: "NodeTypeSetCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+- name: "ExpressionContainer"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "SwitchToInspector"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "EditorComponentExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "TestInfo"
+  abstract: false
+  properties:
+  - name: "projectPath"
+    type: "STRING"
+  - name: "reOpenProject"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "InvokeActionStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "actionReference"
+    type: "jetbrains.mps.lang.test.ActionReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "ActionReference"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "BootstrapActionReference"
+  abstract: false
+  properties:
+  - name: "actionId"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.ActionReference"
+- name: "MPSActionReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "action"
+    type: "jetbrains.mps.lang.plugin.ActionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.test.ActionReference"
+- name: "NodeExpectedTypeCheckOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeTypeCheckOperation"
+- name: "ScopesTest"
+  abstract: false
+  properties: []
+  children:
+  - name: "nodes"
+    type: "jetbrains.mps.lang.test.ScopesExpectedNode"
+    multiple: true
+    optional: true
+  references:
+  - name: "checkingReference"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.test.AbstractTestNodeAnnotation"
+  - "jetbrains.mps.lang.test.INodesTestMethod"
+- name: "ScopesExpectedNode"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "ref"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "NodeRuleCheckOperation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeRuleCheckOperation"
+  - "jetbrains.mps.lang.test.IReferenceAttachable"
+- name: "ReportErrorStatementReference"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.test.IRuleReference"
+- name: "WarningStatementReference"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.test.IRuleReference"
+- name: "NodeTypeSystemErrorCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "equationRef"
+    type: "jetbrains.mps.lang.test.TypesystemEquationReference"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeTypeSystemRuleCheckOperation"
+  - "jetbrains.mps.lang.test.IReferenceAttachable"
+- name: "ICheckForExpectedRule"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "NodeTypeSystemWarningCheckOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeTypeSystemRuleCheckOperation"
+- name: "NodeTypeSystemRuleCheckOperation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeRuleCheckOperation"
+- name: "IReferenceAttachable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "UnknownRuleReference"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.test.IRuleReference"
+- name: "IRuleReference"
+  abstract: true
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends: []
+- name: "NodeUnknownErrorCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "errorRef"
+    type: "jetbrains.mps.lang.test.UnknownRuleReference"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeErrorCheckOperation"
+- name: "AbstractNodeErrorCheckOperation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeRuleCheckOperation"
+- name: "AbstractNodeRuleCheckOperation"
+  abstract: true
+  properties: []
+  children:
+  - name: "expectedMessage"
+    type: "jetbrains.mps.lang.test.ExpectedMessageContainer"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeCheckOperation"
+  - "jetbrains.mps.lang.test.ICheckForExpectedRule"
+- name: "NodeConstraintsErrorCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "errorRef"
+    type: "jetbrains.mps.lang.test.UnknownRuleReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeErrorCheckOperation"
+- name: "AbstractNodeWarningCheckOperation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeRuleCheckOperation"
+- name: "NodeConstraintsWarningCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "warningRef"
+    type: "jetbrains.mps.lang.test.UnknownRuleReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeWarningCheckOperation"
+- name: "NodeUnknownWarningCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "warningRef"
+    type: "jetbrains.mps.lang.test.UnknownRuleReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.AbstractNodeWarningCheckOperation"
+- name: "PressMouseStatement"
+  abstract: false
+  properties:
+  - name: "x"
+    type: "STRING"
+  - name: "y"
+    type: "STRING"
+  children:
+  - name: "statementList"
+    type: "jetbrains.mps.baseLanguage.StatementList"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "DragMouseStatement"
+  abstract: false
+  properties:
+  - name: "x"
+    type: "STRING"
+  - name: "y"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "UntypedExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "LogEvent"
+  abstract: false
+  properties:
+  - name: "level"
+    type: "STRING"
+  - name: "message"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "NodeInfoCheckOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "statementRef"
+    type: "jetbrains.mps.lang.test.InfoStatementReference"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.NodeRuleCheckOperation"
+- name: "InfoStatementReference"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.test.IRuleReference"
+- name: "MockScopeProvider"
+  abstract: false
+  properties: []
+  children:
+  - name: "entries"
+    type: "jetbrains.mps.lang.test.ScopeEntry"
+    multiple: true
+    optional: false
+  - name: "node"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+- name: "ScopeEntry"
+  abstract: false
+  properties: []
+  children:
+  - name: "nodes"
+    type: "jetbrains.mps.lang.test.NamedNodeReference"
+    multiple: true
+    optional: true
+  references:
+  - name: "kind"
+    type: "jetbrains.mps.lang.core.INamedConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "NamedNodeReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "node"
+    type: "jetbrains.mps.lang.core.INamedConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "INodesTestMethod"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.unitTest.ITestMethod"
+- name: "IsIntentionApplicableExpression"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "intention"
+    type: "jetbrains.mps.lang.intentions.IntentionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "MigrationTestCase"
+  abstract: false
+  properties: []
+  children:
+  - name: "inputNodes"
+    type: "jetbrains.mps.lang.test.TestNode"
+    multiple: true
+    optional: true
+  - name: "outputNodes"
+    type: "jetbrains.mps.lang.test.TestNode"
+    multiple: true
+    optional: true
+  - name: "migration"
+    type: "jetbrains.mps.lang.test.MigrationReference"
+    multiple: true
+    optional: false
+  - name: "option"
+    type: "jetbrains.mps.lang.test.MigrationTestOption"
+    multiple: true
+    optional: true
+  references:
+  - name: "migration_old"
+    type: "jetbrains.mps.lang.migration.IMigrationUnit"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+  - "jetbrains.mps.baseLanguage.unitTest.ITestCase"
+  - "jetbrains.mps.baseLanguage.unitTest.ITestMethod"
+  - "jetbrains.mps.lang.test.TestProjectAware"
+  - "jetbrains.mps.lang.core.ImplementationPart"
+- name: "BeforeTestsMethod"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "AfterTestsMethod"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "MigrationReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "migration"
+    type: "jetbrains.mps.lang.migration.IMigrationUnit"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IsActionApplicableExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "actionReference"
+    type: "jetbrains.mps.lang.test.ActionReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "InvokeSurroundWithIntentionStatement"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "intention"
+    type: "jetbrains.mps.lang.intentions.SurroundWithIntentionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "MigrationTestOption"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IgnoreMigrationDataOption"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.MigrationTestOption"
+- name: "ITestAnnotationsContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ExpectedMessageContainer"
+  abstract: false
+  properties:
+  - name: "text"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TypesystemEquationReference"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.test.IRuleReference"
+- name: "StableIdOption"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.test.MigrationTestOption"
+- name: "ApplyQuickFix"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "quickfix"
+    type: "jetbrains.mps.lang.typesystem.TypesystemIntention"
+    optional: true
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "TestProjectAware"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []

@@ -1,0 +1,1335 @@
+name: "jetbrains.mps.lang.plugin"
+concepts:
+- name: "ToolDeclaration"
+  abstract: false
+  properties: []
+  children:
+  - name: "getComponentBlock"
+    type: "jetbrains.mps.lang.plugin.GetComponentBlock"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.BaseToolDeclaration"
+- name: "DoUpdateBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.UpdateBlock"
+- name: "ConceptFunctionParameter_AnActionEvent"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "ExecuteBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ActionGroupDeclaration"
+  abstract: false
+  properties:
+  - name: "caption"
+    type: "STRING"
+  - name: "mnemonic"
+    type: "STRING"
+  - name: "isInternal"
+    type: "STRING"
+  - name: "isPopup"
+    type: "STRING"
+  - name: "isInvisibleWhenDisabled"
+    type: "STRING"
+  - name: "isPluginXmlGroup"
+    type: "STRING"
+  children:
+  - name: "modifier"
+    type: "jetbrains.mps.lang.plugin.ModificationStatement"
+    multiple: true
+    optional: true
+  - name: "contents"
+    type: "jetbrains.mps.lang.plugin.GroupContents"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+  - "jetbrains.mps.lang.plugin.ActionGroupMember"
+  - "jetbrains.mps.baseLanguage.classifiers.IClassifier"
+  - "jetbrains.mps.lang.checkedName.ICheckedNamePolicy"
+- name: "ActionInstance"
+  abstract: false
+  properties: []
+  children:
+  - name: "actualParameter"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: true
+    optional: true
+  references:
+  - name: "action"
+    type: "jetbrains.mps.lang.plugin.ActionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ActionGroupMember"
+- name: "ModificationStatement"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "modifiedGroup"
+    type: "jetbrains.mps.lang.plugin.ActionGroupDeclaration"
+    optional: false
+  - name: "point"
+    type: "jetbrains.mps.lang.plugin.GroupAnchor"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.ImplementationPart"
+- name: "GroupAnchor"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "jetbrains.mps.lang.plugin.ActionGroupMember"
+- name: "GetNodeBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+  - "jetbrains.mps.lang.plugin.NodesBlock"
+- name: "GetNodesBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+  - "jetbrains.mps.lang.plugin.NodesBlock"
+- name: "ConceptFunctionParameter_node"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.ConceptFunctionParameter_CreatorType"
+- name: "ConceptFunctionParameter_OperationContext"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "InterfaceGroup"
+  abstract: false
+  properties: []
+  children:
+  - name: "groupID"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.ActionGroupDeclaration"
+- name: "ActionGroupMember"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "InterfaceExtentionPoint"
+  abstract: false
+  properties: []
+  children:
+  - name: "pointID"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.GroupAnchor"
+- name: "ToolInstanceExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "ConceptFunctionParameter_IModule"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.ConceptFunctionParameter_CreatorType"
+- name: "ConceptFunctionParameter_MPSProject"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "Separator"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ActionGroupMember"
+- name: "ActionParameterDeclaration"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.FieldDeclaration"
+  - "jetbrains.mps.baseLanguage.classifiers.IMember"
+  - "jetbrains.mps.lang.plugin.ActionParameter"
+- name: "UpdateBlock"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "IsApplicableBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.UpdateBlock"
+- name: "ActionType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "action"
+    type: "jetbrains.mps.lang.plugin.ActionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.classifiers.BaseClassifierType"
+- name: "ActionParameterReferenceOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.classifiers.IMemberOperation"
+- name: "GroupContents"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "BuildGroupBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+  - "jetbrains.mps.lang.plugin.GroupContents"
+- name: "ElementListContents"
+  abstract: false
+  properties: []
+  children:
+  - name: "reference"
+    type: "jetbrains.mps.lang.plugin.ActionGroupMember"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.GroupContents"
+- name: "KeyMapKeystroke"
+  abstract: false
+  properties:
+  - name: "modifiers"
+    type: "STRING"
+  - name: "keycode"
+    type: "STRING"
+  - name: "change"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "GroupType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "actionGroup"
+    type: "jetbrains.mps.lang.plugin.ActionGroupDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.classifiers.BaseClassifierType"
+- name: "ToolType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "tool"
+    type: "jetbrains.mps.lang.plugin.BaseToolDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.classifiers.BaseClassifierType"
+- name: "GetGroupOperation"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "group"
+    type: "jetbrains.mps.lang.plugin.ActionGroupDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "PreferencesComponentDeclaration"
+  abstract: false
+  properties: []
+  children:
+  - name: "persistenPropertyDeclaration"
+    type: "jetbrains.mps.lang.plugin.PersistentPropertyDeclaration"
+    multiple: true
+    optional: true
+  - name: "afterReadBlock"
+    type: "jetbrains.mps.lang.plugin.OnAfterReadBlock"
+    multiple: false
+    optional: true
+  - name: "beforeWriteBlock"
+    type: "jetbrains.mps.lang.plugin.OnBeforeWriteBlock"
+    multiple: false
+    optional: true
+  - name: "preferencePage"
+    type: "jetbrains.mps.lang.plugin.PreferencePage"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.classifiers.IClassifier"
+  - "jetbrains.mps.lang.structure.INamedAspect"
+- name: "PersistentPropertyDeclaration"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.VariableDeclaration"
+  - "jetbrains.mps.baseLanguage.classifiers.IMember"
+- name: "PersistentPropertyReference"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.classifiers.IMemberOperation"
+- name: "PreferencesComponentType"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "componentDeclaration"
+    type: "jetbrains.mps.lang.plugin.PreferencesComponentDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.classifiers.BaseClassifierType"
+- name: "OnBeforeWriteBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "OnAfterReadBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "PreferencePage"
+  abstract: false
+  properties:
+  - name: "iconPath"
+    type: "STRING"
+  - name: "helpTopic"
+    type: "STRING"
+  children:
+  - name: "component"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "isModifiedBlock"
+    type: "jetbrains.mps.lang.plugin.PreferencePageIsModifiedBlock"
+    multiple: false
+    optional: false
+  - name: "resetBlock"
+    type: "jetbrains.mps.lang.plugin.PreferencePageResetBlock"
+    multiple: false
+    optional: false
+  - name: "commitBlock"
+    type: "jetbrains.mps.lang.plugin.PreferencePageCommitBlock"
+    multiple: false
+    optional: false
+  - name: "icon"
+    type: "jetbrains.mps.lang.resources.Icon"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+  - "jetbrains.mps.lang.checkedName.ICheckedNamePolicy"
+- name: "PreferencePageResetBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "PreferencePageCommitBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ConceptFunctionParameter_PreferencePage_component"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "PreferencePageIsModifiedBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "InitBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "DisposeBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ConceptFunctionParameter_Project"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "GetComponentBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ActionDataParameterDeclaration"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "key"
+    type: "jetbrains.mps.baseLanguage.StaticFieldDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.classifiers.IMember"
+  - "jetbrains.mps.lang.plugin.ActionParameter"
+- name: "ActionDataParameterReferenceOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.classifiers.IMemberOperation"
+- name: "ActionParameter"
+  abstract: true
+  properties:
+  - name: "isOptional"
+    type: "STRING"
+  children:
+  - name: "condition"
+    type: "jetbrains.mps.lang.plugin.ActionParameterCondition"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+- name: "ActionConstructionParameterDeclaration"
+  abstract: false
+  properties: []
+  children:
+  - name: "toStringFunction"
+    type: "jetbrains.mps.lang.plugin.ToStringConceptFunction"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.classifiers.DefaultClassifierFieldDeclaration"
+  - "jetbrains.mps.baseLanguage.classifiers.IMember"
+- name: "ActionConstructorParameterReferenceOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.classifiers.IMemberOperation"
+- name: "AddStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "item"
+    type: "jetbrains.mps.lang.plugin.ActionGroupMember"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "ToStringConceptFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ToStringParameter"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "UpdateGroupBlock"
+  abstract: false
+  properties: []
+  children:
+  - name: "updateFunction"
+    type: "jetbrains.mps.lang.plugin.UpdateGroupFunction"
+    multiple: false
+    optional: false
+  - name: "enumerateFunction"
+    type: "jetbrains.mps.lang.plugin.EnumerateChildrenFunction"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.GroupContents"
+- name: "UpdateGroupFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "EnumerateChildrenFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "KeymapChangesDeclaration"
+  abstract: false
+  properties:
+  - name: "keymap"
+    type: "STRING"
+  - name: "isPluginXmlKeymap"
+    type: "STRING"
+  children:
+  - name: "shortcutChange"
+    type: "jetbrains.mps.lang.plugin.ShortcutChange"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+- name: "SimpleShortcutChange"
+  abstract: false
+  properties: []
+  children:
+  - name: "keystroke"
+    type: "jetbrains.mps.lang.plugin.KeyMapKeystroke"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ShortcutChange"
+- name: "ShortcutChange"
+  abstract: true
+  properties: []
+  children: []
+  references:
+  - name: "action"
+    type: "jetbrains.mps.lang.plugin.ActionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.ImplementationPart"
+- name: "ParameterizedShortcutChange"
+  abstract: false
+  properties:
+  - name: "change"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+  - "jetbrains.mps.lang.plugin.ShortcutChange"
+- name: "SimpleActionPlace"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ActionPlaceSpecification"
+- name: "ActionPlaceSpecification"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ToolActionPlace"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ActionPlaceSpecification"
+- name: "EverywhereActionPlace"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ActionPlaceSpecification"
+- name: "ConceptFunctionParameter_Model"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.ConceptFunctionParameter_CreatorType"
+- name: "ConceptFunctionParameter_CreatorType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "BaseToolDeclaration"
+  abstract: true
+  properties:
+  - name: "caption"
+    type: "STRING"
+  - name: "number"
+    type: "STRING"
+  - name: "position"
+    type: "STRING"
+  - name: "icon"
+    type: "STRING"
+  children:
+  - name: "methodDeclaration"
+    type: "jetbrains.mps.baseLanguage.classifiers.DefaultClassifierMethodDeclaration"
+    multiple: true
+    optional: true
+  - name: "fieldDeclaration"
+    type: "jetbrains.mps.baseLanguage.classifiers.DefaultClassifierFieldDeclaration"
+    multiple: true
+    optional: true
+  - name: "toolInitBlock"
+    type: "jetbrains.mps.lang.plugin.InitBlock"
+    multiple: false
+    optional: true
+  - name: "toolDisposeBlock"
+    type: "jetbrains.mps.lang.plugin.DisposeBlock"
+    multiple: false
+    optional: true
+  - name: "toolIcon"
+    type: "jetbrains.mps.lang.resources.Icon"
+    multiple: false
+    optional: true
+  - name: "shortcut"
+    type: "jetbrains.mps.lang.plugin.AbstractToolShortcut"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.classifiers.IClassifier"
+  - "jetbrains.mps.lang.checkedName.ICheckedNamePolicy"
+- name: "TabbedToolDeclaration"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.BaseToolDeclaration"
+- name: "AddTabOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "tab"
+    type: "jetbrains.mps.lang.plugin.ToolTab"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.TabbedToolOperation"
+  - "jetbrains.mps.baseLanguage.IOperation"
+- name: "CloseTabOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "componentExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.TabbedToolOperation"
+- name: "GetSelectedTabOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.TabbedToolOperation"
+- name: "TabbedToolOperation"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IOperation"
+- name: "SmartDisposeClosureParameterDeclaration"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.closures.UnboundClosureParameterDeclaration"
+- name: "ToolTab"
+  abstract: false
+  properties: []
+  children:
+  - name: "componentExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "titleExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "iconExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  - name: "disposeTabClosure"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "BaseProjectOperation"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IOperation"
+- name: "ActionAccessOperation"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "action"
+    type: "jetbrains.mps.lang.plugin.ActionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "GroupAccessOperation"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "group"
+    type: "jetbrains.mps.lang.plugin.ActionGroupDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "IdeaInitializerDescriptor"
+  abstract: false
+  properties:
+  - name: "id"
+    type: "STRING"
+  - name: "descripttion"
+    type: "STRING"
+  - name: "version"
+    type: "STRING"
+  - name: "vendor"
+    type: "STRING"
+  - name: "vendorUrl"
+    type: "STRING"
+  - name: "vendorLogo"
+    type: "STRING"
+  - name: "ideaVersion"
+    type: "STRING"
+  - name: "loadModules"
+    type: "STRING"
+  - name: "handleErrors"
+    type: "STRING"
+  children:
+  - name: "dependency"
+    type: "jetbrains.mps.lang.plugin.PluginDependency"
+    multiple: true
+    optional: true
+  - name: "actions"
+    type: "jetbrains.mps.lang.plugin.IdeaActionsDescriptor"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "KeyStrokeType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Type"
+- name: "ActionParameterReference"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.VariableReference"
+- name: "AddKeystrokeStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "stroke"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "CreateNodeAspectBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "EditorTab"
+  abstract: false
+  properties:
+  - name: "shortcutChar"
+    type: "STRING"
+  - name: "commandOnCreate"
+    type: "STRING"
+  children:
+  - name: "icon"
+    type: "jetbrains.mps.lang.resources.Icon"
+    multiple: false
+    optional: true
+  - name: "order"
+    type: "jetbrains.mps.lang.plugin.OrderConstraints"
+    multiple: false
+    optional: true
+  - name: "listenBlock"
+    type: "jetbrains.mps.lang.plugin.ListenBlock"
+    multiple: false
+    optional: true
+  - name: "baseNodeBlock"
+    type: "jetbrains.mps.lang.plugin.BaseNodeBlock"
+    multiple: false
+    optional: true
+  - name: "isApplicableBlock"
+    type: "jetbrains.mps.lang.plugin.IsApplicableTabBlock"
+    multiple: false
+    optional: true
+  - name: "nodesBlock"
+    type: "jetbrains.mps.lang.plugin.NodesBlock"
+    multiple: false
+    optional: true
+  - name: "createTabBlock"
+    type: "jetbrains.mps.lang.plugin.CreateTabBlock"
+    multiple: false
+    optional: true
+  references:
+  - name: "baseNodeConcept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+  - "jetbrains.mps.lang.checkedName.ICheckedNamePolicy"
+- name: "NodesBlock"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IsApplicableTabBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "BaseNodeBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ListenBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "OrderConstraints"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "Order"
+  abstract: false
+  properties: []
+  children:
+  - name: "tab"
+    type: "jetbrains.mps.lang.plugin.EditorTabReference"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.OrderConstraints"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "EditorTabReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "editorTab"
+    type: "jetbrains.mps.lang.plugin.EditorTab"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "OrderReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "order"
+    type: "jetbrains.mps.lang.plugin.Order"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.OrderConstraints"
+- name: "ActionDeclaration"
+  abstract: false
+  properties:
+  - name: "caption"
+    type: "STRING"
+  - name: "ID"
+    type: "STRING"
+  - name: "overrides"
+    type: "STRING"
+  - name: "description"
+    type: "STRING"
+  - name: "mnemonic"
+    type: "STRING"
+  - name: "isAlwaysVisible"
+    type: "STRING"
+  - name: "outsideCommandExecution"
+    type: "STRING"
+  - name: "requiredAccess"
+    type: "STRING"
+  - name: "fillActionContext"
+    type: "STRING"
+  children:
+  - name: "updateBlock"
+    type: "jetbrains.mps.lang.plugin.UpdateBlock"
+    multiple: false
+    optional: true
+  - name: "icon"
+    type: "jetbrains.mps.lang.resources.Icon"
+    multiple: false
+    optional: true
+  - name: "executeFunction"
+    type: "jetbrains.mps.lang.plugin.ExecuteBlock"
+    multiple: false
+    optional: false
+  - name: "methodDeclaration"
+    type: "jetbrains.mps.baseLanguage.classifiers.DefaultClassifierMethodDeclaration"
+    multiple: true
+    optional: true
+  - name: "parameter"
+    type: "jetbrains.mps.lang.plugin.ActionParameter"
+    multiple: true
+    optional: true
+  - name: "constructionParameter"
+    type: "jetbrains.mps.lang.plugin.ActionConstructionParameterDeclaration"
+    multiple: true
+    optional: true
+  - name: "places"
+    type: "jetbrains.mps.lang.plugin.ActionPlaceSpecification"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.classifiers.IClassifier"
+  - "jetbrains.mps.lang.checkedName.ICheckedNamePolicy"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+  - "jetbrains.mps.lang.core.ICanSuppressErrors"
+- name: "ButtonCreator"
+  abstract: false
+  properties: []
+  children:
+  - name: "action"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "PopupCreator"
+  abstract: false
+  properties: []
+  children:
+  - name: "group"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "ToolbarCreator"
+  abstract: false
+  properties:
+  - name: "isHorizontal"
+    type: "STRING"
+  children:
+  - name: "group"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "CreateTabBlock"
+  abstract: false
+  properties:
+  - name: "commandOnCreate"
+    type: "STRING"
+  children:
+  - name: "conceptsBlock"
+    type: "jetbrains.mps.lang.plugin.ConceptsBlock"
+    multiple: false
+    optional: true
+  - name: "createBlock"
+    type: "jetbrains.mps.lang.plugin.CreateBlock"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "CustomCondition"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+  - "jetbrains.mps.lang.plugin.ActionParameterCondition"
+- name: "ParameterCondition_ConceptFunctionParameter"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "ActionParameterCondition"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "RequiredCondition"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ActionParameterCondition"
+- name: "EditableModel"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ActionParameterCondition"
+- name: "PluginDependency"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.ImplementationPart"
+- name: "IdeaPluginDependency"
+  abstract: false
+  properties:
+  - name: "pluginId"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.PluginDependency"
+- name: "MPSPluginDependency"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "plugin"
+    type: "jetbrains.mps.lang.plugin.IdeaInitializerDescriptor"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.plugin.PluginDependency"
+- name: "IdeaActionsDescriptor"
+  abstract: false
+  properties: []
+  children:
+  - name: "keymapsRef"
+    type: "jetbrains.mps.lang.plugin.KeymapRef"
+    multiple: true
+    optional: true
+  - name: "actionGroups"
+    type: "jetbrains.mps.lang.plugin.ActionGroupRef"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.ImplementationPart"
+- name: "ActionGroupRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "group"
+    type: "jetbrains.mps.lang.plugin.ActionGroupDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "KeymapRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "keymap"
+    type: "jetbrains.mps.lang.plugin.KeymapChangesDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IdeaConfigurationXml"
+  abstract: false
+  properties:
+  - name: "outputPath"
+    type: "STRING"
+  children:
+  - name: "actions"
+    type: "jetbrains.mps.lang.plugin.IdeaActionsDescriptor"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "ConceptCondition"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "concept"
+    type: "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.plugin.ActionParameterCondition"
+- name: "AddElementStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "expression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+- name: "NonDumbAwareActions"
+  abstract: false
+  properties: []
+  children:
+  - name: "actions"
+    type: "jetbrains.mps.lang.plugin.ActionReference"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+- name: "ActionReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "actionDeclaration"
+    type: "jetbrains.mps.lang.plugin.ActionDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "jetbrains.mps.lang.core.ImplementationPart"
+- name: "PinTabOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "componentExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.TabbedToolOperation"
+  - "jetbrains.mps.baseLanguage.IOperation"
+- name: "UnpinTabOperation"
+  abstract: false
+  properties: []
+  children:
+  - name: "componentExpression"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.TabbedToolOperation"
+  - "jetbrains.mps.baseLanguage.IOperation"
+- name: "ConceptsBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "CreateBlock"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunction"
+- name: "ConceptFunctionParameter_SConceptClass"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+- name: "CustomToolShortcut"
+  abstract: false
+  properties: []
+  children:
+  - name: "changes"
+    type: "jetbrains.mps.lang.plugin.AbstractToolKeystroke"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.AbstractToolShortcut"
+- name: "NumberToolShortcut"
+  abstract: false
+  properties:
+  - name: "number"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.AbstractToolShortcut"
+- name: "ToolKeystroke"
+  abstract: false
+  properties:
+  - name: "keymap"
+    type: "STRING"
+  children:
+  - name: "keystroke"
+    type: "jetbrains.mps.lang.plugin.KeyMapKeystroke"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.plugin.AbstractToolKeystroke"
+- name: "AbstractToolKeystroke"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AbstractToolShortcut"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"

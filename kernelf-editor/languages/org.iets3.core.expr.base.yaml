@@ -1,0 +1,1580 @@
+name: "org.iets3.core.expr.base"
+concepts:
+- name: "Expression"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "com.mbeddr.core.base.ICommentable"
+  - "com.mbeddr.core.base.IDocumentable"
+- name: "Type"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.IType"
+  - "com.mbeddr.core.base.ICommentable"
+- name: "PrimitiveType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "BinaryExpression"
+  abstract: true
+  properties: []
+  children:
+  - name: "left"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "right"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMainSlot"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "PlusExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryArithmeticExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "MulExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryArithmeticExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "MinusExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryArithmeticExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "DivExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryArithmeticExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "BinaryArithmeticExpression"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryExpression"
+- name: "BinaryComparisonExpression"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryExpression"
+- name: "GreaterExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryComparisonExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "GreaterEqualsExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryComparisonExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "LessExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryComparisonExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "LessEqualsExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryComparisonExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "BinaryLogicalExpression"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryExpression"
+- name: "LogicalOrExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryLogicalExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "LogicalAndExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryLogicalExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "BinaryEqualityExpression"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryExpression"
+- name: "EqualsExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryEqualityExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "NotEqualsExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryEqualityExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "UnaryExpression"
+  abstract: true
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "LogicalNotExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.UnaryExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "UnaryMinusExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.UnaryExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "ParensExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "LogicalImpliesExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryLogicalExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "DotExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "target"
+    type: "org.iets3.core.expr.base.IDotTarget"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.UnaryExpression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.ICanBeLValue"
+  - "org.iets3.core.expr.base.ISSConstrainedValueRef"
+- name: "IDotTarget"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+- name: "PrimitiveLiteral"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.ILiteral"
+- name: "IRef"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IfExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "condition"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "thenPart"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "elsePart"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  - name: "elseSection"
+    type: "org.iets3.core.expr.base.IfElseSection"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IBigExpression"
+  - "org.iets3.core.expr.base.ITypeFromMultiple"
+  - "org.iets3.core.expr.base.IOptionDerefContext"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.IMainSlot"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+  - "org.iets3.core.expr.base.IProvidePathConstraints"
+- name: "IBigExpression"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IWantNewLine"
+- name: "IReducableExpression"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ReductionInspector"
+  abstract: false
+  properties: []
+  children:
+  - name: "reduced"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+- name: "TracerExpression"
+  abstract: false
+  properties:
+  - name: "traceLabel"
+    type: "STRING"
+  children:
+  - name: "traced"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  references:
+  - name: "target"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "NoneLiteral"
+  abstract: false
+  properties: []
+  children:
+  - name: "optionalBaseType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "NoneType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "SomeValExpr"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "someQuery"
+    type: "org.iets3.core.expr.base.IsSomeExpression"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "OptionType"
+  abstract: false
+  properties: []
+  children:
+  - name: "baseType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "com.mbeddr.mpsutil.interpreter.IInterpreterWrapperType"
+  - "org.iets3.core.expr.base.ITypeSupportsDefaultValue"
+- name: "IsSomeExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.base.IOptionallyNamed"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "LogicalIffExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryLogicalExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "IIsSingleSymbol"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ErrorLiteral"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.base.IValidNamedConcept"
+- name: "ErrorExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "error"
+    type: "org.iets3.core.expr.base.ErrorLiteral"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "SuccessType"
+  abstract: false
+  properties: []
+  children:
+  - name: "baseType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "org.iets3.core.expr.base.IAttemptType"
+- name: "GenericErrorType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "org.iets3.core.expr.base.IAttemptType"
+- name: "SpecificErrorType"
+  abstract: false
+  properties: []
+  children:
+  - name: "error"
+    type: "org.iets3.core.expr.base.ErrorLiteral"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "org.iets3.core.expr.base.IAttemptType"
+- name: "IAttemptType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.IInterpreterWrapperType"
+- name: "AttemptType"
+  abstract: false
+  properties: []
+  children:
+  - name: "successType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  - name: "errorLiterals"
+    type: "org.iets3.core.expr.base.ErrorLiteral"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+  - "org.iets3.core.expr.base.IAttemptType"
+- name: "TryExpression"
+  abstract: false
+  properties:
+  - name: "complete"
+    type: "STRING"
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "successClause"
+    type: "org.iets3.core.expr.base.TrySuccessClause"
+    multiple: false
+    optional: false
+  - name: "errorClauses"
+    type: "org.iets3.core.expr.base.TryErrorClause"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.base.IOptionallyNamed"
+  - "org.iets3.core.expr.base.ITypeFromMultiple"
+  - "org.iets3.core.expr.base.IMainSlot"
+  - "org.iets3.core.expr.base.IStructuredSyntax"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "TrySuccessClause"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IOptionallyTyped"
+  abstract: true
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IContextAssistantTypeProvider"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+- name: "EmptyExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "com.mbeddr.core.base.IEmpty"
+  - "org.iets3.core.expr.base.IWantNewLine"
+- name: "TryErrorClause"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "errorLiteral"
+    type: "org.iets3.core.expr.base.ErrorLiteral"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "SuccessValueExpr"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "try"
+    type: "org.iets3.core.expr.base.TryExpression"
+    optional: false
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "ITypeFromMultiple"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "CastExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "expectedType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.analysis.base.ISolvable"
+  - "org.iets3.core.expr.base.ISSConstrainedValueRef"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+- name: "IStructuredSyntax"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IWantNewLine"
+- name: "ExprInContract"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "IContracted"
+  abstract: true
+  properties: []
+  children:
+  - name: "contract"
+    type: "org.iets3.core.expr.base.Contract"
+    multiple: false
+    optional: true
+  references: []
+  extends: []
+- name: "IContainmentStackMember"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "Postcondition"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ContractItem"
+- name: "Invariant"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ContractItem"
+- name: "Contract"
+  abstract: false
+  properties: []
+  children:
+  - name: "items"
+    type: "org.iets3.core.expr.base.ContractItem"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "ContractItem"
+  abstract: true
+  properties:
+  - name: "warning"
+    type: "STRING"
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "err"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "Precondition"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ContractItem"
+- name: "PlainConstraint"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ContractItem"
+- name: "OneOfTarget"
+  abstract: false
+  properties: []
+  children:
+  - name: "values"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IDeclarativelyInterpretable"
+- name: "RangeTarget"
+  abstract: false
+  properties:
+  - name: "upperExcluding"
+    type: "STRING"
+  - name: "lowerExcluding"
+    type: "STRING"
+  children:
+  - name: "min"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "max"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.IDeclarativelyInterpretable"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "TupleType"
+  abstract: false
+  properties: []
+  children:
+  - name: "elementTypes"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: true
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "TupleValue"
+  abstract: false
+  properties: []
+  children:
+  - name: "values"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.ICanBeLValue"
+- name: "TupleAccessExpr"
+  abstract: false
+  properties:
+  - name: "index"
+    type: "STRING"
+  children:
+  - name: "tuple"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "AlternativesExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "alternatives"
+    type: "org.iets3.core.expr.base.AltOption"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IBigExpression"
+  - "org.iets3.core.expr.base.IReducableExpression"
+  - "org.iets3.core.expr.base.ITypeFromMultiple"
+  - "org.iets3.core.expr.base.IContainmentStackMember"
+  - "com.mbeddr.mpsutil.interpreter.ICanHaveTestCoverage"
+  - "org.iets3.analysis.base.ISolvable"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+  - "org.iets3.core.expr.base.IProvidePathConstraints"
+  - "org.iets3.core.expr.base.IValidOtherwiseContainer"
+  - "org.iets3.core.expr.base.IOptionDerefContext"
+- name: "AltOption"
+  abstract: false
+  properties: []
+  children:
+  - name: "when"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "then"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IContainmentStackMember"
+  - "org.iets3.core.expr.base.IValidOtherwiseContainer"
+  - "com.mbeddr.core.base.IDocumentable"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "com.mbeddr.core.base.ICommentable"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "org.iets3.core.expr.base.IMayAllowEffect"
+- name: "IOptionDerefContext"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IScopeFilterer"
+- name: "ISingleSymbolRef"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IIsSingleSymbol"
+  - "org.iets3.core.expr.base.IRef"
+- name: "IScopeFilterer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "OptionOrExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryExpression"
+- name: "IMayHaveEffect"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IBlockLike"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "CheckTypeConstraintsExpr"
+  abstract: false
+  properties:
+  - name: "failIfInvalid"
+    type: "STRING"
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "tp"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "ValidityType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "OkTarget"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "ErrorTarget"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "ImplicitValidityValExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.ISSItValueRef"
+- name: "IValidOtherwiseContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ITyped"
+  abstract: true
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ITypeable"
+- name: "IIgnoreTrivialErrorsContext"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IDeclarativelyInterpretable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IDocumentableWordProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.core.base.IDocumentable"
+- name: "DocWordRef"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "node"
+    type: "org.iets3.core.base.IValidNamedConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "de.slisson.mps.richtext.IWord"
+- name: "IDocumentableWordContainer"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IHasBaseType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ISSConstrainedValue"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ISSConstrainedValueRef"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ISSItValueRef"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ISSDelegatingType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ICollectionType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IHasBaseType"
+- name: "ConstraintAndErrorNode"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "expression"
+    type: "org.iets3.core.expr.base.Expression"
+    optional: true
+  - name: "source"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: true
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ReferenceType"
+  abstract: false
+  properties: []
+  children:
+  - name: "baseType"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "IReferenceableType"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "MakeRefTarget"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "ILiteral"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.ITrivialNode"
+- name: "DeRefTarget"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "JoinType"
+  abstract: false
+  properties: []
+  children:
+  - name: "types"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "IJoinTypeContext"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ITraceRoot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+- name: "IMultiTraceRoot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+- name: "Revealer"
+  abstract: false
+  properties: []
+  children:
+  - name: "condition"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.NodeAttribute"
+  - "com.mbeddr.mpsutil.interpreter.IReveal"
+- name: "IControlAdvancedFeatures_old"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IMayAllowEffect"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IMainSlot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IMayReadMutableState"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IWantNewLine"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IAllowsDocInChildExpressions"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IVoidContext"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "PragmaExpression"
+  abstract: true
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+- name: "PragmaDisableCaching"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.PragmaExpression"
+- name: "IRunningInterpreterContext"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "DefaultValueExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "ITypeSupportsDefaultValue"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IContextTypeProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "FailExpr"
+  abstract: false
+  properties: []
+  children:
+  - name: "message"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "contextExpression"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "ThisExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "IfElseSection"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "VoidType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "ICanBeLValue"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "INameQualifier"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "SimpleExpressionValueInspector"
+  abstract: false
+  properties:
+  - name: "onlyLast"
+    type: "STRING"
+  - name: "showOnTop"
+    type: "STRING"
+  - name: "showOnConsole"
+    type: "STRING"
+  - name: "optionalLabel"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "com.mbeddr.mpsutil.interpreter.ValueInspector"
+- name: "IProvidePathConstraints"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ModExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryArithmeticExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "IAssertConstraints"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ColonCast"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+  - "org.iets3.core.expr.base.ISSConstrainedValueRef"
+  - "org.iets3.core.expr.base.ISSConstrainedValue"
+  - "org.iets3.analysis.base.ISolvable"
+- name: "SuccessExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "INeverAllowDot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "AbstractMinMaxExpression"
+  abstract: true
+  properties: []
+  children:
+  - name: "values"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "MinExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.AbstractMinMaxExpression"
+- name: "MaxExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.AbstractMinMaxExpression"
+- name: "ITypeOverridingContext"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "NonStrictEqualsExpression"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryEqualityExpression"
+  - "org.iets3.analysis.base.ICanBeMappedToSolver"
+- name: "AssignmentExpr"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.BinaryExpression"
+  - "org.iets3.core.expr.base.IMayHaveEffect"
+  - "com.mbeddr.mpsutil.interpreter.ITracerFrame"
+  - "org.iets3.core.expr.base.IWantNewLine"
+  - "org.iets3.core.expr.base.IContextAssistantTypeProvider"
+- name: "IProgramLocationProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ProgramLocationType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "ProgramLocationOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "ProgramLocationUrlOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ProgramLocationOp"
+- name: "MessageValueType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "InlineMessage"
+  abstract: false
+  properties: []
+  children:
+  - name: "text"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "ITypeSupportsProposals"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IContextAssistantTypeProvider"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "OrTag"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.OperatorTag"
+- name: "MulTag"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.OperatorTag"
+- name: "PlusTag"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.OperatorTag"
+- name: "OperatorGroup"
+  abstract: false
+  properties: []
+  children:
+  - name: "expressions"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: true
+    optional: true
+  - name: "tag"
+    type: "org.iets3.core.expr.base.OperatorTag"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "OperatorTag"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AndTag"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.OperatorTag"
+- name: "BangOp"
+  abstract: false
+  properties: []
+  children:
+  - name: "optionValue"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.UnaryExpression"
+- name: "ITypeable"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "ConvenientBoolean"
+  abstract: false
+  properties: []
+  children:
+  - name: "value"
+    type: "org.iets3.core.expr.base.ConvenientBooleanValue"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ConvenientBooleanValue"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AlwaysValue"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ConvenientBooleanValue"
+- name: "NeverValue"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ConvenientBooleanValue"
+- name: "ConvenientValueCond"
+  abstract: false
+  properties: []
+  children:
+  - name: "expr"
+    type: "org.iets3.core.expr.base.Expression"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ConvenientBooleanValue"
+- name: "IParameterizedTypeSupportsEquals"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IContextTypedOp"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.IDotTarget"
+- name: "RevealerThis"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+- name: "IAllowDeletionOfDot"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "IAllowDotOnLeft"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "HasValueOp"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "org.iets3.core.expr.base.IDotTarget"
+  - "org.iets3.core.expr.base.ITargetThatCanDealWithNix"
+- name: "EmptyValue"
+  abstract: false
+  properties: []
+  children:
+  - name: "type"
+    type: "org.iets3.core.expr.base.Type"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Expression"
+  - "org.iets3.core.expr.base.IEmptyLiteral"
+- name: "ITargetThatCanDealWithNix"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "EmptyType"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.Type"
+- name: "IEmptyLiteral"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "org.iets3.core.expr.base.ILiteral"
+- name: "IComplexTypeSupportsEquals"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []

@@ -1,0 +1,523 @@
+name: "jetbrains.mps.lang.migration"
+concepts:
+- name: "RequiredDataDeclaration"
+  abstract: false
+  properties: []
+  children:
+  - name: "dependencies"
+    type: "jetbrains.mps.lang.migration.DataDependency"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.ClassifierMember"
+  - "jetbrains.mps.baseLanguage.lightweightdsl.MemberInstance"
+- name: "DataDependency"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "script"
+    type: "jetbrains.mps.lang.migration.IMigrationUnit"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+  - "jetbrains.mps.baseLanguage.IVariableDeclaration"
+  - "jetbrains.mps.lang.core.IResolveInfo"
+  - "jetbrains.mps.baseLanguage.ClassifierMember"
+- name: "ProducedDataDeclaration"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "dataType"
+    type: "jetbrains.mps.lang.structure.ConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.ClassifierMember"
+  - "jetbrains.mps.baseLanguage.lightweightdsl.MemberInstance"
+- name: "DataDependencyReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "dataDependency"
+    type: "jetbrains.mps.lang.migration.DataDependency"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+  - "jetbrains.mps.baseLanguage.IVariableReference"
+- name: "ExecuteAfterDeclaration"
+  abstract: false
+  properties: []
+  children:
+  - name: "dependencies"
+    type: "jetbrains.mps.lang.migration.OrderDependency"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.ClassifierMember"
+  - "jetbrains.mps.baseLanguage.lightweightdsl.MemberInstance"
+- name: "OrderDependency"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "script"
+    type: "jetbrains.mps.lang.migration.IMigrationUnit"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "TransformStatement"
+  abstract: false
+  properties: []
+  children:
+  - name: "pattern"
+    type: "jetbrains.mps.lang.pattern.PatternExpression"
+    multiple: false
+    optional: false
+  - name: "consequence"
+    type: "jetbrains.mps.lang.migration.TransformConsequence"
+    multiple: false
+    optional: false
+  - name: "precondition"
+    type: "jetbrains.mps.baseLanguage.closures.ClosureLiteral"
+    multiple: false
+    optional: true
+  - name: "postprocess"
+    type: "jetbrains.mps.baseLanguage.closures.ClosureLiteral"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Statement"
+  - "jetbrains.mps.lang.core.ScopeProvider"
+- name: "TransformConsequence"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends: []
+- name: "QuotationConsequence"
+  abstract: false
+  properties: []
+  children:
+  - name: "quotation"
+    type: "jetbrains.mps.lang.quotation.Quotation"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.migration.TransformConsequence"
+- name: "ConsequenceFunction"
+  abstract: false
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.closures.ClosureLiteral"
+  - "jetbrains.mps.lang.migration.TransformConsequence"
+- name: "LinkPatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.pattern.LinkPatternVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "NodePatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.pattern.PatternVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "PropertyPatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.pattern.PropertyPatternVariableDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "ListPatternVariableReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "declaration"
+    type: "jetbrains.mps.lang.pattern.ListPattern"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "MoveProperty"
+  abstract: false
+  properties: []
+  children:
+  - name: "sourceId"
+    type: "jetbrains.mps.lang.smodel.PropertyId"
+    multiple: false
+    optional: true
+  - name: "targetId"
+    type: "jetbrains.mps.lang.smodel.PropertyId"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.migration.MoveConceptMember"
+- name: "MoveReferenceLink"
+  abstract: false
+  properties: []
+  children:
+  - name: "sourceId"
+    type: "jetbrains.mps.lang.smodel.ReferenceLinkId"
+    multiple: false
+    optional: true
+  - name: "targetId"
+    type: "jetbrains.mps.lang.smodel.ReferenceLinkId"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.migration.MoveConceptMember"
+- name: "MoveContainmentLink"
+  abstract: false
+  properties: []
+  children:
+  - name: "sourceId"
+    type: "jetbrains.mps.lang.smodel.ContainmentLinkId"
+    multiple: false
+    optional: true
+  - name: "targetId"
+    type: "jetbrains.mps.lang.smodel.ContainmentLinkId"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.migration.MoveConceptMember"
+- name: "MoveNodeMigrationPart"
+  abstract: false
+  properties: []
+  children:
+  - name: "fromNode"
+    type: "jetbrains.mps.lang.migration.AbstractNodeReference"
+    multiple: false
+    optional: false
+  - name: "toNode"
+    type: "jetbrains.mps.lang.migration.AbstractNodeReference"
+    multiple: false
+    optional: true
+  - name: "specialization"
+    type: "jetbrains.mps.lang.migration.MoveNodeSpecialization"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.migration.PureMigrationPart"
+- name: "PureMigrationScript"
+  abstract: false
+  properties:
+  - name: "fromVersion"
+    type: "STRING"
+  - name: "description"
+    type: "STRING"
+  children:
+  - name: "executeAfter"
+    type: "jetbrains.mps.lang.migration.OrderDependency"
+    multiple: true
+    optional: true
+  - name: "part"
+    type: "jetbrains.mps.lang.migration.PureMigrationPart"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.structure.INamedAspect"
+  - "jetbrains.mps.lang.migration.IMigrationUnit"
+- name: "RefactoringOrderDependency"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "refactoring"
+    type: "jetbrains.mps.lang.migration.RefactoringLog"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "AbstractNodeReference"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "MoveConceptMember"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.migration.MoveNodeSpecialization"
+- name: "RefactoringLog"
+  abstract: false
+  properties:
+  - name: "fromVersion"
+    type: "STRING"
+  children:
+  - name: "options"
+    type: "jetbrains.mps.lang.migration.RefactoringOptions"
+    multiple: false
+    optional: true
+  - name: "executeAfter"
+    type: "jetbrains.mps.lang.migration.RefactoringOrderDependency"
+    multiple: true
+    optional: true
+  - name: "part"
+    type: "jetbrains.mps.lang.migration.RefactoringPart"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "MoveConcept"
+  abstract: false
+  properties: []
+  children:
+  - name: "sourceId"
+    type: "jetbrains.mps.lang.smodel.ConceptId"
+    multiple: false
+    optional: true
+  - name: "targetId"
+    type: "jetbrains.mps.lang.smodel.ConceptId"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.migration.MoveNodeSpecialization"
+- name: "RefactoringPart"
+  abstract: false
+  properties:
+  - name: "participant"
+    type: "STRING"
+  children:
+  - name: "initialState"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: false
+  - name: "finalState"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "MoveNodeSpecialization"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IMigrationUnit"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.INamedConcept"
+- name: "ReflectionNodeReference"
+  abstract: false
+  properties:
+  - name: "nodeId"
+    type: "STRING"
+  - name: "nodeName"
+    type: "STRING"
+  - name: "modelRef"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.migration.AbstractNodeReference"
+- name: "DirectNodeReference"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "target"
+    type: "jetbrains.mps.lang.core.BaseConcept"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.migration.AbstractNodeReference"
+- name: "RefactoringOptions"
+  abstract: false
+  properties: []
+  children:
+  - name: "options"
+    type: "jetbrains.mps.lang.migration.RefactoringOption"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "RefactoringOption"
+  abstract: false
+  properties:
+  - name: "optionId"
+    type: "STRING"
+  - name: "description"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "PureMigrationPart"
+  abstract: true
+  properties: []
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "IncludeMigrationPart"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "target"
+    type: "jetbrains.mps.lang.migration.IMigrationUnit"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.migration.PureMigrationPart"
+- name: "ConceptMigrationReference"
+  abstract: false
+  properties: []
+  children:
+  - name: "migrationScript"
+    type: "jetbrains.mps.lang.migration.MigrationScriptReference"
+    multiple: false
+    optional: false
+  - name: "oldConcept"
+    type: "jetbrains.mps.lang.migration.AbstractNodeReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "MigrationScriptReference"
+  abstract: false
+  properties:
+  - name: "fromVersion"
+    type: "STRING"
+  - name: "module"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "ClassifierMemberData"
+  abstract: false
+  properties: []
+  children:
+  - name: "nodeData"
+    type: "jetbrains.mps.lang.migration.ReflectionNodeReference"
+    multiple: false
+    optional: false
+  - name: "classifierData"
+    type: "jetbrains.mps.lang.migration.ReflectionNodeReference"
+    multiple: false
+    optional: false
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+- name: "PutDataExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "dataNode"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  - name: "contextNode"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "ProducedAnnotationDataDeclaration"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "dataType"
+    type: "jetbrains.mps.lang.structure.ConceptDeclaration"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.ClassifierMember"
+  - "jetbrains.mps.baseLanguage.lightweightdsl.MemberInstance"
+- name: "RequiredAnnotationDataDeclaration"
+  abstract: false
+  properties: []
+  children:
+  - name: "dependencies"
+    type: "jetbrains.mps.lang.migration.AnnotationDataDependency"
+    multiple: true
+    optional: true
+  references: []
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.ClassifierMember"
+  - "jetbrains.mps.baseLanguage.lightweightdsl.MemberInstance"
+- name: "AnnotationDataDependency"
+  abstract: false
+  properties: []
+  children: []
+  references:
+  - name: "script"
+    type: "jetbrains.mps.lang.migration.IMigrationUnit"
+    optional: false
+  extends:
+  - "jetbrains.mps.lang.core.BaseConcept"
+  - "jetbrains.mps.baseLanguage.IValidIdentifier"
+  - "jetbrains.mps.lang.core.IResolveInfo"
+  - "jetbrains.mps.baseLanguage.ClassifierMember"
+- name: "GetDataExpression"
+  abstract: false
+  properties: []
+  children:
+  - name: "module"
+    type: "jetbrains.mps.baseLanguage.Expression"
+    multiple: false
+    optional: false
+  references:
+  - name: "requiredDataDeclararion"
+    type: "jetbrains.mps.lang.migration.AnnotationDataDependency"
+    optional: false
+  extends:
+  - "jetbrains.mps.baseLanguage.Expression"
+- name: "MigrationScript"
+  abstract: false
+  properties:
+  - name: "fromVersion"
+    type: "STRING"
+  children: []
+  references: []
+  extends:
+  - "jetbrains.mps.baseLanguage.ClassConcept"
+  - "jetbrains.mps.lang.migration.IMigrationUnit"
+  - "jetbrains.mps.baseLanguage.lightweightdsl.AutoInitDSLClass"

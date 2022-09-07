@@ -75,8 +75,9 @@ typealias ConnectionStatusListener = (oldValue: RestWebModelClient.ConnectionSta
  */
 class RestWebModelClient @JvmOverloads constructor(
     var baseUrl: String = defaultUrl,
-    val authTokenProvider: (() -> String?)? = null,
-    initialConnectionListeners: List<ConnectionListener> = emptyList()
+    private val authTokenProvider: (() -> String?)? = null,
+    initialConnectionListeners: List<ConnectionListener> = emptyList(),
+    providedClient: HttpClient? = null
 ) : IModelClient {
 
     companion object {
@@ -114,7 +115,7 @@ class RestWebModelClient @JvmOverloads constructor(
         }
     private var clientIdInternal: Int = 0
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
-    private val client = HttpClient(CIO) {
+    private val client = (providedClient ?: HttpClient(CIO)).config {
         this.followRedirects = false
         install(HttpTimeout) {
             connectTimeoutMillis = 1.seconds.inWholeMilliseconds
@@ -328,93 +329,99 @@ class RestWebModelClient @JvmOverloads constructor(
     override fun getPendingSize(): Int = pendingWrites.get()
 
     override fun get(key: String): String? {
+        return runBlocking { getA(key) }
+    }
+
+    suspend fun getA(key: String): String? {
         val isHash = HashUtil.isSha256(key)
         if (isHash) {
             if (LOG.isDebugEnabled) {
                 LOG.debug("GET $key")
             }
         }
-        return runBlocking {
-            val start = System.currentTimeMillis()
-            val uri = baseUrl + "get/" + URLEncoder.encode(key, StandardCharsets.UTF_8)
-            try {
-                val response = client.get(uri)
-                return@runBlocking when (response.status) {
-                    HttpStatusCode.OK -> {
-                        val value = response.bodyAsText()
-                        val end = System.currentTimeMillis()
-                        if (isHash) {
-                            if (LOG.isDebugEnabled) {
-                                LOG.debug("GET " + key + " took " + (end - start) + " ms: " + value)
-                            }
+        val start = System.currentTimeMillis()
+        val uri = baseUrl + "get/" + URLEncoder.encode(key, StandardCharsets.UTF_8)
+        try {
+            val response = client.get(uri)
+            return when (response.status) {
+                HttpStatusCode.OK -> {
+                    val value = response.bodyAsText()
+                    val end = System.currentTimeMillis()
+                    if (isHash) {
+                        if (LOG.isDebugEnabled) {
+                            LOG.debug("GET " + key + " took " + (end - start) + " ms: " + value)
                         }
-                        value
                     }
-                    HttpStatusCode.NotFound -> {
-                        null
-                    }
-                    else -> {
-                        throw RuntimeException("Request for key '" + key + "' failed: " + response.status)
-                    }
+                    value
                 }
-            } catch (e: Exception) {
-                throw RuntimeException("Unable to connect to '$uri' to get key $key", e)
+                HttpStatusCode.NotFound -> {
+                    null
+                }
+                else -> {
+                    throw RuntimeException("Request for key '" + key + "' failed: " + response.status)
+                }
             }
+        } catch (e: Exception) {
+            throw RuntimeException("Unable to connect to '$uri' to get key $key", e)
         }
     }
 
     override fun getAll(keys: Iterable<String>): Map<String, String?> {
+        return runBlocking { getAllA(keys) }
+    }
+
+    suspend fun getAllA(keys: Iterable<String>): Map<String, String?> {
         if (!keys.iterator().hasNext()) {
             return HashMap()
         }
 
-        return runBlocking {
-            val result: MutableMap<String, String?> = LinkedHashMap(16, 0.75.toFloat(), false)
-            var json = JSONArray()
-            val batch = suspend {
-                val response = client.put(baseUrl + "getAll") {
-                    setBody(json)
-                    contentType(ContentType.Application.Json)
+        val result: MutableMap<String, String?> = LinkedHashMap(16, 0.75.toFloat(), false)
+        var json = JSONArray()
+        val batch = suspend {
+            val response = client.put(baseUrl + "getAll") {
+                setBody(json)
+                contentType(ContentType.Application.Json)
+            }
+            if (response.status == HttpStatusCode.OK) {
+                val jsonStr = response.bodyAsText()
+                val responseJson = JSONArray(jsonStr)
+                for (entry_: Any in responseJson) {
+                    val entry = entry_ as JSONObject
+                    result[entry.getString("key")] = entry.optString("value", null)
                 }
-                if (response.status == HttpStatusCode.OK) {
-                    val jsonStr = response.bodyAsText()
-                    val responseJson = JSONArray(jsonStr)
-                    for (entry_: Any in responseJson) {
-                        val entry = entry_ as JSONObject
-                        result[entry.getString("key")] = entry.optString("value", null)
-                    }
-                    json = JSONArray()
-                } else {
-                    throw RuntimeException(
-                        String.format(
-                            "Request for %d keys failed (%s, ...): %s",
-                            keys.spliterator().exactSizeIfKnown,
-                            toStream(keys).findFirst().orElse(null),
-                            response.status
-                        )
+                json = JSONArray()
+            } else {
+                throw RuntimeException(
+                    String.format(
+                        "Request for %d keys failed (%s, ...): %s",
+                        keys.spliterator().exactSizeIfKnown,
+                        toStream(keys).findFirst().orElse(null),
+                        response.status
                     )
-                }
+                )
             }
-
-            for (key in keys) {
-                json.put(key)
-                if (json.length() >= 5000) batch()
-            }
-
-            if (json.length() > 0) batch()
-
-            return@runBlocking result
         }
+
+        for (key in keys) {
+            json.put(key)
+            if (json.length() >= 5000) batch()
+        }
+
+        if (json.length() > 0) batch()
+
+        return result
     }
 
     fun getEmail(): String {
-        return runBlocking {
-            val response = client.get(baseUrl + "getEmail")
-            if (response.successful) {
-                response.bodyAsText()
-            } else {
-                throw RuntimeException("Request for e-mail address failed: " + response.status)
-            }
+        return runBlocking { getEmailA() }
+    }
+
+    suspend fun getEmailA(): String {
+        val response = client.get(baseUrl + "getEmail")
+        if (response.successful) {
+            return response.bodyAsText()
+        } else {
+            throw RuntimeException("Request for e-mail address failed: " + response.status)
         }
     }
 
@@ -435,12 +442,16 @@ class RestWebModelClient @JvmOverloads constructor(
     }
 
     override fun put(key: String, value: String?) {
+        runBlocking { putA(key, value) }
+    }
+
+    suspend fun putA(key: String, value: String?) {
         if (!key.matches(HashUtil.HASH_PATTERN)) {
             if (LOG.isDebugEnabled) {
                 LOG.debug("PUT $key = $value")
             }
         }
-        runBlocking {
+        let {
             val url = baseUrl + "put/" + URLEncoder.encode(key, StandardCharsets.UTF_8)
             try {
                 val response = client.put(url) {
@@ -481,6 +492,10 @@ class RestWebModelClient @JvmOverloads constructor(
     }
 
     override fun putAll(entries_: Map<String, String?>) {
+        runBlocking { putAllA(entries_) }
+    }
+
+    suspend fun putAllA(entries_: Map<String, String?>) {
         val entries = sortEntriesByDependency(entries_)
         val sendBatch: suspend (JSONArray, Int) -> Unit = sendBatch@{ json: JSONArray, remaining: Int ->
             for (attempt in 1..3) {
@@ -510,7 +525,7 @@ class RestWebModelClient @JvmOverloads constructor(
             LOG.debug("PUT " + entries.size + " entries")
         }
 
-        runBlocking {
+        let {
             var remainingEntries = entries.size
             try {
                 pendingWrites.addAndGet(remainingEntries)

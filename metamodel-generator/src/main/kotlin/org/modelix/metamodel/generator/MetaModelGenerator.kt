@@ -216,7 +216,7 @@ class MetaModelGenerator(val outputDir: Path) {
         return TypeSpec.classBuilder(concept.nodeWrapperImplType()).apply {
             addModifiers(KModifier.OPEN)
             addProperty(PropertySpec.builder(TypedNodeImpl::_concept.name, concept.conceptWrapperImplType(), KModifier.OVERRIDE)
-                .initializer(concept.conceptWrapperImplType().simpleName + ".INSTANCE")
+                .getter(FunSpec.getterBuilder().addStatement("""return ${concept.conceptWrapperImplType().simpleName}.INSTANCE""").build())
                 .build())
 
             if (concept.extends().size > 1) {

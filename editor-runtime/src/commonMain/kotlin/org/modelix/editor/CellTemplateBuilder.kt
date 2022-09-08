@@ -1,12 +1,9 @@
 package org.modelix.editor
 
-import org.modelix.metamodel.GeneratedReferenceLink
-import org.modelix.metamodel.ITypedConcept
-import org.modelix.metamodel.ITypedNode
-import org.modelix.metamodel.TypedLanguagesRegistry
+import org.modelix.metamodel.*
 import org.modelix.model.api.*
 
-open class CellTemplateBuilder<CellT : Cell, NodeT : ITypedNode, ConceptT : ITypedConcept>(val template: CellTemplate<CellT, NodeT, ConceptT>) {
+open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val template: CellTemplate<NodeT, ConceptT>) {
     val concept: ConceptT = template.concept._typed
     val properties = CellProperties()
 
@@ -30,12 +27,13 @@ open class CellTemplateBuilder<CellT : Cell, NodeT : ITypedNode, ConceptT : ITyp
         template.withNode += { node, _ -> body(WithNodeContext(node)) }
     }
 
-    fun String.cell(body: CellTemplateBuilder<TextCell, NodeT, ConceptT>.()->Unit = {}) {
+    fun String.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         constant(this, body)
     }
 
-    fun constant(text: String, body: CellTemplateBuilder<TextCell, NodeT, ConceptT>.()->Unit = {}) {
-        TODO("Not implemented yet")
+    fun constant(text: String, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        CellTemplateBuilder(ConstantCellTemplate(template.concept, text))
+            .also(body).template.also(template.children::add)
     }
 
     fun textColor(color: String) {
@@ -46,19 +44,23 @@ open class CellTemplateBuilder<CellT : Cell, NodeT : ITypedNode, ConceptT : ITyp
         TODO("Not implemented yet")
     }
 
-    fun vertical(body: CellTemplateBuilder<Cell, NodeT, ConceptT>.()->Unit = {}) {
-        TODO("Not implemented yet")
+    fun vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        // TODO add correct layout information
+        horizontal(body)
     }
 
-    fun horizontal(body: CellTemplateBuilder<Cell, NodeT, ConceptT>.()->Unit = {}) {
-        TODO("Not implemented yet")
+    fun horizontal(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        // TODO add layout information
+        CellTemplateBuilder(CollectionCellTemplate(template.concept))
+            .also(body).template.also(template.children::add)
     }
 
-    fun optional(body: CellTemplateBuilder<Cell, NodeT, ConceptT>.()->Unit = {}) {
-        TODO("Not implemented yet")
+    fun optional(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        CellTemplateBuilder(OptionalCellTemplate<NodeT, ConceptT>(template.concept))
+            .also(body).template.also(template.children::add)
     }
 
-    fun brackets(singleLine: Boolean, leftSymbol: String, rightSymbol: String, body: CellTemplateBuilder<CellT, NodeT, ConceptT>.()->Unit = {}) {
+    fun brackets(singleLine: Boolean, leftSymbol: String, rightSymbol: String, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         if (singleLine) {
             constant(leftSymbol)
             noSpace()
@@ -78,19 +80,19 @@ open class CellTemplateBuilder<CellT : Cell, NodeT : ITypedNode, ConceptT : ITyp
         }
     }
 
-    fun parentheses(singleLine: Boolean = false, body: CellTemplateBuilder<CellT, NodeT, ConceptT>.()->Unit = {}) {
+    fun parentheses(singleLine: Boolean = false, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         brackets(true, "(", ")", body)
     }
 
-    fun curlyBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<CellT, NodeT, ConceptT>.()->Unit = {}) {
+    fun curlyBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         brackets(singleLine, "{", "}", body)
     }
 
-    fun angleBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<CellT, NodeT, ConceptT>.()->Unit = {}) {
+    fun angleBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         brackets(singleLine, "<", ">", body)
     }
 
-    fun squareBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<CellT, NodeT, ConceptT>.()->Unit = {}) {
+    fun squareBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         brackets(singleLine, "[", "]", body)
     }
 
@@ -99,44 +101,38 @@ open class CellTemplateBuilder<CellT : Cell, NodeT : ITypedNode, ConceptT : ITyp
      * Multiple consecutive newLine's are merged to a single one. See also emptyLine()
      */
     fun newLine() {
-        TODO("Not implemented yet")
+        // TODO 
     }
 
     /**
      * The next cell appears two lines below the current line.
      */
     fun emptyLine() {
-        TODO("Not implemented yet")
+        // TODO
     }
 
     fun noSpace() {
-        TODO("Not implemented yet")
+        // TODO
     }
 
-    fun indented(body: CellTemplateBuilder<Cell, NodeT, ConceptT>.()->Unit = {}) {
-        TODO("Not implemented yet")
+    fun indented(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        // TODO add correct layout information
+        horizontal(body)
     }
 
     /**
      * The content is foldable
      */
-    fun foldable(foldedText: String = "...", body: CellTemplateBuilder<Cell, NodeT, ConceptT>.()->Unit = {}) {
-        TODO("Not implemented yet")
+    fun foldable(foldedText: String = "...", body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        // TODO
+        horizontal(body)
     }
 
     /**
      * The current cell is foldable
      */
     fun foldable(foldedText: String = "...") {
-        TODO("Not implemented yet")
-    }
-
-    fun property(property: IProperty): Cell {
-        TODO("Not implemented yet")
-    }
-
-    fun property(getter: ConceptT.()-> IProperty) {
-        TODO("Not implemented yet")
+        // TODO
     }
 
     fun IProperty.cell(body: PropertyCellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
@@ -144,69 +140,76 @@ open class CellTemplateBuilder<CellT : Cell, NodeT : ITypedNode, ConceptT : ITyp
     }
 
     fun IProperty.propertyCell(body: PropertyCellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
-        TODO("Not implemented yet")
+        PropertyCellTemplateBuilder(PropertyCellTemplate(template.concept, this))
+            .also(body).template.also(template.children::add)
     }
 
-    fun IProperty.flagCell(text: String? = null, body: CellTemplateBuilder<TextCell, NodeT, ConceptT>.()->Unit = {}) {
-        TODO("Not implemented yet")
+    fun IProperty.flagCell(text: String? = null, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        PropertyCellTemplateBuilder(FlagCellTemplate(template.concept, this, text ?: name))
+            .also(body).template.also(template.children::add)
     }
 
-    fun flags(vararg properties: IProperty) {
-
+    fun <TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept> GeneratedReferenceLink<TargetNodeT, TargetConceptT>.cell(presentation: TargetNodeT.()->String?, body: ReferenceCellTemplateBuilder<NodeT, ConceptT, TargetNodeT, TargetConceptT>.()->Unit = {}) {
+        ReferenceCellTemplateBuilder(ReferenceCellTemplate(template.concept, this, presentation), this)
+            .also(body).template.also(template.children::add)
     }
 
-    fun <TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept> GeneratedReferenceLink<TargetNodeT, TargetConceptT>.cell(presentation: TargetNodeT.()->String?, body: ReferenceCellTemplateBuilder<NodeT, ConceptT, TargetNodeT, TargetConceptT>.()->Unit = {}): Cell {
-        TODO("Not implemented yet")
+    fun IChildLink.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        CellTemplateBuilder(ChildCellTemplate(template.concept, this))
+            .also(body).template.also(template.children::add)
     }
 
-    fun IChildLink.cell(body: CellTemplateBuilder<Cell, NodeT, ConceptT>.()->Unit = {}): Cell {
-        TODO("Not implemented yet")
+    fun IChildLink.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        // TODO add layout information
+        cell(body)
     }
 
-    fun IChildLink.vertical(body: CellTemplateBuilder<Cell, NodeT, ConceptT>.()->Unit = {}): Cell {
-        TODO("Not implemented yet")
-    }
-
-    fun IChildLink.horizontal(separator: String = ",", body: CellTemplateBuilder<Cell, NodeT, ConceptT>.()->Unit = {}): Cell {
-        TODO("Not implemented yet")
-    }
-
-    fun reference(link: IReferenceLink) {
-        TODO("Not implemented yet")
+    fun IChildLink.horizontal(separator: String = ",", body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        // TODO add layout information
+        cell(body)
     }
 
     fun modelAccess(body: ModelAccessBuilder.()->Unit) {
-        TODO("Not implemented yet")
+        var setter: (String?)->Unit = {}
+        var getter: ()->String? = { "<getter missing>" }
+        body(object : ModelAccessBuilder {
+            override fun get(body: () -> String?) {
+                getter = body
+            }
+
+            override fun set(body: (String?) -> Unit) {
+                setter = body
+            }
+        })
+        modelAccess(getter, setter)
     }
 
     fun modelAccess(getter: ()->String?, setter: (String?)->Unit) {
-        TODO("Not implemented yet")
-    }
-
-    fun build(): CellT {
-        TODO("Not implemented yet")
+        // TODO ModelAccessCellTemplate
+        CellTemplateBuilder(ConstantCellTemplate(template.concept, "<model access>"))
+            .template.also(template.children::add)
     }
 
     inner class WithNodeContext(val node: NodeT)
 }
 
-class PropertyCellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(template: CellTemplate<TextCell, NodeT, ConceptT>) : CellTemplateBuilder<TextCell, NodeT, ConceptT>(
+class PropertyCellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(template: CellTemplate<NodeT, ConceptT>) : CellTemplateBuilder<NodeT, ConceptT>(
     template
 ) {
     fun validateValue(validator: (String)->Boolean) {
-        TODO("Not implemented yet")
+        // TODO
     }
 
     fun readReplace(replacement: (String)->String) {
-        TODO("Not implemented yet")
+        // TODO
     }
 
     fun writeReplace(replacement: (String)->String) {
-        TODO("Not implemented yet")
+        // TODO
     }
 }
 
-class ReferenceCellTemplateBuilder<SourceNodeT : ITypedNode, SourceConceptT : ITypedConcept, TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept>(template: CellTemplate<TextCell, SourceNodeT, SourceConceptT>, val link: GeneratedReferenceLink<TargetNodeT, TargetConceptT>) : CellTemplateBuilder<TextCell, SourceNodeT, SourceConceptT>(
+class ReferenceCellTemplateBuilder<SourceNodeT : ITypedNode, SourceConceptT : ITypedConcept, TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept>(template: CellTemplate<SourceNodeT, SourceConceptT>, val link: GeneratedReferenceLink<TargetNodeT, TargetConceptT>) : CellTemplateBuilder<SourceNodeT, SourceConceptT>(
     template
 ) {
     fun presentation(f: (TargetNodeT)->String?) {
@@ -215,7 +218,7 @@ class ReferenceCellTemplateBuilder<SourceNodeT : ITypedNode, SourceConceptT : IT
 
     fun withTargetNode(body: WithTargetNodeContext.()->Unit) {
         withNode {
-            val targetNode: ITypedNode? = node._node.getReferenceTarget(link)?.let { TypedLanguagesRegistry.wrapNode(it) }
+            val targetNode: ITypedNode? = node._node.getReferenceTarget(link)?.let { it.typed() }
             if (targetNode != null) {
                 body(WithTargetNodeContext(node, targetNode as TargetNodeT))
             }

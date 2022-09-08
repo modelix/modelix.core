@@ -8,26 +8,24 @@ import org.modelix.model.api.*
 
 
 fun <LanguageT : ILanguage> languageEditors(language: LanguageT, body: LanguageEditors<LanguageT>.()->Unit): LanguageEditors<LanguageT> {
-    TODO("Not implemented yet")
+    return LanguageEditors(language).also(body)
 }
 
 class LanguageEditors<LanguageT : ILanguage>(val language: LanguageT) {
+    val conceptEditors: MutableList<ConceptEditor<*, *>> = ArrayList()
 
-    fun <NodeT : ITypedNode, ConceptT : GeneratedConcept<NodeT, TypedConceptT>, TypedConceptT : ITypedConcept> conceptEditor(concept: ConceptT, body: CellTemplateBuilder<Cell, NodeT, TypedConceptT>.()->Unit): CellTemplateBuilder<Cell, NodeT, TypedConceptT> {
-        TODO("Not implemented yet")
+    fun <NodeT : ITypedNode, ConceptT : GeneratedConcept<NodeT, TypedConceptT>, TypedConceptT : ITypedConcept> conceptEditor(concept: ConceptT, body: CellTemplateBuilder<NodeT, TypedConceptT>.()->Unit): ConceptEditor<NodeT, TypedConceptT> {
+        return ConceptEditor(concept) { subConcept ->
+            CellTemplateBuilder(CollectionCellTemplate(subConcept)).also(body).template
+        }.also(conceptEditors::add)
     }
 
-    fun register() {
-        TODO("Not implemented yet")
+    fun register(editorEngine: EditorEngine) {
+        editorEngine.registerEditors(this)
     }
 }
 
-class ModelAccessBuilder {
-    fun get(body: ()->String?) {
-
-    }
-
-    fun set(body: (String?)->Unit) {
-
-    }
+interface ModelAccessBuilder {
+    fun get(body: ()->String?)
+    fun set(body: (String?)->Unit)
 }

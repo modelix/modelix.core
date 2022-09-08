@@ -37,3 +37,5 @@ object TypedLanguagesRegistry : ILanguageRepository {
         return concept.wrap(node)
     }
 }
+
+fun INode.typed(): ITypedNode = TypedLanguagesRegistry.wrapNode(this)

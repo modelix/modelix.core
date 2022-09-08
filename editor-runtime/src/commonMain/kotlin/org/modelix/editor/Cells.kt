@@ -4,6 +4,10 @@ open class Cell {
     val children: MutableList<Cell> = ArrayList()
     val actions: MutableList<ICellAction> = ArrayList()
     val properties = CellProperties()
+
+    override fun toString(): String {
+        return children.toString()
+    }
 }
 
 class CellProperties {
@@ -23,4 +27,10 @@ interface ICellAction {
 
 }
 
-class TextCell(val text: String, val placeholderText: String): Cell()
+class TextCell(val text: String, val placeholderText: String): Cell() {
+    override fun toString(): String {
+        return if (children.isEmpty())
+            text
+        else """$text<${children}>"""
+    }
+}

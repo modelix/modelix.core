@@ -16,7 +16,7 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
     override fun iterator(): Iterator<ChildT> {
         return parent.getChildren(role).map {
             val wrapped = when (childConcept) {
-                is GeneratedConcept<*, *> -> childConcept.wrap(it)
+                is GeneratedConcept<*, *> -> TypedLanguagesRegistry.wrapNode(it)
                 else -> throw RuntimeException("Unsupported concept type: ${childConcept::class} (${childConcept.getLongName()})")
             }
             childType.cast(wrapped)

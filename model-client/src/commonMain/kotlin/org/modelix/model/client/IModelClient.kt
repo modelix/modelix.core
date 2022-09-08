@@ -22,6 +22,6 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 interface IModelClient : IKeyValueStore {
     val clientId: Int
     val idGenerator: IIdGenerator
-    val storeCache: IDeserializingKeyValueStore?
-    val asyncStore: IKeyValueStore?
+    val storeCache: IDeserializingKeyValueStore
+    val asyncStore: IKeyValueStore
 }

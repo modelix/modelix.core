@@ -20,15 +20,17 @@ import kotlin.jvm.JvmStatic
 
 data class RepositoryId(val id: String) {
 
+    @Deprecated("Use getBranchReference().getKey()")
     fun getBranchKey(branchName: String?): String {
-        var branchName = branchName
-        if (branchName == null || branchName.isEmpty()) {
-            branchName = DEFAULT_BRANCH
-        }
-        return "branch_" + id + "_" + branchName
+        return getBranchReference(branchName).getKey()
     }
 
+    @Deprecated("Use getBranchReference().getKey()")
     fun getBranchKey(): String = getBranchKey(null)
+
+    fun getBranchReference(branchName: String? = DEFAULT_BRANCH): BranchReference {
+        return BranchReference(this, (branchName ?: DEFAULT_BRANCH).ifEmpty { DEFAULT_BRANCH })
+    }
 
     override fun toString(): String {
         return id

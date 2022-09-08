@@ -30,6 +30,20 @@ class MetaModelGenerator(val outputDir: Path) {
         return packageDir
     }
 
+    fun generateRegistrationHelper(classFqName: String) {
+        val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
+        val cls = TypeSpec.objectBuilder(typeName)
+            .addProperty(PropertySpec.builder("languages", List::class.parameterizedBy(GeneratedLanguage::class))
+                .initializer("listOf(" + languagesMap.values.map { it.generatedClassName() }.joinToString(", ") { it.canonicalName } + ")")
+                .build())
+            .build()
+
+        FileSpec.builder(typeName.packageName, typeName.simpleName)
+            .addType(cls)
+            .build()
+            .write()
+    }
+
     fun generate(languages: List<LanguageData>) {
         for (language in languages) {
             languagesMap[language.name] = language

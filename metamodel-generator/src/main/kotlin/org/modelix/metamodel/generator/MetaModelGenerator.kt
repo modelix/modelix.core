@@ -90,7 +90,7 @@ class MetaModelGenerator(val outputDir: Path) {
                 .initializer(concept.nodeWrapperImplName() + "::class")
                 .build())
             addProperty(PropertySpec.builder(GeneratedConcept<*, *>::_typed.name, concept.conceptWrapperImplType(), KModifier.OVERRIDE)
-                .initializer(concept.conceptWrapperImplType().simpleName + ".INSTANCE")
+                .getter(FunSpec.getterBuilder().addStatement("""return ${concept.conceptWrapperImplType().simpleName}.INSTANCE""").build())
                 .build())
             addProperty(PropertySpec.builder(IConcept::language.name, ILanguage::class, KModifier.OVERRIDE)
                 .initializer(concept.language.generatedClassName().simpleName)

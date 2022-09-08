@@ -100,6 +100,12 @@ class MetaModelGenerator(val outputDir: Path) {
                 .addParameter("node", INode::class)
                 .addStatement("return ${concept.nodeWrapperImplName()}(node)")
                 .build())
+            concept.concept.uid?.let { uid ->
+                addFunction(FunSpec.builder(GeneratedConcept<*, *>::getUID.name)
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addStatement(CodeBlock.of("return %S", uid).toString())
+                    .build())
+            }
             addFunction(FunSpec.builder(GeneratedConcept<*, *>::getDirectSuperConcepts.name)
                 .addModifiers(KModifier.OVERRIDE)
                 .addStatement("return listOf(${concept.concept.extends.joinToString(", ") { it.conceptObjectName() } })")

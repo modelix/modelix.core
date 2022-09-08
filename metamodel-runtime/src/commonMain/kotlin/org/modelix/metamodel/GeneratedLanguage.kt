@@ -4,15 +4,15 @@ import org.modelix.model.api.ILanguage
 
 abstract class GeneratedLanguage(private val name: String) : ILanguage {
     fun register() {
-        LanguageRegistry.register(this)
+        TypedLanguagesRegistry.register(this)
     }
 
     fun unregister() {
-        LanguageRegistry.unregister(this)
+        TypedLanguagesRegistry.unregister(this)
     }
 
     fun isRegistered(): Boolean {
-        return LanguageRegistry.isRegistered(this)
+        return TypedLanguagesRegistry.isRegistered(this)
     }
 
     fun assertRegistered() {

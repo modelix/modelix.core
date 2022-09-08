@@ -1,24 +1,18 @@
 package org.modelix.metamodel
 
-import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 
-object LanguageRegistry {
+object TypedLanguagesRegistry : ILanguageRepository {
     private var languages: Map<String, GeneratedLanguage> = emptyMap()
     private var concepts: Map<String, GeneratedConcept<*, *>> = emptyMap()
 
     init {
-        IConceptReference.registerDeserializer(this) { serialized ->
-            if (serialized.startsWith(GeneratedConceptReference.PREFIX)) {
-                GeneratedConceptReference(serialized)
-            } else {
-                null
-            }
-        }
+        ILanguageRepository.register(this)
     }
 
     fun dispose() {
-        IConceptReference.unregisterSerializer(this)
+        ILanguageRepository.unregister(this)
     }
 
     fun register(language: GeneratedLanguage) {
@@ -33,7 +27,7 @@ object LanguageRegistry {
 
     fun isRegistered(language: GeneratedLanguage) = languages[language.getUID()] == language
 
-    fun resolveConcept(uid: String): GeneratedConcept<*, *>? {
+    override fun resolveConcept(uid: String): GeneratedConcept<*, *>? {
         return concepts[uid]
     }
 

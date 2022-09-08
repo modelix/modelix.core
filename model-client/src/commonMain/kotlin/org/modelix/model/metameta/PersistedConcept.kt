@@ -49,7 +49,7 @@ data class PersistedConcept(val id: Long, val uid: String?) : IConcept, IConcept
     }
 
     override fun getUID(): String {
-        throw UnsupportedOperationException()
+        return uid!!
     }
 
     override fun isAbstract(): Boolean {

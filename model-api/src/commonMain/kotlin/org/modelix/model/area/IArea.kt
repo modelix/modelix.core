@@ -28,6 +28,7 @@ interface IArea {
      */
     fun getRoot(): INode
 
+    @Deprecated("use ILanguageRepository.resolveConcept")
     fun resolveConcept(ref: IConceptReference): IConcept?
 
     /**

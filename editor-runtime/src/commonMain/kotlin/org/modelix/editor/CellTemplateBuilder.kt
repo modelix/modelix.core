@@ -1,12 +1,9 @@
 package org.modelix.editor
 
-import org.modelix.editor.Cell
-import org.modelix.editor.CellProperties
-import org.modelix.editor.TextCell
 import org.modelix.metamodel.GeneratedReferenceLink
 import org.modelix.metamodel.ITypedConcept
 import org.modelix.metamodel.ITypedNode
-import org.modelix.metamodel.LanguageRegistry
+import org.modelix.metamodel.TypedLanguagesRegistry
 import org.modelix.model.api.*
 
 open class CellTemplateBuilder<CellT : Cell, NodeT : ITypedNode, ConceptT : ITypedConcept>(val template: CellTemplate<CellT, NodeT, ConceptT>) {
@@ -218,7 +215,7 @@ class ReferenceCellTemplateBuilder<SourceNodeT : ITypedNode, SourceConceptT : IT
 
     fun withTargetNode(body: WithTargetNodeContext.()->Unit) {
         withNode {
-            val targetNode: ITypedNode? = node._node.getReferenceTarget(link)?.let { LanguageRegistry.wrapNode(it) }
+            val targetNode: ITypedNode? = node._node.getReferenceTarget(link)?.let { TypedLanguagesRegistry.wrapNode(it) }
             if (targetNode != null) {
                 body(WithTargetNodeContext(node, targetNode as TargetNodeT))
             }

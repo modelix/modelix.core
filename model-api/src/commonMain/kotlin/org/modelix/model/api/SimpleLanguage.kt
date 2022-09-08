@@ -16,6 +16,19 @@
 package org.modelix.model.api
 
 class SimpleLanguage(private val name: String) : ILanguage {
+    private var registered: Boolean = false
+    fun register() {
+        if (registered) return
+        ILanguageRepository.default.registerLanguage(this)
+        registered = true
+    }
+
+    fun unregister() {
+        if (!registered) return
+        ILanguageRepository.default.registerLanguage(this)
+        registered = false
+    }
+
     override fun getUID(): String = name
 
     private val concepts: MutableList<SimpleConcept> = ArrayList()
@@ -27,6 +40,9 @@ class SimpleLanguage(private val name: String) : ILanguage {
         if (currentLang != null) throw IllegalStateException("concept ${concept.getShortName()} was already added to language ${currentLang.getName()}")
         concept.language = this
         concepts.add(concept)
+        if (registered) {
+            ILanguageRepository.default.registerConcept(concept)
+        }
     }
 
     override fun getName() = name

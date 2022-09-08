@@ -24,7 +24,7 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
     }
 
     fun addNew(index: Int = -1, concept: IConcept? = null): ChildT {
-        return childType.cast(LanguageRegistry.wrapNode(parent.addNewChild(role, index, concept)))
+        return childType.cast(TypedLanguagesRegistry.wrapNode(parent.addNewChild(role, index, concept)))
     }
 
     fun remove(child: INode) {

@@ -9,6 +9,7 @@ import java.io.File
 
 @Serializable
 data class LanguageData(
+    val uid: String? = null,
     val name: String,
     val concepts: List<ConceptData>,
 ) {
@@ -31,6 +32,7 @@ data class LanguageData(
 
 @Serializable
 data class ConceptData(
+    val uid: String? = null,
     val name: String,
     val abstract: Boolean = false,
     val properties: List<PropertyData> = emptyList(),
@@ -40,21 +42,24 @@ data class ConceptData(
 )
 
 interface IConceptFeatureData {
+    val uid: String?
     val name: String
 }
 
 @Serializable
 data class PropertyData (
+    override val uid: String? = null,
     override val name: String,
     val type: PropertyType = PropertyType.STRING
 ) : IConceptFeatureData
 
 enum class PropertyType {
-    STRING,
+    STRING, BOOLEAN, INT, DOUBLE
 }
 
 @Serializable
 data class ChildLinkData(
+    override val uid: String? = null,
     override val name: String,
     val type: String,
     val multiple: Boolean = false,
@@ -63,6 +68,7 @@ data class ChildLinkData(
 
 @Serializable
 data class ReferenceLinkData(
+    override val uid: String? = null,
     override val name: String,
     val type: String,
     val optional: Boolean = true,

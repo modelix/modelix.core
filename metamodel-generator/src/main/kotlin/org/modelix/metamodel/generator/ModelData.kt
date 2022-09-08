@@ -36,7 +36,7 @@ data class ModelData(
         createdNodes: HashMap<String, Long>,
         pendingReferences: ArrayList<() -> Unit>
     ) {
-        val conceptRef = nodeData.concept?.let { UIDConceptReference(it) }
+        val conceptRef = nodeData.concept?.let { ConceptReference(it) }
         val createdId = t.addNewChild(parentId, nodeData.role, -1, conceptRef)
         if (nodeData.id != null) {
             createdNodes[nodeData.id] = createdId

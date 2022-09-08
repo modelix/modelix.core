@@ -17,11 +17,16 @@ package org.modelix.model.api
 
 import org.modelix.model.area.IArea
 
-data class UIDConceptReference(val uid: String) : IConceptReference {
+data class ConceptReference(val uid: String) : IConceptReference {
     override fun resolve(area: IArea?): IConcept? {
         return area?.resolveConcept(this)
     }
 
+    override fun getUID(): String {
+        return uid
+    }
+
+    @Deprecated("use getUID()", ReplaceWith("getUID()"))
     override fun serialize(): String {
         return uid
     }

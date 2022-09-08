@@ -30,11 +30,11 @@ class ConceptBuilder(val conceptName: String, val languageBuilder: LanguageBuild
     }
 
     fun property(name: String) {
-        properties.add(PropertyData(name))
+        properties.add(PropertyData(uid = null, name = name))
     }
 
     fun reference(name: String, type: String, optional: Boolean = false) {
-        references.add(ReferenceLinkData(name, type, optional))
+        references.add(ReferenceLinkData(uid = null, name = name, type = type, optional = optional))
     }
 
     fun optionalReference(name: String, type: String) {

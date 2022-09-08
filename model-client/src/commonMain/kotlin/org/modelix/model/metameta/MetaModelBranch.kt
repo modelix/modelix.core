@@ -17,7 +17,6 @@ import org.modelix.model.ITransactionWrapper
 import org.modelix.model.api.*
 import org.modelix.model.lazy.CLNode
 import org.modelix.model.lazy.IBulkTree
-import org.modelix.model.lazy.IConceptReferenceSerializer
 import org.modelix.model.lazy.ITreeWrapper
 
 class MetaModelBranch(val branch: IBranch) : IBranch by branch {
@@ -52,8 +51,10 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
             if (uid == null && tree.containsNode(localConcept.id)) {
                 uid = tree.getProperty(localConcept.id, MetaMetaLanguage.property_IHasUID_uid.name)
             }
-            return IConceptReferenceSerializer.deserializeAll(uid, tree).firstOrNull { it !is PersistedConcept }
-                ?: throw RuntimeException("Cannot find concept $uid, id = ${localConcept.id}")
+            if (uid == null) throw RuntimeException("Concept ${localConcept.id} has no UID")
+            val concept = ILanguageRepository.resolveConcept(ConceptReference(uid))
+            if (concept is PersistedConcept) throw RuntimeException("Cannot find concept $uid, id = ${localConcept.id}")
+            return concept
         }
         return localConcept
     }

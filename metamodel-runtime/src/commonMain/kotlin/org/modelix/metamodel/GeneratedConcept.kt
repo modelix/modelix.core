@@ -50,7 +50,7 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
     }
 
     override fun getReference(): IConceptReference {
-        return GeneratedConceptReference(getUID())
+        return ConceptReference(getUID())
     }
 
     override fun getShortName(): String {
@@ -70,7 +70,7 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
     }
 
     override fun getUID(): String {
-        return GeneratedConceptReference.PREFIX + getLongName()
+        return UID_PREFIX + getLongName()
     }
 
     override fun isExactly(concept: IConcept?): Boolean {
@@ -102,6 +102,10 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
 
     override fun getAllReferenceLinks(): List<IReferenceLink> {
         return getAllConcepts().flatMap { it.getOwnReferenceLinks() }
+    }
+
+    companion object {
+        const val UID_PREFIX = "gen:"
     }
 }
 

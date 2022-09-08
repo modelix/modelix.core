@@ -11,7 +11,7 @@ class ReferenceAccessor<SourceT, TargetT : ITypedNode>(
     val targetType: KClass<TargetT>
 ) {
     operator fun getValue(thisRef: SourceT, property: KProperty<*>): TargetT? {
-        return node.getReferenceTarget(role)?.let { targetType.cast(LanguageRegistry.wrapNode(it)) }
+        return node.getReferenceTarget(role)?.let { targetType.cast(TypedLanguagesRegistry.wrapNode(it)) }
     }
 
     operator fun setValue(thisRef: SourceT, property: KProperty<*>, target: TargetT?) {

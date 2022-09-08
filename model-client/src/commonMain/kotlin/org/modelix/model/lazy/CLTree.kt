@@ -149,7 +149,7 @@ class CLTree : ITree, IBulkTree {
         var newIdToHash = nodesMap
         val newChildData = create(
             nodeId,
-            serializeConcept(concept),
+            concept?.getUID(),
             0,
             null,
             LongArray(0),
@@ -312,18 +312,18 @@ class CLTree : ITree, IBulkTree {
 
     override fun getConcept(nodeId: Long): IConcept? {
         try {
-            val node = resolveElement(nodeId)
-            return deserializeConcept(node!!.concept)
-        } catch (e: RuntimeException) {
+            return getConceptReference(nodeId)?.let { ILanguageRepository.resolveConcept(it) }
+        } catch (e: Exception) {
             throw RuntimeException("Unable to find concept for node $nodeId", e)
         }
+
     }
 
     override fun getConceptReference(nodeId: Long): IConceptReference? {
         try {
             val node = resolveElement(nodeId)
-            return IConceptReference.deserialize(node!!.concept)
-        } catch (e: RuntimeException) {
+            return node!!.concept?.let { ConceptReference(it) }
+        } catch (e: Exception) {
             throw RuntimeException("Unable to find concept for node $nodeId", e)
         }
     }
@@ -525,15 +525,6 @@ class CLTree : ITree, IBulkTree {
         return bulkQuery.map(hashes) { hash: KVEntryReference<CPNode> ->
             bulkQuery[hash].map { n -> CLNode.create(this@CLTree, n)!! }
         }
-    }
-
-    protected fun serializeConcept(concept: IConceptReference?): String? {
-        return concept?.serialize()
-    }
-
-    protected fun deserializeConcept(serialized: String?): IConcept? {
-        if (serialized == null) return null
-        return IConceptReferenceSerializer.deserialize(serialized, this)
     }
 
     override fun toString(): String {

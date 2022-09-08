@@ -77,5 +77,7 @@ object MetaMetaLanguage {
         language_metameta.addConcept(concept_Property)
         language_metameta.addConcept(concept_ChildLink)
         language_metameta.addConcept(concept_ReferenceLink)
+
+        language_metameta.register()
     }
 }

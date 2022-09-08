@@ -37,7 +37,7 @@ class SimpleConcept(
     override fun getUID(): String = getLongName()
 
     override fun getReference(): IConceptReference {
-        return UIDConceptReference(getUID())
+        return ConceptReference(getUID())
     }
 
     fun addProperty(p: SimpleProperty): SimpleConcept {

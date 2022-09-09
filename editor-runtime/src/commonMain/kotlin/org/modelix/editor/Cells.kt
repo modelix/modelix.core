@@ -4,7 +4,6 @@ open class Cell {
     val children: MutableList<Cell> = ArrayList()
     val actions: MutableList<ICellAction> = ArrayList()
     val properties = CellProperties()
-    val textLayoutHandlers: MutableList<(LayoutedText)->Unit> = ArrayList()
 
     override fun toString(): String {
         return children.toString()
@@ -12,8 +11,10 @@ open class Cell {
 
     open fun layoutText(buffer: LayoutedText) {
         val body: ()->Unit = {
-            textLayoutHandlers.forEach { it(buffer) }
+            if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
+            if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
             children.forEach { it.layoutText(buffer) }
+            if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
         }
         if (properties[CommonCellProperties.indentChildren]) {
             buffer.withIndent(body)
@@ -47,14 +48,13 @@ class CellPropertyKey<E>(val name: String, val defaultValue: E)
 enum class ECellLayout {
     VERTICAL,
     HORIZONTAL;
-
-    companion object {
-        val Key = CellPropertyKey<ECellLayout>("layout", HORIZONTAL)
-    }
 }
 
 object CommonCellProperties {
-    val indentChildren = CellPropertyKey<Boolean>("indentChildren", false)
+    val layout = CellPropertyKey<ECellLayout>("layout", ECellLayout.HORIZONTAL)
+    val indentChildren = CellPropertyKey<Boolean>("indent-children", false)
+    val onNewLine = CellPropertyKey<Boolean>("on-new-line", false)
+    val noSpace = CellPropertyKey<Boolean>("no-space", false)
 }
 
 interface ICellAction {
@@ -69,6 +69,9 @@ class TextCell(val text: String, val placeholderText: String): Cell() {
     }
 
     override fun layoutText(buffer: LayoutedText) {
+        if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
+        if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
         buffer.append(toString())
+        if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
     }
 }

@@ -14,6 +14,9 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
         val cell = createCell(editor, node)
         cell.properties.addAll(properties)
         applyChildren(editor, node, cell)
+        if (properties[CommonCellProperties.layout] == ECellLayout.VERTICAL) {
+            cell.children.drop(1).forEach { it.properties[CommonCellProperties.onNewLine] = true }
+        }
         withNode.forEach { it(node, cell) }
         return cell
     }
@@ -30,13 +33,13 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
 class NewLineCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(editor: EditorEngine, node: NodeT): Cell {
-        return Cell().also { cell -> cell.textLayoutHandlers += { it.onNewLine() } }
+        return Cell().also { cell -> cell.properties[CommonCellProperties.onNewLine] = true }
     }
 }
 class NoSpaceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(editor: EditorEngine, node: NodeT): Cell {
-        return Cell().also { cell -> cell.textLayoutHandlers += { it.noSpace() } }
+        return Cell().also { cell -> cell.properties[CommonCellProperties.noSpace] = true }
     }
 }
 class CollectionCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
@@ -90,16 +93,8 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
         if (childNodes.isEmpty()) {
             cell.children += TextCell("", "<no ${link.name}>")
         } else {
-            cell.children += childNodes.map { editor.createCell(it.typed()) }.flatMapIndexed { index: Int, cell: Cell ->
-                if (index == 0) {
-                    listOf(cell)
-                } else {
-                    listOf(
-                        Cell().also { it.textLayoutHandlers += { it.onNewLine() } },
-                        cell
-                    )
-                }
-            }
+            val childCells = childNodes.map { editor.createCell(it.typed()) }
+            cell.children += childCells
         }
     }
 

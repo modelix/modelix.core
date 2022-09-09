@@ -22,8 +22,14 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
         }
     }
 
-    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newChildLink(name: String, isMultiple: Boolean, isOptional: Boolean, targetConcept: IConcept): GeneratedChildLink<ChildNodeT, ChildConceptT> {
-        return GeneratedChildLink<ChildNodeT, ChildConceptT>(this, name, isMultiple, isOptional, targetConcept).also {
+    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newSingleChildLink(name: String, isOptional: Boolean, targetConcept: IConcept): GeneratedSingleChildLink<ChildNodeT, ChildConceptT> {
+        return GeneratedSingleChildLink<ChildNodeT, ChildConceptT>(this, name, isOptional, targetConcept).also {
+            childLinksMap[name] = it
+        }
+    }
+
+    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newChildListLink(name: String, isOptional: Boolean, targetConcept: IConcept): GeneratedChildListLink<ChildNodeT, ChildConceptT> {
+        return GeneratedChildListLink<ChildNodeT, ChildConceptT>(this, name, isOptional, targetConcept).also {
             childLinksMap[name] = it
         }
     }
@@ -114,7 +120,7 @@ class GeneratedProperty(private val owner: IConcept, override val name: String) 
     override fun getUID(): String = getConcept().getUID() + "." + name
 }
 
-class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
+abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
     private val owner: IConcept,
     override val name: String,
     override val isMultiple: Boolean,
@@ -127,6 +133,24 @@ class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>
     override fun getConcept(): IConcept = owner
 
     override fun getUID(): String = getConcept().getUID() + "." + name
+}
+
+class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
+    owner: IConcept,
+    name: String,
+    isOptional: Boolean,
+    targetConcept: IConcept,
+) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, false, isOptional, targetConcept) {
+
+}
+
+class GeneratedChildListLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
+    owner: IConcept,
+    name: String,
+    isOptional: Boolean,
+    targetConcept: IConcept,
+) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, true, isOptional, targetConcept) {
+
 }
 
 class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept>(

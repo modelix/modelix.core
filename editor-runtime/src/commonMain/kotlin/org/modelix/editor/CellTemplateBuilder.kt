@@ -47,7 +47,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     fun vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add correct layout information
         CellTemplateBuilder(CollectionCellTemplate(template.concept))
-            .also { it.template.properties[ECellLayout.Key] = ECellLayout.VERTICAL }.also(body).template.also(template.children::add)
+            .also { it.template.properties[CommonCellProperties.layout] = ECellLayout.VERTICAL }.also(body).template.also(template.children::add)
     }
 
     fun horizontal(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
@@ -61,7 +61,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
             .also(body).template.also(template.children::add)
     }
 
-    fun brackets(singleLine: Boolean, leftSymbol: String, rightSymbol: String, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+    fun brackets(singleLine: Boolean = true, leftSymbol: String, rightSymbol: String, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         if (singleLine) {
             constant(leftSymbol)
             noSpace()
@@ -81,19 +81,19 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
         }
     }
 
-    fun parentheses(singleLine: Boolean = false, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
-        brackets(true, "(", ")", body)
+    fun parentheses(singleLine: Boolean = true, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        brackets(singleLine, "(", ")", body)
     }
 
     fun curlyBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         brackets(singleLine, "{", "}", body)
     }
 
-    fun angleBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+    fun angleBrackets(singleLine: Boolean = true, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         brackets(singleLine, "<", ">", body)
     }
 
-    fun squareBrackets(singleLine: Boolean = false, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+    fun squareBrackets(singleLine: Boolean = true, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         brackets(singleLine, "[", "]", body)
     }
 
@@ -161,22 +161,22 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
             .also(body).template.also(template.children::add)
     }
 
-    fun IChildLink.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+    fun GeneratedSingleChildLink<*, *>.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         CellTemplateBuilder(ChildCellTemplate(template.concept, this))
             .also(body).template.also(template.children::add)
     }
 
-    fun IChildLink.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+    fun GeneratedChildListLink<*, *>.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add layout information
-        cell {
-            template.properties[ECellLayout.Key] = ECellLayout.VERTICAL
+        horizontal {
+            template.properties[CommonCellProperties.layout] = ECellLayout.VERTICAL
             body()
         }
     }
 
-    fun IChildLink.horizontal(separator: String = ",", body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
-        // TODO add layout information
-        cell(body)
+    fun GeneratedChildListLink<*, *>.horizontal(separator: String? = ",", body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        CellTemplateBuilder(ChildCellTemplate(template.concept, this))
+            .also(body).template.also(template.children::add)
     }
 
     fun modelAccess(body: ModelAccessBuilder.()->Unit) {

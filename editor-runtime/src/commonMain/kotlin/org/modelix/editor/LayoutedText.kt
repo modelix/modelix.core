@@ -4,11 +4,10 @@ class LayoutedText {
     private var indent: String = ""
     private var autoInsertSpace: Boolean = true
     private val buffer = StringBuilder()
+    private var insertNewLineNext: Boolean = true
 
     fun onNewLine() {
-        if (buffer.length != 0 && buffer.last() != '\n') {
-            buffer.append('\n')
-        }
+        insertNewLineNext = true
     }
     fun emptyLine() {
         onNewLine()
@@ -27,10 +26,14 @@ class LayoutedText {
         autoInsertSpace = false
     }
     fun append(text: String) {
-        if (buffer.length == 0 || buffer.last() == '\n') {
+        if (insertNewLineNext) {
+            insertNewLineNext = false
+            buffer.append('\n')
+        }
+        if (buffer.isEmpty() || buffer.last() == '\n') {
             buffer.append(indent)
         }
-        if (autoInsertSpace && buffer.length != 0 && !buffer.last().isWhitespace()) {
+        if (autoInsertSpace && buffer.isNotEmpty() && !buffer.last().isWhitespace()) {
             buffer.append(' ')
         }
         buffer.append(text)

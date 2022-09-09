@@ -133,8 +133,9 @@ class MetaModelGenerator(val outputDir: Path) {
                             .build())
                     }
                     is ChildLinkData -> {
+                        val methodName = if (data.multiple) "newChildListLink" else "newSingleChildLink"
                         addProperty(PropertySpec.builder(feature.validName, feature.generatedChildLinkType())
-                            .initializer("""newChildLink("${feature.originalName}", ${data.multiple}, ${data.optional}, ${data.type.conceptObjectName()})""")
+                            .initializer("""$methodName("${feature.originalName}", ${data.optional}, ${data.type.conceptObjectName()})""")
                             .build())
                     }
                     is ReferenceLinkData -> {
@@ -370,7 +371,8 @@ class MetaModelGenerator(val outputDir: Path) {
         fun kotlinRef() = concept.conceptObjectType().canonicalName + "." + CodeBlock.of("%N", validName)
         fun generatedChildLinkType(): TypeName {
             val childConcept = (data as ChildLinkData).type.parseConceptRef(concept.language)
-            return GeneratedChildLink::class.asClassName().parameterizedBy(
+            val linkClass = if (data.multiple) GeneratedChildListLink::class else GeneratedSingleChildLink::class
+            return linkClass.asClassName().parameterizedBy(
                 childConcept.nodeWrapperInterfaceType(), childConcept.conceptWrapperInterfaceType())
         }
         fun generatedReferenceLinkType(): TypeName {

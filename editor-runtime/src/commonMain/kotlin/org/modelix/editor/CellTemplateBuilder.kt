@@ -46,7 +46,8 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add correct layout information
-        horizontal(body)
+        CellTemplateBuilder(CollectionCellTemplate(template.concept))
+            .also { it.template.layout = ECellLayout.VERTICAL }.also(body).template.also(template.children::add)
     }
 
     fun horizontal(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
@@ -165,7 +166,10 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun IChildLink.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add layout information
-        cell(body)
+        cell {
+            template.layout = ECellLayout.VERTICAL
+            body()
+        }
     }
 
     fun IChildLink.horizontal(separator: String = ",", body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {

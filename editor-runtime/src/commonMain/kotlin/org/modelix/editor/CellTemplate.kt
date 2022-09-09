@@ -7,6 +7,7 @@ import org.modelix.model.api.getChildren
 import org.modelix.model.api.getReferenceTarget
 
 abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val concept: GeneratedConcept<NodeT, ConceptT>) {
+    var layout: ECellLayout = ECellLayout.HORIZONTAL
     val children: MutableList<CellTemplate<NodeT, ConceptT>> = ArrayList()
     val withNode: MutableList<(node: NodeT, Cell)->Unit> = ArrayList()
     fun apply(editor: EditorEngine, node: NodeT): Cell {
@@ -16,6 +17,11 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
         return cell
     }
     protected abstract fun createCell(editor: EditorEngine, node: NodeT): Cell
+}
+
+enum class ECellLayout {
+    VERTICAL,
+    HORIZONTAL
 }
 
 class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
@@ -45,7 +51,10 @@ class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
 
 open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val property: IProperty)
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT): Cell = TextCell(node.getPropertyValue(property) ?: "", "<no ${property.name}>")
+    override fun createCell(editor: EditorEngine, node: NodeT): Cell {
+        val value = node.getPropertyValue(property)
+        return TextCell(value ?: "", if (value == null) "<no ${property.name}>" else "")
+    }
 }
 
 class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept>(
@@ -73,7 +82,16 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
         if (childNodes.isEmpty()) {
             cell.children += TextCell("", "<no ${link.name}>")
         } else {
-            cell.children += childNodes.map { editor.createCell(it.typed()) }
+            cell.children += childNodes.map { editor.createCell(it.typed()) }.flatMapIndexed { index: Int, cell: Cell ->
+                if (index == 0) {
+                    listOf(cell)
+                } else {
+                    listOf(
+                        Cell().also { it.textLayoutHandlers += { it.onNewLine() } },
+                        cell
+                    )
+                }
+            }
         }
     }
 }

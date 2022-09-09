@@ -7,21 +7,20 @@ import org.modelix.model.api.getChildren
 import org.modelix.model.api.getReferenceTarget
 
 abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val concept: GeneratedConcept<NodeT, ConceptT>) {
-    var layout: ECellLayout = ECellLayout.HORIZONTAL
+    val properties = CellProperties()
     val children: MutableList<CellTemplate<NodeT, ConceptT>> = ArrayList()
     val withNode: MutableList<(node: NodeT, Cell)->Unit> = ArrayList()
-    fun apply(editor: EditorEngine, node: NodeT): Cell {
+    open fun apply(editor: EditorEngine, node: NodeT): Cell {
         val cell = createCell(editor, node)
-        cell.children += children.map { it.apply(editor, node) }
+        cell.properties.addAll(properties)
+        applyChildren(editor, node, cell)
         withNode.forEach { it(node, cell) }
         return cell
     }
+    protected open fun applyChildren(editor: EditorEngine, node: NodeT, cell: Cell) {
+        cell.children += children.map { it.apply(editor, node) }
+    }
     protected abstract fun createCell(editor: EditorEngine, node: NodeT): Cell
-}
-
-enum class ECellLayout {
-    VERTICAL,
-    HORIZONTAL
 }
 
 class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
@@ -46,7 +45,16 @@ class CollectionCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(conce
 }
 class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT) = Cell()
+    override fun createCell(editor: EditorEngine, node: NodeT): Cell {
+        return Cell()
+    }
+
+    override fun applyChildren(editor: EditorEngine, node: NodeT, cell: Cell) {
+        val childLinkCell = children.filterIsInstance<ChildCellTemplate<NodeT, *>>().firstOrNull()
+        if (childLinkCell == null || !childLinkCell.getChildNodes(node).isEmpty()) {
+            super.applyChildren(editor, node, cell)
+        }
+    }
 }
 
 open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val property: IProperty)
@@ -78,7 +86,7 @@ class FlagCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: Ge
 class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val link: IChildLink)
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(editor: EditorEngine, node: NodeT) = Cell().also { cell ->
-        val childNodes = node._node.getChildren(link).toList()
+        val childNodes = getChildNodes(node)
         if (childNodes.isEmpty()) {
             cell.children += TextCell("", "<no ${link.name}>")
         } else {
@@ -94,4 +102,6 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
             }
         }
     }
+
+    fun getChildNodes(node: NodeT) = node._node.getChildren(link).toList()
 }

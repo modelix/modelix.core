@@ -47,7 +47,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     fun vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add correct layout information
         CellTemplateBuilder(CollectionCellTemplate(template.concept))
-            .also { it.template.layout = ECellLayout.VERTICAL }.also(body).template.also(template.children::add)
+            .also { it.template.properties[ECellLayout.Key] = ECellLayout.VERTICAL }.also(body).template.also(template.children::add)
     }
 
     fun horizontal(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
@@ -121,8 +121,10 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     }
 
     fun indented(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
-        // TODO add correct layout information
-        horizontal(body)
+        horizontal {
+            template.properties[CommonCellProperties.indentChildren] = true
+            body()
+        }
     }
 
     /**
@@ -167,7 +169,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     fun IChildLink.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add layout information
         cell {
-            template.layout = ECellLayout.VERTICAL
+            template.properties[ECellLayout.Key] = ECellLayout.VERTICAL
             body()
         }
     }

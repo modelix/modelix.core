@@ -11,23 +11,51 @@ open class Cell {
     }
 
     open fun layoutText(buffer: LayoutedText) {
-        textLayoutHandlers.forEach { it(buffer) }
-        children.forEach { it.layoutText(buffer) }
+        val body: ()->Unit = {
+            textLayoutHandlers.forEach { it(buffer) }
+            children.forEach { it.layoutText(buffer) }
+        }
+        if (properties[CommonCellProperties.indentChildren]) {
+            buffer.withIndent(body)
+        } else {
+            body()
+        }
     }
 }
 
 class CellProperties {
-    val properties: MutableMap<CellPropertyKey<*>, Any?> = HashMap<CellPropertyKey<*>, Any?>()
+    private val properties: MutableMap<CellPropertyKey<*>, Any?> = HashMap()
     operator fun <T> get(key: CellPropertyKey<T>): T {
-        return properties[key] as T
+        return if (properties.containsKey(key)) properties[key] as T else key.defaultValue
     }
 
     operator fun <T> set(key: CellPropertyKey<T>, value: T) {
         properties[key] = value
     }
+
+    fun copy(): CellProperties {
+        return CellProperties().also { it.addAll(this) }
+    }
+
+    fun addAll(from: CellProperties) {
+        properties += from.properties
+    }
 }
 
-class CellPropertyKey<E>(val name: String)
+class CellPropertyKey<E>(val name: String, val defaultValue: E)
+
+enum class ECellLayout {
+    VERTICAL,
+    HORIZONTAL;
+
+    companion object {
+        val Key = CellPropertyKey<ECellLayout>("layout", HORIZONTAL)
+    }
+}
+
+object CommonCellProperties {
+    val indentChildren = CellPropertyKey<Boolean>("indentChildren", false)
+}
 
 interface ICellAction {
 

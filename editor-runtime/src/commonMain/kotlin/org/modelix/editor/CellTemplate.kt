@@ -69,6 +69,11 @@ class FlagCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: Ge
 class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val link: IChildLink)
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(editor: EditorEngine, node: NodeT) = Cell().also { cell ->
-        cell.children += node._node.getChildren(link).map { editor.createCell(it.typed()) }
+        val childNodes = node._node.getChildren(link).toList()
+        if (childNodes.isEmpty()) {
+            cell.children += TextCell("", "<no ${link.name}>")
+        } else {
+            cell.children += childNodes.map { editor.createCell(it.typed()) }
+        }
     }
 }

@@ -36,11 +36,11 @@ interface ICellAction {
 class TextCell(val text: String, val placeholderText: String): Cell() {
     override fun toString(): String {
         return if (children.isEmpty())
-            text
+            text.ifEmpty { placeholderText }
         else """$text<${children}>"""
     }
 
     override fun layoutText(buffer: LayoutedText) {
-        buffer.append(text)
+        buffer.append(toString())
     }
 }

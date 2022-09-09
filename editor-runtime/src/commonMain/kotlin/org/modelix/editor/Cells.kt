@@ -9,7 +9,7 @@ open class Cell {
         return children.toString()
     }
 
-    open fun layoutText(buffer: LayoutedText) {
+    open fun layoutText(buffer: LayoutedCells) {
         val body: ()->Unit = {
             if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
             if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
@@ -62,16 +62,20 @@ interface ICellAction {
 }
 
 class TextCell(val text: String, val placeholderText: String): Cell() {
-    override fun toString(): String {
-        return if (children.isEmpty())
+    override fun toString(): String = getVisibleText()
+
+    fun getVisibleText(): String {
+        return if (children.isEmpty()) {
             text.ifEmpty { placeholderText }
-        else """$text<${children}>"""
+        } else {
+            """$text<${children}>"""
+        }
     }
 
-    override fun layoutText(buffer: LayoutedText) {
+    override fun layoutText(buffer: LayoutedCells) {
         if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
         if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
-        buffer.append(toString())
+        buffer.append(LayoutableCell(this))
         if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
     }
 }

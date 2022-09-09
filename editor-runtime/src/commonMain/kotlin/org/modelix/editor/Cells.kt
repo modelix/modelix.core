@@ -4,9 +4,15 @@ open class Cell {
     val children: MutableList<Cell> = ArrayList()
     val actions: MutableList<ICellAction> = ArrayList()
     val properties = CellProperties()
+    val textLayoutHandlers: MutableList<(LayoutedText)->Unit> = ArrayList()
 
     override fun toString(): String {
         return children.toString()
+    }
+
+    open fun layoutText(buffer: LayoutedText) {
+        textLayoutHandlers.forEach { it(buffer) }
+        children.forEach { it.layoutText(buffer) }
     }
 }
 
@@ -32,5 +38,9 @@ class TextCell(val text: String, val placeholderText: String): Cell() {
         return if (children.isEmpty())
             text
         else """$text<${children}>"""
+    }
+
+    override fun layoutText(buffer: LayoutedText) {
+        buffer.append(text)
     }
 }

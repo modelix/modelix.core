@@ -101,18 +101,22 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
      * Multiple consecutive newLine's are merged to a single one. See also emptyLine()
      */
     fun newLine() {
-        // TODO 
+        CellTemplateBuilder(NewLineCellTemplate(template.concept))
+            .template.also(template.children::add)
     }
 
     /**
      * The next cell appears two lines below the current line.
      */
     fun emptyLine() {
-        // TODO
+        newLine()
+        constant("")
+        newLine()
     }
 
     fun noSpace() {
-        // TODO
+        CellTemplateBuilder(NoSpaceCellTemplate(template.concept))
+            .template.also(template.children::add)
     }
 
     fun indented(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {

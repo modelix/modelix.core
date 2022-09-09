@@ -22,6 +22,18 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(editor: EditorEngine, node: NodeT) = TextCell(text, "")
 }
+class NewLineCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
+    : CellTemplate<NodeT, ConceptT>(concept) {
+    override fun createCell(editor: EditorEngine, node: NodeT): Cell {
+        return Cell().also { cell -> cell.textLayoutHandlers += { it.onNewLine() } }
+    }
+}
+class NoSpaceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
+    : CellTemplate<NodeT, ConceptT>(concept) {
+    override fun createCell(editor: EditorEngine, node: NodeT): Cell {
+        return Cell().also { cell -> cell.textLayoutHandlers += { it.noSpace() } }
+    }
+}
 class CollectionCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(editor: EditorEngine, node: NodeT) = Cell()

@@ -8,10 +8,9 @@ val mpsExtensionsVersion: String by rootProject
 
 kotlin {
     jvm()
-    js() {
+    js(BOTH) {
         browser {
         }
-        binaries.executable()
         nodejs {
             testTask {
                 useMocha {

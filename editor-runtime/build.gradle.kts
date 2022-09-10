@@ -10,7 +10,7 @@ val kotlinLoggingVersion: String by rootProject
 
 kotlin {
     jvm()
-    js() {
+    js(BOTH) {
         browser {}
         nodejs {
             testTask {

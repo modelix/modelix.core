@@ -203,7 +203,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     inner class WithNodeContext(val node: NodeT)
 }
 
-class PropertyCellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(template: CellTemplate<NodeT, ConceptT>) : CellTemplateBuilder<NodeT, ConceptT>(
+class PropertyCellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(template: PropertyCellTemplate<NodeT, ConceptT>) : CellTemplateBuilder<NodeT, ConceptT>(
     template
 ) {
     fun validateValue(validator: (String)->Boolean) {
@@ -216,6 +216,10 @@ class PropertyCellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(
 
     fun writeReplace(replacement: (String)->String) {
         // TODO
+    }
+
+    fun placeholderText(placeholderText: String) {
+        (template as PropertyCellTemplate).placeholderText = placeholderText
     }
 }
 

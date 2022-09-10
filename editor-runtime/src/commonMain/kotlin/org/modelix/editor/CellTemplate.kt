@@ -62,9 +62,10 @@ class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
 
 open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val property: IProperty)
     : CellTemplate<NodeT, ConceptT>(concept) {
+    var placeholderText: String = "<no ${property.name}>"
     override fun createCell(editor: EditorEngine, node: NodeT): Cell {
         val value = node.getPropertyValue(property)
-        return TextCell(value ?: "", if (value == null) "<no ${property.name}>" else "")
+        return TextCell(value ?: "", if (value == null) placeholderText else "")
     }
 }
 

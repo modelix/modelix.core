@@ -1,15 +1,14 @@
 package org.modelix.model
 
+import kotlinx.datetime.Clock
 import org.modelix.model.api.*
 import org.modelix.model.client.IModelClient
 import org.modelix.model.client.IdGenerator
-import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.lazy.*
 import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.MapBaseStore
-import java.util.*
 
 object ModelFacade {
 
@@ -21,12 +20,12 @@ object ModelFacade {
         return PNodeAdapter(ITree.ROOT_ID, branch)
     }
 
-    fun connectToServer(url: String): IModelClient {
-        return RestWebModelClient(url)
-    }
+//    fun connectToServer(url: String): IModelClient {
+//        return RestWebModelClient(url)
+//    }
 
     fun loadCurrentVersion(client: IModelClient, branch: BranchReference): CLVersion? {
-        require(client is RestWebModelClient)
+        //require(client is RestWebModelClient)
         val versionHash = client.get(branch.getKey()) ?: return null
         return CLVersion.loadFromHash(versionHash, client.storeCache)
     }
@@ -54,7 +53,7 @@ object ModelFacade {
     }
     
     fun createBranchReference(repositoryId: String, branchName: String? = null): BranchReference {
-        return ModelFacade.createBranchReference(RepositoryId(repositoryId), branchName)
+        return createBranchReference(RepositoryId(repositoryId), branchName)
     }
     
     fun mergeUpdate(client: IModelClient, branch: BranchReference, baseVersionHash: String? = null, userName: String?, body: (IWriteTransaction) -> Unit): CLVersion {
@@ -82,7 +81,7 @@ object ModelFacade {
         val operationsAndTree = otBranch.operationsAndTree
         val newVersion = CLVersion.createRegularVersion(
             client.idGenerator.generate(),
-            Date().toString(),
+            Clock.System.now().epochSeconds.toString(),
             userId,
             operationsAndTree.second as CLTree,
             baseVersion,

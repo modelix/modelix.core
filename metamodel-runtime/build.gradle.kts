@@ -25,6 +25,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation("io.github.microutils:kotlin-logging:2.1.21")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
                 api(project(":model-api"))
             }
         }
@@ -36,6 +37,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
+                implementation("com.charleskorn.kaml:kaml:0.48.0")
             }
         }
         val jvmTest by getting {

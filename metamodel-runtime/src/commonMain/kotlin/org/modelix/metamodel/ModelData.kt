@@ -1,19 +1,16 @@
-package org.modelix.metamodel.generator
+package org.modelix.metamodel
 
-import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.model.api.*
-import java.io.File
 
 @Serializable
 data class ModelData(
     val id: String? = null,
     val root: NodeData,
 ) {
-    fun toYaml(): String = Yaml.default.encodeToString(this)
     fun toJson(): String = prettyJson.encodeToString(this)
     fun toCompactJson(): String = Json.encodeToString(this)
 
@@ -57,14 +54,6 @@ data class ModelData(
 
     companion object {
         private val prettyJson = Json { prettyPrint = true }
-        fun fromFile(file: File): ModelData {
-            return when (file.extension.lowercase()) {
-                "yaml" -> fromYaml(file.readText())
-                "json" -> fromJson(file.readText())
-                else -> throw IllegalArgumentException("Unsupported file extension: $file")
-            }
-        }
-        fun fromYaml(serialized: String): ModelData = Yaml.default.decodeFromString(serialized)
         fun fromJson(serialized: String): ModelData = Json.decodeFromString(serialized)
     }
 }

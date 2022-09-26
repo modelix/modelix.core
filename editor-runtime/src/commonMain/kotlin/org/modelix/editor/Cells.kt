@@ -9,11 +9,11 @@ open class Cell {
         return children.toString()
     }
 
-    open fun layoutText(buffer: LayoutedCells) {
+    open fun layout(buffer: LayoutedCells) {
         val body: ()->Unit = {
             if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
             if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
-            children.forEach { it.layoutText(buffer) }
+            children.forEach { it.layout(buffer) }
             if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
         }
         if (properties[CommonCellProperties.indentChildren]) {
@@ -72,7 +72,7 @@ class TextCell(val text: String, val placeholderText: String): Cell() {
         }
     }
 
-    override fun layoutText(buffer: LayoutedCells) {
+    override fun layout(buffer: LayoutedCells) {
         if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
         if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
         buffer.append(LayoutableCell(this))

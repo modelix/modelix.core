@@ -25,7 +25,7 @@ object ModelFacade {
 //    }
 
     fun loadCurrentVersion(client: IModelClient, branch: BranchReference): CLVersion? {
-        //require(client is RestWebModelClient)
+        // require(client is RestWebModelClient)
         val versionHash = client.get(branch.getKey()) ?: return null
         return CLVersion.loadFromHash(versionHash, client.storeCache)
     }
@@ -40,22 +40,22 @@ object ModelFacade {
         return PNodeAdapter(ITree.ROOT_ID, toLocalBranch(tree))
     }
 
-    fun readNode(node: INode, body: ()->Unit) {
+    fun readNode(node: INode, body: () -> Unit) {
         node.getArea().executeRead(body)
     }
 
-    fun writeNode(node: INode, body: ()->Unit) {
+    fun writeNode(node: INode, body: () -> Unit) {
         node.getArea().executeWrite(body)
     }
-    
+
     fun createBranchReference(repositoryId: RepositoryId, branchName: String? = null): BranchReference {
         return repositoryId.getBranchReference(branchName)
     }
-    
+
     fun createBranchReference(repositoryId: String, branchName: String? = null): BranchReference {
         return createBranchReference(RepositoryId(repositoryId), branchName)
     }
-    
+
     fun mergeUpdate(client: IModelClient, branch: BranchReference, baseVersionHash: String? = null, userName: String?, body: (IWriteTransaction) -> Unit): CLVersion {
         val baseVersionHash: String = baseVersionHash
             ?: client.get(branch.getKey())

@@ -316,7 +316,6 @@ class CLTree : ITree, IBulkTree {
         } catch (e: Exception) {
             throw RuntimeException("Unable to find concept for node $nodeId", e)
         }
-
     }
 
     override fun getConceptReference(nodeId: Long): IConceptReference? {

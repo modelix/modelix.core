@@ -1,5 +1,7 @@
 package org.modelix.editor
 
+import kotlinx.html.*
+
 class LayoutedCells {
     private val lines: MutableList<MutableList<ILayoutable>> = mutableListOf(ArrayList())
     private var indent: String = ""
@@ -52,22 +54,20 @@ class LayoutedCells {
         return buffer.toString()
     }
 
-    fun toHtml(): String {
-        val buffer = StringBuilder()
-        buffer.append("<div>\n")
-        lines.forEach { line ->
-            buffer.append("""    <div class="line">""")
-            val oldLength = buffer.length
-            line.forEach { element ->
-                element.toHtml(buffer)
+    fun toHtml(tagConsumer: TagConsumer<*>) {
+        tagConsumer.div {
+            lines.forEach { line ->
+                div("line") {
+                    val parentTag = this
+                    line.forEach { element: ILayoutable ->
+                        element.toHtml(tagConsumer, parentTag)
+                    }
+                    if (line.sumOf { it.getLength() } == 0) {
+                        +Typography.nbsp.toString()
+                    }
+                }
             }
-            if (buffer.length == oldLength) {
-                buffer.append("&nbsp;")
-            }
-            buffer.append("</div>\n")
         }
-        buffer.append("</div>\n")
-        return buffer.toString()
     }
 }
 
@@ -75,15 +75,15 @@ interface ILayoutable {
     fun getLength(): Int
     fun isWhitespace(): Boolean
     fun toText(): String
-    fun toHtml(buffer: Appendable)
+    fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag)
 }
 
 class LayoutableText(val text: String) : ILayoutable {
     override fun getLength(): Int = text.length
     override fun isWhitespace(): Boolean = text.isNotEmpty() && text.last().isWhitespace()
     override fun toText(): String = text
-    override fun toHtml(buffer: Appendable) {
-        buffer.escapeAppend(text)
+    override fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag) {
+        parentTag.text(text.useNbsp())
     }
 }
 class LayoutableCell(val cell: TextCell) : ILayoutable {
@@ -92,18 +92,15 @@ class LayoutableCell(val cell: TextCell) : ILayoutable {
     }
     override fun toText(): String = cell.getVisibleText()
     override fun isWhitespace(): Boolean = false
-    override fun toHtml(buffer: Appendable) {
+    override fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag) {
         val textColor = cell.getProperty(CommonCellProperties.textColor)
         if (textColor != null) {
-            buffer.apply {
-                append("""<span style="color:""")
-                append(textColor)
-                append("""">""")
-                escapeAppend(cell.getVisibleText())
-                append("""</span>""")
+            consumer.span {
+                style = "color:$textColor"
+                +cell.getVisibleText().useNbsp()
             }
         } else {
-            buffer.escapeAppend(cell.getVisibleText())
+            parentTag.text(cell.getVisibleText().useNbsp())
         }
     }
 }
@@ -111,52 +108,21 @@ class LayoutableIndent(val indentSize: Int): ILayoutable {
     override fun getLength(): Int = indentSize * 2
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = (1..indentSize).joinToString { "  " }
-    override fun toHtml(buffer: Appendable) {
-        buffer.append("<span>${toText().replace(" ", "&nbsp;")}</span>")
+    override fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag) {
+        consumer.span {
+            +toText().useNbsp()
+        }
     }
 }
 class LayoutableSpace(): ILayoutable {
     override fun getLength(): Int = 1
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = " "
-    override fun toHtml(buffer: Appendable) {
-        buffer.append("<span>&nbsp;</span>")
-    }
-}
-
-private val escapeMap = mapOf(
-    '<' to "&lt;",
-    '>' to "&gt;",
-    '&' to "&amp;",
-    '\"' to "&quot;",
-    ' ' to "&nbsp;"
-).let { mappings ->
-    val maxCode = mappings.keys.map { it.toInt() }.maxOrNull() ?: -1
-
-    Array(maxCode + 1) { mappings[it.toChar()] }
-}
-
-private fun Appendable.escapeAppend(s: CharSequence) {
-    var lastIndex = 0
-    val mappings = escapeMap
-    val size = mappings.size
-
-    for (idx in 0..s.length - 1) {
-        val ch = s[idx].toInt()
-        if (ch < 0 || ch >= size) continue
-        val escape = mappings[ch]
-        if (escape != null) {
-            append(s.substring(lastIndex, idx))
-            append(escape)
-            lastIndex = idx + 1
+    override fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag) {
+        consumer.span {
+            +Typography.nbsp.toString()
         }
     }
-
-    if (lastIndex < s.length) {
-        append(s.substring(lastIndex, s.length))
-    }
 }
 
-private fun escape(s: CharSequence): String {
-    return StringBuilder().apply { escapeAppend(s) }.toString()
-}
+fun String.useNbsp() = replace(' ', Typography.nbsp)

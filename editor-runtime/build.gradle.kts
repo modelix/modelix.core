@@ -7,6 +7,7 @@ val kotlinVersion: String by rootProject
 val kotlinCoroutinesVersion: String by rootProject
 val ktorVersion: String by rootProject
 val kotlinLoggingVersion: String by rootProject
+val kotlinxHtmlVersion: String by rootProject
 
 kotlin {
     jvm()
@@ -29,6 +30,7 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
+                api("org.jetbrains.kotlinx:kotlinx-html:$kotlinxHtmlVersion")
             }
         }
         val commonTest by getting {

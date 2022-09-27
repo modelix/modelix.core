@@ -1,13 +1,28 @@
 package org.modelix.editor
 
 open class Cell {
-    val children: MutableList<Cell> = ArrayList()
+    var parent: Cell? = null
+    private val children: MutableList<Cell> = ArrayList()
     val actions: MutableList<ICellAction> = ArrayList()
     val properties = CellProperties()
 
     override fun toString(): String {
         return children.toString()
     }
+
+    fun addChild(child: Cell) {
+        require(child.parent == null) { "$child already has a parent ${child.parent}" }
+        children.add(child)
+        child.parent = this
+    }
+
+    fun removeChild(child: Cell) {
+        require(child.parent == this) { "$child is not a child of $this" }
+        children.remove(child)
+        child.parent = null
+    }
+
+    fun getChildren(): List<Cell> = children
 
     open fun layout(buffer: LayoutedCells) {
         val body: ()->Unit = {
@@ -22,6 +37,14 @@ open class Cell {
             body()
         }
     }
+
+    fun <T> getProperty(key: CellPropertyKey<T>): T {
+        return if (properties.isSet(key)) {
+            properties.get(key)
+        } else {
+            parent.let { if (it != null) it.getProperty(key) else key.defaultValue }
+        }
+    }
 }
 
 class CellProperties {
@@ -29,6 +52,8 @@ class CellProperties {
     operator fun <T> get(key: CellPropertyKey<T>): T {
         return if (properties.containsKey(key)) properties[key] as T else key.defaultValue
     }
+
+    fun isSet(key: CellPropertyKey<*>): Boolean = properties.containsKey(key)
 
     operator fun <T> set(key: CellPropertyKey<T>, value: T) {
         properties[key] = value
@@ -55,6 +80,8 @@ object CommonCellProperties {
     val indentChildren = CellPropertyKey<Boolean>("indent-children", false)
     val onNewLine = CellPropertyKey<Boolean>("on-new-line", false)
     val noSpace = CellPropertyKey<Boolean>("no-space", false)
+    val textColor = CellPropertyKey<String?>("text-color", null)
+    val backgroundColor = CellPropertyKey<String?>("background-color", null)
 }
 
 interface ICellAction {
@@ -65,10 +92,10 @@ class TextCell(val text: String, val placeholderText: String): Cell() {
     override fun toString(): String = getVisibleText()
 
     fun getVisibleText(): String {
-        return if (children.isEmpty()) {
+        return if (getChildren().isEmpty()) {
             text.ifEmpty { placeholderText }
         } else {
-            """$text<${children}>"""
+            """$text<${getChildren()}>"""
         }
     }
 

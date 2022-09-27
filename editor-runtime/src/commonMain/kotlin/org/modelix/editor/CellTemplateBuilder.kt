@@ -37,11 +37,11 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     }
 
     fun textColor(color: String) {
-        TODO("Not implemented yet")
+        template.properties[CommonCellProperties.textColor] = color
     }
 
     fun backgroundColor(color: String) {
-        TODO("Not implemented yet")
+        template.properties[CommonCellProperties.backgroundColor] = color
     }
 
     fun vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {

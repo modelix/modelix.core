@@ -15,13 +15,13 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
         cell.properties.addAll(properties)
         applyChildren(editor, node, cell)
         if (properties[CommonCellProperties.layout] == ECellLayout.VERTICAL) {
-            cell.children.drop(1).forEach { it.properties[CommonCellProperties.onNewLine] = true }
+            cell.getChildren().drop(1).forEach { it.properties[CommonCellProperties.onNewLine] = true }
         }
         withNode.forEach { it(node, cell) }
         return cell
     }
     protected open fun applyChildren(editor: EditorEngine, node: NodeT, cell: Cell) {
-        cell.children += children.map { it.apply(editor, node) }
+        children.map { it.apply(editor, node) }.forEach { cell.addChild(it) }
     }
     protected abstract fun createCell(editor: EditorEngine, node: NodeT): Cell
 }
@@ -92,10 +92,10 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
     override fun createCell(editor: EditorEngine, node: NodeT) = Cell().also { cell ->
         val childNodes = getChildNodes(node)
         if (childNodes.isEmpty()) {
-            cell.children += TextCell("", "<no ${link.name}>")
+            cell.addChild(TextCell("", "<no ${link.name}>"))
         } else {
             val childCells = childNodes.map { editor.createCell(it.typed()) }
-            cell.children += childCells
+            childCells.forEach { cell.addChild(it) }
         }
     }
 

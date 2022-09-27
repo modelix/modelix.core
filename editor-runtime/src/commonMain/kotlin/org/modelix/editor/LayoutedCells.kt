@@ -93,7 +93,18 @@ class LayoutableCell(val cell: TextCell) : ILayoutable {
     override fun toText(): String = cell.getVisibleText()
     override fun isWhitespace(): Boolean = false
     override fun toHtml(buffer: Appendable) {
-        buffer.escapeAppend(cell.getVisibleText())
+        val textColor = cell.getProperty(CommonCellProperties.textColor)
+        if (textColor != null) {
+            buffer.apply {
+                append("""<span style="color:""")
+                append(textColor)
+                append("""">""")
+                escapeAppend(cell.getVisibleText())
+                append("""</span>""")
+            }
+        } else {
+            buffer.escapeAppend(cell.getVisibleText())
+        }
     }
 }
 class LayoutableIndent(val indentSize: Int): ILayoutable {

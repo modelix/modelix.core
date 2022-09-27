@@ -1,5 +1,7 @@
 package org.modelix.model.persistent
 
+import org.khronos.webgl.Uint8Array
+
 @JsNonModule
 @JsModule("js-sha256")
 external fun sha256(s: String): String
@@ -20,7 +22,7 @@ fun wrapperSha256(s: String) = sha256(s)
 @JsModule("js-base64")
 @JsNonModule
 external object Base64 {
-    fun fromUint8Array(input: ByteArray, uriSafe: Boolean): String
+    fun fromUint8Array(input: Uint8Array, uriSafe: Boolean): String
     fun decode(input: String): String
     fun encode(input: String): String
     fun encode(input: String, uriSafe: Boolean): String
@@ -52,7 +54,7 @@ actual object PlatformSpecificHashUtil {
     }
 
     actual fun base64encode(input: ByteArray): String {
-        return Base64.fromUint8Array(input, true)
+        return Base64.fromUint8Array(Uint8Array(input.toTypedArray()), true)
     }
 
     actual fun stringToUTF8ByteArray(input: String): ByteArray {

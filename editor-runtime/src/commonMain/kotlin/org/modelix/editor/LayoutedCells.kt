@@ -4,7 +4,7 @@ import kotlinx.html.*
 
 class LayoutedCells {
     private val lines: MutableList<MutableList<ILayoutable>> = mutableListOf(ArrayList())
-    private var indent: String = ""
+    private var indent: Int = 0
     private var autoInsertSpace: Boolean = true
     private var insertNewLineNext: Boolean = false
 
@@ -18,7 +18,7 @@ class LayoutedCells {
     fun withIndent(body: ()->Unit) {
         val oldIndent = indent
         try {
-            indent += "  "
+            indent++
             body()
         } finally {
             indent = oldIndent
@@ -32,8 +32,8 @@ class LayoutedCells {
             insertNewLineNext = false
             lines.add(ArrayList())
         }
-        if (indent.isNotEmpty() && (lines.isEmpty() || lines.last().isEmpty())) {
-            lines.last().add(LayoutableText(indent))
+        if (indent > 0 && (lines.isEmpty() || lines.last().isEmpty())) {
+            lines.last().add(LayoutableIndent(indent))
         }
         val lastOnLine = lines.last().lastOrNull()
         if (autoInsertSpace && lastOnLine != null && !lastOnLine.isWhitespace()) {
@@ -60,7 +60,7 @@ class LayoutedCells {
                 div("line") {
                     val parentTag = this
                     line.forEach { element: ILayoutable ->
-                        element.toHtml(tagConsumer, parentTag)
+                        element.toHtml(tagConsumer)
                     }
                     if (line.sumOf { it.getLength() } == 0) {
                         +Typography.nbsp.toString()
@@ -75,15 +75,15 @@ interface ILayoutable {
     fun getLength(): Int
     fun isWhitespace(): Boolean
     fun toText(): String
-    fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag)
+    fun toHtml(consumer: TagConsumer<*>)
 }
 
 class LayoutableText(val text: String) : ILayoutable {
     override fun getLength(): Int = text.length
     override fun isWhitespace(): Boolean = text.isNotEmpty() && text.last().isWhitespace()
     override fun toText(): String = text
-    override fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag) {
-        parentTag.text(text.useNbsp())
+    override fun toHtml(consumer: TagConsumer<*>) {
+        consumer.onTagContent(text.useNbsp())
     }
 }
 class LayoutableCell(val cell: TextCell) : ILayoutable {
@@ -92,15 +92,13 @@ class LayoutableCell(val cell: TextCell) : ILayoutable {
     }
     override fun toText(): String = cell.getVisibleText()
     override fun isWhitespace(): Boolean = false
-    override fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag) {
+    override fun toHtml(consumer: TagConsumer<*>) {
         val textColor = cell.getProperty(CommonCellProperties.textColor)
-        if (textColor != null) {
-            consumer.span {
+        consumer.span("text-cell") {
+            if (textColor != null) {
                 style = "color:$textColor"
-                +cell.getVisibleText().useNbsp()
             }
-        } else {
-            parentTag.text(cell.getVisibleText().useNbsp())
+            +cell.getVisibleText().useNbsp()
         }
     }
 }
@@ -108,8 +106,8 @@ class LayoutableIndent(val indentSize: Int): ILayoutable {
     override fun getLength(): Int = indentSize * 2
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = (1..indentSize).joinToString { "  " }
-    override fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag) {
-        consumer.span {
+    override fun toHtml(consumer: TagConsumer<*>) {
+        consumer.span("indent") {
             +toText().useNbsp()
         }
     }
@@ -118,7 +116,7 @@ class LayoutableSpace(): ILayoutable {
     override fun getLength(): Int = 1
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = " "
-    override fun toHtml(consumer: TagConsumer<*>, parentTag: HTMLTag) {
+    override fun toHtml(consumer: TagConsumer<*>) {
         consumer.span {
             +Typography.nbsp.toString()
         }

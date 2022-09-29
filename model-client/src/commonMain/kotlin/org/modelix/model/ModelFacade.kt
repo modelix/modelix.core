@@ -2,6 +2,8 @@ package org.modelix.model
 
 import kotlinx.datetime.Clock
 import org.modelix.model.api.*
+import org.modelix.model.area.IArea
+import org.modelix.model.area.PArea
 import org.modelix.model.client.IModelClient
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.*
@@ -23,6 +25,15 @@ object ModelFacade {
 //    fun connectToServer(url: String): IModelClient {
 //        return RestWebModelClient(url)
 //    }
+
+    fun getBranch(node: INode): IBranch? {
+        val unwrapped = deepUnwrapNode(node)
+        return if (unwrapped is PNodeAdapter) {
+            unwrapped.branch
+        } else {
+            null
+        }
+    }
 
     fun loadCurrentVersion(client: IModelClient, branch: BranchReference): CLVersion? {
         // require(client is RestWebModelClient)

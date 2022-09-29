@@ -2,8 +2,6 @@ package org.modelix.model
 
 import kotlinx.datetime.Clock
 import org.modelix.model.api.*
-import org.modelix.model.area.IArea
-import org.modelix.model.area.PArea
 import org.modelix.model.client.IModelClient
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.*

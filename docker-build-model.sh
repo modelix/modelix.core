@@ -11,5 +11,7 @@ TAG=$( ./modelix-version.sh )
 
 docker tag modelix/modelix-model:latest "modelix/modelix-model:${TAG}"
 
-sed -i.bak -E "s/  model: \".*\"/  model: \"${TAG}\"/" helm/dev.yaml
-rm helm/dev.yaml.bak
+if [ -f "../modelix/helm" ]; then
+  sed -i.bak -E "s/  model: \".*\"/  model: \"${TAG}\"/" ../modelix/helm/dev.yaml
+  rm ../modelix/helm/dev.yaml.bak
+fi

@@ -17,5 +17,11 @@ jobs:
           java-version: '11'
       - name: Use tag as version
         run: echo "${GITHUB_REF#refs/*/}" > version.txt
-      - name: Build and Publish
+      - name: Build and Publish Maven Artifacts
         run: ./gradlew build publish -PciBuild=true -Partifacts.itemis.cloud.user=${{secrets.ARTIFACTS_ITEMIS_CLOUD_USER}} -Partifacts.itemis.cloud.pw=${{secrets.ARTIFACTS_ITEMIS_CLOUD_PW}}
+      - name: Build and Publish Docker
+        env:
+          DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+          DOCKER_HUB_KEY: ${{ secrets.DOCKER_HUB_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./docker-ci.sh

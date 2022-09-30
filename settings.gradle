@@ -1,7 +1,9 @@
 rootProject.name = 'modelix.core'
 
+include 'authorization'
 include 'editor-runtime'
 include 'metamodel-generator'
 include 'metamodel-runtime'
 include 'model-api'
 include 'model-client'
+include 'model-server'

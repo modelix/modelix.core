@@ -18,6 +18,7 @@ package org.modelix.model.api
 import org.modelix.model.area.IArea
 
 data class ConceptReference(val uid: String) : IConceptReference {
+    @Deprecated("use ILanguageRepository.resolveConcept")
     override fun resolve(area: IArea?): IConcept? {
         return area?.resolveConcept(this)
     }

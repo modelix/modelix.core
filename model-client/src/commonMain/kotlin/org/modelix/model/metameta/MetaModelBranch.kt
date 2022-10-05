@@ -18,6 +18,7 @@ import org.modelix.model.api.*
 import org.modelix.model.lazy.CLNode
 import org.modelix.model.lazy.IBulkTree
 import org.modelix.model.lazy.ITreeWrapper
+import org.modelix.model.persistent.SerializationUtil
 
 class MetaModelBranch(val branch: IBranch) : IBranch by branch {
     var disabled: Boolean = true
@@ -57,6 +58,19 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
             return concept
         }
         return localConcept
+    }
+
+    fun resolveConcept(localConceptRef: IConceptReference, tree: ITree): IConcept {
+        val serialized = localConceptRef.getUID()
+        if (serialized matches Regex("[a-fA-Z0-9]+")) {
+            var uid: String? = null
+            val conceptNodeId = SerializationUtil.longFromHex(serialized)
+            if (tree.containsNode(conceptNodeId)) {
+                uid = tree.getProperty(conceptNodeId, MetaMetaLanguage.property_IHasUID_uid.name)
+            }
+            return toGlobalConcept(PersistedConcept(conceptNodeId, uid), tree)
+        }
+        return ILanguageRepository.resolveConcept(localConceptRef)
     }
 
     fun toLocalConcept(globalConcept: IConcept): IConcept {
@@ -124,7 +138,7 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
             get() = wrapTree(transaction.tree)
 
         override fun getConcept(nodeId: Long): IConcept? {
-            return transaction.getConcept(nodeId)?.let { toGlobalConcept(it, transaction.tree) }
+            return transaction.getConceptReference(nodeId)?.let { resolveConcept(it, transaction.tree) }
         }
     }
 
@@ -140,7 +154,7 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
             }
 
         override fun getConcept(nodeId: Long): IConcept? {
-            return transaction.getConcept(nodeId)?.let { toGlobalConcept(it, transaction.tree) }
+            return transaction.getConceptReference(nodeId)?.let { resolveConcept(it, transaction.tree) }
         }
         override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?) {
             transaction.addNewChild(parentId, role, index, childId, concept?.let { toLocalConcept(it) })
@@ -153,7 +167,8 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
 
     open inner class MMTree(open val tree: ITree) : ITree by tree {
         override fun getConcept(nodeId: Long): IConcept? {
-            return tree.getConcept(nodeId)?.let { toGlobalConcept(it, tree) }
+            val conceptRef = tree.getConceptReference(nodeId) ?: return null
+            return resolveConcept(conceptRef, tree)
         }
 
         override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {

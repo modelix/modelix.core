@@ -4,6 +4,7 @@ plugins {
 }
 
 val kotlinVersion: String by rootProject
+val kotlinLoggingVersion: String by rootProject
 val mpsExtensionsVersion: String by rootProject
 
 kotlin {
@@ -24,7 +25,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation("io.github.microutils:kotlin-logging:2.1.21")
+                implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
                 api(project(":model-api"))
             }

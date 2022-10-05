@@ -15,15 +15,13 @@
 
 package org.modelix.model.client
 
-import org.apache.log4j.Level
-import org.apache.log4j.LogManager
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 object SharedExecutors {
-    private val LOG = LogManager.getLogger(SharedExecutors::class.java)
+    private val LOG = mu.KotlinLogging.logger {}
     @JvmField
     val FIXED = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1)
     val SCHEDULED = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() + 1)
@@ -43,9 +41,7 @@ object SharedExecutors {
             try {
                 r.run()
             } catch (ex: Exception) {
-                if (LOG.isEnabledFor(Level.ERROR)) {
-                    LOG.error("", ex)
-                }
+                LOG.error("", ex)
             }
         }
 

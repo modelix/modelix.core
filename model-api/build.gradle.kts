@@ -41,7 +41,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation("io.github.microutils:kotlin-logging:2.1.21")
+                implementation("io.github.microutils:kotlin-logging:2.1.23")
             }
         }
         val commonTest by getting {

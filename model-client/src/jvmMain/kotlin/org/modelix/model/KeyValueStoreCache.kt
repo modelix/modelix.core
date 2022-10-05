@@ -16,7 +16,6 @@
 package org.modelix.model
 
 import org.apache.commons.collections4.map.LRUMap
-import org.apache.log4j.LogManager
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.util.StreamUtils.intersection
 import org.modelix.model.util.StreamUtils.toStream
@@ -85,9 +84,9 @@ class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrap
             synchronized(activeRequests) {
                 for (r in activeRequests) {
                     if (remainingKeys.stream().anyMatch { o: String? -> r.keys.contains(o) }) {
-                        if (LOG.isDebugEnabled) {
-                            val intersection = intersection(remainingKeys.stream(), r.keys)
-                            LOG.debug("Reusing an active request: " + intersection.stream().findFirst().orElse(null) + " (" + intersection.size + ")")
+                        LOG.debug {
+                            val intersection = remainingKeys.intersect(r.keys)
+                            "Reusing an active request: " + intersection.firstOrNull() + " (" + intersection.size + ")"
                         }
                         requiredRequest.add(r)
                         remainingKeys.removeAll(r.keys)
@@ -156,6 +155,6 @@ class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrap
     }
 
     companion object {
-        private val LOG = LogManager.getLogger(KeyValueStoreCache::class.java)
+        private val LOG = mu.KotlinLogging.logger {}
     }
 }

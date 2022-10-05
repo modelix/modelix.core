@@ -15,8 +15,6 @@
 
 package org.modelix.model.client
 
-import org.apache.log4j.Level
-import org.apache.log4j.LogManager
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IKeyValueStoreWrapper
@@ -109,9 +107,7 @@ class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
                                     }
                                 }
                             } catch (ex: Exception) {
-                                if (LOG.isEnabledFor(Level.ERROR)) {
-                                    LOG.error("", ex)
-                                }
+                                LOG.error(ex) { "" }
                                 try {
                                     Thread.sleep(1000)
                                 } catch (ex2: InterruptedException) {
@@ -130,6 +126,6 @@ class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
     fun dispose() {}
 
     companion object {
-        private val LOG = LogManager.getLogger(AsyncStore::class.java)
+        private val LOG = mu.KotlinLogging.logger {}
     }
 }

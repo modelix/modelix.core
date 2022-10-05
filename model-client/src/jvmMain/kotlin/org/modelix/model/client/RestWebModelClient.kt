@@ -32,7 +32,6 @@ import io.ktor.utils.io.charsets.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.CancellationException
-import org.apache.log4j.LogManager
 import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.model.IKeyListener
@@ -81,7 +80,7 @@ class RestWebModelClient @JvmOverloads constructor(
 ) : IModelClient {
 
     companion object {
-        private val LOG = LogManager.getLogger(RestWebModelClient::class.java)
+        private val LOG = mu.KotlinLogging.logger {}
         const val MODEL_URI_VAR_NAME = "MODEL_URI"
         val modelUrlFromEnv: String?
             get() {

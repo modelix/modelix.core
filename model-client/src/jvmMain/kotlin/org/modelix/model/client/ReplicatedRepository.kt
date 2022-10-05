@@ -16,8 +16,6 @@
 package org.modelix.model.client
 
 import org.apache.commons.lang3.mutable.MutableObject
-import org.apache.log4j.Level
-import org.apache.log4j.LogManager
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.*
 import org.modelix.model.client.SharedExecutors.fixDelay
@@ -43,7 +41,6 @@ actual open class ReplicatedRepository actual constructor(
     private val branchName: String,
     private val user: () -> String
 ) {
-    private val logger = mu.KotlinLogging.logger {}
     private val localBranch: IBranch
     private val localOTBranch: OTBranch
     private val localMMBranch: IBranch
@@ -130,20 +127,16 @@ actual open class ReplicatedRepository actual constructor(
                         var mergedVersion: CLVersion
                         try {
                             mergedVersion = merger.mergeChange(remoteBase!!, newLocalVersion)
-                            if (LOG.isDebugEnabled) {
-                                LOG.debug(
-                                    String.format(
-                                        "Merged local %s with remote %s -> %s",
-                                        newLocalVersion.hash,
-                                        remoteBase!!.hash,
-                                        mergedVersion.hash
-                                    )
+                            LOG.debug {
+                                String.format(
+                                    "Merged local %s with remote %s -> %s",
+                                    newLocalVersion.hash,
+                                    remoteBase!!.hash,
+                                    mergedVersion.hash
                                 )
                             }
                         } catch (ex: Exception) {
-                            if (LOG.isEnabledFor(Level.ERROR)) {
-                                LOG.error("", ex)
-                            }
+                            LOG.error(ex) { "" }
                             mergedVersion = newLocalVersion
                         }
                         synchronized(mergeLock) {
@@ -220,7 +213,7 @@ actual open class ReplicatedRepository actual constructor(
         try {
             versionChangeDetector.dispose()
         } catch (ex: Exception) {
-            logger.error(ex) { "" }
+            LOG.error(ex) { "" }
         }
         convergenceWatchdog.cancel(false)
     }
@@ -232,7 +225,7 @@ actual open class ReplicatedRepository actual constructor(
     }
 
     companion object {
-        private val LOG = LogManager.getLogger(ReplicatedRepository::class.java)
+        private val LOG = mu.KotlinLogging.logger {}
         private fun getHash(v: CLVersion?): String? {
             return v?.hash
         }
@@ -296,9 +289,7 @@ actual open class ReplicatedRepository actual constructor(
                                 )
                             }
                         } catch (ex: Exception) {
-                            if (LOG.isEnabledFor(Level.ERROR)) {
-                                LOG.error("", ex)
-                            }
+                            LOG.error(ex) { "" }
                             mergedVersion = newRemoteVersion
                         }
                         val mergedTree = mergedVersion.tree

@@ -16,8 +16,6 @@
 package org.modelix.model.client
 
 import kotlinx.coroutines.*
-import org.apache.log4j.Level
-import org.apache.log4j.LogManager
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 
@@ -36,9 +34,7 @@ abstract class VersionChangeDetector(private val store: IKeyValueStore, private 
         try {
             processVersionChange(lastVersionHash, newVersion)
         } catch (ex: Exception) {
-            if (LOG.isEnabledFor(Level.ERROR)) {
-                LOG.error("", ex)
-            }
+            LOG.error("", ex)
         }
         lastVersionHash = newVersion
     }
@@ -51,7 +47,7 @@ abstract class VersionChangeDetector(private val store: IKeyValueStore, private 
     }
 
     companion object {
-        private val LOG = LogManager.getLogger(VersionChangeDetector::class.java)
+        private val LOG = mu.KotlinLogging.logger {}
     }
 
     init {

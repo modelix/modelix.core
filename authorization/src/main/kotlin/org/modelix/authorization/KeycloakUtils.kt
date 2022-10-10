@@ -13,6 +13,7 @@
  */
 package org.modelix.authorization
 
+import com.auth0.jwk.JwkProvider
 import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
@@ -32,15 +33,23 @@ object KeycloakUtils {
     val CLIENT_ID = System.getenv("KEYCLOAK_CLIENT_ID")
     val CLIENT_SECRET = System.getenv("KEYCLOAK_CLIENT_SECRET")
 
-    val authzClient = patchUrls(AuthzClient.create(Configuration(
-        BASE_URL,
-        REALM,
-        CLIENT_ID,
-        mapOf("secret" to CLIENT_SECRET),
-        null
-    )))
+    fun isEnabled() = BASE_URL != null
 
-    val jwkProvider = JwkProviderBuilder(URL("${BASE_URL}realms/$REALM/protocol/openid-connect/certs")).build()
+    val authzClient: AuthzClient by lazy {
+        require(isEnabled()) { "Keycloak is not enabled" }
+        patchUrls(AuthzClient.create(Configuration(
+            BASE_URL,
+            REALM,
+            CLIENT_ID,
+            mapOf("secret" to CLIENT_SECRET),
+            null
+        )))
+    }
+
+    val jwkProvider: JwkProvider by lazy {
+        require(isEnabled()) { "Keycloak is not enabled" }
+        JwkProviderBuilder(URL("${BASE_URL}realms/$REALM/protocol/openid-connect/certs")).build()
+    }
 
     private val permissionCache = CacheBuilder.newBuilder()
         .expireAfterWrite(1, TimeUnit.MINUTES)

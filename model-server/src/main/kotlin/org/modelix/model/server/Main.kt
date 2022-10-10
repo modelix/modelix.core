@@ -29,6 +29,7 @@ import io.ktor.server.routing.*
 import kotlinx.html.*
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
+import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.installAuthentication
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -244,7 +245,7 @@ object Main {
             val jsonModelServer = JsonModelServer(localModelClient)
             val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port) {
                 install(Routing)
-                installAuthentication(unitTestMode = cmdLineArgs.inmemory)
+                installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)
 
                 modelServer.init(this)

@@ -9,7 +9,9 @@ import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.MapBaseStore
+import kotlin.js.JsExport
 
+@JsExport
 object ModelFacade {
 
     fun newLocalTree(): ITree {
@@ -49,21 +51,19 @@ object ModelFacade {
         return PNodeAdapter(ITree.ROOT_ID, toLocalBranch(tree))
     }
 
-    fun readNode(node: INode, body: () -> Unit) {
-        node.getArea().executeRead(body)
+    fun <T> readNode(node: INode, body: () -> T): T {
+        return node.getArea().executeRead(body)
     }
 
-    fun writeNode(node: INode, body: () -> Unit) {
-        node.getArea().executeWrite(body)
+    fun <T> writeNode(node: INode, body: () -> T): T {
+        return node.getArea().executeWrite(body)
     }
 
     fun createBranchReference(repositoryId: RepositoryId, branchName: String? = null): BranchReference {
         return repositoryId.getBranchReference(branchName)
     }
 
-    fun createBranchReference(repositoryId: String, branchName: String? = null): BranchReference {
-        return createBranchReference(RepositoryId(repositoryId), branchName)
-    }
+    fun createRepositoryId(id: String): RepositoryId = RepositoryId(id)
 
     fun mergeUpdate(client: IModelClient, branch: BranchReference, baseVersionHash: String? = null, userName: String?, body: (IWriteTransaction) -> Unit): CLVersion {
         val baseVersionHash: String = baseVersionHash

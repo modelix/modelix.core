@@ -22,6 +22,10 @@ kotlin {
     }
 
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.js.ExperimentalJsExport")
+            languageSettings.optIn("kotlin.js.JsExport")
+        }
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))

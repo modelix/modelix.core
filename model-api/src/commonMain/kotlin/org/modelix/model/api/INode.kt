@@ -16,7 +16,9 @@
 package org.modelix.model.api
 
 import org.modelix.model.area.IArea
+import kotlin.js.JsExport
 
+@JsExport
 interface INode {
     fun getArea(): IArea
     val isValid: Boolean

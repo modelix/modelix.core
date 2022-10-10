@@ -2,7 +2,9 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
+import kotlin.js.JsExport
 
+@JsExport
 abstract class TypedNodeImpl(override val _node: INode) : ITypedNode {
 
     init {

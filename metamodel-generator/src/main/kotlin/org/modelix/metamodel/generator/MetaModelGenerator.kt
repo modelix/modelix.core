@@ -277,6 +277,7 @@ class MetaModelGenerator(val outputDir: Path) {
 
     private fun generateNodeWrapperInterface(concept: ConceptInLanguage): TypeSpec {
         return TypeSpec.interfaceBuilder(concept.nodeWrapperInterfaceType()).apply {
+            addAnnotation(ClassName("kotlin.js", "JsExport"))
             if (concept.extends().isEmpty()) addSuperinterface(ITypedNode::class.asTypeName())
             for (extended in concept.extends()) {
                 addSuperinterface(extended.nodeWrapperInterfaceType())

@@ -2,8 +2,10 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
+import kotlin.js.JsExport
 import kotlin.reflect.KClass
 
+@JsExport
 class SingleChildAccessor<ChildT : ITypedNode>(
     parent: INode,
     role: String,
@@ -12,7 +14,7 @@ class SingleChildAccessor<ChildT : ITypedNode>(
 ) : ChildAccessor<ChildT>(parent, role, childConcept, childType) {
     fun isSet(): Boolean = !isEmpty()
     fun get(): ChildT? = iterator().let { if (it.hasNext()) it.next() else null }
-    fun <T> get(receiver: (ChildT?)->T): T = receiver(get())
+    fun <T> read(receiver: (ChildT?)->T): T = receiver(get())
     fun setNew(concept: IConcept? = null): ChildT {
         require(concept == null || concept.isSubConceptOf(childConcept)) {
             "$concept is not a sub concept of $childConcept"

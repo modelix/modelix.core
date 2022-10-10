@@ -44,35 +44,37 @@ class MetaModelGenerator(val outputDir: Path) {
             .write()
     }
 
-    fun generate(languages: List<LanguageData>) {
-        for (language in languages) {
+    fun generate(languages: List<LanguageData>, filter: ConceptsFilter? = null) {
+        for (language in languages.filter { filter?.isLanguageIncluded(it.name) ?: true }) {
             languagesMap[language.name] = language
-            for (concept in language.getConceptsInLanguage()) {
+            for (concept in language.getConceptsInLanguage().filter { filter?.isConceptIncluded(it.getConceptFqName()) ?: true }) {
                 conceptsMap[concept.getConceptFqName()] = concept
             }
         }
 
-        for (language in languages) {
+        for (language in languages.filter { filter?.isLanguageIncluded(it.name) ?: true }) {
             language.packageDir().toFile().listFiles()?.filter { it.isFile }?.forEach { it.delete() }
             val builder = FileSpec.builder(language.generatedClassName().packageName, language.generatedClassName().simpleName)
-            val file = builder.addType(generateLanguage(language)).build()
-            for (concept in language.getConceptsInLanguage()) {
+            val file = builder.addType(generateLanguage(language, filter)).build()
+            for (concept in language.getConceptsInLanguage().filter { filter?.isConceptIncluded(it.getConceptFqName()) ?: true }) {
                 generateConceptFile(concept)
             }
             file.write()
         }
     }
 
-    private fun generateLanguage(language: LanguageData): TypeSpec {
+    private fun generateLanguage(language: LanguageData, filter: ConceptsFilter?): TypeSpec {
         val builder = TypeSpec.objectBuilder(language.generatedClassName())
-        val conceptNamesList = language.concepts.joinToString(", ") { it.name }
+        val conceptNamesList = language.concepts
+            .filter { filter?.isConceptIncluded(ConceptInLanguage(it, language).getConceptFqName()) ?: true }
+            .joinToString(", ") { it.name }
         builder.addFunction(FunSpec.builder("getConcepts")
             .addModifiers(KModifier.OVERRIDE)
             .addStatement("return listOf($conceptNamesList)")
             .build())
         builder.superclass(GeneratedLanguage::class)
         builder.addSuperclassConstructorParameter("\"${language.name}\"")
-        for (concept in language.concepts) {
+        for (concept in language.concepts.filter { filter?.isConceptIncluded(ConceptInLanguage(it, language).getConceptFqName()) ?: true }) {
             builder.addProperty(PropertySpec.builder(concept.name, ClassName(language.name, concept.conceptObjectName()))
                 .initializer(language.name + "." + concept.conceptObjectName())
                 .build())

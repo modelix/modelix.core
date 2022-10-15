@@ -15,6 +15,10 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
 ): Iterable<ChildT> {
     fun isEmpty(): Boolean = iterator().hasNext()
 
+    fun getSize(): Int {
+        return this.count()
+    }
+
     override fun iterator(): Iterator<ChildT> {
         return parent.getChildren(role).map {
             val wrapped = when (childConcept) {
@@ -25,15 +29,21 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         }.iterator()
     }
 
+    fun asArray(): Array<out ChildT> {
+        return iterableToArray(childType, this)
+    }
+
     fun addNew(index: Int = -1, concept: IConcept? = null): ChildT {
         return childType.cast(parent.addNewChild(role, index, concept).typed())
     }
 
-    fun removeRaw(child: INode) {
+    fun removeUnwrapped(child: INode) {
         parent.removeChild(child)
     }
 
     fun remove(child: TypedNodeImpl) {
-        removeRaw(child._node)
+        removeUnwrapped(child.unwrap())
     }
 }
+
+expect fun <T : Any> iterableToArray(elementsType: KClass<T>, elements: Iterable<T>): Array<out T>

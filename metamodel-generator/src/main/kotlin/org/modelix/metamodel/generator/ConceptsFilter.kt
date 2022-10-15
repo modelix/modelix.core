@@ -24,6 +24,3 @@ class ConceptsFilter(allLanguages_: List<LanguageData>) {
     }
 }
 
-private class ConceptInLanguage(val concept: ConceptData, val language: LanguageData) {
-    val fqName: String get() = language.name + "." + concept.name
-}

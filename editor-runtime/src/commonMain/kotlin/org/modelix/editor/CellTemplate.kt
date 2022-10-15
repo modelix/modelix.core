@@ -78,7 +78,7 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
     override fun createCell(editor: EditorEngine, node: NodeT): Cell = TextCell(getText(node), "<no ${link.name}>")
     private fun getText(node: NodeT): String = getTargetNode(node)?.let(presentation) ?: ""
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
-        return sourceNode._node.getReferenceTarget(link)?.typed() as TargetNodeT?
+        return sourceNode.unwrap().getReferenceTarget(link)?.typed() as TargetNodeT?
     }
 }
 
@@ -99,5 +99,5 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
         }
     }
 
-    fun getChildNodes(node: NodeT) = node._node.getChildren(link).toList()
+    fun getChildNodes(node: NodeT) = node.unwrap().getChildren(link).toList()
 }

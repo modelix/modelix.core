@@ -3,13 +3,15 @@ package org.modelix.metamodel
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
+import kotlin.js.JsExport
 
+@JsExport
 interface ITypedNode {
     val _concept: ITypedConcept
-    val _node: INode
+    fun unwrap(): INode
 }
 
-fun ITypedNode.getPropertyValue(property: IProperty): String? = _node.getPropertyValue(property.name)
+fun ITypedNode.getPropertyValue(property: IProperty): String? = unwrap().getPropertyValue(property.name)
 fun ITypedNode.instanceOf(concept: ITypedConcept): Boolean {
     return instanceOf(concept._concept)
 }

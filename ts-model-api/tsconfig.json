@@ -1,0 +1,11 @@
+{
+  "extends": "@reallyland/tsconfig",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declarationDir": "dist",
+    "noUnusedLocals": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist"]
+}

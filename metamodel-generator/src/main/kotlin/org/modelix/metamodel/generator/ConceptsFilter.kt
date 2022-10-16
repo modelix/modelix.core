@@ -1,8 +1,6 @@
 package org.modelix.metamodel.generator
 
-class ConceptsFilter(allLanguages_: List<LanguageData>) {
-    private val allLanguages: Map<String, LanguageData> = allLanguages_.associateBy { it.name }
-    private val allConcepts: Map<String, ConceptInLanguage> = allLanguages_.flatMap { lang -> lang.concepts.map { ConceptInLanguage(it, lang) } }.associateBy { it.fqName }
+class ConceptsFilter(val languageSet: LanguageSet) {
     private val includedConcepts: MutableSet<String> = HashSet()
     private val includedLanguages: MutableSet<String> = HashSet()
 
@@ -10,7 +8,7 @@ class ConceptsFilter(allLanguages_: List<LanguageData>) {
         if (includedConcepts.contains(fqName)) return
         includedConcepts.add(fqName)
         includedLanguages.add(fqName.substringBeforeLast("."))
-        val concept = allConcepts[fqName] ?: return
+        val concept = languageSet.resolveConcept(fqName) ?: return
         concept.concept.extends.forEach { includeConcept(resolveRelativeConcept(concept.language, it)) }
         concept.concept.children.forEach { includeConcept(resolveRelativeConcept(concept.language, it.type)) }
         concept.concept.references.forEach { includeConcept(resolveRelativeConcept(concept.language, it.type)) }
@@ -18,6 +16,16 @@ class ConceptsFilter(allLanguages_: List<LanguageData>) {
 
     fun isConceptIncluded(conceptFqName: String): Boolean = includedConcepts.contains(conceptFqName)
     fun isLanguageIncluded(langName: String): Boolean = includedLanguages.contains(langName)
+
+    fun apply(): LanguageSet {
+        return LanguageSet(languageSet.getLanguages()
+            .filter { includedLanguages.contains(it.name) }
+            .map { lang -> LanguageData(
+                lang.language.uid,
+                lang.name,
+                lang.getConceptsInLanguage().filter { includedConcepts.contains(it.fqName) }.map { it.concept }
+            ) })
+    }
 
     private fun resolveRelativeConcept(contextLanguage: LanguageData, conceptName: String): String {
         return if (conceptName.contains(".")) conceptName else contextLanguage.name + "." + conceptName

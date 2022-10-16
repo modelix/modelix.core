@@ -96,7 +96,7 @@ export class ModelService {
     this.server.sendUpdate(body)
   }
 }
-
+/*
 export class NodeFromService implements INode {
   constructor(public id: NodeId, public service: ModelService) {
   }
@@ -172,7 +172,7 @@ export class NodeFromService implements INode {
 
 
 }
-
+*/
 interface VersionData {
   repositoryId: string,
   versionHash: string,

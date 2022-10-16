@@ -44,39 +44,31 @@ class MetaModelGenerator(val outputDir: Path) {
             .write()
     }
 
-    fun generate(languages: List<LanguageData>, filter: ConceptsFilter? = null) {
-        for (language in languages.filter { filter?.isLanguageIncluded(it.name) ?: true }) {
-            languagesMap[language.name] = language
-            for (concept in language.getConceptsInLanguageInner().filter { filter?.isConceptIncluded(it.getConceptFqName()) ?: true }) {
-                conceptsMap[concept.getConceptFqName()] = concept
-            }
-        }
-
-        for (language in languages.filter { filter?.isLanguageIncluded(it.name) ?: true }) {
-            language.packageDir().toFile().listFiles()?.filter { it.isFile }?.forEach { it.delete() }
-            val builder = FileSpec.builder(language.generatedClassName().packageName, language.generatedClassName().simpleName)
-            val file = builder.addType(generateLanguage(language, filter)).build()
-            for (concept in language.getConceptsInLanguageInner().filter { filter?.isConceptIncluded(it.getConceptFqName()) ?: true }) {
+    fun generate(languages: LanguageSet) {
+        for (language in languages.getLanguages()) {
+            language.language.packageDir().toFile().listFiles()?.filter { it.isFile }?.forEach { it.delete() }
+            val builder = FileSpec.builder(language.language.generatedClassName().packageName, language.language.generatedClassName().simpleName)
+            val file = builder.addType(generateLanguage(language)).build()
+            for (concept in language.language.getConceptsInLanguageInner()) {
                 generateConceptFile(concept)
             }
             file.write()
         }
     }
 
-    private fun generateLanguage(language: LanguageData, filter: ConceptsFilter?): TypeSpec {
-        val builder = TypeSpec.objectBuilder(language.generatedClassName())
-        val conceptNamesList = language.concepts
-            .filter { filter?.isConceptIncluded(ConceptInLanguageInner(it, language).getConceptFqName()) ?: true }
-            .joinToString(", ") { it.name }
+    private fun generateLanguage(language: LanguageSet.LanguageInSet): TypeSpec {
+        val builder = TypeSpec.objectBuilder(language.language.generatedClassName())
+        val conceptNamesList = language.getConceptsInLanguage()
+            .joinToString(", ") { it.simpleName }
         builder.addFunction(FunSpec.builder("getConcepts")
             .addModifiers(KModifier.OVERRIDE)
             .addStatement("return listOf($conceptNamesList)")
             .build())
         builder.superclass(GeneratedLanguage::class)
         builder.addSuperclassConstructorParameter("\"${language.name}\"")
-        for (concept in language.concepts.filter { filter?.isConceptIncluded(ConceptInLanguageInner(it, language).getConceptFqName()) ?: true }) {
-            builder.addProperty(PropertySpec.builder(concept.name, ClassName(language.name, concept.conceptObjectName()))
-                .initializer(language.name + "." + concept.conceptObjectName())
+        for (concept in language.getConceptsInLanguage()) {
+            builder.addProperty(PropertySpec.builder(concept.simpleName, ClassName(language.name, concept.concept.conceptObjectName()))
+                .initializer(language.name + "." + concept.concept.conceptObjectName())
                 .build())
         }
         return builder.build()
@@ -392,24 +384,16 @@ class MetaModelGenerator(val outputDir: Path) {
 
 private fun String.parseConceptRef(contextLanguage: LanguageData): ConceptRef {
     return if (this.contains(".")) {
-        ConceptRef(this.substringBeforeLast("."), this.substringAfterLast("."))
+        ConceptRef(substringBeforeLast("."), substringAfterLast("."))
     } else {
         ConceptRef(contextLanguage.name, this)
     }
 }
 
-
-private class ConceptRef(val languageName: String, val conceptName: String) {
-    init {
-        require(!conceptName.contains(".")) { "Simple name expected for concept: $conceptName" }
-    }
-    override fun toString(): String = languageName + "." + conceptName
-
-    fun conceptWrapperImplType() = ClassName(languageName, conceptName.conceptWrapperImplName())
-    fun conceptWrapperInterfaceType() = ClassName(languageName, conceptName.conceptWrapperInterfaceName())
-    fun nodeWrapperImplType() = ClassName(languageName, conceptName.nodeWrapperImplName())
-    fun nodeWrapperInterfaceType() = ClassName(languageName, conceptName.nodeWrapperInterfaceName())
-}
+fun ConceptRef.conceptWrapperImplType() = ClassName(languageName, conceptName.conceptWrapperImplName())
+fun ConceptRef.conceptWrapperInterfaceType() = ClassName(languageName, conceptName.conceptWrapperInterfaceName())
+fun ConceptRef.nodeWrapperImplType() = ClassName(languageName, conceptName.nodeWrapperImplName())
+fun ConceptRef.nodeWrapperInterfaceType() = ClassName(languageName, conceptName.nodeWrapperInterfaceName())
 
 fun LanguageData.generatedClassName()  = ClassName(name, "L_" + name.replace(".", "_"))
 private fun ConceptData.nodeWrapperInterfaceName() = name.nodeWrapperInterfaceName()

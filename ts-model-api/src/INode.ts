@@ -1,27 +1,27 @@
 
 export interface INode {
-  getConcept(): IConcept | null
-  getConceptReference(): IConceptReference | null
+  getConcept(): IConcept | undefined
+  getConceptReference(): IConceptReference | undefined
 
   getReference(): INodeReference
-  getRoleInParent(): string | null
-  getParent(): INode | null
+  getRoleInParent(): string | undefined
+  getParent(): INode | undefined
 
-  getChildren(role: string | null): Iterable<INode>
-  getAllChildren(): Iterable<INode>
-  moveChild(role: string | null, index: number, child: INode): void
-  addNewChild(role: string | null, index: number, concept: IConcept | null): INode
+  getChildren(role: string | undefined): Array<INode>
+  getAllChildren(): Array<INode>
+  moveChild(role: string | undefined, index: number, child: INode): void
+  addNewChild(role: string | undefined, index: number, concept: IConcept | undefined): INode
   removeChild(child: INode): void
 
   getReferenceRoles(): Array<string>
-  getReferenceTargetNode(role: string): INode | null
-  getReferenceTargetRef(role: string): INodeReference | null
-  setReferenceTargetNode(role: string, target: INode | null): void
-  setReferenceTargetRef(role: string, target: INodeReference | null): void
+  getReferenceTargetNode(role: string): INode | undefined
+  getReferenceTargetRef(role: string): INodeReference | undefined
+  setReferenceTargetNode(role: string, target: INode | undefined): void
+  setReferenceTargetRef(role: string, target: INodeReference | undefined): void
 
   getPropertyRoles(): Array<string>
-  getPropertyValue(role: string): string | null
-  setPropertyValue(role: string, value: string | null): void
+  getPropertyValue(role: string): string | undefined
+  setPropertyValue(role: string, value: string | undefined): void
 }
 
 export interface INodeReference {}

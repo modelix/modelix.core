@@ -24,10 +24,22 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 .resolve(language.language.generatedClassName().simpleName + ".ts")
                 .writeText(generateLanguage(language))
 
-            for (concept in language.getConceptsInLanguage()) {
-                //generateConceptFile(concept)
-            }
+            generateRegistry(languages)
         }
+    }
+
+    private fun generateRegistry(languages: LanguageSet) {
+        outputDir.resolve("index.ts").writeText("""
+            import { LanguageRegistry } from "ts-model-api";
+            ${languages.getLanguages().joinToString("\n") { """
+                import { ${it.simpleClassName()} } from "./${it.simpleClassName()}";
+            """.trimIndent() }}
+            export function registerLanguages() {
+                ${languages.getLanguages().joinToString("\n") { """
+                    LanguageRegistry.INSTANCE.register(${it.simpleClassName()}.INSTANCE);
+                """.trimIndent() }}
+            }
+        """.trimIndent())
     }
 
     private fun generateLanguage(language: LanguageSet.LanguageInSet): String {
@@ -45,7 +57,10 @@ class TypescriptMMGenerator(val outputDir: Path) {
               TypedNode
             } from "ts-model-api";
             
-            export class ${language.language.generatedClassName().simpleName} extends GeneratedLanguage {
+            export namespace ${language.simpleClassName()} {
+            
+            export class ${language.simpleClassName()} extends GeneratedLanguage {
+                public static INSTANCE: ${language.simpleClassName()} = new ${language.simpleClassName()}();
                 constructor() {
                     super("${language.name}")
                 }
@@ -58,6 +73,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
             }
             
             ${language.getConceptsInLanguage().joinToString("\n") { generateConcept(it) }.replaceIndent("            ")}
+            }
         """.trimIndent()
     }
 

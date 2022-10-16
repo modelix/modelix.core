@@ -396,6 +396,7 @@ fun ConceptRef.nodeWrapperImplType() = ClassName(languageName, conceptName.nodeW
 fun ConceptRef.nodeWrapperInterfaceType() = ClassName(languageName, conceptName.nodeWrapperInterfaceName())
 
 fun LanguageData.generatedClassName()  = ClassName(name, "L_" + name.replace(".", "_"))
+fun LanguageSet.LanguageInSet.simpleClassName()  = this.language.generatedClassName().simpleName
 private fun ConceptData.nodeWrapperInterfaceName() = name.nodeWrapperInterfaceName()
 private fun String.nodeWrapperInterfaceName() = fqNamePrefix("N_")
 private fun ConceptData.nodeWrapperImplName() = name.nodeWrapperImplName()

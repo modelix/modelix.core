@@ -25,12 +25,14 @@ class LanguageSet(languages: List<LanguageData>) {
     inner class LanguageInSet(val language: LanguageData) {
         val name: String get() = language.name
         fun getConceptsInLanguage() = language.concepts.map { ConceptInLanguage(it, language) }
+        fun getLanguageSet() = this@LanguageSet
     }
 
     inner class ConceptInLanguage(val concept: ConceptData, val language: LanguageData) {
         val fqName: String get() = language.name + "." + concept.name
         val simpleName: String get() = concept.name
         fun getConceptFqName() = fqName
+        val uid = concept.uid ?: fqName
 
         /**
          * Unknown concepts are not included!
@@ -107,7 +109,7 @@ data class FeatureInConcept(val concept: LanguageSet.ConceptInLanguage, val data
     val originalName: String = data.name
 }
 
-private fun String.parseConceptRef(contextLanguage: LanguageData): ConceptRef {
+fun String.parseConceptRef(contextLanguage: LanguageData): ConceptRef {
     return if (this.contains(".")) {
         ConceptRef(this.substringBeforeLast("."), this.substringAfterLast("."))
     } else {

@@ -1,8 +1,8 @@
 import {TypedNode} from "./TypedNode";
-import type {INode} from "./INode";
+import type {INodeJS} from "./INodeJS";
 
 export abstract class ChildrenAccessor<ChildT extends TypedNode> implements Iterable<ChildT> {
-  constructor(public parentNode: INode, public role: string | undefined) {
+  constructor(public parentNode: INodeJS, public role: string | undefined) {
   }
 
   [Symbol.iterator](): Iterator<ChildT> {
@@ -13,7 +13,7 @@ export abstract class ChildrenAccessor<ChildT extends TypedNode> implements Iter
     return this.parentNode.getChildren(this.role).map(n => this.wrapChild(n))
   }
 
-  protected wrapChild(child: INode): ChildT {
+  protected wrapChild(child: INodeJS): ChildT {
     // TODO wrap with correct subclass
     return new TypedNode(child) as ChildT
   }
@@ -21,13 +21,13 @@ export abstract class ChildrenAccessor<ChildT extends TypedNode> implements Iter
 
 
 export class ChildListAccessor<ChildT extends TypedNode> extends ChildrenAccessor<ChildT> {
-  constructor(parentNode: INode, role: string | undefined) {
+  constructor(parentNode: INodeJS, role: string | undefined) {
     super(parentNode, role);
   }
 }
 
 export class SingleChildAccessor<ChildT extends TypedNode> extends ChildrenAccessor<ChildT> {
-  constructor(parentNode: INode, role: string | undefined) {
+  constructor(parentNode: INodeJS, role: string | undefined) {
     super(parentNode, role);
   }
 

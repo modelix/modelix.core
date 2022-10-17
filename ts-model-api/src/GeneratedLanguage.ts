@@ -1,20 +1,24 @@
 import type {ILanguage} from "./ILanguage";
+import {LanguageRegistry} from "./LanguageRegistry";
+import type {INodeJS} from "./INodeJS";
+import type {TypedNode} from "./TypedNode";
 
 export abstract class GeneratedLanguage implements ILanguage {
+
+  public nodeWrappers: Map<String, (node: INodeJS)=>TypedNode> = new Map()
 
   constructor(readonly name: string) {}
 
   public register() {
-    //TypedLanguagesRegistry.register(this)
+    LanguageRegistry.INSTANCE.register(this)
   }
 
   public unregister() {
-    //TypedLanguagesRegistry.unregister(this)
+    LanguageRegistry.INSTANCE.unregister(this)
   }
 
   public isRegistered(): boolean {
-    //return TypedLanguagesRegistry.isRegistered(this)
-    return true
+    return LanguageRegistry.INSTANCE.isRegistered(this)
   }
 
   public assertRegistered() {

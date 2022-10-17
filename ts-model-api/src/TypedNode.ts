@@ -1,6 +1,6 @@
-import type {INode} from "./INode";
+import type {INodeJS} from "./INodeJS";
 
 export class TypedNode {
-  constructor(public node: INode) {
+  constructor(public node: INodeJS) {
   }
 }

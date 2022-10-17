@@ -382,20 +382,13 @@ class MetaModelGenerator(val outputDir: Path) {
     private fun LanguageData.getConceptsInLanguageInner() = concepts.map { ConceptInLanguageInner(it, this) }
 }
 
-private fun String.parseConceptRef(contextLanguage: LanguageData): ConceptRef {
-    return if (this.contains(".")) {
-        ConceptRef(substringBeforeLast("."), substringAfterLast("."))
-    } else {
-        ConceptRef(contextLanguage.name, this)
-    }
-}
-
 fun ConceptRef.conceptWrapperImplType() = ClassName(languageName, conceptName.conceptWrapperImplName())
 fun ConceptRef.conceptWrapperInterfaceType() = ClassName(languageName, conceptName.conceptWrapperInterfaceName())
 fun ConceptRef.nodeWrapperImplType() = ClassName(languageName, conceptName.nodeWrapperImplName())
 fun ConceptRef.nodeWrapperInterfaceType() = ClassName(languageName, conceptName.nodeWrapperInterfaceName())
 
-fun LanguageData.generatedClassName()  = ClassName(name, "L_" + name.replace(".", "_"))
+fun String.languageClassName() = "L_" + this.replace(".", "_")
+fun LanguageData.generatedClassName()  = ClassName(name, name.languageClassName())
 fun LanguageSet.LanguageInSet.simpleClassName()  = this.language.generatedClassName().simpleName
 private fun ConceptData.nodeWrapperInterfaceName() = name.nodeWrapperInterfaceName()
 private fun String.nodeWrapperInterfaceName() = fqNamePrefix("N_")

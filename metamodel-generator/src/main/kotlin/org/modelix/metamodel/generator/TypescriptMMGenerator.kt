@@ -36,7 +36,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
             """.trimIndent() }}
             export function registerLanguages() {
                 ${languages.getLanguages().joinToString("\n") { """
-                    LanguageRegistry.INSTANCE.register(${it.simpleClassName()}.INSTANCE);
+                    LanguageRegistry.INSTANCE.register(${it.simpleClassName()}.Language);
                 """.trimIndent() }}
             }
         """.trimIndent())
@@ -54,8 +54,13 @@ class TypescriptMMGenerator(val outputDir: Path) {
               ChildListAccessor,
               SingleChildAccessor,
               GeneratedLanguage,
+              INodeJS,
               TypedNode
             } from "ts-model-api";
+            
+            ${language.languageDependencies().joinToString("\n") {
+                """import {${it.simpleClassName()}} from "./${it.simpleClassName()}";"""
+            }}
             
             export namespace ${language.simpleClassName()} {
             
@@ -63,6 +68,10 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 public static INSTANCE: ${language.simpleClassName()} = new ${language.simpleClassName()}();
                 constructor() {
                     super("${language.name}")
+                    
+                    ${language.getConceptsInLanguage().joinToString("\n") { concept -> """
+                        this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.simpleName}(node))
+                    """.trimIndent() }}
                 }
                 /*
                 public getConcepts() {
@@ -71,6 +80,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 ${conceptFields.replaceIndent("                ")}
                 */
             }
+            export const Language = ${language.simpleClassName()}.INSTANCE
             
             ${language.getConceptsInLanguage().joinToString("\n") { generateConcept(it) }.replaceIndent("            ")}
             }
@@ -94,7 +104,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 is ChildLinkData -> {
                     val accessorClassName = if (data.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     """
-                        public ${data.name}: $accessorClassName<TypedNode> = new $accessorClassName(this.node, "${data.name}")
+                        public ${data.name}: $accessorClassName<${data.type.parseConceptRef(concept.language).tsClassName()}> = new $accessorClassName(this.node, "${data.name}")
                     """.trimIndent()
                 }
                 else -> ""
@@ -107,4 +117,20 @@ class TypescriptMMGenerator(val outputDir: Path) {
             }
         """.trimIndent()
     }
+}
+
+fun ConceptRef.tsClassName() = this.languageName.languageClassName() + "." + this.conceptName
+fun LanguageSet.LanguageInSet.languageDependencies(): List<LanguageSet.LanguageInSet> {
+    val languageNames = this.getConceptsInLanguage()
+        .flatMap { it.allFeatures() }
+        .mapNotNull {
+            when (val data = it.data) {
+                is ChildLinkData -> data.type
+                is ReferenceLinkData -> data.type
+                else -> null
+            }?.parseConceptRef(language)
+        }
+        .map { it.languageName }
+        .toSet()
+    return getLanguageSet().getLanguages().filter { languageNames.contains(it.name) }.minus(this)
 }

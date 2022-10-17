@@ -1,4 +1,4 @@
-import type {INode} from "./INode";
+import type {INodeJS} from "./INodeJS";
 
 export type NodeId = string
 

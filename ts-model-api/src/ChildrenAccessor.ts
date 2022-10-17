@@ -1,5 +1,6 @@
-import {TypedNode} from "./TypedNode";
+import type {TypedNode} from "./TypedNode";
 import type {INodeJS} from "./INodeJS";
+import {LanguageRegistry} from "./LanguageRegistry";
 
 export abstract class ChildrenAccessor<ChildT extends TypedNode> implements Iterable<ChildT> {
   constructor(public parentNode: INodeJS, public role: string | undefined) {
@@ -14,8 +15,7 @@ export abstract class ChildrenAccessor<ChildT extends TypedNode> implements Iter
   }
 
   protected wrapChild(child: INodeJS): ChildT {
-    // TODO wrap with correct subclass
-    return new TypedNode(child) as ChildT
+    return LanguageRegistry.INSTANCE.wrapNode(child) as ChildT
   }
 }
 

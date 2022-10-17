@@ -14,6 +14,7 @@ export class LanguageRegistry {
 
   public unregister(lang: GeneratedLanguage): void {
     this.languages.delete(lang.name);
+    this.nodeWrappers = undefined
   }
 
   public isRegistered(lang: GeneratedLanguage): boolean {
@@ -33,13 +34,12 @@ export class LanguageRegistry {
         }
       }
     }
-    let conceptUID = node.getConceptReference()?.getUID();
-    if (conceptUID !== undefined) {
-      let wrapper = this.nodeWrappers.get(conceptUID)
-      if (wrapper !== undefined) {
-        return wrapper(node)
-      }
+    let conceptUID = node.getConceptUID();
+    if (conceptUID === undefined) return new TypedNode(node)
+    let wrapper = this.nodeWrappers.get(conceptUID)
+    if (wrapper === undefined) {
+      throw Error("No node wrapper found for concept " + conceptUID)
     }
-    return new TypedNode(node)
+    return wrapper(node)
   }
 }

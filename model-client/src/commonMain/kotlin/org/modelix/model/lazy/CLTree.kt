@@ -118,12 +118,7 @@ class CLTree : ITree, IBulkTree {
         if (containsNode(childId)) {
             throw DuplicateNodeId("Node ID already exists: ${childId.toString(16)}")
         }
-        val newTree = createNewNode(childId, concept).addChild(parentId, role, index, childId)
-
-        // TODO remove
-        newTree.getConcept(childId)
-
-        return newTree
+        return createNewNode(childId, concept).addChild(parentId, role, index, childId)
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?): ITree {

@@ -1,24 +1,43 @@
 package org.modelix.model.api
 
 import IConceptJS
-import IConceptReferenceJS
 import INodeJS
 import INodeReferenceJS
 
 @ExperimentalJsExport
 @JsExport
-fun nodeToJs(node: INode): Any {
-    // return type is Any because the import for INodeJS is missing in the generated .d.ts
-    return NodeAdapterJS(node)
+object JSNodeConverter {
+    fun nodeToJs(node: INode): Any {
+        // return type is Any because the import for INodeJS is missing in the generated .d.ts
+        return NodeAdapterJS(node)
+    }
+
+    fun nodeFromJs(node: Any): Any {
+        return (node as NodeAdapterJS).node
+    }
+
+    fun isJsNode(node: Any): Boolean {
+        return node is NodeAdapterJS
+    }
 }
 
-class NodeAdapterJS(val node: INode) : INodeJS {
+
+
+// workaround: because of the missing import for INodeJS, this intermediate interface prevents it from being generated
+// into the .d.ts file.
+interface INodeJS_ : INodeJS
+
+@JsExport // this is only required to prevent the compiler from renaming the methods in the generated JS
+class NodeAdapterJS(val node: INode) : INodeJS_ {
+    init {
+        require(node is INode) { "Not an INode: $node" }
+    }
     override fun getConcept(): IConceptJS? {
         TODO("Not yet implemented")
     }
 
-    override fun getConceptReference(): IConceptReferenceJS? {
-        TODO("Not yet implemented")
+    override fun getConceptUID(): String? {
+        return node.getConceptReference()?.getUID()
     }
 
     override fun getReference(): INodeReferenceJS {

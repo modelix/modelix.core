@@ -21,6 +21,7 @@ interface INode {
     fun getArea(): IArea
     val isValid: Boolean
     val reference: INodeReference
+    @Deprecated("Use getConceptReference().resolve()")
     val concept: IConcept?
     val roleInParent: String?
     val parent: INode?
@@ -46,3 +47,4 @@ fun INode.getReferenceTarget(link: IReferenceLink): INode? = getReferenceTarget(
 fun INode.setReferenceTarget(link: IReferenceLink, target: INode?): Unit = setReferenceTarget(link.key(), target)
 fun INode.getPropertyValue(property: IProperty): String? = getPropertyValue(property.key())
 fun INode.setPropertyValue(property: IProperty, value: String?): Unit = setPropertyValue(property.key(), value)
+fun INode.getConcept(): IConcept? = getConceptReference()?.resolve()

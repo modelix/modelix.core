@@ -2,6 +2,7 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
+import org.modelix.model.api.resolve
 
 object TypedLanguagesRegistry : ILanguageRepository {
     private var languages: Map<String, GeneratedLanguage> = emptyMap()
@@ -32,8 +33,8 @@ object TypedLanguagesRegistry : ILanguageRepository {
     }
 
     fun wrapNode(node: INode): ITypedNode {
-        val concept = (node.concept as? GeneratedConcept<*, *>)
-            ?: throw IllegalArgumentException("Unknown concept: ${node.concept}")
+        val concept = (node.getConceptReference()?.resolve() as? GeneratedConcept<*, *>)
+            ?: throw IllegalArgumentException("Unknown concept: ${node.getConceptReference()}")
         return concept.wrap(node)
     }
 }

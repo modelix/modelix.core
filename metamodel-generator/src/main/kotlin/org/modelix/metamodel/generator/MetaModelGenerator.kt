@@ -12,8 +12,6 @@ private val reservedPropertyNames: Set<String> = setOf(
 ) + IConcept::class.members.map { it.name }
 
 class MetaModelGenerator(val outputDir: Path) {
-    private val languagesMap = HashMap<String, LanguageData>()
-    private val conceptsMap = HashMap<String, LanguageSet.ConceptInLanguage>()
 
     private fun FileSpec.write() {
         writeTo(outputDir)
@@ -30,11 +28,11 @@ class MetaModelGenerator(val outputDir: Path) {
         return packageDir
     }
 
-    fun generateRegistrationHelper(classFqName: String) {
+    fun generateRegistrationHelper(classFqName: String, languages: LanguageSet) {
         val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
         val cls = TypeSpec.objectBuilder(typeName)
             .addProperty(PropertySpec.builder("languages", List::class.parameterizedBy(GeneratedLanguage::class))
-                .initializer("listOf(" + languagesMap.values.map { it.generatedClassName() }.joinToString(", ") { it.canonicalName } + ")")
+                .initializer("listOf(" + languages.getLanguages().map { it.language.generatedClassName() }.joinToString(", ") { it.canonicalName } + ")")
                 .build())
             .build()
 

@@ -1,7 +1,7 @@
 
 export interface INodeJS {
   getConcept(): IConceptJS | undefined
-  getConceptReference(): IConceptReferenceJS | undefined
+  getConceptUID(): string | undefined
 
   getReference(): INodeReferenceJS
   getRoleInParent(): string | undefined
@@ -24,8 +24,6 @@ export interface INodeJS {
   setPropertyValue(role: string, value: string | undefined): void
 }
 
-export interface INodeReferenceJS {}
-export interface IConceptJS {}
-export interface IConceptReferenceJS {
-  getUID(): String
-}
+type INodeReferenceJS = any
+type IConceptJS = any
+

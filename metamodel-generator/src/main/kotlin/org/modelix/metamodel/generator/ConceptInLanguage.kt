@@ -57,7 +57,7 @@ class LanguageSet(languages: List<LanguageData>) {
         fun directFeatures(): List<FeatureInConcept> = (concept.properties + concept.children + concept.references)
             .map { FeatureInConcept(this, it) }
 
-        fun allFeatures(): List<FeatureInConcept> = allSuperConcepts().flatMap { it.directFeatures() }.distinct()
+        fun allFeatures(): List<FeatureInConcept> = (allSuperConcepts() + this).flatMap { it.directFeatures() }.distinct()
         fun directFeaturesAndConflicts(): List<FeatureInConcept> =
             (directFeatures() + resolveMultipleInheritanceConflicts().flatMap { it.key.allFeatures() })
                 .distinct().groupBy { it.validName }.values.map { it.first() }

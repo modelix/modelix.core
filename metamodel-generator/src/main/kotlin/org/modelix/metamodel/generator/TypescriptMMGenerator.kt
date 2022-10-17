@@ -36,7 +36,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
             """.trimIndent() }}
             export function registerLanguages() {
                 ${languages.getLanguages().joinToString("\n") { """
-                    LanguageRegistry.INSTANCE.register(${it.simpleClassName()}.Language);
+                    LanguageRegistry.INSTANCE.register(${it.simpleClassName()}.INSTANCE);
                 """.trimIndent() }}
             }
         """.trimIndent())
@@ -80,7 +80,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 ${conceptFields.replaceIndent("                ")}
                 */
             }
-            export const Language = ${language.simpleClassName()}.INSTANCE
+            export const INSTANCE = ${language.simpleClassName()}.INSTANCE
             
             ${language.getConceptsInLanguage().joinToString("\n") { generateConcept(it) }.replaceIndent("            ")}
             }
@@ -91,10 +91,10 @@ class TypescriptMMGenerator(val outputDir: Path) {
         val features = concept.allFeatures().joinToString("\n") { feature ->
             when (val data = feature.data) {
                 is PropertyData -> """
-                    public set ${data.name}(value: string | undefined) {
+                    public set ${feature.validName}(value: string | undefined) {
                         this.node.setPropertyValue("${data.name}", value)
                     }
-                    public get ${data.name}(): string | undefined {
+                    public get ${feature.validName}(): string | undefined {
                         return this.node.getPropertyValue("${data.name}")
                     }
                 """.trimIndent()
@@ -104,7 +104,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 is ChildLinkData -> {
                     val accessorClassName = if (data.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     """
-                        public ${data.name}: $accessorClassName<${data.type.parseConceptRef(concept.language).tsClassName()}> = new $accessorClassName(this.node, "${data.name}")
+                        public ${feature.validName}: $accessorClassName<${data.type.parseConceptRef(concept.language).tsClassName()}> = new $accessorClassName(this.node, "${data.name}")
                     """.trimIndent()
                 }
                 else -> ""
@@ -114,6 +114,8 @@ class TypescriptMMGenerator(val outputDir: Path) {
             
             export class ${concept.concept.name} extends TypedNode {
                 ${features.replaceIndent("                ")}
+                ${concept.directFeaturesAndConflicts().joinToString("\n") { """// feature: ${it.originalName} """ }}
+                ${concept.allSuperConcepts().joinToString("\n") { """// super concept: ${it.fqName} """ }}
             }
         """.trimIndent()
     }

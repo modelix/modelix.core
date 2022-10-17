@@ -64,6 +64,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
+                api(npm("ts-model-api", rootDir.resolve("ts-model-api"), generateExternals = true))
             }
         }
         val jsTest by getting {

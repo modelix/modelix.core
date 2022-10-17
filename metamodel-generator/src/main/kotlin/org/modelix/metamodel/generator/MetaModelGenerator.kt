@@ -13,7 +13,7 @@ private val reservedPropertyNames: Set<String> = setOf(
 
 class MetaModelGenerator(val outputDir: Path) {
     private val languagesMap = HashMap<String, LanguageData>()
-    private val conceptsMap = HashMap<String, ConceptInLanguageInner>()
+    private val conceptsMap = HashMap<String, LanguageSet.ConceptInLanguage>()
 
     private fun FileSpec.write() {
         writeTo(outputDir)
@@ -49,7 +49,7 @@ class MetaModelGenerator(val outputDir: Path) {
             language.language.packageDir().toFile().listFiles()?.filter { it.isFile }?.forEach { it.delete() }
             val builder = FileSpec.builder(language.language.generatedClassName().packageName, language.language.generatedClassName().simpleName)
             val file = builder.addType(generateLanguage(language)).build()
-            for (concept in language.language.getConceptsInLanguageInner()) {
+            for (concept in language.getConceptsInLanguage()) {
                 generateConceptFile(concept)
             }
             file.write()
@@ -74,7 +74,7 @@ class MetaModelGenerator(val outputDir: Path) {
         return builder.build()
     }
 
-    private fun generateConceptFile(concept: ConceptInLanguageInner) {
+    private fun generateConceptFile(concept: LanguageSet.ConceptInLanguage) {
         FileSpec.builder(concept.language.name, concept.concept.name)
             .addType(generateConceptObject(concept))
             .addType(generateConceptWrapperInterface(concept))
@@ -86,7 +86,7 @@ class MetaModelGenerator(val outputDir: Path) {
             .build().write()
     }
 
-    private fun generateConceptObject(concept: ConceptInLanguageInner): TypeSpec {
+    private fun generateConceptObject(concept: LanguageSet.ConceptInLanguage): TypeSpec {
         return TypeSpec.objectBuilder(concept.conceptObjectName()).apply {
             superclass(GeneratedConcept::class.asTypeName().parameterizedBy(
                 concept.nodeWrapperImplType(),
@@ -143,7 +143,7 @@ class MetaModelGenerator(val outputDir: Path) {
         }.build()
     }
 
-    private fun generateConceptWrapperInterface(concept: ConceptInLanguageInner): TypeSpec {
+    private fun generateConceptWrapperInterface(concept: LanguageSet.ConceptInLanguage): TypeSpec {
         return TypeSpec.interfaceBuilder(concept.conceptWrapperInterfaceType()).apply {
             addSuperinterface(ITypedConcept::class)
             for (extended in concept.extended()) {
@@ -159,7 +159,7 @@ class MetaModelGenerator(val outputDir: Path) {
         }.build()
     }
 
-    private fun generateConceptWrapperImpl(concept: ConceptInLanguageInner): TypeSpec {
+    private fun generateConceptWrapperImpl(concept: LanguageSet.ConceptInLanguage): TypeSpec {
         return TypeSpec.classBuilder(concept.conceptWrapperImplType()).apply {
             addModifiers(KModifier.OPEN)
             if (concept.extends().isEmpty()) {
@@ -208,7 +208,7 @@ class MetaModelGenerator(val outputDir: Path) {
         }.build()
     }
 
-    private fun generateNodeWrapperImpl(concept: ConceptInLanguageInner): TypeSpec {
+    private fun generateNodeWrapperImpl(concept: LanguageSet.ConceptInLanguage): TypeSpec {
         return TypeSpec.classBuilder(concept.nodeWrapperImplType()).apply {
             addModifiers(KModifier.OPEN)
             addProperty(PropertySpec.builder(TypedNodeImpl::_concept.name, concept.conceptWrapperImplType(), KModifier.OVERRIDE)
@@ -269,9 +269,8 @@ class MetaModelGenerator(val outputDir: Path) {
         }.build()
     }
 
-    private fun generateNodeWrapperInterface(concept: ConceptInLanguageInner): TypeSpec {
+    private fun generateNodeWrapperInterface(concept: LanguageSet.ConceptInLanguage): TypeSpec {
         return TypeSpec.interfaceBuilder(concept.nodeWrapperInterfaceType()).apply {
-            addAnnotation(ClassName("kotlin.js", "JsExport"))
             if (concept.extends().isEmpty()) addSuperinterface(ITypedNode::class.asTypeName())
             for (extended in concept.extends()) {
                 addSuperinterface(extended.nodeWrapperInterfaceType())
@@ -302,84 +301,6 @@ class MetaModelGenerator(val outputDir: Path) {
             }
         }.build()
     }
-
-    private inner class ConceptInLanguageInner(val concept: ConceptData, val language: LanguageData) {
-        /**
-         * Unknown concepts are not included!
-         */
-        private val resolvedDirectSuperConcepts: List<ConceptInLanguageInner> by lazy {
-            concept.extends.map { it.parseConceptRef(language) }.mapNotNull { conceptsMap[it.toString()] }
-        }
-        fun getConceptFqName() = language.name + "." + concept.name
-        fun conceptObjectName() = concept.conceptObjectName()
-        fun conceptObjectType() = ClassName(language.name, concept.conceptObjectName())
-        fun nodeWrapperImplName() = concept.nodeWrapperImplName()
-        fun nodeWrapperImplType() = ClassName(language.name, concept.nodeWrapperImplName())
-        fun nodeWrapperInterfaceType() = ClassName(language.name, concept.nodeWrapperInterfaceName())
-        fun conceptWrapperImplType() = ClassName(language.name, concept.conceptWrapperImplName())
-        fun conceptWrapperInterfaceType() = ClassName(language.name, concept.conceptWrapperInterfaceName())
-        fun extended(): List<ConceptRef> = concept.extends.map { it.parseConceptRef(language) }
-        fun extends() = extended()
-        fun resolveMultipleInheritanceConflicts(): Map<ConceptInLanguageInner, ConceptInLanguageInner> {
-            val inheritedFrom = LinkedHashMap<ConceptInLanguageInner, MutableSet<ConceptInLanguageInner>>()
-            for (superConcept in resolvedDirectSuperConcepts) {
-                loadInheritance(superConcept, inheritedFrom)
-            }
-            return inheritedFrom.filter { it.value.size > 1 }.map { it.key to it.value.first() }.toMap()
-        }
-        fun allSuperConcepts(): List<ConceptInLanguageInner> =
-            resolvedDirectSuperConcepts.flatMap { listOf(it) + it.allSuperConcepts() }.distinct()
-        fun directFeatures(): List<FeatureInConcept> = (concept.properties + concept.children + concept.references)
-            .map { FeatureInConcept(this, it) }
-        fun allFeatures(): List<FeatureInConcept> = allSuperConcepts().flatMap { it.directFeatures() }.distinct()
-        fun directFeaturesAndConflicts(): List<FeatureInConcept> =
-            (directFeatures() + resolveMultipleInheritanceConflicts().flatMap { it.key.allFeatures() })
-                .distinct().groupBy { it.validName }.values.map { it.first() }
-        fun ref() = ConceptRef(language.name, concept.name)
-        fun loadInheritance(directSuperConcept: ConceptInLanguageInner, inheritedFrom: MutableMap<ConceptInLanguageInner, MutableSet<ConceptInLanguageInner>>) {
-            for (superConcept in resolvedDirectSuperConcepts) {
-                inheritedFrom.computeIfAbsent(superConcept, { LinkedHashSet() }).add(directSuperConcept)
-                superConcept.loadInheritance(directSuperConcept, inheritedFrom)
-            }
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as ConceptInLanguageInner
-
-            if (concept != other.concept) return false
-            if (language != other.language) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = concept.hashCode()
-            result = 31 * result + language.hashCode()
-            return result
-        }
-    }
-
-    private data class FeatureInConcept(val concept: ConceptInLanguageInner, val data: IConceptFeatureData) {
-        val validName: String = if (reservedPropertyNames.contains(data.name)) data.name + "_" else data.name
-        val originalName: String = data.name
-        fun kotlinRef() = concept.conceptObjectType().canonicalName + "." + CodeBlock.of("%N", validName)
-        fun generatedChildLinkType(): TypeName {
-            val childConcept = (data as ChildLinkData).type.parseConceptRef(concept.language)
-            val linkClass = if (data.multiple) GeneratedChildListLink::class else GeneratedSingleChildLink::class
-            return linkClass.asClassName().parameterizedBy(
-                childConcept.nodeWrapperInterfaceType(), childConcept.conceptWrapperInterfaceType())
-        }
-        fun generatedReferenceLinkType(): TypeName {
-            val targetConcept = (data as ReferenceLinkData).type.parseConceptRef(concept.language)
-            return GeneratedReferenceLink::class.asClassName().parameterizedBy(
-                targetConcept.nodeWrapperInterfaceType(), targetConcept.conceptWrapperInterfaceType())
-        }
-    }
-
-    private fun LanguageData.getConceptsInLanguageInner() = concepts.map { ConceptInLanguageInner(it, this) }
 }
 
 fun ConceptRef.conceptWrapperImplType() = ClassName(languageName, conceptName.conceptWrapperImplName())
@@ -406,4 +327,26 @@ private fun String.fqNamePrefix(prefix: String, suffix: String = ""): String {
     } else {
         prefix + this
     } + suffix
+}
+
+fun LanguageSet.ConceptInLanguage.getConceptFqName() = language.name + "." + concept.name
+fun LanguageSet.ConceptInLanguage.conceptObjectName() = concept.conceptObjectName()
+fun LanguageSet.ConceptInLanguage.conceptObjectType() = ClassName(language.name, concept.conceptObjectName())
+fun LanguageSet.ConceptInLanguage.nodeWrapperImplName() = concept.nodeWrapperImplName()
+fun LanguageSet.ConceptInLanguage.nodeWrapperImplType() = ClassName(language.name, concept.nodeWrapperImplName())
+fun LanguageSet.ConceptInLanguage.nodeWrapperInterfaceType() = ClassName(language.name, concept.nodeWrapperInterfaceName())
+fun LanguageSet.ConceptInLanguage.conceptWrapperImplType() = ClassName(language.name, concept.conceptWrapperImplName())
+fun LanguageSet.ConceptInLanguage.conceptWrapperInterfaceType() = ClassName(language.name, concept.conceptWrapperInterfaceName())
+
+fun FeatureInConcept.kotlinRef() = concept.conceptObjectType().canonicalName + "." + CodeBlock.of("%N", validName)
+fun FeatureInConcept.generatedChildLinkType(): TypeName {
+    val childConcept = (data as ChildLinkData).type.parseConceptRef(concept.language)
+    val linkClass = if (data.multiple) GeneratedChildListLink::class else GeneratedSingleChildLink::class
+    return linkClass.asClassName().parameterizedBy(
+        childConcept.nodeWrapperInterfaceType(), childConcept.conceptWrapperInterfaceType())
+}
+fun FeatureInConcept.generatedReferenceLinkType(): TypeName {
+    val targetConcept = (data as ReferenceLinkData).type.parseConceptRef(concept.language)
+    return GeneratedReferenceLink::class.asClassName().parameterizedBy(
+        targetConcept.nodeWrapperInterfaceType(), targetConcept.conceptWrapperInterfaceType())
 }

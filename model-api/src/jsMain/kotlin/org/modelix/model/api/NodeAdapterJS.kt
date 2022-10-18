@@ -25,8 +25,6 @@ object JSNodeConverter {
     }
 }
 
-
-
 // workaround: because of the missing import for INodeJS, this intermediate interface prevents it from being generated
 // into the .d.ts file.
 interface INodeJS_ : INodeJS

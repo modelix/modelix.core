@@ -20,6 +20,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
 ktlint {
     disabledRules.add("no-wildcard-imports")
     outputToConsole.set(true)
+    this.filter {
+        this.exclude {
+            it.file.toPath().toAbsolutePath().startsWith(buildDir.toPath().toAbsolutePath())
+        }
+    }
 }
 
 tasks.named("check") {
@@ -72,8 +77,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                api(npm("ts-model-api", rootDir.resolve("ts-model-api")))
-                api(npm("@types/ts-model-api", rootDir.resolve("ts-model-api"), generateExternals = true))
+                api(npm("ts-model-api", rootDir.resolve("ts-model-api"), generateExternals = true))
             }
         }
         val jsTest by getting {

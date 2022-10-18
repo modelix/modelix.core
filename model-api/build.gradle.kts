@@ -30,6 +30,10 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.js.dukat.IntegratedDukatTask>
     dependsOn(":ts-model-api:npm_run_build")
 }
 
+tasks.named("sourcesJar") {
+    dependsOn("jsIrGenerateExternalsIntegrated")
+}
+
 kotlin {
     jvm()
     js(BOTH) {
@@ -68,7 +72,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                api(npm("ts-model-api", rootDir.resolve("ts-model-api"), generateExternals = true))
+                api(npm("ts-model-api", rootDir.resolve("ts-model-api")))
                 api(npm("@types/ts-model-api", rootDir.resolve("ts-model-api"), generateExternals = true))
             }
         }

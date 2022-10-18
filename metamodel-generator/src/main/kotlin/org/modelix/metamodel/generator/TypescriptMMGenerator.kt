@@ -1,6 +1,5 @@
 package org.modelix.metamodel.generator
 
-import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.writeText
 
@@ -55,7 +54,8 @@ class TypescriptMMGenerator(val outputDir: Path) {
               SingleChildAccessor,
               GeneratedLanguage,
               INodeJS,
-              TypedNode
+              TypedNode,
+              ITypedNode
             } from "ts-model-api";
             
             ${language.languageDependencies().joinToString("\n") {
@@ -70,7 +70,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
                     super("${language.name}")
                     
                     ${language.getConceptsInLanguage().joinToString("\n") { concept -> """
-                        this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.simpleName}(node))
+                        this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.concept.nodeWrapperImplName()}(node))
                     """.trimIndent() }}
                 }
                 /*
@@ -88,7 +88,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
     }
 
     private fun generateConcept(concept: LanguageSet.ConceptInLanguage): String {
-        val features = concept.allFeatures().joinToString("\n") { feature ->
+        val featuresImpl = concept.allFeatures().joinToString("\n") { feature ->
             when (val data = feature.data) {
                 is PropertyData -> """
                     public set ${feature.validName}(value: string | undefined) {
@@ -103,25 +103,61 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 """.trimIndent()
                 is ChildLinkData -> {
                     val accessorClassName = if (data.multiple) "ChildListAccessor" else "SingleChildAccessor"
+                    val typeRef = data.type.parseConceptRef(concept.language)
+                    val languagePrefix = if (typeRef.languageName == concept.language.name) {
+                        ""
+                    } else {
+                        typeRef.languageName.languageClassName() + "."
+                    }
                     """
-                        public ${feature.validName}: $accessorClassName<${data.type.parseConceptRef(concept.language).tsClassName()}> = new $accessorClassName(this.node, "${data.name}")
+                        public ${feature.validName}: $accessorClassName<$languagePrefix${typeRef.conceptName.nodeWrapperInterfaceName()}> = new $accessorClassName(this.node, "${data.name}")
                     """.trimIndent()
                 }
                 else -> ""
             }
         }
+        val features = concept.directFeatures().joinToString("\n") { feature ->
+            when (val data = feature.data) {
+                is PropertyData -> """
+                    ${feature.validName}: string | undefined
+                """.trimIndent()
+                is ReferenceLinkData -> """
+                    
+                """.trimIndent()
+                is ChildLinkData -> {
+                    val accessorClassName = if (data.multiple) "ChildListAccessor" else "SingleChildAccessor"
+                    """
+                        ${feature.validName}: $accessorClassName<${data.type.parseConceptRef(concept.language).tsInterfaceRef(concept.language.name)}>
+                    """.trimIndent()
+                }
+                else -> ""
+            }
+        }
+        val interfaceList = concept.directSuperConcepts().joinToString(", ") { it.ref().tsInterfaceRef(concept.language.name) }.ifEmpty { "ITypedNode" }
         return """
             
-            export class ${concept.concept.name} extends TypedNode {
-                ${features.replaceIndent("                ")}
-                ${concept.directFeaturesAndConflicts().joinToString("\n") { """// feature: ${it.originalName} """ }}
-                ${concept.allSuperConcepts().joinToString("\n") { """// super concept: ${it.fqName} """ }}
+            export interface ${concept.concept.nodeWrapperInterfaceName()} extends $interfaceList {
+                ${features}
             }
+            
+            export class ${concept.concept.nodeWrapperImplName()} extends TypedNode {
+                ${featuresImpl.replaceIndent("                ")}
+            }
+            
         """.trimIndent()
     }
 }
 
 fun ConceptRef.tsClassName() = this.languageName.languageClassName() + "." + this.conceptName
+fun ConceptRef.tsInterfaceRef(contextLanguage: String) = languagePrefix(contextLanguage) + this.conceptName.nodeWrapperInterfaceName()
+fun ConceptRef.languagePrefix(contextLanguage: String): String {
+    return if (this.languageName == contextLanguage) {
+        ""
+    } else {
+        this.languageName.languageClassName() + "."
+    }
+}
+fun LanguageSet.ConceptInLanguage.tsClassName() = ConceptRef(language.name, concept.name).tsClassName()
 fun LanguageSet.LanguageInSet.languageDependencies(): List<LanguageSet.LanguageInSet> {
     val languageNames = this.getConceptsInLanguage()
         .flatMap { it.allFeatures() }
@@ -132,6 +168,7 @@ fun LanguageSet.LanguageInSet.languageDependencies(): List<LanguageSet.LanguageI
                 else -> null
             }?.parseConceptRef(language)
         }
+        .plus(this.getConceptsInLanguage().flatMap { it.directSuperConcepts() }.map { it.ref() })
         .map { it.languageName }
         .toSet()
     return getLanguageSet().getLanguages().filter { languageNames.contains(it.name) }.minus(this)

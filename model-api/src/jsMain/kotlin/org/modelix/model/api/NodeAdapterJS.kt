@@ -16,6 +16,10 @@ object JSNodeConverter {
         return (node as NodeAdapterJS).node
     }
 
+    fun unwrapNode(node: Any): Any {
+        return if (node is NodeAdapterJS) node.node else node
+    }
+
     fun isJsNode(node: Any): Boolean {
         return node is NodeAdapterJS
     }

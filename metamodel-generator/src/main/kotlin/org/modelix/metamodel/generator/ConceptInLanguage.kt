@@ -51,6 +51,10 @@ class LanguageSet(languages: List<LanguageData>) {
             return inheritedFrom.filter { it.value.size > 1 }.map { it.key to it.value.first() }.toMap()
         }
 
+        fun directSuperConcepts(): List<ConceptInLanguage> {
+            return resolvedDirectSuperConcepts
+        }
+
         fun allSuperConcepts(): List<ConceptInLanguage> =
             resolvedDirectSuperConcepts.flatMap { listOf(it) + it.allSuperConcepts() }.distinct()
 

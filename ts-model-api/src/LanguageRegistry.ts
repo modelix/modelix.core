@@ -1,6 +1,6 @@
 import type {GeneratedLanguage} from "./GeneratedLanguage";
 import type {INodeJS} from "./INodeJS";
-import {TypedNode} from "./TypedNode";
+import {ITypedNode, TypedNode} from "./TypedNode";
 
 export class LanguageRegistry {
   public static INSTANCE: LanguageRegistry = new LanguageRegistry();
@@ -25,7 +25,7 @@ export class LanguageRegistry {
     return Array.from(this.languages.values());
   }
 
-  public wrapNode(node: INodeJS): TypedNode {
+  public wrapNode(node: INodeJS): ITypedNode {
     if (this.nodeWrappers === undefined) {
       this.nodeWrappers = new Map()
       for (let lang of this.languages.values()) {

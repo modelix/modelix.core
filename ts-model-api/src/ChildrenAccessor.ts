@@ -1,8 +1,8 @@
-import type {TypedNode} from "./TypedNode";
+import type {ITypedNode, TypedNode} from "./TypedNode";
 import type {INodeJS} from "./INodeJS";
 import {LanguageRegistry} from "./LanguageRegistry";
 
-export abstract class ChildrenAccessor<ChildT extends TypedNode> implements Iterable<ChildT> {
+export abstract class ChildrenAccessor<ChildT extends ITypedNode> implements Iterable<ChildT> {
   constructor(public parentNode: INodeJS, public role: string | undefined) {
   }
 
@@ -20,13 +20,13 @@ export abstract class ChildrenAccessor<ChildT extends TypedNode> implements Iter
 }
 
 
-export class ChildListAccessor<ChildT extends TypedNode> extends ChildrenAccessor<ChildT> {
+export class ChildListAccessor<ChildT extends ITypedNode> extends ChildrenAccessor<ChildT> {
   constructor(parentNode: INodeJS, role: string | undefined) {
     super(parentNode, role);
   }
 }
 
-export class SingleChildAccessor<ChildT extends TypedNode> extends ChildrenAccessor<ChildT> {
+export class SingleChildAccessor<ChildT extends ITypedNode> extends ChildrenAccessor<ChildT> {
   constructor(parentNode: INodeJS, role: string | undefined) {
     super(parentNode, role);
   }
@@ -39,7 +39,7 @@ export class SingleChildAccessor<ChildT extends TypedNode> extends ChildrenAcces
   public setNew(): ChildT {
     let existing = this.get();
     if (existing !== undefined) {
-      this.parentNode.removeChild(existing.node)
+      this.parentNode.removeChild(existing.unwrap())
     }
     return this.wrapChild(this.parentNode.addNewChild(this.role, 0, undefined))
   }

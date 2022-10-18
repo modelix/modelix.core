@@ -55,6 +55,8 @@ class LanguageSet(languages: List<LanguageData>) {
             return resolvedDirectSuperConcepts
         }
 
+        fun allSuperConceptsAndSelf() = listOf(this) + allSuperConcepts()
+
         fun allSuperConcepts(): List<ConceptInLanguage> =
             resolvedDirectSuperConcepts.flatMap { listOf(it) + it.allSuperConcepts() }.distinct()
 

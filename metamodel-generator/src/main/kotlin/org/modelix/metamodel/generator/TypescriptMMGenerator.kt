@@ -134,13 +134,24 @@ class TypescriptMMGenerator(val outputDir: Path) {
             }
         }
         val interfaceList = concept.directSuperConcepts().joinToString(", ") { it.ref().tsInterfaceRef(concept.language.name) }.ifEmpty { "ITypedNode" }
+        // TODO extend first super concept do reduce the number of generated members
         return """
             
             export interface ${concept.concept.nodeWrapperInterfaceName()} extends $interfaceList {
+                ${concept.ref().markerPropertyName()}: boolean
                 ${features}
             }
             
-            export class ${concept.concept.nodeWrapperImplName()} extends TypedNode {
+            export namespace ${concept.concept.nodeWrapperInterfaceName()} {
+                export function isInstance(node: ITypedNode): node is ${concept.concept.nodeWrapperInterfaceName()} {
+                    return '${concept.ref().markerPropertyName()}' in node;
+                }
+            }
+            
+            export class ${concept.concept.nodeWrapperImplName()} extends TypedNode implements ${concept.concept.nodeWrapperInterfaceName()} {
+                ${concept.allSuperConceptsAndSelf().joinToString("\n") {
+                    """public ${it.ref().markerPropertyName()}: boolean = true"""
+                }}
                 ${featuresImpl.replaceIndent("                ")}
             }
             
@@ -148,6 +159,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
     }
 }
 
+private fun ConceptRef.markerPropertyName() = "_is_" + toString().replace(".", "_")
 fun ConceptRef.tsClassName() = this.languageName.languageClassName() + "." + this.conceptName
 fun ConceptRef.tsInterfaceRef(contextLanguage: String) = languagePrefix(contextLanguage) + this.conceptName.nodeWrapperInterfaceName()
 fun ConceptRef.languagePrefix(contextLanguage: String): String {

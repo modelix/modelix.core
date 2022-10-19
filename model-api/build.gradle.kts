@@ -31,14 +31,6 @@ tasks.named("check") {
     dependsOn("ktlintCheck")
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.targets.js.dukat.IntegratedDukatTask> {
-    dependsOn(":ts-model-api:npm_run_build")
-}
-
-tasks.named("sourcesJar") {
-    dependsOn("jsIrGenerateExternalsIntegrated")
-}
-
 kotlin {
     jvm()
     js(BOTH) {

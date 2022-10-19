@@ -24,10 +24,10 @@ val updateVersion = tasks.register<NpmTask>("updateVersion") {
   args.set(listOf("version", "$version"))
 }
 
-tasks.named("npm_run_publish") {
+tasks.named("npm_publish") {
   dependsOn(updateVersion)
 }
 
 tasks.named("publish") {
-  dependsOn("npm_run_publish")
+  dependsOn("npm_publish")
 }

@@ -23,6 +23,7 @@
   "main": "dist/index",
   "module": "dist/index.mjs",
   "typings": "dist/index.d.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.prod.json",
     "clean": "shx rm -rf dist/ .*cache *.log",

@@ -34,11 +34,6 @@
     "ts": "tsc",
     "watch": "tsc --watch"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint && tsc --noEmit"
-    }
-  },
   "dependencies": {},
   "devDependencies": {
     "@reallyland/tsconfig": "^2.0.0",

@@ -26,4 +26,3 @@ export interface INodeJS {
 
 type INodeReferenceJS = any
 type IConceptJS = any
-

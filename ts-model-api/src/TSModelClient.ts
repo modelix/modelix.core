@@ -58,7 +58,7 @@ export class ModelService {
       parent: parent,
       role: role,
       index: index,
-      concept: concept
+      concept: concept,
     }]
     this.server.sendUpdate(body)
   }
@@ -69,7 +69,7 @@ export class ModelService {
     return parentData.children[role]
   }
 
-  public containsNode(nodeId: NodeId): Boolean {
+  public containsNode(nodeId: NodeId): boolean {
     return this.nodes.has(nodeId)
   }
 
@@ -169,7 +169,6 @@ export class NodeFromService implements INode {
 
   setReferenceTargetRef(role: string, target: INodeReference | null): void {
   }
-
 
 }
 */

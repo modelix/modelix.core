@@ -5,7 +5,7 @@ import type {TypedNode} from "./TypedNode";
 
 export abstract class GeneratedLanguage implements ILanguage {
 
-  public nodeWrappers: Map<String, (node: INodeJS)=>TypedNode> = new Map()
+  public nodeWrappers: Map<string, (node: INodeJS) => TypedNode> = new Map()
 
   constructor(readonly name: string) {}
 
@@ -25,13 +25,11 @@ export abstract class GeneratedLanguage implements ILanguage {
     if (!this.isRegistered()) throw Error("Language " + this.name + " is not registered")
   }
 
-  public getName(): String {
+  public getName(): string {
     return this.name
   }
 
-  public getUID(): String {
+  public getUID(): string {
     return this.name
   }
-
-
 }

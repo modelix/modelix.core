@@ -4,8 +4,8 @@ import {ITypedNode, TypedNode} from "./TypedNode";
 
 export class LanguageRegistry {
   public static INSTANCE: LanguageRegistry = new LanguageRegistry();
-  private languages: Map<String, GeneratedLanguage> = new Map();
-  private nodeWrappers: Map<String, (node: INodeJS)=>TypedNode> | undefined = undefined
+  private languages: Map<string, GeneratedLanguage> = new Map();
+  private nodeWrappers: Map<string, (node: INodeJS) => TypedNode> | undefined = undefined
 
   public register(lang: GeneratedLanguage): void {
     this.languages.set(lang.name, lang);

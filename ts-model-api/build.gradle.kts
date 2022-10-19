@@ -1,6 +1,7 @@
 import com.github.gradle.node.task.NodeTask
 
 plugins {
+  base
   id("com.github.node-gradle.node") version "3.4.0"
 }
 
@@ -16,4 +17,8 @@ tasks.named("npm_run_build") {
   inputs.file("package-lock.json")
 
   outputs.dir("dist")
+}
+
+tasks.named("publish") {
+  dependsOn("npm_run_publish")
 }

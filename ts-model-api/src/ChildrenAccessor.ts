@@ -19,7 +19,6 @@ export abstract class ChildrenAccessor<ChildT extends ITypedNode> implements Ite
   }
 }
 
-
 export class ChildListAccessor<ChildT extends ITypedNode> extends ChildrenAccessor<ChildT> {
   constructor(parentNode: INodeJS, role: string | undefined) {
     super(parentNode, role);

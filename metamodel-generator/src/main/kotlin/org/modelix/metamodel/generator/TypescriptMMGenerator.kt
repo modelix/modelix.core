@@ -29,7 +29,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
 
     private fun generateRegistry(languages: LanguageSet) {
         outputDir.resolve("index.ts").writeText("""
-            import { LanguageRegistry } from "ts-model-api";
+            import { LanguageRegistry } from "@modelix/ts-model-api";
             ${languages.getLanguages().joinToString("\n") { """
                 import { ${it.simpleClassName()} } from "./${it.simpleClassName()}";
             """.trimIndent() }}
@@ -56,7 +56,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
               INodeJS,
               TypedNode,
               ITypedNode
-            } from "ts-model-api";
+            } from "@modelix/ts-model-api";
             
             ${language.languageDependencies().joinToString("\n") {
                 """import {${it.simpleClassName()}} from "./${it.simpleClassName()}";"""

@@ -1,3 +1,4 @@
+import com.github.gradle.node.npm.task.NpmTask
 import com.github.gradle.node.task.NodeTask
 
 plugins {
@@ -17,6 +18,14 @@ tasks.named("npm_run_build") {
   inputs.file("package-lock.json")
 
   outputs.dir("dist")
+}
+
+val updateVersion = tasks.register<NpmTask>("updateVersion") {
+  args.set(listOf("version", "$version"))
+}
+
+tasks.named("npm_run_publish") {
+  dependsOn(updateVersion)
 }
 
 tasks.named("publish") {

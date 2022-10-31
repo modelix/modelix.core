@@ -104,9 +104,8 @@ class IncrementalBranch(val branch: IBranch) : IBranch {
         TODO("Not yet implemented")
     }
 
-    open inner class IncrementalTransaction<TransactionT : ITransaction>(val transaction: TransactionT) : ITransaction {
+    abstract inner class IncrementalTransaction<TransactionT : ITransaction>(val transaction: TransactionT) : ITransaction {
         override val branch: IBranch get() = this@IncrementalBranch
-        override val tree: ITree get() = IncrementalTree(transaction.tree)
 
         override fun containsNode(nodeId: Long): Boolean {
             accessed(UnclassifiedNodeDependency(this@IncrementalBranch, nodeId))
@@ -174,8 +173,15 @@ class IncrementalBranch(val branch: IBranch) : IBranch {
         }
     }
 
-    inner class IncrementalReadTransaction(transaction: IReadTransaction) : IncrementalTransaction<IReadTransaction>(transaction), IReadTransaction
+    inner class IncrementalReadTransaction(transaction: IReadTransaction) : IncrementalTransaction<IReadTransaction>(transaction), IReadTransaction {
+        override val tree: ITree
+            get() = IncrementalTree(transaction.tree)
+    }
+
     inner class IncrementalWriteTransaction(transaction: IWriteTransaction) : IncrementalTransaction<IWriteTransaction>(transaction), IWriteTransaction {
+        override var tree: ITree
+            get() = IncrementalTree(transaction.tree)
+            set(value) { if (value is IncrementalTree) transaction.tree = value.tree else tree }
         override fun setProperty(nodeId: Long, role: String, value: String?) {
             transaction.setProperty(nodeId, role, value)
             modified(PropertyDependency(this@IncrementalBranch, nodeId, role))

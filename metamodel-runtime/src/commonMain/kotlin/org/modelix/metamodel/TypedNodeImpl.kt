@@ -18,5 +18,20 @@ abstract class TypedNodeImpl(val wrappedNode: INode) : ITypedNode {
     override fun unwrap(): INode {
         return wrappedNode
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as TypedNodeImpl
+
+        if (wrappedNode != other.wrappedNode) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return wrappedNode.hashCode()
+    }
 }
 

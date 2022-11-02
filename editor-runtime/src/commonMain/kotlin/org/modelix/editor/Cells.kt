@@ -1,10 +1,33 @@
 package org.modelix.editor
 
-open class Cell {
+interface IFreezable {
+    fun freeze()
+    fun checkNotFrozen()
+}
+
+open class Freezable {
+    private var frozen: Boolean = false
+    open fun freeze() {
+        frozen = true
+    }
+
+    fun checkNotFrozen() {
+        if (frozen) {
+            throw IllegalStateException("Cell cannot be modified anymore")
+        }
+    }
+}
+
+open class Cell : Freezable() {
     var parent: Cell? = null
     private val children: MutableList<Cell> = ArrayList()
     val actions: MutableList<ICellAction> = ArrayList()
     val properties = CellProperties()
+
+    override fun freeze() {
+        super.freeze()
+        properties.freeze()
+    }
 
     override fun toString(): String {
         return children.toString()
@@ -47,7 +70,7 @@ open class Cell {
     }
 }
 
-class CellProperties {
+class CellProperties : Freezable() {
     private val properties: MutableMap<CellPropertyKey<*>, Any?> = HashMap()
     operator fun <T> get(key: CellPropertyKey<T>): T {
         return if (properties.containsKey(key)) properties[key] as T else key.defaultValue
@@ -56,6 +79,7 @@ class CellProperties {
     fun isSet(key: CellPropertyKey<*>): Boolean = properties.containsKey(key)
 
     operator fun <T> set(key: CellPropertyKey<T>, value: T) {
+        checkNotFrozen()
         properties[key] = value
     }
 
@@ -64,6 +88,7 @@ class CellProperties {
     }
 
     fun addAll(from: CellProperties) {
+        checkNotFrozen()
         properties += from.properties
     }
 }

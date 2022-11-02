@@ -12,6 +12,7 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
     private val editorsForConcept: MutableMap<IConceptReference, MutableList<ConceptEditor<*, *>>> = LinkedHashMap()
     private val createCellIncremental: (ITypedNode)->Cell = incrementalEngine.incrementalFunction("createCell") { context, node ->
         val cell = doCreateCell(node)
+        cell.freeze()
         LOG.trace { "Cell created for $node: $cell" }
         cell
     }

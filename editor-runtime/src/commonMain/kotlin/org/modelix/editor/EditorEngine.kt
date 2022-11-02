@@ -11,7 +11,9 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
     private val editors: MutableSet<LanguageEditors<*>> = HashSet()
     private val editorsForConcept: MutableMap<IConceptReference, MutableList<ConceptEditor<*, *>>> = LinkedHashMap()
     private val createCellIncremental: (ITypedNode)->Cell = incrementalEngine.incrementalFunction("createCell") { context, node ->
-        doCreateCell(node)
+        val cell = doCreateCell(node)
+        LOG.trace { "Cell created for $node: $cell" }
+        cell
     }
 
     fun registerEditors(languageEditors: LanguageEditors<*>) {
@@ -26,17 +28,26 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
     }
 
     private fun <NodeT : ITypedNode> doCreateCell(node: NodeT): Cell {
-        val editors = node._concept._concept.getAllConcepts()
-            .firstNotNullOfOrNull { editorsForConcept[it.getReference()] }
-        val editor = editors?.firstOrNull() as ConceptEditor<NodeT, *>?
-        if (editor != null) {
-            return editor.apply(this, node)
-        } else {
-            return TextCell("<no editor for ${node._concept._concept.getLongName()}>", "")
+        try {
+            val editors = node._concept._concept.getAllConcepts()
+                .firstNotNullOfOrNull { editorsForConcept[it.getReference()] }
+            val editor = editors?.firstOrNull() as ConceptEditor<NodeT, *>?
+            if (editor != null) {
+                return editor.apply(this, node)
+            } else {
+                return TextCell("<no editor for ${node._concept._concept.getLongName()}>", "")
+            }
+        } catch (ex: Exception) {
+            LOG.error(ex) { "Failed to create cell for $node" }
+            return TextCell("<ERROR: ${ex.message}>", "")
         }
     }
 
     fun dispose() {
         incrementalEngine.dispose()
+    }
+
+    companion object {
+        private val LOG = mu.KotlinLogging.logger {}
     }
 }

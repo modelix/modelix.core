@@ -21,7 +21,10 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
         return cell
     }
     protected open fun applyChildren(editor: EditorEngine, node: NodeT, cell: Cell) {
-        children.map { it.apply(editor, node) }.forEach { cell.addChild(it) }
+        children.map { it.apply(editor, node) }.forEach { child ->
+            child.parent?.removeChild(child) // child may be cached and is still attached to the old parent
+            cell.addChild(child)
+        }
     }
     protected abstract fun createCell(editor: EditorEngine, node: NodeT): Cell
 }
@@ -95,7 +98,10 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
             cell.addChild(TextCell("", "<no ${link.name}>"))
         } else {
             val childCells = childNodes.map { editor.createCell(it.typed()) }
-            childCells.forEach { cell.addChild(it) }
+            childCells.forEach {child ->
+                child.parent?.removeChild(child) // child may be cached and is still attached to the old parent
+                cell.addChild(child)
+            }
         }
     }
 

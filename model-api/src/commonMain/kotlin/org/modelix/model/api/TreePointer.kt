@@ -4,8 +4,9 @@ package org.modelix.model.api
  * A non thread safe branch without real transactions.
  * Provides better performance for temporary branches that are not shared.
  */
-class TreePointer(var tree_: ITree, val idGenerator: IIdGenerator = IdGeneratorDummy()) : IBranch, IWriteTransaction, IReadTransaction {
+class TreePointer(private var tree_: ITree, val idGenerator: IIdGenerator = IdGeneratorDummy()) : IBranch, IWriteTransaction, IReadTransaction {
     private val userObjects = HashMap<Any, Any?>()
+    private val listeners = LinkedHashSet<IBranchListener>()
     override fun getUserObject(key: Any) = userObjects[key]
 
     override fun putUserObject(key: Any, value: Any?) {
@@ -14,7 +15,11 @@ class TreePointer(var tree_: ITree, val idGenerator: IIdGenerator = IdGeneratorD
 
     override var tree: ITree
         get() = tree_
-        set(value) { tree_ = value }
+        set(value) {
+            val oldTree = tree
+            tree_ = value
+            listeners.forEach { it.treeChanged(oldTree, value) }
+        }
 
     override fun runRead(runnable: () -> Unit) {
         runnable()
@@ -48,11 +53,11 @@ class TreePointer(var tree_: ITree, val idGenerator: IIdGenerator = IdGeneratorD
         get() = this
 
     override fun addListener(l: IBranchListener) {
-        throw UnsupportedOperationException()
+        listeners.add(l)
     }
 
     override fun removeListener(l: IBranchListener) {
-        throw UnsupportedOperationException()
+        listeners.remove(l)
     }
 
     override val branch: IBranch

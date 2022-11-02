@@ -16,6 +16,12 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
         LOG.trace { "Cell created for $node: $cell" }
         cell
     }
+    private val createCellDataIncremental: (ITypedNode)->CellData = incrementalEngine.incrementalFunction("createCellData") { context, node ->
+        val cellData = doCreateCellData(node)
+        cellData.freeze()
+        LOG.trace { "Cell created for $node: $cellData" }
+        cellData
+    }
 
     fun registerEditors(languageEditors: LanguageEditors<*>) {
         editors.add(languageEditors)
@@ -28,7 +34,28 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
         return createCellIncremental(node)
     }
 
-    private fun <NodeT : ITypedNode> doCreateCell(node: NodeT): Cell {
+    private fun doCreateCell(node: ITypedNode): Cell {
+        return dataToCell(createCellDataIncremental(node))
+    }
+
+    private fun dataToCell(data: CellData): Cell {
+        val cell = Cell(data)
+        for (childData in data.children) {
+            val childCell: Cell = when (childData) {
+                is CellData -> {
+                    dataToCell(childData)
+                }
+                is ChildNodeCellReference -> {
+                    createCell(childData.childNode).also { it.parent?.removeChild(it) }
+                }
+                else -> throw RuntimeException("Unsupported: $childData")
+            }
+            cell.addChild(childCell)
+        }
+        return cell
+    }
+
+    private fun <NodeT : ITypedNode> doCreateCellData(node: NodeT): CellData {
         try {
             val editors = node._concept._concept.getAllConcepts()
                 .firstNotNullOfOrNull { editorsForConcept[it.getReference()] }
@@ -36,11 +63,11 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
             if (editor != null) {
                 return editor.apply(this, node)
             } else {
-                return TextCell("<no editor for ${node._concept._concept.getLongName()}>", "")
+                return TextCellData("<no editor for ${node._concept._concept.getLongName()}>", "")
             }
         } catch (ex: Exception) {
             LOG.error(ex) { "Failed to create cell for $node" }
-            return TextCell("<ERROR: ${ex.message}>", "")
+            return TextCellData("<ERROR: ${ex.message}>", "")
         }
     }
 
@@ -52,3 +79,9 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
         private val LOG = mu.KotlinLogging.logger {}
     }
 }
+
+private class CachedCell(val node: ITypedNode) {
+    val children: MutableList<CachedCell> = ArrayList()
+
+}
+

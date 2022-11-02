@@ -24,7 +24,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     }
 
     fun withNode(body: WithNodeContext.()->Unit) {
-        template.withNode += { node, _ -> body(WithNodeContext(node)) }
+        template.withNode += { node -> body(WithNodeContext(node)) }
     }
 
     fun String.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {

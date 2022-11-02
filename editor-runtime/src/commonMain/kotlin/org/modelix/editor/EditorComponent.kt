@@ -11,9 +11,9 @@ open class EditorComponent {
     fun toHtml(tagConsumer: TagConsumer<*>) {
         tagConsumer.div("editor") {
             div("main-layer") {
-                val layoutedCell = LayoutedCells()
+                val layoutedCell = TextLayouter()
                 rootCell?.layout(layoutedCell)
-                layoutedCell.toHtml(tagConsumer)
+                layoutedCell.close().toHtml(tagConsumer)
             }
             div("selection-layer") {
                 selection?.toHtml(tagConsumer)

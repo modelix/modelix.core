@@ -2,45 +2,26 @@ package org.modelix.editor
 
 import kotlinx.html.*
 
-class LayoutedCells {
+class LayoutedText : Freezable() {
     private val lines: MutableList<MutableList<ILayoutable>> = mutableListOf(ArrayList())
-    private var indent: Int = 0
-    private var autoInsertSpace: Boolean = true
-    private var insertNewLineNext: Boolean = false
 
-    fun onNewLine() {
-        insertNewLineNext = true
-    }
-    fun emptyLine() {
-        onNewLine()
+    fun addLine() {
+        checkNotFrozen()
         lines.add(ArrayList())
     }
-    fun withIndent(body: ()->Unit) {
-        val oldIndent = indent
-        try {
-            indent++
-            body()
-        } finally {
-            indent = oldIndent
-        }
-    }
-    fun noSpace() {
-        autoInsertSpace = false
-    }
-    fun append(element: ILayoutable) {
-        if (insertNewLineNext) {
-            insertNewLineNext = false
-            lines.add(ArrayList())
-        }
-        if (indent > 0 && (lines.isEmpty() || lines.last().isEmpty())) {
-            lines.last().add(LayoutableIndent(indent))
-        }
-        val lastOnLine = lines.last().lastOrNull()
-        if (autoInsertSpace && lastOnLine != null && !lastOnLine.isWhitespace()) {
-            lines.last().add(LayoutableText(" "))
-        }
+
+    fun isLastLineEmpty() = lines.isEmpty() || lines.last().isEmpty()
+
+    fun addElement(element: ILayoutable) {
+        checkNotFrozen()
+        if (lines.isEmpty()) addLine()
         lines.last().add(element)
-        autoInsertSpace = true
+    }
+
+    fun getLastElement(): ILayoutable? = lines.lastOrNull()?.lastOrNull()
+
+    fun copy() : LayoutedText {
+        return LayoutedText().also { copy -> copy.lines.addAll(lines.map { line -> ArrayList(line) }) }
     }
 
     override fun toString(): String {
@@ -71,6 +52,53 @@ class LayoutedCells {
     }
 }
 
+class TextLayouter {
+    private val text = LayoutedText()
+    private var indent: Int = 0
+    private var autoInsertSpace: Boolean = true
+    private var insertNewLineNext: Boolean = false
+
+    fun onNewLine() {
+        insertNewLineNext = true
+    }
+    fun emptyLine() {
+        onNewLine()
+        text.addLine()
+    }
+    fun withIndent(body: ()->Unit) {
+        val oldIndent = indent
+        try {
+            indent++
+            body()
+        } finally {
+            indent = oldIndent
+        }
+    }
+    fun noSpace() {
+        autoInsertSpace = false
+    }
+    fun append(element: ILayoutable) {
+        if (insertNewLineNext) {
+            insertNewLineNext = false
+            text.addLine()
+        }
+        if (indent > 0 && text.isLastLineEmpty()) {
+            text.addElement(LayoutableIndent(indent))
+        }
+        val lastOnLine = text.getLastElement()
+        if (autoInsertSpace && lastOnLine != null && !lastOnLine.isWhitespace()) {
+            text.addElement(LayoutableWord(" "))
+        }
+        text.addElement(element)
+        autoInsertSpace = true
+    }
+
+    fun close() : LayoutedText {
+        text.freeze()
+        return text
+    }
+}
+
 interface ILayoutable {
     fun getLength(): Int
     fun isWhitespace(): Boolean
@@ -78,7 +106,7 @@ interface ILayoutable {
     fun toHtml(consumer: TagConsumer<*>)
 }
 
-class LayoutableText(val text: String) : ILayoutable {
+class LayoutableWord(val text: String) : ILayoutable {
     override fun getLength(): Int = text.length
     override fun isWhitespace(): Boolean = text.isNotEmpty() && text.last().isWhitespace()
     override fun toText(): String = text
@@ -86,11 +114,14 @@ class LayoutableText(val text: String) : ILayoutable {
         consumer.onTagContent(text.useNbsp())
     }
 }
-class LayoutableCell(val cell: TextCell) : ILayoutable {
-    override fun getLength(): Int {
-        return cell.getVisibleText().length
+class LayoutableCell(val cell: Cell) : ILayoutable {
+    init {
+        require(cell.data is TextCellData) { "Not a text cell: $cell" }
     }
-    override fun toText(): String = cell.getVisibleText()
+    override fun getLength(): Int {
+        return toText().length
+    }
+    override fun toText(): String = (cell.data as TextCellData).getVisibleText(cell)
     override fun isWhitespace(): Boolean = false
     override fun toHtml(consumer: TagConsumer<*>) {
         val textColor = cell.getProperty(CommonCellProperties.textColor)
@@ -98,7 +129,7 @@ class LayoutableCell(val cell: TextCell) : ILayoutable {
             if (textColor != null) {
                 style = "color:$textColor"
             }
-            +cell.getVisibleText().useNbsp()
+            +toText().useNbsp()
         }
     }
 }

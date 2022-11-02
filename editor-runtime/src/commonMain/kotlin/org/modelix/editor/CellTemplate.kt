@@ -9,55 +9,55 @@ import org.modelix.model.api.getReferenceTarget
 abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val concept: GeneratedConcept<NodeT, ConceptT>) {
     val properties = CellProperties()
     val children: MutableList<CellTemplate<NodeT, ConceptT>> = ArrayList()
-    val withNode: MutableList<(node: NodeT, Cell)->Unit> = ArrayList()
-    open fun apply(editor: EditorEngine, node: NodeT): Cell {
-        val cell = createCell(editor, node)
-        cell.properties.addAll(properties)
-        applyChildren(editor, node, cell)
+    val withNode: MutableList<(node: NodeT)->Unit> = ArrayList()
+    open fun apply(editor: EditorEngine, node: NodeT): CellData {
+        val cellData = createCell(editor, node)
+        cellData.properties.addAll(properties)
+        cellData.children.addAll(applyChildren(editor, node, cellData))
         if (properties[CommonCellProperties.layout] == ECellLayout.VERTICAL) {
-            cell.getChildren().drop(1).forEach { it.properties[CommonCellProperties.onNewLine] = true }
+            cellData.children.drop(1).forEach { (it as CellData).properties[CommonCellProperties.onNewLine] = true }
         }
-        withNode.forEach { it(node, cell) }
-        return cell
+        withNode.forEach { it(node) }
+        return cellData
     }
-    protected open fun applyChildren(editor: EditorEngine, node: NodeT, cell: Cell) {
-        children.map { it.apply(editor, node) }.forEach { child ->
-            cell.addChild(child)
-        }
+    protected open fun applyChildren(editor: EditorEngine, node: NodeT, cell: CellData): List<CellData> {
+        return children.map { it.apply(editor, node) }
     }
-    protected abstract fun createCell(editor: EditorEngine, node: NodeT): Cell
+    protected abstract fun createCell(editor: EditorEngine, node: NodeT): CellData
 }
 
 class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT) = TextCell(text, "")
+    override fun createCell(editor: EditorEngine, node: NodeT) = TextCellData(text, "")
 }
 class NewLineCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT): Cell {
-        return Cell().also { cell -> cell.properties[CommonCellProperties.onNewLine] = true }
+    override fun createCell(editor: EditorEngine, node: NodeT): CellData {
+        return CellData().also { cell -> cell.properties[CommonCellProperties.onNewLine] = true }
     }
 }
 class NoSpaceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT): Cell {
-        return Cell().also { cell -> cell.properties[CommonCellProperties.noSpace] = true }
+    override fun createCell(editor: EditorEngine, node: NodeT): CellData {
+        return CellData().also { cell -> cell.properties[CommonCellProperties.noSpace] = true }
     }
 }
 class CollectionCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT) = Cell()
+    override fun createCell(editor: EditorEngine, node: NodeT) = CellData()
 }
 class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT): Cell {
-        return Cell()
+    override fun createCell(editor: EditorEngine, node: NodeT): CellData {
+        return CellData()
     }
 
-    override fun applyChildren(editor: EditorEngine, node: NodeT, cell: Cell) {
+    override fun applyChildren(editor: EditorEngine, node: NodeT, cell: CellData): List<CellData> {
         val childLinkCell = children.filterIsInstance<ChildCellTemplate<NodeT, *>>().firstOrNull()
-        if (childLinkCell == null || !childLinkCell.getChildNodes(node).isEmpty()) {
-            super.applyChildren(editor, node, cell)
+        if (childLinkCell == null || childLinkCell.getChildNodes(node).isNotEmpty()) {
+            return super.applyChildren(editor, node, cell)
+        } else {
+            return emptyList()
         }
     }
 }
@@ -65,9 +65,9 @@ class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
 open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val property: IProperty)
     : CellTemplate<NodeT, ConceptT>(concept) {
     var placeholderText: String = "<no ${property.name}>"
-    override fun createCell(editor: EditorEngine, node: NodeT): Cell {
+    override fun createCell(editor: EditorEngine, node: NodeT): CellData {
         val value = node.getPropertyValue(property)
-        return TextCell(value ?: "", if (value == null) placeholderText else "")
+        return TextCellData(value ?: "", if (value == null) placeholderText else "")
     }
 }
 
@@ -77,7 +77,7 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
     val presentation: TargetNodeT.() -> String?
 )
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT): Cell = TextCell(getText(node), "<no ${link.name}>")
+    override fun createCell(editor: EditorEngine, node: NodeT): CellData = TextCellData(getText(node), "<no ${link.name}>")
     private fun getText(node: NodeT): String = getTargetNode(node)?.let(presentation) ?: ""
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
         return sourceNode.unwrap().getReferenceTarget(link)?.typed() as TargetNodeT?
@@ -86,20 +86,20 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
 
 class FlagCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, property: IProperty, val text: String)
     : PropertyCellTemplate<NodeT, ConceptT>(concept, property) {
-    override fun createCell(editor: EditorEngine, node: NodeT) = if (node.getPropertyValue(property) == "true") TextCell(text, "") else Cell()
+    override fun createCell(editor: EditorEngine, node: NodeT) = if (node.getPropertyValue(property) == "true") TextCellData(text, "") else CellData()
 }
 
 class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val link: IChildLink)
     : CellTemplate<NodeT, ConceptT>(concept) {
-    override fun createCell(editor: EditorEngine, node: NodeT) = Cell().also { cell ->
+    override fun createCell(editor: EditorEngine, node: NodeT) = CellData().also { cell ->
         val childNodes = getChildNodes(node)
         if (childNodes.isEmpty()) {
-            cell.addChild(TextCell("", "<no ${link.name}>"))
+            cell.addChild(TextCellData("", "<no ${link.name}>"))
         } else {
-            val childCells = childNodes.map { editor.createCell(it.typed()) }
+            val childCells = childNodes.map { ChildNodeCellReference(it.typed()) }
             childCells.forEach {child ->
-                child.parent?.removeChild(child) // child may be cached and is still attached to the old parent
-                val wrapper = Cell() // allow setting properties by the parent, because the cell is already frozen
+                //child.parent?.removeChild(child) // child may be cached and is still attached to the old parent
+                val wrapper = CellData() // allow setting properties by the parent, because the cell is already frozen
                 wrapper.addChild(child)
                 cell.addChild(wrapper)
             }

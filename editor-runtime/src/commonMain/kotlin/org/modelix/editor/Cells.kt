@@ -11,6 +11,8 @@ open class Freezable {
         frozen = true
     }
 
+    fun isFrozen() = frozen
+
     fun checkNotFrozen() {
         if (frozen) {
             throw IllegalStateException("Cell cannot be modified anymore")
@@ -25,8 +27,10 @@ open class Cell : Freezable() {
     val properties = CellProperties()
 
     override fun freeze() {
+        if (isFrozen()) return
         super.freeze()
         properties.freeze()
+        children.forEach { it.freeze() }
     }
 
     override fun toString(): String {

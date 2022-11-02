@@ -22,7 +22,6 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
     }
     protected open fun applyChildren(editor: EditorEngine, node: NodeT, cell: Cell) {
         children.map { it.apply(editor, node) }.forEach { child ->
-            child.parent?.removeChild(child) // child may be cached and is still attached to the old parent
             cell.addChild(child)
         }
     }
@@ -100,7 +99,9 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
             val childCells = childNodes.map { editor.createCell(it.typed()) }
             childCells.forEach {child ->
                 child.parent?.removeChild(child) // child may be cached and is still attached to the old parent
-                cell.addChild(child)
+                val wrapper = Cell() // allow setting properties by the parent, because the cell is already frozen
+                wrapper.addChild(child)
+                cell.addChild(wrapper)
             }
         }
     }

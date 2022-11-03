@@ -54,7 +54,7 @@ open class CellData : Freezable(), ILocalOrChildNodeCell {
         val body: ()->Unit = {
             if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
             if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
-            cell.getChildren().forEach { it.layout(buffer) }
+            cell.getChildren().forEach { buffer.append(it.layout) }
             if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
         }
         if (properties[CommonCellProperties.indentChildren]) {
@@ -72,6 +72,9 @@ class ChildNodeCellReference(val childNode: ITypedNode) : ILocalOrChildNodeCell 
 class Cell(val data: CellData = CellData()) : Freezable() {
     var parent: Cell? = null
     private val children: MutableList<Cell> = ArrayList()
+    val layout: LayoutedText by lazy(LazyThreadSafetyMode.NONE) {
+        TextLayouter().also { data.layout(it, this) }.done()
+    }
 
     override fun freeze() {
         if (isFrozen()) return
@@ -97,10 +100,6 @@ class Cell(val data: CellData = CellData()) : Freezable() {
     }
 
     fun getChildren(): List<Cell> = children
-
-    fun layout(buffer: TextLayouter) {
-        data.layout(buffer, this)
-    }
 
     fun <T> getProperty(key: CellPropertyKey<T>): T {
         return if (data.properties.isSet(key)) {

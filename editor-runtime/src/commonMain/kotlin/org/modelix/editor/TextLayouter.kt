@@ -2,33 +2,36 @@ package org.modelix.editor
 
 import kotlinx.html.*
 
-class LayoutedText : Freezable() {
-    private val lines: MutableList<MutableList<ILayoutable>> = mutableListOf(ArrayList())
+class TextLine(words_: Iterable<ILayoutable>) {
+    var owner: LayoutedText? = null
+    val words: List<ILayoutable> = words_.toList()
 
-    fun addLine() {
-        checkNotFrozen()
-        lines.add(ArrayList())
+    init {
+        words.filterIsInstance<LayoutableIndent>().forEach { it.owner = this }
     }
 
-    fun isLastLineEmpty() = lines.isEmpty() || lines.last().isEmpty()
+    fun getContextIndent() = owner?.getContextIndent() ?: 0
+}
 
-    fun addElement(element: ILayoutable) {
-        checkNotFrozen()
-        if (lines.isEmpty()) addLine()
-        lines.last().add(element)
+class LayoutedText(
+    val lines: TreeList<TextLine>,
+    val beginsWithNewLine: Boolean,
+    val endsWithNewLine: Boolean,
+    var indent: Int = 0
+) {
+    var owner: LayoutedText? = null
+
+    init {
+        lines.forEach { if (it.owner == null) it.owner = this }
     }
 
-    fun getLastElement(): ILayoutable? = lines.lastOrNull()?.lastOrNull()
-
-    fun copy() : LayoutedText {
-        return LayoutedText().also { copy -> copy.lines.addAll(lines.map { line -> ArrayList(line) }) }
-    }
+    fun getContextIndent(): Int = (owner?.getContextIndent() ?: 0) + indent
 
     override fun toString(): String {
         val buffer = StringBuilder()
         lines.forEachIndexed { index, line ->
             if (index != 0) buffer.append('\n')
-            line.forEach { element ->
+            line.words.forEach { element ->
                 buffer.append(element.toText())
             }
         }
@@ -40,10 +43,10 @@ class LayoutedText : Freezable() {
             lines.forEach { line ->
                 div("line") {
                     val parentTag = this
-                    line.forEach { element: ILayoutable ->
+                    line.words.forEach { element: ILayoutable ->
                         element.toHtml(tagConsumer)
                     }
-                    if (line.sumOf { it.getLength() } == 0) {
+                    if (line.words.sumOf { it.getLength() } == 0) {
                         +Typography.nbsp.toString()
                     }
                 }
@@ -53,49 +56,107 @@ class LayoutedText : Freezable() {
 }
 
 class TextLayouter {
-    private val text = LayoutedText()
-    private var indent: Int = 0
+    private var beginsWithNewLine: Boolean = false
+    private val closedLines = ArrayList<TreeList<TextLine>>()
+    private var lastLine: MutableList<ILayoutable>? = null
+    private var currentIndent: Int = 0
     private var autoInsertSpace: Boolean = true
     private var insertNewLineNext: Boolean = false
 
+    fun done(): LayoutedText {
+        closeLine()
+        return LayoutedText(
+            TreeList.flatten(closedLines),
+            beginsWithNewLine = beginsWithNewLine,
+            endsWithNewLine = insertNewLineNext
+        )
+    }
+
+    private fun closeLine() {
+        lastLine?.let { closedLines.add(TreeList.of(TextLine(it))) }
+        lastLine = null
+        insertNewLineNext = false
+    }
+
+    private fun addNewLine() {
+        closeLine()
+        lastLine = ArrayList()
+    }
+
+    private fun ensureLastLine(): MutableList<ILayoutable> {
+        if (lastLine == null) {
+            lastLine = ArrayList()
+        }
+        return lastLine!!
+    }
+
+    fun isEmpty() = closedLines.isEmpty() && lastLine == null
+
     fun onNewLine() {
+        if (isEmpty()) beginsWithNewLine = true
         insertNewLineNext = true
     }
     fun emptyLine() {
+        addNewLine()
         onNewLine()
-        text.addLine()
     }
     fun withIndent(body: ()->Unit) {
-        val oldIndent = indent
+        val oldIndent = currentIndent
         try {
-            indent++
+            currentIndent++
             body()
         } finally {
-            indent = oldIndent
+            currentIndent = oldIndent
         }
     }
     fun noSpace() {
         autoInsertSpace = false
     }
-    fun append(element: ILayoutable) {
-        if (insertNewLineNext) {
-            insertNewLineNext = false
-            text.addLine()
+
+    fun append(text: LayoutedText) {
+        text.indent = currentIndent
+        if (text.beginsWithNewLine || insertNewLineNext || lastLine == null) {
+            closeLine()
+            if (text.endsWithNewLine) {
+                closedLines.add(text.lines)
+            } else {
+                closedLines.add(text.lines.withoutLast())
+            }
+            lastLine = ArrayList(text.lines.last()?.words ?: emptyList())
+        } else {
+            lastLine!!.addAll(text.lines.first()?.words ?: emptyList())
+            val remaining = text.lines.withoutFirst()
+            if (remaining.isNotEmpty()) {
+                closeLine()
+                if (text.endsWithNewLine) {
+                    closedLines.add(remaining)
+                } else {
+                    closedLines.add(remaining.withoutLast())
+                    ensureLastLine().addAll(remaining.last()?.words ?: emptyList())
+                }
+            }
         }
-        if (indent > 0 && text.isLastLineEmpty()) {
-            text.addElement(LayoutableIndent(indent))
-        }
-        val lastOnLine = text.getLastElement()
-        if (autoInsertSpace && lastOnLine != null && !lastOnLine.isWhitespace()) {
-            text.addElement(LayoutableWord(" "))
-        }
-        text.addElement(element)
-        autoInsertSpace = true
     }
 
-    fun close() : LayoutedText {
-        text.freeze()
-        return text
+    fun append(element: ILayoutable) {
+        if (lastLine == null) {
+            lastLine = ArrayList()
+        }
+        if (insertNewLineNext) {
+            insertNewLineNext = false
+            if (lastLine!!.isNotEmpty()) {
+                addNewLine()
+            }
+        }
+        if (currentIndent > 0 && lastLine!!.isEmpty()) {
+            lastLine!!.add(LayoutableIndent(currentIndent))
+        }
+        val lastOnLine = lastLine!!.lastOrNull()
+        if (autoInsertSpace && lastOnLine != null && !lastOnLine.isWhitespace()) {
+            lastLine!!.add(LayoutableWord(" "))
+        }
+        lastLine!!.add(element)
+        autoInsertSpace = true
     }
 }
 
@@ -134,9 +195,11 @@ class LayoutableCell(val cell: Cell) : ILayoutable {
     }
 }
 class LayoutableIndent(val indentSize: Int): ILayoutable {
-    override fun getLength(): Int = indentSize * 2
+    var owner: TextLine? = null
+    fun totalIndent() = indentSize + (owner?.getContextIndent() ?: 0)
+    override fun getLength(): Int = totalIndent() * 2
     override fun isWhitespace(): Boolean = true
-    override fun toText(): String = (1..indentSize).joinToString { "  " }
+    override fun toText(): String = (1..totalIndent()).joinToString { "  " }
     override fun toHtml(consumer: TagConsumer<*>) {
         consumer.span("indent") {
             +toText().useNbsp()

@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 class TextLayouterTest {
     private val noSpace = Any()
     private val newLine = Any()
-    private val emptyLine = Any()
+    private val indentChildren = Any()
 
     @Test
     fun testNoSpace() {
@@ -96,6 +96,14 @@ class TextLayouterTest {
     @Test fun cells5() = testCells("a\nb", listOf("a", listOf(newLine, "b")))
     @Test fun cells6() = testCells("ab", listOf(listOf("a", noSpace), "b"))
     @Test fun cells7() = testCells("a\nb", listOf(listOf("a", newLine), "b"))
+    @Test fun cells8() = testCells("a {\nb\n}", listOf(listOf(listOf("a"), listOf("{", newLine, listOf("b"), newLine, "}"))))
+    @Test fun cells9() = testCells("a {\n  b\n}", listOf(listOf(listOf("a"), listOf(indentChildren, "{", newLine, listOf("b"), newLine, "}"))))
+    @Test fun cells10() = testCells("a {\n  b\n  c\n}", listOf(listOf(listOf("a"), listOf(indentChildren, "{", newLine, "b", newLine, "c", newLine, "}"))))
+    @Test fun cells11() = testCells("a {\n  b\n  c\n}", listOf(listOf(listOf("a"), listOf(indentChildren, "{", newLine, listOf("b"), newLine, listOf("c"), newLine, "}"))))
+    @Test fun cells12() = testCells("a {\n  b\n  c\n}", listOf(listOf(listOf("a"), listOf(indentChildren, "{", newLine, listOf(listOf("b"), newLine, listOf("c")), newLine, "}"))))
+
+    @Test fun cells13() = testCells("{\n  b\n  c\n  d\n}", listOf(indentChildren, "{", newLine, listOf("b", newLine, "c", newLine, "d"), newLine, "}"))
+    @Test fun cells14() = testCells("{\n  b\n  c\n  d\n}", listOf(indentChildren, "{", newLine, "b", newLine, "c", newLine, "d", newLine, "}"))
 
     fun testCells(expected: String, template: Any) {
         assertEquals(expected, buildCells(template).layout.toString())
@@ -106,7 +114,15 @@ class TextLayouterTest {
             noSpace -> Cell(CellData().apply { properties[CommonCellProperties.noSpace] = true })
             newLine -> Cell(CellData().apply { properties[CommonCellProperties.onNewLine] = true })
             is String -> Cell(TextCellData(template, ""))
-            is List<*> -> Cell(CellData()).apply { template.forEach { addChild(buildCells(it!!)) } }
+            is List<*> -> Cell(CellData()).apply {
+                template.forEach { child ->
+                    when (child) {
+                        indentChildren -> data.properties[CommonCellProperties.indentChildren] = true
+                        is ECellLayout -> data.properties[CommonCellProperties.layout] = child
+                        else -> addChild(buildCells(child!!))
+                    }
+                }
+            }
             else -> throw IllegalArgumentException("Unsupported: $template")
         }
     }

@@ -133,7 +133,9 @@ class CellProperties : Freezable() {
     }
 }
 
-class CellPropertyKey<E>(val name: String, val defaultValue: E)
+class CellPropertyKey<E>(val name: String, val defaultValue: E) {
+    override fun toString() = name
+}
 
 enum class ECellLayout {
     VERTICAL,

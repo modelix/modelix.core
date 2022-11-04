@@ -142,9 +142,18 @@ class TextLayouter {
             }
         }
 
+        var lastLineToCopy: TextLine? = null
         if (!text.endsWithNewLine) {
-            val line = closedLinesToCopy.last()
+            lastLineToCopy = closedLinesToCopy.last()
             closedLinesToCopy = closedLinesToCopy.withoutLast()
+        }
+        if (closedLinesToCopy.isNotEmpty()) {
+            closeLine()
+            closedLines.add(closedLinesToCopy)
+        }
+
+        if (lastLineToCopy != null) {
+            val line = lastLineToCopy
             if (line != null && line.words.isNotEmpty()) {
                 line.words.forEachIndexed { index, it ->
                     if (index > 0) noSpace() // already contains LayoutableSpace instances
@@ -152,8 +161,6 @@ class TextLayouter {
                 }
             }
         }
-
-        if (closedLinesToCopy.isNotEmpty()) closedLines.add(closedLinesToCopy)
 
         if (text.endsWithNoSpace) noSpace()
         if (text.endsWithNewLine) onNewLine()

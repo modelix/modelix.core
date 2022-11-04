@@ -17,6 +17,8 @@ class LayoutedText(
     val lines: TreeList<TextLine>,
     val beginsWithNewLine: Boolean,
     val endsWithNewLine: Boolean,
+    val beginsWithNoSpace: Boolean,
+    val endsWithNoSpace: Boolean,
     var indent: Int = 0
 ) {
     var owner: LayoutedText? = null
@@ -57,6 +59,7 @@ class LayoutedText(
 
 class TextLayouter {
     private var beginsWithNewLine: Boolean = false
+    private var beginsWithNoSpace: Boolean = false
     private val closedLines = ArrayList<TreeList<TextLine>>()
     private var lastLine: MutableList<ILayoutable>? = null
     private var currentIndent: Int = 0
@@ -64,18 +67,26 @@ class TextLayouter {
     private var insertNewLineNext: Boolean = false
 
     fun done(): LayoutedText {
+        val endsWithNoSpace = !autoInsertSpace
+        val endsWithNewLine = insertNewLineNext
         closeLine()
         return LayoutedText(
             TreeList.flatten(closedLines),
             beginsWithNewLine = beginsWithNewLine,
-            endsWithNewLine = insertNewLineNext
+            endsWithNewLine = endsWithNewLine,
+            beginsWithNoSpace = beginsWithNoSpace,
+            endsWithNoSpace = endsWithNoSpace
         )
     }
 
     private fun closeLine() {
-        lastLine?.let { closedLines.add(TreeList.of(TextLine(it))) }
-        lastLine = null
-        insertNewLineNext = false
+        lastLine?.let { line ->
+            if (line.first() !is LayoutableIndent && (beginsWithNewLine || closedLines.isNotEmpty())) line.add(0, LayoutableIndent(currentIndent))
+            closedLines.add(TreeList.of(TextLine(line)))
+            lastLine = null
+            insertNewLineNext = false
+            autoInsertSpace = true
+        }
     }
 
     private fun addNewLine() {
@@ -110,38 +121,46 @@ class TextLayouter {
         }
     }
     fun noSpace() {
+        if (isEmpty()) beginsWithNoSpace = true
         autoInsertSpace = false
     }
 
     fun append(text: LayoutedText) {
+        if (text.beginsWithNoSpace) noSpace()
         text.indent = currentIndent
+        var closedLinesToCopy = text.lines
         if (text.beginsWithNewLine || insertNewLineNext || lastLine == null) {
             closeLine()
-            if (text.endsWithNewLine) {
-                closedLines.add(text.lines)
-            } else {
-                closedLines.add(text.lines.withoutLast())
-            }
-            lastLine = ArrayList(text.lines.last()?.words ?: emptyList())
         } else {
-            lastLine!!.addAll(text.lines.first()?.words ?: emptyList())
-            val remaining = text.lines.withoutFirst()
-            if (remaining.isNotEmpty()) {
-                closeLine()
-                if (text.endsWithNewLine) {
-                    closedLines.add(remaining)
-                } else {
-                    closedLines.add(remaining.withoutLast())
-                    ensureLastLine().addAll(remaining.last()?.words ?: emptyList())
+            val line = closedLinesToCopy.first()
+            closedLinesToCopy = closedLinesToCopy.withoutFirst()
+            if (line != null && line.words.isNotEmpty()) {
+                line.words.forEachIndexed { index, it ->
+                    if (index > 0) noSpace() // already contains LayoutableSpace instances
+                    append(it)
                 }
             }
         }
+
+        if (!text.endsWithNewLine) {
+            val line = closedLinesToCopy.last()
+            closedLinesToCopy = closedLinesToCopy.withoutLast()
+            if (line != null && line.words.isNotEmpty()) {
+                line.words.forEachIndexed { index, it ->
+                    if (index > 0) noSpace() // already contains LayoutableSpace instances
+                    append(it)
+                }
+            }
+        }
+
+        if (closedLinesToCopy.isNotEmpty()) closedLines.add(closedLinesToCopy)
+
+        if (text.endsWithNoSpace) noSpace()
+        if (text.endsWithNewLine) onNewLine()
     }
 
     fun append(element: ILayoutable) {
-        if (lastLine == null) {
-            lastLine = ArrayList()
-        }
+        ensureLastLine()
         if (insertNewLineNext) {
             insertNewLineNext = false
             if (lastLine!!.isNotEmpty()) {
@@ -149,11 +168,11 @@ class TextLayouter {
             }
         }
         if (currentIndent > 0 && lastLine!!.isEmpty()) {
-            lastLine!!.add(LayoutableIndent(currentIndent))
+            //lastLine!!.add(LayoutableIndent(currentIndent))
         }
         val lastOnLine = lastLine!!.lastOrNull()
-        if (autoInsertSpace && lastOnLine != null && !lastOnLine.isWhitespace()) {
-            lastLine!!.add(LayoutableWord(" "))
+        if (autoInsertSpace && lastOnLine != null && !lastOnLine.isWhitespace() && element !is LayoutableSpace) {
+            lastLine!!.add(LayoutableSpace())
         }
         lastLine!!.add(element)
         autoInsertSpace = true

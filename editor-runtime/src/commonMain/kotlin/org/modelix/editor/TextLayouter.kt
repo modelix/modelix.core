@@ -7,7 +7,7 @@ class TextLine(words_: Iterable<ILayoutable>) {
     val words: List<ILayoutable> = words_.toList()
 
     init {
-        words.filterIsInstance<LayoutableIndent>().forEach { it.owner = this }
+        words.filterIsInstance<LayoutableIndent>().filter { it.owner == null }.forEach { it.owner = this }
     }
 
     fun getContextIndent() = owner?.getContextIndent() ?: 0
@@ -65,23 +65,26 @@ class TextLayouter {
     private var currentIndent: Int = 0
     private var autoInsertSpace: Boolean = true
     private var insertNewLineNext: Boolean = false
+    private val childTexts = ArrayList<LayoutedText>()
 
     fun done(): LayoutedText {
         val endsWithNoSpace = !autoInsertSpace
         val endsWithNewLine = insertNewLineNext
         closeLine()
-        return LayoutedText(
+        val newText = LayoutedText(
             TreeList.flatten(closedLines),
             beginsWithNewLine = beginsWithNewLine,
             endsWithNewLine = endsWithNewLine,
             beginsWithNoSpace = beginsWithNoSpace,
             endsWithNoSpace = endsWithNoSpace
         )
+        childTexts.forEach { it.owner = newText }
+        return newText
     }
 
     private fun closeLine() {
         lastLine?.let { line ->
-            if (line.first() !is LayoutableIndent && (beginsWithNewLine || closedLines.isNotEmpty())) line.add(0, LayoutableIndent(currentIndent))
+            if (line.first() !is LayoutableIndent) line.add(0, LayoutableIndent(currentIndent))
             closedLines.add(TreeList.of(TextLine(line)))
             lastLine = null
             insertNewLineNext = false
@@ -126,8 +129,9 @@ class TextLayouter {
     }
 
     fun append(text: LayoutedText) {
-        if (text.beginsWithNoSpace) noSpace()
+        childTexts.add(text)
         text.indent = currentIndent
+        if (text.beginsWithNoSpace) noSpace()
         var closedLinesToCopy = text.lines
         if (text.beginsWithNewLine || insertNewLineNext || lastLine == null) {
             closeLine()
@@ -135,7 +139,7 @@ class TextLayouter {
             val line = closedLinesToCopy.first()
             closedLinesToCopy = closedLinesToCopy.withoutFirst()
             if (line != null && line.words.isNotEmpty()) {
-                line.words.forEachIndexed { index, it ->
+                line.words.filter { it !is LayoutableIndent }.forEachIndexed { index, it ->
                     if (index > 0) noSpace() // already contains LayoutableSpace instances
                     append(it)
                 }
@@ -153,9 +157,8 @@ class TextLayouter {
         }
 
         if (lastLineToCopy != null) {
-            val line = lastLineToCopy
-            if (line != null && line.words.isNotEmpty()) {
-                line.words.forEachIndexed { index, it ->
+            if (lastLineToCopy != null && lastLineToCopy.words.isNotEmpty()) {
+                lastLineToCopy.words.forEachIndexed { index, it ->
                     if (index > 0) noSpace() // already contains LayoutableSpace instances
                     append(it)
                 }

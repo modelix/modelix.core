@@ -1,8 +1,5 @@
 package org.modelix.model.api
 
-import ITypedNode
-import LanguageRegistry
-import TypedNode
 import kotlinx.browser.window
 
 @JsExport
@@ -12,7 +9,7 @@ object NodeAdapterCache {
     private val caches = (1..5).map { HashMap<INode, Any>() }.toMutableList()
     private var anyAccess = false
 
-    fun <In : Any, Out : Any> getCachedWrapper(node: In, wrapperFunction: (node: In)->Out): Out {
+    fun <In : Any, Out : Any> getCachedWrapper(node: In, wrapperFunction: (node: In) -> Out): Out {
         if (!anyAccess) {
             anyAccess = true
             window.setTimeout({

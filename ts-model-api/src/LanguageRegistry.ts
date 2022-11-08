@@ -6,6 +6,7 @@ export class LanguageRegistry {
   public static INSTANCE: LanguageRegistry = new LanguageRegistry();
   private languages: Map<string, GeneratedLanguage> = new Map();
   private nodeWrappers: Map<string, (node: INodeJS) => TypedNode> | undefined = undefined
+  public wrapperCache: ((node: ITypedNode)=>ITypedNode) | undefined = undefined
 
   public register(lang: GeneratedLanguage): void {
     this.languages.set(lang.name, lang);
@@ -40,6 +41,7 @@ export class LanguageRegistry {
     if (wrapper === undefined) {
       throw Error("No node wrapper found for concept " + conceptUID)
     }
-    return wrapper(node)
+    let wrapped = wrapper(node);
+    return this.wrapperCache ? this.wrapperCache(wrapped) : wrapped
   }
 }

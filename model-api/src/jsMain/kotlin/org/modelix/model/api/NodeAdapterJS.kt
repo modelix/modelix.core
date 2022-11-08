@@ -101,4 +101,19 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     override fun setPropertyValue(role: String, value: String?) {
         node.setPropertyValue(role, value)
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class.js != other::class.js) return false
+
+        other as NodeAdapterJS
+
+        if (node != other.node) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return node.hashCode()
+    }
 }

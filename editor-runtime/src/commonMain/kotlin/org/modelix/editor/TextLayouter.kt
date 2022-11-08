@@ -40,8 +40,8 @@ class LayoutedText(
         return buffer.toString()
     }
 
-    fun toHtml(tagConsumer: TagConsumer<*>) {
-        tagConsumer.div {
+    fun <T> toHtml(tagConsumer: TagConsumer<T>): T {
+        return tagConsumer.div("layouted-text") {
             lines.forEach { line ->
                 div("line") {
                     val parentTag = this

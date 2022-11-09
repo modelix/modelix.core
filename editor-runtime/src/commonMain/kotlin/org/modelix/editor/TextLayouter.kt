@@ -1,8 +1,9 @@
 package org.modelix.editor
 
 import kotlinx.html.*
+import kotlin.reflect.KClass
 
-class TextLine(words_: Iterable<ILayoutable>) {
+class TextLine(words_: Iterable<ILayoutable>) : IProducesHtml {
     var owner: LayoutedText? = null
     val words: List<ILayoutable> = words_.toList()
 
@@ -11,6 +12,17 @@ class TextLine(words_: Iterable<ILayoutable>) {
     }
 
     fun getContextIndent() = owner?.getContextIndent() ?: 0
+
+    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+        consumer.div("line") {
+            words.forEach { element: ILayoutable ->
+                produceChild(element)
+            }
+            if (words.sumOf { it.getLength() } == 0) {
+                +Typography.nbsp.toString()
+            }
+        }
+    }
 }
 
 class LayoutedText(
@@ -20,7 +32,7 @@ class LayoutedText(
     val beginsWithNoSpace: Boolean,
     val endsWithNoSpace: Boolean,
     var indent: Int = 0
-) {
+) : IProducesHtml {
     var owner: LayoutedText? = null
 
     init {
@@ -40,18 +52,10 @@ class LayoutedText(
         return buffer.toString()
     }
 
-    fun <T> toHtml(tagConsumer: TagConsumer<T>): T {
-        return tagConsumer.div("layouted-text") {
+    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+        consumer.div("layouted-text") {
             lines.forEach { line ->
-                div("line") {
-                    val parentTag = this
-                    line.words.forEach { element: ILayoutable ->
-                        element.toHtml(tagConsumer)
-                    }
-                    if (line.words.sumOf { it.getLength() } == 0) {
-                        +Typography.nbsp.toString()
-                    }
-                }
+                produceChild(line)
             }
         }
     }
@@ -61,6 +65,7 @@ class TextLayouter {
     private var beginsWithNewLine: Boolean = false
     private var beginsWithNoSpace: Boolean = false
     private val closedLines = ArrayList<TreeList<TextLine>>()
+    private var reusableLastLine: TextLine? = null
     private var lastLine: MutableList<ILayoutable>? = null
     private var currentIndent: Int = 0
     private var autoInsertSpace: Boolean = true
@@ -85,7 +90,13 @@ class TextLayouter {
     private fun closeLine() {
         lastLine?.let { line ->
             if (line.first() !is LayoutableIndent) line.add(0, LayoutableIndent(currentIndent))
-            closedLines.add(TreeList.of(TextLine(line)))
+            val closedLine = TextLine(line)
+            if (closedLine.words == reusableLastLine?.words) {
+                closedLines.add(TreeList.of(reusableLastLine!!))
+            } else {
+                closedLines.add(TreeList.of(closedLine))
+            }
+
             lastLine = null
             insertNewLineNext = false
             autoInsertSpace = true
@@ -157,12 +168,13 @@ class TextLayouter {
         }
 
         if (lastLineToCopy != null) {
-            if (lastLineToCopy != null && lastLineToCopy.words.isNotEmpty()) {
+            if (lastLineToCopy.words.isNotEmpty()) {
                 lastLineToCopy.words.forEachIndexed { index, it ->
                     if (index > 0) noSpace() // already contains LayoutableSpace instances
                     append(it)
                 }
             }
+            reusableLastLine = lastLineToCopy
         }
 
         if (text.endsWithNoSpace) noSpace()
@@ -170,6 +182,7 @@ class TextLayouter {
     }
 
     fun append(element: ILayoutable) {
+        reusableLastLine = null
         ensureLastLine()
         if (insertNewLineNext) {
             insertNewLineNext = false
@@ -189,21 +202,20 @@ class TextLayouter {
     }
 }
 
-interface ILayoutable {
+interface ILayoutable : IProducesHtml {
     fun getLength(): Int
     fun isWhitespace(): Boolean
     fun toText(): String
-    fun toHtml(consumer: TagConsumer<*>)
 }
 
-class LayoutableWord(val text: String) : ILayoutable {
+/*class LayoutableWord(val text: String) : ILayoutable {
     override fun getLength(): Int = text.length
     override fun isWhitespace(): Boolean = text.isNotEmpty() && text.last().isWhitespace()
     override fun toText(): String = text
     override fun toHtml(consumer: TagConsumer<*>) {
         consumer.onTagContent(text.useNbsp())
     }
-}
+}*/
 class LayoutableCell(val cell: Cell) : ILayoutable {
     init {
         require(cell.data is TextCellData) { "Not a text cell: $cell" }
@@ -213,7 +225,7 @@ class LayoutableCell(val cell: Cell) : ILayoutable {
     }
     override fun toText(): String = (cell.data as TextCellData).getVisibleText(cell)
     override fun isWhitespace(): Boolean = false
-    override fun toHtml(consumer: TagConsumer<*>) {
+    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         val textColor = cell.getProperty(CommonCellProperties.textColor)
         consumer.span("text-cell") {
             if (textColor != null) {
@@ -229,7 +241,7 @@ class LayoutableIndent(val indentSize: Int): ILayoutable {
     override fun getLength(): Int = totalIndent() * 2
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = (1..totalIndent()).joinToString { "  " }
-    override fun toHtml(consumer: TagConsumer<*>) {
+    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.span("indent") {
             +toText().useNbsp()
         }
@@ -239,7 +251,7 @@ class LayoutableSpace(): ILayoutable {
     override fun getLength(): Int = 1
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = " "
-    override fun toHtml(consumer: TagConsumer<*>) {
+    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.span {
             +Typography.nbsp.toString()
         }

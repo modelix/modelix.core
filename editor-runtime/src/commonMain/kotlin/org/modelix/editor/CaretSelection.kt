@@ -4,8 +4,8 @@ import kotlinx.html.TagConsumer
 import kotlinx.html.div
 
 class CaretSelection(val cell: Cell, val start: Int, val end: Int) : Selection() {
-    override fun toHtml(tagConsumer: TagConsumer<*>) {
-        tagConsumer.div("caret") {
+    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+        consumer.div("caret") {
 
         }
     }

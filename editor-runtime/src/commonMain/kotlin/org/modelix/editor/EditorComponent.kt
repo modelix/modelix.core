@@ -3,20 +3,19 @@ package org.modelix.editor
 import kotlinx.html.TagConsumer
 import kotlinx.html.div
 
-open class EditorComponent {
+open class EditorComponent : IProducesHtml {
 
     var rootCell: Cell? = null
     var selection: Selection? = null
 
-    fun toHtml(tagConsumer: TagConsumer<*>) {
-        tagConsumer.div("editor") {
+    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+        consumer.div("editor") {
             div("main-layer") {
-                rootCell?.layout?.toHtml(tagConsumer)
+                rootCell?.layout?.let(produceChild)
             }
             div("selection-layer") {
-                selection?.toHtml(tagConsumer)
+                selection?.let(produceChild)
             }
         }
     }
-
 }

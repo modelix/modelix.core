@@ -60,6 +60,8 @@ kotlin {
         val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-js"))
+                implementation(npm("jsdom-global", "3.0.2"))
+                implementation(npm("jsdom", "20.0.2"))
             }
         }
     }

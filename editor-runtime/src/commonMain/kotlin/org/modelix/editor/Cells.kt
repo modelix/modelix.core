@@ -63,6 +63,8 @@ open class CellData : Freezable(), ILocalOrChildNodeCell {
             body()
         }
     }
+
+    open fun cellToString(cell: Cell) = "[${cell.getChildren().joinToString(" ")}]"
 }
 
 class ChildNodeCellReference(val childNode: ITypedNode) : ILocalOrChildNodeCell {
@@ -84,7 +86,7 @@ class Cell(val data: CellData = CellData()) : Freezable() {
     }
 
     override fun toString(): String {
-        return children.toString()
+        return data.cellToString(this)
     }
 
     fun addChild(child: Cell) {
@@ -155,7 +157,7 @@ interface ICellAction {
 
 }
 
-class TextCellData(val text: String, val placeholderText: String) : CellData() {
+class TextCellData(val text: String, val placeholderText: String = "") : CellData() {
     fun getVisibleText(cell: Cell): String {
         return if (cell.getChildren().isEmpty()) {
             text.ifEmpty { placeholderText }
@@ -170,4 +172,6 @@ class TextCellData(val text: String, val placeholderText: String) : CellData() {
         buffer.append(LayoutableCell(cell))
         if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
     }
+
+    override fun cellToString(cell: Cell) = getVisibleText(cell)
 }

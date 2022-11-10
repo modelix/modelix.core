@@ -50,7 +50,7 @@ class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrap
                     }
                 }
             } finally {
-                pendingPrefetches.removeAll(currentKeys)
+                synchronized(pendingPrefetches) { pendingPrefetches.removeAll(currentKeys) }
             }
         }
     }

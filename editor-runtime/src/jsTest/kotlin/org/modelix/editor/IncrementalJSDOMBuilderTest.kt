@@ -11,8 +11,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
-fun Node.descendants(): Sequence<Node> = childNodes.asList().asSequence().flatMap { sequenceOf(it) + it.descendants() }
-
 class IncrementalJSDOMBuilderTest {
     @Test
     fun test() {

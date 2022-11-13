@@ -1,22 +1,40 @@
 package org.modelix.editor
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import org.modelix.metamodel.ITypedNode
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.getAllConcepts
 import org.modelix.incremental.IncrementalEngine
 import org.modelix.incremental.incrementalFunction
+import kotlin.coroutines.CoroutineContext
 
-class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(100_000)) {
+class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
 
+    private val incrementalEngine: IncrementalEngine
+    private val ownsIncrementalEngine: Boolean
     private val editors: MutableSet<LanguageEditors<*>> = HashSet()
     private val editorsForConcept: MutableMap<IConceptReference, MutableList<ConceptEditor<*, *>>> = LinkedHashMap()
-    private val createCellIncremental: (ITypedNode)->Cell = incrementalEngine.incrementalFunction("createCell") { context, node ->
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+
+    init {
+        if (incrementalEngine == null) {
+            this.incrementalEngine = IncrementalEngine(100_000)
+            this.ownsIncrementalEngine = true
+        } else {
+            this.incrementalEngine = incrementalEngine
+            this.ownsIncrementalEngine = false
+        }
+    }
+
+    private val createCellIncremental: (ITypedNode)->Cell = this.incrementalEngine.incrementalFunction("createCell") { context, node ->
         val cell = doCreateCell(node)
         cell.freeze()
         LOG.trace { "Cell created for $node: $cell" }
         cell
     }
-    private val createCellDataIncremental: (ITypedNode)->CellData = incrementalEngine.incrementalFunction("createCellData") { context, node ->
+    private val createCellDataIncremental: (ITypedNode)->CellData = this.incrementalEngine.incrementalFunction("createCellData") { context, node ->
         val cellData = doCreateCellData(node)
         cellData.freeze()
         LOG.trace { "Cell created for $node: $cellData" }
@@ -32,6 +50,10 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
 
     fun <NodeT : ITypedNode> createCell(node: NodeT): Cell {
         return createCellIncremental(node)
+    }
+
+    fun editNode(node: ITypedNode): EditorComponent {
+        return EditorComponent({ createCell(node) })
     }
 
     private fun doCreateCell(node: ITypedNode): Cell {
@@ -72,7 +94,8 @@ class EditorEngine(val incrementalEngine: IncrementalEngine = IncrementalEngine(
     }
 
     fun dispose() {
-        incrementalEngine.dispose()
+        coroutineScope.cancel("EditorEngine disposed")
+        if (ownsIncrementalEngine) incrementalEngine.dispose()
     }
 
     companion object {

@@ -72,11 +72,18 @@ class ChildNodeCellReference(val childNode: ITypedNode) : ILocalOrChildNodeCell 
 }
 
 class Cell(val data: CellData = CellData()) : Freezable() {
+    private var editorComponentValue: EditorComponent? = null
     var parent: Cell? = null
     private val children: MutableList<Cell> = ArrayList()
     val layout: LayoutedText by lazy(LazyThreadSafetyMode.NONE) {
         TextLayouter().also { data.layout(it, this) }.done()
     }
+    var editorComponent: EditorComponent?
+        get() = editorComponentValue ?: parent?.editorComponent
+        set(value) {
+            if (value != null && parent != null) throw IllegalStateException("Only allowed on the root cell")
+            editorComponentValue = value
+        }
 
     override fun freeze() {
         if (isFrozen()) return

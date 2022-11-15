@@ -1,6 +1,12 @@
 package org.modelix.editor
 
 abstract class TreeList<E> : Iterable<E> {
+    abstract val size: Int
+    operator fun get(index: Int): E {
+        require(index in 0 until size) { "$index not in range 0 until $size" }
+        return getUnsafe(index)
+    }
+    abstract fun getUnsafe(index: Int): E
     abstract fun asSequence(): Sequence<E>
     override fun iterator(): Iterator<E> {
         return asSequence().iterator()
@@ -28,6 +34,14 @@ abstract class TreeList<E> : Iterable<E> {
 }
 
 private class TreeListLeaf<E>(val element: E) : TreeList<E>() {
+    override val size: Int
+        get() = 1
+
+    override fun getUnsafe(index: Int): E {
+        require(index == 0)
+        return element
+    }
+
     override fun asSequence(): Sequence<E> {
         return sequenceOf(element)
     }
@@ -49,8 +63,18 @@ private class TreeListLeaf<E>(val element: E) : TreeList<E>() {
     }
 }
 
-private class TreeListParent<E>(children_: Iterable<TreeList<E>>) : TreeList<E>() {
-    val children: List<TreeList<E>> = children_.filter { it !is TreeListEmpty }
+private class TreeListParent<E>(val children: List<TreeList<E>>) : TreeList<E>() {
+    override val size: Int = children.sumOf { it.size }
+
+    override fun getUnsafe(index: Int): E {
+        var relativeIndex = index
+        for (child in children) {
+            if (relativeIndex < child.size) return child.getUnsafe(relativeIndex)
+            relativeIndex -= child.size
+        }
+        throw IndexOutOfBoundsException("index: $index, size: $size")
+    }
+
     override fun asSequence(): Sequence<E> {
         return children.asSequence().flatMap { it.asSequence() }
     }
@@ -72,15 +96,23 @@ private class TreeListParent<E>(children_: Iterable<TreeList<E>>) : TreeList<E>(
     }
 
     fun normalized(): TreeList<E> {
-        return when (this.children.size) {
+        val withoutEmpty = this.children.filter { it !is TreeListEmpty }
+        return when (withoutEmpty.size) {
             0 -> TreeListEmpty()
-            1 -> this.children.first()
-            else -> this
+            1 -> withoutEmpty.first()
+            else -> if (withoutEmpty.size != children.size) TreeListParent(withoutEmpty) else this
         }
     }
 }
 
 private class TreeListEmpty<E> : TreeList<E>() {
+    override val size: Int
+        get() = 0
+
+    override fun getUnsafe(index: Int): E {
+        throw IndexOutOfBoundsException("index = $index, size = 0")
+    }
+
     override fun asSequence(): Sequence<E> {
         return emptySequence<E>()
     }

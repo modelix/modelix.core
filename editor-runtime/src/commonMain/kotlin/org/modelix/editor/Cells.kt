@@ -117,6 +117,8 @@ class Cell(val data: CellData = CellData()) : Freezable() {
             parent.let { if (it != null) it.getProperty(key) else key.defaultValue }
         }
     }
+
+    fun rootCell(): Cell = parent?.rootCell() ?: this
 }
 
 class CellProperties : Freezable() {
@@ -182,3 +184,6 @@ class TextCellData(val text: String, val placeholderText: String = "") : CellDat
 
     override fun cellToString(cell: Cell) = getVisibleText(cell)
 }
+
+fun Cell.getVisibleText(): String? = (data as? TextCellData)?.getVisibleText(this)
+fun Cell.getSelectableText(): String? = (data as? TextCellData)?.text

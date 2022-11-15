@@ -5,14 +5,31 @@ import kotlinx.html.div
 
 open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtml {
 
-    private var rootCell: Cell = rootCellCreator()
-    var selection: Selection? = null
+    private var rootCell: Cell = rootCellCreator().also { it.editorComponent = this }
+    private var selection: Selection? = null
 
     fun updateRootCell() {
-        rootCell = rootCellCreator()
+        val oldRootCell = rootCell
+        val newRootCell = rootCellCreator()
+        if (oldRootCell !== newRootCell) {
+            oldRootCell.editorComponent = null
+            newRootCell.editorComponent = this
+            rootCell = newRootCell
+        }
+    }
+
+    open fun update() {
+        updateRootCell()
     }
 
     fun getRootCell() = rootCell
+
+    open fun changeSelection(newSelection: Selection) {
+        selection = newSelection
+        update()
+    }
+
+    fun getSelection(): Selection? = selection
 
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.div("editor") {
@@ -27,6 +44,11 @@ open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtm
 
     fun dispose() {
 
+    }
+
+    open fun processKeyDown(event: JSKeyboardEvent): Boolean {
+        val selection = this.selection ?: return false
+        return selection.processKeyDown(event)
     }
 
     companion object {

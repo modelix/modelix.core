@@ -1,21 +1,33 @@
 package org.modelix.editor
 
 import kotlinx.html.*
-import kotlin.reflect.KClass
 
-class TextLine(words_: Iterable<ILayoutable>) : IProducesHtml {
-    var owner: LayoutedText? = null
-    val words: List<ILayoutable> = words_.toList()
+class TextLine(words_: Iterable<Layoutable>) : IProducesHtml {
+    var initialText: LayoutedText? = null
+    var finalText: LayoutedText? = null
+    val words: List<Layoutable> = words_.toList()
 
     init {
-        words.filterIsInstance<LayoutableIndent>().filter { it.owner == null }.forEach { it.owner = this }
+        words.filter { it.initialLine == null }.forEach { it.initialLine = this }
+        words.forEach { it.finalLine = this }
     }
 
-    fun getContextIndent() = owner?.getContextIndent() ?: 0
+    fun getText(): LayoutedText? = finalText?.rootText() ?: initialText?.rootText()
+
+    fun getSibling(next: Boolean): TextLine? {
+        val text = getText() ?: return null
+        val index = text.lines.indexOf(this)
+        if (index < 0) return null
+        val siblingIndex = index + (if (next) 1 else -1)
+        if (siblingIndex < 0 || siblingIndex >= text.lines.size) return null
+        return text.lines[siblingIndex]
+    }
+
+    fun getContextIndent() = initialText?.getContextIndent() ?: 0
 
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.div("line") {
-            words.forEach { element: ILayoutable ->
+            words.forEach { element: Layoutable ->
                 produceChild(element)
             }
             if (words.sumOf { it.getLength() } == 0) {
@@ -36,8 +48,11 @@ class LayoutedText(
     var owner: LayoutedText? = null
 
     init {
-        lines.forEach { if (it.owner == null) it.owner = this }
+        lines.forEach { if (it.initialText == null) it.initialText = this }
+        lines.forEach { it.finalText = this }
     }
+
+    fun rootText(): LayoutedText? = owner?.rootText() ?: owner ?: this
 
     fun getContextIndent(): Int = (owner?.getContextIndent() ?: 0) + indent
 
@@ -66,7 +81,7 @@ class TextLayouter {
     private var beginsWithNoSpace: Boolean = false
     private val closedLines = ArrayList<TreeList<TextLine>>()
     private var reusableLastLine: TextLine? = null
-    private var lastLine: MutableList<ILayoutable>? = null
+    private var lastLine: MutableList<Layoutable>? = null
     private var currentIndent: Int = 0
     private var autoInsertSpace: Boolean = true
     private var insertNewLineNext: Boolean = false
@@ -108,7 +123,7 @@ class TextLayouter {
         lastLine = ArrayList()
     }
 
-    private fun ensureLastLine(): MutableList<ILayoutable> {
+    private fun ensureLastLine(): MutableList<Layoutable> {
         if (lastLine == null) {
             lastLine = ArrayList()
         }
@@ -181,7 +196,7 @@ class TextLayouter {
         if (text.endsWithNewLine) onNewLine()
     }
 
-    fun append(element: ILayoutable) {
+    fun append(element: Layoutable) {
         reusableLastLine = null
         ensureLastLine()
         if (insertNewLineNext) {
@@ -202,10 +217,37 @@ class TextLayouter {
     }
 }
 
-interface ILayoutable : IProducesHtml {
-    fun getLength(): Int
-    fun isWhitespace(): Boolean
-    fun toText(): String
+abstract class Layoutable : IProducesHtml {
+    var initialLine: TextLine? = null
+    var finalLine: TextLine? = null
+
+    abstract fun getLength(): Int
+    abstract fun isWhitespace(): Boolean
+    abstract fun toText(): String
+    override fun toString(): String = toText()
+
+    fun getLine(): TextLine? = finalLine ?: initialLine
+
+    fun getSiblingInLine(next: Boolean): Layoutable? {
+        val line = getLine() ?: return null
+        val index = line.words.indexOf(this)
+        if (index < 0) return null
+        val siblingIndex = index + (if (next) + 1 else -1)
+        if (siblingIndex < 0 || siblingIndex >= line.words.size) return null
+        return line.words[siblingIndex]
+    }
+
+    fun getSiblingInText(next: Boolean): Layoutable? {
+        val siblingInLine = getSiblingInLine(next)
+        if (siblingInLine != null) return siblingInLine
+        val siblingLines = generateSequence(getLine()) { it.getSibling(next) }.drop(1)
+        val nonEmptySiblingLine = siblingLines.filter { it.words.isNotEmpty() }.firstOrNull() ?: return null
+        return if (next) nonEmptySiblingLine.words.first() else nonEmptySiblingLine.words.last()
+    }
+
+    fun getSiblingsInText(next: Boolean): Sequence<Layoutable> {
+        return generateSequence(getSiblingInText(next)) { it.getSiblingInText(next) }
+    }
 }
 
 /*class LayoutableWord(val text: String) : ILayoutable {
@@ -216,7 +258,7 @@ interface ILayoutable : IProducesHtml {
         consumer.onTagContent(text.useNbsp())
     }
 }*/
-class LayoutableCell(val cell: Cell) : ILayoutable {
+class LayoutableCell(val cell: Cell) : Layoutable() {
     init {
         require(cell.data is TextCellData) { "Not a text cell: $cell" }
     }
@@ -235,9 +277,13 @@ class LayoutableCell(val cell: Cell) : ILayoutable {
         }
     }
 }
-class LayoutableIndent(val indentSize: Int): ILayoutable {
-    var owner: TextLine? = null
-    fun totalIndent() = indentSize + (owner?.getContextIndent() ?: 0)
+
+fun Cell.layoutable(): LayoutableCell? {
+    return rootCell().layout.lines.asSequence().flatMap { it.words }.filterIsInstance<LayoutableCell>().find { it.cell == this }
+}
+
+class LayoutableIndent(val indentSize: Int): Layoutable() {
+    fun totalIndent() = indentSize + (initialLine?.getContextIndent() ?: 0)
     override fun getLength(): Int = totalIndent() * 2
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = (1..totalIndent()).joinToString { "  " }
@@ -247,7 +293,7 @@ class LayoutableIndent(val indentSize: Int): ILayoutable {
         }
     }
 }
-class LayoutableSpace(): ILayoutable {
+class LayoutableSpace(): Layoutable() {
     override fun getLength(): Int = 1
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = " "

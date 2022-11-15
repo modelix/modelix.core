@@ -3,9 +3,7 @@ package org.modelix.editor
 import kotlinx.browser.document
 import kotlinx.html.TagConsumer
 import org.w3c.dom.HTMLElement
-import org.w3c.dom.Node
 import org.w3c.dom.Text
-import org.w3c.dom.asList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame

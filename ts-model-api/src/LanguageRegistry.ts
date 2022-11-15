@@ -6,7 +6,7 @@ export class LanguageRegistry {
   public static INSTANCE: LanguageRegistry = new LanguageRegistry();
   private languages: Map<string, GeneratedLanguage> = new Map();
   private nodeWrappers: Map<string, (node: INodeJS) => TypedNode> | undefined = undefined
-  public wrapperCache: ((node: ITypedNode)=>ITypedNode) | undefined = undefined
+  public wrapperCache: ((node: ITypedNode) => ITypedNode) | undefined = undefined
 
   public register(lang: GeneratedLanguage): void {
     this.languages.set(lang.name, lang);

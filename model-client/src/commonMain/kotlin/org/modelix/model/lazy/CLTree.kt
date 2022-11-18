@@ -16,6 +16,7 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.api.*
+import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.lazy.COWArrays.add
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
@@ -348,7 +349,7 @@ class CLTree : ITree, IBulkTree {
         return when {
             targetRef == null -> null
             targetRef.isLocal -> PNodeReference(targetRef.elementId, this.getId())
-            targetRef is CPNodeRef.ForeignRef -> INodeReferenceSerializer.deserialize(targetRef.serializedRef)
+            targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
             else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
         }
     }

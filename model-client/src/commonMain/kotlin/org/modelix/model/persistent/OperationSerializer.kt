@@ -15,10 +15,23 @@
 
 package org.modelix.model.persistent
 
-import org.modelix.model.api.*
-import org.modelix.model.lazy.INodeReferenceSerializer
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.operations.*
+import org.modelix.model.operations.AddNewChildOp
+import org.modelix.model.operations.AddNewChildSubtreeOp
+import org.modelix.model.operations.DeleteNodeOp
+import org.modelix.model.operations.IOperation
+import org.modelix.model.operations.MoveNodeOp
+import org.modelix.model.operations.NoOp
+import org.modelix.model.operations.PositionInRole
+import org.modelix.model.operations.RevertToOp
+import org.modelix.model.operations.SetPropertyOp
+import org.modelix.model.operations.SetReferenceOp
+import org.modelix.model.operations.UndoOp
 import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import org.modelix.model.persistent.SerializationUtil.longToHex
@@ -43,7 +56,7 @@ class OperationSerializer private constructor() {
                 is LocalPNodeReference -> longToHex(obj.id)
                 is PNodeReference -> "${longToHex(obj.id)}/${escape(obj.branchId)}"
                 is SerializedNodeReference -> escape(obj.serialized)
-                else -> escape(INodeReferenceSerializer.serialize(obj))
+                else -> escape(org.modelix.model.api.INodeReferenceSerializer.serialize(obj))
             }
         }
 

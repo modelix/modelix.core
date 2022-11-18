@@ -16,33 +16,29 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.api.INodeReference
-import org.modelix.model.persistent.SerializedNodeReference
 
-interface INodeReferenceSerializer {
+@Deprecated("use org.modelix.model.api.INodeReferenceSerializer")
+interface INodeReferenceSerializer : org.modelix.model.api.INodeReferenceSerializer {
 
-    fun serialize(ref: INodeReference): String?
-    fun deserialize(serialized: String): INodeReference?
+    override fun serialize(ref: INodeReference): String?
+    override fun deserialize(serialized: String): INodeReference?
 
     companion object {
-        private val serializers: MutableSet<INodeReferenceSerializer> = HashSet()
 
         fun register(serializer: INodeReferenceSerializer) {
-            serializers.add(serializer)
+            org.modelix.model.api.INodeReferenceSerializer.register(serializer)
         }
 
         fun unregister(serializer: INodeReferenceSerializer) {
-            serializers.remove(serializer)
+            org.modelix.model.api.INodeReferenceSerializer.unregister(serializer)
         }
 
         fun serialize(ref: INodeReference): String {
-            if (ref is SerializedNodeReference) return ref.serialized
-            return serializers.map { it.serialize(ref) }.firstOrNull { it != null }
-                ?: throw RuntimeException("No serializer found for ${ref::class}")
+            return org.modelix.model.api.INodeReferenceSerializer.serialize(ref)
         }
 
         fun deserialize(serialized: String): INodeReference {
-            return serializers.map { it.deserialize(serialized) }.firstOrNull { it != null }
-                ?: throw RuntimeException("No deserializer found for: $serialized")
+            return org.modelix.model.api.INodeReferenceSerializer.deserialize(serialized)
         }
     }
 }

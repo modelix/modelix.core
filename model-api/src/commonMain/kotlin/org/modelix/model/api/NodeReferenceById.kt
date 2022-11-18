@@ -11,15 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.persistent
+package org.modelix.model.api
 
-import org.modelix.model.api.INode
-import org.modelix.model.api.INodeReference
 import org.modelix.model.area.IArea
-import org.modelix.model.lazy.INodeReferenceSerializer
 
-class SerializedNodeReference(val serialized: String) : INodeReference {
+class NodeReferenceById(val nodeId: String) : INodeReference {
     override fun resolveNode(area: IArea?): INode? {
-        return INodeReferenceSerializer.deserialize(serialized).resolveNode(area)
+        return area?.resolveNode(this)
     }
 }

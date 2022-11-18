@@ -26,6 +26,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
 import kotlinx.html.*
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
@@ -247,6 +248,7 @@ object Main {
                 install(Routing)
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)
+                install(WebSockets)
 
                 modelServer.init(this)
                 historyHandler.init(this)

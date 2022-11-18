@@ -21,18 +21,29 @@ interface INode {
     fun getArea(): IArea
     val isValid: Boolean
     val reference: INodeReference
-    @Deprecated("Use getConceptReference().resolve()")
+    @Deprecated("Use .getResolvedConcept()")
     val concept: IConcept?
     val roleInParent: String?
     val parent: INode?
+    fun getConceptReference(): IConceptReference?
+
     fun getChildren(role: String?): Iterable<INode>
     val allChildren: Iterable<INode>
-    fun getConceptReference(): IConceptReference?
     fun moveChild(role: String?, index: Int, child: INode)
     fun addNewChild(role: String?, index: Int, concept: IConcept?): INode
     fun removeChild(child: INode)
+
+    @Deprecated("use .getResolvedReferenceTarget")
     fun getReferenceTarget(role: String): INode?
+    fun getReferenceTargetRef(role: String): INodeReference? {
+        return getReferenceTarget(role)?.reference
+    }
     fun setReferenceTarget(role: String, target: INode?)
+    fun setReferenceTarget(role: String, target: INodeReference?) {
+        // Default implementation for backward compatibility only.
+        setReferenceTarget(role, target?.resolveNode(getArea()))
+    }
+
     fun getPropertyValue(role: String): String?
     fun setPropertyValue(role: String, value: String?)
     fun getPropertyRoles(): List<String>
@@ -48,3 +59,5 @@ fun INode.setReferenceTarget(link: IReferenceLink, target: INode?): Unit = setRe
 fun INode.getPropertyValue(property: IProperty): String? = getPropertyValue(property.key())
 fun INode.setPropertyValue(property: IProperty, value: String?): Unit = setPropertyValue(property.key(), value)
 fun INode.getConcept(): IConcept? = getConceptReference()?.resolve()
+fun INode.getResolvedReferenceTarget(role: String): INode? = getReferenceTargetRef(role)?.resolveNode(getArea())
+fun INode.getResolvedConcept(): IConcept? = getConceptReference()?.resolve()

@@ -17,7 +17,9 @@ package org.modelix.model.server
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.testing.*
+import io.ktor.server.websocket.*
 import org.json.JSONObject
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.ITree
@@ -28,6 +30,7 @@ class JsonAPITest {
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
+            install(WebSockets)
             JsonModelServer(LocalModelClient(InMemoryStoreClient())).init(this)
         }
         block()

@@ -32,6 +32,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
 
     implementation(project(":model-api"))
+    implementation(project(":model-server-api"))
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))
     implementation(project(":authorization"))
     implementation("org.apache.commons:commons-lang3:3.10")

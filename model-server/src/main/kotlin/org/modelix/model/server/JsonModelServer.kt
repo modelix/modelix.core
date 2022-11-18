@@ -49,7 +49,6 @@ class JsonModelServer(val client: LocalModelClient) {
 
     fun init(application: Application) {
         application.apply {
-            install(WebSockets)
             routing {
                 requiresPermission("model-json-api", "read") {
                     route("/json") {
@@ -379,4 +378,4 @@ class JsonModelServer(val client: LocalModelClient) {
     }
 }
 
-private class ContainmentData(val parent: Long, val role: String?, val index: Int)
+class ContainmentData(val parent: Long, val role: String?, val index: Int)

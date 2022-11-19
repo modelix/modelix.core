@@ -40,18 +40,26 @@ class LightModelClient(val connection: IConnection) {
 
     fun isInitialized(): Boolean = initialized
 
-    fun hasTemporaryIds(): Boolean = temporaryNodeAdapters.isNotEmpty() || nodesReferencingTemporaryIds.isNotEmpty()
+    fun hasTemporaryIds(): Boolean = synchronized {
+        temporaryNodeAdapters.isNotEmpty() || nodesReferencingTemporaryIds.isNotEmpty()
+    }
 
     fun getNode(nodeId: NodeId): INode {
-        getNodeData(nodeId) // fail fast if it doesn't exist
-        return getNodeAdapter(nodeId)
+        return synchronized {
+            getNodeData(nodeId) // fail fast if it doesn't exist
+            return@synchronized getNodeAdapter(nodeId)
+        }
     }
 
     private fun appendUpdate(nodeId: NodeId, body: (NodeUpdateData)->NodeUpdateData) {
-        pendingUpdates[nodeId] = body((pendingUpdates[nodeId] ?: NodeUpdateData.nothing(nodeId)))
+        synchronized {
+            pendingUpdates[nodeId] = body((pendingUpdates[nodeId] ?: NodeUpdateData.nothing(nodeId)))
+        }
     }
 
-    private fun generateTemporaryNodeId(): String = TEMP_ID_PREFIX + (++temporaryIdsSequence).toString(16)
+    private fun generateTemporaryNodeId(): String = synchronized {
+        TEMP_ID_PREFIX + (++temporaryIdsSequence).toString(16)
+    }
     
     private fun <R> synchronized(block: () -> R): R {
         runSynchronized(this) {

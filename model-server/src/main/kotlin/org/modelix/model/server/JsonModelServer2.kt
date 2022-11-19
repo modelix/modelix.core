@@ -91,7 +91,6 @@ class JsonModelServer2(val client: LocalModelClient) {
 
     private fun Route.initRouting() {
         webSocket("/{repositoryId}/ws") {
-            println("server connected")
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val userId = call.getUserName()
 

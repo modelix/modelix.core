@@ -13,29 +13,18 @@
  */
 package org.modelix.model.server
 
-import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.html.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.html.body
-import kotlinx.html.table
-import kotlinx.html.td
-import kotlinx.html.tr
-import org.json.JSONArray
-import org.json.JSONObject
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.model.IKeyListener
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.ConceptReference
-import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitorEx
@@ -45,20 +34,39 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
-import org.modelix.model.api.getPropertyValue
-import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
-import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.api.MessageFromClient
 import org.modelix.model.server.api.MessageFromServer
 import org.modelix.model.server.api.NodeData
-import org.modelix.model.server.api.NodeId
 import org.modelix.model.server.api.NodeUpdateData
 import org.modelix.model.server.api.VersionData
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.MutableList
+import kotlin.collections.MutableMap
+import kotlin.collections.associate
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.filter
+import kotlin.collections.forEach
+import kotlin.collections.forEachIndexed
+import kotlin.collections.groupBy
+import kotlin.collections.ifEmpty
+import kotlin.collections.isNotEmpty
+import kotlin.collections.map
+import kotlin.collections.mapValues
+import kotlin.collections.minus
+import kotlin.collections.plusAssign
+import kotlin.collections.set
+import kotlin.collections.toSet
+import kotlin.collections.toTypedArray
 
 class JsonModelServer2(val client: LocalModelClient) {
 
@@ -83,14 +91,15 @@ class JsonModelServer2(val client: LocalModelClient) {
 
     private fun Route.initRouting() {
         webSocket("/{repositoryId}/ws") {
+            println("server connected")
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val userId = call.getUserName()
 
             var lastVersion: CLVersion? = null
             val deltaMutex = Mutex()
             val sendDelta: suspend (CLVersion, Map<String, String>?)->Unit = { newVersion, replacedIds ->
-                if (newVersion.hash != lastVersion?.hash) {
-                    deltaMutex.withLock {
+                deltaMutex.withLock {
+                    if (newVersion.hash != lastVersion?.hash) {
                         send(MessageFromServer(
                             version = versionAsJson(newVersion, lastVersion),
                             replacedIds = replacedIds?.ifEmpty { null }
@@ -116,7 +125,9 @@ class JsonModelServer2(val client: LocalModelClient) {
                 for (frame in incoming) {
                     when (frame) {
                         is Frame.Text -> {
-                            val message = MessageFromClient.fromJson(frame.readText())
+                            val text = frame.readText()
+                            println("message on server: $text")
+                            val message = MessageFromClient.fromJson(text)
                             if (message.changedNodes != null) {
                                 val replacedIds = HashMap<String, String>()
                                 val mergedVersion = applyUpdate(lastVersion!!, message.changedNodes!!, repositoryId, userId, replacedIds)
@@ -260,7 +271,7 @@ class JsonModelServer2(val client: LocalModelClient) {
         return VersionData(
             repositoryId = version.tree.getId(),
             versionHash = version.hash,
-            rootNodeId = ITree.ROOT_ID.toString(16),
+            rootNodeId = if (oldVersion == null) ITree.ROOT_ID.toString(16) else null,
             nodes = nodeDataList
         )
     }
@@ -282,7 +293,9 @@ class JsonModelServer2(val client: LocalModelClient) {
             }
             it to targetId?.toString(16)
         }.filter { it.second != null }.associate { it.first to it.second!! }
-        val children = node.allChildren.map { (it as PNodeAdapter).nodeId.toString(16) }
+        val children = node.allChildren
+            .groupBy { it.roleInParent }
+            .mapValues { children -> children.value.map { (it as PNodeAdapter).nodeId.toString(16) } }
         val nodeData = NodeData(
             nodeId = nodeId,
             concept = node.getConceptReference()?.getUID(),
@@ -297,5 +310,9 @@ class JsonModelServer2(val client: LocalModelClient) {
         if (includeDescendants) {
             node.allChildren.forEach { node2json(it, true, outputList) }
         }
+    }
+
+    companion object {
+        private val LOG = mu.KotlinLogging.logger {  }
     }
 }

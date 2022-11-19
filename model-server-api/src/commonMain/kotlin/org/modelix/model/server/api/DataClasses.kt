@@ -15,7 +15,7 @@ data class NodeData(
     val role: String?,
     val properties: Map<String, String>,
     val references: Map<String, String>,
-    val children: List<NodeId>
+    val children: Map<String?, List<NodeId>>
 )
 
 @Serializable
@@ -30,6 +30,40 @@ data class NodeUpdateData(
     val properties: Map<String, String?>? = null,
     val children: Map<String?, List<NodeId>>? = null
 ) {
+    fun withReference(role: String, target: NodeId?) = NodeUpdateData(
+        nodeId = nodeId,
+        temporaryNodeId = temporaryNodeId,
+        parent = parent,
+        role = role,
+        index = index,
+        concept = concept,
+        references = (references ?: emptyMap()) + (role to target),
+        properties = properties,
+        children = children
+    )
+    fun withProperty(role: String, value: String?) = NodeUpdateData(
+        nodeId = nodeId,
+        temporaryNodeId = temporaryNodeId,
+        parent = parent,
+        role = role,
+        index = index,
+        concept = concept,
+        references = references,
+        properties = (properties ?: emptyMap()) + (role to value),
+        children = children
+    )
+    fun withChildren(role: String?, newChildren: List<String>) = NodeUpdateData(
+        nodeId = nodeId,
+        temporaryNodeId = temporaryNodeId,
+        parent = parent,
+        role = role,
+        index = index,
+        concept = concept,
+        references = references,
+        properties = properties,
+        children = (children ?: emptyMap()) + (role to newChildren)
+    )
+
     companion object {
         fun newNode(tempId: NodeId, parent: NodeId, role: String?, index: Int, concept: String?) = NodeUpdateData(
             nodeId = null,
@@ -42,6 +76,8 @@ data class NodeUpdateData(
             properties = null,
             children = null
         )
+
+        fun nothing(nodeId: NodeId) = NodeUpdateData(nodeId = nodeId)
     }
 }
 

@@ -19,6 +19,8 @@ import io.ktor.client.request.*
 import io.ktor.server.application.*
 import io.ktor.server.testing.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -35,7 +37,6 @@ import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 class LightModelClientTest {
 
@@ -54,43 +55,69 @@ class LightModelClientTest {
     }
 
     fun runClientTest(block: suspend (LightModelClient) -> Unit) = runTest { httpClient ->
-        httpClient.post("http://localhost/json/test-repo/init")
-        httpClient.webSocket("ws://localhost/json/v2/test-repo/ws") {
-            val listeners = ArrayList<(message: MessageFromServer) -> Unit>()
-            val connection = object : LightModelClient.IConnection {
+        val response = httpClient.post("http://localhost/json/test-repo/init").status
+        println("init: $response")
+
+        val createConnection: ()->LightModelClient.IConnection = {
+            object : LightModelClient.IConnection {
+                var wsSession: DefaultClientWebSocketSession? = null
+                val coroutineScope = CoroutineScope(Dispatchers.Default)
                 override fun sendMessage(message: MessageFromClient) {
                     runBlocking {
-                        send(message.toJson())
+                        (wsSession ?: throw IllegalStateException("Not connected")).send(message.toJson())
                     }
                 }
 
-                override fun receiveMessages(listener: (message: MessageFromServer) -> Unit) {
-                    listeners.add(listener)
-                }
-            }
-            launch {
-                try {
-                    while(true) {
-                        val messageFromServer = (incoming.receive() as? Frame.Text)?.let { MessageFromServer.fromJson(it.readText()) }
-                        if (messageFromServer != null) {
-                            listeners.forEach { it(messageFromServer) }
+                override fun connect(messageReceiver: (message: MessageFromServer) -> Unit) {
+                    coroutineScope.launch {
+                        println("connecting")
+                        httpClient.webSocket("ws://localhost/json/v2/test-repo/ws") {
+                            println("client connected")
+                            wsSession = this
+                            try {
+                                for (frame in incoming) {
+                                    when (frame) {
+                                        is Frame.Text -> {
+                                            val text = frame.readText()
+                                            println("message: $text")
+                                            messageReceiver(MessageFromServer.fromJson(text))
+                                        }
+                                        else -> {}
+                                    }
+                                }
+                            } catch (ex : ClosedReceiveChannelException) {
+                                println("WebSocket closed")
+                            }
                         }
                     }
-                } catch (ex : ClosedReceiveChannelException) {
-                    println("WebSocket closed")
                 }
             }
-            val client = LightModelClient(connection)
-            block(client)
         }
+
+        val client = LightModelClient(createConnection())
+        block(client)
     }
 
     @Test
-    fun test() = runClientTest {  client ->
+    fun setProperty() = runClientTest {  client ->
+        delay(500.milliseconds)
         val rootNode = client.getNode(ITree.ROOT_ID.toString(16))
         delay(100.milliseconds)
         rootNode.setPropertyValue("name", "abc")
         delay(100.milliseconds)
         assertEquals("abc", rootNode.getPropertyValue("name"))
+    }
+
+    @Test
+    fun addNewChild() = runClientTest {  client ->
+        delay(500.milliseconds)
+        val rootNode = client.getNode(ITree.ROOT_ID.toString(16))
+        delay(100.milliseconds)
+        val child = rootNode.addNewChild("role1", -1, null)
+        delay(100.milliseconds)
+        assertEquals(1, rootNode.getChildren("role1").toList().size)
+        child.setPropertyValue("name", "xyz")
+        delay(100.milliseconds)
+        assertEquals("xyz", child.getPropertyValue("name"))
     }
 }

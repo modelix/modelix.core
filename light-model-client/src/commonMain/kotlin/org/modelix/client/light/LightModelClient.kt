@@ -14,14 +14,15 @@ class LightModelClient(val connection: IConnection) {
     private val area = Area()
     private var repositoryId: String? = null
     private var versionHash: String? = null
-    private val pendingUpdates: MutableList<NodeUpdateData> = ArrayList()
+    private val pendingUpdates: MutableMap<NodeId, NodeUpdateData> = LinkedHashMap()
     private var rootNodeId: NodeId? = null
     private var temporaryIdsSequence: Long = 0
     private val nodesReferencingTemporaryIds = HashSet<NodeId>()
     private var synchronizationLevel: Int = 0
+    private val temporaryNodeAdapters: MutableMap<String, NodeAdapter> = HashMap()
 
     init {
-        connection.receiveMessages { message ->
+        connection.connect { message ->
             try {
                 messageReceived(message)
             } catch (ex: Exception) {
@@ -33,10 +34,17 @@ class LightModelClient(val connection: IConnection) {
     fun getRepositoryId(): String? = repositoryId
 
     fun getRootNode(): INode? {
-        return rootNodeId?.let { NodeAdapter(it) }
+        return rootNodeId?.let { getNodeAdapter(it) }
     }
 
-    fun getNode(nodeId: NodeId): INode = NodeAdapter(nodeId)
+    fun getNode(nodeId: NodeId): INode {
+        getNodeData(nodeId) // fail fast if it doesn't exist
+        return getNodeAdapter(nodeId)
+    }
+
+    private fun appendUpdate(nodeId: NodeId, body: (NodeUpdateData)->NodeUpdateData) {
+        pendingUpdates[nodeId] = body((pendingUpdates[nodeId] ?: NodeUpdateData.nothing(nodeId)))
+    }
 
     private fun generateTemporaryNodeId(): String = TEMP_ID_PREFIX + (++temporaryIdsSequence).toString(16)
     
@@ -57,7 +65,7 @@ class LightModelClient(val connection: IConnection) {
 
     fun flush() {
         if (pendingUpdates.isNotEmpty()) {
-            connection.sendMessage(MessageFromClient(ArrayList(pendingUpdates)))
+            connection.sendMessage(MessageFromClient(pendingUpdates.values.toList()))
             pendingUpdates.clear()
         }
     }
@@ -91,17 +99,27 @@ class LightModelClient(val connection: IConnection) {
                 val oldData = nodes[sourceId] ?: continue
                 val newData = oldData.replaceReferences { references ->
                     references.map { it.key to (replacements[it.value] ?: it.value) }.toMap()
+                }.replaceChildren { children ->
+                    children.mapValues { role2list -> role2list.value.map { child -> replacements[child] ?: child } }
                 }
                 nodes[sourceId] = newData
-                if (newData.references.values.all { !it.startsWith(TEMP_ID_PREFIX) }) {
+                if (newData.references.values.all { !it.startsWith(TEMP_ID_PREFIX) }
+                    && newData.children.values.flatten().all { !it.startsWith(TEMP_ID_PREFIX) }) {
                     noTempReferencesLeft.add(sourceId)
                 }
             }
             nodesReferencingTemporaryIds.removeAll(noTempReferencesLeft)
             for (replacement in replacements) {
-                val oldData: NodeData = nodes[replacement.key] ?: continue
-                nodes[replacement.value] = oldData.replaceId(replacement.value)
+                val oldData: NodeData? = nodes.remove(replacement.key)
+                if (oldData != null) {
+                    nodes[replacement.value] = oldData.replaceId(replacement.value)
+                }
+                val tempAdapter = temporaryNodeAdapters.remove(replacement.key)
+                if (tempAdapter != null) {
+                    tempAdapter.nodeId = replacement.value
+                }
             }
+            // TODO pendingUpdates may contain temporary IDs
         }
     }
 
@@ -111,7 +129,17 @@ class LightModelClient(val connection: IConnection) {
         }
     }
 
-    inner class NodeAdapter(val nodeId: NodeId) : INode, INodeReference {
+    private fun getNodeAdapter(nodeId: NodeId): NodeAdapter {
+        return synchronized {
+            if (nodeId.startsWith(TEMP_ID_PREFIX)) {
+                temporaryNodeAdapters.getOrPut(nodeId) { NodeAdapter(nodeId) }
+            } else {
+                NodeAdapter(nodeId)
+            }
+        }
+    }
+
+    inner class NodeAdapter(var nodeId: NodeId) : INode, INodeReference {
         fun getData() = getNodeData(nodeId)
 
         override fun resolveNode(area: IArea?): INode? = this
@@ -127,12 +155,12 @@ class LightModelClient(val connection: IConnection) {
         override val roleInParent: String?
             get() = getData().role
         override val parent: INode?
-            get() = getData().parent?.let { NodeAdapter(nodeId) }
+            get() = getData().parent?.let { getNodeAdapter(nodeId) }
 
         override fun getChildren(role: String?): Iterable<INode> = allChildren.filter { it.roleInParent == role }
 
         override val allChildren: Iterable<INode>
-            get() = getData().children.map { NodeAdapter(it) }
+            get() = getData().children.flatMap { it.value }.map { getNodeAdapter(it) }
 
         override fun getConceptReference(): IConceptReference? {
             return getData().concept?.let { ConceptReference(it) }
@@ -143,7 +171,24 @@ class LightModelClient(val connection: IConnection) {
         }
 
         override fun addNewChild(role: String?, index: Int, concept: IConcept?): INode {
-            TODO("Not yet implemented")
+            return synchronized {
+                val childId = generateTemporaryNodeId()
+                val oldParentData = getData()
+                nodes[childId] = NodeData(childId, concept?.getUID(), nodeId, role, emptyMap(), emptyMap(), emptyMap())
+                val newParentData = oldParentData.replaceChildren { allOldChildren ->
+                    val newChildren = (allOldChildren[role] ?: emptyList()).toMutableList()
+                    if (index == -1) {
+                        newChildren.add(childId)
+                    } else {
+                        newChildren.add(index, childId)
+                    }
+                    allOldChildren + (role to newChildren)
+                }
+                nodes[nodeId] = newParentData
+                pendingUpdates[childId] = NodeUpdateData.newNode(childId, nodeId, role, index, concept?.getUID())
+                nodesReferencingTemporaryIds.add(nodeId)
+                return@synchronized getNodeAdapter(childId)
+            }
         }
 
         override fun removeChild(child: INode) {
@@ -165,9 +210,11 @@ class LightModelClient(val connection: IConnection) {
                 nodes[nodeId] = getData().replaceReferences {
                     if (target == null) it - role else it + (role to target.nodeId)
                 }
-                pendingUpdates.add(NodeUpdateData(nodeId = nodeId, references = mapOf(role to target?.nodeId)))
+                appendUpdate { it.withReference(role, target?.nodeId) }
             }
         }
+
+        private fun appendUpdate(body: (NodeUpdateData)->NodeUpdateData) = appendUpdate(nodeId, body)
 
         override fun setReferenceTarget(role: String, target: INode?) {
             setReferenceTarget(role, target?.reference)
@@ -191,7 +238,7 @@ class LightModelClient(val connection: IConnection) {
                         children = children
                     )
                 }
-                pendingUpdates.add(NodeUpdateData(nodeId = nodeId, properties = mapOf(role to value)))
+                appendUpdate { it.withProperty(role, value) }
             }
         }
 
@@ -224,7 +271,7 @@ class LightModelClient(val connection: IConnection) {
 
     inner class Area : IArea {
         override fun getRoot(): INode {
-            return rootNodeId?.let { NodeAdapter(it) } ?: throw IllegalStateException("Root node ID unknown")
+            return rootNodeId?.let { getNodeAdapter(it) } ?: throw IllegalStateException("Root node ID unknown")
         }
 
         @Deprecated("use ILanguageRepository.resolveConcept")
@@ -296,7 +343,7 @@ class LightModelClient(val connection: IConnection) {
 
     interface IConnection {
         fun sendMessage(message: MessageFromClient)
-        fun receiveMessages(listener: (message: MessageFromServer)->Unit)
+        fun connect(messageReceiver: (message: MessageFromServer)->Unit)
     }
 }
 
@@ -322,6 +369,18 @@ private fun NodeData.replaceReferences(f: (Map<String, String>)->Map<String, Str
         properties = properties,
         references = f(references),
         children = children
+    )
+}
+
+private fun NodeData.replaceChildren(f: (Map<String?, List<String>>)->Map<String?, List<String>>): NodeData {
+    return NodeData(
+        nodeId = nodeId,
+        concept = concept,
+        parent = parent,
+        role = role,
+        properties = properties,
+        references = references,
+        children = f(children)
     )
 }
 

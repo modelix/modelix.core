@@ -20,6 +20,7 @@ class LightModelClient(val connection: IConnection) {
     private val nodesReferencingTemporaryIds = HashSet<NodeId>()
     private var synchronizationLevel: Int = 0
     private val temporaryNodeAdapters: MutableMap<String, NodeAdapter> = HashMap()
+    private var initialized = false
 
     init {
         connection.connect { message ->
@@ -36,6 +37,10 @@ class LightModelClient(val connection: IConnection) {
     fun getRootNode(): INode? {
         return rootNodeId?.let { getNodeAdapter(it) }
     }
+
+    fun isInitialized(): Boolean = initialized
+
+    fun hasTemporaryIds(): Boolean = temporaryNodeAdapters.isNotEmpty() || nodesReferencingTemporaryIds.isNotEmpty()
 
     fun getNode(nodeId: NodeId): INode {
         getNodeData(nodeId) // fail fast if it doesn't exist
@@ -79,6 +84,7 @@ class LightModelClient(val connection: IConnection) {
 
     private fun versionReceived(version: VersionData) {
         synchronized {
+            initialized = true
             if (version.repositoryId != null && version.repositoryId != repositoryId) {
                 repositoryId = version.repositoryId
             }

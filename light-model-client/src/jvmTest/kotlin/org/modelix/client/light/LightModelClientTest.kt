@@ -25,6 +25,7 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.ITree
 import org.modelix.model.server.InMemoryStoreClient
@@ -37,6 +38,7 @@ import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class LightModelClientTest {
 
@@ -100,24 +102,32 @@ class LightModelClientTest {
 
     @Test
     fun setProperty() = runClientTest {  client ->
-        delay(500.milliseconds)
+        client.wait()
         val rootNode = client.getNode(ITree.ROOT_ID.toString(16))
-        delay(100.milliseconds)
+        client.wait()
         rootNode.setPropertyValue("name", "abc")
-        delay(100.milliseconds)
+        client.wait()
         assertEquals("abc", rootNode.getPropertyValue("name"))
     }
 
     @Test
     fun addNewChild() = runClientTest {  client ->
-        delay(500.milliseconds)
+        client.wait()
         val rootNode = client.getNode(ITree.ROOT_ID.toString(16))
-        delay(100.milliseconds)
+        client.wait()
         val child = rootNode.addNewChild("role1", -1, null)
-        delay(100.milliseconds)
+        client.wait()
         assertEquals(1, rootNode.getChildren("role1").toList().size)
         child.setPropertyValue("name", "xyz")
-        delay(100.milliseconds)
+        client.wait()
         assertEquals("xyz", child.getPropertyValue("name"))
+    }
+
+    private suspend fun LightModelClient.wait() {
+        withTimeout(5.seconds) {
+            while (!isInitialized() || hasTemporaryIds()) {
+                delay(1.milliseconds)
+            }
+        }
     }
 }

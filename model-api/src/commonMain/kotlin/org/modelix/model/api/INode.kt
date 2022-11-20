@@ -31,6 +31,9 @@ interface INode {
     val allChildren: Iterable<INode>
     fun moveChild(role: String?, index: Int, child: INode)
     fun addNewChild(role: String?, index: Int, concept: IConcept?): INode
+    fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
+        return addNewChild(role, index, concept?.resolve())
+    }
     fun removeChild(child: INode)
 
     @Deprecated("use .getResolvedReferenceTarget")
@@ -61,3 +64,8 @@ fun INode.setPropertyValue(property: IProperty, value: String?): Unit = setPrope
 fun INode.getConcept(): IConcept? = getConceptReference()?.resolve()
 fun INode.getResolvedReferenceTarget(role: String): INode? = getReferenceTargetRef(role)?.resolveNode(getArea())
 fun INode.getResolvedConcept(): IConcept? = getConceptReference()?.resolve()
+
+fun INode.addNewChild(role: String?, index: Int): INode = addNewChild(role, index, null as IConceptReference?)
+fun INode.addNewChild(role: String?): INode = addNewChild(role, -1, null as IConceptReference?)
+fun INode.addNewChild(role: String?, concept: IConceptReference?): INode = addNewChild(role, -1, concept)
+fun INode.addNewChild(role: String?, concept: IConcept?): INode = addNewChild(role, -1, concept)

@@ -121,6 +121,7 @@ class JsonModelServer2(val client: LocalModelClient) {
             client.listen(repositoryId.getBranchReference().getKey(), listener)
             try {
                 sendDelta(getCurrentVersion(repositoryId), null)
+                val previouslyReplacedIds = HashMap<String, String>()
                 for (frame in incoming) {
                     when (frame) {
                         is Frame.Text -> {
@@ -129,8 +130,12 @@ class JsonModelServer2(val client: LocalModelClient) {
                             val message = MessageFromClient.fromJson(text)
                             if (message.changedNodes != null) {
                                 val replacedIds = HashMap<String, String>()
-                                val mergedVersion = applyUpdate(lastVersion!!, message.changedNodes!!, repositoryId, userId, replacedIds)
+                                val changedNodes = message.changedNodes!!.map { it.replaceIds { previouslyReplacedIds[it] } }
+                                val mergedVersion = applyUpdate(lastVersion!!,
+                                    changedNodes, repositoryId, userId, replacedIds)
                                 sendDelta(mergedVersion, replacedIds)
+                                previouslyReplacedIds.putAll(replacedIds)
+                                // TODO previouslyReplacedIds will grow infinitely. Remove entries once we are sure client isn't using them anymore.
                             }
                         }
                         else -> {}
@@ -152,7 +157,11 @@ class JsonModelServer2(val client: LocalModelClient) {
         val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.computeWriteT { t ->
             for (nodeData in updateData) {
-                updateNode(nodeData, t, replacedIds)
+                try {
+                    updateNode(nodeData, t, replacedIds)
+                } catch (ex: Exception) {
+                    throw RuntimeException("Failed to apply $nodeData", ex)
+                }
             }
         }
 
@@ -185,8 +194,8 @@ class JsonModelServer2(val client: LocalModelClient) {
         }
 
         if (!t.containsNode(nodeId)) {
-            val parent = nodeData.parent ?: throw IllegalArgumentException("Node $nodeId doesn't exist, but no parent node is specified.")
-            val index = nodeData.index ?: throw IllegalArgumentException("Node $nodeId doesn't exist, but no index is specified. You can use -1 to add it to the end.")
+            val parent = nodeData.parent ?: throw IllegalArgumentException("Cannot create node ${nodeId.toString(16)}, because no parent node is specified.")
+            val index = nodeData.index ?: throw IllegalArgumentException("Cannot create node ${nodeId.toString(16)}, because no index is specified. You can use -1 to add it to the end.")
             val role = nodeData.role
             t.addNewChild(
                 parent.toLong(16),

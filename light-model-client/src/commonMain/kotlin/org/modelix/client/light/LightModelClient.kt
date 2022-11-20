@@ -53,7 +53,13 @@ class LightModelClient(val connection: IConnection) {
 
     private fun appendUpdate(nodeId: NodeId, body: (NodeUpdateData)->NodeUpdateData) {
         synchronized {
-            pendingUpdates[nodeId] = body((pendingUpdates[nodeId] ?: NodeUpdateData.nothing(nodeId)))
+            val existing = pendingUpdates[nodeId]
+                ?: if (nodeId.startsWith(TEMP_ID_PREFIX)) {
+                    NodeUpdateData(nodeId = null, temporaryNodeId = nodeId)
+                } else {
+                    NodeUpdateData.nothing(nodeId)
+                }
+            pendingUpdates[nodeId] = body(existing)
         }
     }
 
@@ -133,7 +139,7 @@ class LightModelClient(val connection: IConnection) {
                     tempAdapter.nodeId = replacement.value
                 }
             }
-            // TODO pendingUpdates may contain temporary IDs
+            pendingUpdates.putAll(pendingUpdates.mapValues { it.value.replaceIds { id -> replacements[id] } })
         }
     }
 
@@ -163,41 +169,70 @@ class LightModelClient(val connection: IConnection) {
         override val isValid: Boolean
             get() = synchronized { nodes.containsKey(nodeId) }
         override val reference: INodeReference
-            get() = NodeReferenceById(nodeId)
+            get() = this
         override val concept: IConcept?
             get() = getConceptReference()?.resolve()
         override val roleInParent: String?
             get() = getData().role
         override val parent: INode?
-            get() = getData().parent?.let { getNodeAdapter(nodeId) }
+            get() = synchronized { getData().parent?.let { getNodeAdapter(it) } }
 
-        override fun getChildren(role: String?): Iterable<INode> = allChildren.filter { it.roleInParent == role }
+        override fun getChildren(role: String?): List<INode> = synchronized { allChildren.filter { it.roleInParent == role } }
 
-        override val allChildren: Iterable<INode>
-            get() = getData().children.flatMap { it.value }.map { getNodeAdapter(it) }
+        override val allChildren: List<INode>
+            get() = synchronized { getData().children.flatMap { it.value }.map { getNodeAdapter(it) } }
 
         override fun getConceptReference(): IConceptReference? {
-            return getData().concept?.let { ConceptReference(it) }
+            return synchronized { getData().concept?.let { ConceptReference(it) } }
         }
 
         override fun moveChild(role: String?, index: Int, child: INode) {
-            TODO("Not yet implemented")
+            require(child is NodeAdapter && child.getClient() == getClient()) { "Not part of this client: $child" }
+            synchronized {
+                val oldParent = child.parent!! as NodeAdapter
+                val oldRole = child.roleInParent
+                val sameParent = oldParent == this
+                val oldDataOfOldParent = oldParent.getData()
+
+                val newDataOfOldParent = oldDataOfOldParent.replaceChildren(oldRole) { oldChildren ->
+                    oldChildren - child.nodeId
+                }
+
+                val oldDataOfNewParent = if (sameParent) newDataOfOldParent else getData()
+
+                val newDataOfNewParent = oldDataOfNewParent.replaceChildren(role) { oldChildren ->
+                    val newChildren = oldChildren.toMutableList()
+                    if (index == -1) newChildren.add(child.nodeId) else newChildren.add(index, child.nodeId)
+                    newChildren
+                }
+
+                nodes[child.nodeId] = child.getData().replaceContainment(nodeId, role)
+                if (!sameParent) nodes[oldParent.nodeId] = newDataOfOldParent
+                nodes[nodeId] = newDataOfNewParent
+                child.appendUpdate { it.withContainment(nodeId, role, index) }
+            }
         }
 
         override fun addNewChild(role: String?, index: Int, concept: IConcept?): INode {
+            return addNewChild(role, index, concept?.getReference())
+        }
+
+        override fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
             return synchronized {
+                val size = getChildren(role).size
+                require(index == -1 || index in (0..size)) { "Invalid index: $index, size: $size" }
                 val childId = generateTemporaryNodeId()
                 val oldParentData = getData()
-                nodes[childId] = NodeData(childId, concept?.getUID(), nodeId, role, emptyMap(), emptyMap(), emptyMap())
-                val newParentData = oldParentData.replaceChildren { allOldChildren ->
-                    val newChildren = (allOldChildren[role] ?: emptyList()).toMutableList()
+                val newParentData = oldParentData.replaceChildren(role) { oldChildren ->
+                    val newChildren = oldChildren.toMutableList()
                     if (index == -1) {
                         newChildren.add(childId)
                     } else {
                         newChildren.add(index, childId)
                     }
-                    allOldChildren + (role to newChildren)
+                    newChildren
                 }
+                nodes[childId] = NodeData(childId, concept?.getUID(), nodeId, role, emptyMap(), emptyMap(), emptyMap())
                 nodes[nodeId] = newParentData
                 pendingUpdates[childId] = NodeUpdateData.newNode(childId, nodeId, role, index, concept?.getUID())
                 nodesReferencingTemporaryIds.add(nodeId)
@@ -206,29 +241,43 @@ class LightModelClient(val connection: IConnection) {
         }
 
         override fun removeChild(child: INode) {
-            TODO("Not yet implemented")
-        }
-
-        override fun getReferenceTarget(role: String): INode? {
-            return getReferenceTargetRef(role)?.resolveNode(getArea())
-        }
-
-        override fun getReferenceTargetRef(role: String): INodeReference? {
-            return getData().references[role]?.let { INodeReferenceSerializer.deserialize(it) }
-        }
-
-        override fun setReferenceTarget(role: String, target: INodeReference?) {
-            require(target == null || (target is NodeAdapter && target.getClient() == getClient())) { "Only local references are supported" }
-            val target = target as NodeAdapter?
             synchronized {
-                nodes[nodeId] = getData().replaceReferences {
-                    if (target == null) it - role else it + (role to target.nodeId)
+                val oldParentData = getData()
+                val role = child.roleInParent
+                val newParentData = oldParentData.replaceChildren { allOldChildren ->
+                    val newChildren = (allOldChildren[role] ?: emptyList()).toMutableList()
+                    newChildren.remove((child as NodeAdapter).nodeId)
+                    allOldChildren + (role to newChildren)
                 }
-                appendUpdate { it.withReference(role, target?.nodeId) }
+                nodes[nodeId] = newParentData
+                appendUpdate { it.withChildren(role, newParentData.children[role]!!) }
             }
         }
 
-        private fun appendUpdate(body: (NodeUpdateData)->NodeUpdateData) = appendUpdate(nodeId, body)
+        override fun getReferenceTarget(role: String): INode? {
+            return synchronized { getReferenceTargetRef(role)?.resolveNode(getArea()) }
+        }
+
+        override fun getReferenceTargetRef(role: String): INodeReference? {
+            return synchronized { getData().references[role]?.let { INodeReferenceSerializer.deserialize(it) } }
+        }
+
+        override fun setReferenceTarget(role: String, target: INodeReference?) {
+            synchronized {
+                val targetId: NodeId? = when (target) {
+                    null -> null
+                    is NodeAdapter -> target.nodeId
+                    is NodeReferenceById -> target.nodeId
+                    else -> throw IllegalArgumentException("Unsupported reference: $target")
+                }
+                nodes[nodeId] = getData().replaceReferences {
+                    if (targetId == null) it - role else it + (role to targetId)
+                }
+                appendUpdate { it.withReference(role, targetId) }
+            }
+        }
+
+        private fun appendUpdate(body: (NodeUpdateData)->NodeUpdateData) = synchronized { appendUpdate(nodeId, body) }
 
         override fun setReferenceTarget(role: String, target: INode?) {
             setReferenceTarget(role, target?.reference)
@@ -257,11 +306,11 @@ class LightModelClient(val connection: IConnection) {
         }
 
         override fun getPropertyRoles(): List<String> {
-            return getData().properties.keys.toList()
+            return synchronized { getData().properties.keys.toList() }
         }
 
         override fun getReferenceRoles(): List<String> {
-            return getData().references.keys.toList()
+            return synchronized { getData().references.keys.toList() }
         }
 
         override fun equals(other: Any?): Boolean {
@@ -270,17 +319,26 @@ class LightModelClient(val connection: IConnection) {
 
             other as NodeAdapter
 
-            if (nodeId != other.nodeId) return false
+            val sameNodeId = synchronized { nodeId == other.nodeId }
+            if (!sameNodeId) return false
             if (getClient() != other.getClient()) return false
 
             return true
         }
 
         override fun hashCode(): Int {
+            if (nodeId.startsWith(TEMP_ID_PREFIX)) {
+                throw IllegalStateException("The server hasn't yet assigned an ID to this node." +
+                        " The ID and the hashCode will change.")
+            }
             return nodeId.hashCode()
         }
 
         fun getClient(): LightModelClient = this@LightModelClient
+
+        override fun toString(): String {
+            return nodeId
+        }
     }
 
     inner class Area : IArea {
@@ -395,6 +453,26 @@ private fun NodeData.replaceChildren(f: (Map<String?, List<String>>)->Map<String
         properties = properties,
         references = references,
         children = f(children)
+    )
+}
+
+private fun NodeData.replaceChildren(role: String?, f: (List<String>)->List<String>): NodeData {
+    return replaceChildren { allOldChildren ->
+        val oldChildren = (allOldChildren[role] ?: emptyList()).toMutableList()
+        val newChildren = f(oldChildren)
+        allOldChildren + (role to newChildren)
+    }
+}
+
+private fun NodeData.replaceContainment(newParent: NodeId, newRole: String?): NodeData {
+    return NodeData(
+        nodeId = nodeId,
+        concept = concept,
+        parent = newParent,
+        role = newRole,
+        properties = properties,
+        references = references,
+        children = children
     )
 }
 

@@ -27,13 +27,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
+import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
+import org.modelix.model.api.addNewChild
 import org.modelix.model.server.InMemoryStoreClient
 import org.modelix.model.server.JsonModelServer
 import org.modelix.model.server.JsonModelServer2
 import org.modelix.model.server.LocalModelClient
 import org.modelix.model.server.api.MessageFromClient
 import org.modelix.model.server.api.MessageFromServer
+import org.modelix.model.test.RandomModelChangeGenerator
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
@@ -103,8 +107,8 @@ class LightModelClientTest {
     fun setProperty() = runClientTest {  client1, client2 ->
         val role = "name"
         val newValue = "abc"
-        val rootNode1 = client1.getNode(ITree.ROOT_ID.toString(16))
-        val rootNode2 = client2.getNode(ITree.ROOT_ID.toString(16))
+        val rootNode1 = client1.getRootNode()!!
+        val rootNode2 = client2.getRootNode()!!
         rootNode1.setPropertyValue(role, newValue)
         assertEquals(newValue, rootNode1.getPropertyValue(role))
         wait { rootNode2.getPropertyValue(role) == newValue }
@@ -113,20 +117,29 @@ class LightModelClientTest {
 
     @Test
     fun addNewChild() = runClientTest {  client1, client2 ->
-        val rootNode1 = client1.getNode(ITree.ROOT_ID.toString(16))
-        val rootNode2 = client2.getNode(ITree.ROOT_ID.toString(16))
-        val child1 = rootNode1.addNewChild("role1", -1, null)
-        assertEquals(1, rootNode1.getChildren("role1").toList().size)
+        val rootNode1 = client1.getRootNode()!!
+        val rootNode2 = client2.getRootNode()!!
         assertEquals(0, rootNode2.getChildren("role1").toList().size)
+        val child1 = rootNode1.addNewChild("role1")
+        assertEquals(1, rootNode1.getChildren("role1").toList().size)
         wait { rootNode2.getChildren("role1").toList().size == 1 }
         assertEquals(1, rootNode2.getChildren("role1").toList().size)
 
         val child2 = rootNode2.getChildren("role1").first()
+        assertEquals(null, child1.getPropertyValue("name"))
         child2.setPropertyValue("name", "xyz")
         assertEquals("xyz", child2.getPropertyValue("name"))
-        assertEquals(null, child1.getPropertyValue("name"))
         wait { child1.getPropertyValue("name") == "xyz" }
         assertEquals("xyz", child1.getPropertyValue("name"))
+    }
+
+    @Test
+    fun random() = runClientTest {  client1, client2 ->
+        val rand = Random(1234L)
+        val changeGenerator = RandomModelChangeGenerator(client1.getRootNode()!!, rand)
+        for (i in (0..1000)) {
+            changeGenerator.applyRandomChange()
+        }
     }
 
     private suspend fun wait(condition: ()->Boolean) {

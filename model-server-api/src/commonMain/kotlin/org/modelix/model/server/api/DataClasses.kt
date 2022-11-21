@@ -4,7 +4,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConceptReference
 
 typealias NodeId = String
@@ -36,10 +35,10 @@ data class NodeUpdateData(
     fun replaceIds(replacer: (String)->String?): NodeUpdateData {
         val replaceOrKeep: (String)->String = { replacer(it) ?: it }
 
-        val newNodeId = temporaryNodeId?.let(replacer) ?: nodeId
+        val newNodeId = nodeId ?: temporaryNodeId?.let(replacer)
         return NodeUpdateData(
             nodeId = newNodeId,
-            temporaryNodeId = if (newNodeId == null) temporaryNodeId else null,
+            temporaryNodeId = temporaryNodeId,
 //            parent = parent?.let(replaceOrKeep),
 //            role = role,
 //            index = index,
@@ -136,9 +135,10 @@ data class VersionData(
 
 @Serializable
 data class MessageFromServer(
-    val version: VersionData?,
+    val version: VersionData? = null,
     val replacedIds: Map<String, String>? = null,
-    val includedChangeSets: List<ChangeSetId>
+    val includedChangeSets: List<ChangeSetId> = emptyList(),
+    val exception: ExceptionData? = null
 ) {
     fun toJson() = Json.encodeToString(this)
     companion object {
@@ -154,5 +154,26 @@ data class MessageFromClient(
     fun toJson() = Json.encodeToString(this)
     companion object {
         fun fromJson(json: String) = Json.decodeFromString<MessageFromClient>(json)
+    }
+}
+
+@Serializable
+data class ExceptionData(
+    val message: String,
+    val type: String,
+    val stacktrace: List<String>,
+    val cause: ExceptionData? = null
+) {
+    constructor(exception: Throwable) : this(
+        exception.message ?: "",
+        exception::class.qualifiedName ?: "",
+        exception.stackTraceToString().lines(),
+        if (exception.cause == exception) null else exception.cause?.let { ExceptionData(it) }
+    )
+
+    fun allMessages() = generateSequence(this) { it.cause }.map { it.message }
+
+    override fun toString(): String {
+        return stacktrace.joinToString("\n")
     }
 }

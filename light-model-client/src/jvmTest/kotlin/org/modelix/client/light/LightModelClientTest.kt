@@ -41,6 +41,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class LightModelClientTest {
@@ -60,49 +61,51 @@ class LightModelClientTest {
     }
 
     fun runClientTest(block: suspend (suspend ()->LightModelClient) -> Unit) = runTest { httpClient ->
-        val response = httpClient.post("http://localhost/json/test-repo/init").status
-        println("init: $response")
+        withTimeout(2.minutes) {
+            val response = httpClient.post("http://localhost/json/test-repo/init").status
+            println("init: $response")
 
-        val createConnection: ()->LightModelClient.IConnection = {
-            object : LightModelClient.IConnection {
-                var wsSession: DefaultClientWebSocketSession? = null
-                val coroutineScope = CoroutineScope(Dispatchers.Default)
-                override fun sendMessage(message: MessageFromClient) {
-                    runBlocking {
-                        (wsSession ?: throw IllegalStateException("Not connected")).send(message.toJson())
+            val createConnection: ()->LightModelClient.IConnection = {
+                object : LightModelClient.IConnection {
+                    var wsSession: DefaultClientWebSocketSession? = null
+                    val coroutineScope = CoroutineScope(Dispatchers.Default)
+                    override fun sendMessage(message: MessageFromClient) {
+                        runBlocking {
+                            (wsSession ?: throw IllegalStateException("Not connected")).send(message.toJson())
+                        }
                     }
-                }
 
-                override fun connect(messageReceiver: (message: MessageFromServer) -> Unit) {
-                    coroutineScope.launch {
-                        httpClient.webSocket("ws://localhost/json/v2/test-repo/ws") {
-                            wsSession = this
-                            try {
-                                for (frame in incoming) {
-                                    when (frame) {
-                                        is Frame.Text -> {
-                                            val text = frame.readText()
-                                            println("message: $text")
-                                            messageReceiver(MessageFromServer.fromJson(text))
+                    override fun connect(messageReceiver: (message: MessageFromServer) -> Unit) {
+                        coroutineScope.launch {
+                            httpClient.webSocket("ws://localhost/json/v2/test-repo/ws") {
+                                wsSession = this
+                                try {
+                                    for (frame in incoming) {
+                                        when (frame) {
+                                            is Frame.Text -> {
+                                                val text = frame.readText()
+                                                println("message: $text")
+                                                messageReceiver(MessageFromServer.fromJson(text))
+                                            }
+                                            else -> {}
                                         }
-                                        else -> {}
                                     }
+                                } catch (ex : ClosedReceiveChannelException) {
+                                    println("WebSocket closed")
                                 }
-                            } catch (ex : ClosedReceiveChannelException) {
-                                println("WebSocket closed")
                             }
                         }
                     }
                 }
             }
-        }
 
-        val createClient: suspend ()->LightModelClient = {
-            val client = LightModelClient(createConnection())
-            wait {client.isInitialized() }
-            client
+            val createClient: suspend ()->LightModelClient = {
+                val client = LightModelClient(createConnection())
+                wait {client.isInitialized() }
+                client
+            }
+            block(createClient)
         }
-        block(createClient)
     }
 
     @Test
@@ -150,9 +153,12 @@ class LightModelClientTest {
             client1.runWrite {
                 for (k in (0..rand.nextInt(1,10))) {
                     changeGenerator.applyRandomChange()
+                    client1.checkException()
                 }
             }
         }
+        delay(2.seconds)
+        client1.checkException()
     }
 
     private suspend fun wait(condition: ()->Boolean) {

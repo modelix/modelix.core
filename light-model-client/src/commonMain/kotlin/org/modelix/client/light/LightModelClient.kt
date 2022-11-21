@@ -24,6 +24,7 @@ class LightModelClient(val connection: IConnection) {
     private var initialized = false
     private val unconfirmedChangeSets: MutableSet<ChangeSetId> = LinkedHashSet()
     private val unappliedVersions: MutableList<VersionData> = ArrayList()
+    private var exceptions: MutableList<ExceptionData> = ArrayList()
 
     init {
         connection.connect { message ->
@@ -32,6 +33,14 @@ class LightModelClient(val connection: IConnection) {
             } catch (ex: Exception) {
                 LOG.error(ex) { "Failed to process message: $message" }
             }
+        }
+    }
+
+    fun checkException() {
+        val ex = exceptions.firstOrNull()
+        if (ex != null) {
+            exceptions.clear()
+            throw ServerSideException(ex)
         }
     }
 
@@ -103,6 +112,9 @@ class LightModelClient(val connection: IConnection) {
 
     private fun messageReceived(message: MessageFromServer) {
         synchronized {
+            if (message.exception != null) {
+                exceptions.add(message.exception!!)
+            }
             message.replacedIds?.let { replaceIds(it) }
             unconfirmedChangeSets.removeAll(message.includedChangeSets)
             message.version?.let { unappliedVersions.add(it) }

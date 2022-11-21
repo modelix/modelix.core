@@ -39,10 +39,10 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.api.ChangeSetId
+import org.modelix.model.server.api.ExceptionData
 import org.modelix.model.server.api.MessageFromClient
 import org.modelix.model.server.api.MessageFromServer
 import org.modelix.model.server.api.NodeData
-import org.modelix.model.server.api.NodeId
 import org.modelix.model.server.api.NodeUpdateData
 import org.modelix.model.server.api.VersionData
 import java.util.*
@@ -52,7 +52,6 @@ import kotlin.collections.HashSet
 import kotlin.collections.List
 import kotlin.collections.Map
 import kotlin.collections.MutableList
-import kotlin.collections.MutableMap
 import kotlin.collections.associate
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -130,28 +129,33 @@ class JsonModelServer2(val client: LocalModelClient) {
                         is Frame.Text -> {
                             val text = frame.readText()
                             println("message on server: $text")
-                            val message = MessageFromClient.fromJson(text)
-                            if (message.changedNodes != null) {
-                                val replacedIds = HashMap<String, String>()
-                                message.changedNodes!!
-                                    .asSequence()
-                                    .mapNotNull { it.temporaryNodeId }
-                                    .distinct()
-                                    .filter { previouslyReplacedIds[it] == null }
-                                    .forEach { replacedIds[it] = client.idGenerator.generate().toString(16) }
-                                val idsKnownByClient = HashSet<String>()
-                                val changedNodes = message.changedNodes!!
-                                    .map { it.replaceIds { id ->
-                                        idsKnownByClient.add(id)
-                                        previouslyReplacedIds[id] ?: replacedIds[id]
-                                    } }
-                                    .associateBy { it.nodeId!!.toLong(16) }
-                                val mergedVersion = applyUpdate(lastVersion!!,
-                                    changedNodes, repositoryId, userId)
-                                sendDelta(mergedVersion, replacedIds, listOfNotNull(message.changeSetId))
-                                previouslyReplacedIds.putAll(replacedIds)
-                                //idsKnownByClient.forEach { previouslyReplacedIds.remove(it) }
-                                // TODO remove all other entries in `previouslyReplacedIds` that were part of the same message
+                            try {
+                                val message = MessageFromClient.fromJson(text)
+                                if (message.changedNodes != null) {
+                                    val replacedIds = HashMap<String, String>()
+                                    message.changedNodes!!
+                                        .asSequence()
+                                        .filter { it.nodeId == null }
+                                        .mapNotNull { it.temporaryNodeId }
+                                        .distinct()
+                                        .filter { previouslyReplacedIds[it] == null }
+                                        .forEach { replacedIds[it] = client.idGenerator.generate().toString(16) }
+                                    val idsKnownByClient = HashSet<String>()
+                                    val changedNodes = message.changedNodes!!
+                                        .map { it.replaceIds { id ->
+                                            idsKnownByClient.add(id)
+                                            previouslyReplacedIds[id] ?: replacedIds[id]
+                                        } }
+                                        .associateBy { it.nodeId!!.toLong(16) }
+                                    val mergedVersion = applyUpdate(lastVersion!!,
+                                        changedNodes, repositoryId, userId)
+                                    sendDelta(mergedVersion, replacedIds, listOfNotNull(message.changeSetId))
+                                    previouslyReplacedIds.putAll(replacedIds)
+                                    //idsKnownByClient.forEach { previouslyReplacedIds.remove(it) }
+                                    // TODO remove all other entries in `previouslyReplacedIds` that were part of the same message
+                                }
+                            } catch (ex: Exception) {
+                                send(MessageFromServer(exception = ExceptionData(RuntimeException("Failed to process message: $text", ex))).toJson())
                             }
                         }
                         else -> {}
@@ -171,12 +175,24 @@ class JsonModelServer2(val client: LocalModelClient) {
     ): CLVersion {
         val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.computeWriteT { t ->
+            val postponedNodes = ArrayList<NodeUpdateData>()
             for (nodeData in updateData.values) {
                 try {
-                    updateNode(nodeData, t, updateData)
+                    val nodeId: Long = nodeData.nodeId!!.toLong(16)
+                    if (t.containsNode(nodeId)) {
+                        updateNode(nodeData, t, updateData)
+                    } else {
+                        // will be created when updating the parent
+                        postponedNodes.add(nodeData)
+                    }
                 } catch (ex: Exception) {
                     throw RuntimeException("Failed to apply $nodeData", ex)
                 }
+            }
+            val failedNodes = postponedNodes.filter { !t.containsNode(it.nodeId!!.toLong(16)) }
+            if (failedNodes.isNotEmpty()) {
+                throw RuntimeException("Nodes weren't created. Ensure they are used as a child in any of the other nodes:\n" +
+                        failedNodes.joinToString("\n") { "\t$it" })
             }
         }
 
@@ -196,7 +212,7 @@ class JsonModelServer2(val client: LocalModelClient) {
         return mergedVersion
     }
 
-    private fun updateNode(nodeData: NodeUpdateData, t: IWriteTransaction, newNodes: Map<Long, NodeUpdateData>): Long {
+    private fun updateNode(nodeData: NodeUpdateData, t: IWriteTransaction, allNodes: Map<Long, NodeUpdateData>): Long {
         val nodeId: Long = nodeData.nodeId!!.toLong(16)
 
         require(t.containsNode(nodeId)) { "Node ${nodeId.toString(16)} doesn't exist." }
@@ -234,9 +250,9 @@ class JsonModelServer2(val client: LocalModelClient) {
                     if (t.containsNode(child)) {
                         t.moveChild(nodeId, role, index, child)
                     } else {
-                        val childData = newNodes[child] ?: throw IllegalArgumentException("Data for node $child missing.")
+                        val childData = allNodes[child] ?: throw IllegalArgumentException("Data for node $child missing.")
                         t.addNewChild(nodeId, role, index, child, nodeData.concept?.let { ConceptReference(it) })
-                        updateNode(childData, t, newNodes)
+                        updateNode(childData, t, allNodes)
                     }
                 }
             }

@@ -160,13 +160,11 @@ data class MessageFromClient(
 @Serializable
 data class ExceptionData(
     val message: String,
-    val type: String,
     val stacktrace: List<String>,
     val cause: ExceptionData? = null
 ) {
     constructor(exception: Throwable) : this(
         exception.message ?: "",
-        exception::class.qualifiedName ?: "",
         exception.stackTraceToString().lines(),
         if (exception.cause == exception) null else exception.cause?.let { ExceptionData(it) }
     )

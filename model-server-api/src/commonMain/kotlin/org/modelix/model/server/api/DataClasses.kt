@@ -133,6 +133,32 @@ data class VersionData(
     val nodes: List<NodeData>,
 )
 
+fun VersionData.merge(older: VersionData): VersionData {
+    val mergedNodes: Map<NodeId, NodeData> = older.nodes.associateBy { it.nodeId } + nodes.associateBy { it.nodeId }
+    val deletedNodes: List<NodeData> = mergedNodes.values.filter { node ->
+        val parent = node.parent?.let { mergedNodes[it] } ?: return@filter true
+        !parent.children.values.flatten().contains(node.nodeId)
+    }
+    val deletedAndDescendants = deletedNodes.asSequence()
+        .flatMap { mergedNodes.descendants(it.nodeId, true) }.toSet()
+    val filteredMergedNodes = mergedNodes - deletedAndDescendants
+    return VersionData(
+        repositoryId = repositoryId ?: older.repositoryId,
+        versionHash = versionHash,
+        rootNodeId = rootNodeId ?: older.rootNodeId,
+        nodes = filteredMergedNodes.values.toList()
+    )
+}
+
+private fun Map<NodeId, NodeData>.descendants(nodeId: NodeId, includeSelf: Boolean): Sequence<NodeId> {
+    return if (includeSelf) {
+        sequenceOf(nodeId) + descendants(nodeId, false)
+    } else {
+        val data = this[nodeId] ?: return emptySequence()
+        data.children.values.asSequence().flatten().flatMap { descendants(it, true) }
+    }
+}
+
 @Serializable
 data class MessageFromServer(
     val version: VersionData? = null,
@@ -174,4 +200,64 @@ data class ExceptionData(
     override fun toString(): String {
         return stacktrace.joinToString("\n")
     }
+}
+
+fun NodeData.replaceReferences(f: (Map<String, String>)->Map<String, String>): NodeData {
+    return NodeData(
+        nodeId = nodeId,
+        concept = concept,
+        parent = parent,
+        role = role,
+        properties = properties,
+        references = f(references),
+        children = children
+    )
+}
+
+fun NodeData.replaceChildren(f: (Map<String?, List<String>>)->Map<String?, List<String>>): NodeData {
+    return NodeData(
+        nodeId = nodeId,
+        concept = concept,
+        parent = parent,
+        role = role,
+        properties = properties,
+        references = references,
+        children = f(children)
+    )
+}
+
+fun NodeData.replaceChildren(role: String?, f: (List<String>)->List<String>): NodeData {
+    return replaceChildren { allOldChildren ->
+        val oldChildren = (allOldChildren[role] ?: emptyList()).toMutableList()
+        val newChildren = f(oldChildren)
+        allOldChildren + (role to newChildren)
+    }
+}
+
+fun NodeData.replaceContainment(newParent: NodeId?, newRole: String?): NodeData {
+    return NodeData(
+        nodeId = nodeId,
+        concept = concept,
+        parent = newParent,
+        role = newRole,
+        properties = properties,
+        references = references,
+        children = children
+    )
+}
+
+fun NodeData.replaceId(newId: String): NodeData {
+    return NodeData(
+        nodeId = newId,
+        concept = concept,
+        parent = parent,
+        role = role,
+        properties = properties,
+        references = references,
+        children = children
+    )
+}
+
+fun NodeData.allReferencedIds(): List<NodeId> {
+    return children.values.flatten() + references.values + listOfNotNull(parent)
 }

@@ -57,6 +57,11 @@ class LightModelClient(val connection: IConnection) {
         }
     }
 
+    fun isInSync(): Boolean = synchronized {
+        checkException()
+        lastUnconfirmedChangeSetId == null && pendingUpdates.isEmpty() && unappliedVersions.isEmpty()
+    }
+
     private fun <T> synchronizedRead(body: ()->T): T {
         return synchronized {
             checkRead()
@@ -100,6 +105,7 @@ class LightModelClient(val connection: IConnection) {
                 body()
             } finally {
                 currentAccessType = previousType
+                fullConsistencyCheck()
             }
         }
     }
@@ -113,6 +119,20 @@ class LightModelClient(val connection: IConnection) {
     }
 
     fun isInitialized(): Boolean = synchronized { initialized }
+
+    private fun fullConsistencyCheck() {
+        runRead {
+            nodes.keys.forEach { getNode(it).checkContainmentConsistency() }
+
+            val actualTempReferences = nodes.filter { it.value.allReferencedIds().any { it.startsWith(TEMP_ID_PREFIX) } }.keys
+            val registeredTempReferences = nodesReferencingTemporaryIds
+            val unregisteredTempReferences = actualTempReferences - registeredTempReferences
+            val wrongRegistered = registeredTempReferences - actualTempReferences
+            if (unregisteredTempReferences.isNotEmpty()) {
+                throw RuntimeException("missing registrations: $unregisteredTempReferences, unnecessary registration: $wrongRegistered")
+            }
+        }
+    }
 
     fun hasTemporaryIds(): Boolean = synchronized {
         temporaryNodeAdapters.isNotEmpty() || nodesReferencingTemporaryIds.isNotEmpty()
@@ -172,6 +192,7 @@ class LightModelClient(val connection: IConnection) {
 
     private fun messageReceived(message: MessageFromServer) {
         synchronized {
+            println("processing on client: " + message.toJson())
             if (message.exception != null) {
                 exceptions.add(message.exception!!)
             }
@@ -180,17 +201,13 @@ class LightModelClient(val connection: IConnection) {
                 lastUnconfirmedChangeSetId = null
             }
             message.version?.let { unappliedVersions.add(it) }
-            if (lastUnconfirmedChangeSetId == null) {
-                val changedNodeIds = unappliedVersions.flatMap { it.nodes }.map { it.nodeId }
-                unappliedVersions.forEach { applyVersion(it) }
+            fullConsistencyCheck()
+            if (lastUnconfirmedChangeSetId == null && unappliedVersions.isNotEmpty()) {
+                val merged = unappliedVersions.reduce { old, new -> new.merge(old) }
+                applyVersion(merged)
                 unappliedVersions.clear()
-                runRead {
-                    for (nodeId in changedNodeIds) {
-                        if (nodes.containsKey(nodeId))
-                        getNode(nodeId).checkContainmentConsistency()
-                    }
-                }
             }
+            fullConsistencyCheck()
         }
     }
 
@@ -204,14 +221,30 @@ class LightModelClient(val connection: IConnection) {
                 rootNodeId = version.rootNodeId
             }
             versionHash = version.versionHash
+
+            val oldChildNodes: Set<NodeId> = version.nodes.mapNotNull { nodes[it.nodeId] }.flatMap { it.children.values.flatten() }.toSet()
             for (nodeData in version.nodes) {
                 nodes[nodeData.nodeId] = nodeData
             }
+
+            val newChildNodes: Set<NodeId> = version.nodes.flatMap { it.children.values.flatten() }.toSet()
+            val removedNodes: Set<NodeId> = oldChildNodes - newChildNodes
+            removedNodes.forEach { removeDataRecursive(it, newChildNodes) }
         }
+    }
+
+    private fun removeDataRecursive(nodeId: NodeId, nodesToKeep: Set<NodeId>) {
+        if (nodesToKeep.contains(nodeId)) return
+        val data = nodes[nodeId] ?: return
+        data.children.values.flatten().forEach { removeDataRecursive(it, nodesToKeep) }
+        nodes.remove(nodeId)
+        println("Removed $nodeId: $data")
     }
 
     private fun replaceIds(replacements: Map<String, String>) {
         synchronized {
+            require(pendingUpdates.isEmpty()) { "Flush pending updates first" }
+            val nodesReferencingTemporaryIdsSaved = ArrayList(nodesReferencingTemporaryIds)
             val noTempReferencesLeft = ArrayList<String>(nodesReferencingTemporaryIds.size)
             for (sourceId in nodesReferencingTemporaryIds) {
                 val oldData = nodes[sourceId] ?: continue
@@ -219,10 +252,11 @@ class LightModelClient(val connection: IConnection) {
                     references.map { it.key to (replacements[it.value] ?: it.value) }.toMap()
                 }.replaceChildren { children ->
                     children.mapValues { role2list -> role2list.value.map { child -> replacements[child] ?: child } }
-                }
+                }.let { it.replaceContainment(replacements[it.parent] ?: it.parent, it.role) }
                 nodes[sourceId] = newData
                 if (newData.references.values.all { !it.startsWith(TEMP_ID_PREFIX) }
-                    && newData.children.values.flatten().all { !it.startsWith(TEMP_ID_PREFIX) }) {
+                    && newData.children.values.flatten().all { !it.startsWith(TEMP_ID_PREFIX) }
+                    && newData.parent?.startsWith(TEMP_ID_PREFIX) != true) {
                     noTempReferencesLeft.add(sourceId)
                 }
             }
@@ -238,6 +272,13 @@ class LightModelClient(val connection: IConnection) {
                 }
             }
             pendingUpdates.putAll(pendingUpdates.mapValues { it.value.replaceIds { id -> replacements[id] } })
+            nodesReferencingTemporaryIds.removeAll(replacements.keys)
+            nodesReferencingTemporaryIds.addAll(replacements.values)
+
+            runRead {
+                replacements.values.mapNotNull { nodes[it] }.forEach { getNode(it.nodeId).checkContainmentConsistency() }
+            }
+            fullConsistencyCheck()
         }
     }
 
@@ -304,8 +345,10 @@ class LightModelClient(val connection: IConnection) {
                     newChildren
                 }
                 nodes[child.nodeId] = child.getData().replaceContainment(nodeId, role)
-                if (!sameParent) oldParent.appendUpdate { it.withChildren(oldRole, oldParent.getData().children[oldRole]) }
+                oldParent.appendUpdate { it.withChildren(oldRole, oldParent.getData().children[oldRole]) }
                 appendUpdate { it.withChildren(role, getData().children[role]) }
+                if (nodeId.startsWith(TEMP_ID_PREFIX)) nodesReferencingTemporaryIds.add(child.nodeId)
+                if (child.nodeId.startsWith(TEMP_ID_PREFIX)) nodesReferencingTemporaryIds.add(nodeId)
                 checkContainmentConsistency()
                 oldParent.checkContainmentConsistency()
                 child.checkContainmentConsistency()
@@ -334,6 +377,7 @@ class LightModelClient(val connection: IConnection) {
                 nodes[childId] = NodeData(childId, concept?.getUID(), nodeId, role, emptyMap(), emptyMap(), emptyMap())
                 nodes[nodeId] = newParentData
                 nodesReferencingTemporaryIds.add(nodeId)
+                if (nodeId.startsWith(TEMP_ID_PREFIX)) nodesReferencingTemporaryIds.add(childId)
                 appendUpdate { it.withChildren(role, newParentData.children[role]) }
                 appendUpdate(childId) { it.withConcept(concept) }
                 val childNode = getNodeAdapter(childId)
@@ -354,10 +398,14 @@ class LightModelClient(val connection: IConnection) {
                 // remove broken references
                 if (childId.startsWith(TEMP_ID_PREFIX)) {
                     for (sourceNodeId in nodesReferencingTemporaryIds) {
-                        val brokenRoles = getNodeData(sourceNodeId).references.filter { it.value == childId }.map { it.key }
+                        val sourceNodeData = nodes[sourceNodeId] ?: continue
+                        val brokenRoles = sourceNodeData.references.filter { it.value == childId }.map { it.key }
                         if (brokenRoles.isNotEmpty()) {
                             val sourceNode = getNode(sourceNodeId)
-                            brokenRoles.forEach { brokenRole -> sourceNode.setReferenceTarget(brokenRole, null as INodeReference?) }
+                            brokenRoles.forEach { brokenRole ->
+                                println("removing reference $sourceNodeId.$brokenRole -> $childId")
+                                sourceNode.setReferenceTarget(brokenRole, null as INodeReference?)
+                            }
                         }
                     }
                 }
@@ -416,6 +464,9 @@ class LightModelClient(val connection: IConnection) {
                     if (targetId == null) it - role else it + (role to targetId)
                 }
                 appendUpdate { it.withReference(role, targetId) }
+                if (targetId != null && targetId.startsWith(TEMP_ID_PREFIX)) {
+                    nodesReferencingTemporaryIds.add(nodeId)
+                }
             }
         }
 
@@ -580,62 +631,6 @@ private object LightClientReferenceSerializer : INodeReferenceSerializer {
     override fun deserialize(serialized: String): INodeReference? {
         return null
     }
-}
-
-private fun NodeData.replaceReferences(f: (Map<String, String>)->Map<String, String>): NodeData {
-    return NodeData(
-        nodeId = nodeId,
-        concept = concept,
-        parent = parent,
-        role = role,
-        properties = properties,
-        references = f(references),
-        children = children
-    )
-}
-
-private fun NodeData.replaceChildren(f: (Map<String?, List<String>>)->Map<String?, List<String>>): NodeData {
-    return NodeData(
-        nodeId = nodeId,
-        concept = concept,
-        parent = parent,
-        role = role,
-        properties = properties,
-        references = references,
-        children = f(children)
-    )
-}
-
-private fun NodeData.replaceChildren(role: String?, f: (List<String>)->List<String>): NodeData {
-    return replaceChildren { allOldChildren ->
-        val oldChildren = (allOldChildren[role] ?: emptyList()).toMutableList()
-        val newChildren = f(oldChildren)
-        allOldChildren + (role to newChildren)
-    }
-}
-
-private fun NodeData.replaceContainment(newParent: NodeId, newRole: String?): NodeData {
-    return NodeData(
-        nodeId = nodeId,
-        concept = concept,
-        parent = newParent,
-        role = newRole,
-        properties = properties,
-        references = references,
-        children = children
-    )
-}
-
-private fun NodeData.replaceId(newId: String): NodeData {
-    return NodeData(
-        nodeId = newId,
-        concept = concept,
-        parent = parent,
-        role = role,
-        properties = properties,
-        references = references,
-        children = children
-    )
 }
 
 fun NodeData.asUpdateData(): NodeUpdateData {

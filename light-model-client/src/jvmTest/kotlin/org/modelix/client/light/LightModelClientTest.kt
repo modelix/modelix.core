@@ -69,7 +69,7 @@ class LightModelClientTest {
                     var wsSession: DefaultClientWebSocketSession? = null
                     val coroutineScope = CoroutineScope(Dispatchers.Default)
                     override fun sendMessage(message: MessageFromClient) {
-                        runBlocking {
+                        coroutineScope.launch {
                             (wsSession ?: throw IllegalStateException("Not connected")).send(message.toJson())
                         }
                     }
@@ -153,13 +153,14 @@ class LightModelClientTest {
         val changeGenerator = RandomModelChangeGenerator(client1.runRead { client1.getRootNode()!! }, rand)
         for (i in (1..100)) {
             client1.runWrite {
-                for (k in (0..rand.nextInt(1,10))) {
+                for (k in (0..rand.nextInt(1, 10))) {
                     changeGenerator.applyRandomChange()
                     client1.checkException()
                 }
             }
+            if (rand.nextInt(5) == 0) wait { client1.isInSync() }
         }
-        delay(2.seconds)
+        wait { client1.isInSync() }
         client1.checkException()
     }
 
@@ -170,41 +171,42 @@ class LightModelClientTest {
 
         val rand = Random(1234L)
         val changeGenerator1 = RandomModelChangeGenerator(client1.runRead { client1.getRootNode()!! }, rand)
-        for (i in (1..100)) {
+        for (i in (1..1000)) {
+            wait { client1.isInSync() && client2.isInSync() }
             client1.runWrite {
                 for (k in (0..rand.nextInt(1,10))) {
                     changeGenerator1.applyRandomChange()
                     client1.checkException()
                 }
             }
+            wait { client1.isInSync() && client2.isInSync() }
+            //if (rand.nextInt(5) == 0) wait { client2.isInSync() }
         }
 
-        client1.runWrite { client1.getRootNode()!!.setPropertyValue("client1done", "true") }
-        wait { client2.runRead { client2.getRootNode()?.getPropertyValue("client1done") } == "true" }
-        client1.checkException()
+        wait { client1.isInSync() && client2.isInSync() }
         compareClients(client1, client2)
 
         println("starting write to client 2")
         val changeGenerator2 = RandomModelChangeGenerator(client2.runRead { client2.getRootNode()!! }, rand)
-        for (i in (1..100)) {
+        for (i in (1..1000)) {
+            wait { client1.isInSync() && client2.isInSync() }
             client2.runWrite {
                 for (k in (0..rand.nextInt(1,10))) {
                     changeGenerator2.applyRandomChange()
                     client2.checkException()
                 }
             }
+            wait { client1.isInSync() && client2.isInSync() }
         }
 
-        client2.runWrite { client2.getRootNode()!!.setPropertyValue("client2done", "true") }
-        wait { client1.runRead { client1.getRootNode()?.getPropertyValue("client2done") } == "true" }
-        client2.checkException()
+        wait { client1.isInSync() && client2.isInSync() }
         compareClients(client1, client2)
     }
 
     private fun compareClients(client1: LightModelClient, client2: LightModelClient) {
         client1.runRead { client2.runRead {
-            val nodes1 = client1.getRootNode()!!.getDescendants(true).toList()
-            val nodes2 = client2.getRootNode()!!.getDescendants(true).toList()
+            val nodes1 = client1.getRootNode()!!.getDescendants(true).sortedBy { (it as LightModelClient.NodeAdapter).nodeId }.toList()
+            val nodes2 = client2.getRootNode()!!.getDescendants(true).sortedBy { (it as LightModelClient.NodeAdapter).nodeId }.toList()
             assertEquals(nodes1.size, nodes2.size)
             assertEquals(
                 nodes1.map { (it as LightModelClient.NodeAdapter).nodeId },

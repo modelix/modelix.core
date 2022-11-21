@@ -289,6 +289,10 @@ class JsonModelServer2(val client: LocalModelClient) {
 
                 override fun containmentChanged(nodeId: Long) {
                     nodesToInclude.add(nodeId)
+                    if (version.tree.getParent(nodeId) == oldVersion.tree.getParent(nodeId)) {
+                        // no childrenChanged event is received for the parent if only the role changed
+                        nodesToInclude.add(version.tree.getParent(nodeId))
+                    }
                 }
 
                 override fun propertyChanged(nodeId: Long, role: String) {

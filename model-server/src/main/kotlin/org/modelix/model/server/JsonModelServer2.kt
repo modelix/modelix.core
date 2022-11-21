@@ -99,13 +99,23 @@ class JsonModelServer2(val client: LocalModelClient) {
             val deltaMutex = Mutex()
             val sendDelta: suspend (CLVersion, Map<String, String>?, List<ChangeSetId>)->Unit = { newVersion, replacedIds, appliedChangeSets ->
                 deltaMutex.withLock {
+                    val sendMsg: suspend (MessageFromServer)->Unit = {
+                        val text = it.toJson()
+                        println("message to client: $text")
+                        send(text)
+                    }
                     if (newVersion.hash != lastVersion?.hash) {
-                        send(MessageFromServer(
+                        sendMsg(MessageFromServer(
                             version = versionAsJson(newVersion, lastVersion),
                             replacedIds = replacedIds?.ifEmpty { null },
                             includedChangeSets = appliedChangeSets
-                        ).toJson())
+                        ))
                         lastVersion = newVersion
+                    } else if (!replacedIds.isNullOrEmpty() || appliedChangeSets.isNotEmpty()) {
+                        sendMsg(MessageFromServer(
+                            replacedIds = replacedIds?.ifEmpty { null },
+                            includedChangeSets = appliedChangeSets
+                        ))
                     }
                 }
             }
@@ -194,6 +204,7 @@ class JsonModelServer2(val client: LocalModelClient) {
                 throw RuntimeException("Nodes weren't created. Ensure they are used as a child in any of the other nodes:\n" +
                         failedNodes.joinToString("\n") { "\t$it" })
             }
+            t.getChildren(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE).toList().forEach { t.deleteNode(it) }
         }
 
         val operationsAndTree = branch.operationsAndTree
@@ -276,7 +287,9 @@ class JsonModelServer2(val client: LocalModelClient) {
                     nodesToInclude += nodeId
                 }
 
-                override fun containmentChanged(nodeId: Long) {}
+                override fun containmentChanged(nodeId: Long) {
+                    nodesToInclude.add(nodeId)
+                }
 
                 override fun propertyChanged(nodeId: Long, role: String) {
                     nodesToInclude += nodeId

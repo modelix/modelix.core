@@ -12,12 +12,12 @@ typealias ChangeSetId = Int
 @Serializable
 data class NodeData(
     val nodeId: NodeId,
-    val concept: String?,
-    val parent: NodeId?,
-    val role: String?,
-    val properties: Map<String, String>,
-    val references: Map<String, String>,
-    val children: Map<String?, List<NodeId>>
+    val concept: String? = null,
+    val parent: NodeId? = null,
+    val role: String? = null,
+    val properties: Map<String, String> = emptyMap(),
+    val references: Map<String, String> = emptyMap(),
+    val children: Map<String?, List<NodeId>> = emptyMap()
 )
 
 @Serializable

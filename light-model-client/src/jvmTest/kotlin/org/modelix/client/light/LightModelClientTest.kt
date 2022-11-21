@@ -27,9 +27,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.api.IConceptReference
-import org.modelix.model.api.ITree
 import org.modelix.model.api.addNewChild
+import org.modelix.model.api.getDescendants
 import org.modelix.model.server.InMemoryStoreClient
 import org.modelix.model.server.JsonModelServer
 import org.modelix.model.server.JsonModelServer2
@@ -84,7 +83,7 @@ class LightModelClientTest {
                                         when (frame) {
                                             is Frame.Text -> {
                                                 val text = frame.readText()
-                                                println("message: $text")
+                                                println("message on client: $text")
                                                 messageReceiver(MessageFromServer.fromJson(text))
                                             }
                                             else -> {}
@@ -114,12 +113,15 @@ class LightModelClientTest {
         val client2 = createClient()
         val role = "name"
         val newValue = "abc"
-        val rootNode1 = client1.getRootNode()!!
-        val rootNode2 = client2.getRootNode()!!
-        rootNode1.setPropertyValue(role, newValue)
-        assertEquals(newValue, rootNode1.getPropertyValue(role))
-        wait { rootNode2.getPropertyValue(role) == newValue }
-        assertEquals(newValue, rootNode2.getPropertyValue(role))
+        val rootNode1 = client1.runWrite {
+            val rootNode = client1.getRootNode()!!
+            rootNode.setPropertyValue(role, newValue)
+            rootNode
+        }
+        assertEquals(newValue, client1.runRead { rootNode1.getPropertyValue(role) })
+        val rootNode2 = client2.runRead { client2.getRootNode()!! }
+        wait { client2.runRead { rootNode2.getPropertyValue(role) } == newValue }
+        assertEquals(newValue, client2.runRead { rootNode2.getPropertyValue(role) })
     }
 
     @Test
@@ -127,20 +129,20 @@ class LightModelClientTest {
         val client1 = createClient()
         val client2 = createClient()
 
-        val rootNode1 = client1.getRootNode()!!
-        val rootNode2 = client2.getRootNode()!!
-        assertEquals(0, rootNode2.getChildren("role1").toList().size)
-        val child1 = rootNode1.addNewChild("role1")
-        assertEquals(1, rootNode1.getChildren("role1").toList().size)
-        wait { rootNode2.getChildren("role1").toList().size == 1 }
-        assertEquals(1, rootNode2.getChildren("role1").toList().size)
+        val rootNode1 = client1.runRead { client1.getRootNode()!! }
+        val rootNode2 = client2.runRead { client2.getRootNode()!! }
+        assertEquals(0, client2.runRead { rootNode2.getChildren("role1").toList().size })
+        val child1 = client1.runWrite { rootNode1.addNewChild("role1") }
+        assertEquals(1, client1.runRead { rootNode1.getChildren("role1").toList().size })
+        wait { client2.runRead { rootNode2.getChildren("role1").toList().size == 1 } }
+        assertEquals(1, client2.runRead { rootNode2.getChildren("role1").toList().size })
 
-        val child2 = rootNode2.getChildren("role1").first()
-        assertEquals(null, child1.getPropertyValue("name"))
-        child2.setPropertyValue("name", "xyz")
-        assertEquals("xyz", child2.getPropertyValue("name"))
-        wait { child1.getPropertyValue("name") == "xyz" }
-        assertEquals("xyz", child1.getPropertyValue("name"))
+        val child2 = client2.runRead { rootNode2.getChildren("role1").first() }
+        assertEquals(null, client1.runRead { child1.getPropertyValue("name") })
+        client2.runWrite { child2.setPropertyValue("name", "xyz") }
+        assertEquals("xyz", client2.runRead { child2.getPropertyValue("name") })
+        wait { client1.runRead { child1.getPropertyValue("name") == "xyz" } }
+        assertEquals("xyz", client1.runRead { child1.getPropertyValue("name") })
     }
 
     @Test
@@ -148,7 +150,7 @@ class LightModelClientTest {
         val client1 = createClient()
 
         val rand = Random(1234L)
-        val changeGenerator = RandomModelChangeGenerator(client1.getRootNode()!!, rand)
+        val changeGenerator = RandomModelChangeGenerator(client1.runRead { client1.getRootNode()!! }, rand)
         for (i in (1..100)) {
             client1.runWrite {
                 for (k in (0..rand.nextInt(1,10))) {
@@ -159,6 +161,56 @@ class LightModelClientTest {
         }
         delay(2.seconds)
         client1.checkException()
+    }
+
+    @Test
+    fun random2clients() = runClientTest { createClient ->
+        val client1 = createClient()
+        val client2 = createClient()
+
+        val rand = Random(1234L)
+        val changeGenerator1 = RandomModelChangeGenerator(client1.runRead { client1.getRootNode()!! }, rand)
+        for (i in (1..100)) {
+            client1.runWrite {
+                for (k in (0..rand.nextInt(1,10))) {
+                    changeGenerator1.applyRandomChange()
+                    client1.checkException()
+                }
+            }
+        }
+
+        client1.runWrite { client1.getRootNode()!!.setPropertyValue("client1done", "true") }
+        wait { client2.runRead { client2.getRootNode()?.getPropertyValue("client1done") } == "true" }
+        client1.checkException()
+        compareClients(client1, client2)
+
+        println("starting write to client 2")
+        val changeGenerator2 = RandomModelChangeGenerator(client2.runRead { client2.getRootNode()!! }, rand)
+        for (i in (1..100)) {
+            client2.runWrite {
+                for (k in (0..rand.nextInt(1,10))) {
+                    changeGenerator2.applyRandomChange()
+                    client2.checkException()
+                }
+            }
+        }
+
+        client2.runWrite { client2.getRootNode()!!.setPropertyValue("client2done", "true") }
+        wait { client1.runRead { client1.getRootNode()?.getPropertyValue("client2done") } == "true" }
+        client2.checkException()
+        compareClients(client1, client2)
+    }
+
+    private fun compareClients(client1: LightModelClient, client2: LightModelClient) {
+        client1.runRead { client2.runRead {
+            val nodes1 = client1.getRootNode()!!.getDescendants(true).toList()
+            val nodes2 = client2.getRootNode()!!.getDescendants(true).toList()
+            assertEquals(nodes1.size, nodes2.size)
+            assertEquals(
+                nodes1.map { (it as LightModelClient.NodeAdapter).nodeId },
+                nodes2.map { (it as LightModelClient.NodeAdapter).nodeId }
+            )
+        }}
     }
 
     private suspend fun wait(condition: ()->Boolean) {

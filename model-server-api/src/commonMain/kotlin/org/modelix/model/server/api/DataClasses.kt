@@ -4,8 +4,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IConceptReference
 
 typealias NodeId = String
+typealias ChangeSetId = Int
 
 @Serializable
 data class NodeData(
@@ -22,9 +25,9 @@ data class NodeData(
 data class NodeUpdateData(
     val nodeId: NodeId?,
     val temporaryNodeId: NodeId? = null,
-    val parent: NodeId? = null,
-    val role: String? = null,
-    val index: Int? = null, // when a new node is created, this is the position in the parent
+    //val parent: NodeId? = null,
+    //val role: String? = null,
+    //val index: Int? = null, // when a new node is created, this is the position in the parent
     val concept: String? = null,
     val references: Map<String, String?>? = null,
     val properties: Map<String, String?>? = null,
@@ -37,9 +40,9 @@ data class NodeUpdateData(
         return NodeUpdateData(
             nodeId = newNodeId,
             temporaryNodeId = if (newNodeId == null) temporaryNodeId else null,
-            parent = parent?.let(replaceOrKeep),
-            role = role,
-            index = index,
+//            parent = parent?.let(replaceOrKeep),
+//            role = role,
+//            index = index,
             concept = concept,
             references = references?.mapValues { it.value?.let(replaceOrKeep) },
             properties = properties,
@@ -50,9 +53,9 @@ data class NodeUpdateData(
     fun withReference(referenceRole: String, target: NodeId?) = NodeUpdateData(
         nodeId = nodeId,
         temporaryNodeId = temporaryNodeId,
-        parent = parent,
-        role = role,
-        index = index,
+//        parent = parent,
+//        role = role,
+//        index = index,
         concept = concept,
         references = (references ?: emptyMap()) + (referenceRole to target),
         properties = properties,
@@ -61,45 +64,58 @@ data class NodeUpdateData(
     fun withProperty(propertyRole: String, value: String?) = NodeUpdateData(
         nodeId = nodeId,
         temporaryNodeId = temporaryNodeId,
-        parent = parent,
-        role = role,
-        index = index,
+//        parent = parent,
+//        role = role,
+//        index = index,
         concept = concept,
         references = references,
         properties = (properties ?: emptyMap()) + (propertyRole to value),
         children = children
     )
-    fun withChildren(childrenRole: String?, newChildren: List<String>) = NodeUpdateData(
+    fun withChildren(childrenRole: String?, newChildren: List<NodeId>?) = NodeUpdateData(
         nodeId = nodeId,
         temporaryNodeId = temporaryNodeId,
-        parent = parent,
-        role = role,
-        index = index,
+//        parent = parent,
+//        role = role,
+//        index = index,
         concept = concept,
         references = references,
         properties = properties,
-        children = (children ?: emptyMap()) + (childrenRole to newChildren)
+        children = (children ?: emptyMap()) + (childrenRole to (newChildren ?: emptyList()))
     )
+    fun withConcept(newConcept: IConceptReference?): NodeUpdateData {
+        return NodeUpdateData(
+            nodeId = nodeId,
+            temporaryNodeId = temporaryNodeId,
+//        parent = parent,
+//        role = role,
+//        index = index,
+            concept = newConcept?.getUID(),
+            references = references,
+            properties = properties,
+            children = children
+        )
+    }
 
-    fun withContainment(newParent: NodeId, newRole: String?, newIndex: Int) = NodeUpdateData(
-        nodeId = nodeId,
-        temporaryNodeId = temporaryNodeId,
-        parent = newParent,
-        role = newRole,
-        index = newIndex,
-        concept = concept,
-        references = references,
-        properties = properties,
-        children = children
-    )
+//    fun withContainment(newParent: NodeId, newRole: String?, newIndex: Int) = NodeUpdateData(
+//        nodeId = nodeId,
+//        temporaryNodeId = temporaryNodeId,
+////        parent = newParent,
+////        role = newRole,
+////        index = newIndex,
+//        concept = concept,
+//        references = references,
+//        properties = properties,
+//        children = children
+//    )
 
     companion object {
-        fun newNode(tempId: NodeId, parent: NodeId, role: String?, index: Int, concept: String?) = NodeUpdateData(
+        fun newNode(tempId: NodeId, /*parent: NodeId, role: String?, index: Int,*/ concept: String?) = NodeUpdateData(
             nodeId = null,
             temporaryNodeId = tempId,
-            parent = parent,
-            role = role,
-            index = index,
+//            parent = parent,
+//            role = role,
+//            index = index,
             concept = concept,
             references = null,
             properties = null,
@@ -122,6 +138,7 @@ data class VersionData(
 data class MessageFromServer(
     val version: VersionData?,
     val replacedIds: Map<String, String>? = null,
+    val includedChangeSets: List<ChangeSetId>
 ) {
     fun toJson() = Json.encodeToString(this)
     companion object {
@@ -131,6 +148,7 @@ data class MessageFromServer(
 
 @Serializable
 data class MessageFromClient(
+    val changeSetId: ChangeSetId,
     val changedNodes: List<NodeUpdateData>?,
 ) {
     fun toJson() = Json.encodeToString(this)

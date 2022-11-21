@@ -59,7 +59,7 @@ class LightModelClientTest {
         block(client)
     }
 
-    fun runClientTest(block: suspend (LightModelClient, LightModelClient) -> Unit) = runTest { httpClient ->
+    fun runClientTest(block: suspend (suspend ()->LightModelClient) -> Unit) = runTest { httpClient ->
         val response = httpClient.post("http://localhost/json/test-repo/init").status
         println("init: $response")
 
@@ -97,14 +97,18 @@ class LightModelClientTest {
             }
         }
 
-        val client1 = LightModelClient(createConnection())
-        val client2 = LightModelClient(createConnection())
-        wait {client1.isInitialized() && client2.isInitialized() }
-        block(client1, client2)
+        val createClient: suspend ()->LightModelClient = {
+            val client = LightModelClient(createConnection())
+            wait {client.isInitialized() }
+            client
+        }
+        block(createClient)
     }
 
     @Test
-    fun setProperty() = runClientTest {  client1, client2 ->
+    fun setProperty() = runClientTest {  createClient ->
+        val client1 = createClient()
+        val client2 = createClient()
         val role = "name"
         val newValue = "abc"
         val rootNode1 = client1.getRootNode()!!
@@ -116,7 +120,10 @@ class LightModelClientTest {
     }
 
     @Test
-    fun addNewChild() = runClientTest {  client1, client2 ->
+    fun addNewChild() = runClientTest { createClient ->
+        val client1 = createClient()
+        val client2 = createClient()
+
         val rootNode1 = client1.getRootNode()!!
         val rootNode2 = client2.getRootNode()!!
         assertEquals(0, rootNode2.getChildren("role1").toList().size)
@@ -134,11 +141,17 @@ class LightModelClientTest {
     }
 
     @Test
-    fun random() = runClientTest {  client1, client2 ->
+    fun random() = runClientTest { createClient ->
+        val client1 = createClient()
+
         val rand = Random(1234L)
         val changeGenerator = RandomModelChangeGenerator(client1.getRootNode()!!, rand)
-        for (i in (0..1000)) {
-            changeGenerator.applyRandomChange()
+        for (i in (1..100)) {
+            client1.runWrite {
+                for (k in (0..rand.nextInt(1,10))) {
+                    changeGenerator.applyRandomChange()
+                }
+            }
         }
     }
 

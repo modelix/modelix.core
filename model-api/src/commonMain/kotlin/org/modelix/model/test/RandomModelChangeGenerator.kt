@@ -21,7 +21,8 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
             val role = childRoles[rand.nextInt(childRoles.size)]
             val index = if (rand.nextBoolean()) rand.nextInt(parent.getChildren(role).count() + 1) else -1
             println("$parent.addNewChild($role, $index)")
-            parent.addNewChild(role, index)
+            val child = parent.addNewChild(role, index)
+            println(" -> $child")
         }
     }
     val setPropertyOp: () -> Unit = {

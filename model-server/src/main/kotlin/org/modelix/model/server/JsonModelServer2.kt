@@ -38,9 +38,11 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.server.api.ChangeSetId
 import org.modelix.model.server.api.MessageFromClient
 import org.modelix.model.server.api.MessageFromServer
 import org.modelix.model.server.api.NodeData
+import org.modelix.model.server.api.NodeId
 import org.modelix.model.server.api.NodeUpdateData
 import org.modelix.model.server.api.VersionData
 import java.util.*
@@ -96,12 +98,13 @@ class JsonModelServer2(val client: LocalModelClient) {
 
             var lastVersion: CLVersion? = null
             val deltaMutex = Mutex()
-            val sendDelta: suspend (CLVersion, Map<String, String>?)->Unit = { newVersion, replacedIds ->
+            val sendDelta: suspend (CLVersion, Map<String, String>?, List<ChangeSetId>)->Unit = { newVersion, replacedIds, appliedChangeSets ->
                 deltaMutex.withLock {
                     if (newVersion.hash != lastVersion?.hash) {
                         send(MessageFromServer(
                             version = versionAsJson(newVersion, lastVersion),
-                            replacedIds = replacedIds?.ifEmpty { null }
+                            replacedIds = replacedIds?.ifEmpty { null },
+                            includedChangeSets = appliedChangeSets
                         ).toJson())
                         lastVersion = newVersion
                     }
@@ -113,14 +116,14 @@ class JsonModelServer2(val client: LocalModelClient) {
                     if (value == null) return
                     launch {
                         val newVersion = CLVersion.loadFromHash(value, client.storeCache)
-                        sendDelta(newVersion, null)
+                        sendDelta(newVersion, null, emptyList())
                     }
                 }
             }
 
             client.listen(repositoryId.getBranchReference().getKey(), listener)
             try {
-                sendDelta(getCurrentVersion(repositoryId), null)
+                sendDelta(getCurrentVersion(repositoryId), null, emptyList())
                 val previouslyReplacedIds = HashMap<String, String>()
                 for (frame in incoming) {
                     when (frame) {
@@ -130,12 +133,25 @@ class JsonModelServer2(val client: LocalModelClient) {
                             val message = MessageFromClient.fromJson(text)
                             if (message.changedNodes != null) {
                                 val replacedIds = HashMap<String, String>()
-                                val changedNodes = message.changedNodes!!.map { it.replaceIds { previouslyReplacedIds[it] } }
+                                message.changedNodes!!
+                                    .asSequence()
+                                    .mapNotNull { it.temporaryNodeId }
+                                    .distinct()
+                                    .filter { previouslyReplacedIds[it] == null }
+                                    .forEach { replacedIds[it] = client.idGenerator.generate().toString(16) }
+                                val idsKnownByClient = HashSet<String>()
+                                val changedNodes = message.changedNodes!!
+                                    .map { it.replaceIds { id ->
+                                        idsKnownByClient.add(id)
+                                        previouslyReplacedIds[id] ?: replacedIds[id]
+                                    } }
+                                    .associateBy { it.nodeId!!.toLong(16) }
                                 val mergedVersion = applyUpdate(lastVersion!!,
-                                    changedNodes, repositoryId, userId, replacedIds)
-                                sendDelta(mergedVersion, replacedIds)
+                                    changedNodes, repositoryId, userId)
+                                sendDelta(mergedVersion, replacedIds, listOfNotNull(message.changeSetId))
                                 previouslyReplacedIds.putAll(replacedIds)
-                                // TODO previouslyReplacedIds will grow infinitely. Remove entries once we are sure client isn't using them anymore.
+                                //idsKnownByClient.forEach { previouslyReplacedIds.remove(it) }
+                                // TODO remove all other entries in `previouslyReplacedIds` that were part of the same message
                             }
                         }
                         else -> {}
@@ -149,16 +165,15 @@ class JsonModelServer2(val client: LocalModelClient) {
 
     private fun applyUpdate(
         baseVersion: CLVersion,
-        updateData: List<NodeUpdateData>,
+        updateData: Map<Long, NodeUpdateData>,
         repositoryId: RepositoryId,
-        userId: String?,
-        replacedIds: MutableMap<String, String>
+        userId: String?
     ): CLVersion {
         val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.computeWriteT { t ->
-            for (nodeData in updateData) {
+            for (nodeData in updateData.values) {
                 try {
-                    updateNode(nodeData, t, replacedIds)
+                    updateNode(nodeData, t, updateData)
                 } catch (ex: Exception) {
                     throw RuntimeException("Failed to apply $nodeData", ex)
                 }
@@ -181,30 +196,11 @@ class JsonModelServer2(val client: LocalModelClient) {
         return mergedVersion
     }
 
-    private fun updateNode(nodeData: NodeUpdateData, t: IWriteTransaction, replacedIds: MutableMap<String, String>): Long {
-        val nodeIdStr: String
-        val nodeId: Long
-        if (nodeData.temporaryNodeId != null) {
-            nodeId = client.idGenerator.generate()
-            nodeIdStr = nodeId.toString(16)
-            replacedIds[nodeData.temporaryNodeId!!] = nodeIdStr
-        } else {
-            nodeIdStr = nodeData.nodeId ?: throw IllegalArgumentException("Node ID missing")
-            nodeId = nodeIdStr.toLong(16)
-        }
+    private fun updateNode(nodeData: NodeUpdateData, t: IWriteTransaction, newNodes: Map<Long, NodeUpdateData>): Long {
+        val nodeId: Long = nodeData.nodeId!!.toLong(16)
 
-        if (!t.containsNode(nodeId)) {
-            val parent = nodeData.parent ?: throw IllegalArgumentException("Cannot create node ${nodeId.toString(16)}, because no parent node is specified.")
-            val index = nodeData.index ?: throw IllegalArgumentException("Cannot create node ${nodeId.toString(16)}, because no index is specified. You can use -1 to add it to the end.")
-            val role = nodeData.role
-            t.addNewChild(
-                parent.toLong(16),
-                role,
-                index,
-                nodeId,
-                nodeData.concept?.let { ConceptReference(it) }
-            )
-        }
+        require(t.containsNode(nodeId)) { "Node ${nodeId.toString(16)} doesn't exist." }
+
         nodeData.properties?.forEach { (role, value) ->
             if (t.getProperty(nodeId, role) != value) {
                 t.setProperty(nodeId, role, value)
@@ -224,7 +220,7 @@ class JsonModelServer2(val client: LocalModelClient) {
             }
         }
         nodeData.children?.forEach { (role, childIdStrings) ->
-            val expectedChildren = childIdStrings.map { it.toLong(16) }
+            val expectedChildren: List<Long> = childIdStrings.map { it.toLong(16) }
             val unexpected = (t.getChildren(nodeId, role).toSet() - expectedChildren.toSet())
             if (unexpected.isNotEmpty()) {
                 unexpected.forEach { child ->
@@ -232,10 +228,16 @@ class JsonModelServer2(val client: LocalModelClient) {
                 }
 
             }
-            val actualChildren = t.getChildren(nodeId, role)
+            val actualChildren: List<Long> = t.getChildren(nodeId, role).toList()
             if (actualChildren != expectedChildren) {
                 expectedChildren.forEachIndexed { index, child ->
-                    t.moveChild(nodeId, role, index, child)
+                    if (t.containsNode(child)) {
+                        t.moveChild(nodeId, role, index, child)
+                    } else {
+                        val childData = newNodes[child] ?: throw IllegalArgumentException("Data for node $child missing.")
+                        t.addNewChild(nodeId, role, index, child, nodeData.concept?.let { ConceptReference(it) })
+                        updateNode(childData, t, newNodes)
+                    }
                 }
             }
         }

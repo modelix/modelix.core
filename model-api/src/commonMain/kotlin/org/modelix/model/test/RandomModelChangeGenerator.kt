@@ -87,7 +87,7 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
         operations[rand.nextInt(operations.size)]()
     }
 
-    private fun getRandomNode(condition: (INode)->Boolean = { true }, includeRoot: Boolean = true): INode? {
+    private fun getRandomNode(condition: (INode) -> Boolean = { true }, includeRoot: Boolean = true): INode? {
         val nodes = rootNode.getDescendants(includeRoot).filter(condition).toList()
         if (nodes.isEmpty()) return null
         return nodes[rand.nextInt(nodes.size)]

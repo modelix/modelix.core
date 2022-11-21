@@ -419,6 +419,9 @@ class CLTree : ITree, IBulkTree {
                     if (oldElement!!::class != newElement!!::class) {
                         throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
                     }
+                    if (oldElement.parentId != newElement.parentId || oldElement.roleInParent != newElement.roleInParent) {
+                        visitor.containmentChanged(key)
+                    }
                     oldElement.getData().propertyRoles.asSequence()
                         .plus(newElement.getData().propertyRoles.asSequence())
                         .distinct()

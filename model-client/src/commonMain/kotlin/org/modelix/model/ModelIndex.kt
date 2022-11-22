@@ -24,9 +24,10 @@ class ModelIndex private constructor(val tree: ITree, val propertyRole: String) 
         }
 
         fun incremental(oldIndex: ModelIndex, newTree: ITree): ModelIndex {
+            val oldTree = oldIndex.tree
+            if (oldTree == newTree) return oldIndex
             val index = ModelIndex(newTree, oldIndex.propertyRole)
             index.nodeMap.putAll(oldIndex.nodeMap.map { it.key to HashSet(it.value) })
-            val oldTree = oldIndex.tree
             newTree.visitChanges(
                 oldTree,
                 object : ITreeChangeVisitorEx {

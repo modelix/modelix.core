@@ -25,6 +25,9 @@ import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.model.persistent.SerializationUtil.unescape
 import kotlin.reflect.KClass
 
+private val localNodeIdPattern = Regex("[a-fA-F0-9]+")
+private val globalNodeIdPattern = Regex("[a-fA-F0-9]+/.+")
+
 class OperationSerializer private constructor() {
     companion object {
         val INSTANCE = OperationSerializer()
@@ -50,8 +53,8 @@ class OperationSerializer private constructor() {
         fun deserializeReference(serialized: String?): INodeReference? {
             return when {
                 serialized.isNullOrEmpty() -> null
-                serialized.matches(Regex("[a-fA-F0-9]+")) -> LocalPNodeReference(longFromHex(serialized))
-                serialized.matches(Regex("[a-fA-F0-9]+/.+")) -> {
+                serialized.matches(localNodeIdPattern) -> LocalPNodeReference(longFromHex(serialized))
+                serialized.matches(globalNodeIdPattern) -> {
                     val parts = serialized.split('/', limit = 2)
                     PNodeReference(longFromHex(parts[0]), unescape(parts[1])!!)
                 }
@@ -209,7 +212,7 @@ class OperationSerializer private constructor() {
     }
 
     fun deserialize(serialized: String): IOperation {
-        val parts = serialized.split(Regex(SEPARATOR), 2).toTypedArray()
+        val parts = serialized.split(SEPARATOR, limit = 2).toTypedArray()
         val deserializer = deserializers[parts[0]]
             ?: throw RuntimeException("Unknown operation type: " + parts[0])
         return deserializer.deserialize(parts[1])!!

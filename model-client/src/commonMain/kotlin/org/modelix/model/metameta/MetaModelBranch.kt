@@ -20,6 +20,8 @@ import org.modelix.model.lazy.IBulkTree
 import org.modelix.model.lazy.ITreeWrapper
 import org.modelix.model.persistent.SerializationUtil
 
+private val hexLongPattern = Regex("[a-fA-Z0-9]+")
+
 class MetaModelBranch(val branch: IBranch) : IBranch by branch {
     var disabled: Boolean = true
     private val metaModelSynchronizer = MetaModelSynchronizer(branch)
@@ -62,7 +64,7 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
 
     fun resolveConcept(localConceptRef: IConceptReference, tree: ITree): IConcept {
         val serialized = localConceptRef.getUID()
-        if (serialized matches Regex("[a-fA-Z0-9]+")) {
+        if (serialized matches hexLongPattern) {
             var uid: String? = null
             val conceptNodeId = SerializationUtil.longFromHex(serialized)
             if (tree.containsNode(conceptNodeId)) {

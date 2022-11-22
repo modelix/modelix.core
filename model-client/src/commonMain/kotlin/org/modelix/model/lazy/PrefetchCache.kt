@@ -53,7 +53,7 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
     }
 
     override fun prefetch(hash: String) {
-        TODO("Not yet implemented")
+        store.prefetch(hash)
     }
 
     companion object {

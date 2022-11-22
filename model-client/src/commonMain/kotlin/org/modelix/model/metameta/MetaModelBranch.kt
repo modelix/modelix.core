@@ -22,6 +22,7 @@ import org.modelix.model.persistent.SerializationUtil
 
 private val hexLongPattern = Regex("[a-fA-Z0-9]+")
 
+@Deprecated("It only exists to support existing databases, but it has no effect when writing new data. Storing meta-models in the same repository as models is not supported anymore.")
 class MetaModelBranch(val branch: IBranch) : IBranch by branch {
     var disabled: Boolean = true
     private val metaModelSynchronizer = MetaModelSynchronizer(branch)
@@ -73,6 +74,19 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
             return toGlobalConcept(PersistedConcept(conceptNodeId, uid), tree)
         }
         return ILanguageRepository.resolveConcept(localConceptRef)
+    }
+
+    fun toGlobalConceptRef(localConceptRef: IConceptReference, tree: ITree): IConceptReference {
+        val serialized = localConceptRef.getUID()
+        if (serialized matches hexLongPattern) {
+            val conceptNodeId = SerializationUtil.longFromHex(serialized)
+            if (tree.containsNode(conceptNodeId)) {
+                val uid = tree.getProperty(conceptNodeId, MetaMetaLanguage.property_IHasUID_uid.name)
+                if (uid != null) return ConceptReference(uid)
+            }
+            return resolveConcept(localConceptRef, tree).getReference()
+        }
+        return localConceptRef
     }
 
     fun toLocalConcept(globalConcept: IConcept): IConcept {
@@ -171,6 +185,11 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
         override fun getConcept(nodeId: Long): IConcept? {
             val conceptRef = tree.getConceptReference(nodeId) ?: return null
             return resolveConcept(conceptRef, tree)
+        }
+
+        override fun getConceptReference(nodeId: Long): IConceptReference? {
+            val ref = tree.getConceptReference(nodeId) ?: return null
+            return toGlobalConceptRef(ref, tree)
         }
 
         override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {

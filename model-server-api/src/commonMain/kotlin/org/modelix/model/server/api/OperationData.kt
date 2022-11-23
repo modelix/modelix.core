@@ -16,6 +16,7 @@
 
 package org.modelix.model.server.api
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -24,6 +25,7 @@ sealed class OperationData {
 }
 
 @Serializable
+@SerialName("setProperty")
 data class SetPropertyOpData(
     val node: NodeId,
     val role: String,
@@ -35,6 +37,7 @@ data class SetPropertyOpData(
 }
 
 @Serializable
+@SerialName("setReference")
 data class SetReferenceOpData(
     val node: NodeId,
     val role: String,
@@ -46,6 +49,7 @@ data class SetReferenceOpData(
 }
 
 @Serializable
+@SerialName("addNew")
 data class AddNewChildNodeOpData(
     val parentNode: NodeId,
     val role: String?,
@@ -59,6 +63,7 @@ data class AddNewChildNodeOpData(
 }
 
 @Serializable
+@SerialName("move")
 data class MoveNodeOpData(
     val newParentNode: NodeId,
     val newRole: String?,
@@ -71,6 +76,7 @@ data class MoveNodeOpData(
 }
 
 @Serializable
+@SerialName("delete")
 data class DeleteNodeOpData(
     val nodeId: NodeId,
 ) : OperationData() {

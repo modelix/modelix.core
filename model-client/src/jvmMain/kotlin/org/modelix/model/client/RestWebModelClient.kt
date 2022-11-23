@@ -535,7 +535,7 @@ class RestWebModelClient @JvmOverloads constructor(
                     jsonEntry.put("key", key)
                     jsonEntry.put("value", value)
                     approxSize += key.length
-                    approxSize += value!!.length
+                    approxSize += value?.length ?: 4
                     json.put(jsonEntry)
                     if (!key.matches(HashUtil.HASH_PATTERN)) {
                         if (LOG.isDebugEnabled) {

@@ -134,7 +134,11 @@ class LightModelClientTest {
         assertEquals(0, client2.runRead { rootNode2.getChildren("role1").toList().size })
         val child1 = client1.runWrite { rootNode1.addNewChild("role1") }
         assertEquals(1, client1.runRead { rootNode1.getChildren("role1").toList().size })
-        wait { client2.runRead { rootNode2.getChildren("role1").toList().size == 1 } }
+        wait {
+            client1.checkException()
+            client2.checkException()
+            client2.runRead { rootNode2.getChildren("role1").toList().size == 1 }
+        }
         assertEquals(1, client2.runRead { rootNode2.getChildren("role1").toList().size })
 
         val child2 = client2.runRead { rootNode2.getChildren("role1").first() }

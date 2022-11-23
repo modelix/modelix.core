@@ -14,7 +14,7 @@ class LightModelClient(val connection: IConnection) {
     private val area = Area()
     private var repositoryId: String? = null
     private var versionHash: String? = null
-    private val pendingUpdates: MutableMap<NodeId, NodeUpdateData> = LinkedHashMap()
+    private val pendingOperations: MutableList<OperationData> = ArrayList()
     private var rootNodeId: NodeId? = null
     private var temporaryIdsSequence: Long = 0
     private var changeSetIdSequence: Int = 0
@@ -59,7 +59,7 @@ class LightModelClient(val connection: IConnection) {
 
     fun isInSync(): Boolean = synchronized {
         checkException()
-        lastUnconfirmedChangeSetId == null && pendingUpdates.isEmpty() && unappliedVersions.isEmpty()
+        lastUnconfirmedChangeSetId == null && pendingOperations.isEmpty() && unappliedVersions.isEmpty()
     }
 
     private fun <T> synchronizedRead(body: ()->T): T {
@@ -145,18 +145,6 @@ class LightModelClient(val connection: IConnection) {
         }
     }
 
-    private fun appendUpdate(nodeId: NodeId, body: (NodeUpdateData)->NodeUpdateData) {
-        synchronized {
-            val existing = pendingUpdates[nodeId]
-                ?: if (nodeId.startsWith(TEMP_ID_PREFIX)) {
-                    NodeUpdateData(nodeId = null, temporaryNodeId = nodeId)
-                } else {
-                    NodeUpdateData.nothing(nodeId)
-                }
-            pendingUpdates[nodeId] = body(existing)
-        }
-    }
-
     private fun generateTemporaryNodeId(): String = synchronized {
         TEMP_ID_PREFIX + (++temporaryIdsSequence).toString(16)
     }
@@ -177,16 +165,16 @@ class LightModelClient(val connection: IConnection) {
     }
 
     private fun flush() {
-        if (pendingUpdates.isNotEmpty()) {
+        if (pendingOperations.isNotEmpty()) {
             val changeSetId: ChangeSetId = ++changeSetIdSequence
             lastUnconfirmedChangeSetId = changeSetId
             val message = MessageFromClient(
-                changedNodes = pendingUpdates.values.toList(),
+                operations = ArrayList(pendingOperations),
                 changeSetId = changeSetId
             )
             println("message to server: " + message.toJson())
             connection.sendMessage(message)
-            pendingUpdates.clear()
+            pendingOperations.clear()
         }
     }
 
@@ -242,7 +230,7 @@ class LightModelClient(val connection: IConnection) {
 
     private fun replaceIds(replacements: Map<String, String>) {
         synchronized {
-            require(pendingUpdates.isEmpty()) { "Flush pending updates first" }
+            require(pendingOperations.isEmpty()) { "Flush pending updates first" }
             val nodesReferencingTemporaryIdsSaved = ArrayList(nodesReferencingTemporaryIds)
             val noTempReferencesLeft = ArrayList<String>(nodesReferencingTemporaryIds.size)
             for (sourceId in nodesReferencingTemporaryIds) {
@@ -270,7 +258,9 @@ class LightModelClient(val connection: IConnection) {
                     tempAdapter.nodeId = replacement.value
                 }
             }
-            pendingUpdates.putAll(pendingUpdates.mapValues { it.value.replaceIds { id -> replacements[id] } })
+            for (i in pendingOperations.indices) {
+                pendingOperations[i] = pendingOperations[i].replaceIds { id -> replacements[id] }
+            }
             nodesReferencingTemporaryIds.removeAll(replacements.keys)
             nodesReferencingTemporaryIds.addAll(replacements.values)
 
@@ -344,8 +334,7 @@ class LightModelClient(val connection: IConnection) {
                     newChildren
                 }
                 nodes[child.nodeId] = child.getData().replaceContainment(nodeId, role)
-                oldParent.appendUpdate { it.withChildren(oldRole, oldParent.getData().children[oldRole]) }
-                appendUpdate { it.withChildren(role, getData().children[role]) }
+                pendingOperations.add(MoveNodeOpData(nodeId, role, index, child.nodeId))
                 if (nodeId.startsWith(TEMP_ID_PREFIX)) nodesReferencingTemporaryIds.add(child.nodeId)
                 if (child.nodeId.startsWith(TEMP_ID_PREFIX)) nodesReferencingTemporaryIds.add(nodeId)
                 checkContainmentConsistency()
@@ -377,8 +366,7 @@ class LightModelClient(val connection: IConnection) {
                 nodes[nodeId] = newParentData
                 nodesReferencingTemporaryIds.add(nodeId)
                 if (nodeId.startsWith(TEMP_ID_PREFIX)) nodesReferencingTemporaryIds.add(childId)
-                appendUpdate { it.withChildren(role, newParentData.children[role]) }
-                appendUpdate(childId) { it.withConcept(concept) }
+                pendingOperations.add(AddNewChildNodeOpData(nodeId, role, index, concept?.getUID(), childId))
                 val childNode = getNodeAdapter(childId)
                 checkContainmentConsistency()
                 childNode.checkContainmentConsistency()
@@ -417,9 +405,9 @@ class LightModelClient(val connection: IConnection) {
                 }
                 val newParentData = oldParentData.replaceChildren(role) { it - childId }
                 nodes[nodeId] = newParentData
-                appendUpdate { it.withChildren(role, newParentData.children[role]!!) }
+                pendingOperations.add(DeleteNodeOpData(childId))
                 nodes.remove(childId)
-                pendingUpdates.remove(childId)
+                //pendingUpdates.removeAll { it.nodeId == childId }
                 nodesReferencingTemporaryIds.remove(childId)
                 checkContainmentConsistency()
             }
@@ -462,14 +450,12 @@ class LightModelClient(val connection: IConnection) {
                 nodes[nodeId] = getData().replaceReferences {
                     if (targetId == null) it - role else it + (role to targetId)
                 }
-                appendUpdate { it.withReference(role, targetId) }
+                pendingOperations.add(SetReferenceOpData(nodeId, role, targetId))
                 if (targetId != null && targetId.startsWith(TEMP_ID_PREFIX)) {
                     nodesReferencingTemporaryIds.add(nodeId)
                 }
             }
         }
-
-        private fun appendUpdate(body: (NodeUpdateData)->NodeUpdateData) = synchronized { appendUpdate(nodeId, body) }
 
         override fun setReferenceTarget(role: String, target: INode?) {
             synchronizedWrite {  setReferenceTarget(role, target?.reference) }
@@ -493,7 +479,7 @@ class LightModelClient(val connection: IConnection) {
                         children = children
                     )
                 }
-                appendUpdate { it.withProperty(propertyRole, value) }
+                pendingOperations.add(SetPropertyOpData(nodeId, propertyRole, value))
             }
         }
 

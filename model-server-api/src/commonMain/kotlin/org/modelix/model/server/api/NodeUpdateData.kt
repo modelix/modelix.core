@@ -18,7 +18,7 @@ import org.modelix.model.api.IConceptReference
 
 @Serializable
 data class NodeUpdateData(
-    val nodeId: NodeId?,
+    val nodeId: NodeId? = null,
     val temporaryNodeId: NodeId? = null,
     //val parent: NodeId? = null,
     //val role: String? = null,

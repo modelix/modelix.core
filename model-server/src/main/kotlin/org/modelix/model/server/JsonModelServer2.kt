@@ -99,7 +99,7 @@ class JsonModelServer2(val client: LocalModelClient) {
                 deltaMutex.withLock {
                     val sendMsg: suspend (MessageFromServer)->Unit = {
                         val text = it.toJson()
-                        println("message to client: $text")
+                        //println("message to client: $text")
                         send(text)
                     }
                     if (newVersion.hash != lastVersion?.hash) {
@@ -136,7 +136,7 @@ class JsonModelServer2(val client: LocalModelClient) {
                     when (frame) {
                         is Frame.Text -> {
                             val text = frame.readText()
-                            println("message on server: $text")
+                            //println("message on server: $text")
                             try {
                                 val message = MessageFromClient.fromJson(text)
                                 if (message.operations != null) {

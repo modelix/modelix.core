@@ -121,17 +121,17 @@ class LightModelClient(val connection: IConnection) {
     fun isInitialized(): Boolean = synchronized { initialized }
 
     private fun fullConsistencyCheck() {
-        runRead {
-            nodes.keys.forEach { getNode(it).checkContainmentConsistency() }
-
-            val actualTempReferences = nodes.filter { it.value.allReferencedIds().any { it.startsWith(TEMP_ID_PREFIX) } }.keys
-            val registeredTempReferences = nodesReferencingTemporaryIds
-            val unregisteredTempReferences = actualTempReferences - registeredTempReferences
-            val wrongRegistered = registeredTempReferences - actualTempReferences
-            if (unregisteredTempReferences.isNotEmpty()) {
-                throw RuntimeException("missing registrations: $unregisteredTempReferences, unnecessary registration: $wrongRegistered")
-            }
-        }
+//        runRead {
+//            nodes.keys.forEach { getNode(it).checkContainmentConsistency() }
+//
+//            val actualTempReferences = nodes.filter { it.value.allReferencedIds().any { it.startsWith(TEMP_ID_PREFIX) } }.keys
+//            val registeredTempReferences = nodesReferencingTemporaryIds
+//            val unregisteredTempReferences = actualTempReferences - registeredTempReferences
+//            val wrongRegistered = registeredTempReferences - actualTempReferences
+//            if (unregisteredTempReferences.isNotEmpty()) {
+//                throw RuntimeException("missing registrations: $unregisteredTempReferences, unnecessary registration: $wrongRegistered")
+//            }
+//        }
     }
 
     fun hasTemporaryIds(): Boolean = synchronized {
@@ -172,7 +172,7 @@ class LightModelClient(val connection: IConnection) {
                 operations = ArrayList(pendingOperations),
                 changeSetId = changeSetId
             )
-            println("message to server: " + message.toJson())
+            //println("message to server: " + message.toJson())
             connection.sendMessage(message)
             pendingOperations.clear()
         }
@@ -180,7 +180,7 @@ class LightModelClient(val connection: IConnection) {
 
     private fun messageReceived(message: MessageFromServer) {
         synchronized {
-            println("processing on client: " + message.toJson())
+            //println("processing on client: " + message.toJson())
             if (message.exception != null) {
                 exceptions.add(message.exception!!)
             }
@@ -225,7 +225,7 @@ class LightModelClient(val connection: IConnection) {
         val data = nodes[nodeId] ?: return
         data.children.values.flatten().forEach { removeDataRecursive(it, nodesToKeep) }
         nodes.remove(nodeId)
-        println("Removed $nodeId: $data")
+        //println("Removed $nodeId: $data")
     }
 
     private fun replaceIds(replacements: Map<String, String>) {
@@ -390,7 +390,7 @@ class LightModelClient(val connection: IConnection) {
                         if (brokenRoles.isNotEmpty()) {
                             val sourceNode = getNode(sourceNodeId)
                             brokenRoles.forEach { brokenRole ->
-                                println("removing reference $sourceNodeId.$brokenRole -> $childId")
+                                //println("removing reference $sourceNodeId.$brokenRole -> $childId")
                                 sourceNode.setReferenceTarget(brokenRole, null as INodeReference?)
                             }
                         }

@@ -62,7 +62,7 @@ class LightModelClientTest {
     fun runClientTest(block: suspend (suspend ()->LightModelClient) -> Unit) = runTest { httpClient ->
         withTimeout(2.minutes) {
             val response = httpClient.post("http://localhost/json/test-repo/init").status
-            println("init: $response")
+            //println("init: $response")
 
             val createConnection: ()->LightModelClient.IConnection = {
                 object : LightModelClient.IConnection {
@@ -83,7 +83,7 @@ class LightModelClientTest {
                                         when (frame) {
                                             is Frame.Text -> {
                                                 val text = frame.readText()
-                                                println("message on client: $text")
+                                                //println("message on client: $text")
                                                 messageReceiver(MessageFromServer.fromJson(text))
                                             }
                                             else -> {}
@@ -220,7 +220,7 @@ class LightModelClientTest {
     }
 
     private suspend fun wait(condition: ()->Boolean) {
-        withTimeout(5.seconds) {
+        withTimeout(30.seconds) {
             while (!condition()) {
                 delay(1.milliseconds)
             }

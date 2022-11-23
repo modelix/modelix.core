@@ -97,7 +97,7 @@ class JsonModelServer2(val client: LocalModelClient) {
 
             var lastVersion: CLVersion? = null
             val deltaMutex = Mutex()
-            val sendDelta: suspend (CLVersion, Map<String, String>?, List<ChangeSetId>)->Unit = { newVersion, replacedIds, appliedChangeSets ->
+            val sendDelta: suspend (CLVersion, Map<String, String>?, ChangeSetId?)->Unit = { newVersion, replacedIds, appliedChangeSet ->
                 deltaMutex.withLock {
                     val sendMsg: suspend (MessageFromServer)->Unit = {
                         val text = it.toJson()
@@ -108,13 +108,13 @@ class JsonModelServer2(val client: LocalModelClient) {
                         sendMsg(MessageFromServer(
                             version = versionAsJson(newVersion, lastVersion),
                             replacedIds = replacedIds?.ifEmpty { null },
-                            includedChangeSets = appliedChangeSets
+                            appliedChangeSet = appliedChangeSet
                         ))
                         lastVersion = newVersion
-                    } else if (!replacedIds.isNullOrEmpty() || appliedChangeSets.isNotEmpty()) {
+                    } else if (!replacedIds.isNullOrEmpty() || appliedChangeSet != null) {
                         sendMsg(MessageFromServer(
                             replacedIds = replacedIds?.ifEmpty { null },
-                            includedChangeSets = appliedChangeSets
+                            appliedChangeSet = appliedChangeSet
                         ))
                     }
                 }
@@ -125,14 +125,14 @@ class JsonModelServer2(val client: LocalModelClient) {
                     if (value == null) return
                     launch {
                         val newVersion = CLVersion.loadFromHash(value, client.storeCache)
-                        sendDelta(newVersion, null, emptyList())
+                        sendDelta(newVersion, null, null)
                     }
                 }
             }
 
             client.listen(repositoryId.getBranchReference().getKey(), listener)
             try {
-                sendDelta(getCurrentVersion(repositoryId), null, emptyList())
+                sendDelta(getCurrentVersion(repositoryId), null, null)
                 val previouslyReplacedIds = HashMap<String, String>()
                 for (frame in incoming) {
                     when (frame) {
@@ -159,7 +159,7 @@ class JsonModelServer2(val client: LocalModelClient) {
                                         .associateBy { it.nodeId!!.toLong(16) }
                                     val mergedVersion = applyUpdate(lastVersion!!,
                                         changedNodes, repositoryId, userId)
-                                    sendDelta(mergedVersion, replacedIds, listOfNotNull(message.changeSetId))
+                                    sendDelta(mergedVersion, replacedIds, message.changeSetId)
                                     previouslyReplacedIds.putAll(replacedIds)
                                     //idsKnownByClient.forEach { previouslyReplacedIds.remove(it) }
                                     // TODO remove all other entries in `previouslyReplacedIds` that were part of the same message

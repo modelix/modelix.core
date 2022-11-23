@@ -22,7 +22,7 @@ import kotlinx.serialization.json.Json
 data class MessageFromServer(
     val version: VersionData? = null,
     val replacedIds: Map<String, String>? = null,
-    val includedChangeSets: List<ChangeSetId> = emptyList(),
+    val appliedChangeSet: ChangeSetId? = null,
     val exception: ExceptionData? = null
 ) {
     fun toJson() = Json.encodeToString(this)

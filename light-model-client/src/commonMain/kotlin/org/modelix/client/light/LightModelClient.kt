@@ -197,11 +197,10 @@ class LightModelClient(val connection: IConnection) {
                 exceptions.add(message.exception!!)
             }
             message.replacedIds?.let { replaceIds(it) }
-            if (lastUnconfirmedChangeSetId != null && message.includedChangeSets.contains(lastUnconfirmedChangeSetId)) {
+            if (lastUnconfirmedChangeSetId != null && message.appliedChangeSet == lastUnconfirmedChangeSetId) {
                 lastUnconfirmedChangeSetId = null
             }
             message.version?.let { unappliedVersions.add(it) }
-            fullConsistencyCheck()
             if (lastUnconfirmedChangeSetId == null && unappliedVersions.isNotEmpty()) {
                 val merged = unappliedVersions.reduce { old, new -> new.merge(old) }
                 applyVersion(merged)

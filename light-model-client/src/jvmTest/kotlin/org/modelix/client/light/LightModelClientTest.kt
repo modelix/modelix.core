@@ -175,7 +175,7 @@ class LightModelClientTest {
 
         val rand = Random(1234L)
         val changeGenerator1 = RandomModelChangeGenerator(client1.runRead { client1.getRootNode()!! }, rand)
-        for (i in (1..1000)) {
+        for (i in (1..200)) {
             wait { client1.isInSync() && client2.isInSync() }
             client1.runWrite {
                 for (k in (0..rand.nextInt(1,10))) {
@@ -192,7 +192,7 @@ class LightModelClientTest {
 
         println("starting write to client 2")
         val changeGenerator2 = RandomModelChangeGenerator(client2.runRead { client2.getRootNode()!! }, rand)
-        for (i in (1..1000)) {
+        for (i in (1..200)) {
             wait { client1.isInSync() && client2.isInSync() }
             client2.runWrite {
                 for (k in (0..rand.nextInt(1,10))) {

@@ -92,7 +92,7 @@ val fatJarArtifact = artifacts.add("archives", fatJarFile) {
     builtBy("shadowJar")
 }
 
-task("cucumber") {
+val cucumber = task("cucumber") {
     dependsOn("shadowJar", "compileTestJava")
     doLast {
         javaexec {
@@ -106,6 +106,9 @@ task("cucumber") {
     }
 }
 
+tasks.named("test") {
+    dependsOn("cucumber")
+}
 
 task("copyLibs", Copy::class) {
     into("$buildDir/libs")

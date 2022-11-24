@@ -11,7 +11,7 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
         val nodeToDelete = getRandomNode(condition = { it.allChildren.toList().isEmpty() }, includeRoot = false)
         val parent = nodeToDelete?.parent
         if (nodeToDelete != null && nodeToDelete != rootNode && parent != null) {
-            //println("$parent.removeChild($nodeToDelete)")
+            // println("$parent.removeChild($nodeToDelete)")
             parent.removeChild(nodeToDelete)
         }
     }
@@ -20,9 +20,9 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
         if (parent != null) {
             val role = childRoles[rand.nextInt(childRoles.size)]
             val index = if (rand.nextBoolean()) rand.nextInt(parent.getChildren(role).count() + 1) else -1
-            //println("$parent.addNewChild($role, $index)")
+            // println("$parent.addNewChild($role, $index)")
             val child = parent.addNewChild(role, index)
-            //println(" -> $child")
+            // println(" -> $child")
         }
     }
     val setPropertyOp: () -> Unit = {
@@ -31,7 +31,7 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
             val role = propertyRoles[rand.nextInt(propertyRoles.size)]
             val chars = "abcdABCDⓐⓑⓒⓓ"
             val value = (1..10).map { chars.elementAt(rand.nextInt(chars.length)) }.joinToString()
-            //println("$node.setPropertyValue($role, $value)")
+            // println("$node.setPropertyValue($role, $value)")
             node.setPropertyValue(role, value)
         }
     }
@@ -40,7 +40,7 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
         val target = getRandomNode()
         if (source != null && target != null) {
             val role = referenceRoles[rand.nextInt(referenceRoles.size)]
-            //println("$source.setReferenceTarget($role, $target)")
+            // println("$source.setReferenceTarget($role, $target)")
             source.setReferenceTarget(role, target)
         }
     }
@@ -50,7 +50,7 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
         if (child != null && parent != null) {
             val role = childRoles[rand.nextInt(childRoles.size)]
             var index = if (rand.nextBoolean()) rand.nextInt(parent.getChildren(role).count() + 1) else -1
-            //println("$parent.moveChild($role, $index, $child)")
+            // println("$parent.moveChild($role, $index, $child)")
             parent.moveChild(role, index, child)
         }
     }

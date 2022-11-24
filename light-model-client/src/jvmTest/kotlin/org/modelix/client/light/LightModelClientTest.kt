@@ -21,10 +21,10 @@ import io.ktor.server.testing.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.addNewChild
@@ -66,18 +66,20 @@ class LightModelClientTest {
 
             val createConnection: ()->LightModelClient.IConnection = {
                 object : LightModelClient.IConnection {
-                    var wsSession: DefaultClientWebSocketSession? = null
-                    val coroutineScope = CoroutineScope(Dispatchers.Default)
+                    val coroutineScope = CoroutineScope(Dispatchers.IO.limitedParallelism(1))
+                    val outgoingMessagesChannel = Channel<MessageFromClient>(capacity = Channel.UNLIMITED)
                     override fun sendMessage(message: MessageFromClient) {
-                        coroutineScope.launch {
-                            (wsSession ?: throw IllegalStateException("Not connected")).send(message.toJson())
-                        }
+                        outgoingMessagesChannel.trySend(message)
                     }
 
                     override fun connect(messageReceiver: (message: MessageFromServer) -> Unit) {
                         coroutineScope.launch {
                             httpClient.webSocket("ws://localhost/json/v2/test-repo/ws") {
-                                wsSession = this
+                                launch {
+                                    for (msg in outgoingMessagesChannel) {
+                                        send(msg.toJson())
+                                    }
+                                }
                                 try {
                                     for (frame in incoming) {
                                         when (frame) {
@@ -155,7 +157,7 @@ class LightModelClientTest {
 
         val rand = Random(1234L)
         val changeGenerator = RandomModelChangeGenerator(client1.runRead { client1.getRootNode()!! }, rand)
-        for (i in (1..100)) {
+        for (i in (1..1000)) {
             client1.runWrite {
                 for (k in (0..rand.nextInt(1, 10))) {
                     changeGenerator.applyRandomChange()

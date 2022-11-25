@@ -13,7 +13,7 @@ class LightModelClient(val connection: IConnection) {
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
     private val area = Area()
     private var repositoryId: String? = null
-    private var versionHash: String? = null
+    private var lastMergedVersionHash: String? = null
     private val pendingOperations: MutableList<OperationData> = ArrayList()
     private var rootNodeId: NodeId? = null
     private var temporaryIdsSequence: Long = 0
@@ -170,7 +170,9 @@ class LightModelClient(val connection: IConnection) {
             lastUnconfirmedChangeSetId = changeSetId
             val message = MessageFromClient(
                 operations = ArrayList(pendingOperations),
-                changeSetId = changeSetId
+                changeSetId = changeSetId,
+                baseVersionHash = lastMergedVersionHash,
+                baseChangeSet = lastUnconfirmedChangeSetId
             )
             //println("message to server: " + message.toJson())
             connection.sendMessage(message)
@@ -207,7 +209,7 @@ class LightModelClient(val connection: IConnection) {
             if (version.rootNodeId != null && version.rootNodeId != rootNodeId) {
                 rootNodeId = version.rootNodeId
             }
-            versionHash = version.versionHash
+            lastMergedVersionHash = version.versionHash
 
             val oldChildNodes: Set<NodeId> = version.nodes.mapNotNull { nodes[it.nodeId] }.flatMap { it.children.values.flatten() }.toSet()
             for (nodeData in version.nodes) {

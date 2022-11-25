@@ -14,6 +14,7 @@
 package org.modelix.model.server
 
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
@@ -22,7 +23,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
-import org.modelix.model.IKeyListener
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
@@ -33,6 +33,8 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
+import org.modelix.model.client.ReplicatedRepository
+import org.modelix.model.client.VersionChangeDetector
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
@@ -91,46 +93,64 @@ class JsonModelServer2(val client: LocalModelClient) {
     private fun Route.initRouting() {
         webSocket("/{repositoryId}/ws") {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val userId = call.getUserName()
+            val userId = call.getUserName() ?: call.request.host()
 
-            var lastVersion: CLVersion? = null
+            var lastVersionToClient: CLVersion? = null
+            var lastVersionFromClient: CLVersion? = null
+            val versionMerger = VersionMerger(client.storeCache, client.idGenerator)
             val deltaMutex = Mutex()
             val sendDelta: suspend (CLVersion, Map<String, String>?, ChangeSetId?)->Unit = { newVersion, replacedIds, appliedChangeSet ->
-                deltaMutex.withLock {
-                    val sendMsg: suspend (MessageFromServer)->Unit = {
-                        val text = it.toJson()
-                        //println("message to client: $text")
-                        send(text)
+                require(deltaMutex.isLocked)
+                val sendMsg: suspend (MessageFromServer)->Unit = {
+                    val text = it.toJson()
+                    //println("message to client: $text")
+                    send(text)
+                }
+
+                val mergedVersion: CLVersion =
+                    if (lastVersionToClient == null) {
+                        newVersion
+                    } else {
+                        versionMerger.mergeChange(
+                            lastVersionToClient!!,
+                            newVersion
+                        )
                     }
-                    if (newVersion.hash != lastVersion?.hash) {
-                        sendMsg(MessageFromServer(
-                            version = versionAsJson(newVersion, lastVersion),
-                            replacedIds = replacedIds?.ifEmpty { null },
-                            appliedChangeSet = appliedChangeSet
-                        ))
-                        lastVersion = newVersion
-                    } else if (!replacedIds.isNullOrEmpty() || appliedChangeSet != null) {
-                        sendMsg(MessageFromServer(
-                            replacedIds = replacedIds?.ifEmpty { null },
-                            appliedChangeSet = appliedChangeSet
-                        ))
+                if (mergedVersion.hash != newVersion.hash) {
+                    client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.hash)
+                }
+                if (mergedVersion.hash != lastVersionToClient?.hash) {
+                    sendMsg(MessageFromServer(
+                        version = versionAsJson(mergedVersion, lastVersionToClient),
+                        replacedIds = replacedIds?.ifEmpty { null },
+                        appliedChangeSet = appliedChangeSet
+                    ))
+                    lastVersionToClient = mergedVersion
+                } else if (!replacedIds.isNullOrEmpty() || appliedChangeSet != null) {
+                    sendMsg(MessageFromServer(
+                        replacedIds = replacedIds?.ifEmpty { null },
+                        appliedChangeSet = appliedChangeSet
+                    ))
+                }
+            }
+
+            val versionChangeDetector = object : VersionChangeDetector(client.asyncStore, repositoryId.getBranchReference().getKey(), coroutineContext) {
+                override fun processVersionChange(oldVersionHash: String?, newVersionHash: String?) {
+                    if (newVersionHash != null) {
+                        val newVersion = CLVersion.loadFromHash(newVersionHash, client.storeCache)
+                        launch {
+                            deltaMutex.withLock {
+                                sendDelta(newVersion, null, null)
+                            }
+                        }
                     }
                 }
             }
 
-            val listener = object : IKeyListener {
-                override fun changed(key: String, value: String?) {
-                    if (value == null) return
-                    launch {
-                        val newVersion = CLVersion.loadFromHash(value, client.storeCache)
-                        sendDelta(newVersion, null, null)
-                    }
-                }
-            }
-
-            client.listen(repositoryId.getBranchReference().getKey(), listener)
             try {
-                sendDelta(getCurrentVersion(repositoryId), null, null)
+                deltaMutex.withLock {
+                    sendDelta(getCurrentVersion(repositoryId), null, null)
+                }
                 val previouslyReplacedIds = HashMap<String, String>()
                 for (frame in incoming) {
                     when (frame) {
@@ -138,26 +158,35 @@ class JsonModelServer2(val client: LocalModelClient) {
                             val text = frame.readText()
                             println("message on server: $text")
                             try {
-                                val message = MessageFromClient.fromJson(text)
-                                if (message.operations != null) {
-                                    val replacedIds = HashMap<String, String>()
-                                    message.operations!!
-                                        .asSequence()
-                                        .filterIsInstance<AddNewChildNodeOpData>()
-                                        .map { it.childId }
-                                        .filter { previouslyReplacedIds[it] == null }
-                                        .forEach { replacedIds[it] = client.idGenerator.generate().toString(16) }
-                                    val idsKnownByClient = HashSet<String>()
-                                    val operations = message.operations!!
-                                        .map { it.replaceIds { id ->
-                                            idsKnownByClient.add(id)
-                                            previouslyReplacedIds[id] ?: replacedIds[id]
-                                        } }
-                                    val mergedVersion = applyUpdate(lastVersion!!, operations, repositoryId, userId)
-                                    sendDelta(mergedVersion, replacedIds, message.changeSetId)
-                                    previouslyReplacedIds.putAll(replacedIds)
-                                    //idsKnownByClient.forEach { previouslyReplacedIds.remove(it) }
-                                    // TODO remove all other entries in `previouslyReplacedIds` that were part of the same message
+                                deltaMutex.withLock {
+                                    val message = MessageFromClient.fromJson(text)
+                                    if (message.operations != null) {
+                                        val replacedIds = HashMap<String, String>()
+                                        message.operations!!
+                                            .asSequence()
+                                            .filterIsInstance<AddNewChildNodeOpData>()
+                                            .map { it.childId }
+                                            .filter { previouslyReplacedIds[it] == null }
+                                            .forEach { replacedIds[it] = client.idGenerator.generate().toString(16) }
+                                        val idsKnownByClient = HashSet<String>()
+                                        val operations = message.operations!!
+                                            .map { it.replaceIds { id ->
+                                                idsKnownByClient.add(id)
+                                                previouslyReplacedIds[id] ?: replacedIds[id]
+                                            } }
+                                        val baseVersion = if (message.baseChangeSet == null) {
+                                            lastVersionToClient
+                                        } else {
+                                            lastVersionFromClient ?: lastVersionToClient
+                                        }
+
+                                        val mergedVersion = applyUpdate(baseVersion!!, operations, repositoryId, userId)
+                                        lastVersionFromClient = mergedVersion
+                                        sendDelta(mergedVersion, replacedIds, message.changeSetId)
+                                        previouslyReplacedIds.putAll(replacedIds)
+                                        //idsKnownByClient.forEach { previouslyReplacedIds.remove(it) }
+                                        // TODO remove all other entries in `previouslyReplacedIds` that were part of the same message
+                                    }
                                 }
                             } catch (ex: Exception) {
                                 send(MessageFromServer(exception = ExceptionData(RuntimeException("Failed to process message: $text", ex))).toJson())
@@ -167,7 +196,7 @@ class JsonModelServer2(val client: LocalModelClient) {
                     }
                 }
             } finally {
-                client.removeListener(repositoryId.getBranchKey(), listener)
+                versionChangeDetector.dispose()
             }
         }
     }
@@ -232,9 +261,9 @@ class JsonModelServer2(val client: LocalModelClient) {
             baseVersion,
             operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
         )
-        val mergedVersion = VersionMerger(client.storeCache!!, client.idGenerator)
+        val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
             .mergeChange(getCurrentVersion(repositoryId), newVersion)
-        client.asyncStore!!.put(repositoryId.getBranchKey(), mergedVersion.hash)
+        client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.hash)
         // TODO handle concurrent write to the branchKey, otherwise versions might get lost. See ReplicatedRepository.
         return mergedVersion
     }

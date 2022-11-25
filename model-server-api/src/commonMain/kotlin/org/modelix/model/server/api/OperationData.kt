@@ -32,7 +32,11 @@ data class SetPropertyOpData(
     val value: String?
 ) : OperationData() {
     override fun replaceIds(replacer: (String) -> String?): OperationData {
-        return SetPropertyOpData(replacer(node) ?: node, role, value)
+        return SetPropertyOpData(
+            node = replacer(node) ?: node,
+            role = role,
+            value = value
+        )
     }
 }
 
@@ -44,7 +48,11 @@ data class SetReferenceOpData(
     val target: NodeId?
 ) : OperationData() {
     override fun replaceIds(replacer: (String) -> String?): OperationData {
-        return SetReferenceOpData(replacer(node) ?: node, role, target?.let(replacer) ?: target)
+        return SetReferenceOpData(
+            node = replacer(node) ?: node,
+            role = role,
+            target = target?.let(replacer) ?: target
+        )
     }
 }
 
@@ -58,7 +66,13 @@ data class AddNewChildNodeOpData(
     val childId: NodeId
 ) : OperationData() {
     override fun replaceIds(replacer: (String) -> String?): OperationData {
-        return AddNewChildNodeOpData(replacer(parentNode) ?: parentNode, role, index, concept, replacer(childId) ?: childId)
+        return AddNewChildNodeOpData(
+            parentNode = replacer(parentNode) ?: parentNode,
+            role = role,
+            index = index,
+            concept = concept,
+            childId = replacer(childId) ?: childId
+        )
     }
 }
 
@@ -71,7 +85,12 @@ data class MoveNodeOpData(
     val childId: NodeId,
 ) : OperationData() {
     override fun replaceIds(replacer: (String) -> String?): OperationData {
-        return MoveNodeOpData(replacer(newParentNode) ?: newParentNode, newRole, newIndex, replacer(childId) ?: childId)
+        return MoveNodeOpData(
+            newParentNode = replacer(newParentNode) ?: newParentNode,
+            newRole = newRole,
+            newIndex = newIndex,
+            childId = replacer(childId) ?: childId
+        )
     }
 }
 

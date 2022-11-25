@@ -23,7 +23,9 @@ typealias ChangeSetId = Int
 @Serializable
 data class MessageFromClient(
     val changeSetId: ChangeSetId,
-    val operations: List<OperationData>? = null
+    val operations: List<OperationData>? = null,
+    val baseVersionHash: String?,
+    val baseChangeSet: ChangeSetId?,
 ) {
     fun toJson() = Json.encodeToString(this)
     companion object {

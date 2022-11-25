@@ -18,13 +18,18 @@ package org.modelix.model.client
 import kotlinx.coroutines.*
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
+import kotlin.coroutines.CoroutineContext
 
-abstract class VersionChangeDetector(private val store: IKeyValueStore, private val key: String) {
+abstract class VersionChangeDetector(
+    private val store: IKeyValueStore,
+    private val key: String,
+    coroutineContext: CoroutineContext = Dispatchers.Default
+) {
     private val keyListener: IKeyListener
     var lastVersionHash: String? = null
         private set
     private var job: Job? = null
-    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    private val coroutineScope = CoroutineScope(coroutineContext)
 
     @Synchronized
     private fun versionChanged(newVersion: String?) {

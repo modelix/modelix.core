@@ -150,6 +150,10 @@ class CLVersion {
         return data?.id?.hashCode() ?: 0
     }
 
+    override fun toString(): String {
+        return hash
+    }
+
     companion object {
         val INLINED_OPS_LIMIT = 10
         fun createAutoMerge(

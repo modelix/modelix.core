@@ -15,10 +15,18 @@
 
 package org.modelix.model.client
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.apache.commons.lang3.mutable.MutableObject
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.*
-import org.modelix.model.client.SharedExecutors.fixDelay
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.loadFromHash
@@ -31,21 +39,26 @@ import java.time.LocalDateTime
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Supplier
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Dispose should be called on this, as otherwise a regular polling will go on.
  */
 actual open class ReplicatedRepository actual constructor(
     private val client: IModelClient,
-    private val repositoryId: RepositoryId,
-    private val branchName: String,
+    private val branchReference: BranchReference,
     private val user: () -> String
 ) {
     private val localBranch: IBranch
     private val localOTBranch: OTBranch
+    @Deprecated("MetaModelBranch is deprecated")
     private val localMMBranch: IBranch
     private val mergeLock = Any()
     private val merger: VersionMerger
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+
+    actual constructor(client: IModelClient, repositoryId: RepositoryId, branchName: String, user: () -> String)
+            : this(client, repositoryId.getBranchReference(branchName), user)
 
     @Volatile
     actual var localVersion: CLVersion?
@@ -57,7 +70,7 @@ actual open class ReplicatedRepository actual constructor(
     private val isEditing = AtomicBoolean(false)
     private var disposed = false
     private var divergenceTime = 0
-    private val convergenceWatchdog: ScheduledFuture<*>
+    private val convergenceWatchdog: Job
     actual val branch: IBranch
         get() {
             checkDisposed()
@@ -119,51 +132,41 @@ actual open class ReplicatedRepository actual constructor(
             localVersion = newLocalVersion
             divergenceTime = 0
         }
-        SharedExecutors.FIXED.execute(object : Runnable {
-            override fun run() {
-                val doMerge: Supplier<Boolean> = object : Supplier<Boolean> {
-                    override fun get(): Boolean {
-
-                        var mergedVersion: CLVersion
-                        try {
-                            mergedVersion = merger.mergeChange(remoteBase!!, newLocalVersion)
-                            LOG.debug {
-                                String.format(
-                                    "Merged local %s with remote %s -> %s",
-                                    newLocalVersion.hash,
-                                    remoteBase!!.hash,
-                                    mergedVersion.hash
-                                )
-                            }
-                        } catch (ex: Exception) {
-                            LOG.error(ex) { "" }
-                            mergedVersion = newLocalVersion
-                        }
-                        synchronized(mergeLock) {
-                            writeLocalVersion(localVersion)
-                            if (remoteVersion == remoteBase) {
-                                writeRemoteVersion(mergedVersion)
-                                return true
-                            } else {
-                                remoteBase = remoteVersion
-                                return false
-                            }
-                        }
+        coroutineScope.launch {
+            val doMerge: () -> Boolean =  {
+                var mergedVersion: CLVersion
+                try {
+                    mergedVersion = merger.mergeChange(remoteBase!!, newLocalVersion)
+                    LOG.debug {
+                        "Merged local ${newLocalVersion.hash} with remote ${remoteBase!!.hash} -> ${mergedVersion.hash}"
                     }
-                }
-
-                // Avoid locking during the merge as it may require communication with the model server
-                for (mergeAttempt in 0..2) {
-                    if (doMerge.get()) {
-                        return
-                    }
+                } catch (ex: Exception) {
+                    LOG.error(ex) { "" }
+                    mergedVersion = newLocalVersion
                 }
                 synchronized(mergeLock) {
-                    remoteBase = remoteVersion
-                    doMerge.get()
+                    writeLocalVersion(localVersion)
+                    if (remoteVersion == remoteBase) {
+                        writeRemoteVersion(mergedVersion)
+                        true
+                    } else {
+                        remoteBase = remoteVersion
+                        false
+                    }
                 }
             }
-        })
+
+            // Avoid locking during the merge as it may require communication with the model server
+            for (mergeAttempt in 0..2) {
+                if (doMerge()) {
+                    return@launch
+                }
+            }
+            synchronized(mergeLock) {
+                remoteBase = remoteVersion
+                doMerge()
+            }
+        }
         return newLocalVersion
     }
 
@@ -171,7 +174,7 @@ actual open class ReplicatedRepository actual constructor(
         synchronized(mergeLock) {
             if (remoteVersion!!.hash != newVersion.hash) {
                 remoteVersion = newVersion
-                client.asyncStore!!.put(repositoryId.getBranchKey(branchName), newVersion.hash)
+                client.asyncStore.put(branchReference.getKey(), newVersion.hash)
             }
         }
     }
@@ -215,12 +218,12 @@ actual open class ReplicatedRepository actual constructor(
         } catch (ex: Exception) {
             LOG.error(ex) { "" }
         }
-        convergenceWatchdog.cancel(false)
+        convergenceWatchdog.cancel("ReplicatedRepository disposed")
     }
 
     fun checkDisposed() {
         if (disposed) {
-            throw RuntimeException("Already disposed, replicated client $client, branch: $branchName, author: ${user()}")
+            throw RuntimeException("Already disposed, replicated client $client, branch: $branchReference, author: ${user()}")
         }
     }
 
@@ -236,14 +239,14 @@ actual open class ReplicatedRepository actual constructor(
     }
 
     init {
-        val versionHash = client[repositoryId.getBranchKey(branchName)]
-        val store = client.storeCache!!
+        val versionHash = client[branchReference.getKey()]
+        val store = client.storeCache
         var initialVersion = if (versionHash.isNullOrEmpty()) null else loadFromHash(versionHash, store)
         val initialTree = MutableObject<CLTree>()
         if (initialVersion == null) {
-            initialTree.setValue(CLTree(repositoryId, store))
+            initialTree.setValue(CLTree(branchReference.repositoryId, store))
             initialVersion = createVersion(initialTree.value, arrayOf(), null)
-            client.asyncStore!!.put(repositoryId.getBranchKey(branchName), initialVersion.hash)
+            client.asyncStore.put(branchReference.getKey(), initialVersion.hash)
         } else {
             initialTree.setValue(CLTree(initialVersion.treeHash?.getValue(store), store))
         }
@@ -256,7 +259,7 @@ actual open class ReplicatedRepository actual constructor(
         localOTBranch = OTBranch(localBranch, client.idGenerator, store)
         localMMBranch = MetaModelBranch(localOTBranch)
         merger = VersionMerger(store, client.idGenerator)
-        versionChangeDetector = object : VersionChangeDetector(client, repositoryId.getBranchKey(branchName)) {
+        versionChangeDetector = object : VersionChangeDetector(client, branchReference.getKey(), coroutineScope) {
             override fun processVersionChange(oldVersionHash: String?, newVersionHash: String?) {
                 if (disposed) {
                     return
@@ -273,49 +276,42 @@ actual open class ReplicatedRepository actual constructor(
                     localBase.setValue(localVersion)
                     remoteVersion = newRemoteVersion
                 }
-                val doMerge = object : Supplier<Boolean> {
-                    override fun get(): Boolean {
-                        var mergedVersion: CLVersion
-                        try {
-                            mergedVersion = merger.mergeChange(localBase.value!!, newRemoteVersion)
-                            if (LOG.isDebugEnabled) {
-                                LOG.debug(
-                                    String.format(
-                                        "Merged remote %s with local %s -> %s",
-                                        newRemoteVersion.hash,
-                                        localBase.value!!.hash,
-                                        mergedVersion.hash
-                                    )
-                                )
-                            }
-                        } catch (ex: Exception) {
-                            LOG.error(ex) { "" }
-                            mergedVersion = newRemoteVersion
+                val doMerge: () -> Boolean = {
+                    var mergedVersion: CLVersion
+                    try {
+                        mergedVersion = merger.mergeChange(localBase.value!!, newRemoteVersion)
+                        if (LOG.isDebugEnabled) {
+                            LOG.debug(
+                                "Merged remote ${newRemoteVersion.hash} with local ${localBase.value!!.hash} -> ${mergedVersion.hash}"
+                            )
                         }
-                        val mergedTree = mergedVersion.tree
-                        synchronized(mergeLock) {
-                            remoteVersion = mergedVersion
-                            if (localVersion == localBase.value) {
-                                writeLocalVersion(mergedVersion)
-                                writeRemoteVersion(mergedVersion)
-                                return true
-                            } else {
-                                localBase.setValue(localVersion)
-                                return false
-                            }
+                    } catch (ex: Exception) {
+                        LOG.error(ex) { "" }
+                        mergedVersion = newRemoteVersion
+                    }
+                    val mergedTree = mergedVersion.tree
+                    synchronized(mergeLock) {
+                        remoteVersion = mergedVersion
+                        if (localVersion == localBase.value) {
+                            writeLocalVersion(mergedVersion)
+                            writeRemoteVersion(mergedVersion)
+                            true
+                        } else {
+                            localBase.setValue(localVersion)
+                            false
                         }
                     }
                 }
 
                 // Avoid locking during the merge as it may require communication with the model server 
                 for (mergeAttempt in 0..2) {
-                    if (doMerge.get()) {
+                    if (doMerge()) {
                         return
                     }
                 }
                 synchronized(mergeLock) {
                     localBase.setValue(localVersion)
-                    doMerge.get()
+                    doMerge()
                 }
             }
         }
@@ -335,20 +331,18 @@ actual open class ReplicatedRepository actual constructor(
                 }
             }
         })
-        convergenceWatchdog = fixDelay(
-            1000,
-            Runnable {
-                val localHash = if (localVersion == null) null else localVersion!!.hash
-                val remoteHash = if (remoteVersion == null) null else remoteVersion!!.hash
-                if (localHash == remoteHash) {
-                    divergenceTime = 0
-                } else {
-                    divergenceTime++
-                }
-                if (divergenceTime > 5) {
-                    synchronized(mergeLock) { divergenceTime = 0 }
-                }
+        convergenceWatchdog = coroutineScope.launch {
+            val localHash = if (localVersion == null) null else localVersion!!.hash
+            val remoteHash = if (remoteVersion == null) null else remoteVersion!!.hash
+            if (localHash == remoteHash) {
+                divergenceTime = 0
+            } else {
+                divergenceTime++
             }
-        )
+            if (divergenceTime > 5) {
+                synchronized(mergeLock) { divergenceTime = 0 }
+            }
+            delay(1.seconds)
+        }
     }
 }

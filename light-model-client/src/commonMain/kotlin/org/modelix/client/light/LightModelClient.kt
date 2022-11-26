@@ -8,7 +8,7 @@ import org.modelix.model.server.api.*
 
 private const val TEMP_ID_PREFIX = "tmp-"
 
-class LightModelClient(val connection: IConnection) {
+class LightModelClient(val connection: IConnection, val debugName: String = "") {
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
     private val area = Area()
@@ -182,7 +182,7 @@ class LightModelClient(val connection: IConnection) {
 
     private fun messageReceived(message: MessageFromServer) {
         synchronized {
-            //println("processing on client: " + message.toJson())
+            println("$debugName processing on client: " + message.toJson())
             if (message.exception != null) {
                 exceptions.add(message.exception!!)
             }

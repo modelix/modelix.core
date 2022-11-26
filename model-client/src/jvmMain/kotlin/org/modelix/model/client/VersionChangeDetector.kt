@@ -18,18 +18,16 @@ package org.modelix.model.client
 import kotlinx.coroutines.*
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
-import kotlin.coroutines.CoroutineContext
 
 abstract class VersionChangeDetector(
     private val store: IKeyValueStore,
     private val key: String,
-    coroutineContext: CoroutineContext = Dispatchers.Default
+    coroutineScope: CoroutineScope
 ) {
     private val keyListener: IKeyListener
     var lastVersionHash: String? = null
         private set
     private var job: Job? = null
-    private val coroutineScope = CoroutineScope(coroutineContext)
 
     @Synchronized
     private fun versionChanged(newVersion: String?) {
@@ -47,7 +45,6 @@ abstract class VersionChangeDetector(
     protected abstract fun processVersionChange(oldVersion: String?, newVersion: String?)
     fun dispose() {
         job?.cancel("disposed")
-        coroutineScope.cancel("disposed")
         store.removeListener(key, keyListener)
     }
 
@@ -58,22 +55,18 @@ abstract class VersionChangeDetector(
     init {
         keyListener = object : IKeyListener {
             override fun changed(key: String, versionHash: String?) {
-                if (LOG.isDebugEnabled) {
-                    LOG.debug("Listener received new version $versionHash")
-                }
+                LOG.debug { "Listener received new version $versionHash" }
                 versionChanged(versionHash)
             }
         }
 
-        SharedExecutors.FIXED.execute { store.listen(key, keyListener) }
         job = coroutineScope.launch {
+            store.listen(key, keyListener)
             while (isActive) {
                 try {
                     val version = store[key]
                     if (version != lastVersionHash) {
-                        if (LOG.isDebugEnabled) {
-                            LOG.debug("New version detected by polling: $version")
-                        }
+                        LOG.debug { "New version detected by polling: $version" }
                         versionChanged(version)
                     }
                 } catch (e: Exception) {

@@ -20,6 +20,7 @@ import org.modelix.model.lazy.IBulkTree
 import org.modelix.model.lazy.ITreeWrapper
 import org.modelix.model.persistent.SerializationUtil
 
+@Deprecated("Storing meta-models next to the model is not supported anymore for performance reasons.")
 class MetaModelBranch(val branch: IBranch) : IBranch by branch {
     var disabled: Boolean = true
     private val metaModelSynchronizer = MetaModelSynchronizer(branch)

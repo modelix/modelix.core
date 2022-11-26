@@ -20,6 +20,7 @@ class LinearHistory(val baseVersionHash: String?) {
 
         var result: List<CLVersion> = ArrayList()
 
+        // TODO this algorithm is slow if there are a lot of merges
         for (version in versions.values.filter { !it.isMerge() }.sortedBy { it.id }) {
             val descendantVersions = paths[version.id]!!.flatten().associateBy { it.id }.values
                 .filter { !it.isMerge() }.sortedBy { it.id }

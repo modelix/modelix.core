@@ -18,6 +18,8 @@ import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -33,7 +35,6 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
-import org.modelix.model.client.ReplicatedRepository
 import org.modelix.model.client.VersionChangeDetector
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -99,14 +100,13 @@ class JsonModelServer2(val client: LocalModelClient) {
             var lastVersionFromClient: CLVersion? = null
             val versionMerger = VersionMerger(client.storeCache, client.idGenerator)
             val deltaMutex = Mutex()
+            val sendMsg: suspend (MessageFromServer)->Unit = {
+                val text = it.toJson()
+                //println("message to client: $text")
+                send(text)
+            }
             val sendDelta: suspend (CLVersion, Map<String, String>?, ChangeSetId?)->Unit = { newVersion, replacedIds, appliedChangeSet ->
                 require(deltaMutex.isLocked)
-                val sendMsg: suspend (MessageFromServer)->Unit = {
-                    val text = it.toJson()
-                    //println("message to client: $text")
-                    send(text)
-                }
-
                 val mergedVersion: CLVersion =
                     if (lastVersionToClient == null) {
                         newVersion
@@ -116,9 +116,7 @@ class JsonModelServer2(val client: LocalModelClient) {
                             newVersion
                         )
                     }
-                if (mergedVersion.hash != newVersion.hash) {
-                    client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.hash)
-                }
+                client.asyncStore.put(repositoryId.getBranchReference().getKey(), mergedVersion.hash)
                 if (mergedVersion.hash != lastVersionToClient?.hash) {
                     sendMsg(MessageFromServer(
                         version = versionAsJson(mergedVersion, lastVersionToClient),
@@ -134,14 +132,21 @@ class JsonModelServer2(val client: LocalModelClient) {
                 }
             }
 
-            val versionChangeDetector = object : VersionChangeDetector(client.asyncStore, repositoryId.getBranchReference().getKey(), coroutineContext) {
+            val versionChanges = Channel<String>(capacity = Channel.UNLIMITED)
+            val versionChangeDetector = object : VersionChangeDetector(client.asyncStore, repositoryId.getBranchReference().getKey(), CoroutineScope(coroutineContext)) {
                 override fun processVersionChange(oldVersionHash: String?, newVersionHash: String?) {
                     if (newVersionHash != null) {
-                        val newVersion = CLVersion.loadFromHash(newVersionHash, client.storeCache)
-                        launch {
-                            deltaMutex.withLock {
-                                sendDelta(newVersion, null, null)
-                            }
+                        versionChanges.trySend(newVersionHash)
+                    }
+                }
+            }
+            launch {
+                while (true) {
+                    val latestVersionHash = versionChanges.receiveLast()
+                    val newVersion = CLVersion.loadFromHash(latestVersionHash, client.storeCache)
+                    deltaMutex.withLock {
+                        if (latestVersionHash != lastVersionToClient?.hash) {
+                            sendDelta(newVersion, null, null)
                         }
                     }
                 }
@@ -156,7 +161,7 @@ class JsonModelServer2(val client: LocalModelClient) {
                     when (frame) {
                         is Frame.Text -> {
                             val text = frame.readText()
-                            println("message on server: $text")
+                            // println("message on server: $text")
                             try {
                                 deltaMutex.withLock {
                                     val message = MessageFromClient.fromJson(text)
@@ -355,4 +360,14 @@ class JsonModelServer2(val client: LocalModelClient) {
     companion object {
         private val LOG = mu.KotlinLogging.logger {  }
     }
+}
+
+private suspend fun <T> Channel<T>.receiveLast(): T {
+    var latest = receive()
+    while (!isEmpty) latest = receive()
+    return latest
+}
+
+private fun Channel<*>.clear() {
+    while (!isEmpty) tryReceive()
 }

@@ -21,8 +21,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.apache.commons.lang3.mutable.MutableObject
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.*
@@ -36,9 +34,7 @@ import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import java.time.LocalDateTime
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.function.Supplier
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -57,8 +53,8 @@ actual open class ReplicatedRepository actual constructor(
     private val merger: VersionMerger
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
-    actual constructor(client: IModelClient, repositoryId: RepositoryId, branchName: String, user: () -> String)
-            : this(client, repositoryId.getBranchReference(branchName), user)
+    actual constructor(client: IModelClient, repositoryId: RepositoryId, branchName: String, user: () -> String) :
+        this(client, repositoryId.getBranchReference(branchName), user)
 
     @Volatile
     actual var localVersion: CLVersion?
@@ -133,7 +129,7 @@ actual open class ReplicatedRepository actual constructor(
             divergenceTime = 0
         }
         coroutineScope.launch {
-            val doMerge: () -> Boolean =  {
+            val doMerge: () -> Boolean = {
                 var mergedVersion: CLVersion
                 try {
                     mergedVersion = merger.mergeChange(remoteBase!!, newLocalVersion)

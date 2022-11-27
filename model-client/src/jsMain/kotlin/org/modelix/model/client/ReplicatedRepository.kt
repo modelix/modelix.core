@@ -11,8 +11,8 @@ actual class ReplicatedRepository actual constructor(
     user: () -> String
 ) {
     actual constructor(client: IModelClient, repositoryId: RepositoryId, branchName: String, user: () -> String) :
-            this(client, repositoryId.getBranchReference(branchName), user) {
-    }
+        this(client, repositoryId.getBranchReference(branchName), user) {
+        }
 
     actual var localVersion: CLVersion?
         get() = TODO("Not yet implemented")

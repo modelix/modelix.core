@@ -221,8 +221,7 @@ class LightModelClientTest {
             launch {
                 val rand1 = Random(87634L)
                 val changeGenerator1 = RandomModelChangeGenerator(client1.runRead { client1.getRootNode()!! }, rand1)
-                // TODO increase this to 10 or more and fix the performance issue in LinearHistory
-                for (i in (1..5)) {
+                for (i in (1..10)) {
                     client1.runWrite {
                         for (k in (0..rand1.nextInt(1,10))) {
                             changeGenerator1.applyRandomChange()
@@ -238,7 +237,7 @@ class LightModelClientTest {
             launch {
                 val rand2 = Random(87235778L)
                 val changeGenerator2 = RandomModelChangeGenerator(client2.runRead { client2.getRootNode()!! }, rand2)
-                for (i in (1..5)) {
+                for (i in (1..10)) {
                     client2.runWrite {
                         for (k in (0..rand2.nextInt(1,10))) {
                             changeGenerator2.applyRandomChange()

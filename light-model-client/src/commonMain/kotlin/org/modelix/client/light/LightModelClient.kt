@@ -182,7 +182,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
 
     private fun messageReceived(message: MessageFromServer) {
         synchronized {
-            println("$debugName processing on client: " + message.toJson())
+            // println("$debugName processing on client: " + message.toJson())
             if (message.exception != null) {
                 exceptions.add(message.exception!!)
             }

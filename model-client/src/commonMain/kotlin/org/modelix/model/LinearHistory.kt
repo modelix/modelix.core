@@ -7,7 +7,7 @@ import org.modelix.model.persistent.CPVersion
 
 class LinearHistory(val baseVersionHash: String?) {
 
-    val paths: MutableMap<Long, MutableList<List<CLVersion>>> = HashMap()
+    val version2descendants: MutableMap<Long, MutableSet<Long>> = HashMap()
     val versions: MutableMap<Long, CLVersion> = HashMap()
 
     /**
@@ -18,45 +18,41 @@ class LinearHistory(val baseVersionHash: String?) {
             collect(fromVersion, emptyList())
         }
 
-        var result: List<CLVersion> = ArrayList()
+        var result: List<Long> = ArrayList()
 
-        // TODO this algorithm is slow if there are a lot of merges
         for (version in versions.values.filter { !it.isMerge() }.sortedBy { it.id }) {
-            val descendantVersions = paths[version.id]!!.flatten().associateBy { it.id }.values
-                .filter { !it.isMerge() }.sortedBy { it.id }
-            val descendantIds = descendantVersions.map { it.id }.toHashSet()
-            val idsInResult = result.map { it.id }.toHashSet()
+            val descendantIds = version2descendants[version.id]!!.sorted()
+            val idsInResult = result.toHashSet()
             if (idsInResult.contains(version.id)) {
                 result =
                     result +
-                    descendantVersions.filter { !idsInResult.contains(it.id) }
+                    descendantIds.filter { !idsInResult.contains(it) }
             } else {
                 result =
-                    result.filter { !descendantIds.contains(it.id) } +
-                    version +
-                    result.filter { descendantIds.contains(it.id) } +
-                    descendantVersions.filter { !idsInResult.contains(it.id) }
+                    result.filter { !descendantIds.contains(it) } +
+                    version.id +
+                    result.filter { descendantIds.contains(it) } +
+                    descendantIds.filter { !idsInResult.contains(it) }
             }
         }
-        return result
+        return result.map { versions[it]!! }
     }
 
     private fun collect(version: CLVersion, path: List<CLVersion>) {
         if (version.hash == baseVersionHash) return
 
-        versions[version.id] = version
-        paths.getOrPut(version.id, { ArrayList() }).add(path)
-        val pathForParents = path + version
+        if (!versions.containsKey(version.id)) versions[version.id] = version
+        version2descendants.getOrPut(version.id) { HashSet() }.addAll(path.asSequence().map { it.id })
 
         if (version.isMerge()) {
             val version1 = getVersion(version.data!!.mergedVersion1!!, version.store)
             val version2 = getVersion(version.data!!.mergedVersion2!!, version.store)
-            collect(version1, pathForParents)
-            collect(version2, pathForParents)
+            collect(version1, path)
+            collect(version2, path)
         } else {
             val previous = version.baseVersion
             if (previous != null) {
-                collect(previous, pathForParents)
+                collect(previous, path + version)
             }
         }
     }

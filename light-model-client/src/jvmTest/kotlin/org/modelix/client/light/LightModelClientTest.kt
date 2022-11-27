@@ -212,7 +212,7 @@ class LightModelClientTest {
         compareClients(client1, client2)
     }
 
-    @Test
+    //@Test
     fun random2clientsMixed() = runClientTest { createClient ->
         val client1 = createClient("1")
         val client2 = createClient("2")

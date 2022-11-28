@@ -90,14 +90,42 @@ class TypescriptMMGenerator(val outputDir: Path) {
     private fun generateConcept(concept: LanguageSet.ConceptInLanguage): String {
         val featuresImpl = concept.allFeatures().joinToString("\n") { feature ->
             when (val data = feature.data) {
-                is PropertyData -> """
-                    public set ${feature.validName}(value: string | undefined) {
-                        this.node.setPropertyValue("${data.name}", value)
-                    }
-                    public get ${feature.validName}(): string | undefined {
-                        return this.node.getPropertyValue("${data.name}")
-                    }
-                """.trimIndent()
+                is PropertyData -> {
+                    val rawValueName = feature.rawValueName()
+                    when (data.type) {
+                        PropertyType.INT -> {
+                            """
+                                public set ${feature.validName}(value: number) {
+                                    this.${rawValueName} = value.toString();
+                                }
+                                public get ${feature.validName}(): number {
+                                    let str = this.${rawValueName};
+                                    return str ? parseInt(str) : 0;
+                                }
+                                
+                            """.trimIndent()
+                        }
+                        PropertyType.BOOLEAN -> {
+                            """
+                                public set ${feature.validName}(value: boolean) {
+                                    this.${rawValueName} = value ? "true" : "false";
+                                }
+                                public get ${feature.validName}(): boolean {
+                                    return this.${rawValueName} === "true";
+                                }
+                                
+                            """.trimIndent()
+                        }
+                        else -> ""
+                    } + """
+                        public set $rawValueName(value: string | undefined) {
+                            this.node.setPropertyValue("${data.name}", value)
+                        }
+                        public get $rawValueName(): string | undefined {
+                            return this.node.getPropertyValue("${data.name}")
+                        }
+                    """.trimIndent()
+                }
                 is ReferenceLinkData -> """
                     
                 """.trimIndent()
@@ -118,9 +146,26 @@ class TypescriptMMGenerator(val outputDir: Path) {
         }
         val features = concept.directFeatures().joinToString("\n") { feature ->
             when (val data = feature.data) {
-                is PropertyData -> """
-                    ${feature.validName}: string | undefined
-                """.trimIndent()
+                is PropertyData -> {
+                    when (data.type) {
+                        PropertyType.BOOLEAN -> {
+                            """
+                                ${feature.validName}: boolean
+                                
+                            """.trimIndent()
+                        }
+                        PropertyType.INT -> {
+                            """
+                                ${feature.validName}: number
+                                
+                            """.trimIndent()
+                        }
+                        else -> ""
+                    } +
+                    """
+                        ${feature.rawValueName()}: string | undefined
+                    """.trimIndent()
+                }
                 is ReferenceLinkData -> """
                     
                 """.trimIndent()
@@ -184,4 +229,9 @@ fun LanguageSet.LanguageInSet.languageDependencies(): List<LanguageSet.LanguageI
         .map { it.languageName }
         .toSet()
     return getLanguageSet().getLanguages().filter { languageNames.contains(it.name) }.minus(this)
+}
+
+private fun FeatureInConcept.rawValueName() = when ((data as PropertyData).type) {
+    PropertyType.STRING -> validName
+    else -> "_raw_" + validName
 }

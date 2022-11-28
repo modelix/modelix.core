@@ -54,7 +54,7 @@ data class PropertyData (
 ) : IConceptFeatureData
 
 enum class PropertyType {
-    STRING, BOOLEAN, INT, DOUBLE
+    STRING, BOOLEAN, INT
 }
 
 @Serializable

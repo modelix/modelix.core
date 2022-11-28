@@ -179,17 +179,16 @@ class TypescriptMMGenerator(val outputDir: Path) {
         return """
             
             export interface ${concept.concept.nodeWrapperInterfaceName()} extends $interfaceList {
-                ${concept.ref().markerPropertyName()}: boolean
                 ${features}
             }
             
             export function isOfConcept_${concept.concept.name}(node: ITypedNode): node is ${concept.concept.nodeWrapperInterfaceName()} {
-                return '${concept.ref().markerPropertyName()}' in node;
+                return '${concept.ref().markerPropertyName()}' in node.constructor;
             }
             
             export class ${concept.concept.nodeWrapperImplName()} extends TypedNode implements ${concept.concept.nodeWrapperInterfaceName()} {
                 ${concept.allSuperConceptsAndSelf().joinToString("\n") {
-                    """public ${it.ref().markerPropertyName()}: boolean = true"""
+                    """public static readonly ${it.ref().markerPropertyName()}: boolean = true"""
                 }}
                 ${featuresImpl.replaceIndent("                ")}
             }

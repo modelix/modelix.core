@@ -95,7 +95,7 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun getPropertyValue(role: String): String? {
-        return node.getPropertyValue(role)
+        return node.getPropertyValue(role) ?: undefined
     }
 
     override fun setPropertyValue(role: String, value: String?) {

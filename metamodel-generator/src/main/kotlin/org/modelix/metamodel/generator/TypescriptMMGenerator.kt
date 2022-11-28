@@ -59,10 +59,8 @@ class TypescriptMMGenerator(val outputDir: Path) {
             } from "@modelix/ts-model-api";
             
             ${language.languageDependencies().joinToString("\n") {
-                """import {${it.simpleClassName()}} from "./${it.simpleClassName()}";"""
+                """import * as ${it.simpleClassName()} from "./${it.simpleClassName()}";"""
             }}
-            
-            export namespace ${language.simpleClassName()} {
             
             export class ${language.simpleClassName()} extends GeneratedLanguage {
                 public static INSTANCE: ${language.simpleClassName()} = new ${language.simpleClassName()}();
@@ -80,10 +78,8 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 ${conceptFields.replaceIndent("                ")}
                 */
             }
-            export const INSTANCE = ${language.simpleClassName()}.INSTANCE
             
             ${language.getConceptsInLanguage().joinToString("\n") { generateConcept(it) }.replaceIndent("            ")}
-            }
         """.trimIndent()
     }
 
@@ -187,10 +183,8 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 ${features}
             }
             
-            export namespace ${concept.concept.nodeWrapperInterfaceName()} {
-                export function isInstance(node: ITypedNode): node is ${concept.concept.nodeWrapperInterfaceName()} {
-                    return '${concept.ref().markerPropertyName()}' in node;
-                }
+            export function isOfConcept_${concept.concept.name}(node: ITypedNode): node is ${concept.concept.nodeWrapperInterfaceName()} {
+                return '${concept.ref().markerPropertyName()}' in node;
             }
             
             export class ${concept.concept.nodeWrapperImplName()} extends TypedNode implements ${concept.concept.nodeWrapperInterfaceName()} {

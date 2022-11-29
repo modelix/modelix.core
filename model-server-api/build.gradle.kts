@@ -28,8 +28,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":model-api"))
-                implementation(project(":metamodel-runtime"))
+//                implementation(project(":model-api"))
+//                implementation(project(":metamodel-runtime"))
                 implementation(kotlin("stdlib-common"))
                 implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")

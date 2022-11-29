@@ -14,7 +14,6 @@
 package org.modelix.model.server.api
 
 import kotlinx.serialization.Serializable
-import org.modelix.model.api.IConceptReference
 
 @Serializable
 data class NodeUpdateData(
@@ -78,14 +77,14 @@ data class NodeUpdateData(
         properties = properties,
         children = (children ?: emptyMap()) + (childrenRole to (newChildren ?: emptyList()))
     )
-    fun withConcept(newConcept: IConceptReference?): NodeUpdateData {
+    fun withConcept(newConceptUID: String?): NodeUpdateData {
         return NodeUpdateData(
             nodeId = nodeId,
             temporaryNodeId = temporaryNodeId,
 //        parent = parent,
 //        role = role,
 //        index = index,
-            concept = newConcept?.getUID(),
+            concept = newConceptUID,
             references = references,
             properties = properties,
             children = children

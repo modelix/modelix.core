@@ -44,3 +44,5 @@ private object ByIdSerializer : INodeReferenceSerializer {
         return if (serialized.startsWith(PREFIX)) NodeReferenceById(serialized.drop(PREFIX.length)) else null
     }
 }
+
+fun INodeReference.serialize() = INodeReferenceSerializer.serialize(this)

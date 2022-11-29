@@ -69,3 +69,7 @@ fun INode.addNewChild(role: String?, index: Int): INode = addNewChild(role, inde
 fun INode.addNewChild(role: String?): INode = addNewChild(role, -1, null as IConceptReference?)
 fun INode.addNewChild(role: String?, concept: IConceptReference?): INode = addNewChild(role, -1, concept)
 fun INode.addNewChild(role: String?, concept: IConcept?): INode = addNewChild(role, -1, concept)
+
+fun INode.remove() {
+    parent?.removeChild(this)
+}

@@ -48,22 +48,32 @@ import org.modelix.model.server.api.VersionData
 import java.time.Duration
 import java.util.*
 
-abstract class LightModelServer(val port: Int, val rootNode: INode) {
+class LightModelServer(val port: Int, val rootNode: INode) {
+    companion object {
+        private val LOG = mu.KotlinLogging.logger {  }
+    }
+
     private var server: NettyApplicationEngine? = null
     private val sessions: MutableSet<SessionData> = Collections.synchronizedSet(HashSet())
 
     fun start() {
+        LOG.trace { "server starting ..." }
         server = embeddedServer(Netty, port = port) {
             init()
-        }.start()
+        }
+        server!!.start()
+        LOG.trace { "server started" }
     }
 
     fun stop() {
+        LOG.trace { "server stopping ..." }
         server?.stop()
         server = null
+        LOG.trace { "server stopped" }
     }
 
     fun nodeChanged(node: INode) {
+        LOG.trace { "node changed: $node" }
         synchronized(sessions) {
             for (session in sessions) {
                 synchronized(session) {
@@ -86,7 +96,7 @@ abstract class LightModelServer(val port: Int, val rootNode: INode) {
 
     private fun getArea() = rootNode.getArea()
 
-    protected fun Application.init() {
+    private fun Application.init() {
         install(WebSockets) {
             pingPeriod = Duration.ofSeconds(15)
             timeout = Duration.ofSeconds(15)
@@ -95,9 +105,13 @@ abstract class LightModelServer(val port: Int, val rootNode: INode) {
         }
         routing {
             webSocket("/ws") {
-                val session = SessionData(this)
-                sessions.add(session)
-                handleWebsocket(session)
+                try {
+                    val session = SessionData(this)
+                    sessions.add(session)
+                    handleWebsocket(session)
+                } catch (ex: Exception) {
+                    LOG.error(ex) { "Error in websocket handler" }
+                }
             }
         }
         install(CORS) {
@@ -110,14 +124,22 @@ abstract class LightModelServer(val port: Int, val rootNode: INode) {
         }
     }
 
-    protected suspend fun DefaultWebSocketServerSession.handleWebsocket(session: SessionData) {
+    private suspend fun DefaultWebSocketServerSession.handleWebsocket(session: SessionData) {
+        session.sendMessage(getArea().executeRead {
+            session.includeNodeIfSerializable(rootNode.reference)
+//            rootNode.allChildren.forEach { session.includeNodeIfSerializable(it.reference) }
+            session.createUpdateMessage()
+        })
+
         for (frame in incoming) {
             when (frame) {
                 is Frame.Text -> {
-                    val text = frame.readText()
-                    val message = MessageFromClient.fromJson(text)
+                    val json = frame.readText()
+                    LOG.trace { "incoming message: ${json.take(5000)}" }
+                    val message = MessageFromClient.fromJson(json)
                     val ops = message.operations ?: continue
-                    session.applyUpdate(ops, message.changeSetId)
+                    val response = getArea().executeWrite { session.applyUpdate(ops, message.changeSetId) }
+                    send(response.toJson())
                 }
                 else -> {}
             }
@@ -132,6 +154,17 @@ abstract class LightModelServer(val port: Int, val rootNode: INode) {
     inner class SessionData(val websocketSession: DefaultWebSocketServerSession) {
         private val cleanNodesOnClient: MutableSet<INodeReference> = HashSet()
         private val dirtyNodesOnClient: MutableSet<INodeReference> = HashSet()
+
+        fun includeNode(node: INodeReference) {
+            dirtyNodesOnClient.add(node)
+        }
+
+        fun includeNodeIfSerializable(node: INodeReference) {
+            try {
+                node.nodeId()
+                includeNode(node)
+            } catch (ex: Exception) {}
+        }
 
         @Synchronized
         fun nodeChanged(node: INode) {
@@ -150,6 +183,7 @@ abstract class LightModelServer(val port: Int, val rootNode: INode) {
                 if (node == null) unresolvedNodes.add(it)
                 node?.toData()
             }
+            // TODO include descendants
             cleanNodesOnClient.addAll(dirtyNodesOnClient - unresolvedNodes)
             dirtyNodesOnClient.clear()
             return VersionData(
@@ -160,17 +194,23 @@ abstract class LightModelServer(val port: Int, val rootNode: INode) {
             )
         }
 
-        suspend fun sendUpdate() {
-            sendMessage(MessageFromServer(
+        fun createUpdateMessage(): MessageFromServer {
+            return MessageFromServer(
                 version = createUpdate(),
                 replacedIds = null,
                 appliedChangeSet = null,
                 exception = null
-            ))
+            )
+        }
+
+        suspend fun sendUpdate() {
+            sendMessage(createUpdateMessage())
         }
 
         suspend fun sendMessage(message: MessageFromServer) {
-            websocketSession.send(message.toJson())
+            val json = message.toJson()
+            LOG.trace { "outgoing message: ${json.take(5000)}" }
+            websocketSession.send(json)
         }
 
         @Synchronized
@@ -242,19 +282,29 @@ abstract class LightModelServer(val port: Int, val rootNode: INode) {
             }
         }
     }
+
+    private fun INode.toData(): NodeData {
+        val childrenMap = LinkedHashMap<String?, List<NodeId>>()
+        for (group in this.allChildren.groupBy { it.roleInParent }) {
+            try {
+                childrenMap[group.key] = group.value.map { it.nodeId() }
+            } catch (ex: Exception) {
+                LOG.warn { "Failed to serialize a child in ${this.concept?.getShortName()}.${group.key}. Excluding this role. ${ex.message}" }
+            }
+        }
+        return NodeData(
+            nodeId = this.nodeId(),
+            concept = this.getConceptReference()?.getUID(),
+            parent = this.parent?.reference?.serialize(),
+            role = this.roleInParent,
+            properties = this.getPropertyRoles().associateWithNotNull { this.getPropertyValue(it) },
+            references = this.getReferenceRoles().associateWithNotNull { this.getReferenceTargetRef(it)?.serialize() },
+            children = childrenMap,
+        )
+    }
 }
 
-private fun INode.toData(): NodeData {
-    return NodeData(
-        nodeId = this.nodeId(),
-        concept = this.getConceptReference()?.getUID(),
-        parent = this.parent?.reference?.serialize(),
-        role = this.roleInParent,
-        properties = this.getPropertyRoles().associateWithNotNull { this.getPropertyValue(it) },
-        references = this.getReferenceRoles().associateWithNotNull { this.getReferenceTargetRef(it)?.serialize() },
-        children = this.allChildren.groupBy { it.roleInParent }.mapValues { group -> group.value.map { it.nodeId() } },
-    )
-}
+
 
 private fun INode.nodeId() = reference.serialize()
 private fun INodeReference.nodeId() = serialize()

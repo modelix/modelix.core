@@ -31,6 +31,9 @@ tasks.named("check") {
     dependsOn("ktlintCheck")
 }
 
+
+val kotlinLoggingVersion: String by rootProject
+
 kotlin {
     jvm()
     js(BOTH) {
@@ -46,7 +49,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation("io.github.microutils:kotlin-logging:2.1.23")
+                implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
             }
         }
         val commonTest by getting {

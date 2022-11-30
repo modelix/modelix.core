@@ -21,7 +21,6 @@ interface INode {
     fun getArea(): IArea
     val isValid: Boolean
     val reference: INodeReference
-    @Deprecated("Use .getResolvedConcept()")
     val concept: IConcept?
     val roleInParent: String?
     val parent: INode?
@@ -36,7 +35,6 @@ interface INode {
     }
     fun removeChild(child: INode)
 
-    @Deprecated("use .getResolvedReferenceTarget")
     fun getReferenceTarget(role: String): INode?
     fun getReferenceTargetRef(role: String): INodeReference? {
         return getReferenceTarget(role)?.reference

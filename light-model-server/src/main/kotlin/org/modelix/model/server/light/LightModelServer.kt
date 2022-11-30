@@ -42,9 +42,11 @@ import org.modelix.model.server.api.MoveNodeOpData
 import org.modelix.model.server.api.NodeData
 import org.modelix.model.server.api.NodeId
 import org.modelix.model.server.api.OperationData
+import org.modelix.model.server.api.ModelQuery
 import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
+import org.modelix.model.server.api.buildModelQuery
 import java.time.Duration
 import java.util.*
 
@@ -126,8 +128,6 @@ class LightModelServer(val port: Int, val rootNode: INode) {
 
     private suspend fun DefaultWebSocketServerSession.handleWebsocket(session: SessionData) {
         session.sendMessage(getArea().executeRead {
-            session.includeNodeIfSerializable(rootNode.reference)
-//            rootNode.allChildren.forEach { session.includeNodeIfSerializable(it.reference) }
             session.createUpdateMessage()
         })
 
@@ -137,7 +137,8 @@ class LightModelServer(val port: Int, val rootNode: INode) {
                     val json = frame.readText()
                     LOG.trace { "incoming message: ${json.take(5000)}" }
                     val message = MessageFromClient.fromJson(json)
-                    val ops = message.operations ?: continue
+                    message.query?.let { session.replaceQuery(it) }
+                    val ops = message.operations ?: emptyList()
                     val response = getArea().executeWrite { session.applyUpdate(ops, message.changeSetId) }
                     send(response.toJson())
                 }
@@ -154,16 +155,11 @@ class LightModelServer(val port: Int, val rootNode: INode) {
     inner class SessionData(val websocketSession: DefaultWebSocketServerSession) {
         private val cleanNodesOnClient: MutableSet<INodeReference> = HashSet()
         private val dirtyNodesOnClient: MutableSet<INodeReference> = HashSet()
+        private var query: ModelQuery = buildModelQuery {}
 
-        fun includeNode(node: INodeReference) {
-            dirtyNodesOnClient.add(node)
-        }
-
-        fun includeNodeIfSerializable(node: INodeReference) {
-            try {
-                node.nodeId()
-                includeNode(node)
-            } catch (ex: Exception) {}
+        @Synchronized
+        fun replaceQuery(newQuery: ModelQuery) {
+            query = newQuery
         }
 
         @Synchronized
@@ -176,15 +172,11 @@ class LightModelServer(val port: Int, val rootNode: INode) {
 
         @Synchronized
         fun createUpdate(): VersionData {
-            val area = getArea()
-            val unresolvedNodes = HashSet<INodeReference>()
-            val nodeDataList = dirtyNodesOnClient.mapNotNull {
-                val node = it.resolveNode(area)
-                if (node == null) unresolvedNodes.add(it)
-                node?.toData()
-            }
-            // TODO include descendants
-            cleanNodesOnClient.addAll(dirtyNodesOnClient - unresolvedNodes)
+            val queryResult = query.execute(rootNode).associateBy { it.reference }
+            val nodesToUpdate = queryResult - cleanNodesOnClient
+            val nodeDataList = nodesToUpdate.values.map { it.toData() }
+            cleanNodesOnClient.removeAll(cleanNodesOnClient - nodesToUpdate.keys)
+            cleanNodesOnClient.addAll(nodesToUpdate.keys)
             dirtyNodesOnClient.clear()
             return VersionData(
                 repositoryId = null,

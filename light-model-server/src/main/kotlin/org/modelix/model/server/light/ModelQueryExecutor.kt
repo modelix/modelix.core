@@ -20,17 +20,17 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.api.getAncestors
 import org.modelix.model.api.getDescendants
+import org.modelix.model.server.api.ContainsOperator
+import org.modelix.model.server.api.EndsWithOperator
+import org.modelix.model.server.api.EqualsOperator
 import org.modelix.model.server.api.Filter
-import org.modelix.model.server.api.FilterByConcept
+import org.modelix.model.server.api.FilterByConceptId
+import org.modelix.model.server.api.FilterByConceptLongName
 import org.modelix.model.server.api.FilterByProperty
+import org.modelix.model.server.api.IsNotNullOperator
+import org.modelix.model.server.api.IsNullOperator
+import org.modelix.model.server.api.MatchesRegexOperator
 import org.modelix.model.server.api.ModelQuery
-import org.modelix.model.server.api.PropertyContains
-import org.modelix.model.server.api.PropertyEndWith
-import org.modelix.model.server.api.PropertyEquals
-import org.modelix.model.server.api.PropertyIsNotNull
-import org.modelix.model.server.api.PropertyIsNull
-import org.modelix.model.server.api.PropertyMatchesRegex
-import org.modelix.model.server.api.PropertyStartsWith
 import org.modelix.model.server.api.QueryAllChildren
 import org.modelix.model.server.api.QueryAncestors
 import org.modelix.model.server.api.QueryById
@@ -39,6 +39,8 @@ import org.modelix.model.server.api.QueryDescendants
 import org.modelix.model.server.api.QueryParent
 import org.modelix.model.server.api.QueryReference
 import org.modelix.model.server.api.QueryRootNode
+import org.modelix.model.server.api.StartsWithOperator
+import org.modelix.model.server.api.StringOperator
 import org.modelix.model.server.api.Subquery
 
 private class ModelQueryExecutor(val rootNode: INode) {
@@ -90,19 +92,21 @@ private class ModelQueryExecutor(val rootNode: INode) {
 
     private fun applyFilter(node: INode, filter: Filter): Boolean {
         return when (filter) {
-            is FilterByConcept -> node.getConceptReference()?.getUID() == filter.conceptUID
-            is FilterByProperty -> {
-                val value = node.getPropertyValue(filter.role)
-                when (filter) {
-                    is PropertyContains -> value?.contains(filter.substring) ?: false
-                    is PropertyEndWith -> value?.endsWith(filter.suffix) ?: false
-                    is PropertyEquals -> value == filter.value
-                    is PropertyIsNotNull -> value != null
-                    is PropertyIsNull -> value == null
-                    is PropertyMatchesRegex -> value?.matches(Regex(filter.pattern)) ?: false
-                    is PropertyStartsWith -> value?.startsWith(filter.prefix) ?: false
-                }
-            }
+            is FilterByConceptId -> node.getConceptReference()?.getUID() == filter.conceptUID
+            is FilterByProperty -> applyStringOperator(node.getPropertyValue(filter.role), filter.operator)
+            is FilterByConceptLongName -> applyStringOperator(node.concept?.getLongName(), filter.operator)
+        }
+    }
+
+    private fun applyStringOperator(value: String?, operator: StringOperator): Boolean {
+        return when (operator) {
+            is ContainsOperator -> value?.contains(operator.substring) ?: false
+            is EndsWithOperator -> value?.endsWith(operator.suffix) ?: false
+            is EqualsOperator -> value == operator.value
+            is IsNotNullOperator -> value != null
+            is IsNullOperator -> value == null
+            is MatchesRegexOperator -> value?.matches(Regex(operator.pattern)) ?: false
+            is StartsWithOperator -> value?.startsWith(operator.prefix) ?: false
         }
     }
 }

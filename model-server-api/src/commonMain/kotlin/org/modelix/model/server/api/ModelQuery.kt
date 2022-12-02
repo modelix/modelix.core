@@ -97,34 +97,37 @@ data class QueryParent(
 sealed class Filter
 
 @Serializable
+@SerialName("conceptId")
+data class FilterByConceptId(val conceptUID: String?) : Filter()
+@Serializable
+@SerialName("conceptName")
+data class FilterByConceptLongName(val operator: StringOperator) : Filter()
+
+@Serializable
 @SerialName("property")
-sealed class FilterByProperty : Filter() {
-    abstract val role: String
-}
+class FilterByProperty(val role: String, val operator: StringOperator) : Filter()
+@Serializable
+sealed class StringOperator
 
 @Serializable
-@SerialName("concept")
-data class FilterByConcept(val conceptUID: String?) : Filter()
-
+@SerialName("equals")
+data class EqualsOperator(val value: String) : StringOperator()
 @Serializable
-@SerialName("property-equals")
-data class PropertyEquals(override val role: String, val value: String) : FilterByProperty()
+@SerialName("startsWith")
+data class StartsWithOperator(val prefix: String) : StringOperator()
 @Serializable
-@SerialName("property-startsWith")
-data class PropertyStartsWith(override val role: String, val prefix: String) : FilterByProperty()
+@SerialName("endsWith")
+data class EndsWithOperator(val suffix: String) : StringOperator()
 @Serializable
-@SerialName("property-endsWith")
-data class PropertyEndWith(override val role: String, val suffix: String) : FilterByProperty()
+@SerialName("contains")
+data class ContainsOperator(val substring: String) : StringOperator()
 @Serializable
-@SerialName("property-contains")
-data class PropertyContains(override val role: String, val substring: String) : FilterByProperty()
+@SerialName("regex")
+data class MatchesRegexOperator(val pattern: String) : StringOperator()
 @Serializable
-@SerialName("property-regex")
-data class PropertyMatchesRegex(override val role: String, val pattern: String) : FilterByProperty()
+@SerialName("isNotNull")
+object IsNotNullOperator : StringOperator()
 @Serializable
-@SerialName("property-isNotNull")
-data class PropertyIsNotNull(override val role: String) : FilterByProperty()
-@Serializable
-@SerialName("property-isNull")
-data class PropertyIsNull(override val role: String) : FilterByProperty()
+@SerialName("isNull")
+object IsNullOperator : StringOperator()
 

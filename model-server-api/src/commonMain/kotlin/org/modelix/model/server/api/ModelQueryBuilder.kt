@@ -58,20 +58,21 @@ abstract class QueryOwnerBuilder {
     fun resolve(nodeId: NodeId, body: ByIdBuilder.() -> Unit = {}) {
         addSubquery(ByIdBuilder(nodeId).also(body).build())
     }
-    fun whereProperty(role: String) = PropertyFilterBuilder(role)
+    fun whereProperty(role: String) = StringFilterBuilder { FilterByProperty(role, it) }
+    fun whereConceptName() = StringFilterBuilder { FilterByConceptLongName(it) }
 
     fun whereConcept(conceptUID: String?) {
-        addFilter(FilterByConcept(conceptUID))
+        addFilter(FilterByConceptId(conceptUID))
     }
 
-    inner class PropertyFilterBuilder(val role: String) {
-        fun startsWith(prefix: String) { addFilter(PropertyStartsWith(role, prefix)) }
-        fun endsWith(suffix: String) { addFilter(PropertyEndWith(role, suffix)) }
-        fun contains(substring: String) { addFilter(PropertyContains(role, substring)) }
-        fun equalTo(value: String) { addFilter(PropertyEquals(role, value)) }
-        fun matches(pattern: Regex) { addFilter(PropertyMatchesRegex(role, pattern.pattern)) }
-        fun isNotNull() { addFilter(PropertyIsNotNull(role)) }
-        fun isNull() { addFilter(PropertyIsNull(role)) }
+    inner class StringFilterBuilder(val filterBuilder: (StringOperator) -> Filter) {
+        fun startsWith(prefix: String) { addFilter(filterBuilder(StartsWithOperator(prefix))) }
+        fun endsWith(suffix: String) { addFilter(filterBuilder(EndsWithOperator(suffix))) }
+        fun contains(substring: String) { addFilter(filterBuilder(ContainsOperator(substring))) }
+        fun equalTo(value: String) { addFilter(filterBuilder(EqualsOperator(value))) }
+        fun matches(pattern: Regex) { addFilter(filterBuilder(MatchesRegexOperator(pattern.pattern))) }
+        fun isNotNull() { addFilter(filterBuilder(IsNotNullOperator)) }
+        fun isNull() { addFilter(filterBuilder(IsNullOperator)) }
     }
 }
 

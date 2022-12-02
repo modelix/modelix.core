@@ -215,6 +215,7 @@ actual open class ReplicatedRepository actual constructor(
             LOG.error(ex) { "" }
         }
         convergenceWatchdog.cancel("ReplicatedRepository disposed")
+        coroutineScope.cancel("ReplicatedRepository disposed")
     }
 
     fun checkDisposed() {
@@ -247,8 +248,8 @@ actual open class ReplicatedRepository actual constructor(
             initialTree.setValue(CLTree(initialVersion.treeHash?.getValue(store), store))
         }
 
-        // prefetch to avoid HTTP request in command listener 
-        SharedExecutors.FIXED.execute { initialTree.value.getChildren(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE) }
+        // prefetch to avoid HTTP request in command listener
+        coroutineScope.launch { initialTree.value.getChildren(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE) }
         localVersion = initialVersion
         remoteVersion = initialVersion
         localBranch = PBranch(initialTree.value, client.idGenerator)
@@ -319,7 +320,7 @@ actual open class ReplicatedRepository actual constructor(
                 if (isEditing.get()) {
                     return
                 }
-                SharedExecutors.FIXED.execute {
+                coroutineScope.launch {
                     if (isEditing.get()) {
                         return@execute
                     }

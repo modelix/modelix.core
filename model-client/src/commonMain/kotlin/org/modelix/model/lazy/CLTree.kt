@@ -16,6 +16,7 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.api.*
+import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.lazy.COWArrays.add
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
@@ -118,12 +119,7 @@ class CLTree : ITree, IBulkTree {
         if (containsNode(childId)) {
             throw DuplicateNodeId("Node ID already exists: ${childId.toString(16)}")
         }
-        val newTree = createNewNode(childId, concept).addChild(parentId, role, index, childId)
-
-        // TODO remove
-        newTree.getConcept(childId)
-
-        return newTree
+        return createNewNode(childId, concept).addChild(parentId, role, index, childId)
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?): ITree {
@@ -353,7 +349,7 @@ class CLTree : ITree, IBulkTree {
         return when {
             targetRef == null -> null
             targetRef.isLocal -> PNodeReference(targetRef.elementId, this.getId())
-            targetRef is CPNodeRef.ForeignRef -> INodeReferenceSerializer.deserialize(targetRef.serializedRef)
+            targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
             else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
         }
     }
@@ -422,6 +418,9 @@ class CLTree : ITree, IBulkTree {
                     val newElement = createElement(newValue)
                     if (oldElement!!::class != newElement!!::class) {
                         throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
+                    }
+                    if (oldElement.parentId != newElement.parentId || oldElement.roleInParent != newElement.roleInParent) {
+                        visitor.containmentChanged(key)
                     }
                     oldElement.getData().propertyRoles.asSequence()
                         .plus(newElement.getData().propertyRoles.asSequence())

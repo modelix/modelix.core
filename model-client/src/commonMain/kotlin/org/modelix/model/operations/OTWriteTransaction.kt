@@ -80,6 +80,10 @@ class OTWriteTransaction(
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, concept: IConcept?): Long {
+        return addNewChild(parentId, role, index, concept?.getReference())
+    }
+
+    override fun addNewChild(parentId: Long, role: String?, index: Int, concept: IConceptReference?): Long {
         return try {
             val childId = idGenerator.generate()
             addNewChild(parentId, role, index, childId, concept)
@@ -87,10 +91,6 @@ class OTWriteTransaction(
         } catch (dni: DuplicateNodeId) {
             addNewChild(parentId, role, index, concept)
         }
-    }
-
-    override fun addNewChild(parentId: Long, role: String?, index: Int, concept: IConceptReference?): Long {
-        TODO("Not yet implemented")
     }
 
     override fun containsNode(nodeId: Long): Boolean {

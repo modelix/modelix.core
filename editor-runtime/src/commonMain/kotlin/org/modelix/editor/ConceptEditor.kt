@@ -12,7 +12,7 @@ class ConceptEditor<NodeT : ITypedNode, ConceptT : ITypedConcept>(
         return templateBuilder(subConcept)
     }
 
-    fun apply(editor: EditorEngine, node: NodeT): Cell {
+    fun apply(editor: EditorEngine, node: NodeT): CellData {
         return apply(node._concept._concept as GeneratedConcept<NodeT, ConceptT>).apply(editor, node)
     }
 }

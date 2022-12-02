@@ -49,7 +49,6 @@ class JsonModelServer(val client: LocalModelClient) {
 
     fun init(application: Application) {
         application.apply {
-            install(WebSockets)
             routing {
                 requiresPermission("model-json-api", "read") {
                     route("/json") {
@@ -132,8 +131,8 @@ class JsonModelServer(val client: LocalModelClient) {
             var lastVersion: CLVersion? = null
             val deltaMutex = Mutex()
             val sendDelta: suspend (CLVersion)->Unit = { newVersion ->
-                if (newVersion.hash != lastVersion?.hash) {
-                    deltaMutex.withLock {
+                deltaMutex.withLock {
+                    if (newVersion.hash != lastVersion?.hash) {
                         send(versionAsJson(newVersion, lastVersion).toString())
                         lastVersion = newVersion
                     }
@@ -379,4 +378,4 @@ class JsonModelServer(val client: LocalModelClient) {
     }
 }
 
-private class ContainmentData(val parent: Long, val role: String?, val index: Int)
+class ContainmentData(val parent: Long, val role: String?, val index: Int)

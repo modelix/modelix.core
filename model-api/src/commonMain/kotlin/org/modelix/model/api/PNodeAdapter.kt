@@ -106,14 +106,18 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode {
 
     override fun getReferenceTarget(role: String): INode? {
         notifyAccess()
-        val targetRef = branch.transaction.getReferenceTarget(nodeId, role)
-        if (targetRef == null) return null
+        val targetRef = getReferenceTargetRef(role) ?: return null
         if (targetRef is PNodeReference) {
             return targetRef.resolveNode(PArea(branch))
         }
         val area = ContextArea.CONTEXT_VALUE.getValue()
             ?: throw RuntimeException(IArea::class.simpleName + " not available")
         return targetRef.resolveNode(area)
+    }
+
+    override fun getReferenceTargetRef(role: String): INodeReference? {
+        notifyAccess()
+        return branch.transaction.getReferenceTarget(nodeId, role)
     }
 
     override val roleInParent: String?
@@ -140,7 +144,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode {
         branch.writeTransaction.setReferenceTarget(nodeId, role, target?.reference)
     }
 
-    fun setReferenceTarget(role: String, target: INodeReference?) {
+    override fun setReferenceTarget(role: String, target: INodeReference?) {
         branch.writeTransaction.setReferenceTarget(nodeId, role, target)
     }
 

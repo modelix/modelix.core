@@ -1,11 +1,12 @@
 
 plugins {
-    kotlin("multiplatform") version "1.7.10" apply false
-    kotlin("plugin.serialization") version "1.7.10" apply false
+    kotlin("multiplatform") version "1.7.21" apply false
+    kotlin("plugin.serialization") version "1.7.21" apply false
     `maven-publish`
     id("com.palantir.git-version") version "0.13.0"
     id("org.jlleitschuh.gradle.ktlint") version "10.3.0" apply false
     id("com.diffplug.gradle.spotless") version "4.5.1" apply false
+    id("com.dorongold.task-tree") version "2.1.0"
 }
 
 group = "org.modelix"
@@ -52,4 +53,8 @@ subprojects {
             }
         }
     }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask> {
+    dependsOn(":ts-model-api:npm_run_build")
 }

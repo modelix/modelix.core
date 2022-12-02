@@ -15,11 +15,11 @@
 
 package org.modelix.model.api
 
-fun INode.getDescendants(includeSelf: Boolean): Iterable<INode?> {
+fun INode.getDescendants(includeSelf: Boolean): Sequence<INode> {
     return if (includeSelf) {
-        (sequenceOf(this) + this.getDescendants(false)).asIterable()
+        (sequenceOf(this) + this.getDescendants(false))
     } else {
-        this.allChildren.flatMap { it.getDescendants(true) }
+        this.allChildren.asSequence().flatMap { it.getDescendants(true) }
     }
 }
 
@@ -30,6 +30,10 @@ fun INode?.getAncestor(concept: IConcept?, includeSelf: Boolean): INode? {
     return if (includeSelf && this.concept!!.isSubConceptOf(concept)) {
         this
     } else this.parent.getAncestor(concept, true)
+}
+
+fun INode.getAncestors(includeSelf: Boolean = false): Sequence<INode> {
+    return generateSequence(if (includeSelf) this else parent) { it.parent }
 }
 
 fun deepUnwrapNode(node: INode): INode {

@@ -9,7 +9,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun ifEmpty(link: IChildLink, body: ()->Unit) {
         withNode {
-            if (!node._node.getChildren(link).iterator().hasNext()) {
+            if (!node.unwrap().getChildren(link).iterator().hasNext()) {
                 body()
             }
         }
@@ -17,14 +17,14 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun ifNotEmpty(link: IChildLink, body: ()->Unit) {
         withNode {
-            if (node._node.getChildren(link).iterator().hasNext()) {
+            if (node.unwrap().getChildren(link).iterator().hasNext()) {
                 body()
             }
         }
     }
 
     fun withNode(body: WithNodeContext.()->Unit) {
-        template.withNode += { node, _ -> body(WithNodeContext(node)) }
+        template.withNode += { node -> body(WithNodeContext(node)) }
     }
 
     fun String.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
@@ -232,7 +232,7 @@ class ReferenceCellTemplateBuilder<SourceNodeT : ITypedNode, SourceConceptT : IT
 
     fun withTargetNode(body: WithTargetNodeContext.()->Unit) {
         withNode {
-            val targetNode: ITypedNode? = node._node.getReferenceTarget(link)?.let { it.typed() }
+            val targetNode: ITypedNode? = node.unwrap().getReferenceTarget(link)?.let { it.typed() }
             if (targetNode != null) {
                 body(WithTargetNodeContext(node, targetNode as TargetNodeT))
             }

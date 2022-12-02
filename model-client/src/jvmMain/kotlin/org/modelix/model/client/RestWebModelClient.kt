@@ -187,7 +187,7 @@ class RestWebModelClient @JvmOverloads constructor(
                         response?.let { println(it.bodyAsText()) }
                     }
                 } catch (e: Exception) {
-                    LOG.error("", e)
+                    LOG.debug("", e)
                 }
             }
         }

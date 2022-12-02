@@ -3,7 +3,10 @@ package org.modelix.metamodel
 import org.modelix.model.api.*
 import kotlin.reflect.KClass
 
-abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept>(private val is_abstract: Boolean) : IConcept {
+abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept>(
+    private val name: String,
+    private val is_abstract: Boolean
+) : IConcept {
     abstract val _typed: WrapperT
     abstract val instanceClass: KClass<InstanceT>
     private val propertiesMap: MutableMap<String, GeneratedProperty> = LinkedHashMap()
@@ -60,7 +63,7 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
     }
 
     override fun getShortName(): String {
-        return this::class.simpleName!!
+        return name
     }
 
     override fun getLongName(): String {

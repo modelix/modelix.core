@@ -20,11 +20,19 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
 ktlint {
     disabledRules.add("no-wildcard-imports")
     outputToConsole.set(true)
+    this.filter {
+        this.exclude {
+            it.file.toPath().toAbsolutePath().startsWith(buildDir.toPath().toAbsolutePath())
+        }
+    }
 }
 
 tasks.named("check") {
     dependsOn("ktlintCheck")
 }
+
+
+val kotlinLoggingVersion: String by rootProject
 
 kotlin {
     jvm()
@@ -41,7 +49,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation("io.github.microutils:kotlin-logging:2.1.23")
+                implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
             }
         }
         val commonTest by getting {
@@ -64,6 +72,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
+                api(npm("@modelix/ts-model-api", rootDir.resolve("ts-model-api"), generateExternals = true))
             }
         }
         val jsTest by getting {

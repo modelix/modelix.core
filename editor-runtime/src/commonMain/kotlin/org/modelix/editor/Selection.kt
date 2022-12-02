@@ -1,7 +1,9 @@
 package org.modelix.editor
 
-import kotlinx.html.TagConsumer
+abstract class Selection : IProducesHtml {
+    abstract fun processKeyDown(event: JSKeyboardEvent): Boolean
+}
 
-abstract class Selection {
-    abstract fun toHtml(tagConsumer: TagConsumer<*>)
+abstract class SelectionView<E : Selection>(val selection: E) {
+    abstract fun updateBounds()
 }

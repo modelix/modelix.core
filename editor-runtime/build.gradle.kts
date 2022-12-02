@@ -8,10 +8,11 @@ val kotlinCoroutinesVersion: String by rootProject
 val ktorVersion: String by rootProject
 val kotlinLoggingVersion: String by rootProject
 val kotlinxHtmlVersion: String by rootProject
+val modelixIncrementalVersion: String by rootProject
 
 kotlin {
     jvm()
-    js(BOTH) {
+    js(IR) {
         browser {}
         nodejs {
             testTask {
@@ -30,6 +31,7 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
+                api("org.modelix:incremental:$modelixIncrementalVersion")
                 api("org.jetbrains.kotlinx:kotlinx-html:$kotlinxHtmlVersion")
             }
         }
@@ -58,6 +60,8 @@ kotlin {
         val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-js"))
+                implementation(npm("jsdom-global", "3.0.2"))
+                implementation(npm("jsdom", "20.0.2"))
             }
         }
     }

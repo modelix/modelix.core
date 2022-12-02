@@ -22,7 +22,7 @@ import org.modelix.model.persistent.SerializationUtil
 
 private val hexLongPattern = Regex("[a-fA-Z0-9]+")
 
-@Deprecated("It only exists to support existing databases, but it has no effect when writing new data. Storing meta-models in the same repository as models is not supported anymore.")
+@Deprecated("Storing meta-models next to the model is not supported anymore for performance reasons.")
 class MetaModelBranch(val branch: IBranch) : IBranch by branch {
     var disabled: Boolean = true
     private val metaModelSynchronizer = MetaModelSynchronizer(branch)

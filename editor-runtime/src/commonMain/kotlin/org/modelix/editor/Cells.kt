@@ -1,13 +1,99 @@
 package org.modelix.editor
 
-open class Cell {
-    var parent: Cell? = null
-    private val children: MutableList<Cell> = ArrayList()
+import org.modelix.metamodel.ITypedNode
+
+interface IFreezable {
+    fun freeze()
+    fun checkNotFrozen()
+}
+
+open class Freezable : IFreezable {
+    private var frozen: Boolean = false
+    override fun freeze() {
+        frozen = true
+    }
+
+    fun isFrozen() = frozen
+
+    override fun checkNotFrozen() {
+        if (frozen) {
+            throw IllegalStateException("Cell cannot be modified anymore")
+        }
+    }
+}
+
+interface ICellHolder {
+    fun getCell(): Cell
+    fun tryGetCell(): Cell?
+}
+
+class CellHolder(private val cell: Cell) : ICellHolder {
+    override fun getCell(): Cell {
+        return cell
+    }
+
+    override fun tryGetCell(): Cell {
+        return cell
+    }
+}
+
+interface ILocalOrChildNodeCell {
+
+}
+
+open class CellData : Freezable(), ILocalOrChildNodeCell {
+    val children: MutableList<ILocalOrChildNodeCell> = ArrayList()
     val actions: MutableList<ICellAction> = ArrayList()
     val properties = CellProperties()
 
+    fun addChild(child: ILocalOrChildNodeCell) {
+        children.add(child)
+    }
+
+    open fun layout(buffer: TextLayouter, cell: Cell) {
+        val body: ()->Unit = {
+            if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
+            if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
+            cell.getChildren().forEach { buffer.append(it.layout) }
+            if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
+        }
+        if (properties[CommonCellProperties.indentChildren]) {
+            buffer.withIndent(body)
+        } else {
+            body()
+        }
+    }
+
+    open fun cellToString(cell: Cell) = "[${cell.getChildren().joinToString(" ")}]"
+}
+
+class ChildNodeCellReference(val childNode: ITypedNode) : ILocalOrChildNodeCell {
+
+}
+
+class Cell(val data: CellData = CellData()) : Freezable() {
+    private var editorComponentValue: EditorComponent? = null
+    var parent: Cell? = null
+    private val children: MutableList<Cell> = ArrayList()
+    val layout: LayoutedText by lazy(LazyThreadSafetyMode.NONE) {
+        TextLayouter().also { data.layout(it, this) }.done()
+    }
+    var editorComponent: EditorComponent?
+        get() = editorComponentValue ?: parent?.editorComponent
+        set(value) {
+            if (value != null && parent != null) throw IllegalStateException("Only allowed on the root cell")
+            editorComponentValue = value
+        }
+
+    override fun freeze() {
+        if (isFrozen()) return
+        super.freeze()
+        data.freeze()
+        children.forEach { it.freeze() }
+    }
+
     override fun toString(): String {
-        return children.toString()
+        return data.cellToString(this)
     }
 
     fun addChild(child: Cell) {
@@ -24,30 +110,18 @@ open class Cell {
 
     fun getChildren(): List<Cell> = children
 
-    open fun layout(buffer: LayoutedCells) {
-        val body: ()->Unit = {
-            if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
-            if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
-            children.forEach { it.layout(buffer) }
-            if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
-        }
-        if (properties[CommonCellProperties.indentChildren]) {
-            buffer.withIndent(body)
-        } else {
-            body()
-        }
-    }
-
     fun <T> getProperty(key: CellPropertyKey<T>): T {
-        return if (properties.isSet(key)) {
-            properties.get(key)
+        return if (data.properties.isSet(key)) {
+            data.properties.get(key)
         } else {
             parent.let { if (it != null) it.getProperty(key) else key.defaultValue }
         }
     }
+
+    fun rootCell(): Cell = parent?.rootCell() ?: this
 }
 
-class CellProperties {
+class CellProperties : Freezable() {
     private val properties: MutableMap<CellPropertyKey<*>, Any?> = HashMap()
     operator fun <T> get(key: CellPropertyKey<T>): T {
         return if (properties.containsKey(key)) properties[key] as T else key.defaultValue
@@ -56,6 +130,7 @@ class CellProperties {
     fun isSet(key: CellPropertyKey<*>): Boolean = properties.containsKey(key)
 
     operator fun <T> set(key: CellPropertyKey<T>, value: T) {
+        checkNotFrozen()
         properties[key] = value
     }
 
@@ -64,11 +139,14 @@ class CellProperties {
     }
 
     fun addAll(from: CellProperties) {
+        checkNotFrozen()
         properties += from.properties
     }
 }
 
-class CellPropertyKey<E>(val name: String, val defaultValue: E)
+class CellPropertyKey<E>(val name: String, val defaultValue: E) {
+    override fun toString() = name
+}
 
 enum class ECellLayout {
     VERTICAL,
@@ -88,21 +166,24 @@ interface ICellAction {
 
 }
 
-class TextCell(val text: String, val placeholderText: String): Cell() {
-    override fun toString(): String = getVisibleText()
-
-    fun getVisibleText(): String {
-        return if (getChildren().isEmpty()) {
+class TextCellData(val text: String, val placeholderText: String = "") : CellData() {
+    fun getVisibleText(cell: Cell): String {
+        return if (cell.getChildren().isEmpty()) {
             text.ifEmpty { placeholderText }
         } else {
-            """$text<${getChildren()}>"""
+            """$text<${cell.getChildren()}>"""
         }
     }
 
-    override fun layout(buffer: LayoutedCells) {
+    override fun layout(buffer: TextLayouter, cell: Cell) {
         if (properties[CommonCellProperties.onNewLine]) buffer.onNewLine()
         if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
-        buffer.append(LayoutableCell(this))
+        buffer.append(LayoutableCell(cell))
         if (properties[CommonCellProperties.noSpace]) buffer.noSpace()
     }
+
+    override fun cellToString(cell: Cell) = getVisibleText(cell)
 }
+
+fun Cell.getVisibleText(): String? = (data as? TextCellData)?.getVisibleText(this)
+fun Cell.getSelectableText(): String? = (data as? TextCellData)?.text

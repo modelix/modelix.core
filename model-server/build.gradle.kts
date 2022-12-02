@@ -32,6 +32,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
 
     implementation(project(":model-api"))
+    implementation(project(":model-server-api"))
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))
     implementation(project(":authorization"))
     implementation("org.apache.commons:commons-lang3:3.10")
@@ -91,7 +92,7 @@ val fatJarArtifact = artifacts.add("archives", fatJarFile) {
     builtBy("shadowJar")
 }
 
-task("cucumber") {
+val cucumber = task("cucumber") {
     dependsOn("shadowJar", "compileTestJava")
     doLast {
         javaexec {
@@ -105,6 +106,9 @@ task("cucumber") {
     }
 }
 
+tasks.named("test") {
+    dependsOn("cucumber")
+}
 
 task("copyLibs", Copy::class) {
     into("$buildDir/libs")

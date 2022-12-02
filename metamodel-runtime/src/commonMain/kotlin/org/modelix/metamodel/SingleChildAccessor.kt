@@ -2,10 +2,8 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
-import kotlin.js.JsExport
 import kotlin.reflect.KClass
 
-@JsExport
 class SingleChildAccessor<ChildT : ITypedNode>(
     parent: INode,
     role: String,
@@ -19,7 +17,7 @@ class SingleChildAccessor<ChildT : ITypedNode>(
         require(concept == null || concept.isSubConceptOf(childConcept)) {
             "$concept is not a sub concept of $childConcept"
         }
-        get()?.let { parent.removeChild(it._node) }
+        get()?.let { parent.removeChild(it.unwrap()) }
         return addNew(concept = concept)
     }
 }

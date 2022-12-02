@@ -1,12 +1,10 @@
 package org.modelix.metamodel
 
 import org.modelix.model.api.INode
-import kotlin.js.JsExport
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.cast
 
-@JsExport
 class ReferenceAccessor<SourceT, TargetT : ITypedNode>(
     val node: INode,
     val role: String,
@@ -17,6 +15,6 @@ class ReferenceAccessor<SourceT, TargetT : ITypedNode>(
     }
 
     operator fun setValue(thisRef: SourceT, property: KProperty<*>, target: TargetT?) {
-        node.setReferenceTarget(role, target?._node)
+        node.setReferenceTarget(role, target?.unwrap())
     }
 }

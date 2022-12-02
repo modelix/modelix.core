@@ -2,11 +2,9 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
-import kotlin.js.JsExport
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
-@JsExport
 abstract class ChildAccessor<ChildT : ITypedNode>(
     protected val parent: INode,
     protected val role: String,
@@ -14,6 +12,10 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
     protected val childType: KClass<ChildT>,
 ): Iterable<ChildT> {
     fun isEmpty(): Boolean = iterator().hasNext()
+
+    fun getSize(): Int {
+        return this.count()
+    }
 
     override fun iterator(): Iterator<ChildT> {
         return parent.getChildren(role).map {
@@ -29,11 +31,11 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         return childType.cast(parent.addNewChild(role, index, concept).typed())
     }
 
-    fun removeRaw(child: INode) {
+    fun removeUnwrapped(child: INode) {
         parent.removeChild(child)
     }
 
     fun remove(child: TypedNodeImpl) {
-        removeRaw(child._node)
+        removeUnwrapped(child.unwrap())
     }
 }

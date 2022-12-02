@@ -45,3 +45,5 @@ interface IConceptReference {
     @Deprecated("use getUID()")
     fun serialize(): String
 }
+
+fun IConceptReference.resolve(): IConcept = ILanguageRepository.resolveConcept(this)

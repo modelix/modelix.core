@@ -9,9 +9,7 @@ import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.MapBaseStore
-import kotlin.js.JsExport
 
-@JsExport
 object ModelFacade {
 
     fun newLocalTree(): ITree {

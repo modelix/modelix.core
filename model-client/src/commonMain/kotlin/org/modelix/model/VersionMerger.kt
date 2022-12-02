@@ -24,22 +24,13 @@ import org.modelix.model.persistent.CPVersion
 
 class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private val idGenerator: IIdGenerator) {
     private val logger = mu.KotlinLogging.logger {}
-    private val mergeLock = Any()
     fun mergeChange(lastMergedVersion: CLVersion, newVersion: CLVersion): CLVersion {
-        var lastMergedVersion = lastMergedVersion
-        runSynchronized(mergeLock) {
-            return if (lastMergedVersion == null) {
-                lastMergedVersion = newVersion
-                newVersion
-            } else {
-                if (newVersion.hash == lastMergedVersion.hash) {
-                    return lastMergedVersion
-                }
-                val merged = mergeHistory(lastMergedVersion, newVersion)
-                checkRepositoryIds(lastMergedVersion, newVersion)
-                merged
-            }
+        if (newVersion.hash == lastMergedVersion.hash) {
+            return lastMergedVersion
         }
+        val merged = mergeHistory(lastMergedVersion, newVersion)
+        checkRepositoryIds(lastMergedVersion, newVersion)
+        return merged
     }
 
     fun checkRepositoryIds(v1: CLVersion, v2: CLVersion) {

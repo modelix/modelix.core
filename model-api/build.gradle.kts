@@ -31,7 +31,6 @@ tasks.named("check") {
     dependsOn("ktlintCheck")
 }
 
-
 val kotlinLoggingVersion: String by rootProject
 
 kotlin {

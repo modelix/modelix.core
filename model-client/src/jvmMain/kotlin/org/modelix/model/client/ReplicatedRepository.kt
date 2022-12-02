@@ -321,10 +321,9 @@ actual open class ReplicatedRepository actual constructor(
                     return
                 }
                 coroutineScope.launch {
-                    if (isEditing.get()) {
-                        return@execute
+                    if (!isEditing.get()) {
+                        createAndMergeLocalVersion()
                     }
-                    createAndMergeLocalVersion()
                 }
             }
         })

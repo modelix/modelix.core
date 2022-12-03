@@ -26,6 +26,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     private val unappliedVersions: MutableList<VersionData> = ArrayList()
     private var exceptions: MutableList<ExceptionData> = ArrayList()
     private var currentAccessType: AccessType = AccessType.NONE
+    private var unappliedQuery: ModelQuery? = null
 
     init {
         connection.connect { message ->
@@ -33,6 +34,16 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
                 messageReceived(message)
             } catch (ex: Exception) {
                 LOG.error(ex) { "Failed to process message: $message" }
+            }
+        }
+    }
+
+    fun changeQuery(query: ModelQuery) {
+        synchronized {
+            if (initialized) {
+                connection.sendMessage(MessageFromClient(query = query))
+            } else {
+                unappliedQuery = query
             }
         }
     }
@@ -118,6 +129,12 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
     }
 
+    fun getNodeIfLoaded(nodeId: NodeId): INode? {
+        return synchronized {
+            if (nodes.containsKey(nodeId)) getNodeAdapter(nodeId) else null
+        }
+    }
+
     fun isInitialized(): Boolean = synchronized { initialized }
 
     private fun fullConsistencyCheck() {
@@ -195,6 +212,10 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
                 val merged = unappliedVersions.reduce { old, new -> new.merge(old) }
                 applyVersion(merged)
                 unappliedVersions.clear()
+            }
+            if (unappliedQuery != null) {
+                connection.sendMessage(MessageFromClient(query = unappliedQuery))
+                unappliedQuery = null
             }
             fullConsistencyCheck()
         }

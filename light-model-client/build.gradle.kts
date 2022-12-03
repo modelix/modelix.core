@@ -35,6 +35,7 @@ kotlin {
                 implementation(project(":model-api"))
                 implementation(project(":metamodel-runtime"))
                 implementation(project(":model-server-api"))
+                implementation("io.ktor:ktor-client-websockets:$ktorVersion")
                 implementation(kotlin("stdlib-common"))
                 implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
@@ -78,6 +79,7 @@ kotlin {
         }
         val jsMain by getting {
             dependencies {
+                implementation("io.ktor:ktor-client-js:$ktorVersion")
             }
         }
         val jsTest by getting {

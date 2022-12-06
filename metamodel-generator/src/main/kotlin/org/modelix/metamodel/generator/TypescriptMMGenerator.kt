@@ -178,6 +178,16 @@ class TypescriptMMGenerator(val outputDir: Path) {
         // TODO extend first super concept do reduce the number of generated members
         return """
             
+            export class ${concept.concept.conceptWrapperImplName()} extends GeneratedConcept {
+              constructor(uid: string) {
+                super(uid);
+              }
+              getDirectSuperConcepts(): Array<IConceptJS> {
+                return [${concept.directSuperConcepts().joinToString(",") { it.concept.conceptWrapperInterfaceName() }}];
+              }
+            }
+            export const ${concept.concept.conceptWrapperInterfaceName()} = new ${concept.concept.conceptWrapperImplName()}("${concept.uid}")
+            
             export interface ${concept.concept.nodeWrapperInterfaceName()} extends $interfaceList {
                 ${features}
             }

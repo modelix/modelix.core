@@ -1,8 +1,10 @@
 
 export * from "./ChildrenAccessor"
+export * from "./GeneratedConcept"
 export * from "./GeneratedLanguage"
+export * from "./IConceptJS"
 export * from "./ILanguage"
 export * from "./INodeJS"
+export * from "./LanguageRegistry"
 export * from "./TSModelClient"
 export * from "./TypedNode"
-export * from "./LanguageRegistry"

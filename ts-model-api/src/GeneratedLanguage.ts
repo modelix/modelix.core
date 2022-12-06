@@ -2,10 +2,12 @@ import type {ILanguage} from "./ILanguage";
 import {LanguageRegistry} from "./LanguageRegistry";
 import type {INodeJS} from "./INodeJS";
 import type {TypedNode} from "./TypedNode";
+import type {GeneratedConcept} from "./GeneratedConcept";
 
 export abstract class GeneratedLanguage implements ILanguage {
 
   public nodeWrappers: Map<string, (node: INodeJS) => TypedNode> = new Map()
+  public concepts: Map<string, GeneratedConcept> = new Map()
 
   constructor(readonly name: string) {}
 

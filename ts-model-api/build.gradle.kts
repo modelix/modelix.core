@@ -20,6 +20,10 @@ tasks.named("npm_run_build") {
   outputs.dir("dist")
 }
 
+tasks.named("assemble") {
+  dependsOn("npm_run_build")
+}
+
 val updateVersion = tasks.register<NpmTask>("updateVersion") {
   args.set(listOf("version", "$version"))
 }

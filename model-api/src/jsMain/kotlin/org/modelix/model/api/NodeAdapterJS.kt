@@ -3,6 +3,7 @@ package org.modelix.model.api
 import IConceptJS
 import INodeJS
 import INodeReferenceJS
+import LanguageRegistry
 
 @ExperimentalJsExport
 @JsExport
@@ -35,7 +36,7 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         require(node is INode) { "Not an INode: $node" }
     }
     override fun getConcept(): IConceptJS? {
-        TODO("Not yet implemented")
+        LanguageRegistry.INSTANCE.res
     }
 
     override fun getConceptUID(): String? {
@@ -59,11 +60,11 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun moveChild(role: String?, index: Number, child: INodeJS) {
-        TODO("Not yet implemented")
+        node.moveChild(role, index.toInt(), (child as NodeAdapterJS).node)
     }
 
     override fun addNewChild(role: String?, index: Number, concept: IConceptJS?): INodeJS {
-        TODO("Not yet implemented")
+        node.addNewChild(role, index.toInt(), concept)
     }
 
     override fun removeChild(child: INodeJS) {

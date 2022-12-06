@@ -33,10 +33,11 @@ interface INodeJS_ : INodeJS
 @JsExport // this is only required to prevent the compiler from renaming the methods in the generated JS
 class NodeAdapterJS(val node: INode) : INodeJS_ {
     init {
+        // This is called from JS, so this check is not redundant.
         require(node is INode) { "Not an INode: $node" }
     }
     override fun getConcept(): IConceptJS? {
-        LanguageRegistry.INSTANCE.res
+        return getConceptUID()?.let { LanguageRegistry.INSTANCE.resolveConcept(it) }
     }
 
     override fun getConceptUID(): String? {
@@ -44,7 +45,7 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun getReference(): INodeReferenceJS {
-        TODO("Not yet implemented")
+        return node.reference.serialize()
     }
 
     override fun getRoleInParent(): String? = node.roleInParent
@@ -64,7 +65,8 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun addNewChild(role: String?, index: Number, concept: IConceptJS?): INodeJS {
-        node.addNewChild(role, index.toInt(), concept)
+        val conceptRef = concept?.getUID()?.let { ConceptReference(it) }
+        return NodeAdapterJS(node.addNewChild(role, index.toInt(), conceptRef))
     }
 
     override fun removeChild(child: INodeJS) {
@@ -76,19 +78,20 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun getReferenceTargetNode(role: String): INodeJS? {
-        TODO("Not yet implemented")
+        return node.getReferenceTarget(role)?.let { NodeAdapterJS(it) }
     }
 
     override fun getReferenceTargetRef(role: String): INodeReferenceJS? {
-        TODO("Not yet implemented")
+        return node.getReferenceTargetRef(role)?.serialize()
     }
 
     override fun setReferenceTargetNode(role: String, target: INodeJS?) {
-        TODO("Not yet implemented")
+        val unwrappedTarget = if (target == null) null else (target as NodeAdapterJS).node
+        node.setReferenceTarget(role, unwrappedTarget)
     }
 
     override fun setReferenceTargetRef(role: String, target: INodeReferenceJS?) {
-        TODO("Not yet implemented")
+        node.setReferenceTarget(role, target?.let { INodeReferenceSerializer.deserialize(it as String) })
     }
 
     override fun getPropertyRoles(): Array<String> {

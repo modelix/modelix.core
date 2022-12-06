@@ -1,6 +1,7 @@
 import type {ITypedNode, TypedNode} from "./TypedNode";
 import type {INodeJS} from "./INodeJS";
 import {LanguageRegistry} from "./LanguageRegistry";
+import type {IConceptJS} from "./IConceptJS";
 
 export abstract class ChildrenAccessor<ChildT extends ITypedNode> implements Iterable<ChildT> {
   constructor(public parentNode: INodeJS, public role: string | undefined) {
@@ -22,6 +23,14 @@ export abstract class ChildrenAccessor<ChildT extends ITypedNode> implements Ite
 export class ChildListAccessor<ChildT extends ITypedNode> extends ChildrenAccessor<ChildT> {
   constructor(parentNode: INodeJS, role: string | undefined) {
     super(parentNode, role);
+  }
+
+  public insertNew(index: number, subconcept: IConceptJS | undefined): ChildT {
+    return LanguageRegistry.INSTANCE.wrapNode(this.parentNode.addNewChild(this.role, index, subconcept)) as ChildT
+  }
+
+  public addNew(subconcept: IConceptJS | undefined): ChildT {
+    return this.insertNew(-1, subconcept)
   }
 }
 

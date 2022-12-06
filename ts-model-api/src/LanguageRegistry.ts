@@ -53,8 +53,8 @@ export class LanguageRegistry {
     if (this.concepts === undefined) {
       this.concepts = new Map()
       for (let language of this.getAll()) {
-        for (let entry of language.concepts.entries()) {
-          this.concepts.set(entry[0], entry[1])
+        for (let concept of language.getConcepts()) {
+          this.concepts.set(concept.getUID(), concept)
         }
       }
     }

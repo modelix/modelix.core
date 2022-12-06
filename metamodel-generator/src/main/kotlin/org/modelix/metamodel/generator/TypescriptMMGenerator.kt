@@ -43,19 +43,18 @@ class TypescriptMMGenerator(val outputDir: Path) {
 
     private fun generateLanguage(language: LanguageSet.LanguageInSet): String {
         val conceptNamesList = language.getConceptsInLanguage()
-            .joinToString(", ") { "this." + it.simpleName }
-
-        val conceptFields = language.getConceptsInLanguage()
-            .joinToString("\n") { """public ${it.simpleName}: ${it.concept.conceptObjectName()} = ${it.concept.conceptObjectName()}""" }
+            .joinToString(", ") { it.concept.conceptWrapperInterfaceName() }
 
         return """
             import {
-              ChildListAccessor,
-              SingleChildAccessor,
-              GeneratedLanguage,
-              INodeJS,
-              TypedNode,
-              ITypedNode
+                ChildListAccessor,
+                GeneratedConcept, 
+                GeneratedLanguage,
+                IConceptJS,
+                INodeJS,
+                ITypedNode, 
+                SingleChildAccessor,
+                TypedNode
             } from "@modelix/ts-model-api";
             
             ${language.languageDependencies().joinToString("\n") {
@@ -71,12 +70,9 @@ class TypescriptMMGenerator(val outputDir: Path) {
                         this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.concept.nodeWrapperImplName()}(node))
                     """.trimIndent() }}
                 }
-                /*
                 public getConcepts() {
                     return [$conceptNamesList]
                 }
-                ${conceptFields.replaceIndent("                ")}
-                */
             }
             
             ${language.getConceptsInLanguage().joinToString("\n") { generateConcept(it) }.replaceIndent("            ")}
@@ -128,11 +124,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 is ChildLinkData -> {
                     val accessorClassName = if (data.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     val typeRef = data.type.parseConceptRef(concept.language)
-                    val languagePrefix = if (typeRef.languageName == concept.language.name) {
-                        ""
-                    } else {
-                        typeRef.languageName.languageClassName() + "."
-                    }
+                    val languagePrefix = typeRef.languagePrefix(concept.language.name)
                     """
                         public ${feature.validName}: $accessorClassName<$languagePrefix${typeRef.conceptName.nodeWrapperInterfaceName()}> = new $accessorClassName(this.node, "${data.name}")
                     """.trimIndent()
@@ -183,7 +175,7 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 super(uid);
               }
               getDirectSuperConcepts(): Array<IConceptJS> {
-                return [${concept.directSuperConcepts().joinToString(",") { it.concept.conceptWrapperInterfaceName() }}];
+                return [${concept.directSuperConcepts().joinToString(",") { it.ref().languagePrefix(concept.language.name) + it.concept.conceptWrapperInterfaceName() }}];
               }
             }
             export const ${concept.concept.conceptWrapperInterfaceName()} = new ${concept.concept.conceptWrapperImplName()}("${concept.uid}")

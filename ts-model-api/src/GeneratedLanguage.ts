@@ -7,9 +7,10 @@ import type {GeneratedConcept} from "./GeneratedConcept";
 export abstract class GeneratedLanguage implements ILanguage {
 
   public nodeWrappers: Map<string, (node: INodeJS) => TypedNode> = new Map()
-  public concepts: Map<string, GeneratedConcept> = new Map()
 
   constructor(readonly name: string) {}
+
+  public abstract getConcepts(): Array<GeneratedConcept>
 
   public register() {
     LanguageRegistry.INSTANCE.register(this)

@@ -18,6 +18,7 @@
     "no-increment-decrement": false,
     "no-angle-bracket-type-assertion": false,
     "object-literal-shorthand": false,
-    "trailing-comma": false
+    "trailing-comma": false,
+    "max-line-length": false
   }
 }

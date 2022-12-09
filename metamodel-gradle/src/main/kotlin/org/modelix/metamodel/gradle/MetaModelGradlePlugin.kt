@@ -9,7 +9,7 @@ import org.modelix.metamodel.generator.LanguageSet
 import org.modelix.metamodel.generator.MetaModelGenerator
 import org.modelix.metamodel.generator.TypescriptMMGenerator
 
-class OrgModelixMetamodelGradlePlugin: Plugin<Project> {
+class MetaModelGradlePlugin: Plugin<Project> {
     private lateinit var project: Project
     private lateinit var settings: MetaModelGradleSettings
     override fun apply(project: Project) {

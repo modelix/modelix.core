@@ -15,7 +15,7 @@ import org.modelix.metamodel.generator.LanguageData
 /**
  * A simple functional test for the 'org.modelix.metamodel.gradle.greeting' plugin.
  */
-class OrgModelixMetamodelGradlePluginFunctionalTest {
+class MetaModelGradlePluginFunctionalTest {
     @get:Rule val tempFolder = TemporaryFolder()
 
     private fun getProjectDir() = tempFolder.root

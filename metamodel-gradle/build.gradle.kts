@@ -90,9 +90,9 @@ testing {
 
 gradlePlugin {
     // Define the plugin
-    val greeting by plugins.creating {
+    val mpsMetaModel by plugins.creating {
         id = "org.modelix.metamodel.gradle"
-        implementationClass = "org.modelix.metamodel.gradle.OrgModelixMetamodelGradlePlugin"
+        implementationClass = "org.modelix.metamodel.gradle.MetaModelGradlePlugin"
     }
 }
 

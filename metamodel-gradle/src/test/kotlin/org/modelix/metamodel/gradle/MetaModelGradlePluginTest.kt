@@ -14,9 +14,9 @@ class MetaModelGradlePluginTest {
     @Test fun `plugin registers task`() {
         // Create a test project and apply the plugin
         val project = ProjectBuilder.builder().build()
-        project.plugins.apply("org.modelix.metamodel.gradle.greeting")
+        project.plugins.apply("org.modelix.metamodel.gradle")
 
         // Verify the result
-        assertNotNull(project.tasks.findByName("greeting"))
+        assertNotNull(project.tasks.findByName("generateMetaModelSources"))
     }
 }

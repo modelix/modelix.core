@@ -38,6 +38,10 @@ repositories {
 metamodel {
     mpsHome = file("${File("build/mps").absolutePath}")
     modulesFrom(file("${File("build/mpsDependencies").absolutePath}"))
+    kotlinDir = file("" + buildDir + "/kotlin_gen")
+    registrationHelperName = "org.modelix.metamodel.gradle.functionalTest.Languages"
+    typescriptDir = file("" + buildDir + "/ts_gen")
+    includeNamespace("jetbrains.mps.baseLanguage")
 }
 """)
 
@@ -45,17 +49,26 @@ metamodel {
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("exportMetaModelFromMps")
+        runner.withArguments("generateMetaModelSources")
         runner.withProjectDir(getProjectDir())
-        val result = runner.build();
+        val result = runner.build()
 
         // Verify the result
         val exportDir = getProjectDir().resolve("build/metamodel/exported-languages")
         assertTrue(exportDir.exists())
         assertTrue(exportDir.resolve("json").exists())
-        val jsonFiles = exportDir.resolve("json").listFiles()!!.toList()
+        val jsonFiles = exportDir.resolve("json").listFiles()!!.toList().filter { it.extension.lowercase() == "json" }
         println("${jsonFiles.size} languages exported")
         val parsedFiles = jsonFiles.map { LanguageData.fromFile(it) }
-        assertTrue(parsedFiles.size > 10)
+        assertTrue(parsedFiles.isNotEmpty())
+
+        val kotlinGenDir = getProjectDir().resolve("build/kotlin_gen")
+        val tsGenDir = getProjectDir().resolve("build/ts_gen")
+        val numKotlinFiles = kotlinGenDir.walk().filter { it.extension.lowercase() == "kt" }.count()
+        val numTsFiles = tsGenDir.walk().filter { it.extension.lowercase() == "ts" }.count()
+        println("$numKotlinFiles kotlin files generated")
+        println("$numTsFiles typescript files generated")
+        assertTrue(numKotlinFiles > 0)
+        assertTrue(numTsFiles > 0)
     }
 }

@@ -2,9 +2,12 @@ package org.modelix.metamodel.gradle
 
 import org.gradle.api.Project
 import org.gradle.api.Plugin
-import org.gradle.api.file.FileCollection
+import org.modelix.metamodel.generator.LanguageData
 import java.io.File
 import java.util.*
+import org.modelix.metamodel.generator.LanguageSet
+import org.modelix.metamodel.generator.MetaModelGenerator
+import org.modelix.metamodel.generator.TypescriptMMGenerator
 
 class OrgModelixMetamodelGradlePlugin: Plugin<Project> {
     private lateinit var project: Project
@@ -14,6 +17,9 @@ class OrgModelixMetamodelGradlePlugin: Plugin<Project> {
         this.settings = project.extensions.create("metamodel", MetaModelGradleSettings::class.java)
 
         val generateAntScriptForMpsMetaModelExport = project.tasks.register("generateAntScriptForMpsMetaModelExport") { task ->
+            val antScriptFile = getAntScriptFile()
+            task.inputs.file(getMpsBuildPropertiesFile())
+            task.outputs.file(antScriptFile)
             task.doLast {
                 val mpsVersion = getMpsVersion()
                 val antLibs = if (mpsVersion < "2021.2") {
@@ -23,7 +29,6 @@ class OrgModelixMetamodelGradlePlugin: Plugin<Project> {
                 } else {
                     listOf("lib/ant/lib/ant-mps.jar", "lib/util.jar", "lib/3rd-party-rt.jar")
                 }
-                val antScriptFile = getAntScriptFile()
                 antScriptFile.parentFile.mkdirs()
                 antScriptFile.writeText("""
                     <project name="export-languages" default="build">
@@ -57,7 +62,7 @@ class OrgModelixMetamodelGradlePlugin: Plugin<Project> {
                         <target name="export-languages" depends="declare-mps-tasks">
                             <echo message="Running export of languages" />
                             <runMPS solution="cc09f0ed-0e5c-4109-ad8c-a9842c54cb2e(org.modelix.model.metamodel.mpsgenerator)" startClass="org.modelix.model.metamodel.mpsgenerator.plugin.CommandlineExporter" startMethod="exportLanguages">
-                                <library file="${"$"}{artifacts.mps}/languages" />
+                                <library file="${getMpsLanguagesDir().absolutePath}" />
                                 ${settings.moduleFolders.joinToString("\n                                ") {
                                     """<library file="${it.absolutePath}" />"""
                                 }}                                
@@ -77,7 +82,12 @@ class OrgModelixMetamodelGradlePlugin: Plugin<Project> {
 
         val antDependencies = project.configurations.create("metamodel-ant-dependencies")
         project.dependencies.add(antDependencies.name, "org.apache.ant:ant-junit:1.10.12")
-        project.tasks.register("exportMetaModelFromMps") { task ->
+        val exportedLanguagesDir = getBuildOutputDir().resolve("exported-languages")
+        val languagesJsonDir = exportedLanguagesDir.resolve("json")
+        val exportMetaModelFromMps = project.tasks.register("exportMetaModelFromMps") { task ->
+            task.inputs.dir(getMpsHome())
+            settings.moduleFolders.forEach { task.inputs.dir(it) }
+            task.outputs.dir(exportedLanguagesDir)
             task.dependsOn(generateAntScriptForMpsMetaModelExport)
             task.doLast {
                 project.javaexec { spec ->
@@ -102,8 +112,55 @@ class OrgModelixMetamodelGradlePlugin: Plugin<Project> {
                     spec.args("-buildfile", getAntScriptFile())
                     spec.args("export-languages")
                 }
-                println("Languages exported to " + getBuildOutputDir().resolve("exported-languages").absolutePath)
+                println("Languages exported to " + languagesJsonDir.absolutePath)
             }
+        }
+
+        val generateMetaModelSources = project.tasks.register("generateMetaModelSources") {task ->
+            val kotlinOutputDir = settings.kotlinDir
+            val typescriptOutputDir = settings.typescriptDir
+            task.dependsOn(exportMetaModelFromMps)
+            task.inputs.dir(languagesJsonDir)
+            if (kotlinOutputDir != null) task.outputs.dir(kotlinOutputDir)
+            if (typescriptOutputDir != null) task.outputs.dir(typescriptOutputDir)
+            task.doLast {
+                var languages: LanguageSet = LanguageSet(languagesJsonDir.walk()
+                    .filter { it.extension.toLowerCase() == "json" }
+                    .map { LanguageData.fromFile(it) }
+                    .toList())
+                val previousLanguageCount = languages.getLanguages().size
+                languages = languages.filter {
+                    languages.getLanguages().filter { lang ->
+                        settings.includedLanguages.contains(lang.name)
+                                || settings.includedLanguageNamespaces.any { lang.name.startsWith(it) }
+                    }.forEach { lang ->
+                        lang.getConceptsInLanguage().forEach { concept ->
+                            includeConcept(concept.fqName)
+                        }
+                    }
+                    settings.includedConcepts.forEach { includeConcept(it) }
+                }
+                println("${languages.getLanguages().size} of $previousLanguageCount languages included")
+
+                if (kotlinOutputDir != null) {
+                    println("Generating Kotlin to $kotlinOutputDir")
+                    val generator = MetaModelGenerator(kotlinOutputDir.toPath())
+                    generator.generate(languages)
+                    settings.registrationHelperName?.let {
+                        generator.generateRegistrationHelper(it, languages)
+                    }
+                }
+
+                if (typescriptOutputDir != null) {
+                    println("Generating TypeScript to $typescriptOutputDir")
+                    val tsGenerator = TypescriptMMGenerator(typescriptOutputDir.toPath())
+                    tsGenerator.generate(languages)
+                }
+
+            }
+        }
+        project.tasks.matching { it.name.matches(Regex("""(.*compile.*Kotlin.*|.*[sS]ourcesJar.*)""")) }.configureEach {
+            it.dependsOn(generateMetaModelSources)
         }
     }
 
@@ -111,19 +168,18 @@ class OrgModelixMetamodelGradlePlugin: Plugin<Project> {
 
     private fun getAntScriptFile() = getBuildOutputDir().resolve("export-languages.xml")
 
-    fun getMpsHome(): File {
+    private fun getMpsHome(): File {
         val mpsHome = this.settings.mpsHome
         require(mpsHome != null) { "'mpsHome' is not set in the 'metamodel' settings" }
         require(mpsHome.exists()) { "'mpsHome' doesn't exist: ${mpsHome.absolutePath}" }
         return mpsHome
     }
 
-    fun getMpsVersion(): String {
-        return readMPSVersion(getMpsHome())
-    }
+    private fun getMpsBuildPropertiesFile() = getMpsHome().resolve("build.properties")
+    private fun getMpsLanguagesDir() = getMpsHome().resolve("languages")
 
-    private fun readMPSVersion(mpsHome: File): String {
-        val buildPropertiesFiles = mpsHome.resolve("build.properties")
+    private fun getMpsVersion(): String {
+        val buildPropertiesFiles = getMpsBuildPropertiesFile()
         require(buildPropertiesFiles.exists()) { "${buildPropertiesFiles.absolutePath} not found" }
         val buildProperties = Properties()
         buildPropertiesFiles.inputStream().use { buildProperties.load(it) }

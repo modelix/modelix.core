@@ -28,6 +28,35 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 }
 
+// ------------- Download MPS for the functional test ------------------------------------------------------------------
+
+val mps = configurations.create("mps")
+val mpsDependencies = configurations.create("mpsDependencies")
+
+dependencies {
+    mps("com.jetbrains:mps:2021.3.+")
+    mpsDependencies("de.itemis.mps:extensions:2021.3.+")
+}
+
+val mpsDependenciesDir = buildDir.resolve("mpsDependencies")
+val mpsDir = buildDir.resolve("mps")
+
+val resolveMps by tasks.registering(Sync::class) {
+    from(mps.resolve().map { zipTree(it) })
+    into(mpsDir)
+}
+
+val resolveMpsDependencies by tasks.registering(Sync::class) {
+    from(mpsDependencies.resolve().map { zipTree(it) })
+    into(mpsDependenciesDir)
+}
+
+val resolveMpsAndDependencies by tasks.registering {
+    dependsOn(resolveMps)
+    dependsOn(resolveMpsDependencies)
+}
+// ---------------------------------------------------------------------------------------------------------------------
+
 testing {
     suites {
         // Configure the built-in test suite
@@ -38,12 +67,13 @@ testing {
 
         // Create a new test suite
         val functionalTest by registering(JvmTestSuite::class) {
-            // Use Kotlin Test test framework
+            // Use Kotlin test framework
             useKotlinTest()
 
             dependencies {
                 // functionalTest test suite depends on the production code in tests
                 implementation(project)
+                implementation(project(":metamodel-generator"))
             }
 
             targets {
@@ -69,4 +99,8 @@ gradlePlugin.testSourceSets(sourceSets["functionalTest"])
 tasks.named<Task>("check") {
     // Include functionalTest as part of the check lifecycle
     dependsOn(testing.suites.named("functionalTest"))
+}
+
+tasks.named("functionalTest") {
+    dependsOn(resolveMpsAndDependencies)
 }

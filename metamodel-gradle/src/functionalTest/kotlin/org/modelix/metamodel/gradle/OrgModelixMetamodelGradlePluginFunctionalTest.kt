@@ -10,6 +10,7 @@ import kotlin.test.Test
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
+import org.modelix.metamodel.generator.LanguageData
 
 /**
  * A simple functional test for the 'org.modelix.metamodel.gradle.greeting' plugin.
@@ -28,17 +29,33 @@ class OrgModelixMetamodelGradlePluginFunctionalTest {
 plugins {
     id('org.modelix.metamodel.gradle')
 }
+
+repositories {
+    maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+    mavenCentral()
+}
+
+metamodel {
+    mpsHome = file("${File("build/mps").absolutePath}")
+    modulesFrom(file("${File("build/mpsDependencies").absolutePath}"))
+}
 """)
 
         // Run the build
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("greeting")
+        runner.withArguments("exportMetaModelFromMps")
         runner.withProjectDir(getProjectDir())
         val result = runner.build();
 
         // Verify the result
-        assertTrue(result.output.contains("Hello from plugin 'org.modelix.metamodel.gradle.greeting'"))
+        val exportDir = getProjectDir().resolve("build/metamodel/exported-languages")
+        assertTrue(exportDir.exists())
+        assertTrue(exportDir.resolve("json").exists())
+        val jsonFiles = exportDir.resolve("json").listFiles()!!.toList()
+        println("${jsonFiles.size} languages exported")
+        val parsedFiles = jsonFiles.map { LanguageData.fromFile(it) }
+        assertTrue(parsedFiles.size > 10)
     }
 }

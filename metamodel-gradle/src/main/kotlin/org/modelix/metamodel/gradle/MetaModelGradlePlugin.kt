@@ -12,9 +12,12 @@ import org.modelix.metamodel.generator.TypescriptMMGenerator
 class MetaModelGradlePlugin: Plugin<Project> {
     private lateinit var project: Project
     private lateinit var settings: MetaModelGradleSettings
+    private lateinit var buildDir: File
+
     override fun apply(project: Project) {
         this.project = project
         this.settings = project.extensions.create("metamodel", MetaModelGradleSettings::class.java)
+        this.buildDir = project.buildDir
 
         val generateAntScriptForMpsMetaModelExport = project.tasks.register("generateAntScriptForMpsMetaModelExport") { task ->
             task.dependsOn(*settings.taskDependencies.toTypedArray())
@@ -103,7 +106,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
 
                     spec.classpath(antDependencies)
                     spec.workingDir = getBuildOutputDir()
-                    val mpsHome = getMpsHome()
+                    val mpsHome = getMpsHome(checkExistence = true)
                     val antVariables = listOf(
                         "mps.home" to mpsHome.absolutePath,
                         "mps_home" to mpsHome.absolutePath,
@@ -165,14 +168,16 @@ class MetaModelGradlePlugin: Plugin<Project> {
         }
     }
 
-    private fun getBuildOutputDir() = project.buildDir.resolve("metamodel")
+    private fun getBuildOutputDir() = buildDir.resolve("metamodel")
 
     private fun getAntScriptFile() = getBuildOutputDir().resolve("export-languages.xml")
 
-    private fun getMpsHome(): File {
+    private fun getMpsHome(checkExistence: Boolean = false): File {
         val mpsHome = this.settings.mpsHome
         require(mpsHome != null) { "'mpsHome' is not set in the 'metamodel' settings" }
-        require(mpsHome.exists()) { "'mpsHome' doesn't exist: ${mpsHome.absolutePath}" }
+        if (checkExistence) {
+            require(mpsHome.exists()) { "'mpsHome' doesn't exist: ${mpsHome.absolutePath}" }
+        }
         return mpsHome
     }
 

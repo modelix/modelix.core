@@ -125,12 +125,14 @@ application {
 
 publishing {
     publications {
-/*        modelServer(MavenPublication) {
-            groupId project.group
-            version project.version
+        create<MavenPublication>("modelServer") {
+            groupId = project.group as String
+            artifactId = "model-server"
+            version = project.version as String
 
-            from components.java
-        }*/
+            from(components["java"])
+        }
+
         create<MavenPublication>("modelServerFatJar") {
             groupId = project.group as String
             artifactId = "model-server-fatjar"

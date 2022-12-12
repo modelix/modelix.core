@@ -17,6 +17,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
         this.settings = project.extensions.create("metamodel", MetaModelGradleSettings::class.java)
 
         val generateAntScriptForMpsMetaModelExport = project.tasks.register("generateAntScriptForMpsMetaModelExport") { task ->
+            task.dependsOn(*settings.taskDependencies.toTypedArray())
             val antScriptFile = getAntScriptFile()
             task.inputs.file(getMpsBuildPropertiesFile())
             task.outputs.file(antScriptFile)

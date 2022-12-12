@@ -18,6 +18,11 @@ open class MetaModelGradleSettings {
     var kotlinDir: File? = null
     var typescriptDir: File? = null
     var registrationHelperName: String? = null
+    val taskDependencies: MutableList<Any> = ArrayList()
+
+    fun dependsOn(vararg dependency: Any) {
+        taskDependencies.addAll(dependency)
+    }
 
     fun javaExecutable(provider: () -> File) {
         javaExecutableProvider = provider

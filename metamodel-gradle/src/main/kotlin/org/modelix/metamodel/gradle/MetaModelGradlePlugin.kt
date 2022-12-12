@@ -163,8 +163,19 @@ class MetaModelGradlePlugin: Plugin<Project> {
 
             }
         }
-        project.tasks.matching { it.name.matches(Regex("""(.*compile.*Kotlin.*|.*[sS]ourcesJar.*)""")) }.configureEach {
-            it.dependsOn(generateMetaModelSources)
+
+        project.afterEvaluate {
+            val registerDependencies: (Project) -> Unit = { kotlinProject ->
+                kotlinProject.tasks.matching { it.name.matches(Regex("""(.*compile.*Kotlin.*|.*[sS]ourcesJar.*)""")) }.configureEach {
+                    it.dependsOn(generateMetaModelSources)
+                }
+            }
+            val configuredKotlinProject = settings.kotlinProject
+            if (configuredKotlinProject != null) {
+                registerDependencies(configuredKotlinProject)
+            } else {
+                project.allprojects { registerDependencies(it) }
+            }
         }
     }
 

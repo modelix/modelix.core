@@ -16,6 +16,13 @@ open class MetaModelGradleSettings {
     val includedLanguageNamespaces: MutableSet<String> = HashSet()
     val includedConcepts: MutableSet<String> = HashSet()
     var kotlinDir: File? = null
+    var kotlinProject: Project? = null
+        set(value) {
+            if (kotlinDir == null && value != null) {
+                kotlinDir = value.projectDir.resolve("src/main/kotlin_gen")
+            }
+            field = value
+        }
     var typescriptDir: File? = null
     var registrationHelperName: String? = null
     val taskDependencies: MutableList<Any> = ArrayList()

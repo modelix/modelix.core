@@ -4,7 +4,12 @@ import org.gradle.api.Project
 import java.io.File
 
 open class MetaModelGradleSettings {
-    var javaExecutable: File? = null
+    private var javaExecutableProvider: (() -> File)? = null
+    var javaExecutable: File?
+        get() = javaExecutableProvider?.invoke()
+        set(value) {
+            javaExecutableProvider = value?.let { { it } }
+        }
     val moduleFolders = ArrayList<File>()
     var mpsHome: File? = null
     val includedLanguages: MutableSet<String> = HashSet()
@@ -13,6 +18,14 @@ open class MetaModelGradleSettings {
     var kotlinDir: File? = null
     var typescriptDir: File? = null
     var registrationHelperName: String? = null
+
+    fun javaExecutable(provider: () -> File) {
+        javaExecutableProvider = provider
+    }
+
+    fun javaExecutable(file: File) {
+        javaExecutableProvider = { file }
+    }
 
     fun modulesFrom(dir: File) {
         moduleFolders += dir

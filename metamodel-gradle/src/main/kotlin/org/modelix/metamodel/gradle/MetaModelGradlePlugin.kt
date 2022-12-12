@@ -125,7 +125,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
             if (typescriptOutputDir != null) task.outputs.dir(typescriptOutputDir)
             task.doLast {
                 var languages: LanguageSet = LanguageSet(languagesJsonDir.walk()
-                    .filter { it.extension.toLowerCase() == "json" }
+                    .filter { it.extension.lowercase() == "json" }
                     .map { LanguageData.fromFile(it) }
                     .toList())
                 val previousLanguageCount = languages.getLanguages().size

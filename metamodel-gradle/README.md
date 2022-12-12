@@ -21,8 +21,6 @@ pluginManagement {
     plugins {
         id("org.modelix.metamodel.gradle") version modelixCoreVersion
     }
-    resolutionStrategy {
-    }
     repositories {
         mavenLocal()
         gradlePluginPortal()
@@ -36,8 +34,6 @@ pluginManagement {
 
 ```
 plugins {
-    id("base")
-    id("maven-publish")
     id("org.modelix.metamodel.gradle")
 }
 

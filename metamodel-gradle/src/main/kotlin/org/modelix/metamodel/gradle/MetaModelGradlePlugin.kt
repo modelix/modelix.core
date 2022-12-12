@@ -1,13 +1,17 @@
 package org.modelix.metamodel.gradle
 
-import org.gradle.api.Project
 import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.tasks.Sync
 import org.modelix.metamodel.generator.LanguageData
-import java.io.File
-import java.util.*
 import org.modelix.metamodel.generator.LanguageSet
 import org.modelix.metamodel.generator.MetaModelGenerator
 import org.modelix.metamodel.generator.TypescriptMMGenerator
+import java.io.File
+import java.io.IOException
+import java.net.URL
+import java.util.*
+import java.util.jar.Manifest
 
 class MetaModelGradlePlugin: Plugin<Project> {
     private lateinit var project: Project
@@ -18,6 +22,15 @@ class MetaModelGradlePlugin: Plugin<Project> {
         this.project = project
         this.settings = project.extensions.create("metamodel", MetaModelGradleSettings::class.java)
         this.buildDir = project.buildDir
+
+
+        val exporterDependencies = project.configurations.create("metamodel-mps-dependencies")
+        val exporterDir = getBuildOutputDir().resolve("mpsExporter")
+        project.dependencies.add(exporterDependencies.name, "org.modelix:metamodel-export-mps:${getModelixCoreVersion()}")
+        val downloadExporterDependencies = project.tasks.register("downloadMetaModelExporter", Sync::class.java) { task ->
+            task.from(exporterDependencies.resolve().map { project.zipTree(it) })
+            task.into(exporterDir)
+        }
 
         val generateAntScriptForMpsMetaModelExport = project.tasks.register("generateAntScriptForMpsMetaModelExport") { task ->
             task.dependsOn(*settings.taskDependencies.toTypedArray())
@@ -65,8 +78,9 @@ class MetaModelGradlePlugin: Plugin<Project> {
 
                         <target name="export-languages" depends="declare-mps-tasks">
                             <echo message="Running export of languages" />
-                            <runMPS solution="cc09f0ed-0e5c-4109-ad8c-a9842c54cb2e(org.modelix.model.metamodel.mpsgenerator)" startClass="org.modelix.model.metamodel.mpsgenerator.plugin.CommandlineExporter" startMethod="exportLanguages">
+                            <runMPS solution="e52a4421-48a2-4de1-8327-d9414e799c67(org.modelix.metamodel.export)" startClass="org.modelix.metamodel.export.CommandlineExporter" startMethod="exportLanguages">
                                 <library file="${getMpsLanguagesDir().absolutePath}" />
+                                <library file="${exporterDir.absolutePath}" />
                                 ${settings.moduleFolders.joinToString("\n                                ") {
                                     """<library file="${it.absolutePath}" />"""
                                 }}                                
@@ -86,13 +100,14 @@ class MetaModelGradlePlugin: Plugin<Project> {
 
         val antDependencies = project.configurations.create("metamodel-ant-dependencies")
         project.dependencies.add(antDependencies.name, "org.apache.ant:ant-junit:1.10.12")
+
         val exportedLanguagesDir = getBuildOutputDir().resolve("exported-languages")
-        val languagesJsonDir = exportedLanguagesDir.resolve("json")
         val exportMetaModelFromMps = project.tasks.register("exportMetaModelFromMps") { task ->
             task.inputs.dir(getMpsHome())
             settings.moduleFolders.forEach { task.inputs.dir(it) }
             task.outputs.dir(exportedLanguagesDir)
             task.dependsOn(generateAntScriptForMpsMetaModelExport)
+            task.dependsOn(downloadExporterDependencies)
             task.doLast {
                 project.javaexec { spec ->
                     val javaExecutable = settings.javaExecutable
@@ -116,7 +131,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
                     spec.args("-buildfile", getAntScriptFile())
                     spec.args("export-languages")
                 }
-                println("Languages exported to " + languagesJsonDir.absolutePath)
+                println("Languages exported to " + exportedLanguagesDir.absolutePath)
             }
         }
 
@@ -124,11 +139,11 @@ class MetaModelGradlePlugin: Plugin<Project> {
             val kotlinOutputDir = settings.kotlinDir
             val typescriptOutputDir = settings.typescriptDir
             task.dependsOn(exportMetaModelFromMps)
-            task.inputs.dir(languagesJsonDir)
+            task.inputs.dir(exportedLanguagesDir)
             if (kotlinOutputDir != null) task.outputs.dir(kotlinOutputDir)
             if (typescriptOutputDir != null) task.outputs.dir(typescriptOutputDir)
             task.doLast {
-                var languages: LanguageSet = LanguageSet(languagesJsonDir.walk()
+                var languages: LanguageSet = LanguageSet(exportedLanguagesDir.walk()
                     .filter { it.extension.lowercase() == "json" }
                     .map { LanguageData.fromFile(it) }
                     .toList())
@@ -217,4 +232,26 @@ class MetaModelGradlePlugin: Plugin<Project> {
 //        mpsBootstrapCore.version.eap=
 //        mpsBootstrapCore.version=2020.3
     }
+
+    private fun readManifest(): Manifest {
+        var resources: Enumeration<URL>? = null
+        try {
+            resources = javaClass.classLoader.getResources("META-INF/MANIFEST.MF")
+            while (resources.hasMoreElements()) {
+                try {
+                    val manifest = Manifest(resources.nextElement().openStream())
+                    if (manifest.mainAttributes.getValue("Modelix-Core-Version") != null) {
+                        return manifest
+                    }
+                } catch (ex: IOException) {
+                    throw RuntimeException("Failed to read MANIFEST.MF", ex)
+                }
+            }
+        } catch (ex: IOException) {
+            throw RuntimeException("Failed to read MANIFEST.MF", ex)
+        }
+        throw RuntimeException("No MANIFEST.MF found containing 'Modelix-Core-Version'")
+    }
+
+    fun getModelixCoreVersion(): String = readManifest().mainAttributes.getValue("Modelix-Core-Version")
 }

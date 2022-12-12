@@ -10,6 +10,7 @@
 plugins {
     // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
     `java-gradle-plugin`
+    java
 
     // Apply the Kotlin JVM plugin to add support for Kotlin.
     id("org.jetbrains.kotlin.jvm")
@@ -105,4 +106,10 @@ tasks.named<Task>("check") {
 
 tasks.named("functionalTest") {
     dependsOn(resolveMpsAndDependencies)
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes["Modelix-Core-Version"] = "${project.version}"
+    }
 }

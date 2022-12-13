@@ -23,10 +23,10 @@ class MetaModelGradlePlugin: Plugin<Project> {
         this.settings = project.extensions.create("metamodel", MetaModelGradleSettings::class.java)
         this.buildDir = project.buildDir
 
-
         val exporterDependencies = project.configurations.create("metamodel-mps-dependencies")
         val exporterDir = getBuildOutputDir().resolve("mpsExporter")
-        project.dependencies.add(exporterDependencies.name, "org.modelix:metamodel-export-mps:${getModelixCoreVersion()}")
+        val modelixCoreVersion = readModelixCoreVersion() ?: throw RuntimeException("modelix.core version not found")
+        project.dependencies.add(exporterDependencies.name, "org.modelix:metamodel-export-mps:$modelixCoreVersion")
         val downloadExporterDependencies = project.tasks.register("downloadMetaModelExporter", Sync::class.java) { task ->
             task.from(exporterDependencies.resolve().map { project.zipTree(it) })
             task.into(exporterDir)
@@ -233,25 +233,12 @@ class MetaModelGradlePlugin: Plugin<Project> {
 //        mpsBootstrapCore.version=2020.3
     }
 
-    private fun readManifest(): Manifest {
-        var resources: Enumeration<URL>? = null
-        try {
-            resources = javaClass.classLoader.getResources("META-INF/MANIFEST.MF")
-            while (resources.hasMoreElements()) {
-                try {
-                    val manifest = Manifest(resources.nextElement().openStream())
-                    if (manifest.mainAttributes.getValue("Modelix-Core-Version") != null) {
-                        return manifest
-                    }
-                } catch (ex: IOException) {
-                    throw RuntimeException("Failed to read MANIFEST.MF", ex)
-                }
-            }
-        } catch (ex: IOException) {
-            throw RuntimeException("Failed to read MANIFEST.MF", ex)
+    private fun readModelixCoreVersion(): String? {
+        val resources: Enumeration<URL>? = javaClass.classLoader.getResources("modelix.core.version.properties")
+        while (resources != null && resources.hasMoreElements()) {
+            val properties = resources.nextElement().openStream().use { Properties().apply { load(it) } }
+            return properties.getProperty("modelix.core.version")
         }
-        throw RuntimeException("No MANIFEST.MF found containing 'Modelix-Core-Version'")
+        return null
     }
-
-    fun getModelixCoreVersion(): String = readManifest().mainAttributes.getValue("Modelix-Core-Version")
 }

@@ -31,13 +31,13 @@ plugins {
 }
 
 repositories {
+    mavenLocal()
     maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
     mavenCentral()
 }
 
 metamodel {
     mpsHome = file("${File("build/mps").absolutePath}")
-    modulesFrom(file("${File("build/mpsDependencies").absolutePath}"))
     kotlinDir = file("" + buildDir + "/kotlin_gen")
     registrationHelperName = "org.modelix.metamodel.gradle.functionalTest.Languages"
     typescriptDir = file("" + buildDir + "/ts_gen")
@@ -56,8 +56,7 @@ metamodel {
         // Verify the result
         val exportDir = getProjectDir().resolve("build/metamodel/exported-languages")
         assertTrue(exportDir.exists())
-        assertTrue(exportDir.resolve("json").exists())
-        val jsonFiles = exportDir.resolve("json").listFiles()!!.toList().filter { it.extension.lowercase() == "json" }
+        val jsonFiles = exportDir.listFiles()!!.toList().filter { it.extension.lowercase() == "json" }
         println("${jsonFiles.size} languages exported")
         val parsedFiles = jsonFiles.map { LanguageData.fromFile(it) }
         assertTrue(parsedFiles.isNotEmpty())

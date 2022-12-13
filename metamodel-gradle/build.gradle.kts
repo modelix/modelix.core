@@ -34,14 +34,11 @@ dependencies {
 // ------------- Download MPS for the functional test ------------------------------------------------------------------
 
 val mps = configurations.create("mps")
-val mpsDependencies = configurations.create("mpsDependencies")
 
 dependencies {
     mps("com.jetbrains:mps:2021.3.+")
-    mpsDependencies("de.itemis.mps:extensions:2021.3.+")
 }
 
-val mpsDependenciesDir = buildDir.resolve("mpsDependencies")
 val mpsDir = buildDir.resolve("mps")
 
 val resolveMps by tasks.registering(Sync::class) {
@@ -49,15 +46,15 @@ val resolveMps by tasks.registering(Sync::class) {
     into(mpsDir)
 }
 
-val resolveMpsDependencies by tasks.registering(Sync::class) {
-    from(mpsDependencies.resolve().map { zipTree(it) })
-    into(mpsDependenciesDir)
+val writeVersionFile by tasks.registering {
+    projectDir.resolve("src/main/resources/modelix.core.version.properties").writeText("""
+        modelix.core.version=$version
+    """.trimIndent())
+}
+tasks.named("processResources") {
+    dependsOn(writeVersionFile)
 }
 
-val resolveMpsAndDependencies by tasks.registering {
-    dependsOn(resolveMps)
-    dependsOn(resolveMpsDependencies)
-}
 // ---------------------------------------------------------------------------------------------------------------------
 
 testing {
@@ -77,6 +74,7 @@ testing {
                 // functionalTest test suite depends on the production code in tests
                 implementation(project)
                 implementation(project(":metamodel-generator"))
+                implementation(project(":metamodel-export-mps"))
             }
 
             targets {
@@ -105,11 +103,6 @@ tasks.named<Task>("check") {
 }
 
 tasks.named("functionalTest") {
-    dependsOn(resolveMpsAndDependencies)
-}
-
-tasks.withType<Jar> {
-    manifest {
-        attributes["Modelix-Core-Version"] = "${project.version}"
-    }
+    dependsOn(resolveMps)
+    dependsOn(":metamodel-export-mps:publish_metamodel-export-mps_PublicationToMavenLocal")
 }

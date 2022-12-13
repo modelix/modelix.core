@@ -148,10 +148,15 @@ class MetaModelGradlePlugin: Plugin<Project> {
                     .map { LanguageData.fromFile(it) }
                     .toList())
                 val previousLanguageCount = languages.getLanguages().size
+
+                val includedNamespaces = settings.includedLanguageNamespaces.map { it.trimEnd('.') }
+                val includedLanguages = settings.includedLanguages + includedNamespaces
+                val namespacePrefixes = includedNamespaces.map { it + "." }
+
                 languages = languages.filter {
                     languages.getLanguages().filter { lang ->
-                        settings.includedLanguages.contains(lang.name)
-                                || settings.includedLanguageNamespaces.any { lang.name.startsWith(it) }
+                        includedLanguages.contains(lang.name)
+                                || namespacePrefixes.any { lang.name.startsWith(it) }
                     }.forEach { lang ->
                         lang.getConceptsInLanguage().forEach { concept ->
                             includeConcept(concept.fqName)

@@ -47,7 +47,9 @@ val resolveMps by tasks.registering(Sync::class) {
 }
 
 val writeVersionFile by tasks.registering {
-    projectDir.resolve("src/main/resources/modelix.core.version.properties").writeText("""
+    val propertiesFile = projectDir.resolve("src/main/resources/modelix.core.version.properties")
+    propertiesFile.parentFile.mkdirs()
+    propertiesFile.writeText("""
         modelix.core.version=$version
     """.trimIndent())
 }

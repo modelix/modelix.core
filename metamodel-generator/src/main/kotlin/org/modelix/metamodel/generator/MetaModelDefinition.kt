@@ -41,7 +41,7 @@ data class ConceptData(
     val extends: List<String> = emptyList(),
 )
 
-interface IConceptFeatureData {
+sealed interface IConceptFeatureData {
     val uid: String?
     val name: String
 }

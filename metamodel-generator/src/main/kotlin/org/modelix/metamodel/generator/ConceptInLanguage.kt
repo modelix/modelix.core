@@ -63,7 +63,7 @@ class LanguageSet(languages: List<LanguageData>) {
         fun directFeatures(): List<FeatureInConcept> = (concept.properties + concept.children + concept.references)
             .map { FeatureInConcept(this, it) }
 
-        fun allFeatures(): List<FeatureInConcept> = (allSuperConcepts() + this).flatMap { it.directFeatures() }.distinct()
+        fun allFeatures(): List<FeatureInConcept> = allSuperConceptsAndSelf().flatMap { it.directFeatures() }.distinct()
         fun directFeaturesAndConflicts(): List<FeatureInConcept> =
             (directFeatures() + resolveMultipleInheritanceConflicts().flatMap { it.key.allFeatures() })
                 .distinct().groupBy { it.validName }.values.map { it.first() }
@@ -111,8 +111,19 @@ private val reservedPropertyNames: Set<String> = setOf(
 ) + IConcept::class.members.map { it.name }
 
 data class FeatureInConcept(val concept: LanguageSet.ConceptInLanguage, val data: IConceptFeatureData) {
-    val validName: String = if (reservedPropertyNames.contains(data.name)) data.name + "_" else data.name
+    val validName: String by lazy {
+        if (reservedPropertyNames.contains(originalName) || hasNameConflict()) {
+            originalName + "_" + when (data) {
+                is PropertyData -> "property"
+                is ReferenceLinkData -> "reference"
+                is ChildLinkData -> if (data.multiple) "children" else "child"
+            }
+        } else {
+            originalName
+        }
+    }
     val originalName: String = data.name
+    private fun hasNameConflict() = concept.allFeatures().any { it.originalName == originalName && it != this }
 }
 
 fun String.parseConceptRef(contextLanguage: LanguageData): ConceptRef {

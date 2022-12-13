@@ -8,9 +8,8 @@ a type-safe model API for the Modelix model-api.
 ## gradle.properties
 
 ```
-modelixCoreVersion=1.4.7
+modelixCoreVersion=1.4.10
 mpsVersion=2021.3.2
-mpsExtensionsVersion=2021.3.2496.3b163cd
 ```
 
 ## settings.gradle.kts
@@ -38,17 +37,14 @@ plugins {
 }
 
 val mpsVersion: String by rootProject
-val mpsExtensionsVersion: String by rootProject
 val modelixCoreVersion: String by rootProject
 
-val mpsDependenciesDir = buildDir.resolve("mpsDependencies")
 val mpsDir = buildDir.resolve("mps")
 
 val mps by configurations.creating
 val mpsDependencies by configurations.creating
 dependencies {
     mps("com.jetbrains:mps:$mpsVersion")
-    mpsDependencies("de.itemis.mps:extensions:$mpsExtensionsVersion")
 }
 
 val resolveMps by tasks.registering(Sync::class) {
@@ -56,20 +52,15 @@ val resolveMps by tasks.registering(Sync::class) {
     into(mpsDir)
 }
 
-val resolveMpsDependencies by tasks.registering(Sync::class) {
-    from(mpsDependencies.resolve().map { zipTree(it) })
-    into(mpsDependenciesDir)
-}
-
 metamodel {
-    dependsOn(resolveMps, resolveMpsDependencies)
+    dependsOn(resolveMps)
     mpsHome = mpsDir
     
-    modulesFrom(mpsDependenciesDir)
     modulesFrom(projectDir.resolve("languages"))
     modulesFrom(projectDir.resolve("solutions"))
-    includeNamespace("org.ki.embedded")
-    includeLanguage("org.modelix.model.repositoryconcepts")
+    includeNamespace("org.example")
+    includeLanguage("language.fq.name")
+    includeConcept("concept.fq.name")
     
     kotlinProject = project(":my-kotlin-project")
     kotlinDir = project(":my-kotlin-project").projectDir.resolve("src/main/kotlin_gen")

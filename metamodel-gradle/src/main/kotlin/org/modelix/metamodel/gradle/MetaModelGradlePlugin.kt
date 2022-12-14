@@ -74,6 +74,8 @@ class MetaModelGradlePlugin: Plugin<Project> {
                 if (javaExecutable != null) {
                     task.executable(javaExecutable.absoluteFile)
                 }
+                settings.moduleFolders.forEach { task.inputs.dir(it) }
+                task.inputs.dir(getMpsHome())
             }
         }
         val generateMetaModelSources = project.tasks.register("generateMetaModelSources", GenerateMetaModelSources::class.java) {task ->

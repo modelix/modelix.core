@@ -80,7 +80,7 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
     override fun createCell(editor: EditorEngine, node: NodeT): CellData = TextCellData(getText(node), "<no ${link.name}>")
     private fun getText(node: NodeT): String = getTargetNode(node)?.let(presentation) ?: ""
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
-        return sourceNode.unwrap().getReferenceTarget(link)?.typed() as TargetNodeT?
+        return sourceNode.unwrap().getReferenceTarget(link)?.typedUnsafe()
     }
 }
 

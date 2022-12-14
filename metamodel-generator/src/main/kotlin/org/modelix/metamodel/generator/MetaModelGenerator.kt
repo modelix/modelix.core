@@ -34,6 +34,7 @@ class MetaModelGenerator(val outputDir: Path) {
             .addProperty(PropertySpec.builder("languages", List::class.parameterizedBy(GeneratedLanguage::class))
                 .initializer("listOf(" + languages.getLanguages().map { it.language.generatedClassName() }.joinToString(", ") { it.canonicalName } + ")")
                 .build())
+            .addFunction(FunSpec.builder("registerAll").addStatement("""languages.forEach { it.register() }""").build())
             .build()
 
         FileSpec.builder(typeName.packageName, typeName.simpleName)

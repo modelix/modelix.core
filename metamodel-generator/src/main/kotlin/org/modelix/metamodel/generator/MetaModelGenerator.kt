@@ -236,12 +236,23 @@ class MetaModelGenerator(val outputDir: Path) {
             for (feature in concept.directFeaturesAndConflicts()) {
                 when (val data = feature.data) {
                     is PropertyData -> {
-                        val optionalString = String::class.asTypeName().copy(nullable = true)
-                        addProperty(PropertySpec.builder(feature.validName, optionalString)
+                        val accessorClass = when (data.type) {
+                            PropertyType.STRING -> StringPropertyAccessor::class
+                            PropertyType.BOOLEAN -> BooleanPropertyAccessor::class
+                            PropertyType.INT -> IntPropertyAccessor::class
+                        }
+                        addProperty(PropertySpec.builder(feature.validName, data.type.asKotlinType())
                             .addModifiers(KModifier.OVERRIDE)
                             .mutable(true)
-                            .delegate("""${PropertyAccessor::class.qualifiedName}(unwrap(), "${feature.originalName}")""")
+                            .delegate("""${accessorClass.qualifiedName}(unwrap(), "${feature.originalName}")""")
                             .build())
+                        if (data.type != PropertyType.STRING) {
+                            addProperty(PropertySpec.builder("_raw_" + feature.validName, PropertyType.STRING.asKotlinType())
+                                .addModifiers(KModifier.OVERRIDE)
+                                .mutable(true)
+                                .delegate("""${StringPropertyAccessor::class.qualifiedName}(unwrap(), "${feature.originalName}")""")
+                                .build())
+                        }
                     }
                     is ChildLinkData -> {
                         // TODO resolve link.type and ensure it exists
@@ -276,10 +287,14 @@ class MetaModelGenerator(val outputDir: Path) {
             for (feature in concept.directFeatures()) {
                 when (val data = feature.data) {
                     is PropertyData -> {
-                        val optionalString = String::class.asTypeName().copy(nullable = true)
-                        addProperty(PropertySpec.builder(feature.validName, optionalString)
+                        addProperty(PropertySpec.builder(feature.validName, data.type.asKotlinType())
                             .mutable(true)
                             .build())
+                        if (data.type != PropertyType.STRING) {
+                            addProperty(PropertySpec.builder("_raw_" + feature.validName, PropertyType.STRING.asKotlinType())
+                                .mutable(true)
+                                .build())
+                        }
                     }
                     is ChildLinkData -> {
                         // TODO resolve link.type and ensure it exists
@@ -301,6 +316,13 @@ class MetaModelGenerator(val outputDir: Path) {
     }
 }
 
+fun PropertyType.asKotlinType(): TypeName {
+    return when (this) {
+        PropertyType.STRING -> String::class.asTypeName().copy(nullable = true)
+        PropertyType.BOOLEAN -> Boolean::class.asTypeName()
+        PropertyType.INT -> Int::class.asTypeName()
+    }
+}
 fun ConceptRef.conceptWrapperImplType() = ClassName(languageName, conceptName.conceptWrapperImplName())
 fun ConceptRef.conceptWrapperInterfaceType() = ClassName(languageName, conceptName.conceptWrapperInterfaceName())
 fun ConceptRef.nodeWrapperImplType() = ClassName(languageName, conceptName.nodeWrapperImplName())

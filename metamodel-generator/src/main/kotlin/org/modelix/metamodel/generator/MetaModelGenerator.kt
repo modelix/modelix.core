@@ -98,7 +98,7 @@ class MetaModelGenerator(val outputDir: Path) {
                 .initializer(concept.nodeWrapperImplName() + "::class")
                 .build())
             addProperty(PropertySpec.builder(GeneratedConcept<*, *>::_typed.name, concept.conceptWrapperImplType(), KModifier.OVERRIDE)
-                .getter(FunSpec.getterBuilder().addStatement("""return ${concept.conceptWrapperImplType().simpleName}.INSTANCE""").build())
+                .getter(FunSpec.getterBuilder().addStatement("""return ${concept.conceptWrapperInterfaceType().simpleName}""").build())
                 .build())
             addProperty(PropertySpec.builder(IConcept::language.name, ILanguage::class, KModifier.OVERRIDE)
                 .initializer(concept.language.generatedClassName().simpleName)
@@ -155,6 +155,10 @@ class MetaModelGenerator(val outputDir: Path) {
                     is ReferenceLinkData -> addProperty(PropertySpec.builder(feature.validName, feature.generatedReferenceLinkType()).build())
                 }
             }
+
+            addType(TypeSpec.companionObjectBuilder()
+                .superclass(concept.conceptWrapperImplType())
+                .build())
         }.build()
     }
 
@@ -165,7 +169,7 @@ class MetaModelGenerator(val outputDir: Path) {
             } else {
                 superclass(concept.extends().first().conceptWrapperImplType())
                 for (extended in concept.extends().drop(1)) {
-                    addSuperinterface(extended.conceptWrapperInterfaceType(), CodeBlock.of(extended.conceptWrapperImplType().canonicalName + ".INSTANCE"))
+                    addSuperinterface(extended.conceptWrapperInterfaceType(), CodeBlock.of(extended.conceptWrapperInterfaceType().canonicalName))
                 }
             }
             addSuperinterface(concept.conceptWrapperInterfaceType())
@@ -199,11 +203,6 @@ class MetaModelGenerator(val outputDir: Path) {
                     }
                 }
             }
-
-            addType(TypeSpec.companionObjectBuilder()
-                .addProperty(PropertySpec.builder("INSTANCE", concept.conceptWrapperImplType())
-                    .initializer(concept.conceptWrapperImplType().simpleName + "()").build())
-                .build())
         }.build()
     }
 
@@ -211,7 +210,7 @@ class MetaModelGenerator(val outputDir: Path) {
         return TypeSpec.classBuilder(concept.nodeWrapperImplType()).apply {
             addModifiers(KModifier.OPEN)
             addProperty(PropertySpec.builder(TypedNodeImpl::_concept.name, concept.conceptWrapperImplType(), KModifier.OVERRIDE)
-                .getter(FunSpec.getterBuilder().addStatement("""return ${concept.conceptWrapperImplType().simpleName}.INSTANCE""").build())
+                .getter(FunSpec.getterBuilder().addStatement("""return ${concept.conceptWrapperInterfaceType().simpleName}""").build())
                 .build())
 
             if (concept.extends().size > 1) {

@@ -16,9 +16,14 @@ abstract class PropertyAccessor<ValueT>(val node: INode, val role: String) {
     abstract fun convertWrite(value: ValueT): String?
 }
 
-class StringPropertyAccessor(node: INode, role: String) : PropertyAccessor<String?>(node, role) {
+class RawPropertyAccessor(node: INode, role: String) : PropertyAccessor<String?>(node, role) {
     override fun convertRead(value: String?): String? = value
     override fun convertWrite(value: String?): String? = value
+}
+
+class StringPropertyAccessor(node: INode, role: String) : PropertyAccessor<String>(node, role) {
+    override fun convertRead(value: String?): String = value ?: ""
+    override fun convertWrite(value: String): String? = value
 }
 
 class BooleanPropertyAccessor(node: INode, role: String) : PropertyAccessor<Boolean>(node, role) {

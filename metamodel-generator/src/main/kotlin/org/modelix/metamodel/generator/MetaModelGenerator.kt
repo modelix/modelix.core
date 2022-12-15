@@ -246,13 +246,11 @@ class MetaModelGenerator(val outputDir: Path) {
                             .mutable(true)
                             .delegate("""${accessorClass.qualifiedName}(unwrap(), "${feature.originalName}")""")
                             .build())
-                        if (data.type != PropertyType.STRING) {
-                            addProperty(PropertySpec.builder("_raw_" + feature.validName, PropertyType.STRING.asKotlinType())
-                                .addModifiers(KModifier.OVERRIDE)
-                                .mutable(true)
-                                .delegate("""${StringPropertyAccessor::class.qualifiedName}(unwrap(), "${feature.originalName}")""")
-                                .build())
-                        }
+                        addProperty(PropertySpec.builder("_raw_" + feature.validName, String::class.asTypeName().copy(nullable = true))
+                            .addModifiers(KModifier.OVERRIDE)
+                            .mutable(true)
+                            .delegate("""${RawPropertyAccessor::class.qualifiedName}(unwrap(), "${feature.originalName}")""")
+                            .build())
                     }
                     is ChildLinkData -> {
                         // TODO resolve link.type and ensure it exists
@@ -290,11 +288,9 @@ class MetaModelGenerator(val outputDir: Path) {
                         addProperty(PropertySpec.builder(feature.validName, data.type.asKotlinType())
                             .mutable(true)
                             .build())
-                        if (data.type != PropertyType.STRING) {
-                            addProperty(PropertySpec.builder("_raw_" + feature.validName, PropertyType.STRING.asKotlinType())
-                                .mutable(true)
-                                .build())
-                        }
+                        addProperty(PropertySpec.builder("_raw_" + feature.validName, String::class.asTypeName().copy(nullable = true))
+                            .mutable(true)
+                            .build())
                     }
                     is ChildLinkData -> {
                         // TODO resolve link.type and ensure it exists
@@ -318,7 +314,7 @@ class MetaModelGenerator(val outputDir: Path) {
 
 fun PropertyType.asKotlinType(): TypeName {
     return when (this) {
-        PropertyType.STRING -> String::class.asTypeName().copy(nullable = true)
+        PropertyType.STRING -> String::class.asTypeName()
         PropertyType.BOOLEAN -> Boolean::class.asTypeName()
         PropertyType.INT -> Int::class.asTypeName()
     }

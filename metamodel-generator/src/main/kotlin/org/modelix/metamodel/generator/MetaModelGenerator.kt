@@ -81,7 +81,13 @@ class MetaModelGenerator(val outputDir: Path) {
             .addType(generateNodeWrapperInterface(concept))
             .addType(generateNodeWrapperImpl(concept))
             .addImport(PropertyAccessor::class.asClassName().packageName, PropertyAccessor::class.asClassName().simpleName)
-            .addImport(ReferenceAccessor::class.asClassName().packageName, ReferenceAccessor::class.asClassName().simpleName)
+            .addImport(RawPropertyAccessor::class.asClassName().packageName, RawPropertyAccessor::class.asClassName().simpleName)
+            .addImport(IntPropertyAccessor::class.asClassName().packageName, IntPropertyAccessor::class.asClassName().simpleName)
+            .addImport(StringPropertyAccessor::class.asClassName().packageName, StringPropertyAccessor::class.asClassName().simpleName)
+            .addImport(BooleanPropertyAccessor::class.asClassName().packageName, BooleanPropertyAccessor::class.asClassName().simpleName)
+            .addImport(MandatoryReferenceAccessor::class.asClassName().packageName, MandatoryReferenceAccessor::class.asClassName().simpleName)
+            .addImport(OptionalReferenceAccessor::class.asClassName().packageName, OptionalReferenceAccessor::class.asClassName().simpleName)
+            .addImport(RawReferenceAccessor::class.asClassName().packageName, RawReferenceAccessor::class.asClassName().simpleName)
             .build().write()
     }
 
@@ -265,10 +271,16 @@ class MetaModelGenerator(val outputDir: Path) {
                             .build())
                     }
                     is ReferenceLinkData -> {
-                        addProperty(PropertySpec.builder(feature.validName, data.type.parseConceptRef(concept.language).nodeWrapperInterfaceType().copy(nullable = true))
+                        val accessorClass = if (data.optional) OptionalReferenceAccessor::class else MandatoryReferenceAccessor::class
+                        addProperty(PropertySpec.builder(feature.validName, data.type.parseConceptRef(concept.language).nodeWrapperInterfaceType().copy(nullable = data.optional))
                             .addModifiers(KModifier.OVERRIDE)
                             .mutable(true)
-                            .delegate("""${ReferenceAccessor::class.qualifiedName}(${ITypedNode::unwrap.name}(), "${feature.originalName}", ${data.type.nodeWrapperInterfaceName()}::class)""")
+                            .delegate("""${accessorClass.qualifiedName}(${ITypedNode::unwrap.name}(), "${feature.originalName}", ${data.type.nodeWrapperInterfaceName()}::class)""")
+                            .build())
+                        addProperty(PropertySpec.builder("_raw_" + feature.validName, INode::class.asTypeName().copy(nullable = true))
+                            .addModifiers(KModifier.OVERRIDE)
+                            .mutable(true)
+                            .delegate("""${RawReferenceAccessor::class.qualifiedName}(${ITypedNode::unwrap.name}(), "${feature.originalName}")""")
                             .build())
                     }
                 }
@@ -302,7 +314,10 @@ class MetaModelGenerator(val outputDir: Path) {
                             .build())
                     }
                     is ReferenceLinkData -> {
-                        addProperty(PropertySpec.builder(feature.validName, data.type.parseConceptRef(concept.language).nodeWrapperInterfaceType().copy(nullable = true))
+                        addProperty(PropertySpec.builder(feature.validName, data.type.parseConceptRef(concept.language).nodeWrapperInterfaceType().copy(nullable = data.optional))
+                            .mutable(true)
+                            .build())
+                        addProperty(PropertySpec.builder("_raw_" + feature.validName, INode::class.asTypeName().copy(nullable = true))
                             .mutable(true)
                             .build())
                     }

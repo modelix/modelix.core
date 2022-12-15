@@ -228,5 +228,5 @@ fun LanguageSet.LanguageInSet.languageDependencies(): List<LanguageSet.LanguageI
 
 private fun FeatureInConcept.rawValueName() = when ((data as PropertyData).type) {
     PropertyType.STRING -> validName
-    else -> "_raw_" + validName
+    else -> "raw_" + validName
 }

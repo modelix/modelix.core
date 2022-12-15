@@ -47,3 +47,4 @@ interface IConceptReference {
 }
 
 fun IConceptReference.resolve(): IConcept = ILanguageRepository.resolveConcept(this)
+fun IConceptReference.tryResolve(): IConcept? = ILanguageRepository.tryResolveConcept(this)

@@ -6,11 +6,12 @@ interface ILanguageRepository {
         private var repositories: Set<ILanguageRepository> = setOf(DefaultLanguageRepository)
 
         fun resolveConcept(ref: IConceptReference): IConcept {
+            return tryResolveConcept(ref) ?: throw RuntimeException("Concept not found: $ref")
+        }
+        fun tryResolveConcept(ref: IConceptReference): IConcept? {
             val concepts = repositories.mapNotNull { it.resolveConcept(ref.getUID()) }
             return when (concepts.size) {
-                0 -> {
-                    throw RuntimeException("Concept not found: $ref")
-                }
+                0 -> null
                 1 -> concepts.first()
                 else -> throw RuntimeException("Multiple concepts found for $ref: $concepts")
             }

@@ -3,6 +3,7 @@ package org.modelix.metamodel
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.resolve
+import org.modelix.model.api.tryResolve
 import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
@@ -36,8 +37,8 @@ object TypedLanguagesRegistry : ILanguageRepository {
     }
 
     fun wrapNode(node: INode): ITypedNode {
-        val concept = (node.getConceptReference()?.resolve() as? GeneratedConcept<*, *>)
-            ?: throw IllegalArgumentException("Unknown concept: ${node.getConceptReference()}")
+        val concept = (node.getConceptReference()?.tryResolve() as? GeneratedConcept<*, *>)
+            ?: return UnknownConceptInstance(node)
         return concept.wrap(node)
     }
 }

@@ -2,14 +2,11 @@ package org.modelix.metamodel.gradle
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -17,8 +14,6 @@ import org.modelix.metamodel.generator.LanguageData
 import org.modelix.metamodel.generator.LanguageSet
 import org.modelix.metamodel.generator.MetaModelGenerator
 import org.modelix.metamodel.generator.TypescriptMMGenerator
-import java.io.File
-import java.util.*
 import javax.inject.Inject
 
 abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) : DefaultTask() {
@@ -49,13 +44,14 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
         val previousLanguageCount = languages.getLanguages().size
 
         val includedNamespaces = this.includedNamespaces.get().map { it.trimEnd('.') }
-        val includedLanguages = this.includedLanguages.get() + includedNamespaces
+        val includedLanguages = this.includedLanguages.get()
+        val includedLanguagesAndNS = this.includedLanguages.get() + includedNamespaces
         val namespacePrefixes = includedNamespaces.map { it + "." }
         val includedConcepts = this.includedConcepts.get()
 
         languages = languages.filter {
             languages.getLanguages().filter { lang ->
-                includedLanguages.contains(lang.name)
+                includedLanguagesAndNS.contains(lang.name)
                         || namespacePrefixes.any { lang.name.startsWith(it) }
             }.forEach { lang ->
                 lang.getConceptsInLanguage().forEach { concept ->
@@ -64,6 +60,14 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
             }
             includedConcepts.forEach { includeConcept(it) }
         }
+
+        val missingLanguages = includedLanguages - languages.getLanguages().map { it.name }.toSet()
+        val missingConcepts = includedConcepts - languages.getLanguages().flatMap { it.getConceptsInLanguage() }.map { it.fqName }.toSet()
+
+        if (missingLanguages.isNotEmpty() || missingConcepts.isNotEmpty()) {
+            throw RuntimeException("The following languages or concepts were not found: " + (missingLanguages + missingConcepts))
+        }
+
         println("${languages.getLanguages().size} of $previousLanguageCount languages included")
 
         val kotlinOutputDir = this.kotlinOutputDir.orNull?.asFile

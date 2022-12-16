@@ -13,20 +13,11 @@
  */
 package org.modelix.editor
 
-import kotlinx.browser.document
-import kotlinx.html.TagConsumer
-import kotlinx.html.classes
-import kotlinx.html.div
-import kotlinx.html.dom.create
-import kotlinx.html.js.div
-import kotlinx.html.style
-import org.w3c.dom.HTMLElement
-
 class JSCaretSelectionView(selection: CaretSelection, val editor: JsEditorComponent) : SelectionView<CaretSelection>(selection) {
 
     override fun updateBounds() {
         val dom = selection.generatedHtml ?: return
-        val layoutable = selection.cell
+        val layoutable = selection.layoutable
         val htmlElement = layoutable.generatedHtml ?: return
         val text = htmlElement.innerText
         val cellAbsoluteBounds = htmlElement.getAbsoluteBounds()

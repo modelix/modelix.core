@@ -279,6 +279,7 @@ class LayoutableCell(val cell: Cell) : Layoutable() {
 }
 
 fun Cell.layoutable(): LayoutableCell? {
+    // TODO performance
     return rootCell().layout.lines.asSequence().flatMap { it.words }.filterIsInstance<LayoutableCell>().find { it.cell == this }
 }
 

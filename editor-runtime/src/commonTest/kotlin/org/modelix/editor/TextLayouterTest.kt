@@ -2,6 +2,7 @@ package org.modelix.editor
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertSame
 
 class TextLayouterTest {
 
@@ -24,6 +25,13 @@ class TextLayouterTest {
     @Test fun indent6() = testCells("a {\n  b\n  c\n  d\n  }", listOf("a", listOf(indentChildren, "{", newLine, "b", newLine, "c", newLine, "d", newLine, "}")))
 
     private fun testCells(expected: String, template: Any) {
-        assertEquals(expected, buildCells(template).layout.toString())
+        val text = buildCells(template).layout
+        text.lines.forEach { line ->
+            assertSame(text, line.getText())
+            line.words.forEach { word ->
+                assertSame(line, word.getLine())
+            }
+        }
+        assertEquals(expected, text.toString())
     }
 }

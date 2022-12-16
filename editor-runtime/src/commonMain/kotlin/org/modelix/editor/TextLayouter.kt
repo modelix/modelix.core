@@ -105,11 +105,10 @@ class TextLayouter {
     private fun closeLine() {
         lastLine?.let { line ->
             if (line.first() !is LayoutableIndent) line.add(0, LayoutableIndent(currentIndent))
-            val closedLine = TextLine(line)
-            if (closedLine.words == reusableLastLine?.words) {
+            if (line.toList() == reusableLastLine?.words?.toList()) {
                 closedLines.add(TreeList.of(reusableLastLine!!))
             } else {
-                closedLines.add(TreeList.of(closedLine))
+                closedLines.add(TreeList.of(TextLine(line)))
             }
 
             lastLine = null

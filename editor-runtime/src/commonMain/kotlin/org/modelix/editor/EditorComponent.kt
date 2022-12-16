@@ -31,9 +31,9 @@ open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtm
     fun getRootCell() = rootCell
 
     private fun updateSelection() {
-        if (selection?.isValid() != true) {
-            selection = null
-        }
+        val oldSelection = selection ?: return
+        if (oldSelection.isValid()) return
+        selection = oldSelection.update(this)
     }
 
     open fun changeSelection(newSelection: Selection) {

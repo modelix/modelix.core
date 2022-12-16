@@ -10,8 +10,19 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
     constructor(cell: LayoutableCell, pos: Int) : this(cell, pos, pos)
 
     override fun isValid(): Boolean {
-        val editor = getEditor()
-        return editor != null && editor.getRootCell().layout === layoutable.getLine()?.getText()
+        val editor = getEditor() ?: return false
+        val visibleText = editor.getRootCell().layout
+        val ownText = layoutable.getLine()?.getText()
+        return visibleText === ownText
+    }
+
+    override fun update(editor: EditorComponent): Selection? {
+        val resolvedCell = layoutable.cell.data.cellReferences.asSequence()
+            .mapNotNull { editor.resolveCell(it) }
+            .firstOrNull()
+        val newLayoutable = resolvedCell?.layoutable() ?: return null
+        val textLength = newLayoutable.getLength()
+        return CaretSelection(newLayoutable, start.coerceAtMost(textLength), end.coerceAtMost(textLength))
     }
 
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {

@@ -1,5 +1,6 @@
 package org.modelix.editor
 
+import org.modelix.incremental.IncrementalList
 import org.modelix.metamodel.ITypedNode
 
 interface IFreezable {
@@ -42,6 +43,7 @@ interface ILocalOrChildNodeCell {
 }
 
 open class CellData : Freezable(), ILocalOrChildNodeCell {
+    val cellReferences: MutableList<CellReference> = ArrayList()
     val children: MutableList<ILocalOrChildNodeCell> = ArrayList()
     val actions: MutableList<ICellAction> = ArrayList()
     val properties = CellProperties()
@@ -77,6 +79,12 @@ class Cell(val data: CellData = CellData()) : Freezable() {
     private val children: MutableList<Cell> = ArrayList()
     val layout: LayoutedText by lazy(LazyThreadSafetyMode.NONE) {
         TextLayouter().also { data.layout(it, this) }.done()
+    }
+    val referencesIndexList: IncrementalList<Pair<CellReference, Cell>> by lazy(LazyThreadSafetyMode.NONE) {
+        IncrementalList.concat(
+            IncrementalList.of(data.cellReferences.map { it to this }),
+            IncrementalList.concat(children.map { it.referencesIndexList })
+        )
     }
     var editorComponent: EditorComponent?
         get() = editorComponentValue ?: parent?.editorComponent

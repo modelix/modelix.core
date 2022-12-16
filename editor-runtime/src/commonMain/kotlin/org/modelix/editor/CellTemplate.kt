@@ -70,6 +70,7 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
         val value = node.getPropertyValue(property)
         val data = TextCellData(value ?: "", if (value == null) placeholderText else "")
         data.actions += ChangePropertyAction(node, property)
+        data.cellReferences += PropertyCellReference(property, node.untypedReference())
         return data
     }
 }

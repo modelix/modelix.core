@@ -2,19 +2,24 @@ package org.modelix.editor
 
 import kotlinx.html.TagConsumer
 import kotlinx.html.div
+import org.modelix.incremental.IncrementalIndex
 
 open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtml {
 
     private var rootCell: Cell = rootCellCreator().also { it.editorComponent = this }
     private var selection: Selection? = null
+    private val cellIndex: IncrementalIndex<CellReference, Cell> = IncrementalIndex()
 
-    fun updateRootCell() {
+    fun resolveCell(reference: CellReference): Cell? = cellIndex.lookup(reference)
+
+    private fun updateRootCell() {
         val oldRootCell = rootCell
         val newRootCell = rootCellCreator()
         if (oldRootCell !== newRootCell) {
             oldRootCell.editorComponent = null
             newRootCell.editorComponent = this
             rootCell = newRootCell
+            cellIndex.update(rootCell.referencesIndexList)
         }
     }
 

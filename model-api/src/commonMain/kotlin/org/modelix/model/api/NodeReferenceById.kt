@@ -15,7 +15,7 @@ package org.modelix.model.api
 
 import org.modelix.model.area.IArea
 
-class NodeReferenceById(val nodeId: String) : INodeReference {
+data class NodeReferenceById(val nodeId: String) : INodeReference {
     override fun resolveNode(area: IArea?): INode? {
         return area?.resolveNode(this)
     }

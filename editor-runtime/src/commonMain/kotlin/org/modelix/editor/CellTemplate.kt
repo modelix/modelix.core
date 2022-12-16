@@ -5,6 +5,7 @@ import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.getChildren
 import org.modelix.model.api.getReferenceTarget
+import org.modelix.model.api.setPropertyValue
 
 abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val concept: GeneratedConcept<NodeT, ConceptT>) {
     val properties = CellProperties()
@@ -67,7 +68,18 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
     var placeholderText: String = "<no ${property.name}>"
     override fun createCell(editor: EditorEngine, node: NodeT): CellData {
         val value = node.getPropertyValue(property)
-        return TextCellData(value ?: "", if (value == null) placeholderText else "")
+        val data = TextCellData(value ?: "", if (value == null) placeholderText else "")
+        data.actions += ChangePropertyAction(node, property)
+        return data
+    }
+}
+
+class ChangePropertyAction(val node: ITypedNode, val property: IProperty) : ITextChangeAction {
+    override fun replaceText(range: IntRange, replacement: String): Boolean {
+        val text = node.getPropertyValue(property) ?: ""
+        val newText = text.replaceRange(range, replacement)
+        node.unwrap().setPropertyValue(property, newText)
+        return true
     }
 }
 

@@ -162,10 +162,6 @@ object CommonCellProperties {
     val backgroundColor = CellPropertyKey<String?>("background-color", null)
 }
 
-interface ICellAction {
-
-}
-
 class TextCellData(val text: String, val placeholderText: String = "") : CellData() {
     fun getVisibleText(cell: Cell): String {
         return if (cell.getChildren().isEmpty()) {

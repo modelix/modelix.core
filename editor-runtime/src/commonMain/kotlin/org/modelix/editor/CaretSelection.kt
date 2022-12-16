@@ -3,6 +3,8 @@ package org.modelix.editor
 import kotlinx.html.TagConsumer
 import kotlinx.html.classes
 import kotlinx.html.div
+import kotlin.math.max
+import kotlin.math.min
 
 class CaretSelection(val cell: LayoutableCell, val start: Int, val end: Int) : Selection() {
     constructor(cell: LayoutableCell, pos: Int) : this(cell, pos, pos)
@@ -46,7 +48,15 @@ class CaretSelection(val cell: LayoutableCell, val start: Int, val end: Int) : S
                     }
                 }
             }
-            else -> {}
+            else -> {
+                val typedText = event.typedText
+                if (!typedText.isNullOrEmpty()) {
+                    for (action in cell.cell.data.actions.filterIsInstance<ITextChangeAction>()) {
+                        val range = min(start, end) until max(start, end)
+                        if (action.replaceText(range, typedText)) break
+                    }
+                }
+            }
         }
 
         return true

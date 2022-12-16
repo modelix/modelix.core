@@ -9,6 +9,11 @@ open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtm
     private var rootCell: Cell = rootCellCreator().also { it.editorComponent = this }
     private var selection: Selection? = null
     private val cellIndex: IncrementalIndex<CellReference, Cell> = IncrementalIndex()
+    private var selectionUpdater: (() -> Selection?)? = null
+
+    fun selectAfterUpdate(newSelection: () -> Selection?) {
+        selectionUpdater = newSelection
+    }
 
     fun resolveCell(reference: CellReference): Cell? = cellIndex.lookup(reference)
 
@@ -31,9 +36,12 @@ open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtm
     fun getRootCell() = rootCell
 
     private fun updateSelection() {
-        val oldSelection = selection ?: return
-        if (oldSelection.isValid()) return
-        selection = oldSelection.update(this)
+        val updater = selectionUpdater
+        selectionUpdater = null
+
+        selection = updater?.invoke()
+            ?: selection?.takeIf { it.isValid() }
+            ?: selection?.update(this)
     }
 
     open fun changeSelection(newSelection: Selection) {

@@ -76,7 +76,7 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
 }
 
 class ChangePropertyAction(val node: ITypedNode, val property: IProperty) : ITextChangeAction {
-    override fun replaceText(range: IntRange, replacement: String): Boolean {
+    override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String): Boolean {
         val text = node.getPropertyValue(property) ?: ""
         val newText = text.replaceRange(range, replacement)
         node.unwrap().setPropertyValue(property, newText)

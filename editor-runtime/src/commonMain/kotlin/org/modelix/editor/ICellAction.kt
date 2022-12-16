@@ -5,5 +5,5 @@ interface ICellAction {
 }
 
 interface ITextChangeAction: ICellAction {
-    fun replaceText(range: IntRange, replacement: String): Boolean
+    fun replaceText(editor: EditorComponent, range: IntRange, replacement: String): Boolean
 }

@@ -16,11 +16,14 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         return visibleText === ownText
     }
 
-    override fun update(editor: EditorComponent): Selection? {
-        val resolvedCell = layoutable.cell.data.cellReferences.asSequence()
+    private fun reResolveLayoutable(editor: EditorComponent): LayoutableCell? {
+        return layoutable.cell.data.cellReferences.asSequence()
             .mapNotNull { editor.resolveCell(it) }
-            .firstOrNull()
-        val newLayoutable = resolvedCell?.layoutable() ?: return null
+            .firstOrNull()?.layoutable()
+    }
+
+    override fun update(editor: EditorComponent): Selection? {
+        val newLayoutable = reResolveLayoutable(editor) ?: return null
         val textLength = newLayoutable.getLength()
         return CaretSelection(newLayoutable, start.coerceAtMost(textLength), end.coerceAtMost(textLength))
     }
@@ -69,7 +72,12 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                 if (!typedText.isNullOrEmpty()) {
                     for (action in layoutable.cell.data.actions.filterIsInstance<ITextChangeAction>()) {
                         val range = min(start, end) until max(start, end)
-                        if (action.replaceText(range, typedText)) break
+                        if (action.replaceText(editor, range, typedText)) {
+                            editor.selectAfterUpdate {
+                                reResolveLayoutable(editor)?.let { CaretSelection(it, range.first + typedText.length) }
+                            }
+                            break
+                        }
                     }
                 }
             }

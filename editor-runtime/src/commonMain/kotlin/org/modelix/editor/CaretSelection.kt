@@ -42,7 +42,8 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
 
     override fun processKeyDown(event: JSKeyboardEvent): Boolean {
         val editor = getEditor() ?: throw IllegalStateException("Not attached to any editor")
-        when (event.knownKey) {
+        val knownKey = event.knownKey
+        when (knownKey) {
             KnownKeys.ArrowLeft -> {
                 if (end > 0) {
                     editor.changeSelection(CaretSelection(layoutable, end - 1))
@@ -67,23 +68,41 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     }
                 }
             }
+            KnownKeys.Delete, KnownKeys.Backspace -> {
+                if (start == end) {
+                    val posToDelete = when (knownKey) {
+                        KnownKeys.Delete -> end
+                        KnownKeys.Backspace -> (end - 1)
+                        else -> throw RuntimeException("Cannot happen")
+                    }
+                    val legalRange = 0 until (layoutable.cell.getSelectableText()?.length ?: 0)
+                    if (legalRange.contains(posToDelete)) {
+                        replaceText(posToDelete .. posToDelete, "", editor)
+                    }
+                } else {
+                    replaceText(min(start, end) until max(start, end), "", editor)
+                }
+            }
             else -> {
                 val typedText = event.typedText
                 if (!typedText.isNullOrEmpty()) {
-                    for (action in layoutable.cell.data.actions.filterIsInstance<ITextChangeAction>()) {
-                        val range = min(start, end) until max(start, end)
-                        if (action.replaceText(editor, range, typedText)) {
-                            editor.selectAfterUpdate {
-                                reResolveLayoutable(editor)?.let { CaretSelection(it, range.first + typedText.length) }
-                            }
-                            break
-                        }
-                    }
+                    replaceText(min(start, end) until max(start, end), typedText, editor)
                 }
             }
         }
 
         return true
+    }
+
+    private fun replaceText(range: IntRange, replacement: String, editor: EditorComponent) {
+        for (action in layoutable.cell.data.actions.filterIsInstance<ITextChangeAction>()) {
+            if (action.replaceText(editor, range, replacement)) {
+                editor.selectAfterUpdate {
+                    reResolveLayoutable(editor)?.let { CaretSelection(it, range.first + replacement.length) }
+                }
+                break
+            }
+        }
     }
 
     fun getEditor(): EditorComponent? = layoutable.cell.editorComponent

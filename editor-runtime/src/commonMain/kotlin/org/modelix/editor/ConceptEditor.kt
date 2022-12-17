@@ -40,7 +40,6 @@ fun <NodeT : ITypedNode, ConceptT : ITypedConcept> createDefaultConceptEditor(co
                 for (link in subConcept.getAllChildLinks()) {
                     newLine()
                     label { link.name.cell() }
-                    link.name.cell()
                     when (val l = link.typed()) {
                         is GeneratedSingleChildLink -> l.cell()
                         is GeneratedChildListLink -> {

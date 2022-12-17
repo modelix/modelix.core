@@ -137,6 +137,7 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IType
 
     override fun getUID(): String = getConcept().getUID() + "." + name
 }
+fun IChildLink.typed() = this as? GeneratedChildLink<ITypedNode, ITypedConcept>
 
 class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
     owner: IConcept,
@@ -167,4 +168,5 @@ class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : ITypedCo
 
     override fun getUID(): String = getConcept().getUID() + "." + name
 }
+fun IReferenceLink.typed() = this as? GeneratedReferenceLink<ITypedNode, ITypedConcept>
 

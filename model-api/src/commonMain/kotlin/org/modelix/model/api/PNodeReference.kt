@@ -18,7 +18,9 @@ package org.modelix.model.api
 import org.modelix.model.area.IArea
 
 data class PNodeReference(val id: Long, val branchId: String) : INodeReference {
-
+    init {
+        PNodeReferenceSerializer.ensureRegistered()
+    }
     override fun resolveNode(area: IArea?): INode? {
         return area?.resolveNode(this)
     }
@@ -27,5 +29,29 @@ data class PNodeReference(val id: Long, val branchId: String) : INodeReference {
 
     override fun toString(): String {
         return "PNodeReference_${id.toString(16)}@$branchId"
+    }
+}
+
+object PNodeReferenceSerializer : INodeReferenceSerializer {
+    val PREFIX = "pnode:"
+    init {
+        INodeReferenceSerializer.register(this)
+    }
+
+    fun ensureRegistered() {
+        // Is done in the init section. Calling this method just ensures that the object is initialized.
+    }
+
+    override fun serialize(ref: INodeReference): String? {
+        return (ref as? PNodeReference)?.let { "$PREFIX${ref.id.toString(16)}@${ref.branchId}" }
+    }
+
+    override fun deserialize(serialized: String): INodeReference? {
+        return if (serialized.startsWith(PREFIX)) {
+            val parts = serialized.drop(PREFIX.length).split('@', limit = 2)
+            PNodeReference(parts[0].toLong(16), parts[1])
+        } else {
+            null
+        }
     }
 }

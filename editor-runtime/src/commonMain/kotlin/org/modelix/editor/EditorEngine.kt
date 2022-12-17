@@ -8,6 +8,7 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.getAllConcepts
 import org.modelix.incremental.IncrementalEngine
 import org.modelix.incremental.incrementalFunction
+import org.modelix.metamodel.GeneratedConcept
 import kotlin.coroutines.CoroutineContext
 
 class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
@@ -82,11 +83,8 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
             val editors = node._concept._concept.getAllConcepts()
                 .firstNotNullOfOrNull { editorsForConcept[it.getReference()] }
             val editor = editors?.firstOrNull() as ConceptEditor<NodeT, *>?
-            if (editor != null) {
-                return editor.apply(this, node)
-            } else {
-                return TextCellData("<no editor for ${node._concept._concept.getLongName()}>", "")
-            }
+                ?: createDefaultConceptEditor(node._concept._concept as GeneratedConcept<NodeT, *>)
+            return editor.apply(this, node)
         } catch (ex: Exception) {
             LOG.error(ex) { "Failed to create cell for $node" }
             return TextCellData("<ERROR: ${ex.message}>", "")

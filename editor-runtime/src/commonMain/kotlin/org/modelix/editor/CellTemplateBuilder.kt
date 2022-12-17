@@ -168,7 +168,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun GeneratedChildListLink<*, *>.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add layout information
-        horizontal {
+        horizontal(separator = null) {
             template.properties[CommonCellProperties.layout] = ECellLayout.VERTICAL
             body()
         }

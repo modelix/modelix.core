@@ -16,7 +16,7 @@ object NodeAdapterCache {
             // angular replaces the setTimeout function to trigger an update of the UI,
             // which results in an endless update in this case
             val w: dynamic = window
-            val setTimeout: ((dynamic, Int)->Unit) = w.setTimeout.__zone_symbol__OriginalDelegate ?: w.setTimeout
+            val setTimeout: ((dynamic, Int) -> Unit) = w.setTimeout.__zone_symbol__OriginalDelegate ?: w.setTimeout
             setTimeout({
                 // This is expected to be executed after the update cycle of angular is finished.
                 // If a node wrapper wasn't used after 5 update cycles, it gets evicted.

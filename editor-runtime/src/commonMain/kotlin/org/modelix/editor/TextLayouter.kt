@@ -286,7 +286,7 @@ class LayoutableIndent(val indentSize: Int): Layoutable() {
     fun totalIndent() = indentSize + (initialLine?.getContextIndent() ?: 0)
     override fun getLength(): Int = totalIndent() * 2
     override fun isWhitespace(): Boolean = true
-    override fun toText(): String = (1..totalIndent()).joinToString { "  " }
+    override fun toText(): String = (1..totalIndent()).joinToString("") { "  " }
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.span("indent") {
             +toText().useNbsp()

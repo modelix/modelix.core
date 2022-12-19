@@ -71,3 +71,9 @@ fun INode.addNewChild(role: String?, concept: IConcept?): INode = addNewChild(ro
 fun INode.remove() {
     parent?.removeChild(this)
 }
+
+fun INode.index(): Int {
+    return (parent ?: return 0).getChildren(roleInParent).indexOf(this)
+}
+
+fun INode.getContainmentLink() = roleInParent?.let { parent?.concept?.getChildLink(it) }

@@ -9,7 +9,8 @@ import org.modelix.model.api.getAllConcepts
 import org.modelix.incremental.IncrementalEngine
 import org.modelix.incremental.incrementalFunction
 import org.modelix.metamodel.GeneratedConcept
-import kotlin.coroutines.CoroutineContext
+import org.modelix.metamodel.ITypedConcept
+import org.modelix.model.api.IConcept
 
 class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
 
@@ -53,8 +54,14 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
         return createCellIncremental(node)
     }
 
+    fun createCellModel(concept: IConcept): CellTemplate<*, *> {
+        val editor: ConceptEditor<ITypedNode, ITypedConcept> = resolveConceptEditor(concept) as ConceptEditor<ITypedNode, ITypedConcept>
+        val template: CellTemplate<ITypedNode, ITypedConcept> = editor.apply(concept as GeneratedConcept<ITypedNode, ITypedConcept>)
+        return template
+    }
+
     fun editNode(node: ITypedNode): EditorComponent {
-        return EditorComponent({ createCell(node) })
+        return EditorComponent(this, { createCell(node) })
     }
 
     private fun doCreateCell(node: ITypedNode): Cell {
@@ -80,15 +87,21 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
 
     private fun <NodeT : ITypedNode> doCreateCellData(node: NodeT): CellData {
         try {
-            val editors = node._concept._concept.getAllConcepts()
-                .firstNotNullOfOrNull { editorsForConcept[it.getReference()] }
-            val editor = editors?.firstOrNull() as ConceptEditor<NodeT, *>?
-                ?: createDefaultConceptEditor(node._concept._concept as GeneratedConcept<NodeT, *>)
-            return editor.apply(this, node)
+            val editor = resolveConceptEditor(node._concept._concept) as ConceptEditor<NodeT, *>
+            val data = editor.apply(this, node)
+            data.properties[CellActionProperties.substitute] = ReplaceNodeActionProvider(LocationOfExistingNode(node.unwrap()))
+            return data
         } catch (ex: Exception) {
             LOG.error(ex) { "Failed to create cell for $node" }
             return TextCellData("<ERROR: ${ex.message}>", "")
         }
+    }
+
+    private fun resolveConceptEditor(concept: IConcept): ConceptEditor<*, out ITypedConcept> {
+        val editors = concept.getAllConcepts()
+            .firstNotNullOfOrNull { editorsForConcept[it.getReference()] }
+        return editors?.firstOrNull()
+            ?: createDefaultConceptEditor(concept as GeneratedConcept<*, *>)
     }
 
     fun dispose() {
@@ -101,8 +114,4 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
     }
 }
 
-private class CachedCell(val node: ITypedNode) {
-    val children: MutableList<CachedCell> = ArrayList()
-
-}
 

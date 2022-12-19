@@ -25,12 +25,32 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
         return children.map { it.apply(editor, node) }
     }
     protected abstract fun createCell(editor: EditorEngine, node: NodeT): CellData
+
+    open fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+        return children.asSequence().map { it.getInstantiationActions(location) }.firstOrNull { it.isNotEmpty() } ?: emptyList()
+    }
 }
 
 class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(editor: EditorEngine, node: NodeT) = TextCellData(text, "")
+    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+        return listOf(InstantiateNodeAction(location))
+    }
+
+    inner class InstantiateNodeAction(val location: INodeLocation) : ICodeCompletionAction {
+        override fun isApplicable(parameters: CodeCompletionParameters): Boolean = true
+
+        override fun getMatchingText(parameters: CodeCompletionParameters): String {
+            return text
+        }
+
+        override fun getDescription(parameters: CodeCompletionParameters): String {
+            return concept.getShortName()
+        }
+    }
 }
+
 class NewLineCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(editor: EditorEngine, node: NodeT): CellData {
@@ -69,7 +89,7 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
     override fun createCell(editor: EditorEngine, node: NodeT): CellData {
         val value = node.getPropertyValue(property)
         val data = TextCellData(value ?: "", if (value == null) placeholderText else "")
-        data.actions += ChangePropertyAction(node, property)
+        data.properties[CellActionProperties.replaceText] = ChangePropertyAction(node, property)
         data.cellReferences += PropertyCellReference(property, node.untypedReference())
         return data
     }
@@ -121,3 +141,5 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
 
     fun getChildNodes(node: NodeT) = node.unwrap().getChildren(link).toList()
 }
+
+fun CellTemplate<*, *>.firstLeaf(): CellTemplate<*, *> = if (children.isEmpty()) this else children.first().firstLeaf()

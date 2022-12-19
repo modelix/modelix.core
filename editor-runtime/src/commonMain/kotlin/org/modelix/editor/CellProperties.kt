@@ -1,5 +1,7 @@
 package org.modelix.editor
 
+import kotlin.reflect.KProperty
+
 class CellProperties : Freezable() {
     private val properties: MutableMap<CellPropertyKey<*>, Any?> = HashMap()
     operator fun <T> get(key: CellPropertyKey<T>): T {
@@ -10,6 +12,7 @@ class CellProperties : Freezable() {
 
     operator fun <T> set(key: CellPropertyKey<T>, value: T) {
         checkNotFrozen()
+        if (isSet(key)) throw IllegalStateException("property '$key' is already set")
         properties[key] = value
     }
 
@@ -26,6 +29,8 @@ class CellProperties : Freezable() {
 class CellPropertyKey<E>(val name: String, val defaultValue: E) {
     override fun toString() = name
 }
+
+fun <E> CellPropertyKey<E>.from(cell: Cell) = cell.data.properties[this]
 
 enum class ECellLayout {
     VERTICAL,

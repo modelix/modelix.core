@@ -86,7 +86,11 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
             else -> {
                 val typedText = event.typedText
                 if (!typedText.isNullOrEmpty()) {
-                    replaceText(min(start, end) until max(start, end), typedText, editor)
+                    if (typedText == " " && event.modifiers == Modifiers.CTRL) {
+                        triggerCodeCompletion()
+                    } else {
+                        replaceText(min(start, end) until max(start, end), typedText, editor)
+                    }
                 }
             }
         }
@@ -94,8 +98,15 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         return true
     }
 
+    fun triggerCodeCompletion() {
+        val editor = getEditor() ?: throw IllegalStateException("Not attached to any editor")
+        val actionProviders = layoutable.cell.getSubstituteActions().toList()
+        editor.showCodeCompletionMenu(actionProviders)
+    }
+
     private fun replaceText(range: IntRange, replacement: String, editor: EditorComponent) {
-        for (action in layoutable.cell.data.actions.filterIsInstance<ITextChangeAction>()) {
+        val actions = layoutable.cell.centerAlignedHierarchy().mapNotNull { it.getProperty(CellActionProperties.replaceText) }
+        for (action in actions) {
             if (action.replaceText(editor, range, replacement)) {
                 editor.selectAfterUpdate {
                     reResolveLayoutable(editor)?.let { CaretSelection(it, range.first + replacement.length) }

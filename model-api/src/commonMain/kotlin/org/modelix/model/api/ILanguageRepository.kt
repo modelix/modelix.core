@@ -1,9 +1,11 @@
 package org.modelix.model.api
 
+// TODO make it thread-safe
 interface ILanguageRepository {
     companion object {
         val default = DefaultLanguageRepository
         private var repositories: Set<ILanguageRepository> = setOf(DefaultLanguageRepository)
+        private var subconceptsCache: Map<IConcept, Set<IConcept>>? = null
 
         fun resolveConcept(ref: IConceptReference): IConcept {
             return tryResolveConcept(ref) ?: throw RuntimeException("Concept not found: $ref")
@@ -22,9 +24,38 @@ interface ILanguageRepository {
         fun unregister(repository: ILanguageRepository) {
             repositories -= repository
         }
+
+        fun getDirectSubConcepts(superConcept: IConcept): Set<IConcept> {
+            val cache = loadSubConceptsCache()
+            return cache[superConcept] ?: emptySet()
+        }
+
+        private fun loadSubConceptsCache(): Map<IConcept, Set<IConcept>> {
+            // TODO invalidate when new concepts are registered
+            subconceptsCache?.let { return it }
+            val cache = HashMap<IConcept, MutableSet<IConcept>>()
+            for (concept in repositories.asSequence().flatMap { it.getAllConcepts() }) {
+                for (superConcept in concept.getDirectSuperConcepts()) {
+                    cache.getOrPut(superConcept, { HashSet() }).add(concept)
+                }
+            }
+            subconceptsCache = cache
+            return cache
+        }
     }
 
     fun resolveConcept(uid: String): IConcept?
+    fun getAllConcepts(): List<IConcept>
+}
+
+fun IConcept.getDirectSubConcepts() = ILanguageRepository.getDirectSubConcepts(this)
+fun IConcept.getAllSubConcepts(includeSelf: Boolean) = getAllSubConceptsIncludingDuplicates(includeSelf).toSet()
+private fun IConcept.getAllSubConceptsIncludingDuplicates(includeSelf: Boolean): Sequence<IConcept> {
+    return if (includeSelf) {
+        sequenceOf(this) + getAllSubConceptsIncludingDuplicates(false)
+    } else {
+        getDirectSubConcepts().asSequence().flatMap { it.getAllSubConceptsIncludingDuplicates(true) }
+    }
 }
 
 object DefaultLanguageRepository : ILanguageRepository {
@@ -52,5 +83,9 @@ object DefaultLanguageRepository : ILanguageRepository {
 
     override fun resolveConcept(uid: String): IConcept? {
         return concepts[uid]
+    }
+
+    override fun getAllConcepts(): List<IConcept> {
+        return concepts.values.toList()
     }
 }

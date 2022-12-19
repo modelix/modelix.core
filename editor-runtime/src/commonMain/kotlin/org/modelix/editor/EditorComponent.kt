@@ -4,12 +4,13 @@ import kotlinx.html.TagConsumer
 import kotlinx.html.div
 import org.modelix.incremental.IncrementalIndex
 
-open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtml {
+open class EditorComponent(val engine: EditorEngine?, private val rootCellCreator: ()->Cell) : IProducesHtml {
 
     private var rootCell: Cell = rootCellCreator().also { it.editorComponent = this }
     private var selection: Selection? = null
     private val cellIndex: IncrementalIndex<CellReference, Cell> = IncrementalIndex()
     private var selectionUpdater: (() -> Selection?)? = null
+    private var codeCompletionMenu: CodeCompletionMenu? = null
 
     fun selectAfterUpdate(newSelection: () -> Selection?) {
         selectionUpdater = newSelection
@@ -51,6 +52,11 @@ open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtm
 
     fun getSelection(): Selection? = selection
 
+    fun showCodeCompletionMenu(entries: List<ICodeCompletionActionProvider>) {
+        codeCompletionMenu = CodeCompletionMenu(this, entries)
+        update()
+    }
+
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.div("editor") {
             div(MAIN_LAYER_CLASS_NAME) {
@@ -58,6 +64,9 @@ open class EditorComponent(private val rootCellCreator: ()->Cell) : IProducesHtm
             }
             div("selection-layer relative-layer") {
                 selection?.let(produceChild)
+            }
+            div("popup-layer relative-layer") {
+                codeCompletionMenu?.let(produceChild)
             }
         }
     }

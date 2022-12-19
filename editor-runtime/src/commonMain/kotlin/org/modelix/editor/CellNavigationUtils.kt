@@ -38,12 +38,12 @@ fun Cell.nextLeaf(): Cell? {
     return sibling.firstLeaf()
 }
 
-fun Cell.firstLeaf(): Cell? {
+fun Cell.firstLeaf(): Cell {
     val children = this.getChildren()
     return if (children.isEmpty()) this else children.first().firstLeaf()
 }
 
-fun Cell.lastLeaf(): Cell? {
+fun Cell.lastLeaf(): Cell {
     val children = this.getChildren()
     return if (children.isEmpty()) this else children.last().lastLeaf()
 }
@@ -68,3 +68,28 @@ fun Cell.nextSibling(): Cell? {
 
 fun Cell.descendants(): Sequence<Cell> = getChildren().asSequence().flatMap { it.descendantsAndSelf() }
 fun Cell.descendantsAndSelf(): Sequence<Cell> = sequenceOf(this) + descendants()
+fun Cell.ancestors(includeSelf: Boolean = false) = generateSequence(if (includeSelf) this else this.parent) { it.parent }
+
+fun Cell.commonAncestor(other: Cell) = (ancestors(true) - other.ancestors().toSet()).last()
+
+fun Cell.isLeaf() = this.getChildren().isEmpty()
+fun Cell.isFirstChild() = previousSibling() == null
+fun Cell.isLastChild() = nextSibling() == null
+
+fun Cell.leftAlignedHierarchy() = firstLeaf().ancestors(true).takeWhilePrevious { it.isFirstChild() }
+fun Cell.rightAlignedHierarchy() = lastLeaf().ancestors(true).takeWhilePrevious { it.isLastChild() }
+fun Cell.centerAlignedHierarchy() = leftAlignedHierarchy().toList().intersect(rightAlignedHierarchy().toSet())
+
+/**
+ * Takes all the elements that matches the predicate and one more.
+ */
+fun <T> Sequence<T>.takeWhilePrevious(predicate: (previous: T) -> Boolean): Sequence<T> {
+    var previous: T? = null
+    var isFirst = true
+    return takeWhile { current ->
+        val matches = if (isFirst) true else predicate(previous as T)
+        previous = current
+        isFirst = false
+        matches
+    }
+}

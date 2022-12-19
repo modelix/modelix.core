@@ -1,5 +1,6 @@
 package org.modelix.metamodel
 
+import org.modelix.model.api.IConcept
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.resolve
@@ -34,6 +35,10 @@ object TypedLanguagesRegistry : ILanguageRepository {
 
     override fun resolveConcept(uid: String): GeneratedConcept<*, *>? {
         return concepts[uid]
+    }
+
+    override fun getAllConcepts(): List<IConcept> {
+        return concepts.values.toList()
     }
 
     fun wrapNode(node: INode): ITypedNode {

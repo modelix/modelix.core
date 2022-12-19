@@ -5,7 +5,6 @@ import org.modelix.metamodel.ITypedNode
 open class CellData : Freezable(), ILocalOrChildNodeCell {
     val cellReferences: MutableList<CellReference> = ArrayList()
     val children: MutableList<ILocalOrChildNodeCell> = ArrayList()
-    val actions: MutableList<ICellAction> = ArrayList()
     val properties = CellProperties()
 
     fun addChild(child: ILocalOrChildNodeCell) {
@@ -27,7 +26,11 @@ open class CellData : Freezable(), ILocalOrChildNodeCell {
     }
 
     open fun cellToString(cell: Cell) = "[${cell.getChildren().joinToString(" ")}]"
+
+    open fun isVisible(): Boolean = false
 }
+
+fun Cell.isVisible() = data.isVisible()
 
 interface ILocalOrChildNodeCell {
 
@@ -54,4 +57,6 @@ class TextCellData(val text: String, val placeholderText: String = "") : CellDat
     }
 
     override fun cellToString(cell: Cell) = getVisibleText(cell)
+
+    override fun isVisible(): Boolean = true
 }

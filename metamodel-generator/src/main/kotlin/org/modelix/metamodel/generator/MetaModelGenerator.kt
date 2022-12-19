@@ -162,9 +162,17 @@ class MetaModelGenerator(val outputDir: Path) {
                 }
             }
 
-            addType(TypeSpec.companionObjectBuilder()
-                .superclass(concept.conceptWrapperImplType())
-                .build())
+            addType(TypeSpec.companionObjectBuilder().apply {
+                superclass(concept.conceptWrapperImplType())
+                if (!concept.concept.abstract) {
+                    addSuperinterface(INonAbstractConcept::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
+                    addFunction(FunSpec.builder(INonAbstractConcept<*>::getInstanceClass.name)
+                        .addModifiers(KModifier.OVERRIDE)
+                        .returns(KClass::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
+                        .addStatement("return ${concept.nodeWrapperInterfaceType().simpleName}::class")
+                        .build())
+                }
+            }.build())
         }.build()
     }
 

@@ -3,7 +3,6 @@ package org.modelix.metamodel
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import kotlin.reflect.KClass
-import kotlin.reflect.cast
 
 abstract class ChildAccessor<ChildT : ITypedNode>(
     protected val parent: INode,
@@ -26,8 +25,12 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         }.iterator()
     }
 
-    fun addNew(index: Int = -1, concept: IConcept? = null): ChildT {
-        return childType.cast(parent.addNewChild(role, index, concept).typed())
+    fun addNew(index: Int = -1): ChildT {
+        return parent.addNewChild(role, index, childConcept).typed(childType)
+    }
+
+    fun <NewNodeT : ChildT> addNew(index: Int = -1, concept: INonAbstractConcept<NewNodeT>): NewNodeT {
+        return parent.addNewChild(role, index, concept.untyped()).typed(concept.getInstanceClass())
     }
 
     fun removeUnwrapped(child: INode) {

@@ -13,11 +13,22 @@ class SingleChildAccessor<ChildT : ITypedNode>(
     fun isSet(): Boolean = !isEmpty()
     fun get(): ChildT? = iterator().let { if (it.hasNext()) it.next() else null }
     fun <T> read(receiver: (ChildT?)->T): T = receiver(get())
-    fun setNew(concept: IConcept? = null): ChildT {
-        require(concept == null || concept.isSubConceptOf(childConcept)) {
+    fun setNew(): ChildT {
+        get()?.let { parent.removeChild(it.unwrap()) }
+        return addNew()
+    }
+    fun <NewChildT : ChildT> setNew(concept: INonAbstractConcept<NewChildT>): NewChildT {
+        require(concept.untyped().isSubConceptOf(childConcept)) {
             "$concept is not a sub concept of $childConcept"
         }
         get()?.let { parent.removeChild(it.unwrap()) }
         return addNew(concept = concept)
     }
+}
+
+fun <NewChildT : ChildT, ChildT : ITypedNode> SingleChildAccessor<ChildT>.setNew(concept: INonAbstractConcept<NewChildT>, initializer: NewChildT.() -> Unit): NewChildT {
+    return setNew(concept).apply(initializer)
+}
+fun <ChildT : ITypedNode> SingleChildAccessor<ChildT>.setNew(initializer: ChildT.() -> Unit): ChildT {
+    return setNew().apply(initializer)
 }

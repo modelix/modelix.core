@@ -6,11 +6,14 @@ import org.modelix.incremental.IncrementalIndex
 
 open class EditorComponent(val engine: EditorEngine?, private val rootCellCreator: ()->Cell) : IProducesHtml {
 
-    private var rootCell: Cell = rootCellCreator().also { it.editorComponent = this }
     private var selection: Selection? = null
     private val cellIndex: IncrementalIndex<CellReference, Cell> = IncrementalIndex()
     private var selectionUpdater: (() -> Selection?)? = null
     private var codeCompletionMenu: CodeCompletionMenu? = null
+    private var rootCell: Cell = rootCellCreator().also {
+        it.editorComponent = this
+        cellIndex.update(it.referencesIndexList)
+    }
 
     fun selectAfterUpdate(newSelection: () -> Selection?) {
         selectionUpdater = newSelection

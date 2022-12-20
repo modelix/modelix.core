@@ -12,6 +12,7 @@ interface ITypedNode {
     fun unwrap(): INode
 }
 
+fun ITypedNode.untyped() = unwrap()
 fun ITypedNode.getPropertyValue(property: IProperty): String? = unwrap().getPropertyValue(property.name)
 fun ITypedNode.instanceOf(concept: ITypedConcept): Boolean {
     return instanceOf(concept._concept)

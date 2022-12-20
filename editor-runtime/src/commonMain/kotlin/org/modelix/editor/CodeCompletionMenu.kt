@@ -1,7 +1,6 @@
 package org.modelix.editor
 
 import kotlinx.html.TagConsumer
-import kotlinx.html.classes
 import kotlinx.html.div
 import kotlinx.html.table
 import kotlinx.html.td
@@ -36,7 +35,7 @@ class CodeCompletionMenu(val editor: EditorComponent, val providers: List<ICodeC
             table {
                 val parameters = parameters()
                 entries.forEachIndexed { index, action ->
-                    tr("visibleSelection".takeIf { index == selectedIndex }) {
+                    tr("ccSelectedEntry".takeIf { index == selectedIndex }) {
                         td("matchingText") {
                             +action.getMatchingText(parameters)
                         }

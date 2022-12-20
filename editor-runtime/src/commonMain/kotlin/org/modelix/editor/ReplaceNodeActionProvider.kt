@@ -10,7 +10,7 @@ import org.modelix.model.api.getContainmentLink
 import org.modelix.model.api.index
 import org.modelix.model.api.remove
 
-class ReplaceNodeActionProvider(val location: INodeLocation) : ICodeCompletionActionProvider {
+data class ReplaceNodeActionProvider(val location: INodeLocation) : ICodeCompletionActionProvider {
     override fun getActions(parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
         val engine = parameters.editor.engine ?: return emptyList()
         val expectedConcept = location.expectedConcept() ?: return emptyList()
@@ -29,7 +29,7 @@ interface INodeLocation {
     fun expectedConcept(): IConcept?
 }
 
-class LocationOfExistingNode(val node: INode) : INodeLocation {
+data class LocationOfExistingNode(val node: INode) : INodeLocation {
     override fun createNode(subConcept: IConcept): INode {
         val parent = node.parent ?: throw RuntimeException("cannot replace the root node")
         val newNode = parent.addNewChild(node.roleInParent, node.index(), subConcept)

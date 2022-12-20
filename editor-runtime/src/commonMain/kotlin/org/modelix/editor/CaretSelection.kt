@@ -18,7 +18,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
 
     private fun reResolveLayoutable(editor: EditorComponent): LayoutableCell? {
         return layoutable.cell.data.cellReferences.asSequence()
-            .mapNotNull { editor.resolveCell(it) }
+            .mapNotNull { editor.resolveCell(it).firstOrNull() }
             .firstOrNull()?.layoutable()
     }
 

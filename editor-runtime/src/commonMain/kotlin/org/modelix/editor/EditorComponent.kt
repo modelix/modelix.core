@@ -19,7 +19,7 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
         selectionUpdater = newSelection
     }
 
-    fun resolveCell(reference: CellReference): Cell? = cellIndex.lookup(reference)
+    fun resolveCell(reference: CellReference): List<Cell> = cellIndex.lookup(reference)
 
     private fun updateRootCell() {
         val oldRootCell = rootCell
@@ -57,6 +57,7 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
 
     fun showCodeCompletionMenu(entries: List<ICodeCompletionActionProvider>) {
         codeCompletionMenu = CodeCompletionMenu(this, entries)
+        codeCompletionMenu?.updateActions()
         update()
     }
 

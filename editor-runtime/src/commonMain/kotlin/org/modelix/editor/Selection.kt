@@ -1,7 +1,6 @@
 package org.modelix.editor
 
-abstract class Selection : IProducesHtml {
-    abstract fun processKeyDown(event: JSKeyboardEvent): Boolean
+abstract class Selection : IProducesHtml, IKeyboardHandler {
     abstract fun isValid(): Boolean
     abstract fun update(editor: EditorComponent): Selection?
 }

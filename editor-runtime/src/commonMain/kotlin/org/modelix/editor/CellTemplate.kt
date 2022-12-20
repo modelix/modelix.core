@@ -48,6 +48,10 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
         override fun getDescription(parameters: CodeCompletionParameters): String {
             return concept.getShortName()
         }
+
+        override fun execute() {
+            location.createNode(concept)
+        }
     }
 }
 

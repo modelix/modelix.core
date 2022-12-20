@@ -6,7 +6,7 @@ import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
 
-class CodeCompletionMenu(val editor: EditorComponent, val providers: List<ICodeCompletionActionProvider>) : IProducesHtml {
+class CodeCompletionMenu(val editor: EditorComponent, val providers: List<ICodeCompletionActionProvider>) : IProducesHtml, IKeyboardHandler {
     private var pattern: String = ""
     private var selectedIndex: Int = 0
     private var entries: List<ICodeCompletionAction> = emptyList()
@@ -29,6 +29,21 @@ class CodeCompletionMenu(val editor: EditorComponent, val providers: List<ICodeC
     }
 
     fun getSelectedEntry(): ICodeCompletionAction? = entries.getOrNull(selectedIndex)
+
+    override fun processKeyDown(event: JSKeyboardEvent): Boolean {
+        when (event.knownKey) {
+            KnownKeys.ArrowUp -> selectPrevious()
+            KnownKeys.ArrowDown -> selectNext()
+            KnownKeys.Escape -> editor.closeCodeCompletionMenu()
+            KnownKeys.Enter -> {
+                getSelectedEntry()?.execute()
+                editor.closeCodeCompletionMenu()
+            }
+            else -> return false
+        }
+        editor.update()
+        return true
+    }
 
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.div("ccmenu") {
@@ -64,6 +79,7 @@ interface ICodeCompletionAction {
     fun isApplicable(parameters: CodeCompletionParameters): Boolean
     fun getMatchingText(parameters: CodeCompletionParameters): String
     fun getDescription(parameters: CodeCompletionParameters): String
+    fun execute()
 }
 
 class CodeCompletionParameters(val editor: EditorComponent, val pattern: String)

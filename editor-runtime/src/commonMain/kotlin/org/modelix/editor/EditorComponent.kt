@@ -9,7 +9,7 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
     private var selection: Selection? = null
     private val cellIndex: IncrementalIndex<CellReference, Cell> = IncrementalIndex()
     private var selectionUpdater: (() -> Selection?)? = null
-    private var codeCompletionMenu: CodeCompletionMenu? = null
+    protected var codeCompletionMenu: CodeCompletionMenu? = null
     private var rootCell: Cell = rootCellCreator().also {
         it.editorComponent = this
         cellIndex.update(it.referencesIndexList)
@@ -61,6 +61,11 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
         update()
     }
 
+    fun closeCodeCompletionMenu() {
+        codeCompletionMenu = null
+        update()
+    }
+
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.div("editor") {
             div(MAIN_LAYER_CLASS_NAME) {
@@ -80,11 +85,17 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
     }
 
     open fun processKeyDown(event: JSKeyboardEvent): Boolean {
-        val selection = this.selection ?: return false
-        return selection.processKeyDown(event)
+        for (handler in listOfNotNull(codeCompletionMenu, selection)) {
+            if (handler.processKeyDown(event)) return true
+        }
+        return false
     }
 
     companion object {
         val MAIN_LAYER_CLASS_NAME = "main-layer"
     }
+}
+
+interface IKeyboardHandler {
+    fun processKeyDown(event: JSKeyboardEvent): Boolean
 }

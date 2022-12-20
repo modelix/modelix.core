@@ -53,6 +53,7 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: () -> Cell) : Edi
     fun updateHtml() {
         val oldEditorElement = this.generatedHtml
         this.generatedHtml = null
+        this.codeCompletionMenu?.generatedHtml = null // TODO more generic mechanism to update UI elements that are not part of the cell tree
         val newEditorElement = IncrementalJSDOMBuilder(document, oldEditorElement).produce(this)()
         if (newEditorElement != oldEditorElement) {
             oldEditorElement?.remove()

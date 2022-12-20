@@ -44,17 +44,17 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
     }
 
     override fun getChildLink(name: String): IChildLink {
-        return childLinksMap[name]
+        return getAllChildLinks().find { it.name == name }
             ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain child link $name")
     }
 
     override fun getProperty(name: String): IProperty {
-        return propertiesMap[name]
+        return getAllProperties().find { it.name == name }
             ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain property $name")
     }
 
     override fun getReferenceLink(name: String): IReferenceLink {
-        return referenceLinksMap[name]
+        return getAllReferenceLinks().find { it.name == name }
             ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain reference link $name")
     }
 

@@ -39,6 +39,7 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: () -> Cell) : Edi
         updateSelectionView()
         updateHtml()
         selectionView?.updateBounds()
+        codeCompletionMenu?.let { JSCodeCompletionMenuUI(it, this).updateBounds() }
     }
 
     private fun updateSelectionView() {

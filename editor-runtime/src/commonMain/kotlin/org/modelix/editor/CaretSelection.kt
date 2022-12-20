@@ -101,7 +101,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
     fun triggerCodeCompletion() {
         val editor = getEditor() ?: throw IllegalStateException("Not attached to any editor")
         val actionProviders = layoutable.cell.getSubstituteActions().toList()
-        editor.showCodeCompletionMenu(actionProviders)
+        editor.showCodeCompletionMenu(layoutable, actionProviders)
     }
 
     private fun replaceText(range: IntRange, replacement: String, editor: EditorComponent) {

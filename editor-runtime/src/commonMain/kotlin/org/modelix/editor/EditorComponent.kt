@@ -55,8 +55,8 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
 
     fun getSelection(): Selection? = selection
 
-    fun showCodeCompletionMenu(entries: List<ICodeCompletionActionProvider>) {
-        codeCompletionMenu = CodeCompletionMenu(this, entries)
+    fun showCodeCompletionMenu(anchor: LayoutableCell, entries: List<ICodeCompletionActionProvider>) {
+        codeCompletionMenu = CodeCompletionMenu(this, anchor, entries)
         codeCompletionMenu?.updateActions()
         update()
     }

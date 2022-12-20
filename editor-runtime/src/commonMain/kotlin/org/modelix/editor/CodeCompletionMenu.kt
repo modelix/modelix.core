@@ -6,7 +6,7 @@ import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
 
-class CodeCompletionMenu(val editor: EditorComponent, val providers: List<ICodeCompletionActionProvider>) : IProducesHtml, IKeyboardHandler {
+class CodeCompletionMenu(val editor: EditorComponent, val anchor: LayoutableCell, val providers: List<ICodeCompletionActionProvider>) : IProducesHtml, IKeyboardHandler {
     private var pattern: String = ""
     private var selectedIndex: Int = 0
     private var entries: List<ICodeCompletionAction> = emptyList()

@@ -50,6 +50,7 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
 
     open fun changeSelection(newSelection: Selection) {
         selection = newSelection
+        codeCompletionMenu = null
         update()
     }
 

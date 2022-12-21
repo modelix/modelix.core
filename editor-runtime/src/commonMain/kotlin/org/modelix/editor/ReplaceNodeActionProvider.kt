@@ -1,9 +1,6 @@
 package org.modelix.editor
 
-import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
-import org.modelix.model.api.IConceptReference
-import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.getAllSubConcepts
 import org.modelix.model.api.getContainmentLink
@@ -19,7 +16,7 @@ data class ReplaceNodeActionProvider(val location: INodeLocation) : ICodeComplet
             engine.createCellModel(concept)
         }
         return cellModels.flatMap {
-            it.getInstantiationActions(location)
+            it.getInstantiationActions(location) ?: emptyList()
         }
     }
 }

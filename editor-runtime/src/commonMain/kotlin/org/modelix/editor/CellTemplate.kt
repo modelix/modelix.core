@@ -26,8 +26,8 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
     }
     protected abstract fun createCell(editor: EditorEngine, node: NodeT): CellData
 
-    open fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
-        return children.asSequence().map { it.getInstantiationActions(location) }.firstOrNull { it.isNotEmpty() } ?: emptyList()
+    open fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction>? {
+        return children.asSequence().mapNotNull { it.getInstantiationActions(location) }.firstOrNull()
     }
 }
 
@@ -97,6 +97,10 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
         data.cellReferences += PropertyCellReference(property, node.untypedReference())
         return data
     }
+    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+        // TODO
+        return listOf()
+    }
 }
 
 class ChangePropertyAction(val node: ITypedNode, val property: IProperty) : ITextChangeAction {
@@ -119,11 +123,19 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
         return sourceNode.unwrap().getReferenceTarget(link)?.typedUnsafe()
     }
+    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+        // TODO
+        return listOf()
+    }
 }
 
 class FlagCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, property: IProperty, val text: String)
     : PropertyCellTemplate<NodeT, ConceptT>(concept, property) {
     override fun createCell(editor: EditorEngine, node: NodeT) = if (node.getPropertyValue(property) == "true") TextCellData(text, "") else CellData()
+    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+        // TODO
+        return listOf()
+    }
 }
 
 class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val link: IChildLink)
@@ -144,6 +156,11 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
     }
 
     fun getChildNodes(node: NodeT) = node.unwrap().getChildren(link).toList()
+
+    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+        // TODO
+        return listOf()
+    }
 }
 
 fun CellTemplate<*, *>.firstLeaf(): CellTemplate<*, *> = if (children.isEmpty()) this else children.first().firstLeaf()

@@ -1,8 +1,11 @@
 package org.modelix.editor
 
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
+import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getAllSubConcepts
+import org.modelix.model.api.getChildren
 import org.modelix.model.api.getContainmentLink
 import org.modelix.model.api.index
 import org.modelix.model.api.remove
@@ -36,5 +39,18 @@ data class LocationOfExistingNode(val node: INode) : INodeLocation {
 
     override fun expectedConcept(): IConcept? {
         return node.getContainmentLink()?.targetConcept
+    }
+}
+
+data class ChildLinkLocation(val parent: INode, val link: IChildLink, val index: Int = 0) : INodeLocation {
+    override fun createNode(subConcept: IConcept): INode {
+        val existing = parent.getChildren(link).toList().getOrNull(index)
+        val newNode = parent.addNewChild(link, index, subConcept)
+        existing?.remove()
+        return newNode
+    }
+
+    override fun expectedConcept(): IConcept? {
+        return link.targetConcept
     }
 }

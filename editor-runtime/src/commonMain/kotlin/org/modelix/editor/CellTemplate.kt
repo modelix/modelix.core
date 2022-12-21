@@ -143,7 +143,10 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
     override fun createCell(editor: EditorEngine, node: NodeT) = CellData().also { cell ->
         val childNodes = getChildNodes(node)
         if (childNodes.isEmpty()) {
-            cell.addChild(TextCellData("", "<no ${link.name}>"))
+            val placeholder = TextCellData("", "<no ${link.name}>")
+            placeholder.properties[CellActionProperties.substitute] =
+                ReplaceNodeActionProvider(ChildLinkLocation(node.untyped(), link, 0))
+            cell.addChild(placeholder)
         } else {
             val childCells = childNodes.map { ChildNodeCellReference(it.typed()) }
             childCells.forEach {child ->

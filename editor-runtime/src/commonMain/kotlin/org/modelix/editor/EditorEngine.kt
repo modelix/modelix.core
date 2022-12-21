@@ -61,7 +61,7 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
     }
 
     fun editNode(node: ITypedNode): EditorComponent {
-        return EditorComponent(this, { createCell(node) })
+        return EditorComponent(this, { node.unwrap().getArea().executeRead { createCell(node) } })
     }
 
     private fun doCreateCell(node: ITypedNode): Cell {

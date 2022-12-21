@@ -80,6 +80,43 @@ class MetaModelGenerator(val outputDir: Path) {
             .addType(generateConceptWrapperImpl(concept))
             .addType(generateNodeWrapperInterface(concept))
             .addType(generateNodeWrapperImpl(concept))
+            .apply {
+                // allow to write `nodes.myChildren` instead of `nodes.flatMap { it.myChildren }`
+                for (feature in concept.directFeatures()) {
+                    val receiverType = Iterable::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
+                    when (val data = feature.data) {
+                        is PropertyData -> {
+                            addProperty(PropertySpec.builder(feature.validName, List::class.asTypeName().parameterizedBy(data.type.asKotlinType()))
+                                .receiver(receiverType)
+                                .getter(FunSpec.getterBuilder().addStatement("return map { it.%N }", feature.validName).build())
+                                .build())
+                            addProperty(PropertySpec.builder("raw_" + feature.validName, List::class.asTypeName().parameterizedBy(String::class.asTypeName().copy(nullable = true)))
+                                .receiver(receiverType)
+                                .getter(FunSpec.getterBuilder().addStatement("return map { it.%N }", "raw_" + feature.validName).build())
+                                .build())
+                        }
+                        is ChildLinkData -> {
+                            val targetType = data.type.parseConceptRef(concept.language).nodeWrapperInterfaceType()
+                            addProperty(PropertySpec.builder(feature.validName, List::class.asTypeName().parameterizedBy(targetType))
+                                .receiver(receiverType)
+                                .getter(FunSpec.getterBuilder().addStatement("return flatMap { it.%N }", feature.validName).build())
+                                .build())
+                        }
+                        is ReferenceLinkData -> {
+                            val targetType = data.type.parseConceptRef(concept.language).nodeWrapperInterfaceType().copy(nullable = data.optional)
+                            val rawTargetType = INode::class.asTypeName().copy(nullable = true)
+                            addProperty(PropertySpec.builder(feature.validName, List::class.asTypeName().parameterizedBy(targetType))
+                                .receiver(receiverType)
+                                .getter(FunSpec.getterBuilder().addStatement("return map { it.%N }", feature.validName).build())
+                                .build())
+                            addProperty(PropertySpec.builder("raw_" + feature.validName, List::class.asTypeName().parameterizedBy(rawTargetType))
+                                .receiver(receiverType)
+                                .getter(FunSpec.getterBuilder().addStatement("return map { it.%N }", "raw_" + feature.validName).build())
+                                .build())
+                        }
+                    }
+                }
+            }
             .addImport(PropertyAccessor::class.asClassName().packageName, PropertyAccessor::class.asClassName().simpleName)
             .addImport(RawPropertyAccessor::class.asClassName().packageName, RawPropertyAccessor::class.asClassName().simpleName)
             .addImport(IntPropertyAccessor::class.asClassName().packageName, IntPropertyAccessor::class.asClassName().simpleName)

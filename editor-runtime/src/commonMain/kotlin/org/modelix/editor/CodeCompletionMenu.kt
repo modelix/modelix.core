@@ -13,7 +13,10 @@ class CodeCompletionMenu(val editor: EditorComponent, val anchor: LayoutableCell
 
     fun updateActions() {
         val parameters = parameters()
-        entries = providers.flatMap { it.getActions(parameters) }.filter { it.isApplicable(parameters) }
+        entries = providers.flatMap { it.getActions(parameters) }
+            .filter { it.isApplicable(parameters) }
+            .filter { it.getMatchingText(parameters).isNotEmpty() }
+            .sortedBy { it.getMatchingText(parameters) }
     }
 
     private fun parameters() = CodeCompletionParameters(editor, pattern)

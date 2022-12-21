@@ -72,6 +72,7 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: () -> Cell) : Edi
         val relativeClickX = absoluteClickX - cellAbsoluteBounds.x
         val characterWidth = cellAbsoluteBounds.width / text.length
         val caretPos = (relativeClickX / characterWidth).roundToInt()
+            .coerceAtMost(layoutable.cell.getMaxCaretPos())
         changeSelection(CaretSelection(layoutable, caretPos))
         return true
     }

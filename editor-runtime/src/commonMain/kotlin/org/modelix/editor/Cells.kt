@@ -80,3 +80,4 @@ class Cell(val data: CellData = CellData()) : Freezable() {
 
 fun Cell.getVisibleText(): String? = (data as? TextCellData)?.getVisibleText(this)
 fun Cell.getSelectableText(): String? = (data as? TextCellData)?.text
+fun Cell.getMaxCaretPos(): Int = getSelectableText()?.length ?: 0

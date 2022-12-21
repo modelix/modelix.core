@@ -52,7 +52,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                         .filterIsInstance<LayoutableCell>()
                         .find { it.cell.getSelectableText() != null }
                     if (previous != null) {
-                        editor.changeSelection(CaretSelection(previous, previous.cell.getSelectableText()!!.length))
+                        editor.changeSelection(CaretSelection(previous, previous.cell.getMaxCaretPos()))
                     }
                 }
             }

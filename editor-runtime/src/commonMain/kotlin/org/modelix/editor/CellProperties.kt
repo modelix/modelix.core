@@ -43,5 +43,6 @@ object CommonCellProperties {
     val onNewLine = CellPropertyKey<Boolean>("on-new-line", false)
     val noSpace = CellPropertyKey<Boolean>("no-space", false)
     val textColor = CellPropertyKey<String?>("text-color", null, inherits = true)
+    val placeholderTextColor = CellPropertyKey<String?>("placeholder-text-color", "lightGray", inherits = true)
     val backgroundColor = CellPropertyKey<String?>("background-color", null)
 }

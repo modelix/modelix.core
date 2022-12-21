@@ -68,10 +68,10 @@ class Cell(val data: CellData = CellData()) : Freezable() {
     fun getChildren(): List<Cell> = children
 
     fun <T> getProperty(key: CellPropertyKey<T>): T {
-        return if (data.properties.isSet(key)) {
-            data.properties.get(key)
-        } else {
+        return if (key.inherits && !data.properties.isSet(key)) {
             parent.let { if (it != null) it.getProperty(key) else key.defaultValue }
+        } else {
+            data.properties[key]
         }
     }
 

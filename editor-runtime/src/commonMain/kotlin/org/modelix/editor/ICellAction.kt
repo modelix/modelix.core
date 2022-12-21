@@ -37,7 +37,7 @@ private fun Cell.collectInsertActionsBetween(leftLeaf: Cell?, rightLeaf: Cell?):
     }
 }
 
-private fun Cell.collectActionsBetween(
+fun collectActionsBetween(
     leftLeaf: Cell?,
     rightLeaf: Cell?,
     actionsAccessor: (
@@ -49,11 +49,11 @@ private fun Cell.collectActionsBetween(
     require(leftLeaf != null || rightLeaf != null) { "At least one cell is required. Both are null." }
     val commonAncestor: Cell? = leftLeaf?.let { rightLeaf?.commonAncestor(it) }
     val leafsBetween = if (leftLeaf != null && rightLeaf != null) {
-        leftLeaf.nextLeafs().takeWhile { it != rightLeaf }
+        leftLeaf.nextLeafs(false).takeWhile { it != rightLeaf }
     } else if (leftLeaf != null) {
-        leftLeaf.nextLeafs()
+        leftLeaf.nextLeafs(false)
     } else {
-        rightLeaf!!.previousLeafs()
+        rightLeaf!!.previousLeafs(false)
     }
     val cellsFullyBetween = leafsBetween.map { leaf -> leaf.ancestors(true).takeWhile { it != commonAncestor } }.flatten()
     val cellsEndingBetween = if (leftLeaf == null) emptySequence() else leftLeaf.ancestors(true).takeWhile { it != commonAncestor }

@@ -13,28 +13,29 @@
  */
 package org.modelix.editor
 
-fun Cell.previousLeafs(): Sequence<Cell> = generateSequence(this) { it.previousLeaf() }
-fun Cell.nextLeafs(): Sequence<Cell> = generateSequence(this) { it.nextLeaf() }
+fun Cell.previousLeafs(includeSelf: Boolean = false): Sequence<Cell> {
+    return generateSequence(this) { it.previousLeaf() }.drop(if (includeSelf) 0 else 1)
+}
+
+fun Cell.nextLeafs(includeSelf: Boolean = false): Sequence<Cell> {
+    return generateSequence(this) { it.nextLeaf() }.drop(if (includeSelf) 0 else 1)
+}
 
 fun Cell.previousLeaf(condition: (Cell)->Boolean): Cell? {
-    var candidate = previousLeaf()
-    while (candidate != null && !condition(candidate)) candidate = candidate.previousLeaf()
-    return candidate
+    return previousLeafs(false).find(condition)
 }
 
 fun Cell.nextLeaf(condition: (Cell)->Boolean): Cell? {
-    var candidate = nextLeaf()
-    while (candidate != null && !condition(candidate)) candidate = candidate.nextLeaf()
-    return candidate
+    return nextLeafs(false).find(condition)
 }
 
 fun Cell.previousLeaf(): Cell? {
-    val sibling = previousSibling() ?: return null
+    val sibling = previousSibling() ?: return parent?.previousLeaf()
     return sibling.lastLeaf()
 }
 
 fun Cell.nextLeaf(): Cell? {
-    val sibling = nextSibling() ?: return null
+    val sibling = nextSibling() ?: return parent?.nextLeaf()
     return sibling.firstLeaf()
 }
 
@@ -70,7 +71,7 @@ fun Cell.descendants(): Sequence<Cell> = getChildren().asSequence().flatMap { it
 fun Cell.descendantsAndSelf(): Sequence<Cell> = sequenceOf(this) + descendants()
 fun Cell.ancestors(includeSelf: Boolean = false) = generateSequence(if (includeSelf) this else this.parent) { it.parent }
 
-fun Cell.commonAncestor(other: Cell) = (ancestors(true) - other.ancestors().toSet()).last()
+fun Cell.commonAncestor(other: Cell): Cell = (ancestors(true) - other.ancestors(true).toSet()).last().parent!!
 
 fun Cell.isLeaf() = this.getChildren().isEmpty()
 fun Cell.isFirstChild() = previousSibling() == null

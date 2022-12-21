@@ -26,7 +26,7 @@ class CellProperties : Freezable() {
     }
 }
 
-class CellPropertyKey<E>(val name: String, val defaultValue: E) {
+class CellPropertyKey<E>(val name: String, val defaultValue: E, val inherits: Boolean = false) {
     override fun toString() = name
 }
 
@@ -42,6 +42,6 @@ object CommonCellProperties {
     val indentChildren = CellPropertyKey<Boolean>("indent-children", false)
     val onNewLine = CellPropertyKey<Boolean>("on-new-line", false)
     val noSpace = CellPropertyKey<Boolean>("no-space", false)
-    val textColor = CellPropertyKey<String?>("text-color", null)
+    val textColor = CellPropertyKey<String?>("text-color", null, inherits = true)
     val backgroundColor = CellPropertyKey<String?>("background-color", null)
 }

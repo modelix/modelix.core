@@ -102,12 +102,17 @@ class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
     }
 
     override fun applyChildren(context: CellCreationContext, node: NodeT, cell: CellData): List<CellData> {
+        // TODO support other cell types as condition for the optional
         val childLinkCell = getChildren().filterIsInstance<ChildCellTemplate<NodeT, *>>().firstOrNull()
         if (childLinkCell == null || childLinkCell.getChildNodes(node).isNotEmpty()) {
             return super.applyChildren(context, node, cell)
         } else {
             return emptyList()
         }
+    }
+
+    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction>? {
+        return null // skip optional. Don't search in children.
     }
 }
 

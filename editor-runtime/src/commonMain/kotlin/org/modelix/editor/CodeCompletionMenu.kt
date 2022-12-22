@@ -85,4 +85,21 @@ interface ICodeCompletionAction {
     fun execute()
 }
 
+class CodeCompletionActionWithPostprocessor(val action: ICodeCompletionAction, val after: () -> Unit) : ICodeCompletionAction by action {
+    override fun execute() {
+        action.execute()
+        after()
+    }
+}
+class CodeCompletionActionProviderWithPostprocessor(
+    val actionProvider: ICodeCompletionActionProvider,
+    val after: () -> Unit
+) : ICodeCompletionActionProvider {
+    override fun getActions(parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
+        return actionProvider.getActions(parameters).map { CodeCompletionActionWithPostprocessor(it, after) }
+    }
+}
+
+fun ICodeCompletionActionProvider.after(body: () -> Unit) = CodeCompletionActionProviderWithPostprocessor(this, body)
+
 class CodeCompletionParameters(val editor: EditorComponent, val pattern: String)

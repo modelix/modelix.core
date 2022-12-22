@@ -174,9 +174,12 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
         val substitutionPlaceholder = context.editorState.substitutionPlaceholderPositions[getReference()]
         val placeholderIndex = substitutionPlaceholder?.index?.coerceIn(0..childNodes.size) ?: 0
         val addSubstitutionPlaceholder: (Int) -> Unit = { index ->
-            val placeholder = TextCellData("", "<no ${link.name}>")
+            val placeholderText = if (childNodes.isEmpty()) "<no ${link.name}>" else "<choose ${link.name}>"
+            val placeholder = TextCellData("", placeholderText)
             placeholder.properties[CellActionProperties.substitute] =
-                ReplaceNodeActionProvider(ChildLinkLocation(node.untyped(), link, index))
+                ReplaceNodeActionProvider(ChildLinkLocation(node.untyped(), link, index)).after {
+                    context.editorState.substitutionPlaceholderPositions.remove(getReference())
+                }
             cell.addChild(placeholder)
         }
         val addInsertActionCell: (Int) -> Unit = { index ->

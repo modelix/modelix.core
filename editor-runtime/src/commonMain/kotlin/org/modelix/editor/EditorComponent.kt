@@ -4,13 +4,16 @@ import kotlinx.html.TagConsumer
 import kotlinx.html.div
 import org.modelix.incremental.IncrementalIndex
 
-open class EditorComponent(val engine: EditorEngine?, private val rootCellCreator: ()->Cell) : IProducesHtml {
-
+open class EditorComponent(
+    val engine: EditorEngine?,
+    private val rootCellCreator: (EditorState) -> Cell
+) : IProducesHtml {
+    val state: EditorState = EditorState()
     private var selection: Selection? = null
     private val cellIndex: IncrementalIndex<CellReference, Cell> = IncrementalIndex()
     private var selectionUpdater: (() -> Selection?)? = null
     protected var codeCompletionMenu: CodeCompletionMenu? = null
-    private var rootCell: Cell = rootCellCreator().also {
+    private var rootCell: Cell = rootCellCreator(state).also {
         it.editorComponent = this
         cellIndex.update(it.referencesIndexList)
     }
@@ -23,7 +26,7 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
 
     private fun updateRootCell() {
         val oldRootCell = rootCell
-        val newRootCell = rootCellCreator()
+        val newRootCell = rootCellCreator(state)
         if (oldRootCell !== newRootCell) {
             oldRootCell.editorComponent = null
             newRootCell.editorComponent = this
@@ -86,10 +89,14 @@ open class EditorComponent(val engine: EditorEngine?, private val rootCellCreato
     }
 
     open fun processKeyDown(event: JSKeyboardEvent): Boolean {
-        for (handler in listOfNotNull(codeCompletionMenu, selection)) {
-            if (handler.processKeyDown(event)) return true
+        try {
+            for (handler in listOfNotNull(codeCompletionMenu, selection)) {
+                if (handler.processKeyDown(event)) return true
+            }
+            return false
+        } finally {
+            update()
         }
-        return false
     }
 
     companion object {

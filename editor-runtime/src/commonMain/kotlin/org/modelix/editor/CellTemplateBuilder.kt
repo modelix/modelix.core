@@ -33,7 +33,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun constant(text: String, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         CellTemplateBuilder(ConstantCellTemplate(template.concept, text))
-            .also(body).template.also(template.children::add)
+            .also(body).template.also(template::addChild)
     }
 
     fun textColor(color: String) {
@@ -47,18 +47,18 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     fun vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add correct layout information
         CellTemplateBuilder(CollectionCellTemplate(template.concept))
-            .also { it.template.properties[CommonCellProperties.layout] = ECellLayout.VERTICAL }.also(body).template.also(template.children::add)
+            .also { it.template.properties[CommonCellProperties.layout] = ECellLayout.VERTICAL }.also(body).template.also(template::addChild)
     }
 
     fun horizontal(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add layout information
         CellTemplateBuilder(CollectionCellTemplate(template.concept))
-            .also(body).template.also(template.children::add)
+            .also(body).template.also(template::addChild)
     }
 
     fun optional(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         CellTemplateBuilder(OptionalCellTemplate<NodeT, ConceptT>(template.concept))
-            .also(body).template.also(template.children::add)
+            .also(body).template.also(template::addChild)
     }
 
     fun brackets(singleLine: Boolean = true, leftSymbol: String, rightSymbol: String, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
@@ -103,7 +103,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
      */
     fun newLine() {
         CellTemplateBuilder(NewLineCellTemplate(template.concept))
-            .template.also(template.children::add)
+            .template.also(template::addChild)
     }
 
     /**
@@ -117,7 +117,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun noSpace() {
         CellTemplateBuilder(NoSpaceCellTemplate(template.concept))
-            .template.also(template.children::add)
+            .template.also(template::addChild)
     }
 
     fun indented(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
@@ -148,22 +148,22 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun IProperty.propertyCell(body: PropertyCellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         PropertyCellTemplateBuilder(PropertyCellTemplate(template.concept, this))
-            .also(body).template.also(template.children::add)
+            .also(body).template.also(template::addChild)
     }
 
     fun IProperty.flagCell(text: String? = null, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         PropertyCellTemplateBuilder(FlagCellTemplate(template.concept, this, text ?: name))
-            .also(body).template.also(template.children::add)
+            .also(body).template.also(template::addChild)
     }
 
     fun <TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept> GeneratedReferenceLink<TargetNodeT, TargetConceptT>.cell(presentation: TargetNodeT.()->String?, body: ReferenceCellTemplateBuilder<NodeT, ConceptT, TargetNodeT, TargetConceptT>.()->Unit = {}) {
         ReferenceCellTemplateBuilder(ReferenceCellTemplate(template.concept, this, presentation), this)
-            .also(body).template.also(template.children::add)
+            .also(body).template.also(template::addChild)
     }
 
     fun GeneratedSingleChildLink<*, *>.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         CellTemplateBuilder(ChildCellTemplate(template.concept, this))
-            .also(body).template.also(template.children::add)
+            .also(body).template.also(template::addChild)
     }
 
     fun GeneratedChildListLink<*, *>.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
@@ -176,7 +176,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
 
     fun GeneratedChildListLink<*, *>.horizontal(separator: String? = ",", body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         CellTemplateBuilder(ChildCellTemplate(template.concept, this))
-            .also(body).template.also(template.children::add)
+            .also(body).template.also(template::addChild)
     }
 
     fun modelAccess(body: ModelAccessBuilder.()->Unit) {
@@ -197,7 +197,7 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
     fun modelAccess(getter: ()->String?, setter: (String?)->Unit) {
         // TODO ModelAccessCellTemplate
         CellTemplateBuilder(ConstantCellTemplate(template.concept, "<model access>"))
-            .template.also(template.children::add)
+            .template.also(template::addChild)
     }
 
     inner class WithNodeContext(val node: NodeT)

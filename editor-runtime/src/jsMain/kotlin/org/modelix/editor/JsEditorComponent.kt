@@ -12,7 +12,7 @@ import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.events.MouseEvent
 import kotlin.math.roundToInt
 
-class JsEditorComponent(engine: EditorEngine, rootCellCreator: () -> Cell) : EditorComponent(engine, rootCellCreator) {
+class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> Cell) : EditorComponent(engine, rootCellCreator) {
 
     private var containerElement: HTMLElement = document.create.div("js-editor-component") {
         tabIndex = "-1" // allows setting keyboard focus

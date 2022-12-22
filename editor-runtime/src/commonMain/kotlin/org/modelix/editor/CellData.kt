@@ -36,7 +36,7 @@ interface ILocalOrChildNodeCell {
 
 }
 
-class ChildNodeCellReference(val childNode: ITypedNode) : ILocalOrChildNodeCell {
+class ChildDataReference(val childNode: ITypedNode) : ILocalOrChildNodeCell {
 
 }
 

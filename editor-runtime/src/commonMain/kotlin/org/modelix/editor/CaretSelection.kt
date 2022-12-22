@@ -83,6 +83,25 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     replaceText(min(start, end) until max(start, end), "", editor)
                 }
             }
+            KnownKeys.Enter -> {
+                var previousLeaf: Cell? = layoutable.cell
+                while (previousLeaf != null) {
+                    val nextLeaf = previousLeaf.nextLeaf { it.isVisible() }
+                    val actions = collectActionsBetween(
+                        previousLeaf,
+                        nextLeaf
+                    ) { cellsFullyBetween, cellsEndingBetween, cellsBeginningBetween ->
+                        cellsFullyBetween.map { it.getProperty(CellActionProperties.insert) }
+                    }.filter { it.isApplicable() }
+                    // TODO resolve conflicts if multiple actions are applicable
+                    val action = actions.firstOrNull()
+                    if (action != null) {
+                        action.execute()
+                        break
+                    }
+                    previousLeaf = nextLeaf
+                }
+            }
             else -> {
                 val typedText = event.typedText
                 if (!typedText.isNullOrEmpty()) {

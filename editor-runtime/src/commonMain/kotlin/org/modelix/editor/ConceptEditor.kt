@@ -10,49 +10,48 @@ import org.modelix.metamodel.untypedReference
 import org.modelix.model.api.serialize
 
 class ConceptEditor<NodeT : ITypedNode, ConceptT : ITypedConcept>(
-    val declaredConcept: GeneratedConcept<NodeT, ConceptT>,
+    val declaredConcept: GeneratedConcept<NodeT, ConceptT>?,
     val templateBuilder: (subConcept: GeneratedConcept<NodeT, ConceptT>)->CellTemplate<NodeT, ConceptT>
 ) {
     fun apply(subConcept: GeneratedConcept<NodeT, ConceptT>): CellTemplate<NodeT, ConceptT> {
         return templateBuilder(subConcept)
+            .also { it.setReference(RooCellTemplateReference(this, subConcept.getReference())) }
     }
 
-    fun apply(editor: EditorEngine, node: NodeT): CellData {
-        return apply(node._concept._concept as GeneratedConcept<NodeT, ConceptT>).apply(editor, node)
+    fun apply(context: CellCreationContext, node: NodeT): CellData {
+        return apply(node._concept._concept as GeneratedConcept<NodeT, ConceptT>).apply(context, node)
     }
 }
 
-fun <NodeT : ITypedNode, ConceptT : ITypedConcept> createDefaultConceptEditor(concept: GeneratedConcept<NodeT, ConceptT>): ConceptEditor<NodeT, ConceptT> {
-    return ConceptEditor(concept) { subConcept ->
-        CellTemplateBuilder(CollectionCellTemplate(subConcept)).apply {
-            subConcept.getShortName().cell()
-            curlyBrackets {
-                for (property in subConcept.getAllProperties()) {
-                    newLine()
-                    label { property.name.cell() }
-                    property.cell()
-                }
-                for (link in subConcept.getAllReferenceLinks()) {
-                    newLine()
-                    label { link.name.cell() }
-                    link.typed()?.cell(presentation = { untypedReference().serialize() })
-                }
-                for (link in subConcept.getAllChildLinks()) {
-                    newLine()
-                    label { link.name.cell() }
-                    when (val l = link.typed()) {
-                        is GeneratedSingleChildLink -> l.cell()
-                        is GeneratedChildListLink -> {
-                            newLine()
-                            indented {
-                                l.vertical()
-                            }
+val defaultConceptEditor = ConceptEditor(null) { subConcept ->
+    CellTemplateBuilder(CollectionCellTemplate(subConcept)).apply {
+        subConcept.getShortName().cell()
+        curlyBrackets {
+            for (property in subConcept.getAllProperties()) {
+                newLine()
+                label { property.name.cell() }
+                property.cell()
+            }
+            for (link in subConcept.getAllReferenceLinks()) {
+                newLine()
+                label { link.name.cell() }
+                link.typed()?.cell(presentation = { untypedReference().serialize() })
+            }
+            for (link in subConcept.getAllChildLinks()) {
+                newLine()
+                label { link.name.cell() }
+                when (val l = link.typed()) {
+                    is GeneratedSingleChildLink -> l.cell()
+                    is GeneratedChildListLink -> {
+                        newLine()
+                        indented {
+                            l.vertical()
                         }
                     }
                 }
             }
-        }.template
-    }
+        }
+    }.template
 }
 
 private fun <ConceptT : ITypedConcept, NodeT : ITypedNode> CellTemplateBuilder<NodeT, ConceptT>.label(

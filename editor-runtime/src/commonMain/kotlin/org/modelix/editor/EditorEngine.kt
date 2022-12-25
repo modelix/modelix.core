@@ -10,6 +10,7 @@ import org.modelix.incremental.IncrementalEngine
 import org.modelix.incremental.incrementalFunction
 import org.modelix.metamodel.GeneratedConcept
 import org.modelix.metamodel.ITypedConcept
+import org.modelix.metamodel.untypedReference
 import org.modelix.model.api.IConcept
 
 class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
@@ -93,6 +94,7 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
             val editor = resolveConceptEditor(node._concept._concept) as ConceptEditor<NodeT, *>
             val data = editor.apply(CellCreationContext(this, editorState), node)
             data.properties[CellActionProperties.substitute] = ReplaceNodeActionProvider(LocationOfExistingNode(node.unwrap()))
+            data.cellReferences += NodeCellReference(node.untypedReference())
             return data
         } catch (ex: Exception) {
             LOG.error(ex) { "Failed to create cell for $node" }

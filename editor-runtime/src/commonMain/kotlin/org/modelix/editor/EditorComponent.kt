@@ -90,6 +90,10 @@ open class EditorComponent(
 
     open fun processKeyDown(event: JSKeyboardEvent): Boolean {
         try {
+            if (event.knownKey == KnownKeys.F5) {
+                clearLayoutCache()
+                return true
+            }
             for (handler in listOfNotNull(codeCompletionMenu, selection)) {
                 if (handler.processKeyDown(event)) return true
             }
@@ -97,6 +101,10 @@ open class EditorComponent(
         } finally {
             update()
         }
+    }
+
+    fun clearLayoutCache() {
+        rootCell.descendantsAndSelf().forEach { it.clearCachedLayout() }
     }
 
     companion object {

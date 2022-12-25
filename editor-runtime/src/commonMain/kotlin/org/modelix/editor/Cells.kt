@@ -26,10 +26,12 @@ class Cell(val data: CellData = CellData()) : Freezable() {
     private var editorComponentValue: EditorComponent? = null
     var parent: Cell? = null
     private val children: MutableList<Cell> = ArrayList()
-    val layout: LayoutedText by lazy(LazyThreadSafetyMode.NONE) {
+    private var layout_ = ResettableLazy {
         TextLayouter().also { data.layout(it, this) }.done()
     }
-    val referencesIndexList: IncrementalList<Pair<CellReference, Cell>> by lazy(LazyThreadSafetyMode.NONE) {
+    val layout: LayoutedText
+        get() = layout_.value
+    val referencesIndexList: IncrementalList<Pair<CellReference, Cell>> by lazy {
         IncrementalList.concat(
             IncrementalList.of(data.cellReferences.map { it to this }),
             IncrementalList.concat(children.map { it.referencesIndexList })
@@ -41,6 +43,10 @@ class Cell(val data: CellData = CellData()) : Freezable() {
             if (value != null && parent != null) throw IllegalStateException("Only allowed on the root cell")
             editorComponentValue = value
         }
+
+    fun clearCachedLayout() {
+        layout_.reset()
+    }
 
     override fun freeze() {
         if (isFrozen()) return
@@ -81,3 +87,17 @@ class Cell(val data: CellData = CellData()) : Freezable() {
 fun Cell.getVisibleText(): String? = (data as? TextCellData)?.getVisibleText(this)
 fun Cell.getSelectableText(): String? = (data as? TextCellData)?.text
 fun Cell.getMaxCaretPos(): Int = getSelectableText()?.length ?: 0
+
+class ResettableLazy<E>(private val initializer: () -> E): Lazy<E> {
+    private var lazy: Lazy<E> = lazy(initializer)
+    override val value: E
+        get() = lazy.value
+
+    override fun isInitialized(): Boolean {
+        return lazy.isInitialized()
+    }
+
+    fun reset() {
+        lazy = lazy(initializer)
+    }
+}

@@ -31,12 +31,15 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
         consumer.div("caret own") {
             val textLength = layoutable.cell.getVisibleText()?.length ?: 0
-            if (end == 0) {
+            if (textLength == 0) {
+                // A typical case is a StringLiteral editor for an empty string.
+                // There is no space around the empty text cell.
+                // 'leftend' or 'rightend' styles would look like the caret is set into one of the '"' cells.
+            } else if (end == 0) {
                 classes += "leftend"
             } else if (end == textLength) {
                 classes += "rightend"
             }
-            //css?.let { style = it }
         }
     }
 

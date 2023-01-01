@@ -43,7 +43,7 @@ class ChildDataReference(val childNode: ITypedNode) : ILocalOrChildNodeCell {
 class TextCellData(val text: String, private val placeholderText: String = "") : CellData() {
     fun getVisibleText(cell: Cell): String {
         return if (cell.getChildren().isEmpty()) {
-            text.ifEmpty { placeholderText }.ifEmpty { " " }
+            text.ifEmpty { placeholderText }
         } else {
             """$text<${cell.getChildren()}>"""
         }

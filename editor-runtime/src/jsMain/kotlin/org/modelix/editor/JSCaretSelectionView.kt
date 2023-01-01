@@ -20,14 +20,15 @@ class JSCaretSelectionView(selection: CaretSelection, val editor: JsEditorCompon
         val layoutable = selection.layoutable
         val htmlElement = GeneratedHtmlMap.getOutput(layoutable) ?: return
         val text = htmlElement.innerText
+        val textLength = text.length
         val cellAbsoluteBounds = htmlElement.getAbsoluteBounds()
         val cellRelativeBounds = cellAbsoluteBounds.relativeTo(editor.getMainLayer()?.getAbsoluteBounds() ?: ZERO_BOUNDS)
-        val characterWidth = cellAbsoluteBounds.width / text.length
+        val characterWidth = if (textLength == 0) 0.0 else cellAbsoluteBounds.width / textLength
         val caretPos = selection.end
         val caretX = cellAbsoluteBounds.x + caretPos * characterWidth
         val leftEnd = caretPos == 0
-        val rightEnd = caretPos == text.length
-        val caretOffsetX = if (rightEnd) -5 else -2
+        val rightEnd = caretPos == textLength
+        val caretOffsetX = if (rightEnd && !leftEnd) -5 else -2
         val caretOffsetY = if (leftEnd || rightEnd) -1 else 0
         dom.style.height = "${cellRelativeBounds.height}px"
         dom.style.left = "${caretX + caretOffsetX}px"

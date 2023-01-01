@@ -52,9 +52,9 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
     }
 
     fun updateHtml() {
-        val oldEditorElement = this.generatedHtml
-        this.generatedHtml = null
-        this.codeCompletionMenu?.generatedHtml = null // TODO more generic mechanism to update UI elements that are not part of the cell tree
+        val oldEditorElement = GeneratedHtmlMap.getOutput(this)
+        GeneratedHtmlMap.unassign(this)
+        codeCompletionMenu?.let { GeneratedHtmlMap.unassign(it) } // TODO more generic mechanism to update UI elements that are not part of the cell tree
         val newEditorElement = IncrementalJSDOMBuilder(document, oldEditorElement).produce(this)()
         if (newEditorElement != oldEditorElement) {
             oldEditorElement?.remove()
@@ -65,7 +65,7 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
     fun processClick(event: MouseEvent): Boolean {
         val target = event.target ?: return false
         val htmlElement = target as? HTMLElement
-        val layoutable = htmlElement?.generatedBy as? LayoutableCell ?: return false
+        val layoutable = htmlElement?.let { GeneratedHtmlMap.getProducer(it) } as? LayoutableCell ?: return false
         val text = htmlElement.innerText
         val cellAbsoluteBounds = htmlElement.getAbsoluteBounds()
         val absoluteClickX = event.getAbsolutePositionX()

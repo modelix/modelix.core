@@ -4,13 +4,41 @@ import kotlinx.html.*
 import kotlinx.html.org.w3c.dom.events.Event
 import org.w3c.dom.*
 
-var IProducesHtml.generatedHtml: HTMLElement?
-    get() = asDynamic().generatedHtml
-    set(value) { asDynamic().generatedHtml = value }
+object GeneratedHtmlMap {
+    private var IProducesHtml.generatedHtml: HTMLElement?
+        get() = asDynamic().generatedHtml
+        set(value) { asDynamic().generatedHtml = value }
 
-var HTMLElement.generatedBy: IProducesHtml?
-    get() = asDynamic().generatedBy
-    set(value) { asDynamic().generatedBy = value }
+    private var HTMLElement.generatedBy: IProducesHtml?
+        get() = asDynamic().generatedBy
+        set(value) { asDynamic().generatedBy = value }
+
+    fun reassign(producer: IProducesHtml, output: HTMLElement) {
+        unassign(producer)
+        unassign(output)
+        assign(producer, output)
+    }
+
+    fun assign(producer: IProducesHtml, output: HTMLElement) {
+        require(producer.generatedHtml == null)
+        require(output.generatedBy == null)
+        producer.generatedHtml = output
+        output.generatedBy = producer
+    }
+
+    fun unassign(producer: IProducesHtml) = producer.generatedHtml?.let { unassign(producer, it) }
+    fun unassign(output: HTMLElement) = output.generatedBy?.let { unassign(it, output) }
+
+    fun getProducer(output: HTMLElement) = output.generatedBy
+    fun getOutput(producer: IProducesHtml) = producer.generatedHtml
+
+    private fun unassign(producer: IProducesHtml, output: HTMLElement) {
+        require(producer.generatedHtml == output)
+        require(output.generatedBy == producer)
+        producer.generatedHtml = null
+        output.generatedBy = null
+    }
+}
 
 private class ReusableChildren {
     val reusableChildren: MutableList<Node>
@@ -23,20 +51,20 @@ private class ReusableChildren {
             .toMutableList()
     }
     fun processStillUsed(childProducers: List<IProducesHtml>) {
-        val stillUsedElements: HashSet<HTMLElement> = childProducers.mapNotNull { it.generatedHtml }.toHashSet()
+        val stillUsedElements: HashSet<HTMLElement> = childProducers.mapNotNull { GeneratedHtmlMap.getOutput(it) }.toHashSet()
         reusableChildren.removeAll(stillUsedElements)
-        reusableChildren.filterIsInstance<HTMLElement>().forEach { it.generatedBy = null }
+        reusableChildren.filterIsInstance<HTMLElement>().forEach { GeneratedHtmlMap.unassign(it) }
     }
     fun findReusable(tag: Tag): HTMLElement? {
         // TODO only reuse those where the element in .generatedBy was removed/replaced (this is only known after generating all children)
-        val foundIndex = reusableChildren.indexOfFirst { it is HTMLElement && it.generatedBy == null && it.tagName.lowercase() == tag.tagName.lowercase() }
+        val foundIndex = reusableChildren.indexOfFirst { it is HTMLElement && GeneratedHtmlMap.getProducer(it) == null && it.tagName.lowercase() == tag.tagName.lowercase() }
         return if (foundIndex >= 0) {
             reusableChildren.removeAt(foundIndex) as HTMLElement
         } else {
             null
         }
     }
-    fun findReusabeTextNode(text: String): Text? {
+    fun findReusableTextNode(text: String): Text? {
         val foundIndex = reusableChildren.indexOfFirst { it is Text && it.textContent == text }
         return if (foundIndex >= 0) {
             reusableChildren.removeAt(foundIndex) as Text
@@ -111,16 +139,15 @@ class IncrementalJSDOMBuilder(val document: Document, existingRootElement: HTMLE
             stack.clear()
             stack.add(StackFrame())
         }
-        return { producer.generatedHtml ?: throw IllegalStateException("No HTML generated yet") }
+        return { GeneratedHtmlMap.getOutput(producer) ?: throw IllegalStateException("No HTML generated yet") }
     }
 
     private fun runProducer(producer: IProducesHtml): HTMLElement {
-        var childHtml = producer.generatedHtml
+        var childHtml = GeneratedHtmlMap.getOutput(producer)
         if (childHtml == null) {
             producer.toHtml(this@IncrementalJSDOMBuilder, childHandler)
             childHtml = finalize()
-            childHtml.generatedBy = producer
-            producer.generatedHtml = childHtml
+            GeneratedHtmlMap.assign(producer, childHtml)
         }
         return childHtml
     }
@@ -163,7 +190,7 @@ class IncrementalJSDOMBuilder(val document: Document, existingRootElement: HTMLE
 
     override fun onTagContent(content: CharSequence) {
         val frame = stack.lastOrNull() ?: throw IllegalStateException("No current DOM node")
-        val reusable: Text? = frame.reusableChildren?.findReusabeTextNode(content.toString())
+        val reusable: Text? = frame.reusableChildren?.findReusableTextNode(content.toString())
 
         val element = reusable ?: document.createTextNode(content.toString())
         frame.generatedChildren.add(NodeOrProducer.node(element))

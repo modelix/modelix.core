@@ -16,9 +16,9 @@ package org.modelix.editor
 class JSCaretSelectionView(selection: CaretSelection, val editor: JsEditorComponent) : SelectionView<CaretSelection>(selection) {
 
     override fun updateBounds() {
-        val dom = selection.generatedHtml ?: return
+        val dom = GeneratedHtmlMap.getOutput(selection) ?: return
         val layoutable = selection.layoutable
-        val htmlElement = layoutable.generatedHtml ?: return
+        val htmlElement = GeneratedHtmlMap.getOutput(layoutable) ?: return
         val text = htmlElement.innerText
         val cellAbsoluteBounds = htmlElement.getAbsoluteBounds()
         val cellRelativeBounds = cellAbsoluteBounds.relativeTo(editor.getMainLayer()?.getAbsoluteBounds() ?: ZERO_BOUNDS)

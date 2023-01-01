@@ -12,7 +12,7 @@ class CellProperties : Freezable() {
 
     operator fun <T> set(key: CellPropertyKey<T>, value: T) {
         checkNotFrozen()
-        if (isSet(key)) throw IllegalStateException("property '$key' is already set")
+//        if (isSet(key)) throw IllegalStateException("property '$key' is already set")
         properties[key] = value
     }
 

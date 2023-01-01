@@ -5,6 +5,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertSame
 
 class TextLayouterTest {
+    val noSpace = EditorTestUtils.noSpace
+    val newLine = EditorTestUtils.newLine
+    val indentChildren = EditorTestUtils.indentChildren
 
     @Test fun space1() = testCells("ab c", listOf(listOf("a", noSpace, "b"), "c"))
     @Test fun space2() = testCells("a bc", listOf(listOf("a", "b"), noSpace, "c"))
@@ -25,7 +28,7 @@ class TextLayouterTest {
     @Test fun indent6() = testCells("a {\n  b\n  c\n  d\n  }", listOf("a", listOf(indentChildren, "{", newLine, "b", newLine, "c", newLine, "d", newLine, "}")))
 
     private fun testCells(expected: String, template: Any) {
-        val text = buildCells(template).layout
+        val text = EditorTestUtils.buildCells(template).layout
         text.lines.forEach { line ->
             assertSame(text, line.getText())
             line.words.forEach { word ->

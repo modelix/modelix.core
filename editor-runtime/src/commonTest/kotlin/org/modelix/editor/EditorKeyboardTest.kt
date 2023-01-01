@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 class EditorKeyboardTest {
     @Test
     fun arrowLeft() {
-        val rootCell = buildCells(listOf(listOf("111"), listOf(indentChildren, "222", listOf(newLine, listOf("333")), listOf(listOf("444"), "555")), newLine, "666", "777", "888"))
+        val rootCell = EditorTestUtils.buildCells(listOf(listOf("111"), listOf(EditorTestUtils.indentChildren, "222", listOf(EditorTestUtils.newLine, listOf("333")), listOf(listOf("444"), "555")), EditorTestUtils.newLine, "666", "777", "888"))
         val editor = EditorComponent(engine = null) { rootCell }
         val findByText: (String)->LayoutableCell = { text -> rootCell.descendants().find { it.getVisibleText() == text }!!.layoutable()!! }
         val layoutable444 = findByText("444")
@@ -32,7 +32,7 @@ class EditorKeyboardTest {
 
     @Test
     fun arrowRight() {
-        val rootCell = buildCells(listOf("111", "222", newLine, "333", "444", "555", newLine, "666", "777", "888"))
+        val rootCell = EditorTestUtils.buildCells(listOf("111", "222", EditorTestUtils.newLine, "333", "444", "555", EditorTestUtils.newLine, "666", "777", "888"))
         val editor = EditorComponent(engine = null) { rootCell }
         val findByText: (String)->LayoutableCell = { text -> rootCell.descendants().find { it.getVisibleText() == text }!!.layoutable()!! }
         val layoutable444 = findByText("444")

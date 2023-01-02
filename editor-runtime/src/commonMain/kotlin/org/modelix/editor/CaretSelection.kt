@@ -105,7 +105,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     // TODO resolve conflicts if multiple actions are applicable
                     val action = actions.firstOrNull()
                     if (action != null) {
-                        action.execute()
+                        action.execute(editor)
                         break
                     }
                     previousLeaf = nextLeaf

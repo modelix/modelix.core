@@ -10,7 +10,6 @@ import org.modelix.metamodel.typedUnsafe
 import org.modelix.metamodel.untyped
 import org.modelix.metamodel.untypedReference
 import org.modelix.model.api.IChildLink
-import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.getChildren
 import org.modelix.model.api.getReferenceTarget
@@ -29,6 +28,7 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
             cellData.children.drop(1).forEach { (it as CellData).properties[CommonCellProperties.onNewLine] = true }
         }
         withNode.forEach { it(node) }
+        cellData.cellReferences.add(createCellReference(node))
         return cellData
     }
     protected open fun applyChildren(context: CellCreationContext, node: NodeT, cell: CellData): List<CellData> {
@@ -54,6 +54,8 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
     }
 
     fun getReference() = reference ?: throw IllegalStateException("reference isn't set yet")
+
+    fun createCellReference(node: ITypedNode) = TemplateCellReference(getReference(), node.untypedReference())
 }
 
 class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
@@ -172,21 +174,22 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(context: CellCreationContext, node: NodeT) = CellData().also { cell ->
         val childNodes = getChildNodes(node)
-        val substitutionPlaceholder = context.editorState.substitutionPlaceholderPositions[getReference() to node.untypedReference()]
+        val substitutionPlaceholder = context.editorState.substitutionPlaceholderPositions[createCellReference(node)]
         val placeholderIndex = substitutionPlaceholder?.index?.coerceIn(0..childNodes.size) ?: 0
         val addSubstitutionPlaceholder: (Int) -> Unit = { index ->
             val placeholderText = if (childNodes.isEmpty()) "<no ${link.name}>" else "<choose ${link.name}>"
             val placeholder = TextCellData("", placeholderText)
             placeholder.properties[CellActionProperties.substitute] =
                 ReplaceNodeActionProvider(ChildLinkLocation(node.untyped(), link, index)).after {
-                    context.editorState.substitutionPlaceholderPositions.remove(getReference() to node.untypedReference())
+                    context.editorState.substitutionPlaceholderPositions.remove(createCellReference(node))
                 }
+            placeholder.cellReferences.add(PlaceholderCellReference(createCellReference(node)))
             cell.addChild(placeholder)
         }
         val addInsertActionCell: (Int) -> Unit = { index ->
             if (link.isMultiple) {
                 val actionCell = CellData()
-                val action = InsertSubstitutionPlaceholderAction(context.editorState, getReference(), node.untypedReference(), index)
+                val action = InsertSubstitutionPlaceholderAction(context.editorState, createCellReference(node), index)
                 actionCell.properties[CellActionProperties.insert] = action
                 cell.addChild(actionCell)
             }
@@ -222,17 +225,21 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
         return listOf()
     }
 }
+data class PlaceholderCellReference(val childCellRef: TemplateCellReference) : CellReference()
 
 class InsertSubstitutionPlaceholderAction(
     val editorState: EditorState,
-    val ref: ICellTemplateReference,
-    val node: INodeReference,
+    val ref: TemplateCellReference,
     val index: Int
 ) : ICellAction {
     override fun isApplicable(): Boolean = true
 
-    override fun execute() {
-        editorState.substitutionPlaceholderPositions[ref to node] = SubstitutionPlaceholderPosition(index)
+    override fun execute(editor: EditorComponent) {
+        editorState.substitutionPlaceholderPositions[ref] = SubstitutionPlaceholderPosition(index)
+        editor.selectAfterUpdate {
+            editor.resolveCell(PlaceholderCellReference(ref))
+                .firstOrNull()?.layoutable()?.let { CaretSelection(it, 0) }
+        }
     }
 }
 

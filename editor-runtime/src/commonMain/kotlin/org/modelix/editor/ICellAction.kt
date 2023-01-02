@@ -2,7 +2,7 @@ package org.modelix.editor
 
 interface ICellAction {
     fun isApplicable(): Boolean
-    fun execute()
+    fun execute(editor: EditorComponent)
 }
 
 interface ITextChangeAction {

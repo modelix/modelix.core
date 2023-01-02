@@ -12,6 +12,11 @@ class TextLine(words_: Iterable<Layoutable>) : IProducesHtml {
         words.forEach { it.finalLine = this }
     }
 
+    fun getY(): Int {
+        val text = getText() ?: return 0
+        return text.lines.asSequence().indexOf(this)
+    }
+
     fun getText(): LayoutedText? = finalText?.rootText() ?: initialText?.rootText()
 
     fun getSibling(next: Boolean): TextLine? {
@@ -224,6 +229,14 @@ abstract class Layoutable : IProducesHtml {
     abstract fun isWhitespace(): Boolean
     abstract fun toText(): String
     override fun toString(): String = toText()
+
+    fun getX(): Int {
+        val line = getLine() ?: return 0
+        val prevSiblings = line.words.takeWhile { it != this }
+        return prevSiblings.sumOf { it.getLength() }
+    }
+
+    fun getY(): Int = getLine()?.getY() ?: 0
 
     fun getLine(): TextLine? = finalLine ?: initialLine
 

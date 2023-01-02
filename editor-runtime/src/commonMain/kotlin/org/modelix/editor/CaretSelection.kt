@@ -71,6 +71,12 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     }
                 }
             }
+            KnownKeys.ArrowDown -> {
+                createNextPreviousLineSelection(true, getAbsoluteX())?.let { editor.changeSelection(it) }
+            }
+            KnownKeys.ArrowUp -> {
+                createNextPreviousLineSelection(false, getAbsoluteX())?.let { editor.changeSelection(it) }
+            }
             KnownKeys.Delete, KnownKeys.Backspace -> {
                 if (start == end) {
                     val posToDelete = when (knownKey) {
@@ -120,6 +126,8 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         return true
     }
 
+    fun getAbsoluteX() = layoutable.getX() + end
+
     fun triggerCodeCompletion() {
         val editor = getEditor() ?: throw IllegalStateException("Not attached to any editor")
         val actionProviders = layoutable.cell.getSubstituteActions().toList()
@@ -164,4 +172,26 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         val text = layoutable.toText()
         return text.substring(0 until end) + "|" + text.substring(end)
     }
+
+    private fun createNextPreviousLineSelection(next: Boolean, x: Int): CaretSelection? {
+        val line: TextLine = layoutable.getLine() ?: return null
+        val text: LayoutedText = line.getText() ?: return null
+        val lines = text.lines.asSequence()
+        val nextPrevLines = if (next) lines.dropWhile { it != line }.drop(1) else lines.takeWhile { it != line }
+        return nextPrevLines.mapNotNull { it.createBestMatchingCaretSelection(x) }.firstOrNull()
+    }
+}
+
+fun TextLine.createBestMatchingCaretSelection(x: Int): CaretSelection? {
+    var currentOffset = 0
+    for (layoutable in words) {
+        val length = layoutable.getLength()
+        val range = currentOffset..(currentOffset + length)
+        if (layoutable is LayoutableCell) {
+            if (x < range.first) return CaretSelection(layoutable, 0)
+            if (range.contains(x)) return CaretSelection(layoutable, x - range.first)
+        }
+        currentOffset += length
+    }
+    return words.filterIsInstance<LayoutableCell>().lastOrNull()?.let { CaretSelection(it, it.getLength()) }
 }

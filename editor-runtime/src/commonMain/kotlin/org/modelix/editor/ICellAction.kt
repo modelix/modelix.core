@@ -6,7 +6,7 @@ interface ICellAction {
 }
 
 interface ITextChangeAction {
-    fun replaceText(editor: EditorComponent, range: IntRange, replacement: String): Boolean
+    fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean
 }
 
 object CellActionProperties {

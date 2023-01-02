@@ -277,10 +277,13 @@ class LayoutableCell(val cell: Cell) : Layoutable() {
     override fun getLength(): Int {
         return toText().length
     }
-    override fun toText(): String = (cell.data as TextCellData).getVisibleText(cell)
+    override fun toText(): String {
+        return cell.getProperty(CommonCellProperties.textReplacement)
+            ?: (cell.data as TextCellData).getVisibleText(cell)
+    }
     override fun isWhitespace(): Boolean = false
     override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
-        val isPlaceholder = (cell.data as TextCellData).text.isEmpty()
+        val isPlaceholder = (cell.data as TextCellData).text.isEmpty() && cell.getProperty(CommonCellProperties.textReplacement) == null
         val textColor = cell.getProperty(if (isPlaceholder) CommonCellProperties.placeholderTextColor else CommonCellProperties.textColor)
         consumer.span("text-cell") {
             if (textColor != null) {

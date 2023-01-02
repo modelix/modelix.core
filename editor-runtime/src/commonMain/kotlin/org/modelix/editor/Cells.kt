@@ -84,8 +84,12 @@ class Cell(val data: CellData = CellData()) : Freezable() {
     fun rootCell(): Cell = parent?.rootCell() ?: this
 }
 
-fun Cell.getVisibleText(): String? = (data as? TextCellData)?.getVisibleText(this)
-fun Cell.getSelectableText(): String? = (data as? TextCellData)?.text
+fun Cell.getVisibleText(): String? {
+    return getProperty(CommonCellProperties.textReplacement) ?:  (data as? TextCellData)?.getVisibleText(this)
+}
+fun Cell.getSelectableText(): String? {
+    return getProperty(CommonCellProperties.textReplacement) ?: (data as? TextCellData)?.text
+}
 fun Cell.getMaxCaretPos(): Int = getSelectableText()?.length ?: 0
 
 class ResettableLazy<E>(private val initializer: () -> E): Lazy<E> {

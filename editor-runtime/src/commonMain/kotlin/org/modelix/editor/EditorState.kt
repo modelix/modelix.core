@@ -18,6 +18,7 @@ import org.modelix.model.api.INodeReference
 
 class EditorState {
     val substitutionPlaceholderPositions = TrackableMap<TemplateCellReference, SubstitutionPlaceholderPosition>()
+    val textReplacements = TrackableMap<CellReference, String>()
 }
 
 class SubstitutionPlaceholderPosition(val index: Int)

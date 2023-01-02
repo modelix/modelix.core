@@ -20,7 +20,7 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
     private val children: MutableList<CellTemplate<NodeT, ConceptT>> = ArrayList()
     private var reference: ICellTemplateReference? = null
     val withNode: MutableList<(node: NodeT)->Unit> = ArrayList()
-    open fun apply(context: CellCreationContext, node: NodeT): CellData {
+    fun apply(context: CellCreationContext, node: NodeT): CellData {
         val cellData = createCell(context, node)
         cellData.properties.addAll(properties)
         cellData.children.addAll(applyChildren(context, node, cellData))
@@ -28,7 +28,9 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
             cellData.children.drop(1).forEach { (it as CellData).properties[CommonCellProperties.onNewLine] = true }
         }
         withNode.forEach { it(node) }
-        cellData.cellReferences.add(createCellReference(node))
+        val cellReference: TemplateCellReference = createCellReference(node)
+        cellData.cellReferences.add(cellReference)
+        applyTextReplacement(cellData, context.editorState)
         return cellData
     }
     protected open fun applyChildren(context: CellCreationContext, node: NodeT, cell: CellData): List<CellData> {
@@ -56,6 +58,27 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
     fun getReference() = reference ?: throw IllegalStateException("reference isn't set yet")
 
     fun createCellReference(node: ITypedNode) = TemplateCellReference(getReference(), node.untypedReference())
+
+    private fun applyTextReplacement(cellData: CellData, editorState: EditorState) {
+        if (cellData is TextCellData) {
+            val cellRef = cellData.cellReferences.firstOrNull()
+            if (cellRef != null) {
+                editorState.textReplacements[cellRef]
+                    ?.let { cellData.properties[CommonCellProperties.textReplacement] = it }
+                if (cellData.properties[CellActionProperties.replaceText] == null) {
+                    cellData.properties[CellActionProperties.replaceText] = OverrideText(cellData)
+                }
+            }
+        }
+        cellData.children.filterIsInstance<CellData>().forEach { applyTextReplacement(it, editorState) }
+    }
+}
+
+class OverrideText(val cell: CellData) : ITextChangeAction {
+    override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean {
+        editor.state.textReplacements[cell.cellReferences.first()] = newText
+        return true
+    }
 }
 
 class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
@@ -136,9 +159,7 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
 }
 
 class ChangePropertyAction(val node: ITypedNode, val property: IProperty) : ITextChangeAction {
-    override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String): Boolean {
-        val text = node.getPropertyValue(property) ?: ""
-        val newText = text.replaceRange(range, replacement)
+    override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean {
         node.unwrap().setPropertyValue(property, newText)
         return true
     }

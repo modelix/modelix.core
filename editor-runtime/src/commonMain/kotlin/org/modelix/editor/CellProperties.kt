@@ -45,4 +45,5 @@ object CommonCellProperties {
     val textColor = CellPropertyKey<String?>("text-color", null, inherits = true)
     val placeholderTextColor = CellPropertyKey<String?>("placeholder-text-color", "lightGray", inherits = true)
     val backgroundColor = CellPropertyKey<String?>("background-color", null)
+    val textReplacement = CellPropertyKey<String?>("text-replacement", null)
 }

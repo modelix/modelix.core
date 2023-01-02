@@ -177,7 +177,11 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         val line: TextLine = layoutable.getLine() ?: return null
         val text: LayoutedText = line.getText() ?: return null
         val lines = text.lines.asSequence()
-        val nextPrevLines = if (next) lines.dropWhile { it != line }.drop(1) else lines.takeWhile { it != line }
+        val nextPrevLines = if (next) {
+            lines.dropWhile { it != line }.drop(1)
+        } else {
+            lines.takeWhile { it != line }.toList().reversed().asSequence()
+        }
         return nextPrevLines.mapNotNull { it.createBestMatchingCaretSelection(x) }.firstOrNull()
     }
 }

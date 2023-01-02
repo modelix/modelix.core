@@ -10,6 +10,7 @@ import org.modelix.metamodel.typedUnsafe
 import org.modelix.metamodel.untyped
 import org.modelix.metamodel.untypedReference
 import org.modelix.model.api.IChildLink
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.getChildren
 import org.modelix.model.api.getReferenceTarget
@@ -171,21 +172,21 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(context: CellCreationContext, node: NodeT) = CellData().also { cell ->
         val childNodes = getChildNodes(node)
-        val substitutionPlaceholder = context.editorState.substitutionPlaceholderPositions[getReference()]
+        val substitutionPlaceholder = context.editorState.substitutionPlaceholderPositions[getReference() to node.untypedReference()]
         val placeholderIndex = substitutionPlaceholder?.index?.coerceIn(0..childNodes.size) ?: 0
         val addSubstitutionPlaceholder: (Int) -> Unit = { index ->
             val placeholderText = if (childNodes.isEmpty()) "<no ${link.name}>" else "<choose ${link.name}>"
             val placeholder = TextCellData("", placeholderText)
             placeholder.properties[CellActionProperties.substitute] =
                 ReplaceNodeActionProvider(ChildLinkLocation(node.untyped(), link, index)).after {
-                    context.editorState.substitutionPlaceholderPositions.remove(getReference())
+                    context.editorState.substitutionPlaceholderPositions.remove(getReference() to node.untypedReference())
                 }
             cell.addChild(placeholder)
         }
         val addInsertActionCell: (Int) -> Unit = { index ->
             if (link.isMultiple) {
                 val actionCell = CellData()
-                val action = InsertSubstitutionPlaceholderAction(context.editorState, getReference(), index)
+                val action = InsertSubstitutionPlaceholderAction(context.editorState, getReference(), node.untypedReference(), index)
                 actionCell.properties[CellActionProperties.insert] = action
                 cell.addChild(actionCell)
             }
@@ -225,12 +226,13 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: G
 class InsertSubstitutionPlaceholderAction(
     val editorState: EditorState,
     val ref: ICellTemplateReference,
+    val node: INodeReference,
     val index: Int
 ) : ICellAction {
     override fun isApplicable(): Boolean = true
 
     override fun execute() {
-        editorState.substitutionPlaceholderPositions[ref] = SubstitutionPlaceholderPosition(index)
+        editorState.substitutionPlaceholderPositions[ref to node] = SubstitutionPlaceholderPosition(index)
     }
 }
 

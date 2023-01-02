@@ -7,6 +7,9 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 
+/**
+ * A cell can have multiple CellReferences. Multiple CellReferences can resolve to the same cell.
+ */
 abstract class CellReference {
 
 }

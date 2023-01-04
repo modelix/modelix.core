@@ -50,6 +50,7 @@ interface ILanguageRepository {
 
 fun IConcept.getDirectSubConcepts() = ILanguageRepository.getDirectSubConcepts(this)
 fun IConcept.getAllSubConcepts(includeSelf: Boolean) = getAllSubConceptsIncludingDuplicates(includeSelf).toSet()
+fun IConcept.getInstantiatableSubConcepts() = getAllSubConcepts(true).filterNot { it.isAbstract() }
 private fun IConcept.getAllSubConceptsIncludingDuplicates(includeSelf: Boolean): Sequence<IConcept> {
     return if (includeSelf) {
         sequenceOf(this) + getAllSubConceptsIncludingDuplicates(false)

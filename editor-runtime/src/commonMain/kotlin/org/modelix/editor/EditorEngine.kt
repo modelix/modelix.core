@@ -10,6 +10,7 @@ import org.modelix.incremental.IncrementalEngine
 import org.modelix.incremental.incrementalFunction
 import org.modelix.metamodel.GeneratedConcept
 import org.modelix.metamodel.ITypedConcept
+import org.modelix.metamodel.untyped
 import org.modelix.metamodel.untypedReference
 import org.modelix.model.api.IConcept
 
@@ -95,6 +96,8 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
             val data = editor.apply(CellCreationContext(this, editorState), node)
             data.properties[CellActionProperties.substitute] = ReplaceNodeActionProvider(LocationOfExistingNode(node.unwrap()))
             data.cellReferences += NodeCellReference(node.untypedReference())
+            data.properties[CellActionProperties.transformBefore] = SideTransformNode(true, node.untyped())
+            data.properties[CellActionProperties.transformAfter] = SideTransformNode(false, node.untyped())
             return data
         } catch (ex: Exception) {
             LOG.error(ex) { "Failed to create cell for $node" }

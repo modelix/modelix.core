@@ -86,10 +86,10 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     }
                     val legalRange = 0 until (layoutable.cell.getSelectableText()?.length ?: 0)
                     if (legalRange.contains(posToDelete)) {
-                        replaceText(posToDelete .. posToDelete, "", editor)
+                        replaceText(posToDelete .. posToDelete, "", editor, true)
                     }
                 } else {
-                    replaceText(min(start, end) until max(start, end), "", editor)
+                    replaceText(min(start, end) until max(start, end), "", editor, true)
                 }
             }
             KnownKeys.Enter -> {
@@ -117,13 +117,46 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     if (typedText == " " && event.modifiers == Modifiers.CTRL) {
                         triggerCodeCompletion()
                     } else {
-                        replaceText(min(start, end) until max(start, end), typedText, editor)
+                        processTypedText(typedText, editor)
                     }
                 }
             }
         }
 
         return true
+    }
+
+    private fun processTypedText(typedText: String, editor: EditorComponent) {
+        val oldText = layoutable.cell.getSelectableText() ?: ""
+        val range = min(start, end) until max(start, end)
+        val textLength = oldText.length
+        val leftTransform = start == end && end == 0
+        val rightTransform = start == end && end == textLength
+        if (leftTransform || rightTransform) {
+            //if (replaceText(range, typedText, editor, false)) return
+
+            val providers = (if (leftTransform) {
+                layoutable.cell.getActionsBefore()
+            } else {
+                layoutable.cell.getActionsAfter()
+            }).toList()
+            val params = CodeCompletionParameters(editor, typedText)
+            val actions = providers.flatMap { it.getActions(params) }
+            val matchingActions = actions.filter { it.isApplicable(params) }
+                .filter { it.getMatchingText(params).startsWith(typedText) }
+            when (matchingActions.size) {
+                0 -> {}
+                1 -> {
+                    matchingActions.first().execute()
+                    return
+                }
+                else -> {
+                    editor.showCodeCompletionMenu(layoutable, providers)
+                    return
+                }
+            }
+        }
+        replaceText(range, typedText, editor, true)
     }
 
     fun getAbsoluteX() = layoutable.getX() + end
@@ -134,18 +167,19 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         editor.showCodeCompletionMenu(layoutable, actionProviders)
     }
 
-    private fun replaceText(range: IntRange, replacement: String, editor: EditorComponent) {
+    private fun replaceText(range: IntRange, replacement: String, editor: EditorComponent, force: Boolean): Boolean {
+        val oldText = layoutable.cell.getSelectableText() ?: ""
+        val newText = oldText.replaceRange(range, replacement)
         val actions = layoutable.cell.centerAlignedHierarchy().mapNotNull { it.getProperty(CellActionProperties.replaceText) }
         for (action in actions) {
-            val oldText = layoutable.cell.getSelectableText() ?: ""
-            val newText = oldText.replaceRange(range, replacement)
-            if (action.replaceText(editor, range, replacement, newText)) {
+            if ((force || action.isValid(newText)) && action.replaceText(editor, range, replacement, newText)) {
                 editor.selectAfterUpdate {
                     reResolveLayoutable(editor)?.let { CaretSelection(it, range.first + replacement.length) }
                 }
-                break
+                return true
             }
         }
+        return false
     }
 
     fun getEditor(): EditorComponent? = layoutable.cell.editorComponent

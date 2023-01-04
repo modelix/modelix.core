@@ -1,11 +1,17 @@
 package org.modelix.editor
 
+import org.modelix.metamodel.ITypedNode
+import org.modelix.model.api.INode
+import org.modelix.model.api.getAllSubConcepts
+import org.modelix.model.api.getInstantiatableSubConcepts
+
 interface ICellAction {
     fun isApplicable(): Boolean
     fun execute(editor: EditorComponent)
 }
 
 interface ITextChangeAction {
+    fun isValid(value: String?): Boolean
     fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean
 }
 
@@ -15,6 +21,21 @@ object CellActionProperties {
     val transformAfter = CellPropertyKey<ICodeCompletionActionProvider?>("transformAfter", null)
     val insert = CellPropertyKey<ICellAction?>("insert", null)
     val replaceText = CellPropertyKey<ITextChangeAction?>("replaceText", null)
+}
+
+class SideTransformNode(val before: Boolean, val node: INode) : ICodeCompletionActionProvider {
+    override fun getActions(parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
+        val engine = parameters.editor.engine ?: return emptyList()
+        val location = LocationOfExistingNode(node)
+        val expectedConcept = location.expectedConcept() ?: return emptyList()
+        val allowedConcepts = expectedConcept.getInstantiatableSubConcepts()
+        val cellModels = allowedConcepts.map { concept ->
+            engine.createCellModel(concept)
+        }
+        return cellModels.flatMap {
+            it.getSideTransformActions(before, node) ?: emptyList()
+        }
+    }
 }
 
 fun Cell.getSubstituteActions() = collectSubstituteActionsBetween(previousLeaf { it.isVisible() }, firstLeaf()).distinct() // TODO non-leafs can also be visible (text cells can have children)

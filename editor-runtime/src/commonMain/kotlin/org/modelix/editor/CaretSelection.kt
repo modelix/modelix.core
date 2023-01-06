@@ -135,7 +135,8 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         if (leftTransform || rightTransform) {
             //if (replaceText(range, typedText, editor, false)) return
 
-            val providers = (if (leftTransform) {
+            val completionPosition = if (leftTransform) CompletionPosition.LEFT else CompletionPosition.RIGHT
+            val providers = (if (completionPosition == CompletionPosition.LEFT) {
                 layoutable.cell.getActionsBefore()
             } else {
                 layoutable.cell.getActionsAfter()
@@ -151,7 +152,13 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     return
                 }
                 else -> {
-                    editor.showCodeCompletionMenu(layoutable, providers)
+                    editor.showCodeCompletionMenu(
+                        anchor = layoutable,
+                        position = completionPosition,
+                        entries = providers,
+                        pattern = typedText,
+                        caretPosition = typedText.length
+                    )
                     return
                 }
             }
@@ -161,10 +168,18 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
 
     fun getAbsoluteX() = layoutable.getX() + end
 
+    fun getTextBeforeCaret() = (layoutable.cell.getSelectableText() ?: "").substring(0, end)
+
     fun triggerCodeCompletion() {
         val editor = getEditor() ?: throw IllegalStateException("Not attached to any editor")
         val actionProviders = layoutable.cell.getSubstituteActions().toList()
-        editor.showCodeCompletionMenu(layoutable, actionProviders)
+        editor.showCodeCompletionMenu(
+            anchor = layoutable,
+            position = CompletionPosition.CENTER,
+            entries = actionProviders,
+            pattern = layoutable.cell.getSelectableText() ?: "",
+            caretPosition = end
+        )
     }
 
     private fun replaceText(range: IntRange, replacement: String, editor: EditorComponent, force: Boolean): Boolean {

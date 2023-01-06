@@ -7,10 +7,18 @@ import org.w3c.dom.Node
 import org.w3c.dom.asList
 import org.w3c.dom.events.MouseEvent
 
-class Bounds(val x: Double, val y: Double, val width: Double, val height: Double)
+data class Bounds(val x: Double, val y: Double, val width: Double, val height: Double) {
+    fun maxX() = x + width
+    fun maxY() = y + height
+    fun minX() = x
+    fun minY() = y
+}
 
 fun HTMLElement.getAbsoluteBounds(): Bounds {
-    return getBoundingClientRect().toBounds().relativeTo(getBodyAbsoluteBounds())
+    return getBoundingClientRect().toBounds()
+}
+fun HTMLElement.getAbsoluteInnerBounds(): Bounds {
+    return (getClientRects().asSequence().firstOrNull()?.toBounds() ?: ZERO_BOUNDS)
 }
 
 fun DOMRect.toBounds() = Bounds(x, y, width, height)

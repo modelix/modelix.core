@@ -13,25 +13,32 @@
  */
 package org.modelix.editor
 
+import org.w3c.dom.HTMLElement
+
 class JSCaretSelectionView(selection: CaretSelection, val editor: JsEditorComponent) : SelectionView<CaretSelection>(selection) {
 
     override fun updateBounds() {
-        val dom = GeneratedHtmlMap.getOutput(selection) ?: return
         val layoutable = selection.layoutable
-        val htmlElement = GeneratedHtmlMap.getOutput(layoutable) ?: return
-        val text = htmlElement.innerText
-        val textLength = text.length
-        val cellAbsoluteBounds = htmlElement.getAbsoluteBounds()
-        val cellRelativeBounds = cellAbsoluteBounds.relativeTo(editor.getMainLayer()?.getAbsoluteBounds() ?: ZERO_BOUNDS)
-        val characterWidth = if (textLength == 0) 0.0 else cellAbsoluteBounds.width / textLength
-        val caretPos = selection.end
-        val caretX = cellAbsoluteBounds.x + caretPos * characterWidth
-        val leftEnd = caretPos == 0
-        val rightEnd = caretPos == textLength
-        val caretOffsetX = if (rightEnd && !leftEnd) -5 else -2
-        val caretOffsetY = if (leftEnd || rightEnd) -1 else 0
-        dom.style.height = "${cellRelativeBounds.height}px"
-        dom.style.left = "${caretX + caretOffsetX}px"
-        dom.style.top = "${cellRelativeBounds.y + caretOffsetY}px"
+        val textElement = GeneratedHtmlMap.getOutput(selection.layoutable) ?: return
+        val caretElement = GeneratedHtmlMap.getOutput(selection) ?: return
+        updateCaretBounds(textElement, selection.end, editor.getMainLayer(), caretElement)
+    }
+
+    companion object {
+        fun updateCaretBounds(textElement: HTMLElement, caretPos: Int, coordinatesElement: HTMLElement?, caretElement: HTMLElement) {
+            val text = textElement.innerText
+            val textLength = text.length
+            val cellAbsoluteBounds = textElement.getAbsoluteInnerBounds()
+            val cellRelativeBounds = cellAbsoluteBounds.relativeTo(coordinatesElement?.getAbsoluteBounds() ?: ZERO_BOUNDS)
+            val characterWidth = if (textLength == 0) 0.0 else cellAbsoluteBounds.width / textLength
+            val caretX = cellRelativeBounds.x + caretPos * characterWidth
+            val leftEnd = caretPos == 0
+            val rightEnd = caretPos == textLength
+            val caretOffsetX = if (rightEnd && !leftEnd) -4 else -1
+            val caretOffsetY = if (leftEnd || rightEnd) -1 else 0
+            caretElement.style.height = "${cellRelativeBounds.height}px"
+            caretElement.style.left = "${caretX + caretOffsetX}px"
+            caretElement.style.top = "${cellRelativeBounds.y + caretOffsetY}px"
+        }
     }
 }

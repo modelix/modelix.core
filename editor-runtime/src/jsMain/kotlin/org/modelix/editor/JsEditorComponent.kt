@@ -54,7 +54,10 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
     fun updateHtml() {
         val oldEditorElement = GeneratedHtmlMap.getOutput(this)
         GeneratedHtmlMap.unassign(this)
-        codeCompletionMenu?.let { GeneratedHtmlMap.unassign(it) } // TODO more generic mechanism to update UI elements that are not part of the cell tree
+        codeCompletionMenu?.let {
+            GeneratedHtmlMap.unassign(it)
+            GeneratedHtmlMap.unassign(it.patternEditor)
+        } // TODO more generic mechanism to update UI elements that are not part of the cell tree
         val newEditorElement = IncrementalJSDOMBuilder(document, oldEditorElement).produce(this)()
         if (newEditorElement != oldEditorElement) {
             oldEditorElement?.remove()

@@ -59,8 +59,14 @@ open class EditorComponent(
 
     fun getSelection(): Selection? = selection
 
-    fun showCodeCompletionMenu(anchor: LayoutableCell, entries: List<ICodeCompletionActionProvider>) {
-        codeCompletionMenu = CodeCompletionMenu(this, anchor, entries)
+    fun showCodeCompletionMenu(
+        anchor: LayoutableCell,
+        position: CompletionPosition,
+        entries: List<ICodeCompletionActionProvider>,
+        pattern: String = "",
+        caretPosition: Int? = null
+    ) {
+        codeCompletionMenu = CodeCompletionMenu(this, anchor, position, entries, pattern, caretPosition)
         codeCompletionMenu?.updateActions()
         update()
     }

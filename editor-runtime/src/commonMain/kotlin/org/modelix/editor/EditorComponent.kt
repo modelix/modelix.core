@@ -98,6 +98,7 @@ open class EditorComponent(
         try {
             if (event.knownKey == KnownKeys.F5) {
                 clearLayoutCache()
+                state.reset()
                 return true
             }
             for (handler in listOfNotNull(codeCompletionMenu, selection)) {

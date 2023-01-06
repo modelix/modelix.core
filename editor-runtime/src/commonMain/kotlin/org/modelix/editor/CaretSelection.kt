@@ -6,8 +6,9 @@ import kotlinx.html.div
 import kotlin.math.max
 import kotlin.math.min
 
-class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: Int) : Selection() {
+class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: Int, val desiredXPosition: Int? = null) : Selection() {
     constructor(cell: LayoutableCell, pos: Int) : this(cell, pos, pos)
+    constructor(cell: LayoutableCell, pos: Int, desiredXPosition: Int?) : this(cell, pos, pos, desiredXPosition)
 
     override fun isValid(): Boolean {
         val editor = getEditor() ?: return false
@@ -72,10 +73,12 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                 }
             }
             KnownKeys.ArrowDown -> {
-                createNextPreviousLineSelection(true, getAbsoluteX())?.let { editor.changeSelection(it) }
+                createNextPreviousLineSelection(true, desiredXPosition ?: getAbsoluteX())
+                    ?.let { editor.changeSelection(it) }
             }
             KnownKeys.ArrowUp -> {
-                createNextPreviousLineSelection(false, getAbsoluteX())?.let { editor.changeSelection(it) }
+                createNextPreviousLineSelection(false, desiredXPosition ?: getAbsoluteX())
+                    ?.let { editor.changeSelection(it) }
             }
             KnownKeys.Delete, KnownKeys.Backspace -> {
                 if (start == end) {
@@ -243,10 +246,10 @@ fun TextLine.createBestMatchingCaretSelection(x: Int): CaretSelection? {
         val length = layoutable.getLength()
         val range = currentOffset..(currentOffset + length)
         if (layoutable is LayoutableCell) {
-            if (x < range.first) return CaretSelection(layoutable, 0)
-            if (range.contains(x)) return CaretSelection(layoutable, x - range.first)
+            if (x < range.first) return CaretSelection(layoutable, 0, desiredXPosition = x)
+            if (range.contains(x)) return CaretSelection(layoutable, x - range.first, desiredXPosition = x)
         }
         currentOffset += length
     }
-    return words.filterIsInstance<LayoutableCell>().lastOrNull()?.let { CaretSelection(it, it.getLength()) }
+    return words.filterIsInstance<LayoutableCell>().lastOrNull()?.let { CaretSelection(it, it.getLength(), desiredXPosition = x) }
 }

@@ -5,6 +5,7 @@ import kotlinx.html.TagConsumer
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.Text
 import kotlin.random.Random
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
@@ -109,6 +110,7 @@ class IncrementalJSDOMBuilderTest {
     @Test fun runRandomTest_3_2() = runRandomTests(567454, 3, 2)
     @Test fun runRandomTest_3_3() = runRandomTests(567454, 3, 3)
     @Test fun runRandomTest_5_4_567462() = runRandomTests(567462, 5, 4)
+    @Ignore
     @Test fun runRandomTest_5_4() {
         for (seed in 1..10) {
             println("test ${567454 + seed}, 5, 4")

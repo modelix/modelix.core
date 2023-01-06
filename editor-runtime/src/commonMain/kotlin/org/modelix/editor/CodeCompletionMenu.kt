@@ -25,11 +25,14 @@ class CodeCompletionMenu(
         val parameters = parameters()
         entries = providers.flatMap { it.getActions(parameters) }
             .filter { it.isApplicable(parameters) }
-            .filter { it.getMatchingText(parameters).isNotEmpty() }
+            .filter {
+                val matchingText = it.getMatchingText(parameters)
+                matchingText.isNotEmpty() && matchingText.startsWith(parameters.pattern)
+            }
             .sortedBy { it.getMatchingText(parameters) }
     }
 
-    private fun parameters() = CodeCompletionParameters(editor, patternEditor.pattern)
+    private fun parameters() = CodeCompletionParameters(editor, patternEditor.getTextBeforeCaret())
 
     fun selectNext() {
         selectedIndex++
@@ -101,6 +104,8 @@ class CodeCompletionMenu(
         var caretPos: Int = initialCaretPosition ?: initialPattern.length
         var pattern: String = initialPattern
 
+        fun getTextBeforeCaret() = pattern.substring(0, caretPos)
+
         fun deleteText(before: Boolean): Boolean {
             if (before) {
                 if (caretPos == 0) return false
@@ -110,35 +115,22 @@ class CodeCompletionMenu(
                 if (caretPos == pattern.length) return false
                 pattern = pattern.removeRange(caretPos .. caretPos)
             }
+            updateActions()
             return true
         }
 
         fun insertText(text: String) {
             pattern = pattern.replaceRange(caretPos until caretPos, text)
             caretPos += text.length
+            updateActions()
         }
 
         fun moveCaret(delta: Int) {
             caretPos = (caretPos + delta).coerceIn(0..pattern.length)
-        }
-
-        fun getPatternCell(): Cell {
-            var cell = patternCell
-            if (cell == null || cell.getVisibleText() != pattern) {
-                cell = Cell(TextCellData(pattern))
-                patternCell = cell
-            }
-            return cell
+            updateActions()
         }
 
         override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
-//            consumer.span("text-cell cc-pattern") {
-//                style = "position: relative"
-//                span {
-//                    +pattern.useNbsp()
-//                }
-//                div("caret") {}
-//            }
             consumer.div {
                 div("ccmenu-pattern") {
                     +pattern.useNbsp()

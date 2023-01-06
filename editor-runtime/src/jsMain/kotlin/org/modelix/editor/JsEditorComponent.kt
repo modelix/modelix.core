@@ -70,8 +70,8 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
         val htmlElement = target as? HTMLElement
         val layoutable = htmlElement?.let { GeneratedHtmlMap.getProducer(it) } as? LayoutableCell ?: return false
         val text = htmlElement.innerText
-        val cellAbsoluteBounds = htmlElement.getAbsoluteBounds()
-        val absoluteClickX = event.getAbsolutePositionX()
+        val cellAbsoluteBounds = htmlElement.getAbsoluteInnerBounds()
+        val absoluteClickX = event.clientX
         val relativeClickX = absoluteClickX - cellAbsoluteBounds.x
         val characterWidth = cellAbsoluteBounds.width / text.length
         val caretPos = (relativeClickX / characterWidth).roundToInt()

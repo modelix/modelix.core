@@ -7,6 +7,7 @@ import kotlinx.html.dom.create
 import kotlinx.html.js.div
 import kotlinx.html.tabIndex
 import org.w3c.dom.HTMLElement
+import org.w3c.dom.css.CSSStyleDeclaration
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.events.MouseEvent
@@ -18,6 +19,8 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
         tabIndex = "-1" // allows setting keyboard focus
     }
     private var selectionView: SelectionView<*>? = null
+    private var highlightedLine: HTMLElement? = null
+    private var highlightedCell: HTMLElement? = null
 
     init {
         containerElement.addEventListener("click", { event: Event ->
@@ -63,6 +66,22 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
             oldEditorElement?.remove()
             containerElement.append(newEditorElement)
         }
+
+        val selectedLayoutable = (getSelection() as? CaretSelection)?.layoutable
+
+        val newHighlightedLine = selectedLayoutable?.getLine()?.let { GeneratedHtmlMap.getOutput(it) }
+        if (newHighlightedLine != highlightedLine) {
+            highlightedLine?.classList?.remove("highlighted")
+        }
+        newHighlightedLine?.classList?.add("highlighted")
+        highlightedLine = newHighlightedLine
+
+        val newHighlightedCell = selectedLayoutable?.let { GeneratedHtmlMap.getOutput(it) }
+        if (newHighlightedCell != highlightedCell) {
+            highlightedCell?.classList?.remove("highlighted-cell")
+        }
+        newHighlightedCell?.classList?.add("highlighted-cell")
+        highlightedCell = newHighlightedCell
     }
 
     fun processClick(event: MouseEvent): Boolean {

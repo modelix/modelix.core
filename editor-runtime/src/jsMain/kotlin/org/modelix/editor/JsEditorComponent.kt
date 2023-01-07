@@ -1,16 +1,15 @@
 package org.modelix.editor
 
 import kotlinx.browser.document
-import kotlinx.html.TagConsumer
-import kotlinx.html.div
 import kotlinx.html.dom.create
 import kotlinx.html.js.div
 import kotlinx.html.tabIndex
 import org.w3c.dom.HTMLElement
-import org.w3c.dom.css.CSSStyleDeclaration
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.events.MouseEvent
+import kotlin.math.abs
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> Cell) : EditorComponent(engine, rootCellCreator) {
@@ -87,15 +86,40 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
     fun processClick(event: MouseEvent): Boolean {
         val target = event.target ?: return false
         val htmlElement = target as? HTMLElement
-        val layoutable = htmlElement?.let { GeneratedHtmlMap.getProducer(it) } as? LayoutableCell ?: return false
-        val text = htmlElement.innerText
-        val cellAbsoluteBounds = htmlElement.getAbsoluteInnerBounds()
+        val producer: IProducesHtml = htmlElement?.let { GeneratedHtmlMap.getProducer(it) } ?: return false
         val absoluteClickX = event.clientX
-        val relativeClickX = absoluteClickX - cellAbsoluteBounds.x
-        val characterWidth = cellAbsoluteBounds.width / text.length
-        val caretPos = (relativeClickX / characterWidth).roundToInt()
-            .coerceAtMost(layoutable.cell.getMaxCaretPos())
-        changeSelection(CaretSelection(layoutable, caretPos))
+        when (producer) {
+            is LayoutableCell -> {
+                val layoutable = producer as? LayoutableCell ?: return false
+                val text = htmlElement.innerText
+                val cellAbsoluteBounds = htmlElement.getAbsoluteInnerBounds()
+                val relativeClickX = absoluteClickX - cellAbsoluteBounds.x
+                val characterWidth = cellAbsoluteBounds.width / text.length
+                val caretPos = (relativeClickX / characterWidth).roundToInt()
+                    .coerceAtMost(layoutable.cell.getMaxCaretPos())
+                changeSelection(CaretSelection(layoutable, caretPos))
+                return true
+            }
+            is Layoutable -> {
+                return selectClosestInLine(producer.getLine() ?: return false, absoluteClickX)
+            }
+            is TextLine -> {
+                return selectClosestInLine(producer, absoluteClickX)
+            }
+            else -> return false
+        }
+    }
+
+    private fun selectClosestInLine(line: TextLine, absoluteClickX: Int): Boolean {
+        val words = line.words.filterIsInstance<LayoutableCell>()
+        val closest = words.map { it to GeneratedHtmlMap.getOutput(it)!! }.minByOrNull {
+            min(
+                abs(absoluteClickX - it.second.getAbsoluteBounds().minX()),
+                abs(absoluteClickX - it.second.getAbsoluteBounds().maxX())
+            )
+        } ?: return false
+        val caretPos = if (absoluteClickX <= closest.second.getAbsoluteBounds().minX()) 0 else closest.first.getLength()
+        changeSelection(CaretSelection(closest.first, caretPos))
         return true
     }
 }

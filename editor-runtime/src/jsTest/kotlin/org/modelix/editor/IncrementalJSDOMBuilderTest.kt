@@ -33,7 +33,7 @@ class IncrementalJSDOMBuilderTest {
         }
 
         var domBuilder: TagConsumer<HTMLElement> = IncrementalJSDOMBuilder(document, null)
-        val dom = cell.layout.produceHtml(domBuilder)
+        val dom = cell.layout.toHtml(domBuilder)
         val elements1 = listOf(dom) + dom.descendants()
         println(cell)
         println(dom.outerHTML)
@@ -42,7 +42,7 @@ class IncrementalJSDOMBuilderTest {
         val cell2 = replaceCell(cell, textCellToChange, Cell(TextCellData(newText)))
         assertNotSame(cell, cell2, "No cell was replaced")
         domBuilder = IncrementalJSDOMBuilder(document, dom)
-        val dom2 = cell2.layout.produceHtml(domBuilder)
+        val dom2 = cell2.layout.toHtml(domBuilder)
         val elements2 = listOf(dom2) + dom2.descendants()
         println(cell2)
         println(dom2.outerHTML)
@@ -144,17 +144,17 @@ class IncrementalJSDOMBuilderTest {
 
     fun runRandomTest(rand: Random, cellsPerLevel: Int, levels: Int, modify: (Cell) -> Cell) {
         val cell = EditorTestUtils.buildRandomCells(rand, cellsPerLevel, levels)
-        val dom = cell.layout.produceHtml(IncrementalJSDOMBuilder(document, null))
+        val dom = cell.layout.toHtml(IncrementalJSDOMBuilder(document, null))
         val html = dom.outerHTML
         println("old html: " + html)
         println("old cells: $cell")
         val newCell = modify(cell)
         println("new cells: $newCell")
-        val dom2incremental = newCell.layout.produceHtml(IncrementalJSDOMBuilder(document, dom))
+        val dom2incremental = newCell.layout.toHtml(IncrementalJSDOMBuilder(document, dom))
         val html2incremental = dom2incremental.outerHTML
 
         newCell.descendantsAndSelf().forEach { it.clearCachedLayout() }
-        val dom2nonIncremental = newCell.layout.produceHtml(IncrementalJSDOMBuilder(document, null))
+        val dom2nonIncremental = newCell.layout.toHtml(IncrementalJSDOMBuilder(document, null))
         val html2nonIncremental = dom2nonIncremental.outerHTML
         assertEquals(html2nonIncremental, html2incremental)
     }

@@ -10,7 +10,7 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
     protected val childConcept: IConcept,
     protected val childType: KClass<ChildT>,
 ): Iterable<ChildT> {
-    fun isEmpty(): Boolean = iterator().hasNext()
+    fun isEmpty(): Boolean = !iterator().hasNext()
 
     fun getSize(): Int {
         return this.count()

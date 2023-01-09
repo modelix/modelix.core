@@ -77,3 +77,7 @@ fun INode.index(): Int {
 }
 
 fun INode.getContainmentLink() = roleInParent?.let { parent?.concept?.getChildLink(it) }
+fun INode.getRoot(): INode = parent?.getRoot() ?: this
+fun INode.isInstanceOf(superConcept: IConcept?): Boolean = concept.let { it != null && it.isSubConceptOf(superConcept) }
+fun INode.isInstanceOfSafe(superConcept: IConcept): Boolean = tryGetConcept()?.isSubConceptOf(superConcept) ?: false
+fun INode.tryGetConcept(): IConcept? = getConceptReference()?.tryResolve()

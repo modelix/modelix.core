@@ -19,6 +19,7 @@ import org.modelix.model.api.getReferenceTarget
 import org.modelix.model.api.index
 import org.modelix.model.api.moveChild
 import org.modelix.model.api.setPropertyValue
+import org.modelix.model.api.setReferenceTarget
 
 abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val concept: GeneratedConcept<NodeT, ConceptT>) {
     val properties = CellProperties()
@@ -230,8 +231,28 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
         return sourceNode.unwrap().getReferenceTarget(link)?.typedUnsafe()
     }
     override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
-        // TODO
-        return listOf()
+        val specializedLocation = location.ofSubConcept(concept)
+        val targets = specializedLocation.getVisibleReferenceTargets(link)
+        return targets.map { WrapReferenceTarget(location, it, presentation(it.typedUnsafe()) ?: "") }
+    }
+
+    inner class WrapReferenceTarget(val location: INonExistingNode, val target: INode, val presentation: String): ICodeCompletionAction {
+        override fun isApplicable(parameters: CodeCompletionParameters): Boolean {
+            return true
+        }
+
+        override fun getMatchingText(parameters: CodeCompletionParameters): String {
+            return presentation
+        }
+
+        override fun getDescription(parameters: CodeCompletionParameters): String {
+            return concept.getShortName()
+        }
+
+        override fun execute() {
+            val sourceNode = location.getOrCreateNode(concept)
+            sourceNode.setReferenceTarget(link, target)
+        }
     }
 }
 

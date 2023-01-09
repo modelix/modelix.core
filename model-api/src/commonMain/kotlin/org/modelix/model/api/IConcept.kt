@@ -40,3 +40,5 @@ interface IConcept {
     fun getChildLink(name: String): IChildLink
     fun getReferenceLink(name: String): IReferenceLink
 }
+
+fun IConcept?.isSubConceptOf(superConcept: IConcept?) = this?.isSubConceptOf(superConcept) == true

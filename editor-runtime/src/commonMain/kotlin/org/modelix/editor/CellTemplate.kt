@@ -43,7 +43,7 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
     }
     protected abstract fun createCell(context: CellCreationContext, node: NodeT): CellData
 
-    open fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction>? {
+    open fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction>? {
         return children.asSequence().mapNotNull { it.getInstantiationActions(location) }.firstOrNull()
     }
 
@@ -120,7 +120,7 @@ class OverrideText(val cell: TextCellData) : ITextChangeAction {
 class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
     : CellTemplate<NodeT, ConceptT>(concept), IGrammarSymbol {
     override fun createCell(context: CellCreationContext, node: NodeT) = TextCellData(text, "")
-    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
         return listOf(InstantiateNodeAction(location))
     }
 
@@ -138,7 +138,7 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
         }
     }
 
-    inner class InstantiateNodeAction(val location: INodeLocation) : ICodeCompletionAction {
+    inner class InstantiateNodeAction(val location: INonExistingNode) : ICodeCompletionAction {
         override fun isApplicable(parameters: CodeCompletionParameters): Boolean = true
 
         override fun getMatchingText(parameters: CodeCompletionParameters): String {
@@ -150,7 +150,7 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
         }
 
         override fun execute() {
-            location.createNode(concept)
+            location.replaceNode(concept)
         }
     }
 }
@@ -187,7 +187,7 @@ class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
         }
     }
 
-    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction>? {
+    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction>? {
         return null // skip optional. Don't search in children.
     }
 }
@@ -202,7 +202,7 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
         data.cellReferences += PropertyCellReference(property, node.untypedReference())
         return data
     }
-    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
         // TODO
         return listOf()
     }
@@ -229,7 +229,7 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
         return sourceNode.unwrap().getReferenceTarget(link)?.typedUnsafe()
     }
-    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
         // TODO
         return listOf()
     }
@@ -241,7 +241,7 @@ class FlagCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     val text: String
 ) : PropertyCellTemplate<NodeT, ConceptT>(concept, property), IGrammarSymbol {
     override fun createCell(context: CellCreationContext, node: NodeT) = if (node.getPropertyValue(property) == "true") TextCellData(text, "") else CellData()
-    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
         // TODO
         return listOf()
     }
@@ -259,7 +259,7 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(
             val placeholderText = if (childNodes.isEmpty()) "<no ${link.name}>" else "<choose ${link.name}>"
             val placeholder = TextCellData("", placeholderText)
             placeholder.properties[CellActionProperties.substitute] =
-                ReplaceNodeActionProvider(ChildLinkLocation(node.untyped(), link, index)).after {
+                ReplaceNodeActionProvider(NonExistingChild(node.untyped().toNonExisting(), link, index)).after {
                     context.editorState.substitutionPlaceholderPositions.remove(createCellReference(node))
                 }
             placeholder.cellReferences.add(PlaceholderCellReference(createCellReference(node)))
@@ -299,7 +299,7 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(
 
     fun getChildNodes(node: NodeT) = node.unwrap().getChildren(link).toList()
 
-    override fun getInstantiationActions(location: INodeLocation): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
         // TODO
         return listOf()
     }

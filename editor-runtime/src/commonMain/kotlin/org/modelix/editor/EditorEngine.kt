@@ -94,7 +94,7 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
         try {
             val editor = resolveConceptEditor(node._concept._concept) as ConceptEditor<NodeT, *>
             val data = editor.apply(CellCreationContext(this, editorState), node)
-            data.properties[CellActionProperties.substitute] = ReplaceNodeActionProvider(LocationOfExistingNode(node.unwrap()))
+            data.properties[CellActionProperties.substitute] = ReplaceNodeActionProvider(ExistingNode(node.unwrap()))
             data.cellReferences += NodeCellReference(node.untypedReference())
             data.properties[CellActionProperties.transformBefore] = SideTransformNode(true, node.untyped())
             data.properties[CellActionProperties.transformAfter] = SideTransformNode(false, node.untyped())

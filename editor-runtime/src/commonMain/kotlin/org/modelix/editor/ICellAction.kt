@@ -1,8 +1,6 @@
 package org.modelix.editor
 
-import org.modelix.metamodel.ITypedNode
 import org.modelix.model.api.INode
-import org.modelix.model.api.getAllSubConcepts
 import org.modelix.model.api.getInstantiatableSubConcepts
 
 interface ICellAction {
@@ -26,7 +24,7 @@ object CellActionProperties {
 class SideTransformNode(val before: Boolean, val node: INode) : ICodeCompletionActionProvider {
     override fun getActions(parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
         val engine = parameters.editor.engine ?: return emptyList()
-        val location = LocationOfExistingNode(node)
+        val location = ExistingNode(node)
         val expectedConcept = location.expectedConcept() ?: return emptyList()
         val allowedConcepts = expectedConcept.getInstantiatableSubConcepts()
         val cellModels = allowedConcepts.map { concept ->

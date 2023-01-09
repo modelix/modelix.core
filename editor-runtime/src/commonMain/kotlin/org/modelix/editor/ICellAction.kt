@@ -22,7 +22,7 @@ object CellActionProperties {
 }
 
 class SideTransformNode(val before: Boolean, val node: INode) : ICodeCompletionActionProvider {
-    override fun getActions(parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
+    override fun getApplicableActions(parameters: CodeCompletionParameters): List<IActionOrProvider> {
         val engine = parameters.editor.engine ?: return emptyList()
         val location = ExistingNode(node)
         val expectedConcept = location.expectedConcept() ?: return emptyList()

@@ -145,9 +145,9 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                 layoutable.cell.getActionsAfter()
             }).toList()
             val params = CodeCompletionParameters(editor, typedText)
-            val actions = providers.flatMap { it.getActions(params) }
-            val matchingActions = actions.filter { it.isApplicable(params) }
-                .filter { it.getMatchingText(params).startsWith(typedText) }
+            val actions = providers.flatMap { it.flattenApplicableActions(params) }
+            val matchingActions = actions
+                .filter { it.getMatchingText().startsWith(typedText) }
             when (matchingActions.size) {
                 0 -> {}
                 1 -> {

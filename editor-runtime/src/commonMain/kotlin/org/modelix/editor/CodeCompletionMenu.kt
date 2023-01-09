@@ -15,6 +15,7 @@ class CodeCompletionMenu(
     initialCaretPosition: Int? = null,
 ) : IProducesHtml, IKeyboardHandler {
     val patternEditor = PatternEditor(initialPattern, initialCaretPosition)
+    private val actionsCache = CachedCodeCompletionActions(providers)
     private var selectedIndex: Int = 0
     private var entries: List<ICodeCompletionAction> = emptyList()
 
@@ -22,13 +23,12 @@ class CodeCompletionMenu(
 
     fun updateActions() {
         val parameters = parameters()
-        entries = providers.flatMap { it.getActions(parameters) }
-            .filter { it.isApplicable(parameters) }
+        entries = actionsCache.update(parameters)
             .filter {
-                val matchingText = it.getMatchingText(parameters)
+                val matchingText = it.getMatchingText()
                 matchingText.isNotEmpty() && matchingText.startsWith(parameters.pattern)
             }
-            .sortedBy { it.getMatchingText(parameters).lowercase() }
+            .sortedBy { it.getMatchingText().lowercase() }
     }
 
     private fun parameters() = CodeCompletionParameters(editor, patternEditor.getTextBeforeCaret())
@@ -79,10 +79,10 @@ class CodeCompletionMenu(
                     entries.forEachIndexed { index, action ->
                         tr("ccSelectedEntry".takeIf { index == selectedIndex }) {
                             td("matchingText") {
-                                +action.getMatchingText(parameters)
+                                +action.getMatchingText()
                             }
                             td("description") {
-                                +action.getDescription(parameters)
+                                +action.getDescription()
                             }
                         }
                     }
@@ -142,14 +142,54 @@ class CodeCompletionMenu(
     }
 }
 
-interface ICodeCompletionActionProvider {
-    fun getActions(parameters: CodeCompletionParameters): List<ICodeCompletionAction>
+class CachedCodeCompletionActions(providers: List<ICodeCompletionActionProvider>) {
+    private var cacheEntries: List<CacheEntry> = providers.map { CacheEntry(it) }
+
+    fun update(parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
+        return cacheEntries.flatMap { it.update(parameters) }.toList()
+    }
+
+    inner class CacheEntry(val provider: IActionOrProvider) {
+        private var initialized = false
+        private var cacheEntries: List<CacheEntry> = emptyList()
+        private var dependsOnPattern: Boolean = true
+        fun update(parameters: CodeCompletionParameters): Sequence<ICodeCompletionAction> {
+            return when (provider) {
+                is ICodeCompletionAction -> sequenceOf(provider)
+                is ICodeCompletionActionProvider -> {
+                    parameters.wasPatternAccessed() // reset state
+                    if (!initialized || dependsOnPattern) {
+                        cacheEntries = provider.getApplicableActions(parameters).map { CacheEntry(it) }
+                        dependsOnPattern = parameters.wasPatternAccessed()
+                        initialized = true
+                    }
+                    return cacheEntries.asSequence().flatMap { it.update(parameters) }
+                }
+                else -> throw RuntimeException("Unknown type: " + provider::class)
+            }
+        }
+    }
 }
 
-interface ICodeCompletionAction {
-    fun isApplicable(parameters: CodeCompletionParameters): Boolean
-    fun getMatchingText(parameters: CodeCompletionParameters): String
-    fun getDescription(parameters: CodeCompletionParameters): String
+interface IActionOrProvider
+
+interface ICodeCompletionActionProvider : IActionOrProvider {
+    fun getApplicableActions(parameters: CodeCompletionParameters): List<IActionOrProvider>
+}
+
+fun ICodeCompletionActionProvider.flattenApplicableActions(parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
+    return flatten(parameters).toList()
+}
+
+private fun IActionOrProvider.flatten(parameters: CodeCompletionParameters): Sequence<ICodeCompletionAction> = when (this) {
+    is ICodeCompletionAction -> sequenceOf(this)
+    is ICodeCompletionActionProvider -> getApplicableActions(parameters).asSequence().flatMap { it.flatten(parameters) }
+    else -> throw RuntimeException("Unknown type: " + this::class)
+}
+
+interface ICodeCompletionAction : IActionOrProvider {
+    fun getMatchingText(): String
+    fun getDescription(): String
     fun execute()
 }
 
@@ -163,14 +203,32 @@ class CodeCompletionActionProviderWithPostprocessor(
     val actionProvider: ICodeCompletionActionProvider,
     val after: () -> Unit
 ) : ICodeCompletionActionProvider {
-    override fun getActions(parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
-        return actionProvider.getActions(parameters).map { CodeCompletionActionWithPostprocessor(it, after) }
+    override fun getApplicableActions(parameters: CodeCompletionParameters): List<IActionOrProvider> {
+        return actionProvider.getApplicableActions(parameters).map {
+            when (it) {
+                is ICodeCompletionAction -> CodeCompletionActionWithPostprocessor(it, after)
+                is ICodeCompletionActionProvider -> CodeCompletionActionProviderWithPostprocessor(it, after)
+                else -> throw RuntimeException("Unexpected type: " + it::class)
+            }
+        }
     }
 }
 
 fun ICodeCompletionActionProvider.after(body: () -> Unit) = CodeCompletionActionProviderWithPostprocessor(this, body)
 
-class CodeCompletionParameters(val editor: EditorComponent, val pattern: String)
+class CodeCompletionParameters(val editor: EditorComponent, pattern: String) {
+    val pattern: String = pattern
+        get() {
+            patternAccessed = true
+            return field
+        }
+    private var patternAccessed: Boolean = false
+    fun wasPatternAccessed(): Boolean {
+        val result = patternAccessed
+        patternAccessed = false
+        return result
+    }
+}
 
 enum class CompletionPosition {
     CENTER,

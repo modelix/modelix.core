@@ -19,7 +19,7 @@ data class ReplaceNodeActionProvider(val location: INonExistingNode) : ICodeComp
             engine.createCellModel(concept)
         }
         return cellModels.flatMap {
-            it.getInstantiationActions(location) ?: emptyList()
+            it.getInstantiationActions(location, parameters) ?: emptyList()
         }
     }
 }

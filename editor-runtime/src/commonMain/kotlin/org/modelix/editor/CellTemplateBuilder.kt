@@ -207,7 +207,7 @@ class PropertyCellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     template
 ) {
     fun validateValue(validator: (String)->Boolean) {
-        // TODO
+        (template as PropertyCellTemplate).validator = validator
     }
 
     fun readReplace(replacement: (String)->String) {

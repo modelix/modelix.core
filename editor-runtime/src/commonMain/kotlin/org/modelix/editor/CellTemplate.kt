@@ -44,8 +44,8 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
     }
     protected abstract fun createCell(context: CellCreationContext, node: NodeT): CellData
 
-    open fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction>? {
-        return children.asSequence().mapNotNull { it.getInstantiationActions(location) }.firstOrNull()
+    open fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<ICodeCompletionAction>? {
+        return children.asSequence().mapNotNull { it.getInstantiationActions(location, parameters) }.firstOrNull()
     }
 
     fun getSideTransformActions(before: Boolean, nodeToReplace: INode): List<ICodeCompletionAction>? {
@@ -121,7 +121,7 @@ class OverrideText(val cell: TextCellData) : ITextChangeAction {
 class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
     : CellTemplate<NodeT, ConceptT>(concept), IGrammarSymbol {
     override fun createCell(context: CellCreationContext, node: NodeT) = TextCellData(text, "")
-    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
         return listOf(InstantiateNodeAction(location))
     }
 
@@ -188,7 +188,7 @@ class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
         }
     }
 
-    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction>? {
+    override fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<ICodeCompletionAction>? {
         return null // skip optional. Don't search in children.
     }
 }
@@ -196,6 +196,7 @@ class OptionalCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
 open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val property: IProperty)
     : CellTemplate<NodeT, ConceptT>(concept), IGrammarSymbol {
     var placeholderText: String = "<no ${property.name}>"
+    var validator: (String) -> Boolean = { true }
     override fun createCell(context: CellCreationContext, node: NodeT): CellData {
         val value = node.getPropertyValue(property)
         val data = TextCellData(value ?: "", if (value == null) placeholderText else "")
@@ -203,9 +204,30 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
         data.cellReferences += PropertyCellReference(property, node.untypedReference())
         return data
     }
-    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
-        // TODO
-        return listOf()
+    override fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
+        return if (validator(parameters.pattern)) {
+            listOf(WrapPropertyValue(location, parameters.pattern))
+        } else {
+            emptyList()
+        }
+    }
+
+    inner class WrapPropertyValue(val location: INonExistingNode, val value: String) : ICodeCompletionAction {
+        override fun isApplicable(parameters: CodeCompletionParameters): Boolean {
+            return true
+        }
+
+        override fun getMatchingText(parameters: CodeCompletionParameters): String {
+            return value
+        }
+
+        override fun getDescription(parameters: CodeCompletionParameters): String {
+            return concept.getShortName()
+        }
+
+        override fun execute() {
+            location.getOrCreateNode(concept).setPropertyValue(property, value)
+        }
     }
 }
 
@@ -230,7 +252,7 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
         return sourceNode.unwrap().getReferenceTarget(link)?.typedUnsafe()
     }
-    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
         val specializedLocation = location.ofSubConcept(concept)
         val targets = specializedLocation.getVisibleReferenceTargets(link)
         return targets.map { WrapReferenceTarget(location, it, presentation(it.typedUnsafe()) ?: "") }
@@ -262,7 +284,7 @@ class FlagCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     val text: String
 ) : PropertyCellTemplate<NodeT, ConceptT>(concept, property), IGrammarSymbol {
     override fun createCell(context: CellCreationContext, node: NodeT) = if (node.getPropertyValue(property) == "true") TextCellData(text, "") else CellData()
-    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
         // TODO
         return listOf()
     }
@@ -320,7 +342,7 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(
 
     fun getChildNodes(node: NodeT) = node.unwrap().getChildren(link).toList()
 
-    override fun getInstantiationActions(location: INonExistingNode): List<ICodeCompletionAction> {
+    override fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<ICodeCompletionAction> {
         // TODO
         return listOf()
     }

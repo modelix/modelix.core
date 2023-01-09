@@ -28,7 +28,7 @@ class CodeCompletionMenu(
                 val matchingText = it.getMatchingText(parameters)
                 matchingText.isNotEmpty() && matchingText.startsWith(parameters.pattern)
             }
-            .sortedBy { it.getMatchingText(parameters) }
+            .sortedBy { it.getMatchingText(parameters).lowercase() }
     }
 
     private fun parameters() = CodeCompletionParameters(editor, patternEditor.getTextBeforeCaret())

@@ -1,10 +1,7 @@
 package org.modelix.editor
 
 import kotlinx.html.TagConsumer
-import kotlinx.html.br
 import kotlinx.html.div
-import kotlinx.html.span
-import kotlinx.html.style
 import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
@@ -20,6 +17,8 @@ class CodeCompletionMenu(
     val patternEditor = PatternEditor(initialPattern, initialCaretPosition)
     private var selectedIndex: Int = 0
     private var entries: List<ICodeCompletionAction> = emptyList()
+
+    override fun isHtmlOutputValid(): Boolean = false
 
     fun updateActions() {
         val parameters = parameters()
@@ -71,7 +70,7 @@ class CodeCompletionMenu(
         return true
     }
 
-    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
         consumer.div("ccmenu-container") {
             produceChild(patternEditor)
             div("ccmenu") {
@@ -104,6 +103,8 @@ class CodeCompletionMenu(
         var caretPos: Int = initialCaretPosition ?: initialPattern.length
         var pattern: String = initialPattern
 
+        override fun isHtmlOutputValid(): Boolean = false
+
         fun getTextBeforeCaret() = pattern.substring(0, caretPos)
 
         fun deleteText(before: Boolean): Boolean {
@@ -130,7 +131,7 @@ class CodeCompletionMenu(
             updateActions()
         }
 
-        override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+        override fun <T> produceHtml(consumer: TagConsumer<T>) {
             consumer.div {
                 div("ccmenu-pattern") {
                     +pattern.useNbsp()

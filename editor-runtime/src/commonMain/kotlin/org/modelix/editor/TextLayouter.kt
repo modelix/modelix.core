@@ -30,7 +30,7 @@ class TextLine(words_: Iterable<Layoutable>) : IProducesHtml {
 
     fun getContextIndent() = initialText?.getContextIndent() ?: 0
 
-    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
         consumer.div("line") {
             words.forEach { element: Layoutable ->
                 produceChild(element)
@@ -72,7 +72,7 @@ class LayoutedText(
         return buffer.toString()
     }
 
-    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
         consumer.div("layouted-text") {
             lines.forEach { line ->
                 produceChild(line)
@@ -282,7 +282,7 @@ class LayoutableCell(val cell: Cell) : Layoutable() {
             ?: (cell.data as TextCellData).getVisibleText(cell)
     }
     override fun isWhitespace(): Boolean = false
-    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
         val isPlaceholder = (cell.data as TextCellData).text.isEmpty() && cell.getProperty(CommonCellProperties.textReplacement) == null
         val textColor = cell.getProperty(if (isPlaceholder) CommonCellProperties.placeholderTextColor else CommonCellProperties.textColor)
         consumer.span("text-cell") {
@@ -304,7 +304,7 @@ class LayoutableIndent(val indentSize: Int): Layoutable() {
     override fun getLength(): Int = totalIndent() * 2
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = (1..totalIndent()).joinToString("") { "  " }
-    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
         consumer.span("indent") {
             +toText().useNbsp()
         }
@@ -314,7 +314,7 @@ class LayoutableSpace(): Layoutable() {
     override fun getLength(): Int = 1
     override fun isWhitespace(): Boolean = true
     override fun toText(): String = " "
-    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
         consumer.span {
             +Typography.nbsp.toString()
         }

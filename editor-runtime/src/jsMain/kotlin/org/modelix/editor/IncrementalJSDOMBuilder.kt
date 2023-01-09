@@ -3,6 +3,7 @@ package org.modelix.editor
 import kotlinx.html.*
 import kotlinx.html.org.w3c.dom.events.Event
 import org.w3c.dom.*
+import kotlin.reflect.KClass
 
 object GeneratedHtmlMap {
     private var IProducesHtml.generatedHtml: HTMLElement?
@@ -12,6 +13,10 @@ object GeneratedHtmlMap {
     private var HTMLElement.generatedBy: IProducesHtml?
         get() = asDynamic().generatedBy
         set(value) { asDynamic().generatedBy = value }
+
+    private var HTMLElement.producerType: KClass<out IProducesHtml>?
+        get() = asDynamic().producerType
+        set(value) { asDynamic().producerType = value }
 
     fun reassign(producer: IProducesHtml, output: HTMLElement) {
         unassign(producer)
@@ -24,12 +29,14 @@ object GeneratedHtmlMap {
         require(output.generatedBy == null)
         producer.generatedHtml = output
         output.generatedBy = producer
+        output.producerType = producer::class
     }
 
     fun unassign(producer: IProducesHtml) = producer.generatedHtml?.let { unassign(producer, it) }
     fun unassign(output: HTMLElement) = output.generatedBy?.let { unassign(it, output) }
 
     fun getProducer(output: HTMLElement) = output.generatedBy
+    fun getProducerType(output: HTMLElement) = output.producerType
     fun getOutput(producer: IProducesHtml) = producer.generatedHtml
 
     private fun unassign(producer: IProducesHtml, output: HTMLElement) {
@@ -83,6 +90,7 @@ class NodeOrProducer(val producer: IProducesHtml?, val node: Node?) {
 
 class IncrementalJSDOMBuilder(val document: Document, existingRootElement: HTMLElement?) : IIncrementalTagConsumer<HTMLElement> {
     private inner class StackFrame {
+        var forcedReuseNext: HTMLElement? = null
         var reusableChildren: ReusableChildren? = null
         var resultingHtml: HTMLElement? = null
         var tag: Tag? = null
@@ -144,10 +152,12 @@ class IncrementalJSDOMBuilder(val document: Document, existingRootElement: HTMLE
 
     private fun runProducer(producer: IProducesHtml): HTMLElement {
         var childHtml = GeneratedHtmlMap.getOutput(producer)
-        if (childHtml == null) {
-            producer.toHtml(this@IncrementalJSDOMBuilder, childHandler)
+        if (childHtml == null || !producer.isHtmlOutputValid()) {
+            GeneratedHtmlMap.unassign(producer)
+            stack.lastOrNull()?.forcedReuseNext = childHtml
+            producer.produceHtml(this@IncrementalJSDOMBuilder)
             childHtml = finalize()
-            GeneratedHtmlMap.assign(producer, childHtml)
+            GeneratedHtmlMap.reassign(producer, childHtml)
         }
         return childHtml
     }
@@ -158,7 +168,10 @@ class IncrementalJSDOMBuilder(val document: Document, existingRootElement: HTMLE
         stack.add(frame)
         frame.tag = tag
 
-        val reusable: HTMLElement? = parentFrame.reusableChildren?.findReusable(tag)
+        val reusable: HTMLElement? = parentFrame.forcedReuseNext
+            ?.takeIf { it.tagName.lowercase() == tag.tagName.lowercase() }
+            ?: parentFrame.reusableChildren?.findReusable(tag)
+        parentFrame.forcedReuseNext = null
         if (reusable != null) {
             frame.reusableChildren = ReusableChildren(reusable)
         }

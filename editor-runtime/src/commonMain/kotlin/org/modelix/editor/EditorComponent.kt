@@ -76,16 +76,18 @@ open class EditorComponent(
         update()
     }
 
-    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+    override fun isHtmlOutputValid(): Boolean = false
+
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
         consumer.div("editor") {
             div(MAIN_LAYER_CLASS_NAME) {
-                rootCell.layout.let(produceChild)
+                produceChild(rootCell.layout)
             }
             div("selection-layer relative-layer") {
-                selection?.let(produceChild)
+                produceChild(selection)
             }
             div("popup-layer relative-layer") {
-                codeCompletionMenu?.let(produceChild)
+                produceChild(codeCompletionMenu)
             }
         }
     }

@@ -29,7 +29,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         return CaretSelection(newLayoutable, start.coerceAtMost(textLength), end.coerceAtMost(textLength))
     }
 
-    override fun <T> toHtml(consumer: TagConsumer<T>, produceChild: (IProducesHtml) -> T) {
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
         consumer.div("caret own") {
             val textLength = layoutable.cell.getVisibleText()?.length ?: 0
             if (textLength == 0) {

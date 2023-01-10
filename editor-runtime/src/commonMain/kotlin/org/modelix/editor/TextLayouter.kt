@@ -283,12 +283,23 @@ class LayoutableCell(val cell: Cell) : Layoutable() {
     }
     override fun isWhitespace(): Boolean = false
     override fun <T> produceHtml(consumer: TagConsumer<T>) {
-        val isPlaceholder = (cell.data as TextCellData).text.isEmpty() && cell.getProperty(CommonCellProperties.textReplacement) == null
-        val textColor = cell.getProperty(if (isPlaceholder) CommonCellProperties.placeholderTextColor else CommonCellProperties.textColor)
+        val textIsOverridden = cell.getProperty(CommonCellProperties.textReplacement) != null
+        val isPlaceholder = (cell.data as TextCellData).text.isEmpty()
+        val textColor = when {
+            textIsOverridden -> "#A81E1E"
+            isPlaceholder -> cell.getProperty(CommonCellProperties.placeholderTextColor)
+            else -> cell.getProperty(CommonCellProperties.textColor)
+        }
+        val backgroundColor = when {
+            textIsOverridden -> "rgba(255, 0, 0, 0.5)"
+            else -> null
+        }
         consumer.span("text-cell") {
-            if (textColor != null) {
-                style = "color:$textColor"
-            }
+            val styleParts = mutableListOf<String>()
+            if (textColor != null) styleParts += "color: $textColor"
+            if (backgroundColor != null) styleParts += "background-color: $backgroundColor"
+            if (styleParts.isNotEmpty()) style = styleParts.joinToString(";")
+
             +toText().useNbsp()
         }
     }

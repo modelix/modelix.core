@@ -113,7 +113,12 @@ class OverrideText(val cell: TextCellData) : ITextChangeAction {
     }
 
     override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean {
-        editor.state.textReplacements[cell.cellReferences.first()] = newText
+        val cellRef = cell.cellReferences.first()
+        if (cell.text == newText) {
+            editor.state.textReplacements.remove(cellRef)
+        } else {
+            editor.state.textReplacements[cellRef] = newText
+        }
         return true
     }
 }

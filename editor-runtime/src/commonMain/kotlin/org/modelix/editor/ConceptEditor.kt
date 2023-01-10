@@ -25,21 +25,21 @@ class ConceptEditor<NodeT : ITypedNode, ConceptT : ITypedConcept>(
 
 val defaultConceptEditor = ConceptEditor(null) { subConcept ->
     CellTemplateBuilder(CollectionCellTemplate(subConcept)).apply {
-        subConcept.getShortName().cell()
+        subConcept.getShortName().constant()
         curlyBrackets {
             for (property in subConcept.getAllProperties()) {
                 newLine()
-                label { property.name.cell() }
+                label(property.name + ":")
                 property.cell()
             }
             for (link in subConcept.getAllReferenceLinks()) {
                 newLine()
-                label { link.name.cell() }
+                label(link.name + ":")
                 link.typed()?.cell(presentation = { untypedReference().serialize() })
             }
             for (link in subConcept.getAllChildLinks()) {
                 newLine()
-                label { link.name.cell() }
+                label(link.name + ":")
                 when (val l = link.typed()) {
                     is GeneratedSingleChildLink -> l.cell()
                     is GeneratedChildListLink -> {
@@ -52,15 +52,4 @@ val defaultConceptEditor = ConceptEditor(null) { subConcept ->
             }
         }
     }.template
-}
-
-private fun <ConceptT : ITypedConcept, NodeT : ITypedNode> CellTemplateBuilder<NodeT, ConceptT>.label(
-    body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit
-) {
-    horizontal {
-        textColor("LightGray")
-        body()
-        noSpace()
-        ":".cell()
-    }
 }

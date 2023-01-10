@@ -2,6 +2,7 @@ package org.modelix.editor
 
 import org.modelix.metamodel.*
 import org.modelix.model.api.*
+import kotlin.jvm.JvmName
 
 open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val template: CellTemplate<NodeT, ConceptT>) {
     val concept: ConceptT = template.concept._typed
@@ -27,12 +28,28 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
         template.withNode += { node -> body(WithNodeContext(node)) }
     }
 
+    @Deprecated("use .constant or .label")
     fun String.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        constant(this, body)
+    }
+
+    @JvmName("string2constant")
+    fun String.constant(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        constant(this, body)
+    }
+
+    @JvmName("string2label")
+    fun String.label(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         constant(this, body)
     }
 
     fun constant(text: String, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         CellTemplateBuilder(ConstantCellTemplate(template.concept, text))
+            .also(body).template.also(template::addChild)
+    }
+
+    fun label(text: String, body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        CellTemplateBuilder(LabelCellTemplate(template.concept, text))
             .also(body).template.also(template::addChild)
     }
 

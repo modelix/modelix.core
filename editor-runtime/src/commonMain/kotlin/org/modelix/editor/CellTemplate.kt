@@ -158,6 +158,26 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
     }
 }
 
+/**
+ * A label is some text shown in the editor that has no effect on its behavior.
+ * It is not part of the grammar of the language.
+ * It is ignored when generating transformation action.
+ * A constant is part of the grammar.
+ */
+class LabelCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>, val text: String)
+    : CellTemplate<NodeT, ConceptT>(concept) {
+    override fun createCell(context: CellCreationContext, node: NodeT): TextCellData {
+        return TextCellData(text, "").also {
+            if (!it.properties.isSet(CommonCellProperties.textColor)) {
+                it.properties[CommonCellProperties.textColor] = "LightGray"
+            }
+        }
+    }
+    override fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<IActionOrProvider>? {
+        return emptyList()
+    }
+}
+
 class NewLineCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept: GeneratedConcept<NodeT, ConceptT>)
     : CellTemplate<NodeT, ConceptT>(concept) {
     override fun createCell(context: CellCreationContext, node: NodeT): CellData {

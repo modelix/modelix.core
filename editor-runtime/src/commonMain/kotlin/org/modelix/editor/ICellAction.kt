@@ -13,6 +13,29 @@ interface ITextChangeAction {
     fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean
 }
 
+class CompositeTextChangeAction(val actions: List<ITextChangeAction>) : ITextChangeAction {
+    override fun isValid(value: String?): Boolean {
+        return actions.any { it.isValid(value) }
+    }
+
+    override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean {
+        return actions
+            .filter { it.isValid(newText) }
+            .any { it.replaceText(editor, range, replacement, newText) }
+    }
+
+    companion object {
+        fun create(actions: List<ITextChangeAction?>): ITextChangeAction? {
+            val nonNullActions = actions.filterNotNull()
+            return when (nonNullActions.size) {
+                0 -> null
+                1 -> nonNullActions.first()
+                else -> CompositeTextChangeAction(nonNullActions)
+            }
+        }
+    }
+}
+
 object CellActionProperties {
     val substitute = CellPropertyKey<ICodeCompletionActionProvider?>("substitute", null)
     val transformBefore = CellPropertyKey<ICodeCompletionActionProvider?>("transformBefore", null)

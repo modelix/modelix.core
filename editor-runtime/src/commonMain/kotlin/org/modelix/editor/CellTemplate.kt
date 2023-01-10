@@ -92,9 +92,8 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
             if (cellRef != null) {
                 editorState.textReplacements[cellRef]
                     ?.let { cellData.properties[CommonCellProperties.textReplacement] = it }
-                if (cellData.properties[CellActionProperties.replaceText] == null) {
-                    cellData.properties[CellActionProperties.replaceText] = OverrideText(cellData)
-                }
+                cellData.properties[CellActionProperties.replaceText] =
+                    OverrideText(cellData, cellData.properties[CellActionProperties.replaceText])
             }
         }
         cellData.children.filterIsInstance<CellData>().forEach { applyTextReplacement(it, editorState) }
@@ -107,13 +106,18 @@ interface IGrammarSymbol {
     }
 }
 
-class OverrideText(val cell: TextCellData) : ITextChangeAction {
+class OverrideText(val cell: TextCellData, val delegate: ITextChangeAction?) : ITextChangeAction {
     override fun isValid(value: String?): Boolean {
-        return value == cell.text
+        return true
     }
 
     override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean {
         val cellRef = cell.cellReferences.first()
+        if (delegate != null && delegate.isValid(newText)) {
+            editor.state.textReplacements.remove(cellRef)
+            return delegate.replaceText(editor, range, replacement, newText)
+        }
+
         if (cell.text == newText) {
             editor.state.textReplacements.remove(cellRef)
         } else {
@@ -222,7 +226,7 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
     override fun createCell(context: CellCreationContext, node: NodeT): CellData {
         val value = node.getPropertyValue(property)
         val data = TextCellData(value ?: "", if (value == null) placeholderText else "")
-        data.properties[CellActionProperties.replaceText] = ChangePropertyAction(node, property)
+        data.properties[CellActionProperties.replaceText] = ChangePropertyAction(node)
         data.cellReferences += PropertyCellReference(property, node.untypedReference())
         return data
     }
@@ -253,16 +257,17 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
             location.getOrCreateNode(concept).setPropertyValue(property, value)
         }
     }
-}
 
-class ChangePropertyAction(val node: ITypedNode, val property: IProperty) : ITextChangeAction {
-    override fun isValid(value: String?): Boolean {
-        return true
-    }
+    inner class ChangePropertyAction(val node: ITypedNode) : ITextChangeAction {
+        override fun isValid(value: String?): Boolean {
+            if (value == null) return true
+            return validator(value)
+        }
 
-    override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean {
-        node.unwrap().setPropertyValue(property, newText)
-        return true
+        override fun replaceText(editor: EditorComponent, range: IntRange, replacement: String, newText: String): Boolean {
+            node.unwrap().setPropertyValue(property, newText)
+            return true
+        }
     }
 }
 

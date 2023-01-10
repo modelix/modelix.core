@@ -89,10 +89,10 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     }
                     val legalRange = 0 until (layoutable.cell.getSelectableText()?.length ?: 0)
                     if (legalRange.contains(posToDelete)) {
-                        replaceText(posToDelete .. posToDelete, "", editor, true)
+                        replaceText(posToDelete .. posToDelete, "", editor)
                     }
                 } else {
-                    replaceText(min(start, end) until max(start, end), "", editor, true)
+                    replaceText(min(start, end) until max(start, end), "", editor)
                 }
             }
             KnownKeys.Enter -> {
@@ -163,7 +163,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                 return
             }
         }
-        replaceText(range, typedText, editor, true)
+        replaceText(range, typedText, editor)
     }
 
     fun getAbsoluteX() = layoutable.getX() + end
@@ -182,12 +182,12 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         )
     }
 
-    private fun replaceText(range: IntRange, replacement: String, editor: EditorComponent, force: Boolean): Boolean {
+    private fun replaceText(range: IntRange, replacement: String, editor: EditorComponent): Boolean {
         val oldText = layoutable.cell.getSelectableText() ?: ""
         val newText = oldText.replaceRange(range, replacement)
         val actions = layoutable.cell.centerAlignedHierarchy().mapNotNull { it.getProperty(CellActionProperties.replaceText) }
         for (action in actions) {
-            if ((force || action.isValid(newText)) && action.replaceText(editor, range, replacement, newText)) {
+            if (action.isValid(newText) && action.replaceText(editor, range, replacement, newText)) {
                 editor.selectAfterUpdate {
                     reResolveLayoutable(editor)?.let { CaretSelection(it, range.first + replacement.length) }
                 }

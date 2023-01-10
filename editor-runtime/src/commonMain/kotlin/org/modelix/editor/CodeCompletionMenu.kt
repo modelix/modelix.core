@@ -98,6 +98,13 @@ class CodeCompletionMenu(
         }
     }
 
+    fun executeIfSingleAction() {
+        if (entries.size == 1 && entries.first().getMatchingText() == patternEditor.pattern) {
+            entries.first().execute()
+            editor.closeCodeCompletionMenu()
+        }
+    }
+
     inner class PatternEditor(initialPattern: String, initialCaretPosition: Int?) : IProducesHtml {
         private var patternCell: Cell? = null
         var caretPos: Int = initialCaretPosition ?: initialPattern.length
@@ -117,6 +124,7 @@ class CodeCompletionMenu(
                 pattern = pattern.removeRange(caretPos .. caretPos)
             }
             updateActions()
+            executeIfSingleAction()
             return true
         }
 
@@ -124,6 +132,7 @@ class CodeCompletionMenu(
             pattern = pattern.replaceRange(caretPos until caretPos, text)
             caretPos += text.length
             updateActions()
+            executeIfSingleAction()
         }
 
         fun moveCaret(delta: Int) {

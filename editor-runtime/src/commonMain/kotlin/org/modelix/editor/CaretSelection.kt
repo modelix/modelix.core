@@ -148,22 +148,19 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
             val actions = providers.flatMap { it.flattenApplicableActions(params) }
             val matchingActions = actions
                 .filter { it.getMatchingText().startsWith(typedText) }
-            when (matchingActions.size) {
-                0 -> {}
-                1 -> {
+            if (matchingActions.isNotEmpty()) {
+                if (matchingActions.size == 1 && matchingActions.first().getMatchingText() == typedText) {
                     matchingActions.first().execute()
                     return
                 }
-                else -> {
-                    editor.showCodeCompletionMenu(
-                        anchor = layoutable,
-                        position = completionPosition,
-                        entries = providers,
-                        pattern = typedText,
-                        caretPosition = typedText.length
-                    )
-                    return
-                }
+                editor.showCodeCompletionMenu(
+                    anchor = layoutable,
+                    position = completionPosition,
+                    entries = providers,
+                    pattern = typedText,
+                    caretPosition = typedText.length
+                )
+                return
             }
         }
         replaceText(range, typedText, editor, true)

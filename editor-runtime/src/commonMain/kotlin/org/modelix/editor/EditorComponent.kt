@@ -11,11 +11,13 @@ open class EditorComponent(
     val state: EditorState = EditorState()
     private var selection: Selection? = null
     private val cellIndex: IncrementalIndex<CellReference, Cell> = IncrementalIndex()
+    private val layoutablesIndex: IncrementalIndex<Cell, LayoutableCell> = IncrementalIndex()
     private var selectionUpdater: (() -> Selection?)? = null
     protected var codeCompletionMenu: CodeCompletionMenu? = null
     private var rootCell: Cell = rootCellCreator(state).also {
         it.editorComponent = this
         cellIndex.update(it.referencesIndexList)
+        layoutablesIndex.update(it.layout.layoutablesIndexList)
     }
 
     fun selectAfterUpdate(newSelection: () -> Selection?) {
@@ -23,6 +25,8 @@ open class EditorComponent(
     }
 
     fun resolveCell(reference: CellReference): List<Cell> = cellIndex.lookup(reference)
+
+    fun resolveLayoutable(cell: Cell): LayoutableCell? = layoutablesIndex.lookup(cell).firstOrNull()
 
     private fun updateRootCell() {
         val oldRootCell = rootCell
@@ -32,6 +36,7 @@ open class EditorComponent(
             newRootCell.editorComponent = this
             rootCell = newRootCell
             cellIndex.update(rootCell.referencesIndexList)
+            layoutablesIndex.update(rootCell.layout.layoutablesIndexList)
         }
     }
 

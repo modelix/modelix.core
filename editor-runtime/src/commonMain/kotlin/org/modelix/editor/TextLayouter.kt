@@ -1,11 +1,14 @@
 package org.modelix.editor
 
 import kotlinx.html.*
+import org.modelix.incremental.IncrementalList
 
 class TextLine(words_: Iterable<Layoutable>) : IProducesHtml {
     var initialText: LayoutedText? = null
     var finalText: LayoutedText? = null
     val words: List<Layoutable> = words_.toList()
+    val layoutablesIndexList: IncrementalList<Pair<Cell, LayoutableCell>> =
+        IncrementalList.of(words.filterIsInstance<LayoutableCell>().map { it.cell to it })
 
     init {
         words.filter { it.initialLine == null }.forEach { it.initialLine = this }
@@ -51,6 +54,8 @@ class LayoutedText(
     var indent: Int = 0
 ) : IProducesHtml {
     var owner: LayoutedText? = null
+    val layoutablesIndexList: IncrementalList<Pair<Cell, LayoutableCell>> =
+        IncrementalList.concat(lines.map { it.layoutablesIndexList })
 
     init {
         lines.forEach { if (it.initialText == null) it.initialText = this }
@@ -306,8 +311,8 @@ class LayoutableCell(val cell: Cell) : Layoutable() {
 }
 
 fun Cell.layoutable(): LayoutableCell? {
-    // TODO performance
-    return rootCell().layout.lines.asSequence().flatMap { it.words }.filterIsInstance<LayoutableCell>().find { it.cell == this }
+    //return rootCell().layout.lines.asSequence().flatMap { it.words }.filterIsInstance<LayoutableCell>().find { it.cell == this }
+    return editorComponent?.resolveLayoutable(this)
 }
 
 class LayoutableIndent(val indentSize: Int): Layoutable() {

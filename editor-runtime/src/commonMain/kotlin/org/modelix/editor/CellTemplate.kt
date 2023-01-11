@@ -82,7 +82,8 @@ abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val co
 
     fun getReference() = reference ?: throw IllegalStateException("reference isn't set yet")
 
-    fun createCellReference(node: ITypedNode) = TemplateCellReference(getReference(), node.untypedReference())
+    fun createCellReference(node: INode) = TemplateCellReference(getReference(), node.reference)
+    fun createCellReference(node: ITypedNode) = createCellReference(node.untyped())
 
     private fun applyTextReplacement(cellData: CellData, editorState: EditorState) {
         if (cellData is TextCellData) {
@@ -139,9 +140,14 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
     inner class SideTransformWrapper(val nodeToWrap: INonExistingNode, val wrappingLink: IChildLink) : ICodeCompletionAction {
         override fun getMatchingText(): String = text
         override fun getDescription(): String = concept.getShortName()
-        override fun execute() {
+        override fun execute(editor: EditorComponent) {
             val wrapper = nodeToWrap.getParent()!!.getOrCreateNode(null).addNewChild(nodeToWrap.getContainmentLink()!!, nodeToWrap.index(), concept)
             wrapper.moveChild(wrappingLink, 0, nodeToWrap.getOrCreateNode(null))
+            editor.selectAfterUpdate {
+                val cell = editor.resolveCell(createCellReference(wrapper)).firstOrNull() ?: return@selectAfterUpdate null
+                val layoutable = cell.layoutable() ?: return@selectAfterUpdate null
+                CaretSelection(layoutable, layoutable.getLength())
+            }
         }
 
         override fun shadows(shadowed: ICodeCompletionAction): Boolean {
@@ -166,7 +172,7 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
             return concept.getShortName()
         }
 
-        override fun execute() {
+        override fun execute(editor: EditorComponent) {
             location.replaceNode(concept)
         }
     }
@@ -263,8 +269,14 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
             return concept.getShortName()
         }
 
-        override fun execute() {
-            location.getOrCreateNode(concept).setPropertyValue(property, value)
+        override fun execute(editor: EditorComponent) {
+            val node = location.getOrCreateNode(concept)
+            node.setPropertyValue(property, value)
+            editor.selectAfterUpdate {
+                val cell = editor.resolveCell(createCellReference(node)).firstOrNull() ?: return@selectAfterUpdate null
+                val layoutable = cell.layoutable() ?: return@selectAfterUpdate null
+                CaretSelection(layoutable, layoutable.getLength())
+            }
         }
     }
 
@@ -306,9 +318,14 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
             return concept.getShortName()
         }
 
-        override fun execute() {
+        override fun execute(editor: EditorComponent) {
             val sourceNode = location.getOrCreateNode(concept)
             sourceNode.setReferenceTarget(link, target)
+            editor.selectAfterUpdate {
+                val cell = editor.resolveCell(createCellReference(sourceNode)).firstOrNull() ?: return@selectAfterUpdate null
+                val layoutable = cell.layoutable() ?: return@selectAfterUpdate null
+                CaretSelection(layoutable, layoutable.getLength())
+            }
         }
     }
 }

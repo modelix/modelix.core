@@ -151,7 +151,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                 .applyShadowing()
             if (matchingActions.isNotEmpty()) {
                 if (matchingActions.size == 1 && matchingActions.first().getMatchingText() == typedText) {
-                    matchingActions.first().execute()
+                    matchingActions.first().execute(editor)
                     return
                 }
                 editor.showCodeCompletionMenu(

@@ -54,7 +54,7 @@ class CodeCompletionMenu(
             KnownKeys.ArrowRight -> patternEditor.moveCaret(1)
             KnownKeys.Escape -> editor.closeCodeCompletionMenu()
             KnownKeys.Enter -> {
-                getSelectedEntry()?.execute()
+                getSelectedEntry()?.execute(editor)
                 editor.closeCodeCompletionMenu()
             }
             KnownKeys.Backspace -> patternEditor.deleteText(true)
@@ -101,7 +101,7 @@ class CodeCompletionMenu(
 
     fun executeIfSingleAction() {
         if (entries.size == 1 && entries.first().getMatchingText() == patternEditor.pattern) {
-            entries.first().execute()
+            entries.first().execute(editor)
             editor.closeCodeCompletionMenu()
         }
     }
@@ -200,14 +200,14 @@ private fun IActionOrProvider.flatten(parameters: CodeCompletionParameters): Seq
 interface ICodeCompletionAction : IActionOrProvider {
     fun getMatchingText(): String
     fun getDescription(): String
-    fun execute()
+    fun execute(editor: EditorComponent)
     fun shadows(shadowed: ICodeCompletionAction) = false
     fun shadowedBy(shadowing: ICodeCompletionAction) = false
 }
 
 class CodeCompletionActionWithPostprocessor(val action: ICodeCompletionAction, val after: () -> Unit) : ICodeCompletionAction by action {
-    override fun execute() {
-        action.execute()
+    override fun execute(editor: EditorComponent) {
+        action.execute(editor)
         after()
     }
 }

@@ -28,6 +28,7 @@ class CodeCompletionMenu(
                 val matchingText = it.getMatchingText()
                 matchingText.isNotEmpty() && matchingText.startsWith(parameters.pattern)
             }
+            .applyShadowing()
             .sortedBy { it.getMatchingText().lowercase() }
     }
 
@@ -200,6 +201,8 @@ interface ICodeCompletionAction : IActionOrProvider {
     fun getMatchingText(): String
     fun getDescription(): String
     fun execute()
+    fun shadows(shadowed: ICodeCompletionAction) = false
+    fun shadowedBy(shadowing: ICodeCompletionAction) = false
 }
 
 class CodeCompletionActionWithPostprocessor(val action: ICodeCompletionAction, val after: () -> Unit) : ICodeCompletionAction by action {
@@ -243,4 +246,15 @@ enum class CompletionPosition {
     CENTER,
     LEFT,
     RIGHT
+}
+
+fun List<ICodeCompletionAction>.applyShadowing(): List<ICodeCompletionAction> {
+    return groupBy { it.getMatchingText() }.flatMap { applyShadowingToGroup(it.value) }
+}
+
+private fun applyShadowingToGroup(actions: List<ICodeCompletionAction>): List<ICodeCompletionAction> {
+    return actions.filter { a1 ->
+        val isShadowed = actions.any { a2 -> a2 !== a1 && (a2.shadows(a1) || a1.shadowedBy(a2)) }
+        !isShadowed
+    }
 }

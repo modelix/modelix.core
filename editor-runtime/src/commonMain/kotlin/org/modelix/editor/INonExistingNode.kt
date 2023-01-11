@@ -30,16 +30,37 @@ import org.modelix.model.api.remove
 
 interface INonExistingNode {
     fun getParent(): INonExistingNode?
+    fun getContainmentLink(): IChildLink?
+    fun index(): Int
     fun replaceNode(subConcept: IConcept?): INode
     fun getOrCreateNode(subConcept: IConcept?): INode
     fun expectedConcept(): IConcept?
     fun getVisibleReferenceTargets(link: IReferenceLink): List<INode>
 }
 
-data class SpecializedNonExistingNode(val node: INonExistingNode, val subConcept: IConcept): INonExistingNode {
-    override fun getParent(): INonExistingNode? {
-        TODO("Not yet implemented")
+fun INonExistingNode.ancestors(includeSelf: Boolean = false): Sequence<INonExistingNode> {
+    return generateSequence(if (includeSelf) this else getParent()) { it.getParent() }
+}
+
+fun INonExistingNode.commonAncestor(otherNode: INonExistingNode): INonExistingNode? {
+    val ancestors1 = HashSet<INonExistingNode>()
+    val ancestors2 = HashSet<INonExistingNode>()
+
+    for (ancestorPair in ancestors(true).zip(otherNode.ancestors(true))) {
+        ancestors1.add(ancestorPair.first)
+        ancestors2.add(ancestorPair.second)
+        if (ancestors1.contains(ancestorPair.second)) return ancestorPair.second
+        if (ancestors2.contains(ancestorPair.first)) return ancestorPair.first
     }
+    return null
+}
+
+data class SpecializedNonExistingNode(val node: INonExistingNode, val subConcept: IConcept): INonExistingNode {
+    override fun getParent(): INonExistingNode? = node.getParent()
+
+    override fun getContainmentLink(): IChildLink? = node.getContainmentLink()
+
+    override fun index(): Int = node.index()
 
     override fun replaceNode(subConcept: IConcept?): INode {
         return node.replaceNode(coerceOutputConcept(subConcept))
@@ -81,6 +102,10 @@ fun INonExistingNode.coerceOutputConcept(subConcept: IConcept?): IConcept? {
 data class ExistingNode(val node: INode) : INonExistingNode {
     override fun getParent(): INonExistingNode? = node.parent?.let { ExistingNode(it) }
 
+    override fun getContainmentLink() = node.getContainmentLink()
+
+    override fun index() = node.index()
+
     override fun replaceNode(subConcept: IConcept?): INode {
         val parent = node.parent ?: throw RuntimeException("cannot replace the root node")
         val newNode = parent.addNewChild(node.roleInParent, node.index(), coerceOutputConcept(subConcept))
@@ -109,8 +134,12 @@ data class ExistingNode(val node: INode) : INonExistingNode {
 
 fun INode.toNonExisting() = ExistingNode(this)
 
-data class NonExistingChild(private val parent: INonExistingNode, val link: IChildLink, val index: Int = 0) : INonExistingNode {
+data class NonExistingChild(private val parent: INonExistingNode, val link: IChildLink, private val index: Int = 0) : INonExistingNode {
     override fun getParent() = parent
+
+    override fun getContainmentLink() = link
+
+    override fun index(): Int = index
 
     override fun replaceNode(subConcept: IConcept?): INode {
         val parentNode = parent.getOrCreateNode(null)

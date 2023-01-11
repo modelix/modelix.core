@@ -148,6 +148,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
             val actions = providers.flatMap { it.flattenApplicableActions(params) }
             val matchingActions = actions
                 .filter { it.getMatchingText().startsWith(typedText) }
+                .applyShadowing()
             if (matchingActions.isNotEmpty()) {
                 if (matchingActions.size == 1 && matchingActions.first().getMatchingText() == typedText) {
                     matchingActions.first().execute()

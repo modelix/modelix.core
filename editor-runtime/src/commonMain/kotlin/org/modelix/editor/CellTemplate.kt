@@ -14,9 +14,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getChildren
-import org.modelix.model.api.getContainmentLink
 import org.modelix.model.api.getReferenceTarget
-import org.modelix.model.api.index
 import org.modelix.model.api.moveChild
 import org.modelix.model.api.setPropertyValue
 import org.modelix.model.api.setReferenceTarget
@@ -135,16 +133,28 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
     }
 
     override fun createWrapperAction(nodeToWrap: INode, wrappingLink: IChildLink): List<ICodeCompletionAction> {
-        return listOf(WrapperAction(nodeToWrap, wrappingLink))
+        return listOf(SideTransformWrapper(nodeToWrap.toNonExisting(), wrappingLink))
     }
 
-    inner class WrapperAction(val nodeToWrap: INode, val wrappingLink: IChildLink) : ICodeCompletionAction {
+    inner class SideTransformWrapper(val nodeToWrap: INonExistingNode, val wrappingLink: IChildLink) : ICodeCompletionAction {
         override fun getMatchingText(): String = text
         override fun getDescription(): String = concept.getShortName()
         override fun execute() {
-            val wrapper = nodeToWrap.parent!!.addNewChild(nodeToWrap.getContainmentLink()!!, nodeToWrap.index(), concept)
-            wrapper.moveChild(wrappingLink, 0, nodeToWrap)
+            val wrapper = nodeToWrap.getParent()!!.getOrCreateNode(null).addNewChild(nodeToWrap.getContainmentLink()!!, nodeToWrap.index(), concept)
+            wrapper.moveChild(wrappingLink, 0, nodeToWrap.getOrCreateNode(null))
         }
+
+        override fun shadows(shadowed: ICodeCompletionAction): Boolean {
+            if (shadowed !is ConstantCellTemplate<*, *>.SideTransformWrapper) return false
+            if (shadowed.getTemplate().concept != concept) return false
+            val commonAncestor = nodeToWrap.commonAncestor(shadowed.nodeToWrap)
+            val ownDepth = nodeToWrap.ancestors(true).takeWhile { it != commonAncestor }.count()
+            val otherDepth = shadowed.nodeToWrap.ancestors(true).takeWhile { it != commonAncestor }.count()
+            if (ownDepth > otherDepth) return true
+            return false
+        }
+
+        fun getTemplate() = this@ConstantCellTemplate
     }
 
     inner class InstantiateNodeAction(val location: INonExistingNode) : ICodeCompletionAction {

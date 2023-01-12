@@ -7,7 +7,7 @@ import org.modelix.incremental.IncrementalIndex
 open class EditorComponent(
     val engine: EditorEngine?,
     private val rootCellCreator: (EditorState) -> Cell
-) : IProducesHtml {
+) {
     val state: EditorState = EditorState()
     private var selection: Selection? = null
     private val cellIndex: IncrementalIndex<CellReference, Cell> = IncrementalIndex()
@@ -79,22 +79,6 @@ open class EditorComponent(
     fun closeCodeCompletionMenu() {
         codeCompletionMenu = null
         update()
-    }
-
-    override fun isHtmlOutputValid(): Boolean = false
-
-    override fun <T> produceHtml(consumer: TagConsumer<T>) {
-        consumer.div("editor") {
-            div(MAIN_LAYER_CLASS_NAME) {
-                produceChild(rootCell.layout)
-            }
-            div("selection-layer relative-layer") {
-                produceChild(selection)
-            }
-            div("popup-layer relative-layer") {
-                produceChild(codeCompletionMenu)
-            }
-        }
     }
 
     fun dispose() {

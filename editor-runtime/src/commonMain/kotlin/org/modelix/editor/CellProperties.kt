@@ -47,6 +47,7 @@ object CommonCellProperties {
     val backgroundColor = CellPropertyKey<String?>("background-color", null)
     val textReplacement = CellPropertyKey<String?>("text-replacement", null)
     val tabTarget = CellPropertyKey<Boolean>("tab-target", false) // caret is placed into the cell when navigating via TAB
+    val selectable = CellPropertyKey<Boolean>("selectable", false)
 }
 
 fun Cell.isTabTarget() = getProperty(CommonCellProperties.tabTarget)

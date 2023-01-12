@@ -6,6 +6,8 @@ import org.w3c.dom.HTMLElement
 import org.w3c.dom.Node
 import org.w3c.dom.asList
 import org.w3c.dom.events.MouseEvent
+import kotlin.math.max
+import kotlin.math.min
 
 data class Bounds(val x: Double, val y: Double, val width: Double, val height: Double) {
     fun maxX() = x + width
@@ -30,6 +32,19 @@ fun Bounds.relativeTo(origin: Bounds): Bounds {
         width,
         height
     )
+}
+
+fun Bounds?.union(other: Bounds?): Bounds? {
+    return if (this == null) other else union(other)
+}
+
+fun Bounds.union(other: Bounds?): Bounds {
+    if (other == null) return this
+    val minX = min(minX(), other.minX())
+    val maxX = max(maxX(), other.maxX())
+    val minY = min(minY(), other.minY())
+    val maxY = max(maxY(), other.maxY())
+    return Bounds(minX, minY, maxX - minX, maxY - minY)
 }
 
 private fun getBodyAbsoluteBounds() = document.body?.getBoundingClientRect()?.toBounds() ?: ZERO_BOUNDS

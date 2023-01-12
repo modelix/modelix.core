@@ -13,14 +13,32 @@
  */
 package org.modelix.editor
 
+import kotlinx.html.TagConsumer
+import kotlinx.html.classes
+import kotlinx.html.div
 import org.w3c.dom.HTMLElement
 
 class JSCaretSelectionView(selection: CaretSelection, val editor: JsEditorComponent) : SelectionView<CaretSelection>(selection) {
 
-    override fun updateBounds() {
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
+        consumer.div("caret own") {
+            val textLength = selection.layoutable.cell.getVisibleText()?.length ?: 0
+            if (textLength == 0) {
+                // A typical case is a StringLiteral editor for an empty string.
+                // There is no space around the empty text cell.
+                // 'leftend' or 'rightend' styles would look like the caret is set into one of the '"' cells.
+            } else if (selection.end == 0) {
+                classes += "leftend"
+            } else if (selection.end == textLength) {
+                classes += "rightend"
+            }
+        }
+    }
+
+    override fun update() {
         val layoutable = selection.layoutable
         val textElement = GeneratedHtmlMap.getOutput(selection.layoutable) ?: return
-        val caretElement = GeneratedHtmlMap.getOutput(selection) ?: return
+        val caretElement = GeneratedHtmlMap.getOutput(this) ?: return
         updateCaretBounds(textElement, selection.end, editor.getMainLayer(), caretElement)
     }
 

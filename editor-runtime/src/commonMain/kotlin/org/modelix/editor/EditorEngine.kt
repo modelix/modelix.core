@@ -98,6 +98,7 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
             data.cellReferences += NodeCellReference(node.untypedReference())
             data.properties[CellActionProperties.transformBefore] = SideTransformNode(true, node.untyped())
             data.properties[CellActionProperties.transformAfter] = SideTransformNode(false, node.untyped())
+            data.properties[CommonCellProperties.selectable] = true
             return data
         } catch (ex: Exception) {
             LOG.error(ex) { "Failed to create cell for $node" }

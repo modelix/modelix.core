@@ -29,21 +29,6 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         return CaretSelection(newLayoutable, start.coerceAtMost(textLength), end.coerceAtMost(textLength))
     }
 
-    override fun <T> produceHtml(consumer: TagConsumer<T>) {
-        consumer.div("caret own") {
-            val textLength = layoutable.cell.getVisibleText()?.length ?: 0
-            if (textLength == 0) {
-                // A typical case is a StringLiteral editor for an empty string.
-                // There is no space around the empty text cell.
-                // 'leftend' or 'rightend' styles would look like the caret is set into one of the '"' cells.
-            } else if (end == 0) {
-                classes += "leftend"
-            } else if (end == textLength) {
-                classes += "rightend"
-            }
-        }
-    }
-
     override fun processKeyDown(event: JSKeyboardEvent): Boolean {
         val editor = getEditor() ?: throw IllegalStateException("Not attached to any editor")
         val knownKey = event.knownKey
@@ -77,8 +62,12 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     ?.let { editor.changeSelection(it) }
             }
             KnownKeys.ArrowUp -> {
-                createNextPreviousLineSelection(false, desiredXPosition ?: getAbsoluteX())
-                    ?.let { editor.changeSelection(it) }
+                if (event.modifiers.meta) {
+                    layoutable.cell.let { editor.changeSelection(CellSelection(it)) }
+                } else {
+                    createNextPreviousLineSelection(false, desiredXPosition ?: getAbsoluteX())
+                        ?.let { editor.changeSelection(it) }
+                }
             }
             KnownKeys.Tab -> {
                 val target = layoutable

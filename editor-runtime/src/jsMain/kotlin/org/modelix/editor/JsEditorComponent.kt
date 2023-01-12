@@ -1,6 +1,8 @@
 package org.modelix.editor
 
 import kotlinx.browser.document
+import kotlinx.html.TagConsumer
+import kotlinx.html.div
 import kotlinx.html.dom.create
 import kotlinx.html.js.div
 import kotlinx.html.tabIndex
@@ -12,7 +14,7 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> Cell) : EditorComponent(engine, rootCellCreator) {
+class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> Cell) : EditorComponent(engine, rootCellCreator), IProducesHtml {
 
     private var containerElement: HTMLElement = document.create.div("js-editor-component") {
         tabIndex = "-1" // allows setting keyboard focus
@@ -40,7 +42,7 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
         super.update()
         updateSelectionView()
         updateHtml()
-        selectionView?.updateBounds()
+        selectionView?.update()
         codeCompletionMenu?.let { JSCodeCompletionMenuUI(it, this).updateBounds() }
     }
 
@@ -48,10 +50,27 @@ class JsEditorComponent(engine: EditorEngine, rootCellCreator: (EditorState) -> 
         if (selectionView?.selection != getSelection()) {
             selectionView = when (val selection = getSelection()) {
                 is CaretSelection -> JSCaretSelectionView(selection, this)
+                is CellSelection -> JSCellSelectionView(selection, this)
                 else -> null
             }
         }
     }
+
+    override fun <T> produceHtml(consumer: TagConsumer<T>) {
+        consumer.div("editor") {
+            div(MAIN_LAYER_CLASS_NAME) {
+                produceChild(getRootCell().layout)
+            }
+            div("selection-layer relative-layer") {
+                produceChild(selectionView)
+            }
+            div("popup-layer relative-layer") {
+                produceChild(codeCompletionMenu)
+            }
+        }
+    }
+
+    override fun isHtmlOutputValid(): Boolean = false
 
     fun updateHtml() {
         val oldEditorElement = GeneratedHtmlMap.getOutput(this)

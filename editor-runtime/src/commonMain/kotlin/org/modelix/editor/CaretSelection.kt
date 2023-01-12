@@ -80,6 +80,15 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                 createNextPreviousLineSelection(false, desiredXPosition ?: getAbsoluteX())
                     ?.let { editor.changeSelection(it) }
             }
+            KnownKeys.Tab -> {
+                val target = layoutable
+                    .getSiblingsInText(!event.modifiers.shift)
+                    .filterIsInstance<LayoutableCell>()
+                    .firstOrNull { it.cell.isTabTarget() }
+                if (target != null) {
+                    editor.changeSelection(CaretSelection(target, 0))
+                }
+            }
             KnownKeys.Delete, KnownKeys.Backspace -> {
                 if (start == end) {
                     val posToDelete = when (knownKey) {

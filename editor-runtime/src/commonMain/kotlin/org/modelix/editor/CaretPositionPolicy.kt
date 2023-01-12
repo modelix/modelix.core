@@ -37,7 +37,7 @@ data class CaretPositionPolicy(
             .mapNotNull { editor.resolveLayoutable(it) }
 
         val best = candidates
-            .sortedByDescending { it.cell.ancestors(true).any { isPropertyCell(it) } }
+            .sortedByDescending { it.cell.isTabTarget() }
             .sortedBy { it.cell.ancestors(true).filter { isAvoided(it) }.count() }
             .firstOrNull() ?: return null
 
@@ -45,7 +45,6 @@ data class CaretPositionPolicy(
     }
 
     private fun isAvoided(cell: Cell) = cell.data.cellReferences.intersect(avoidedCellRefs).isNotEmpty()
-    private fun isPropertyCell(cell: Cell) = cell.data.cellReferences.any { it is PropertyCellReference }
 }
 
 enum class CaretPositionType {

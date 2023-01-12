@@ -248,6 +248,7 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
         val value = node.getPropertyValue(property)
         val data = TextCellData(value ?: "", if (value == null) placeholderText else "")
         data.properties[CellActionProperties.replaceText] = ChangePropertyAction(node)
+        data.properties[CommonCellProperties.tabTarget] = true
         data.cellReferences += PropertyCellReference(property, node.untypedReference())
         return data
     }
@@ -303,9 +304,10 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
     val presentation: TargetNodeT.() -> String?
 ) : CellTemplate<NodeT, ConceptT>(concept), IGrammarSymbol {
     override fun createCell(context: CellCreationContext, node: NodeT): CellData {
-        val cell = TextCellData(getText(node), "<no ${link.name}>")
-        cell.cellReferences += ReferencedNodeCellReference(node.untypedReference(), link)
-        return cell
+        val data = TextCellData(getText(node), "<no ${link.name}>")
+        data.cellReferences += ReferencedNodeCellReference(node.untypedReference(), link)
+        data.properties[CommonCellProperties.tabTarget] = true
+        return data
     }
     private fun getText(node: NodeT): String = getTargetNode(node)?.let(presentation) ?: ""
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
@@ -369,6 +371,7 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(
             if (isDefaultPlaceholder) {
                 placeholder.cellReferences += ChildNodeCellReference(node.untypedReference(), link, index)
             }
+            placeholder.properties[CommonCellProperties.tabTarget] = true
             cell.addChild(placeholder)
         }
         val addInsertActionCell: (Int) -> Unit = { index ->

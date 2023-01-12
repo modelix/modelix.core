@@ -3,9 +3,11 @@ package org.modelix.editor
 import org.modelix.metamodel.ITypedNode
 import org.modelix.metamodel.untyped
 import org.modelix.metamodel.untypedReference
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
+import org.modelix.model.api.IReferenceLink
 
 /**
  * A cell can have multiple CellReferences. Multiple CellReferences can resolve to the same cell.
@@ -35,3 +37,6 @@ fun EditorComponent.resolveNodeCell(node: INode): Cell? =
 
 fun EditorComponent.resolveNodeCell(node: ITypedNode): Cell? =
     resolveNodeCell(node.untypedReference())
+
+data class ChildNodeCellReference(val parentNodeRef: INodeReference, val link: IChildLink, val index: Int = 0) : CellReference()
+data class ReferencedNodeCellReference(val sourceNodeRef: INodeReference, val link: IReferenceLink) : CellReference()

@@ -144,9 +144,10 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
             val wrapper = nodeToWrap.getParent()!!.getOrCreateNode(null).addNewChild(nodeToWrap.getContainmentLink()!!, nodeToWrap.index(), concept)
             wrapper.moveChild(wrappingLink, 0, nodeToWrap.getOrCreateNode(null))
             editor.selectAfterUpdate {
-                val cell = editor.resolveCell(createCellReference(wrapper)).firstOrNull() ?: return@selectAfterUpdate null
-                val layoutable = cell.layoutable() ?: return@selectAfterUpdate null
-                CaretSelection(layoutable, layoutable.getLength())
+                CaretPositionPolicy(wrapper)
+                    .avoid(ChildNodeCellReference(wrapper.reference, wrappingLink))
+                    .avoid(createCellReference(wrapper))
+                    .getBestSelection(editor)
             }
         }
 
@@ -173,7 +174,11 @@ class ConstantCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(concept
         }
 
         override fun execute(editor: EditorComponent) {
-            location.replaceNode(concept)
+            val newNode = location.replaceNode(concept)
+            editor.selectAfterUpdate {
+                CaretPositionPolicy(newNode)
+                    .getBestSelection(editor)
+            }
         }
     }
 }
@@ -273,9 +278,8 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
             val node = location.getOrCreateNode(concept)
             node.setPropertyValue(property, value)
             editor.selectAfterUpdate {
-                val cell = editor.resolveCell(createCellReference(node)).firstOrNull() ?: return@selectAfterUpdate null
-                val layoutable = cell.layoutable() ?: return@selectAfterUpdate null
-                CaretSelection(layoutable, layoutable.getLength())
+                CaretPositionPolicy(createCellReference(node))
+                    .getBestSelection(editor)
             }
         }
     }
@@ -298,7 +302,11 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
     val link: GeneratedReferenceLink<TargetNodeT, TargetConceptT>,
     val presentation: TargetNodeT.() -> String?
 ) : CellTemplate<NodeT, ConceptT>(concept), IGrammarSymbol {
-    override fun createCell(context: CellCreationContext, node: NodeT): CellData = TextCellData(getText(node), "<no ${link.name}>")
+    override fun createCell(context: CellCreationContext, node: NodeT): CellData {
+        val cell = TextCellData(getText(node), "<no ${link.name}>")
+        cell.cellReferences += ReferencedNodeCellReference(node.untypedReference(), link)
+        return cell
+    }
     private fun getText(node: NodeT): String = getTargetNode(node)?.let(presentation) ?: ""
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
         return sourceNode.unwrap().getReferenceTarget(link)?.typedUnsafe()
@@ -322,9 +330,8 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
             val sourceNode = location.getOrCreateNode(concept)
             sourceNode.setReferenceTarget(link, target)
             editor.selectAfterUpdate {
-                val cell = editor.resolveCell(createCellReference(sourceNode)).firstOrNull() ?: return@selectAfterUpdate null
-                val layoutable = cell.layoutable() ?: return@selectAfterUpdate null
-                CaretSelection(layoutable, layoutable.getLength())
+                CaretPositionPolicy(createCellReference(sourceNode))
+                    .getBestSelection(editor)
             }
         }
     }
@@ -351,13 +358,17 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(
         val substitutionPlaceholder = context.editorState.substitutionPlaceholderPositions[createCellReference(node)]
         val placeholderIndex = substitutionPlaceholder?.index?.coerceIn(0..childNodes.size) ?: 0
         val addSubstitutionPlaceholder: (Int) -> Unit = { index ->
-            val placeholderText = if (childNodes.isEmpty()) "<no ${link.name}>" else "<choose ${link.name}>"
+            val isDefaultPlaceholder = childNodes.isEmpty()
+            val placeholderText = if (isDefaultPlaceholder) "<no ${link.name}>" else "<choose ${link.name}>"
             val placeholder = TextCellData("", placeholderText)
             placeholder.properties[CellActionProperties.substitute] =
                 ReplaceNodeActionProvider(NonExistingChild(node.untyped().toNonExisting(), link, index)).after {
                     context.editorState.substitutionPlaceholderPositions.remove(createCellReference(node))
                 }
             placeholder.cellReferences.add(PlaceholderCellReference(createCellReference(node)))
+            if (isDefaultPlaceholder) {
+                placeholder.cellReferences += ChildNodeCellReference(node.untypedReference(), link, index)
+            }
             cell.addChild(placeholder)
         }
         val addInsertActionCell: (Int) -> Unit = { index ->
@@ -382,6 +393,7 @@ class ChildCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(
                 //child.parent?.removeChild(child) // child may be cached and is still attached to the old parent
                 val wrapper = CellData() // allow setting properties by the parent, because the cell is already frozen
                 wrapper.addChild(child)
+                wrapper.cellReferences += ChildNodeCellReference(node.untypedReference(), link, index)
                 cell.addChild(wrapper)
             }
             if (substitutionPlaceholder != null && placeholderIndex == childNodes.size) {

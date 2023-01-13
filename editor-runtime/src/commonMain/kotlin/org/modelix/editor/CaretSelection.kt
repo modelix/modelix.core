@@ -45,7 +45,12 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                         .filterIsInstance<LayoutableCell>()
                         .find { it.cell.getSelectableText() != null }
                     if (previous != null) {
-                        editor.changeSelection(CaretSelection(previous, previous.cell.getMaxCaretPos()))
+                        if (event.modifiers.shift) {
+                            val commonAncestor = layoutable.cell.commonAncestor(previous.cell)
+                            editor.changeSelection(CellSelection(commonAncestor, this))
+                        } else {
+                            editor.changeSelection(CaretSelection(previous, previous.cell.getMaxCaretPos()))
+                        }
                     }
                 }
             }
@@ -61,7 +66,12 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                         .filterIsInstance<LayoutableCell>()
                         .find { it.cell.getSelectableText() != null }
                     if (next != null) {
-                        editor.changeSelection(CaretSelection(next, 0))
+                        if (event.modifiers.shift) {
+                            val commonAncestor = layoutable.cell.commonAncestor(next.cell)
+                            editor.changeSelection(CellSelection(commonAncestor, this))
+                        } else {
+                            editor.changeSelection(CaretSelection(next, 0))
+                        }
                     }
                 }
             }

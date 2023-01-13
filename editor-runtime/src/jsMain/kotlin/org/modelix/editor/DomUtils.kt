@@ -1,6 +1,7 @@
 package org.modelix.editor
 
 import kotlinx.browser.document
+import kotlinx.browser.window
 import org.w3c.dom.DOMRect
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.Node
@@ -17,7 +18,7 @@ data class Bounds(val x: Double, val y: Double, val width: Double, val height: D
 }
 
 fun HTMLElement.getAbsoluteBounds(): Bounds {
-    return getBoundingClientRect().toBounds()
+    return getBoundingClientRect().toBounds().translated(window.scrollX, window.scrollY)
 }
 
 fun HTMLElement.setBounds(bounds: Bounds) {
@@ -30,7 +31,7 @@ fun HTMLElement.setBounds(bounds: Bounds) {
 }
 
 fun HTMLElement.getAbsoluteInnerBounds(): Bounds {
-    return (getClientRects().asSequence().firstOrNull()?.toBounds() ?: ZERO_BOUNDS)
+    return (getClientRects().asSequence().firstOrNull()?.toBounds()?.translated(window.scrollX, window.scrollY) ?: ZERO_BOUNDS)
 }
 
 fun DOMRect.toBounds() = Bounds(x, y, width, height)

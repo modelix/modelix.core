@@ -13,11 +13,7 @@
  */
 package org.modelix.editor
 
-import kotlinx.html.TagConsumer
-import kotlinx.html.div
-import kotlinx.html.span
-
-data class CellSelection(val cell: Cell): Selection() {
+data class CellSelection(val cell: Cell, val downSelection: Selection?): Selection() {
     fun getEditor(): EditorComponent? = cell.editorComponent
 
     override fun isValid(): Boolean {
@@ -27,7 +23,7 @@ data class CellSelection(val cell: Cell): Selection() {
     override fun update(editor: EditorComponent): Selection? {
         return cell.data.cellReferences.asSequence()
             .flatMap { editor.resolveCell(it) }
-            .map { CellSelection(it) }
+            .map { CellSelection(it, downSelection?.update(editor)) }
             .firstOrNull()
     }
 
@@ -37,7 +33,12 @@ data class CellSelection(val cell: Cell): Selection() {
             KnownKeys.ArrowUp -> {
                 if (event.modifiers.meta) {
                     cell.ancestors().firstOrNull { it.getProperty(CommonCellProperties.selectable) }
-                        ?.let { editor.changeSelection(CellSelection(it)) }
+                        ?.let { editor.changeSelection(CellSelection(it, this)) }
+                }
+            }
+            KnownKeys.ArrowDown -> {
+                if (event.modifiers.meta && downSelection != null) {
+                    editor.changeSelection(downSelection)
                 }
             }
             else -> {}

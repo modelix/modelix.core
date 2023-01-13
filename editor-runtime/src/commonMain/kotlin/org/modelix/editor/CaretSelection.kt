@@ -63,7 +63,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
             }
             KnownKeys.ArrowUp -> {
                 if (event.modifiers.meta) {
-                    layoutable.cell.let { editor.changeSelection(CellSelection(it)) }
+                    layoutable.cell.let { editor.changeSelection(CellSelection(it, this)) }
                 } else {
                     createNextPreviousLineSelection(false, desiredXPosition ?: getAbsoluteX())
                         ?.let { editor.changeSelection(it) }

@@ -35,7 +35,11 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         when (knownKey) {
             KnownKeys.ArrowLeft -> {
                 if (end > 0) {
-                    editor.changeSelection(CaretSelection(layoutable, end - 1))
+                    if (event.modifiers.shift) {
+                        editor.changeSelection(CaretSelection(layoutable, start, end - 1))
+                    } else {
+                        editor.changeSelection(CaretSelection(layoutable, end - 1))
+                    }
                 } else {
                     val previous = layoutable.getSiblingsInText(next = false)
                         .filterIsInstance<LayoutableCell>()
@@ -47,7 +51,11 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
             }
             KnownKeys.ArrowRight -> {
                 if (end < (layoutable.cell.getSelectableText()?.length ?: 0)) {
-                    editor.changeSelection(CaretSelection(layoutable, end + 1))
+                    if (event.modifiers.shift) {
+                        editor.changeSelection(CaretSelection(layoutable, start, end + 1))
+                    } else {
+                        editor.changeSelection(CaretSelection(layoutable, end + 1))
+                    }
                 } else {
                     val next = layoutable.getSiblingsInText(next = true)
                         .filterIsInstance<LayoutableCell>()

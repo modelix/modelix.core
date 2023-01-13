@@ -19,6 +19,16 @@ data class Bounds(val x: Double, val y: Double, val width: Double, val height: D
 fun HTMLElement.getAbsoluteBounds(): Bounds {
     return getBoundingClientRect().toBounds()
 }
+
+fun HTMLElement.setBounds(bounds: Bounds) {
+    with(style) {
+        left = "${bounds.x}px"
+        top = "${bounds.y}px"
+        width = "${bounds.width}px"
+        height = "${bounds.height}px"
+    }
+}
+
 fun HTMLElement.getAbsoluteInnerBounds(): Bounds {
     return (getClientRects().asSequence().firstOrNull()?.toBounds() ?: ZERO_BOUNDS)
 }
@@ -46,6 +56,14 @@ fun Bounds.union(other: Bounds?): Bounds {
     val maxY = max(maxY(), other.maxY())
     return Bounds(minX, minY, maxX - minX, maxY - minY)
 }
+
+fun Bounds.translated(deltaX: Double, deltaY: Double) = copy(x = x + deltaX, y = y + deltaY)
+fun Bounds.expanded(delta: Double) = copy(
+    x = x - delta,
+    y = y - delta,
+    width = width + delta * 2.0,
+    height = height + delta * 2.0
+)
 
 private fun getBodyAbsoluteBounds() = document.body?.getBoundingClientRect()?.toBounds() ?: ZERO_BOUNDS
 fun MouseEvent.getAbsolutePositionX() = clientX - getBodyAbsoluteBounds().x

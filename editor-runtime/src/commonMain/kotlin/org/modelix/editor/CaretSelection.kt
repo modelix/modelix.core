@@ -47,7 +47,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     if (previous != null) {
                         if (event.modifiers.shift) {
                             val commonAncestor = layoutable.cell.commonAncestor(previous.cell)
-                            editor.changeSelection(CellSelection(commonAncestor, this))
+                            editor.changeSelection(CellSelection(commonAncestor, true, this))
                         } else {
                             editor.changeSelection(CaretSelection(previous, previous.cell.getMaxCaretPos()))
                         }
@@ -68,7 +68,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                     if (next != null) {
                         if (event.modifiers.shift) {
                             val commonAncestor = layoutable.cell.commonAncestor(next.cell)
-                            editor.changeSelection(CellSelection(commonAncestor, this))
+                            editor.changeSelection(CellSelection(commonAncestor, false, this))
                         } else {
                             editor.changeSelection(CaretSelection(next, 0))
                         }
@@ -81,7 +81,7 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
             }
             KnownKeys.ArrowUp -> {
                 if (event.modifiers.meta) {
-                    layoutable.cell.let { editor.changeSelection(CellSelection(it, this)) }
+                    layoutable.cell.let { editor.changeSelection(CellSelection(it, true, this)) }
                 } else {
                     createNextPreviousLineSelection(false, desiredXPosition ?: getAbsoluteX())
                         ?.let { editor.changeSelection(it) }

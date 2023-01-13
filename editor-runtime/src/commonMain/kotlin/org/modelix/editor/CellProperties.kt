@@ -51,3 +51,4 @@ object CommonCellProperties {
 }
 
 fun Cell.isTabTarget() = getProperty(CommonCellProperties.tabTarget)
+fun Cell.isSelectable() = getProperty(CommonCellProperties.selectable)

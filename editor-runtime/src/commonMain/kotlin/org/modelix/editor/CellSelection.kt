@@ -13,7 +13,7 @@
  */
 package org.modelix.editor
 
-data class CellSelection(val cell: Cell, val downSelection: Selection?): Selection() {
+data class CellSelection(val cell: Cell, val directionLeft: Boolean, val previousSelection: Selection?): Selection() {
     fun getEditor(): EditorComponent? = cell.editorComponent
 
     override fun isValid(): Boolean {
@@ -23,7 +23,7 @@ data class CellSelection(val cell: Cell, val downSelection: Selection?): Selecti
     override fun update(editor: EditorComponent): Selection? {
         return cell.data.cellReferences.asSequence()
             .flatMap { editor.resolveCell(it) }
-            .map { CellSelection(it, downSelection?.update(editor)) }
+            .map { CellSelection(it, directionLeft, previousSelection?.update(editor)) }
             .firstOrNull()
     }
 
@@ -33,12 +33,38 @@ data class CellSelection(val cell: Cell, val downSelection: Selection?): Selecti
             KnownKeys.ArrowUp -> {
                 if (event.modifiers.meta) {
                     cell.ancestors().firstOrNull { it.getProperty(CommonCellProperties.selectable) }
-                        ?.let { editor.changeSelection(CellSelection(it, this)) }
+                        ?.let { editor.changeSelection(CellSelection(it, directionLeft, this)) }
                 }
             }
             KnownKeys.ArrowDown -> {
-                if (event.modifiers.meta && downSelection != null) {
-                    editor.changeSelection(downSelection)
+                if (event.modifiers == Modifiers.META && previousSelection != null) {
+                    editor.changeSelection(previousSelection)
+                }
+            }
+            KnownKeys.ArrowLeft, KnownKeys.ArrowRight -> {
+                if (event.modifiers == Modifiers.SHIFT) {
+                    val isLeft = event.knownKey == KnownKeys.ArrowLeft
+                    if (isLeft == directionLeft) {
+                        cell.ancestors().firstOrNull { it.isSelectable() }
+                            ?.let { editor.changeSelection(CellSelection(it, directionLeft, this)) }
+                    } else {
+                        previousSelection?.let { editor.changeSelection(it) }
+                    }
+                } else {
+                    val caretSelection = generateSequence<Selection>(this) { (it as? CellSelection)?.previousSelection }
+                        .lastOrNull() as? CaretSelection
+                    if (caretSelection != null) {
+                        editor.changeSelection(CaretSelection(caretSelection.layoutable, caretSelection.start))
+                    } else {
+                        val tabTargets = cell.descendantsAndSelf().filter { it.isTabTarget() }
+                        if (event.knownKey == KnownKeys.ArrowLeft) {
+                            tabTargets.firstOrNull()?.layoutable()
+                                ?.let { editor.changeSelection(CaretSelection(it, 0)) }
+                        } else {
+                            tabTargets.lastOrNull()?.layoutable()
+                                ?.let { editor.changeSelection(CaretSelection(it, it.cell.getSelectableText()?.length ?: 0)) }
+                        }
+                    }
                 }
             }
             else -> {}

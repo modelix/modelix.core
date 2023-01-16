@@ -70,7 +70,32 @@ data class CellSelection(val cell: Cell, val directionLeft: Boolean, val previou
                     }
                 }
             }
-            else -> {}
+            else -> {
+                val typedText = event.typedText
+                if (!typedText.isNullOrEmpty()) {
+                    val anchor = getLayoutables().filterIsInstance<LayoutableCell>().firstOrNull()
+                    if (anchor != null) {
+                        val actionProviders = cell.getSubstituteActions().toList()
+                        if (typedText == " " && event.modifiers == Modifiers.CTRL) {
+                            editor.showCodeCompletionMenu(
+                                anchor = anchor,
+                                position = CompletionPosition.CENTER,
+                                entries = actionProviders,
+                                pattern = "",
+                                caretPosition = 0
+                            )
+                        } else {
+                            editor.showCodeCompletionMenu(
+                                anchor = anchor,
+                                position = CompletionPosition.CENTER,
+                                entries = actionProviders,
+                                pattern = typedText,
+                                caretPosition = typedText.length
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         return true

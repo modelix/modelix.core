@@ -1,8 +1,5 @@
 package org.modelix.editor
 
-import kotlinx.html.TagConsumer
-import kotlinx.html.classes
-import kotlinx.html.div
 import kotlin.math.max
 import kotlin.math.min
 
@@ -78,15 +75,13 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
                 }
             }
             KnownKeys.ArrowDown -> {
-                createNextPreviousLineSelection(true, desiredXPosition ?: getAbsoluteX())
-                    ?.let { editor.changeSelection(it) }
+                selectNextPreviousLine(true)
             }
             KnownKeys.ArrowUp -> {
                 if (event.modifiers.meta) {
                     layoutable.cell.let { editor.changeSelection(CellSelection(it, true, this)) }
                 } else {
-                    createNextPreviousLineSelection(false, desiredXPosition ?: getAbsoluteX())
-                        ?.let { editor.changeSelection(it) }
+                    selectNextPreviousLine(false)
                 }
             }
             KnownKeys.Tab -> {
@@ -145,6 +140,11 @@ class CaretSelection(val layoutable: LayoutableCell, val start: Int, val end: In
         }
 
         return true
+    }
+
+    fun selectNextPreviousLine(next: Boolean) {
+        createNextPreviousLineSelection(next, desiredXPosition ?: getAbsoluteX())
+            ?.let { getEditor()?.changeSelection(it) }
     }
 
     private fun processTypedText(typedText: String, editor: EditorComponent) {

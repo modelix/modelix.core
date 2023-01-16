@@ -34,11 +34,15 @@ data class CellSelection(val cell: Cell, val directionLeft: Boolean, val previou
                 if (event.modifiers.meta) {
                     cell.ancestors().firstOrNull { it.getProperty(CommonCellProperties.selectable) }
                         ?.let { editor.changeSelection(CellSelection(it, directionLeft, this)) }
+                } else {
+                    unwrapCaretSelection()?.selectNextPreviousLine(false)
                 }
             }
             KnownKeys.ArrowDown -> {
                 if (event.modifiers == Modifiers.META && previousSelection != null) {
                     editor.changeSelection(previousSelection)
+                } else {
+                    unwrapCaretSelection()?.selectNextPreviousLine(true)
                 }
             }
             KnownKeys.ArrowLeft, KnownKeys.ArrowRight -> {
@@ -51,8 +55,7 @@ data class CellSelection(val cell: Cell, val directionLeft: Boolean, val previou
                         previousSelection?.let { editor.changeSelection(it) }
                     }
                 } else {
-                    val caretSelection = generateSequence<Selection>(this) { (it as? CellSelection)?.previousSelection }
-                        .lastOrNull() as? CaretSelection
+                    val caretSelection = unwrapCaretSelection()
                     if (caretSelection != null) {
                         editor.changeSelection(CaretSelection(caretSelection.layoutable, caretSelection.start))
                     } else {
@@ -71,6 +74,11 @@ data class CellSelection(val cell: Cell, val directionLeft: Boolean, val previou
         }
 
         return true
+    }
+
+    private fun unwrapCaretSelection(): CaretSelection? {
+        return generateSequence<Selection>(this) { (it as? CellSelection)?.previousSelection }
+            .lastOrNull() as? CaretSelection
     }
 
     fun getLayoutables(): List<Layoutable> {

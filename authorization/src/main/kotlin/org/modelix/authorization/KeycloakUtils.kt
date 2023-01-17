@@ -20,10 +20,12 @@ import com.auth0.jwt.interfaces.DecodedJWT
 import com.google.common.cache.CacheBuilder
 import org.keycloak.authorization.client.AuthzClient
 import org.keycloak.authorization.client.Configuration
+import org.keycloak.authorization.client.resource.ProtectedResource
 import org.keycloak.representations.idm.authorization.AuthorizationRequest
 import org.keycloak.representations.idm.authorization.Permission
 import org.keycloak.representations.idm.authorization.PermissionRequest
 import org.keycloak.representations.idm.authorization.ResourceRepresentation
+import org.keycloak.representations.idm.authorization.ScopeRepresentation
 import java.net.URL
 import java.util.concurrent.TimeUnit
 
@@ -52,9 +54,11 @@ object KeycloakUtils {
     }
 
     private val permissionCache = CacheBuilder.newBuilder()
-        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .expireAfterWrite(30, TimeUnit.SECONDS)
         .build<String, List<Permission>>()
-    private val existingResources = HashSet<String>()
+    private val existingResources = CacheBuilder.newBuilder()
+        .expireAfterWrite(3, TimeUnit.MINUTES)
+        .build<String, ResourceRepresentation>()
 
     private fun patchUrls(c: AuthzClient): AuthzClient {
         patchObject(c.serverConfiguration)
@@ -105,43 +109,115 @@ object KeycloakUtils {
     }
 
     @Synchronized
-    fun hasPermission(accessToken: DecodedJWT, resourceName: String, scope: String): Boolean {
-        ensureResourcesExists(resourceName)
+    fun hasPermission(accessToken: DecodedJWT, resourceSpec: KeycloakResource, scope: KeycloakScope): Boolean {
+        ensureResourcesExists(resourceSpec, accessToken)
         val allPermissions = getPermissions(accessToken)
-        val forResource = allPermissions.filter { it.resourceName == resourceName }
+        val forResource = allPermissions.filter { it.resourceName == resourceSpec.name }
         if (forResource.isEmpty()) return false
         val scopes: Set<String> = forResource.mapNotNull { it.scopes }.flatten().toSet()
         if (scopes.isEmpty()) {
             // If the permissions are not restricted to any scope we assume they are valid for all scopes.
             return true
         }
-        return scopes.contains(scope)
-    }
-
-    private fun hasPermissions(accessToken: DecodedJWT, resourceNames: List<String>): Boolean {
-        try {
-            val ticket = authzClient.protection(accessToken.token).permission().create(resourceNames.map { PermissionRequest(it) }).ticket
-            val rpt = authzClient.authorization(accessToken.token).authorize(AuthorizationRequest(ticket)).token
-            val introspect = authzClient.protection().introspectRequestingPartyToken(rpt)
-            return introspect.active
-        } catch (e: Exception) {
-            throw RuntimeException("Can't get permissions for token: ${accessToken.token}", e)
-        }
-    }
-
-    private fun createPermission(ownerToken: DecodedJWT?, resourceName: String): String {
-        val protection = if (ownerToken == null) authzClient.protection() else authzClient.protection(ownerToken.token)
-        val newResource = protection.resource().create(ResourceRepresentation(resourceName))
-        return newResource.id
+        return scopes.contains(scope.name)
     }
 
     @Synchronized
-    fun ensureResourcesExists(resourceName: String) {
-        if (existingResources.contains(resourceName)) return
-        if (authzClient.protection().resource().findByName(resourceName) == null) {
-            authzClient.protection().resource().create(ResourceRepresentation(resourceName))
-            permissionCache.invalidateAll()
-        }
-        existingResources += resourceName
+    fun grantPermission(user: DecodedJWT, resourceSpec: KeycloakResource, scopes: Set<KeycloakScope>): Boolean {
+        val resource = ensureResourcesExists(resourceSpec, user)
+        val ticketResponse = authzClient.protection(user.token).permission()
+            .create(PermissionRequest(resource.id, *scopes.map { it.name }.toTypedArray()))
+
+        val authResponse = authzClient.authorization(/* service account */)
+            .authorize(AuthorizationRequest(ticketResponse.ticket))
+
+        return authResponse.isUpgraded
     }
+
+    @Synchronized
+    fun ensureResourcesExists(
+        resourceSpec: KeycloakResource,
+        owner: DecodedJWT? = null
+    ): ResourceRepresentation {
+        return existingResources.get(resourceSpec.name) {
+            var resource = authzClient.protection().resource().findByNameAnyOwner(resourceSpec.name)
+            if (resource != null) return@get resource
+            val protection = (
+                    if (resourceSpec.type.ownerManaged) {
+                        owner?.let { authzClient.protection(owner.token) }
+                    } else {
+                        null
+                    }
+                    ) ?: authzClient.protection()
+            resource = ResourceRepresentation().apply {
+                name = resourceSpec.name
+                scopes = resourceSpec.type.scopes.map { ScopeRepresentation(it.name) }.toSet()
+                type = resourceSpec.type.name
+                if (resourceSpec.type.ownerManaged) ownerManagedAccess = true
+            }
+            resource = protection.resource().create(resource)
+            permissionCache.invalidateAll()
+            return@get resource
+        }
+
+    }
+}
+
+data class KeycloakScope(val name: String) {
+    operator fun plus(other: KeycloakScope): Set<KeycloakScope> = setOf(this, other)
+    fun toSet() = setOf(this)
+
+    companion object {
+        val ADD = KeycloakScope("add") // the user can add a new item, but not remove other items in a list
+        val LIST = KeycloakScope("list") // the user can see that an item exists, but not read the contents
+        val READ = KeycloakScope("read")
+        val WRITE = KeycloakScope("write")
+        val DELETE = KeycloakScope("delete")
+        val READ_WRITE_DELETE = setOf(READ, WRITE, DELETE)
+        val READ_WRITE_DELETE_LIST = setOf(READ, WRITE, DELETE, LIST)
+        val READ_WRITE = setOf(READ, WRITE)
+        val READ_WRITE_LIST = setOf(READ, WRITE, LIST)
+        val READ_ONLY = setOf(READ)
+        val READ_LIST = setOf(READ, LIST)
+        val ALL_SCOPES = READ_WRITE_DELETE_LIST
+    }
+}
+fun EPermissionType.toKeycloakScope(): KeycloakScope = when (this) {
+    EPermissionType.READ -> KeycloakScope.READ
+    EPermissionType.WRITE -> KeycloakScope.WRITE
+}
+
+data class KeycloakResource(val name: String, val type: KeycloakResourceType) {
+
+}
+
+data class KeycloakResourceType(val name: String, val scopes: Set<KeycloakScope>, val ownerManaged: Boolean = false) {
+    fun createInstance(resourceName: String) = KeycloakResource(this.name + "/" + resourceName, this)
+
+    companion object {
+        val DEFAULT_TYPE = KeycloakResourceType("default", KeycloakScope.READ_WRITE)
+        val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
+        val REPOSITORY = KeycloakResourceType("repository", KeycloakScope.READ_WRITE_DELETE_LIST)
+        val WORKSPACE = KeycloakResourceType("workspace", KeycloakScope.READ_WRITE_DELETE_LIST, ownerManaged = true)
+    }
+}
+
+fun String.asResource() = KeycloakResourceType.DEFAULT_TYPE.createInstance(this)
+
+private fun ProtectedResource.findByNameAnyOwner(name: String): ResourceRepresentation? {
+    val resources: List<ResourceRepresentation> = org.modelix.authorization.KeycloakUtils.authzClient.protection().resource()
+        .find(
+            null,
+            name,
+            null,
+            null,
+            null,
+            null,
+            false,
+            true,
+            true,
+            null,
+            null
+        )
+    return resources.firstOrNull()
 }

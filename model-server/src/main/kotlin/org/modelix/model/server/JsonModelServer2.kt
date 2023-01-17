@@ -23,6 +23,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.modelix.authorization.KeycloakScope
+import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.model.VersionMerger
@@ -77,7 +79,7 @@ class JsonModelServer2(val client: LocalModelClient) {
     fun init(application: Application) {
         application.apply {
             routing {
-                requiresPermission("model-json-api", "read") {
+                requiresPermission("model-json-api".asResource(), KeycloakScope.READ) {
                     route("/json/v2") {
                         initRouting()
                     }

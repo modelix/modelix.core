@@ -7,6 +7,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.apache.commons.lang3.StringEscapeUtils
+import org.modelix.authorization.KeycloakScope
+import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.model.LinearHistory
@@ -47,7 +49,7 @@ class HistoryHandler(private val client: IModelClient) {
                     buildRepositoryPage(PrintWriter(this), RepositoryAndBranch(repositoryId, branch), params["head"], skip, limit)
                 }
             }
-            requiresPermission("history", "WRITE") {
+            requiresPermission("history".asResource(), KeycloakScope.WRITE) {
                 post("/history/{repoId}/{branch}/revert") {
                     val repositoryId = call.parameters["repoId"]!!
                     val branch = call.parameters["branch"]!!

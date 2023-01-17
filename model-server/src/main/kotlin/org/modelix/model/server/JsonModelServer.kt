@@ -30,6 +30,8 @@ import kotlinx.html.td
 import kotlinx.html.tr
 import org.json.JSONArray
 import org.json.JSONObject
+import org.modelix.authorization.KeycloakScope
+import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.model.IKeyListener
@@ -50,7 +52,7 @@ class JsonModelServer(val client: LocalModelClient) {
     fun init(application: Application) {
         application.apply {
             routing {
-                requiresPermission("model-json-api", "read") {
+                requiresPermission("model-json-api".asResource(), KeycloakScope.READ) {
                     route("/json") {
                         initRouting()
                     }

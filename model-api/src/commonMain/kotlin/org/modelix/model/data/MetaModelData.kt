@@ -43,7 +43,8 @@ sealed interface IConceptFeatureData {
 data class PropertyData (
     override val uid: String? = null,
     override val name: String,
-    val type: PropertyType = PropertyType.STRING
+    val type: PropertyType = PropertyType.STRING,
+    val optional: Boolean = true
 ) : IConceptFeatureData
 
 enum class PropertyType {

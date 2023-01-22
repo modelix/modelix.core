@@ -172,7 +172,7 @@ class MetaModelGenerator(val outputDir: Path) {
                 when (val data = feature.data) {
                     is PropertyData -> {
                         addProperty(PropertySpec.builder(feature.validName, IProperty::class)
-                            .initializer("""${GeneratedConcept<*, *>::newProperty.name}("${feature.originalName}")""")
+                            .initializer("""${GeneratedConcept<*, *>::newProperty.name}("${feature.originalName}", ${data.optional})""")
                             .build())
                     }
                     is ChildLinkData -> {

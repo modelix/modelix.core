@@ -13,7 +13,7 @@
  */
 package org.modelix.model.api
 
-class SimpleProperty(override val name: String) : IProperty {
+class SimpleProperty(override val name: String, override val isOptional: Boolean = true) : IProperty {
     var owner: SimpleConcept? = null
 
     override fun getConcept(): IConcept = owner!!

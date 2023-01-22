@@ -19,8 +19,8 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
         return is_abstract
     }
 
-    fun newProperty(name: String): GeneratedProperty {
-        return GeneratedProperty(this, name).also {
+    fun newProperty(name: String, optional: Boolean = true): GeneratedProperty {
+        return GeneratedProperty(this, name, optional).also {
             propertiesMap[name] = it
         }
     }
@@ -118,7 +118,11 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
     }
 }
 
-class GeneratedProperty(private val owner: IConcept, override val name: String) : IProperty {
+class GeneratedProperty(
+    private val owner: IConcept,
+    override val name: String,
+    override val isOptional: Boolean
+) : IProperty {
     override fun getConcept(): IConcept = owner
     override fun getUID(): String = getConcept().getUID() + "." + name
 }

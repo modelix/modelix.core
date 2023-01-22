@@ -1,6 +1,12 @@
 package org.modelix.metamodel.generator
 
 import org.modelix.model.api.IConcept
+import org.modelix.model.data.ChildLinkData
+import org.modelix.model.data.ConceptData
+import org.modelix.model.data.IConceptFeatureData
+import org.modelix.model.data.LanguageData
+import org.modelix.model.data.PropertyData
+import org.modelix.model.data.ReferenceLinkData
 
 class LanguageSet(languages: List<LanguageData>) {
     private val languagesMap = HashMap<String, LanguageInSet>()

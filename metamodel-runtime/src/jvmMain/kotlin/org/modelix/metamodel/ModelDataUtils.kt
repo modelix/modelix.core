@@ -4,6 +4,7 @@ import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import java.io.File
+import org.modelix.model.data.ModelData
 
 fun modelDataFromFile(file: File): ModelData {
     return when (file.extension.lowercase()) {

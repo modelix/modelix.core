@@ -1,5 +1,7 @@
 package org.modelix.metamodel.generator
 
+import org.modelix.model.data.LanguageData
+
 class ConceptsFilter(val languageSet: LanguageSet) {
     private val includedConcepts: MutableSet<String> = HashSet()
     private val includedLanguages: MutableSet<String> = HashSet()

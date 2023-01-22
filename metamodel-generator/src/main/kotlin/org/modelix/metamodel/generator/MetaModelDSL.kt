@@ -1,5 +1,11 @@
 package org.modelix.metamodel.generator
 
+import org.modelix.model.data.LanguageData
+import org.modelix.model.data.ConceptData
+import org.modelix.model.data.PropertyData
+import org.modelix.model.data.ChildLinkData
+import org.modelix.model.data.ReferenceLinkData
+
 fun newLanguage(name: String, body: LanguageBuilder.()->Unit): LanguageData {
     return LanguageBuilder(name).apply(body).build()
 }

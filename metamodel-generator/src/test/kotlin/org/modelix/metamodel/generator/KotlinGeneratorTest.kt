@@ -4,6 +4,7 @@ import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.decodeFromString
 import org.junit.Test
 import java.io.File
+import org.modelix.model.data.LanguageData
 
 class KotlinGeneratorTest {
 

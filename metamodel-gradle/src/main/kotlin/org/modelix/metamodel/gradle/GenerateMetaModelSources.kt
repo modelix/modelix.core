@@ -10,7 +10,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import org.modelix.metamodel.generator.LanguageData
+import org.modelix.model.data.LanguageData
 import org.modelix.metamodel.generator.LanguageSet
 import org.modelix.metamodel.generator.MetaModelGenerator
 import org.modelix.metamodel.generator.TypescriptMMGenerator
@@ -39,7 +39,7 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
     fun generate() {
         var languages: LanguageSet = LanguageSet(exportedLanguagesDir.get().asFile.walk()
             .filter { it.extension.lowercase() == "json" }
-            .map { LanguageData.fromFile(it) }
+            .map { LanguageData.fromJson(it.readText()) }
             .toList())
         val previousLanguageCount = languages.getLanguages().size
 

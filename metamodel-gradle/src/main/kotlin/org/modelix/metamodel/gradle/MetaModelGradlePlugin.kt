@@ -1,19 +1,12 @@
 package org.modelix.metamodel.gradle
 
-import org.apache.tools.ant.taskdefs.ExecuteJava
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Sync
-import org.modelix.metamodel.generator.LanguageData
-import org.modelix.metamodel.generator.LanguageSet
-import org.modelix.metamodel.generator.MetaModelGenerator
-import org.modelix.metamodel.generator.TypescriptMMGenerator
 import java.io.File
-import java.io.IOException
 import java.net.URL
 import java.util.*
-import java.util.jar.Manifest
 
 class MetaModelGradlePlugin: Plugin<Project> {
     private lateinit var project: Project

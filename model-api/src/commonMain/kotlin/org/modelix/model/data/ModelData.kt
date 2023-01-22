@@ -1,4 +1,4 @@
-package org.modelix.metamodel
+package org.modelix.model.data
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -7,7 +7,6 @@ import kotlinx.serialization.json.Json
 import org.modelix.model.api.*
 
 @Serializable
-@Deprecated("use org.modelix.mode.data.*")
 data class ModelData(
     val id: String? = null,
     val root: NodeData,
@@ -60,7 +59,6 @@ data class ModelData(
 }
 
 @Serializable
-@Deprecated("use org.modelix.mode.data.*")
 data class NodeData(
     val id: String? = null,
     val concept: String? = null,
@@ -70,11 +68,9 @@ data class NodeData(
     val references: Map<String, String> = emptyMap(),
 )
 
-@Deprecated("use org.modelix.mode.data.*")
 fun NodeData.uid(model: ModelData): String {
     return (model.id ?: throw IllegalArgumentException("Model has no ID")) +
             "/" +
             (id ?: throw IllegalArgumentException("Node has no ID"))
 }
-@Deprecated("use org.modelix.mode.data.*")
 fun ModelData.nodeUID(node: NodeData): String = node.uid(this)

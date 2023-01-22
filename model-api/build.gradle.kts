@@ -32,6 +32,7 @@ tasks.named("check") {
 }
 
 val kotlinLoggingVersion: String by rootProject
+val kotlinxSerializationVersion: String by rootProject
 
 kotlin {
     jvm()
@@ -49,6 +50,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
             }
         }
         val commonTest by getting {

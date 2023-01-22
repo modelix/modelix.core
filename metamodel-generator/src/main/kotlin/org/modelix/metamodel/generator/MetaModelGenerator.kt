@@ -6,6 +6,12 @@ import org.modelix.metamodel.*
 import org.modelix.model.api.*
 import java.nio.file.Path
 import kotlin.reflect.KClass
+import org.modelix.model.data.LanguageData
+import org.modelix.model.data.ConceptData
+import org.modelix.model.data.PropertyData
+import org.modelix.model.data.ChildLinkData
+import org.modelix.model.data.ReferenceLinkData
+import org.modelix.model.data.PropertyType
 
 private val reservedPropertyNames: Set<String> = setOf(
     "constructor", // already exists on JS objects

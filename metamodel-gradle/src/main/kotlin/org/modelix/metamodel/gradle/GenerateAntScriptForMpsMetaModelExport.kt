@@ -6,8 +6,10 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.util.*
@@ -22,6 +24,11 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
     val exporterDir: Property<String> = of.property(String::class.java)
     @InputFiles
     val moduleFolders: ListProperty<String> = of.listProperty(String::class.java)
+    @Input
+    val heapSize: Property<String> = of.property(String::class.java)
+    @Input
+    @Optional
+    val exportModulesFilter: Property<String> = of.property(String::class.java)
 
     @TaskAction
     fun generate() {
@@ -65,7 +72,7 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
 
                 <target name="export-languages" depends="declare-mps-tasks">
                     <echo message="Running export of languages" />
-                    <runMPS solution="e52a4421-48a2-4de1-8327-d9414e799c67(org.modelix.metamodel.export)" startClass="org.modelix.metamodel.export.CommandlineExporter" startMethod="exportLanguages">
+                    <runMPS solution="e52a4421-48a2-4de1-8327-d9414e799c67(org.modelix.metamodel.export)" startClass="org.modelix.metamodel.export.CommandlineExporter" startMethod="${if (exportModulesFilter.isPresent) "exportBoth" else "exportLanguages"}">
                         <library file="${getMpsLanguagesDir().absolutePath}" />
                         <library file="${exporterDir.get()}" />
                         ${moduleFolders.get().joinToString("\n                        ") {
@@ -76,7 +83,12 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
                             <arg value="-Didea.config.path=${"$"}{build.mps.config.path}" />
                             <arg value="-Didea.system.path=${"$"}{build.mps.system.path}" />
                             <arg value="-ea" />
-                            <arg value="-Xmx1024m" />
+                            <arg value="-Xmx${heapSize.get()}" />
+                            ${
+                                if (exportModulesFilter.isPresent) {
+                                    """<arg value="-Dmodelix.export.includedModules=${exportModulesFilter.get()}" />"""
+                                } else ""
+                            }
                         </jvmargs>
                     </runMPS>
                 </target>

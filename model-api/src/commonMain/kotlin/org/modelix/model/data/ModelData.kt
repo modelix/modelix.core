@@ -70,7 +70,7 @@ data class NodeData(
 
 fun NodeData.uid(model: ModelData): String {
     return (model.id ?: throw IllegalArgumentException("Model has no ID")) +
-            "/" +
-            (id ?: throw IllegalArgumentException("Node has no ID"))
+        "/" +
+        (id ?: throw IllegalArgumentException("Node has no ID"))
 }
 fun ModelData.nodeUID(node: NodeData): String = node.uid(this)

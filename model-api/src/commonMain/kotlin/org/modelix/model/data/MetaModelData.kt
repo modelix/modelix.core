@@ -40,7 +40,7 @@ sealed interface IConceptFeatureData {
 }
 
 @Serializable
-data class PropertyData (
+data class PropertyData(
     override val uid: String? = null,
     override val name: String,
     val type: PropertyType = PropertyType.STRING,

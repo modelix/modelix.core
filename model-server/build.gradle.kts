@@ -110,15 +110,6 @@ tasks.named("test") {
     dependsOn("cucumber")
 }
 
-task("copyLibs", Copy::class) {
-    into("$buildDir/libs")
-    from(configurations.default)
-}
-
-tasks.named("assemble") {
-    finalizedBy("copyLibs")
-}
-
 application {
     mainClassName = "org.modelix.model.server.Main"
 }

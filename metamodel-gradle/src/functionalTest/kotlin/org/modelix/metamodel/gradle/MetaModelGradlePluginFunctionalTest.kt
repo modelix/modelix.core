@@ -57,7 +57,7 @@ metamodel {
         assertTrue(exportDir.exists())
         val jsonFiles = exportDir.listFiles()!!.toList().filter { it.extension.lowercase() == "json" }
         println("${jsonFiles.size} languages exported")
-        val parsedFiles = jsonFiles.map { LanguageData.fromFile(it) }
+        val parsedFiles = jsonFiles.map { LanguageData.fromJson(it.readText()) }
         assertTrue(parsedFiles.isNotEmpty())
 
         val kotlinGenDir = getProjectDir().resolve("build/kotlin_gen")

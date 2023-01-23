@@ -3,6 +3,7 @@ plugins {
     id("maven-publish")
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jlleitschuh.gradle.ktlint")
+    kotlin("plugin.serialization")
 }
 
 configurations {

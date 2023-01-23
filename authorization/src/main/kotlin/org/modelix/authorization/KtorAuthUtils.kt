@@ -125,20 +125,42 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
 
 }
 
-fun Route.requiresPermission(resourceName: String, scope: String, body: Route.()->Unit) {
+fun Route.requiresPermission(resource: KeycloakResource, permissionType: EPermissionType, body: Route.()->Unit) {
+    requiresPermission(resource, permissionType.toKeycloakScope(), body)
+}
+
+fun Route.requiresRead(resource: KeycloakResource, body: Route.()->Unit) {
+    requiresPermission(resource, KeycloakScope.READ, body)
+}
+
+fun Route.requiresWrite(resource: KeycloakResource, body: Route.()->Unit) {
+    requiresPermission(resource, KeycloakScope.WRITE, body)
+}
+
+fun Route.requiresDelete(resource: KeycloakResource, body: Route.()->Unit) {
+    requiresPermission(resource, KeycloakScope.DELETE, body)
+}
+
+fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, body: Route.()->Unit) {
     authenticate(jwtAuth) {
         intercept(ApplicationCallPipeline.Call) {
-            call.checkPermission(resourceName, scope)
+            call.checkPermission(resource, scope)
         }
         body()
     }
 }
 
-fun ApplicationCall.checkPermission(resourceName: String, scope: String) {
+fun Route.requiresLogin(body: Route.()->Unit) {
+    authenticate(jwtAuth) {
+        body()
+    }
+}
+
+fun ApplicationCall.checkPermission(resource: KeycloakResource, scope: KeycloakScope) {
     if (attributes.getOrNull(UNIT_TEST_MODE_KEY) == true) return
     val principal = principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
-    if (!KeycloakUtils.hasPermission(principal.jwt, resourceName, scope)) {
-        throw NoPermissionException(principal, resourceName, scope)
+    if (!KeycloakUtils.hasPermission(principal.jwt, resource, scope)) {
+        throw NoPermissionException(principal, resource.name, scope.name)
     }
 }
 
@@ -160,6 +182,8 @@ fun ApplicationCall.jwtFromHeaders(): DecodedJWT? {
     // OAuth proxy passes the ID token as the bearer token, but we need the access token.
     return (request.header("X-Forwarded-Access-Token") ?: getBearerToken())?.let { JWT.decode(it) }
 }
+
+fun ApplicationCall.jwt() = principal<AccessTokenPrincipal>()?.jwt ?: jwtFromHeaders()
 
 fun PipelineContext<Unit, ApplicationCall>.getUserName(): String? {
     return call.getUserName()

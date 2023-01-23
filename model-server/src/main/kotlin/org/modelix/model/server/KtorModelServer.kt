@@ -34,7 +34,8 @@ import java.net.UnknownHostException
 import java.util.*
 import java.util.regex.Pattern
 
-val PERMISSION_MODEL_SERVER = "model-server"
+val PERMISSION_MODEL_SERVER = "model-server".asResource()
+val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
 
 private fun toLong(value: String?): Long {
     return if (value == null || value.isEmpty()) 0 else value.toLong()
@@ -84,7 +85,7 @@ class KtorModelServer(val storeClient: IStoreClient) {
                 val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
                 call.respondText(headers.joinToString("\n") { "${it.first}: ${it.second}" })
             }
-            requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.READ.name) {
+            requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.READ) {
                 get("/get/{key}") {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
@@ -169,7 +170,7 @@ class KtorModelServer(val storeClient: IStoreClient) {
                     call.respondText(respJson.toString(), contentType = ContentType.Application.Json)
                 }
             }
-            requiresPermission(PERMISSION_MODEL_SERVER, "write") {
+            requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.WRITE) {
 
             }
         }
@@ -295,7 +296,7 @@ class KtorModelServer(val storeClient: IStoreClient) {
             // A permission check has happened somewhere earlier.
             return
         }
-        call.checkPermission("model-server-entry/$key", type.name)
+        call.checkPermission(MODEL_SERVER_ENTRY.createInstance(key), type.toKeycloakScope())
     }
 
 

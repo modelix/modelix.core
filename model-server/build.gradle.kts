@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
 
 plugins {
     application
@@ -6,7 +7,7 @@ plugins {
     `maven-publish`
     id("com.adarshr.test-logger") version "2.1.0"
     id("org.jetbrains.kotlin.jvm")
-    id("com.github.johnrengelman.shadow") version "6.1.0"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
     kotlin("plugin.serialization")
 }
 
@@ -83,6 +84,16 @@ tasks.named<ShadowJar>("shadowJar") {
     archiveVersion.set("latest")
     manifest {
         attributes["Main-Class"] = "org.modelix.model.server.Main"
+    }
+
+    mergeServiceFiles()
+    append("META-INF/spring.schemas")
+    append("META-INF/spring.handlers")
+    append("META-INF/spring.tooling")
+
+    transform(PropertiesFileTransformer::class.java) {
+        paths = listOf("META-INF/spring.factories")
+        mergeStrategy = "append"
     }
 }
 

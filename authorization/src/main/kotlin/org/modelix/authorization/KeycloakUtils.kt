@@ -27,6 +27,7 @@ import org.keycloak.representations.idm.authorization.PermissionRequest
 import org.keycloak.representations.idm.authorization.ResourceRepresentation
 import org.keycloak.representations.idm.authorization.ScopeRepresentation
 import java.net.URL
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 object KeycloakUtils {
@@ -142,18 +143,21 @@ object KeycloakUtils {
         return existingResources.get(resourceSpec.name) {
             var resource = authzClient.protection().resource().findByNameAnyOwner(resourceSpec.name)
             if (resource != null) return@get resource
-            val protection = (
-                    if (resourceSpec.type.ownerManaged) {
-                        owner?.let { authzClient.protection(owner.token) }
-                    } else {
-                        null
-                    }
-                    ) ?: authzClient.protection()
+//            val protection = owner?.let { authzClient.protection(owner.token) }
+//                ?.takeIf { resourceSpec.type.createByUser }
+//                ?: authzClient.protection()
+            val protection = authzClient.protection()
             resource = ResourceRepresentation().apply {
                 name = resourceSpec.name
                 scopes = resourceSpec.type.scopes.map { ScopeRepresentation(it.name) }.toSet()
                 type = resourceSpec.type.name
-                if (resourceSpec.type.ownerManaged) ownerManagedAccess = true
+//                if (resourceSpec.type.createByUser) ownerManagedAccess = true
+                if (resourceSpec.type.createByUser) {
+                    attributes = mapOf(
+                        "created-by" to listOfNotNull(owner?.subject, owner?.getClaim("email")?.asString()),
+                        "creation-timestamp" to listOf(Instant.now().epochSecond.toString())
+                    )
+                }
             }
             resource = protection.resource().create(resource)
             permissionCache.invalidateAll()
@@ -191,7 +195,7 @@ data class KeycloakResource(val name: String, val type: KeycloakResourceType) {
 
 }
 
-data class KeycloakResourceType(val name: String, val scopes: Set<KeycloakScope>, val ownerManaged: Boolean = false) {
+data class KeycloakResourceType(val name: String, val scopes: Set<KeycloakScope>, val createByUser: Boolean = false) {
     fun createInstance(resourceName: String) = KeycloakResource(this.name + "/" + resourceName, this)
 
     companion object {

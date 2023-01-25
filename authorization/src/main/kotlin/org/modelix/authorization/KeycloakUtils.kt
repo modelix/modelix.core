@@ -123,7 +123,7 @@ object KeycloakUtils {
     }
 
     @Synchronized
-    fun grantPermission(user: DecodedJWT, resourceSpec: KeycloakResource, scopes: Set<KeycloakScope>): Boolean {
+    private fun grantPermission(user: DecodedJWT, resourceSpec: KeycloakResource, scopes: Set<KeycloakScope>): Boolean {
         val resource = ensureResourcesExists(resourceSpec, user)
         val ticketResponse = authzClient.protection(user.token).permission()
             .create(PermissionRequest(resource.id, *scopes.map { it.name }.toTypedArray()))
@@ -198,7 +198,6 @@ data class KeycloakResourceType(val name: String, val scopes: Set<KeycloakScope>
         val DEFAULT_TYPE = KeycloakResourceType("default", KeycloakScope.READ_WRITE)
         val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
         val REPOSITORY = KeycloakResourceType("repository", KeycloakScope.READ_WRITE_DELETE_LIST)
-        val WORKSPACE = KeycloakResourceType("workspace", KeycloakScope.READ_WRITE_DELETE_LIST, ownerManaged = true)
     }
 }
 

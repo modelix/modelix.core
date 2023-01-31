@@ -23,9 +23,6 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.util.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.html.body
 import kotlinx.html.table
 import kotlinx.html.td
@@ -36,7 +33,6 @@ import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
-import org.modelix.model.IKeyListener
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.*
 import org.modelix.model.client.IdGenerator
@@ -135,17 +131,28 @@ class LionwebModelServer(val client: LocalModelClient) {
             client.asyncStore!!.put(repositoryId.getBranchKey(), newVersion.hash)
             respondVersion(newVersion)
         }
-        post("/{repositoryId}/{versionHash}/update") {
-            val updateData = JSONArray(call.receiveText())
+        post("/{repositoryId}/update") {
+            val updateData = JSONObject(call.receiveText())
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val baseVersionHash = call.parameters["versionHash"]!!
+
+            val currentVersionHash = client.asyncStore.get(repositoryId.getBranchReference().getKey())!!
+
+            val baseVersionHash = updateData.optString("__version", currentVersionHash)
+
+            if (baseVersionHash != currentVersionHash) {
+                call.respond(HttpStatusCode.BadRequest, "Cannot update, current version $currentVersionHash does not match base version $baseVersionHash")
+                return@post
+            }
+
             val baseVersionData = getStore().get(baseVersionHash, { CPVersion.deserialize(it) })
             if (baseVersionData == null) {
                 call.respond(HttpStatusCode.NotFound, "version not found: $baseVersionHash")
                 return@post
             }
+
             val baseVersion = CLVersion(baseVersionData, getStore())
-            val mergedVersion = applyUpdate(baseVersion, updateData, repositoryId, getUserName())
+            val mergedVersion = applyUpdate(baseVersion, updateData.getJSONArray("nodes"), repositoryId, getUserName())
+
             respondVersion(mergedVersion)
         }
         post("/generate-ids") {
@@ -165,11 +172,7 @@ class LionwebModelServer(val client: LocalModelClient) {
         userId: String?
     ): CLVersion {
         val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
-        branch.computeWriteT { t ->
-            for (nodeData in (0 until updateData.length()).map { updateData.getJSONObject(it) }) {
-                updateNode(nodeData, containmentData = null, t)
-            }
-        }
+        branch.computeWriteT { t -> update(updateData, t) }
 
         val operationsAndTree = branch.operationsAndTree
         val newVersion = CLVersion.createRegularVersion(
@@ -181,68 +184,78 @@ class LionwebModelServer(val client: LocalModelClient) {
             operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
         )
         repositoryId.getBranchKey()
-        val mergedVersion = VersionMerger(client.storeCache!!, client.idGenerator)
+        val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
             .mergeChange(getCurrentVersion(repositoryId), newVersion)
-        client.asyncStore!!.put(repositoryId.getBranchKey(), mergedVersion.hash)
+        client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.hash)
         // TODO handle concurrent write to the branchKey, otherwise versions might get lost. See ReplicatedRepository.
         return mergedVersion
     }
 
-    private fun updateNode(nodeData: JSONObject, containmentData: ContainmentData?, t: IWriteTransaction): Long {
-        var containmentData = containmentData
-        val nodeId = nodeData.getString("nodeId").toLong()
-        if (!t.containsNode(nodeId)) {
-            if (containmentData == null) {
-                containmentData = ContainmentData(nodeData.optLong("parent", ITree.ROOT_ID), nodeData.optString("role", null), nodeData.optInt("index", -1))
-            }
-            t.addNewChild(
-                containmentData.parent,
-                containmentData.role,
-                containmentData.index,
-                nodeId,
-                null as IConcept?
-            )
-        }
-        nodeData.optJSONObject("properties")?.stringEntries()?.forEach { (role, newValue) ->
-            if (t.getProperty(nodeId, role) != newValue) {
-                t.setProperty(nodeId, role, newValue)
-            }
-        }
-        nodeData.optJSONObject("references")?.longEntries()?.forEach { (role, newTargetId) ->
-            val currentTarget = t.getReferenceTarget(nodeId, role)
-            val currentTargetId: Long? = when (currentTarget) {
-                is LocalPNodeReference -> currentTarget.id
-                is PNodeReference -> if (currentTarget.branchId == t.tree.getId()) currentTarget.id else null
-                else -> null
-            }
-            if (newTargetId != currentTargetId) {
-                val newTarget = if (newTargetId == null) null else LocalPNodeReference(newTargetId)
-                t.setReferenceTarget(nodeId, role, newTarget)
-            }
-        }
-        nodeData.optJSONObject("children")?.arrayEntries()?.forEach { (role, childDataArray) ->
-            val expectedChildren = childDataArray.mapIndexed { index, child ->
-                when (child) {
-                    is Number -> child.toLong()
-                    is JSONObject -> updateNode(child, ContainmentData(nodeId, role, index), t)
-                    else -> throw RuntimeException("Unsupported child data: $child")
-                }
-            }
-            val unexpected = (t.getChildren(nodeId, role).toSet() - expectedChildren.toSet())
-            if (unexpected.isNotEmpty()) {
-                unexpected.forEach { child ->
-                    t.moveChild(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE, -1, child)
-                }
+    private fun update(nodeData: JSONArray, t: IWriteTransaction) {
+        val jsonObjects = nodeData.asSequence().filterIsInstance(JSONObject::class.java)
 
-            }
-            val actualChildren = t.getChildren(nodeId, role)
-            if (actualChildren != expectedChildren) {
-                expectedChildren.forEachIndexed { index, child ->
-                    t.moveChild(nodeId, role, index, child)
-                }
+        val oldChildren = jsonObjects.asSequence().map { it.getLong("id") }
+                .filter(t::containsNode)
+                .flatMap(t::getAllChildren)
+                .toSet()
+
+        jsonObjects.forEach {
+            val nodeId = it.getLong("id")
+
+            if (!t.containsNode(nodeId)) {
+                val conceptId = decodeBase64Url(it.getString("concept"))
+                t.addNewChild(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE, -1, nodeId, ConceptReference(conceptId))
             }
         }
-        return nodeId
+
+        val movedChildren = mutableSetOf<Long>()
+
+        jsonObjects.forEach {
+            updateProperties(it, t)
+            updateReferences(it, t)
+            updateChildren(it, t, movedChildren)
+        }
+
+        oldChildren.subtract(movedChildren).forEach { t.deleteNode(it) }
+    }
+
+    private fun updateProperties(nodeData: JSONObject, t: IWriteTransaction) {
+        val nodeId = nodeData.getLong("id")
+
+        val missingProperties = t.getPropertyRoles(nodeId).toMutableSet()
+
+        nodeData.optJSONObject("properties")?.stringEntries()?.forEach { role, value ->
+            t.setProperty(nodeId, role, value)
+            missingProperties.remove(role)
+        }
+
+        missingProperties.forEach { t.setProperty(nodeId, it, null) }
+    }
+
+    private fun updateReferences(nodeData: JSONObject, t: IWriteTransaction) {
+        val nodeId = nodeData.getLong("id")
+
+        val missingReferences = t.getReferenceRoles(nodeId).toMutableSet()
+
+        nodeData.optJSONObject("references")?.arrayEntries()?.forEach { (role, refs) ->
+            refs.forEach {
+                val ref = it as JSONObject
+                val newTargetId = ref.getLong("reference")
+                t.setReferenceTarget(nodeId, role, LocalPNodeReference(newTargetId))
+
+                missingReferences.remove(role)
+            }
+        }
+
+        missingReferences.forEach { t.setReferenceTarget(nodeId, it, null) }
+    }
+
+    private fun updateChildren(nodeData: JSONObject, t: IWriteTransaction, moved: MutableSet<Long>) {
+        val nodeId = nodeData.getLong("id")
+
+        nodeData.getJSONObject("children").arrayEntries().forEach { role, childIds ->
+            childIds.asLongList().forEachIndexed { index, childId -> t.moveChild(nodeId, role, index, childId); moved.add(childId) }
+        }
     }
 
     private suspend fun CallContext.respondVersion(version: CLVersion) {
@@ -255,10 +268,7 @@ class LionwebModelServer(val client: LocalModelClient) {
         val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
         val json = JSONObject()
         json.put("serializationFormatVersion", "1")
-
-        json.put("repositoryId", version.tree.getId())
-        json.put("versionHash", version.hash)
-
+        json.put("__version", version.hash)
         json.put("nodes", rootNode.getDescendants(true).map(::node2json).toList())
 
         return json
@@ -279,7 +289,7 @@ class LionwebModelServer(val client: LocalModelClient) {
 
         val conceptId = node.getConceptReference()?.getUID()
         if (conceptId != null) {
-            val encoded = BaseEncoding.base64Url().omitPadding().encode(conceptId.toByteArray(Charsets.US_ASCII))
+            val encoded = encodeBase64Url(conceptId)
             json.put("concept", encoded)
         } else {
             json.put("concept", JSONObject.NULL)
@@ -324,4 +334,10 @@ class LionwebModelServer(val client: LocalModelClient) {
         }
         return json
     }
+
+    private fun encodeBase64Url(input: String): String =
+            BaseEncoding.base64Url().omitPadding().encode(input.toByteArray(Charsets.US_ASCII))
+
+    private fun decodeBase64Url(input: String): String =
+            BaseEncoding.base64Url().omitPadding().decode(input).toString(Charsets.US_ASCII)
 }

@@ -1,0 +1,58 @@
+{
+  "serializationFormatVersion": "1",
+  "__version": "1234abcdef",
+  "nodes": [
+    {
+      "id": "new-node-never-seen-before",
+      "concept": "GreatConceptId",
+      "properties": {
+        "foo": "bar"
+      },
+      "references": {
+        "bar": [
+          {
+            "resolveInfo": "baz",
+            "reference": "bazId"
+          }
+        ]
+      },
+      "children": {
+        "role": [
+          "newChildId1",
+          "newChildId2",
+          "existingFromSomewhereElse"
+        ]
+      }
+    },
+    {
+      "id": "existing-node",
+      "concept": "AnotherConceptId",
+      "properties": {
+        "foo": "NewValue",
+        "barProperty": "Keep existing value -- have to send it here"
+      },
+      "references": {
+        "bar": [
+          {
+            "resolveInfo": "newBaz",
+            "reference": "newBazId"
+          }
+        ],
+        "quux": [
+          {
+            "resolveInfo": "existing",
+            "reference": "existingQuuxId"
+          }
+        ]
+      },
+      "children": {
+        "newRole": [
+          "newChild"
+        ],
+        "existingRole": [
+          "existingChild"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+POST http://localhost:28101/lionweb-json/default/init
+Content-Type: application/json
+
+<> 2023-01-31T163916.200.json
+
+
+###
+
+POST http://localhost:28101/lionweb-json/default/update
+Content-Type: application/json
+
+{
+  "serializationFormatVersion": "1",
+  "nodes": [
+    {
+      "id": "1",
+      "concept": null,
+      "children": { "inventedRole": ["100000"] }
+    },
+    {
+      "id": "100000",
+      "concept": "V2hhdGV2ZXI",
+      "properties": {
+        "foo": "bar"
+      },
+      "references": {},
+      "children": {}
+    }
+  ]
+}
+
+<> 2023-01-31T164543.200.json
+<> 2023-01-31T164531.200.json
+<> 2023-01-31T164309.200.json
+
+###
+
+GET http://localhost:28101/lionweb-json/default/
+
+<> 2023-01-31T164317.200.json
+<> 2023-01-31T164117.200.json
+<> 2023-01-31T164057.200.json

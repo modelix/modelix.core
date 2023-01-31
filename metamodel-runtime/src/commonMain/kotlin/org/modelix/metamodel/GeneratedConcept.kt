@@ -133,13 +133,21 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IType
     override val isMultiple: Boolean,
     override val isOptional: Boolean,
     override val targetConcept: IConcept,
-) : IChildLink {
+) : IChildLink, ITypedChildLink<ChildNodeT> {
     @Deprecated("use .targetConcept")
     override val childConcept: IConcept = targetConcept
 
     override fun getConcept(): IConcept = owner
 
     override fun getUID(): String = getConcept().getUID() + "." + name
+
+    override fun untyped(): IChildLink {
+        return this
+    }
+
+    override fun castChild(childNode: INode?): ChildNodeT {
+        TODO("Not yet implemented")
+    }
 }
 fun IChildLink.typed() = this as? GeneratedChildLink<ITypedNode, ITypedConcept>
 

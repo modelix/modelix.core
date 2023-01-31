@@ -1,6 +1,7 @@
 package org.modelix.metamodel.generator
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.modelix.metamodel.*
 import org.modelix.model.api.*
@@ -212,14 +213,13 @@ class MetaModelGenerator(val outputDir: Path) {
 
             addType(TypeSpec.companionObjectBuilder().apply {
                 superclass(concept.conceptWrapperImplType())
-                if (!concept.concept.abstract) {
-                    addSuperinterface(INonAbstractConcept::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
-                    addFunction(FunSpec.builder(INonAbstractConcept<*>::getInstanceClass.name)
-                        .addModifiers(KModifier.OVERRIDE)
-                        .returns(KClass::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
-                        .addStatement("return ${concept.nodeWrapperInterfaceType().simpleName}::class")
-                        .build())
-                }
+                val t = if (concept.concept.abstract) IConceptOfTypedNode::class else INonAbstractConcept::class
+                addSuperinterface(t.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
+                addFunction(FunSpec.builder(IConceptOfTypedNode<*>::getInstanceInterface.name)
+                    .addModifiers(KModifier.OVERRIDE)
+                    .returns(KClass::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
+                    .addStatement("return ${concept.nodeWrapperInterfaceType().simpleName}::class")
+                    .build())
             }.build())
         }.build()
     }
@@ -238,9 +238,10 @@ class MetaModelGenerator(val outputDir: Path) {
 
             primaryConstructor(FunSpec.constructorBuilder().addModifiers(KModifier.PROTECTED).build())
 
-            addProperty(PropertySpec.builder(ITypedConcept::_concept.name, IConcept::class)
+            addFunction(FunSpec.builder(ITypedConcept::untyped.name)
+                .returns(IConcept::class)
                 .addModifiers(KModifier.OVERRIDE)
-                .initializer(concept.conceptObjectName())
+                .addStatement("return %T", concept.conceptObjectType())
                 .build())
 
             for (feature in concept.directFeaturesAndConflicts()) {
@@ -306,12 +307,20 @@ class MetaModelGenerator(val outputDir: Path) {
                         addProperty(PropertySpec.builder(feature.validName, data.type.asKotlinType())
                             .addModifiers(KModifier.OVERRIDE)
                             .mutable(true)
-                            .delegate("""${accessorClass.qualifiedName}(unwrap(), "${feature.originalName}")""")
+                            .delegate(
+                                """${accessorClass.qualifiedName}(unwrap(), %T.%N)""",
+                                feature.concept.conceptObjectType(),
+                                feature.validName,
+                            )
                             .build())
                         addProperty(PropertySpec.builder("raw_" + feature.validName, String::class.asTypeName().copy(nullable = true))
                             .addModifiers(KModifier.OVERRIDE)
                             .mutable(true)
-                            .delegate("""${RawPropertyAccessor::class.qualifiedName}(unwrap(), "${feature.originalName}")""")
+                            .delegate(
+                                """${RawPropertyAccessor::class.qualifiedName}(unwrap(), %T.%N)""",
+                                feature.concept.conceptObjectType(),
+                                feature.validName,
+                            )
                             .build())
                     }
                     is ChildLinkData -> {
@@ -323,7 +332,11 @@ class MetaModelGenerator(val outputDir: Path) {
                         val accessorName = accessorSubclass.qualifiedName
                         addProperty(PropertySpec.builder(feature.validName, type)
                             .addModifiers(KModifier.OVERRIDE)
-                            .initializer("""$accessorName(${ITypedNode::unwrap.name}(), "${feature.originalName}", ${data.type.conceptObjectName()}, ${data.type.nodeWrapperInterfaceName()}::class)""")
+                            .initializer(
+                                """$accessorName(${ITypedNode::unwrap.name}(), %T.%N, ${data.type.conceptObjectName()}, ${data.type.nodeWrapperInterfaceName()}::class)""",
+                                feature.concept.conceptObjectType(),
+                                feature.validName,
+                            )
                             .build())
                     }
                     is ReferenceLinkData -> {
@@ -331,12 +344,20 @@ class MetaModelGenerator(val outputDir: Path) {
                         addProperty(PropertySpec.builder(feature.validName, data.type.parseConceptRef(concept.language).nodeWrapperInterfaceType().copy(nullable = data.optional))
                             .addModifiers(KModifier.OVERRIDE)
                             .mutable(true)
-                            .delegate("""${accessorClass.qualifiedName}(${ITypedNode::unwrap.name}(), "${feature.originalName}", ${data.type.nodeWrapperInterfaceName()}::class)""")
+                            .delegate(
+                                """${accessorClass.qualifiedName}(${ITypedNode::unwrap.name}(), %T.%N, ${data.type.nodeWrapperInterfaceName()}::class)""",
+                                feature.concept.conceptObjectType(),
+                                feature.validName,
+                            )
                             .build())
                         addProperty(PropertySpec.builder("raw_" + feature.validName, INode::class.asTypeName().copy(nullable = true))
                             .addModifiers(KModifier.OVERRIDE)
                             .mutable(true)
-                            .delegate("""${RawReferenceAccessor::class.qualifiedName}(${ITypedNode::unwrap.name}(), "${feature.originalName}")""")
+                            .delegate(
+                                """${RawReferenceAccessor::class.qualifiedName}(${ITypedNode::unwrap.name}(), %T.%N)""",
+                                feature.concept.conceptObjectType(),
+                                feature.validName,
+                            )
                             .build())
                     }
                 }

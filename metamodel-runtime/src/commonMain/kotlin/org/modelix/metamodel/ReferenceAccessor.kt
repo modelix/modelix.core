@@ -1,12 +1,15 @@
 package org.modelix.metamodel
 
 import org.modelix.model.api.INode
+import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.getReferenceTarget
+import org.modelix.model.api.setReferenceTarget
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
 class OptionalReferenceAccessor<SourceT, TargetT : ITypedNode>(
     val node: INode,
-    val role: String,
+    val role: IReferenceLink,
     val targetType: KClass<TargetT>
 ) {
     operator fun getValue(thisRef: SourceT, property: KProperty<*>): TargetT? {
@@ -20,7 +23,7 @@ class OptionalReferenceAccessor<SourceT, TargetT : ITypedNode>(
 
 class MandatoryReferenceAccessor<SourceT, TargetT : ITypedNode>(
     val node: INode,
-    val role: String,
+    val role: IReferenceLink,
     val targetType: KClass<TargetT>
 ) {
     operator fun getValue(thisRef: SourceT, property: KProperty<*>): TargetT {
@@ -34,7 +37,7 @@ class MandatoryReferenceAccessor<SourceT, TargetT : ITypedNode>(
 
 class RawReferenceAccessor<SourceT>(
     val node: INode,
-    val role: String
+    val role: IReferenceLink
 ) {
     operator fun getValue(thisRef: SourceT, property: KProperty<*>): INode? {
         return node.getReferenceTarget(role)

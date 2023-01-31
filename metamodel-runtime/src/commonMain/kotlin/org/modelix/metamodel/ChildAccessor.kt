@@ -1,12 +1,15 @@
 package org.modelix.metamodel
 
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
+import org.modelix.model.api.addNewChild
+import org.modelix.model.api.getChildren
 import kotlin.reflect.KClass
 
 abstract class ChildAccessor<ChildT : ITypedNode>(
     protected val parent: INode,
-    protected val role: String,
+    protected val role: IChildLink,
     protected val childConcept: IConcept,
     protected val childType: KClass<ChildT>,
 ): Iterable<ChildT> {

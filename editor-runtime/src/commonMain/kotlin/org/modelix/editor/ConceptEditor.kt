@@ -19,7 +19,7 @@ class ConceptEditor<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     }
 
     fun apply(context: CellCreationContext, node: NodeT): CellData {
-        return apply(node._concept._concept as GeneratedConcept<NodeT, ConceptT>).apply(context, node)
+        return apply(node._concept.untyped() as GeneratedConcept<NodeT, ConceptT>).apply(context, node)
     }
 }
 

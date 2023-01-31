@@ -9,7 +9,7 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
 ) : IConcept {
     abstract val _typed: WrapperT
     abstract val instanceClass: KClass<InstanceT>
-    private val propertiesMap: MutableMap<String, GeneratedProperty> = LinkedHashMap()
+    private val propertiesMap: MutableMap<String, GeneratedProperty<*>> = LinkedHashMap()
     private val childLinksMap: MutableMap<String, GeneratedChildLink<*, *>> = LinkedHashMap()
     private val referenceLinksMap: MutableMap<String, GeneratedReferenceLink<*, *>> = LinkedHashMap()
 
@@ -19,26 +19,59 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
         return is_abstract
     }
 
-    fun newProperty(name: String, optional: Boolean = true): GeneratedProperty {
-        return GeneratedProperty(this, name, optional).also {
+    fun <ValueT> newProperty(name: String, serializer: IPropertyValueSerializer<ValueT>, optional: Boolean): GeneratedProperty<ValueT> {
+        return GeneratedProperty(this, name, optional, serializer).also {
             propertiesMap[name] = it
         }
     }
 
-    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newSingleChildLink(name: String, isOptional: Boolean, targetConcept: IConcept): GeneratedSingleChildLink<ChildNodeT, ChildConceptT> {
-        return GeneratedSingleChildLink<ChildNodeT, ChildConceptT>(this, name, isOptional, targetConcept).also {
+    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newSingleChildLink(
+        name: String,
+        isOptional: Boolean,
+        targetConcept: IConcept,
+        childNodeInterface: KClass<ChildNodeT>
+    ): GeneratedSingleChildLink<ChildNodeT, ChildConceptT> {
+        return GeneratedSingleChildLink<ChildNodeT, ChildConceptT>(
+            this,
+            name,
+            isOptional,
+            targetConcept,
+            childNodeInterface
+        ).also {
             childLinksMap[name] = it
         }
     }
 
-    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newChildListLink(name: String, isOptional: Boolean, targetConcept: IConcept): GeneratedChildListLink<ChildNodeT, ChildConceptT> {
-        return GeneratedChildListLink<ChildNodeT, ChildConceptT>(this, name, isOptional, targetConcept).also {
+    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newChildListLink(
+        name: String,
+        isOptional: Boolean,
+        targetConcept: IConcept,
+        childNodeInterface: KClass<ChildNodeT>
+    ): GeneratedChildListLink<ChildNodeT, ChildConceptT> {
+        return GeneratedChildListLink<ChildNodeT, ChildConceptT>(
+            this,
+            name,
+            isOptional,
+            targetConcept,
+            childNodeInterface
+        ).also {
             childLinksMap[name] = it
         }
     }
 
-    fun <TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept> newReferenceLink(name: String, isOptional: Boolean, targetConcept: IConcept): GeneratedReferenceLink<TargetNodeT, TargetConceptT> {
-        return GeneratedReferenceLink<TargetNodeT, TargetConceptT>(this, name, isOptional, targetConcept).also {
+    fun <TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept> newReferenceLink(
+        name: String,
+        isOptional: Boolean,
+        targetConcept: IConcept,
+        targetNodeInterface: KClass<TargetNodeT>
+    ): GeneratedReferenceLink<TargetNodeT, TargetConceptT> {
+        return GeneratedReferenceLink<TargetNodeT, TargetConceptT>(
+            this,
+            name,
+            isOptional,
+            targetConcept,
+            targetNodeInterface
+        ).also {
             referenceLinksMap[name] = it
         }
     }
@@ -118,13 +151,19 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
     }
 }
 
-class GeneratedProperty(
+class GeneratedProperty<ValueT>(
     private val owner: IConcept,
     override val name: String,
-    override val isOptional: Boolean
-) : IProperty {
+    override val isOptional: Boolean,
+    private val serializer: IPropertyValueSerializer<ValueT>
+) : ITypedProperty<ValueT>, IProperty {
     override fun getConcept(): IConcept = owner
     override fun getUID(): String = getConcept().getUID() + "." + name
+    override fun untyped(): IProperty = this
+
+    override fun serializeValue(value: ValueT): String? = serializer.serialize(value)
+
+    override fun deserializeValue(serialized: String?): ValueT = serializer.deserialize(serialized)
 }
 
 abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
@@ -133,13 +172,22 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IType
     override val isMultiple: Boolean,
     override val isOptional: Boolean,
     override val targetConcept: IConcept,
-) : IChildLink {
+    private val childNodeInterface: KClass<ChildNodeT>
+) : IChildLink, ITypedChildLink<ChildNodeT> {
     @Deprecated("use .targetConcept")
     override val childConcept: IConcept = targetConcept
 
     override fun getConcept(): IConcept = owner
 
     override fun getUID(): String = getConcept().getUID() + "." + name
+
+    override fun untyped(): IChildLink {
+        return this
+    }
+
+    override fun castChild(childNode: INode): ChildNodeT {
+        return childNode.typed(childNodeInterface)
+    }
 }
 fun IChildLink.typed() = this as? GeneratedChildLink<ITypedNode, ITypedConcept>
 
@@ -148,7 +196,8 @@ class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedCo
     name: String,
     isOptional: Boolean,
     targetConcept: IConcept,
-) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, false, isOptional, targetConcept) {
+    childNodeInterface: KClass<ChildNodeT>
+) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, false, isOptional, targetConcept, childNodeInterface) {
 
 }
 
@@ -157,7 +206,8 @@ class GeneratedChildListLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConc
     name: String,
     isOptional: Boolean,
     targetConcept: IConcept,
-) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, true, isOptional, targetConcept) {
+    childNodeInterface: KClass<ChildNodeT>
+) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, true, isOptional, targetConcept, childNodeInterface) {
 
 }
 
@@ -166,11 +216,18 @@ class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : ITypedCo
     override val name: String,
     override val isOptional: Boolean,
     override val targetConcept: IConcept,
-) : IReferenceLink {
+    private val targetNodeInterface: KClass<TargetNodeT>
+) : IReferenceLink, ITypedReferenceLink<TargetNodeT> {
 
     override fun getConcept(): IConcept = owner
 
     override fun getUID(): String = getConcept().getUID() + "." + name
+
+    override fun untyped(): IReferenceLink = this
+
+    override fun castTarget(target: INode): TargetNodeT {
+        return target.typed(targetNodeInterface)
+    }
 }
 fun IReferenceLink.typed() = this as? GeneratedReferenceLink<ITypedNode, ITypedConcept>
 

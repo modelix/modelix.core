@@ -92,7 +92,7 @@ class EditorEngine(incrementalEngine: IncrementalEngine? = null) {
 
     private fun <NodeT : ITypedNode> doCreateCellData(editorState: EditorState, node: NodeT): CellData {
         try {
-            val editor = resolveConceptEditor(node._concept._concept) as ConceptEditor<NodeT, *>
+            val editor = resolveConceptEditor(node._concept.untyped()) as ConceptEditor<NodeT, *>
             val data = editor.apply(CellCreationContext(this, editorState), node)
             data.properties[CellActionProperties.substitute] = ReplaceNodeActionProvider(ExistingNode(node.unwrap()))
             data.cellReferences += NodeCellReference(node.untypedReference())

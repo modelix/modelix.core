@@ -244,6 +244,8 @@ object Main {
 
             val historyHandler = HistoryHandler(localModelClient)
             val jsonModelServer = JsonModelServer(localModelClient)
+            val lionwebModelServer = LionwebModelServer(localModelClient)
+
             val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port) {
                 install(Routing)
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
@@ -253,6 +255,8 @@ object Main {
                 modelServer.init(this)
                 historyHandler.init(this)
                 jsonModelServer.init(this)
+                lionwebModelServer.init(this)
+
                 routing {
                     get("/") {
                         call.respondHtml {
@@ -276,6 +280,9 @@ object Main {
                                     }
                                     li {
                                         a("json/") { +"JSON API for JavaScript clients" }
+                                    }
+                                    li {
+                                        a("lionweb-json/") { +"Lionweb Bulk JSON API" }
                                     }
                                     li {
                                         a("headers") { +"View HTTP headers" }

@@ -173,17 +173,17 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
             .also(body).template.also(template::addChild)
     }
 
-    fun <TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept> GeneratedReferenceLink<TargetNodeT, TargetConceptT>.cell(presentation: TargetNodeT.()->String?, body: ReferenceCellTemplateBuilder<NodeT, ConceptT, TargetNodeT, TargetConceptT>.()->Unit = {}) {
+    fun <TargetNodeT : ITypedNode> ITypedReferenceLink<TargetNodeT>.cell(presentation: TargetNodeT.()->String?, body: ReferenceCellTemplateBuilder<NodeT, ConceptT, TargetNodeT>.()->Unit = {}) {
         ReferenceCellTemplateBuilder(ReferenceCellTemplate(template.concept, this, presentation), this)
             .also(body).template.also(template::addChild)
     }
 
-    fun GeneratedSingleChildLink<*, *>.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
-        CellTemplateBuilder(ChildCellTemplate(template.concept, this))
+    fun ITypedSingleChildLink<*>.cell(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        CellTemplateBuilder(ChildCellTemplate(template.concept, this.untyped()))
             .also(body).template.also(template::addChild)
     }
 
-    fun GeneratedChildListLink<*, *>.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+    fun ITypedChildListLink<*>.vertical(body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
         // TODO add layout information
         horizontal(separator = null) {
             template.properties[CommonCellProperties.layout] = ECellLayout.VERTICAL
@@ -191,8 +191,8 @@ open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val
         }
     }
 
-    fun GeneratedChildListLink<*, *>.horizontal(separator: String? = ",", body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
-        CellTemplateBuilder(ChildCellTemplate(template.concept, this))
+    fun ITypedChildListLink<*>.horizontal(separator: String? = ",", body: CellTemplateBuilder<NodeT, ConceptT>.()->Unit = {}) {
+        CellTemplateBuilder(ChildCellTemplate(template.concept, this.untyped()))
             .also(body).template.also(template::addChild)
     }
 
@@ -240,7 +240,7 @@ class PropertyCellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     }
 }
 
-class ReferenceCellTemplateBuilder<SourceNodeT : ITypedNode, SourceConceptT : ITypedConcept, TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept>(template: CellTemplate<SourceNodeT, SourceConceptT>, val link: GeneratedReferenceLink<TargetNodeT, TargetConceptT>) : CellTemplateBuilder<SourceNodeT, SourceConceptT>(
+class ReferenceCellTemplateBuilder<SourceNodeT : ITypedNode, SourceConceptT : ITypedConcept, TargetNodeT : ITypedNode>(template: CellTemplate<SourceNodeT, SourceConceptT>, val link: ITypedReferenceLink<TargetNodeT>) : CellTemplateBuilder<SourceNodeT, SourceConceptT>(
     template
 ) {
     fun presentation(f: (TargetNodeT)->String?) {
@@ -249,7 +249,7 @@ class ReferenceCellTemplateBuilder<SourceNodeT : ITypedNode, SourceConceptT : IT
 
     fun withTargetNode(body: WithTargetNodeContext.()->Unit) {
         withNode {
-            val targetNode: ITypedNode? = node.unwrap().getReferenceTarget(link)?.let { it.typed() }
+            val targetNode: ITypedNode? = node.unwrap().getReferenceTargetOrNull(link)
             if (targetNode != null) {
                 body(WithTargetNodeContext(node, targetNode as TargetNodeT))
             }

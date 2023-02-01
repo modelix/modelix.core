@@ -1,10 +1,12 @@
 package org.modelix.editor
 
 import org.modelix.metamodel.GeneratedConcept
-import org.modelix.metamodel.GeneratedReferenceLink
 import org.modelix.metamodel.ITypedConcept
 import org.modelix.metamodel.ITypedNode
+import org.modelix.metamodel.ITypedReferenceLink
 import org.modelix.metamodel.getPropertyValue
+import org.modelix.metamodel.getReferenceTargetOrNull
+import org.modelix.metamodel.setReferenceTarget
 import org.modelix.metamodel.typed
 import org.modelix.metamodel.typedUnsafe
 import org.modelix.metamodel.untyped
@@ -14,10 +16,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getChildren
-import org.modelix.model.api.getReferenceTarget
 import org.modelix.model.api.moveChild
 import org.modelix.model.api.setPropertyValue
-import org.modelix.model.api.setReferenceTarget
 
 abstract class CellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(val concept: GeneratedConcept<NodeT, ConceptT>) {
     val properties = CellProperties()
@@ -298,24 +298,24 @@ open class PropertyCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept>(co
     }
 }
 
-class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept>(
+class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, TargetNodeT : ITypedNode>(
     concept: GeneratedConcept<NodeT, ConceptT>,
-    val link: GeneratedReferenceLink<TargetNodeT, TargetConceptT>,
+    val link: ITypedReferenceLink<TargetNodeT>,
     val presentation: TargetNodeT.() -> String?
 ) : CellTemplate<NodeT, ConceptT>(concept), IGrammarSymbol {
     override fun createCell(context: CellCreationContext, node: NodeT): CellData {
-        val data = TextCellData(getText(node), "<no ${link.name}>")
-        data.cellReferences += ReferencedNodeCellReference(node.untypedReference(), link)
+        val data = TextCellData(getText(node), "<no ${link.untyped().name}>")
+        data.cellReferences += ReferencedNodeCellReference(node.untypedReference(), link.untyped())
         data.properties[CommonCellProperties.tabTarget] = true
         return data
     }
     private fun getText(node: NodeT): String = getTargetNode(node)?.let(presentation) ?: ""
     private fun getTargetNode(sourceNode: NodeT): TargetNodeT? {
-        return sourceNode.unwrap().getReferenceTarget(link)?.typedUnsafe()
+        return sourceNode.unwrap().getReferenceTargetOrNull(link)
     }
     override fun getInstantiationActions(location: INonExistingNode, parameters: CodeCompletionParameters): List<IActionOrProvider>? {
         val specializedLocation = location.ofSubConcept(concept)
-        val targets = specializedLocation.getVisibleReferenceTargets(link)
+        val targets = specializedLocation.getVisibleReferenceTargets(link.untyped())
         return targets.map { WrapReferenceTarget(location, it, presentation(it.typedUnsafe()) ?: "") }
     }
 
@@ -330,7 +330,7 @@ class ReferenceCellTemplate<NodeT : ITypedNode, ConceptT : ITypedConcept, Target
 
         override fun execute(editor: EditorComponent) {
             val sourceNode = location.getOrCreateNode(concept)
-            sourceNode.setReferenceTarget(link, target)
+            sourceNode.setReferenceTarget(link, link.castTarget(target))
             editor.selectAfterUpdate {
                 CaretPositionPolicy(createCellReference(sourceNode))
                     .getBestSelection(editor)

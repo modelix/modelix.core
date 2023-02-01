@@ -165,6 +165,7 @@ class GeneratedProperty<ValueT>(
 
     override fun deserializeValue(serialized: String?): ValueT = serializer.deserialize(serialized)
 }
+fun IProperty.typed() = this as? ITypedProperty<*>
 
 abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
     private val owner: IConcept,
@@ -189,7 +190,7 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IType
         return childNode.typed(childNodeInterface)
     }
 }
-fun IChildLink.typed() = this as? GeneratedChildLink<ITypedNode, ITypedConcept>
+fun IChildLink.typed() = this as? ITypedChildLink<ITypedNode>
 
 class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
     owner: IConcept,
@@ -197,7 +198,7 @@ class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedCo
     isOptional: Boolean,
     targetConcept: IConcept,
     childNodeInterface: KClass<ChildNodeT>
-) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, false, isOptional, targetConcept, childNodeInterface) {
+) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, false, isOptional, targetConcept, childNodeInterface), ITypedSingleChildLink<ChildNodeT> {
 
 }
 
@@ -207,7 +208,7 @@ class GeneratedChildListLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConc
     isOptional: Boolean,
     targetConcept: IConcept,
     childNodeInterface: KClass<ChildNodeT>
-) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, true, isOptional, targetConcept, childNodeInterface) {
+) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, true, isOptional, targetConcept, childNodeInterface), ITypedChildListLink<ChildNodeT> {
 
 }
 
@@ -229,5 +230,5 @@ class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : ITypedCo
         return target.typed(targetNodeInterface)
     }
 }
-fun IReferenceLink.typed() = this as? GeneratedReferenceLink<ITypedNode, ITypedConcept>
+fun IReferenceLink.typed() = this as? ITypedReferenceLink<ITypedNode>
 

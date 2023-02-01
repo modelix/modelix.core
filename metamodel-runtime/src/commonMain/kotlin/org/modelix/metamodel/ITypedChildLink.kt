@@ -24,6 +24,7 @@ interface ITypedChildLink<ChildT : ITypedNode> : ITypedConceptFeature {
     fun castChild(childNode: INode): ChildT
 }
 interface ITypedSingleChildLink<ChildT : ITypedNode> : ITypedChildLink<ChildT>
+interface ITypedChildListLink<ChildT : ITypedNode> : ITypedChildLink<ChildT>
 
 interface ITypedMandatorySingleChildLink<ChildT : ITypedNode> : ITypedSingleChildLink<ChildT>
 

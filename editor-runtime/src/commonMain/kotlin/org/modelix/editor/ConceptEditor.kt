@@ -1,10 +1,10 @@
 package org.modelix.editor
 
-import org.modelix.metamodel.GeneratedChildListLink
 import org.modelix.metamodel.GeneratedConcept
-import org.modelix.metamodel.GeneratedSingleChildLink
+import org.modelix.metamodel.ITypedChildListLink
 import org.modelix.metamodel.ITypedConcept
 import org.modelix.metamodel.ITypedNode
+import org.modelix.metamodel.ITypedSingleChildLink
 import org.modelix.metamodel.typed
 import org.modelix.metamodel.untypedReference
 import org.modelix.model.api.serialize
@@ -41,8 +41,8 @@ val defaultConceptEditor = ConceptEditor(null) { subConcept ->
                 newLine()
                 label(link.name + ":")
                 when (val l = link.typed()) {
-                    is GeneratedSingleChildLink -> l.cell()
-                    is GeneratedChildListLink -> {
+                    is ITypedSingleChildLink -> l.cell()
+                    is ITypedChildListLink -> {
                         newLine()
                         indented {
                             l.vertical()

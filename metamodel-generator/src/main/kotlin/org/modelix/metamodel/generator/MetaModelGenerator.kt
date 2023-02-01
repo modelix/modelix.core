@@ -77,13 +77,13 @@ class MetaModelGenerator(val outputDir: Path) {
             .joinToString(", ") { it.simpleName }
         builder.addFunction(FunSpec.builder("getConcepts")
             .addModifiers(KModifier.OVERRIDE)
-            .addStatement("return listOf($conceptNamesList)")
+            .addCode(language.getConceptsInLanguage().map { it.conceptObjectType() }.toListLiteralCodeBlock())
             .build())
         builder.superclass(GeneratedLanguage::class)
         builder.addSuperclassConstructorParameter("\"${language.name}\"")
         for (concept in language.getConceptsInLanguage()) {
-            builder.addProperty(PropertySpec.builder(concept.simpleName, ClassName(language.name, concept.concept.conceptObjectName()))
-                .initializer(language.name + "." + concept.concept.conceptObjectName())
+            builder.addProperty(PropertySpec.builder(concept.simpleName, concept.conceptObjectType())
+                .initializer("%T", concept.conceptObjectType())
                 .build())
         }
         return builder.build()
@@ -134,14 +134,6 @@ class MetaModelGenerator(val outputDir: Path) {
                     }
                 }
             }
-            .addImport(PropertyAccessor::class.asClassName().packageName, PropertyAccessor::class.asClassName().simpleName)
-            .addImport(RawPropertyAccessor::class.asClassName().packageName, RawPropertyAccessor::class.asClassName().simpleName)
-            .addImport(IntPropertyAccessor::class.asClassName().packageName, IntPropertyAccessor::class.asClassName().simpleName)
-            .addImport(StringPropertyAccessor::class.asClassName().packageName, StringPropertyAccessor::class.asClassName().simpleName)
-            .addImport(BooleanPropertyAccessor::class.asClassName().packageName, BooleanPropertyAccessor::class.asClassName().simpleName)
-            .addImport(MandatoryReferenceAccessor::class.asClassName().packageName, MandatoryReferenceAccessor::class.asClassName().simpleName)
-            .addImport(OptionalReferenceAccessor::class.asClassName().packageName, OptionalReferenceAccessor::class.asClassName().simpleName)
-            .addImport(RawReferenceAccessor::class.asClassName().packageName, RawReferenceAccessor::class.asClassName().simpleName)
             .build().write()
     }
 
@@ -158,7 +150,7 @@ class MetaModelGenerator(val outputDir: Path) {
                 .initializer(concept.nodeWrapperImplName() + "::class")
                 .build())
             addProperty(PropertySpec.builder(GeneratedConcept<*, *>::_typed.name, concept.conceptWrapperImplType(), KModifier.OVERRIDE)
-                .getter(FunSpec.getterBuilder().addStatement("""return ${concept.conceptWrapperInterfaceType().simpleName}""").build())
+                .getter(FunSpec.getterBuilder().addStatement("""return %T""", concept.conceptWrapperInterfaceType()).build())
                 .build())
             addProperty(PropertySpec.builder(IConcept::language.name, ILanguage::class, KModifier.OVERRIDE)
                 .initializer(concept.language.generatedClassName().simpleName)
@@ -166,7 +158,7 @@ class MetaModelGenerator(val outputDir: Path) {
             addFunction(FunSpec.builder(GeneratedConcept<*, *>::wrap.name)
                 .addModifiers(KModifier.OVERRIDE)
                 .addParameter("node", INode::class)
-                .addStatement("return ${concept.nodeWrapperImplName()}(node)")
+                .addStatement("return %T(node)", concept.nodeWrapperImplType())
                 .build())
             concept.concept.uid?.let { uid ->
                 addFunction(FunSpec.builder(GeneratedConcept<*, *>::getUID.name)
@@ -176,7 +168,7 @@ class MetaModelGenerator(val outputDir: Path) {
             }
             addFunction(FunSpec.builder(GeneratedConcept<*, *>::getDirectSuperConcepts.name)
                 .addModifiers(KModifier.OVERRIDE)
-                .addStatement("return listOf(${concept.concept.extends.joinToString(", ") { it.conceptObjectName() } })")
+                .addCode(concept.directSuperConcepts().map { it.conceptObjectType() }.toListLiteralCodeBlock())
                 .returns(List::class.asTypeName().parameterizedBy(IConcept::class.asTypeName()))
                 .build())
             for (feature in concept.directFeatures()) {
@@ -196,14 +188,15 @@ class MetaModelGenerator(val outputDir: Path) {
                             }
                         }).asTypeName()
                         addProperty(PropertySpec.builder(feature.validName, GeneratedProperty::class.asClassName().parameterizedBy(data.asKotlinType()))
-                            .initializer("""newProperty("${feature.originalName}", %T, ${data.optional})""", serializer)
+                            .initializer("""newProperty(%S, %T, ${data.optional})""", feature.originalName, serializer)
                             .build())
                     }
                     is ChildLinkData -> {
                         val methodName = if (data.multiple) "newChildListLink" else "newSingleChildLink"
                         addProperty(PropertySpec.builder(feature.validName, feature.generatedChildLinkType())
                             .initializer(
-                                """$methodName("${feature.originalName}", ${data.optional}, %T, %T::class)""",
+                                """$methodName(%S, ${data.optional}, %T, %T::class)""",
+                                feature.originalName,
                                 data.type.conceptObjectName().parseClassName(),
                                 data.type.nodeWrapperInterfaceName().parseClassName()
                             )
@@ -212,7 +205,8 @@ class MetaModelGenerator(val outputDir: Path) {
                     is ReferenceLinkData -> {
                         addProperty(PropertySpec.builder(feature.validName, feature.generatedReferenceLinkType())
                             .initializer(
-                                """newReferenceLink("${feature.originalName}", ${data.optional}, %T, %T::class)""",
+                                """newReferenceLink(%S, ${data.optional}, %T, %T::class)""",
+                                feature.originalName,
                                 data.type.conceptObjectName().parseClassName(),
                                 data.type.nodeWrapperInterfaceName().parseClassName()
                             )
@@ -244,7 +238,7 @@ class MetaModelGenerator(val outputDir: Path) {
                 addFunction(FunSpec.builder(IConceptOfTypedNode<*>::getInstanceInterface.name)
                     .addModifiers(KModifier.OVERRIDE)
                     .returns(KClass::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
-                    .addStatement("return ${concept.nodeWrapperInterfaceType().simpleName}::class")
+                    .addStatement("return %T::class", concept.nodeWrapperInterfaceType())
                     .build())
             }.build())
         }.build()
@@ -257,7 +251,7 @@ class MetaModelGenerator(val outputDir: Path) {
             } else {
                 superclass(concept.extends().first().conceptWrapperImplType())
                 for (extended in concept.extends().drop(1)) {
-                    addSuperinterface(extended.conceptWrapperInterfaceType(), CodeBlock.of(extended.conceptWrapperInterfaceType().canonicalName))
+                    addSuperinterface(extended.conceptWrapperInterfaceType(), CodeBlock.of("%T", extended.conceptWrapperInterfaceType()))
                 }
             }
             addSuperinterface(concept.conceptWrapperInterfaceType())
@@ -299,7 +293,7 @@ class MetaModelGenerator(val outputDir: Path) {
         return TypeSpec.classBuilder(concept.nodeWrapperImplType()).apply {
             addModifiers(KModifier.OPEN)
             addProperty(PropertySpec.builder(TypedNodeImpl::_concept.name, concept.conceptWrapperImplType(), KModifier.OVERRIDE)
-                .getter(FunSpec.getterBuilder().addStatement("""return ${concept.conceptWrapperInterfaceType().simpleName}""").build())
+                .getter(FunSpec.getterBuilder().addStatement("""return %T""", concept.conceptWrapperInterfaceType()).build())
                 .build())
 
             if (concept.extends().size > 1) {
@@ -318,7 +312,7 @@ class MetaModelGenerator(val outputDir: Path) {
                 superclass(concept.extends().first().nodeWrapperImplType())
                 addSuperclassConstructorParameter("_node")
                 for (extended in concept.extends().drop(1)) {
-                    addSuperinterface(extended.nodeWrapperInterfaceType(), CodeBlock.of(extended.nodeWrapperImplType().canonicalName + "(_node)"))
+                    addSuperinterface(extended.nodeWrapperInterfaceType(), CodeBlock.of("%T(_node)", extended.nodeWrapperImplType()))
                 }
             }
             addSuperinterface(concept.nodeWrapperInterfaceType())
@@ -352,13 +346,16 @@ class MetaModelGenerator(val outputDir: Path) {
                         val type = accessorSubclass.asClassName()
                             .parameterizedBy(
                                 data.type.parseConceptRef(concept.language).nodeWrapperInterfaceType())
-                        val accessorName = accessorSubclass.qualifiedName
                         addProperty(PropertySpec.builder(feature.validName, type)
                             .addModifiers(KModifier.OVERRIDE)
                             .initializer(
-                                """$accessorName(${ITypedNode::unwrap.name}(), %T.%N, ${data.type.conceptObjectName()}, ${data.type.nodeWrapperInterfaceName()}::class)""",
+                                """%T(%N(), %T.%N, %T, %T::class)""",
+                                accessorSubclass.asTypeName(),
+                                ITypedNode::unwrap.name,
                                 feature.concept.conceptObjectType(),
                                 feature.validName,
+                                data.type.conceptObjectName().parseClassName(),
+                                data.type.nodeWrapperInterfaceName().parseClassName()
                             )
                             .build())
                     }
@@ -368,16 +365,20 @@ class MetaModelGenerator(val outputDir: Path) {
                             .addModifiers(KModifier.OVERRIDE)
                             .mutable(true)
                             .delegate(
-                                """${accessorClass.qualifiedName}(${ITypedNode::unwrap.name}(), %T.%N, ${data.type.nodeWrapperInterfaceName()}::class)""",
+                                """%T(%N(), %T.%N, %T::class)""",
+                                accessorClass.asTypeName(),
+                                ITypedNode::unwrap.name,
                                 feature.concept.conceptObjectType(),
                                 feature.validName,
+                                data.type.nodeWrapperInterfaceName().parseClassName()
                             )
                             .build())
                         addProperty(PropertySpec.builder("raw_" + feature.validName, INode::class.asTypeName().copy(nullable = true))
                             .addModifiers(KModifier.OVERRIDE)
                             .mutable(true)
                             .delegate(
-                                """${RawReferenceAccessor::class.qualifiedName}(${ITypedNode::unwrap.name}(), %T.%N)""",
+                                """%T(${ITypedNode::unwrap.name}(), %T.%N)""",
+                                RawReferenceAccessor::class.asClassName(),
                                 feature.concept.conceptObjectType(),
                                 feature.validName,
                             )
@@ -481,4 +482,17 @@ fun FeatureInConcept.generatedReferenceLinkType(): TypeName {
     val targetConcept = (data as ReferenceLinkData).type.parseConceptRef(concept.language)
     return GeneratedReferenceLink::class.asClassName().parameterizedBy(
         targetConcept.nodeWrapperInterfaceType(), targetConcept.conceptWrapperInterfaceType())
+}
+
+private fun List<TypeName>.toListLiteralCodeBlock(): CodeBlock {
+    val list = this
+    return CodeBlock.builder().apply {
+        add("return listOf(\n")
+        withIndent {
+            for (element in list) {
+                add("%T,\n", element)
+            }
+        }
+        add(")")
+    }.build()
 }

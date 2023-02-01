@@ -10,7 +10,7 @@ abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept
     @Deprecated("use .typed()", ReplaceWith("typed()"))
     val _typed: WrapperT get() = typed()
     abstract fun typed(): WrapperT
-    abstract val instanceClass: KClass<InstanceT>
+    abstract fun getInstanceClass(): KClass<InstanceT>
     private val propertiesMap: MutableMap<String, GeneratedProperty<*>> = LinkedHashMap()
     private val childLinksMap: MutableMap<String, GeneratedChildLink<*, *>> = LinkedHashMap()
     private val referenceLinksMap: MutableMap<String, GeneratedReferenceLink<*, *>> = LinkedHashMap()

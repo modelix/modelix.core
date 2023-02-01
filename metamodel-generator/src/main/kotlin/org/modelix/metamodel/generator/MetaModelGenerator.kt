@@ -1,7 +1,6 @@
 package org.modelix.metamodel.generator
 
 import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.modelix.metamodel.*
 import org.modelix.model.api.*
@@ -146,8 +145,9 @@ class MetaModelGenerator(val outputDir: Path) {
             addSuperclassConstructorParameter("%S", concept.concept.name)
             addSuperclassConstructorParameter(concept.concept.abstract.toString())
             val instanceClassType = KClass::class.asClassName().parameterizedBy(concept.nodeWrapperImplType())
-            addProperty(PropertySpec.builder(GeneratedConcept<*, *>::instanceClass.name, instanceClassType, KModifier.OVERRIDE)
-                .initializer(concept.nodeWrapperImplName() + "::class")
+            addFunction(FunSpec.builder(GeneratedConcept<*, *>::getInstanceClass.name)
+                .addModifiers(KModifier.OVERRIDE)
+                .addStatement("""return %T::class""", concept.nodeWrapperImplType())
                 .build())
             addFunction(FunSpec.builder(GeneratedConcept<*, *>::typed.name)
                 .addModifiers(KModifier.OVERRIDE)

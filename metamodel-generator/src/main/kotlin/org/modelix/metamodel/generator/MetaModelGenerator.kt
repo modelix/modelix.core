@@ -270,19 +270,19 @@ class MetaModelGenerator(val outputDir: Path) {
                     is PropertyData -> {
                         addProperty(PropertySpec.builder(feature.validName, GeneratedProperty::class.asClassName().parameterizedBy(data.asKotlinType()))
                             .addModifiers(KModifier.OVERRIDE)
-                            .initializer(feature.kotlinRef())
+                            .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
                             .build())
                     }
                     is ChildLinkData -> {
                         addProperty(PropertySpec.builder(feature.validName, feature.generatedChildLinkType())
                             .addModifiers(KModifier.OVERRIDE)
-                            .initializer(feature.kotlinRef())
+                            .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
                             .build())
                     }
                     is ReferenceLinkData -> {
                         addProperty(PropertySpec.builder(feature.validName, feature.generatedReferenceLinkType())
                             .addModifiers(KModifier.OVERRIDE)
-                            .initializer(feature.kotlinRef())
+                            .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
                             .build())
                     }
                 }
@@ -473,6 +473,7 @@ fun LanguageSet.ConceptInLanguage.conceptWrapperImplType() = ClassName(language.
 fun LanguageSet.ConceptInLanguage.conceptWrapperInterfaceType() = ClassName(language.name, concept.conceptWrapperInterfaceName())
 
 fun FeatureInConcept.kotlinRef() = CodeBlock.of("%T.%N", concept.conceptObjectType(), validName)
+fun FeatureInConcept.returnKotlinRef() = CodeBlock.of("return %T.%N", concept.conceptObjectType(), validName)
 fun FeatureInConcept.generatedChildLinkType(): TypeName {
     val childConcept = (data as ChildLinkData).type.parseConceptRef(concept.language)
     val linkClass = if (data.multiple) GeneratedChildListLink::class else GeneratedSingleChildLink::class

@@ -5,7 +5,7 @@ import org.modelix.model.api.*
 import kotlin.jvm.JvmName
 
 open class CellTemplateBuilder<NodeT : ITypedNode, ConceptT : ITypedConcept>(val template: CellTemplate<NodeT, ConceptT>) {
-    val concept: ConceptT = template.concept._typed
+    val concept: ConceptT = template.concept.typed()
     val properties = CellProperties()
 
     fun ifEmpty(link: IChildLink, body: ()->Unit) {

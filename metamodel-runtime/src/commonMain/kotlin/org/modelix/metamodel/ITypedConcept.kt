@@ -15,7 +15,7 @@ class FallbackTypedConcept(private val untypedConcept: IConcept) : ITypedConcept
 }
 
 fun IConcept.typed(): ITypedConcept = when (this) {
-    is GeneratedConcept<*, *> -> this._typed
+    is GeneratedConcept<*, *> -> this.typed()
     else -> FallbackTypedConcept(this)
 }
 

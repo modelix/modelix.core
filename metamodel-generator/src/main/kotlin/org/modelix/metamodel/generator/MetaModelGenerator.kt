@@ -81,8 +81,8 @@ class MetaModelGenerator(val outputDir: Path) {
         builder.superclass(GeneratedLanguage::class)
         builder.addSuperclassConstructorParameter("\"${language.name}\"")
         for (concept in language.getConceptsInLanguage()) {
-            builder.addProperty(PropertySpec.builder(concept.simpleName, concept.conceptObjectType())
-                .initializer("%T", concept.conceptObjectType())
+            builder.addProperty(PropertySpec.builder(concept.simpleName, concept.conceptWrapperInterfaceType())
+                .initializer("%T", concept.conceptWrapperInterfaceClass())
                 .build())
         }
         return builder.build()
@@ -92,6 +92,7 @@ class MetaModelGenerator(val outputDir: Path) {
         FileSpec.builder(concept.language.name, concept.concept.name)
             .addFileComment(headerComment)
             .addType(generateConceptObject(concept))
+            .addTypeAlias(TypeAliasSpec.builder("CN_" + concept.simpleName, concept.conceptWrapperInterfaceType()).build())
             .addType(generateConceptWrapperInterface(concept))
 //            .addType(generateConceptWrapperImpl(concept))
             .addType(generateNodeWrapperInterface(concept))
@@ -151,7 +152,7 @@ class MetaModelGenerator(val outputDir: Path) {
                 .build())
             addFunction(FunSpec.builder(GeneratedConcept<*, *>::typed.name)
                 .addModifiers(KModifier.OVERRIDE)
-                .addStatement("""return %T""", concept.conceptWrapperInterfaceType())
+                .addStatement("""return %T""", concept.conceptWrapperInterfaceClass())
                 .build())
             addProperty(PropertySpec.builder(IConcept::language.name, ILanguage::class, KModifier.OVERRIDE)
                 .initializer(concept.language.generatedClassName().simpleName)
@@ -219,10 +220,12 @@ class MetaModelGenerator(val outputDir: Path) {
     }
 
     private fun generateConceptWrapperInterface(concept: LanguageSet.ConceptInLanguage): TypeSpec {
-        return TypeSpec.interfaceBuilder(concept.conceptWrapperInterfaceType()).apply {
-            addSuperinterface(ITypedConcept::class)
+        return TypeSpec.interfaceBuilder(concept.conceptWrapperInterfaceClass()).apply {
+            val nodeT = TypeVariableName("NodeT", ITypedNode::class, variance = KModifier.OUT)
+            addTypeVariable(nodeT)
+            addSuperinterface(IConceptOfTypedNode::class.asTypeName().parameterizedBy(nodeT))
             for (extended in concept.extended()) {
-                addSuperinterface(extended.conceptWrapperInterfaceType())
+                addSuperinterface(extended.conceptWrapperInterfaceClass().parameterizedBy(nodeT))
             }
             for (feature in concept.directFeatures()) {
                 when (val data = feature.data) {
@@ -260,7 +263,7 @@ class MetaModelGenerator(val outputDir: Path) {
         return TypeSpec.classBuilder(concept.nodeWrapperImplType()).apply {
             addModifiers(KModifier.OPEN)
             addProperty(PropertySpec.builder(TypedNodeImpl::_concept.name, concept.conceptWrapperInterfaceType(), KModifier.OVERRIDE)
-                .getter(FunSpec.getterBuilder().addStatement("""return %T""", concept.conceptWrapperInterfaceType()).build())
+                .getter(FunSpec.getterBuilder().addStatement("""return %T""", concept.conceptWrapperInterfaceClass()).build())
                 .build())
 
             if (concept.extends().size > 1) {
@@ -404,7 +407,8 @@ fun PropertyType.asKotlinType(): TypeName {
 }
 fun String.parseClassName() = ClassName(substringBeforeLast("."), substringAfterLast("."))
 //fun ConceptRef.conceptWrapperImplType() = ClassName(languageName, conceptName.conceptWrapperImplName())
-fun ConceptRef.conceptWrapperInterfaceType() = ClassName(languageName, conceptName.conceptWrapperInterfaceName())
+fun ConceptRef.conceptWrapperInterfaceType() = conceptWrapperInterfaceClass().parameterizedBy(nodeWrapperInterfaceType())
+fun ConceptRef.conceptWrapperInterfaceClass() = ClassName(languageName, conceptName.conceptWrapperInterfaceName())
 fun ConceptRef.nodeWrapperImplType() = ClassName(languageName, conceptName.nodeWrapperImplName())
 fun ConceptRef.nodeWrapperInterfaceType() = ClassName(languageName, conceptName.nodeWrapperInterfaceName())
 
@@ -436,7 +440,8 @@ fun LanguageSet.ConceptInLanguage.nodeWrapperImplName() = concept.nodeWrapperImp
 fun LanguageSet.ConceptInLanguage.nodeWrapperImplType() = ClassName(language.name, concept.nodeWrapperImplName())
 fun LanguageSet.ConceptInLanguage.nodeWrapperInterfaceType() = ClassName(language.name, concept.nodeWrapperInterfaceName())
 //fun LanguageSet.ConceptInLanguage.conceptWrapperImplType() = ClassName(language.name, concept.conceptWrapperImplName())
-fun LanguageSet.ConceptInLanguage.conceptWrapperInterfaceType() = ClassName(language.name, concept.conceptWrapperInterfaceName())
+fun LanguageSet.ConceptInLanguage.conceptWrapperInterfaceType() = ref().conceptWrapperInterfaceType()
+fun LanguageSet.ConceptInLanguage.conceptWrapperInterfaceClass() = ref().conceptWrapperInterfaceClass()
 
 fun FeatureInConcept.kotlinRef() = CodeBlock.of("%T.%N", concept.conceptObjectType(), validName)
 fun FeatureInConcept.returnKotlinRef() = CodeBlock.of("return %T.%N", concept.conceptObjectType(), validName)

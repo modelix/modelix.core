@@ -3,9 +3,12 @@ package org.modelix.metamodel.generator
 import java.nio.file.Path
 import kotlin.io.path.writeText
 import org.modelix.model.data.LanguageData
+import org.modelix.model.data.PropertyData
+import org.modelix.model.data.ChildLinkData
+import org.modelix.model.data.ReferenceLinkData
 import org.modelix.model.data.PropertyType
 
-class TypescriptMMGenerator(val outputDir: Path) {
+class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = NameConfig()) {
 
     private fun LanguageData.packageDir(): Path {
         val packageName = name

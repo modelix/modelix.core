@@ -38,7 +38,7 @@ dependencies {
     implementation(project(":authorization"))
     implementation("org.apache.commons:commons-lang3:3.10")
 
-    implementation("org.json:json:20200518")
+    implementation("org.json:json:20220320")
     implementation("org.java-websocket:Java-WebSocket:1.5.0")
     implementation("org.apache.commons:commons-collections4:4.4")
     implementation("io.lettuce:lettuce-core:5.1.8.RELEASE")

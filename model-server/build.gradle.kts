@@ -131,7 +131,23 @@ tasks.named("assemble") {
 }
 
 application {
-    mainClassName = "org.modelix.model.server.Main"
+    mainClass.set("org.modelix.model.server.Main")
+}
+
+tasks.register<JavaExec>("dev") {
+    mainClass.set(application.mainClass)
+    group = ApplicationPlugin.APPLICATION_GROUP
+    val dumpFile = file("model-server.dump")
+    description = "Runs the model server in development mode (in-memory, contents read from/dumped into ${dumpFile.relativeTo(projectDir)})"
+
+    classpath(sourceSets.main.map { it.runtimeClasspath })
+
+    systemProperty("io.ktor.development", "true")
+
+    args("-inmemory")
+
+    argumentProviders.add(CommandLineArgumentProvider { if (dumpFile.exists()) { listOf("-dumpin", dumpFile.path) } else { emptyList<String>() } })
+    args("-dumpout", dumpFile)
 }
 
 publishing {

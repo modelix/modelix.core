@@ -13,6 +13,8 @@ interface ITypedNode {
 }
 
 fun ITypedNode.untyped() = unwrap()
+fun ITypedNode.untypedConcept() = _concept.untyped()
+fun ITypedNode.typedConcept() = _concept
 fun ITypedNode.getPropertyValue(property: IProperty): String? = unwrap().getPropertyValue(property.name)
 fun ITypedNode.instanceOf(concept: ITypedConcept): Boolean {
     return instanceOf(concept._concept)

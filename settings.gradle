@@ -1,7 +1,6 @@
 rootProject.name = 'modelix.core'
 
 include 'authorization'
-include 'editor-runtime'
 include 'light-model-client'
 include 'light-model-server'
 include 'metamodel-export-mps'

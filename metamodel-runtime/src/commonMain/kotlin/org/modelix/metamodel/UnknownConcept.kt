@@ -78,8 +78,9 @@ data class UnknownConcept(private val ref: IConceptReference) : EmptyConcept() {
 }
 
 data class UnknownTypedConcept(private val ref: IConceptReference?) : ITypedConcept {
-    override val _concept: IConcept
-        get() = ref?.let { UnknownConcept(it) } ?: NullConcept
+    override fun untyped(): IConcept {
+        return ref?.let { UnknownConcept(it) } ?: NullConcept
+    }
 }
 
 data class UnknownConceptInstance(val node: INode) : ITypedNode {

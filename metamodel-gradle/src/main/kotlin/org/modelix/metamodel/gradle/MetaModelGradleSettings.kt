@@ -12,9 +12,11 @@ open class MetaModelGradleSettings {
         }
     val moduleFolders = ArrayList<File>()
     var mpsHome: File? = null
+    var mpsHeapSize: String = "1g"
     val includedLanguages: MutableSet<String> = HashSet()
     val includedLanguageNamespaces: MutableSet<String> = HashSet()
     val includedConcepts: MutableSet<String> = HashSet()
+    val includedModules: MutableSet<String> = HashSet()
     var kotlinDir: File? = null
     var kotlinProject: Project? = null
         set(value) {
@@ -53,5 +55,9 @@ open class MetaModelGradleSettings {
 
     fun includeConcept(fqName: String) {
         includedConcepts += fqName
+    }
+
+    fun exportModules(namePrefix: String) {
+        includedModules += namePrefix
     }
 }

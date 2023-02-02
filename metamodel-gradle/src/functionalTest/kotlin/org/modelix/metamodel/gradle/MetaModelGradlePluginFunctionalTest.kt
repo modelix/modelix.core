@@ -37,10 +37,12 @@ repositories {
 
 metamodel {
     mpsHome = file("${File("build/mps").absolutePath}")
+    mpsHeapSize = "2g"
     kotlinDir = file("" + buildDir + "/kotlin_gen")
     registrationHelperName = "org.modelix.metamodel.gradle.functionalTest.Languages"
     typescriptDir = file("" + buildDir + "/ts_gen")
     includeNamespace("jetbrains.mps.baseLanguage")
+    exportModules("jetbrains.mps.runtime")
 }
 """)
 

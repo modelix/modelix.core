@@ -3,19 +3,19 @@ package org.modelix.metamodel
 import org.modelix.model.api.*
 import kotlin.reflect.KClass
 
-abstract class GeneratedConcept<InstanceT : ITypedNode, WrapperT : ITypedConcept>(
+abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     private val name: String,
     private val is_abstract: Boolean
 ) : IConcept {
     @Deprecated("use .typed()", ReplaceWith("typed()"))
-    val _typed: WrapperT get() = typed()
-    abstract fun typed(): WrapperT
-    abstract fun getInstanceClass(): KClass<InstanceT>
+    val _typed: ConceptT get() = typed()
+    abstract fun typed(): ConceptT
+    abstract fun getInstanceClass(): KClass<out NodeT>
     private val propertiesMap: MutableMap<String, GeneratedProperty<*>> = LinkedHashMap()
     private val childLinksMap: MutableMap<String, GeneratedChildLink<*, *>> = LinkedHashMap()
     private val referenceLinksMap: MutableMap<String, GeneratedReferenceLink<*, *>> = LinkedHashMap()
 
-    abstract fun wrap(node: INode): InstanceT
+    abstract fun wrap(node: INode): NodeT
 
     override fun isAbstract(): Boolean {
         return is_abstract

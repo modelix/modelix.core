@@ -20,9 +20,6 @@ import io.ktor.server.html.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.util.*
-import io.ktor.websocket.*
 import kotlinx.html.body
 import kotlinx.html.table
 import kotlinx.html.td
@@ -60,7 +57,7 @@ class LionwebModelServer(val client: LocalModelClient) {
     }
 
     private fun getCurrentVersion(repositoryId: RepositoryId): CLVersion {
-        val versionHash = client.asyncStore.get(repositoryId.getBranchKey())!!
+        val versionHash = client.asyncStore.get(repositoryId.getBranchReference().getKey())!!
         return CLVersion.loadFromHash(versionHash, getStore())
     }
 
@@ -104,7 +101,7 @@ class LionwebModelServer(val client: LocalModelClient) {
         }
         get("/{repositoryId}/") {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val versionHash = client.asyncStore?.get(repositoryId.getBranchKey())!!
+            val versionHash = client.asyncStore.get(repositoryId.getBranchReference().getKey())!!
             // TODO 404 if it doesn't exist
             val version = CLVersion.loadFromHash(versionHash, getStore())
             respondVersion(version)
@@ -128,7 +125,7 @@ class LionwebModelServer(val client: LocalModelClient) {
                 null,
                 emptyArray()
             )
-            client.asyncStore!!.put(repositoryId.getBranchKey(), newVersion.hash)
+            client.asyncStore.put(repositoryId.getBranchReference().getKey(), newVersion.hash)
             respondVersion(newVersion)
         }
         post("/{repositoryId}/update") {
@@ -171,7 +168,7 @@ class LionwebModelServer(val client: LocalModelClient) {
         repositoryId: RepositoryId,
         userId: String?
     ): CLVersion {
-        val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
+        val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache)
         branch.computeWriteT { t -> update(updateData, t) }
 
         val operationsAndTree = branch.operationsAndTree
@@ -183,14 +180,25 @@ class LionwebModelServer(val client: LocalModelClient) {
             baseVersion,
             operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
         )
-        repositoryId.getBranchKey()
         val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
             .mergeChange(getCurrentVersion(repositoryId), newVersion)
-        client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.hash)
+        client.asyncStore.put(repositoryId.getBranchReference().getKey(), mergedVersion.hash)
         // TODO handle concurrent write to the branchKey, otherwise versions might get lost. See ReplicatedRepository.
         return mergedVersion
     }
 
+    /**
+     * Updates the tree according to [nodeData]. After the update each node will have property and reference values
+     * as specified in the data. Any existing children of nodes in the data that are not mentioned in the data will
+     * be deleted.
+     *
+     * The intended use case for this operation is a "Save" button in an editor that will save an entire subtree.
+     *
+     * Limitations:
+     * * A node can only be deleted by omitting it from a list of children of its parent.
+     * * A node can only be created by adding it to a list of children of another node.
+     * * This operation does not do conflict resolution.
+     */
     private fun update(nodeData: JSONArray, t: IWriteTransaction) {
         val jsonObjects = nodeData.asSequence().filterIsInstance(JSONObject::class.java)
 
@@ -335,9 +343,12 @@ class LionwebModelServer(val client: LocalModelClient) {
         return json
     }
 
-    private fun encodeBase64Url(input: String): String =
-            BaseEncoding.base64Url().omitPadding().encode(input.toByteArray(Charsets.US_ASCII))
+    private val base64UrlEncoding = BaseEncoding.base64Url().omitPadding()
+
+    private fun encodeBase64Url(input: String): String {
+        return base64UrlEncoding.encode(input.toByteArray(Charsets.US_ASCII))
+    }
 
     private fun decodeBase64Url(input: String): String =
-            BaseEncoding.base64Url().omitPadding().decode(input).toString(Charsets.US_ASCII)
+            base64UrlEncoding.decode(input).toString(Charsets.US_ASCII)
 }

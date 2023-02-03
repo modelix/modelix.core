@@ -190,15 +190,21 @@ class MetaModelGenerator(val outputDir: Path) {
                             }
                         }).asTypeName()
                         addProperty(PropertySpec.builder(feature.validName, GeneratedProperty::class.asClassName().parameterizedBy(data.asKotlinType()))
-                            .initializer("""newProperty(%S, %T, ${data.optional})""", feature.originalName, serializer)
+                            .initializer(
+                                """newProperty(%S, %S, %T, ${data.optional})""",
+                                feature.originalName,
+                                data.uid,
+                                serializer
+                            )
                             .build())
                     }
                     is ChildLinkData -> {
                         val methodName = if (data.multiple) "newChildListLink" else "newSingleChildLink"
                         addProperty(PropertySpec.builder(feature.validName, feature.generatedChildLinkType())
                             .initializer(
-                                """$methodName(%S, ${data.optional}, %T, %T::class)""",
+                                """$methodName(%S, %S, ${data.optional}, %T, %T::class)""",
                                 feature.originalName,
+                                data.uid,
                                 data.type.conceptObjectName().parseClassName(),
                                 data.type.nodeWrapperInterfaceName().parseClassName()
                             )
@@ -207,8 +213,9 @@ class MetaModelGenerator(val outputDir: Path) {
                     is ReferenceLinkData -> {
                         addProperty(PropertySpec.builder(feature.validName, feature.generatedReferenceLinkType())
                             .initializer(
-                                """newReferenceLink(%S, ${data.optional}, %T, %T::class)""",
+                                """newReferenceLink(%S, %S, ${data.optional}, %T, %T::class)""",
                                 feature.originalName,
+                                data.uid,
                                 data.type.conceptObjectName().parseClassName(),
                                 data.type.nodeWrapperInterfaceName().parseClassName()
                             )

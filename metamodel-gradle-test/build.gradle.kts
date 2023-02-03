@@ -57,6 +57,6 @@ metamodel {
     mpsHome = mpsDir
     kotlinDir = kotlinGenDir
     kotlinProject = project
-    includeNamespace("jetbrains.mps.baseLanguage")
+    includeNamespace("jetbrains")
     //exportModules("jetbrains.mps.baseLanguage")
 }

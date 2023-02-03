@@ -17,11 +17,11 @@ println("Version: $version")
 fun computeVersion(): Any {
     val versionFile = file("version.txt")
     val gitVersion: groovy.lang.Closure<String> by extra
-    var version = if (versionFile.exists()) versionFile.readText().trim() else gitVersion()
-    if (!versionFile.exists() && "true" != project.findProperty("ciBuild")) {
-        version = "$version-SNAPSHOT"
+    return if (versionFile.exists()) {
+        versionFile.readText().trim()
+    } else {
+        gitVersion().let{ if (it.endsWith("-SNAPSHOT")) it else "$it-SNAPSHOT" }.also { versionFile.writeText(it) }
     }
-    return version
 }
 
 subprojects {

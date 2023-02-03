@@ -1,6 +1,7 @@
 package org.modelix.metamodel.gradle
 
 import org.gradle.api.Project
+import org.modelix.metamodel.generator.NameConfig
 import java.io.File
 
 open class MetaModelGradleSettings {
@@ -28,6 +29,19 @@ open class MetaModelGradleSettings {
     var typescriptDir: File? = null
     var registrationHelperName: String? = null
     val taskDependencies: MutableList<Any> = ArrayList()
+
+    var languagePrefix: String = ""
+    var languageSuffix: String = "Lang"
+    var nodeWrapperInterfacePrefix: String = ""
+    var nodeWrapperInterfaceSuffix: String = "Node"
+    var nodeWrapperImplPrefix: String = ""
+    var nodeWrapperImplSuffix: String = "NodeTypedImpl"
+    var conceptObjectPrefix: String = ""
+    var conceptObjectSuffix: String = "ConceptUntypedImpl"
+    var conceptWrapperInterfacePrefix: String = ""
+    var conceptWrapperInterfaceSuffix: String = "Concept"
+    var conceptWrapperImplPrefix: String = ""
+    var conceptWrapperImplSuffix: String = "ConceptTypedImpl"
 
     fun dependsOn(vararg dependency: Any) {
         taskDependencies.addAll(dependency)

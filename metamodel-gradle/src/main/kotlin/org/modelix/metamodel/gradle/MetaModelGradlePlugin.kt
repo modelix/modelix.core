@@ -85,6 +85,18 @@ class MetaModelGradlePlugin: Plugin<Project> {
                 task.includedConcepts.addAll(settings.includedConcepts)
                 task.exportedLanguagesDir.set(exportedLanguagesDir)
                 settings.registrationHelperName?.let { task.registrationHelperName.set(it) }
+                task.languagePrefix.set(settings.languagePrefix)
+                task.languageSuffix.set(settings.languageSuffix)
+                task.nodeWrapperInterfacePrefix.set(settings.nodeWrapperInterfacePrefix)
+                task.nodeWrapperInterfaceSuffix.set(settings.nodeWrapperInterfaceSuffix)
+                task.nodeWrapperImplPrefix.set(settings.nodeWrapperImplPrefix)
+                task.nodeWrapperImplSuffix.set(settings.nodeWrapperImplSuffix)
+                task.conceptObjectPrefix.set(settings.conceptObjectPrefix)
+                task.conceptObjectSuffix.set(settings.conceptObjectSuffix)
+                task.conceptWrapperInterfacePrefix.set(settings.conceptWrapperInterfacePrefix)
+                task.conceptWrapperInterfaceSuffix.set(settings.conceptWrapperInterfaceSuffix)
+                task.conceptWrapperImplPrefix.set(settings.conceptWrapperImplPrefix)
+                task.conceptWrapperImplSuffix.set(settings.conceptWrapperImplSuffix)
             }
         }
 

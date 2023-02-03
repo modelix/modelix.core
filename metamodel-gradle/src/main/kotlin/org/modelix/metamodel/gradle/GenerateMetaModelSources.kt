@@ -13,6 +13,7 @@ import org.gradle.api.tasks.TaskAction
 import org.modelix.model.data.LanguageData
 import org.modelix.metamodel.generator.LanguageSet
 import org.modelix.metamodel.generator.MetaModelGenerator
+import org.modelix.metamodel.generator.NameConfig
 import org.modelix.metamodel.generator.TypescriptMMGenerator
 import org.modelix.metamodel.generator.process
 import javax.inject.Inject
@@ -35,6 +36,31 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
     @get:Input
     @Optional
     val registrationHelperName: Property<String> = of.property(String::class.java)
+
+    @get: Input
+    val languagePrefix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val languageSuffix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val nodeWrapperInterfacePrefix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val nodeWrapperInterfaceSuffix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val nodeWrapperImplPrefix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val nodeWrapperImplSuffix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val conceptObjectPrefix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val conceptObjectSuffix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val conceptWrapperInterfacePrefix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val conceptWrapperInterfaceSuffix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val conceptWrapperImplPrefix: Property<String> = of.property(String::class.java)
+    @get: Input
+    val conceptWrapperImplSuffix: Property<String> = of.property(String::class.java)
 
     @TaskAction
     fun generate() {
@@ -73,10 +99,25 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
 
         val processedLanguages = languages.process()
 
+        val nameConfig = NameConfig(
+            languagePrefix = languagePrefix.get(),
+            languageSuffix = languageSuffix.get(),
+            nodeWrapperInterfacePrefix = nodeWrapperInterfacePrefix.get(),
+            nodeWrapperInterfaceSuffix = nodeWrapperInterfaceSuffix.get(),
+            nodeWrapperImplPrefix = nodeWrapperImplPrefix.get(),
+            nodeWrapperImplSuffix = nodeWrapperImplSuffix.get(),
+            conceptObjectPrefix = conceptObjectPrefix.get(),
+            conceptObjectSuffix = conceptObjectSuffix.get(),
+            conceptWrapperInterfacePrefix = conceptWrapperInterfacePrefix.get(),
+            conceptWrapperInterfaceSuffix = conceptWrapperInterfaceSuffix.get(),
+            conceptWrapperImplPrefix = conceptWrapperImplPrefix.get(),
+            conceptWrapperImplSuffix = conceptWrapperImplSuffix.get())
+
         val kotlinOutputDir = this.kotlinOutputDir.orNull?.asFile
         if (kotlinOutputDir != null) {
-            val generator = MetaModelGenerator(kotlinOutputDir.toPath())
+            val generator = MetaModelGenerator(kotlinOutputDir.toPath(), nameConfig)
             generator.generate(processedLanguages)
+            generator.generate(languages)
             registrationHelperName.orNull?.let {
                 generator.generateRegistrationHelper(it, processedLanguages)
             }
@@ -84,7 +125,7 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
 
         val typescriptOutputDir = this.typescriptOutputDir.orNull?.asFile
         if (typescriptOutputDir != null) {
-            val tsGenerator = TypescriptMMGenerator(typescriptOutputDir.toPath())
+            val tsGenerator = TypescriptMMGenerator(typescriptOutputDir.toPath(), nameConfig)
             tsGenerator.generate(processedLanguages)
         }
     }

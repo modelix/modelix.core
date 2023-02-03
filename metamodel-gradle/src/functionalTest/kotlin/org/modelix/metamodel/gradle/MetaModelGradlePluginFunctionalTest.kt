@@ -42,6 +42,7 @@ metamodel {
     registrationHelperName = "org.modelix.metamodel.gradle.functionalTest.Languages"
     typescriptDir = file("" + buildDir + "/ts_gen")
     includeNamespace("jetbrains.mps.baseLanguage")
+    languagePrefix = "TESTLANG_"
     exportModules("jetbrains.mps.runtime")
 }
 """)

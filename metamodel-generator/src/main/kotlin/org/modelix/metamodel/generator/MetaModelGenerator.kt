@@ -49,7 +49,8 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
         val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
         val cls = TypeSpec.objectBuilder(typeName)
             .addProperty(PropertySpec.builder("languages", List::class.parameterizedBy(GeneratedLanguage::class))
-                .initializer("listOf(" + languages.getLanguages().map { it.language.generatedClassName() }.joinToString(", ") { it.canonicalName } + ")")
+                .initializer("listOf(" + languages.getLanguages().map { it.generatedClassName() }
+                    .joinToString(", ") { it.canonicalName } + ")")
                 .build())
             .addFunction(FunSpec.builder("registerAll").addStatement("""languages.forEach { it.register() }""").build())
             .build()
@@ -68,7 +69,8 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     private fun generate(languages: ProcessedLanguageSet) {
         for (language in languages.getLanguages()) {
             language.packageDir().toFile().listFiles()?.filter { it.isFile }?.forEach { it.delete() }
-            val builder = FileSpec.builder(language.generatedClassName().packageName, language.generatedClassName().simpleName)
+            val builder =
+                FileSpec.builder(language.generatedClassName().packageName, language.generatedClassName().simpleName)
             val file = builder.addFileComment(headerComment)
                 .addType(generateLanguage(language)).build()
             for (concept in language.getConcepts()) {
@@ -82,16 +84,20 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
         val builder = TypeSpec.objectBuilder(language.generatedClassName())
         val conceptNamesList = language.getConcepts()
             .joinToString(", ") { it.name }
-        builder.addFunction(FunSpec.builder("getConcepts")
-            .addModifiers(KModifier.OVERRIDE)
-            .addCode(language.getConcepts().map { it.conceptObjectType() }.toListLiteralCodeBlock())
-            .build())
+        builder.addFunction(
+            FunSpec.builder("getConcepts")
+                .addModifiers(KModifier.OVERRIDE)
+                .addCode(language.getConcepts().map { it.conceptObjectType() }.toListLiteralCodeBlock())
+                .build()
+        )
         builder.superclass(GeneratedLanguage::class)
         builder.addSuperclassConstructorParameter("\"${language.name}\"")
         for (concept in language.getConcepts()) {
-            builder.addProperty(PropertySpec.builder(concept.name, concept.conceptWrapperInterfaceType())
-                .initializer("%T", concept.conceptWrapperInterfaceClass())
-                .build())
+            builder.addProperty(
+                PropertySpec.builder(concept.name, concept.conceptWrapperInterfaceType())
+                    .initializer("%T", concept.conceptWrapperInterfaceClass())
+                    .build()
+            )
         }
         return builder.build()
     }
@@ -111,33 +117,79 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     val receiverType = Iterable::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
                     when (feature) {
                         is ProcessedProperty -> {
-                            addProperty(PropertySpec.builder(feature.generatedName, List::class.asTypeName().parameterizedBy(feature.asKotlinType()))
-                                .receiver(receiverType)
-                                .getter(FunSpec.getterBuilder().addStatement("return map { it.%N }", feature.generatedName).build())
-                                .build())
-                            addProperty(PropertySpec.builder("raw_" + feature.generatedName, List::class.asTypeName().parameterizedBy(String::class.asTypeName().copy(nullable = true)))
-                                .receiver(receiverType)
-                                .getter(FunSpec.getterBuilder().addStatement("return map { it.%N }", "raw_" + feature.generatedName).build())
-                                .build())
+                            addProperty(
+                                PropertySpec.builder(
+                                    feature.generatedName,
+                                    List::class.asTypeName().parameterizedBy(feature.asKotlinType())
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return map { it.%N }", feature.generatedName).build()
+                                    )
+                                    .build()
+                            )
+                            addProperty(
+                                PropertySpec.builder(
+                                    "raw_" + feature.generatedName,
+                                    List::class.asTypeName()
+                                        .parameterizedBy(String::class.asTypeName().copy(nullable = true))
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return map { it.%N }", "raw_" + feature.generatedName)
+                                            .build()
+                                    )
+                                    .build()
+                            )
                         }
+
                         is ProcessedChildLink -> {
                             val targetType = feature.type.resolved.nodeWrapperInterfaceType()
-                            addProperty(PropertySpec.builder(feature.generatedName, List::class.asTypeName().parameterizedBy(targetType))
-                                .receiver(receiverType)
-                                .getter(FunSpec.getterBuilder().addStatement("return flatMap { it.%N }", feature.generatedName).build())
-                                .build())
+                            addProperty(
+                                PropertySpec.builder(
+                                    feature.generatedName,
+                                    List::class.asTypeName().parameterizedBy(targetType)
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return flatMap { it.%N }", feature.generatedName).build()
+                                    )
+                                    .build()
+                            )
                         }
+
                         is ProcessedReferenceLink -> {
-                            val targetType = feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
+                            val targetType =
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
                             val rawTargetType = INode::class.asTypeName().copy(nullable = true)
-                            addProperty(PropertySpec.builder(feature.generatedName, List::class.asTypeName().parameterizedBy(targetType))
-                                .receiver(receiverType)
-                                .getter(FunSpec.getterBuilder().addStatement("return map { it.%N }", feature.generatedName).build())
-                                .build())
-                            addProperty(PropertySpec.builder("raw_" + feature.generatedName, List::class.asTypeName().parameterizedBy(rawTargetType))
-                                .receiver(receiverType)
-                                .getter(FunSpec.getterBuilder().addStatement("return map { it.%N }", "raw_" + feature.generatedName).build())
-                                .build())
+                            addProperty(
+                                PropertySpec.builder(
+                                    feature.generatedName,
+                                    List::class.asTypeName().parameterizedBy(targetType)
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return map { it.%N }", feature.generatedName).build()
+                                    )
+                                    .build()
+                            )
+                            addProperty(
+                                PropertySpec.builder(
+                                    "raw_" + feature.generatedName,
+                                    List::class.asTypeName().parameterizedBy(rawTargetType)
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return map { it.%N }", "raw_" + feature.generatedName)
+                                            .build()
+                                    )
+                                    .build()
+                            )
                         }
                     }
                 }
@@ -147,40 +199,57 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
 
     private fun generateConceptObject(concept: ProcessedConcept): TypeSpec {
         return TypeSpec.objectBuilder(concept.conceptObjectName()).apply {
-            superclass(GeneratedConcept::class.asTypeName().parameterizedBy(
-                concept.nodeWrapperInterfaceType(),
-                concept.conceptWrapperInterfaceType()
-            ))
+            superclass(
+                GeneratedConcept::class.asTypeName().parameterizedBy(
+                    concept.nodeWrapperInterfaceType(),
+                    concept.conceptWrapperInterfaceType()
+                )
+            )
             addSuperclassConstructorParameter("%S", concept.name)
             addSuperclassConstructorParameter(concept.abstract.toString())
             val instanceClassType = KClass::class.asClassName().parameterizedBy(concept.nodeWrapperImplType())
-            addFunction(FunSpec.builder(GeneratedConcept<*, *>::getInstanceClass.name)
-                .addModifiers(KModifier.OVERRIDE)
-                .addStatement("""return %T::class""", concept.nodeWrapperImplType())
-                .build())
-            addFunction(FunSpec.builder(GeneratedConcept<*, *>::typed.name)
-                .addModifiers(KModifier.OVERRIDE)
-                .addStatement("""return %T""", concept.conceptWrapperInterfaceClass())
-                .build())
-            addProperty(PropertySpec.builder(IConcept::language.name, ILanguage::class, KModifier.OVERRIDE)
-                .initializer(concept.language.generatedClassName().simpleName)
-                .build())
-            addFunction(FunSpec.builder(GeneratedConcept<*, *>::wrap.name)
-                .addModifiers(KModifier.OVERRIDE)
-                .addParameter("node", INode::class)
-                .addStatement("return %T(node)", concept.nodeWrapperImplType())
-                .build())
-            concept.uid?.let { uid ->
-                addFunction(FunSpec.builder(GeneratedConcept<*, *>::getUID.name)
+            addFunction(
+                FunSpec.builder(GeneratedConcept<*, *>::getInstanceClass.name)
                     .addModifiers(KModifier.OVERRIDE)
-                    .addStatement(CodeBlock.of("return %S", uid).toString())
-                    .build())
+                    .addStatement("""return %T::class""", concept.nodeWrapperImplType())
+                    .build()
+            )
+            addFunction(
+                FunSpec.builder(GeneratedConcept<*, *>::typed.name)
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addStatement("""return %T""", concept.conceptWrapperInterfaceClass())
+                    .build()
+            )
+            addProperty(
+                PropertySpec.builder(IConcept::language.name, ILanguage::class, KModifier.OVERRIDE)
+                    .initializer(concept.language.generatedClassName().simpleName)
+                    .build()
+            )
+            addFunction(
+                FunSpec.builder(GeneratedConcept<*, *>::wrap.name)
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addParameter("node", INode::class)
+                    .addStatement("return %T(node)", concept.nodeWrapperImplType())
+                    .build()
+            )
+            concept.uid?.let { uid ->
+                addFunction(
+                    FunSpec.builder(GeneratedConcept<*, *>::getUID.name)
+                        .addModifiers(KModifier.OVERRIDE)
+                        .addStatement(CodeBlock.of("return %S", uid).toString())
+                        .build()
+                )
             }
-            addFunction(FunSpec.builder(GeneratedConcept<*, *>::getDirectSuperConcepts.name)
-                .addModifiers(KModifier.OVERRIDE)
-                .addCode(concept.getDirectSuperConcepts().map { it.conceptObjectType() }.toList().toListLiteralCodeBlock())
-                .returns(List::class.asTypeName().parameterizedBy(IConcept::class.asTypeName()))
-                .build())
+            addFunction(
+                FunSpec.builder(GeneratedConcept<*, *>::getDirectSuperConcepts.name)
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addCode(
+                        concept.getDirectSuperConcepts().map { it.conceptObjectType() }.toList()
+                            .toListLiteralCodeBlock()
+                    )
+                    .returns(List::class.asTypeName().parameterizedBy(IConcept::class.asTypeName()))
+                    .build()
+            )
             for (feature in concept.getOwnRoles()) {
                 when (feature) {
                     is ProcessedProperty -> {
@@ -197,37 +266,48 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 PropertyType.INT -> OptionalIntPropertySerializer::class
                             }
                         }).asTypeName()
-                        addProperty(PropertySpec.builder(feature.generatedName, GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType()))
-                            .initializer(
-                                """newProperty(%S, %S, %T, ${feature.optional})""",
-                                feature.originalName,
-                                feature.uid,
-                                serializer
+                        addProperty(
+                            PropertySpec.builder(
+                                feature.generatedName,
+                                GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType())
                             )
-                            .build())
+                                .initializer(
+                                    """newProperty(%S, %S, %T, ${feature.optional})""",
+                                    feature.originalName,
+                                    feature.uid,
+                                    serializer
+                                )
+                                .build()
+                        )
                     }
+
                     is ProcessedChildLink -> {
                         val methodName = if (feature.multiple) "newChildListLink" else "newSingleChildLink"
-                        addProperty(PropertySpec.builder(feature.generatedName, feature.generatedChildLinkType())
-                            .initializer(
-                                """$methodName(%S, %S, ${feature.optional}, %T, %T::class)""",
-                                feature.originalName,
-                                feature.uid,
-                                feature.type.resolved.conceptObjectType(),
-                                feature.type.resolved.nodeWrapperInterfaceType()
-                            )
-                            .build())
+                        addProperty(
+                            PropertySpec.builder(feature.generatedName, feature.generatedChildLinkType())
+                                .initializer(
+                                    """$methodName(%S, %S, ${feature.optional}, %T, %T::class)""",
+                                    feature.originalName,
+                                    feature.uid,
+                                    feature.type.resolved.conceptObjectType(),
+                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                )
+                                .build()
+                        )
                     }
+
                     is ProcessedReferenceLink -> {
-                        addProperty(PropertySpec.builder(feature.generatedName, feature.generatedReferenceLinkType())
-                            .initializer(
-                                """newReferenceLink(%S, %S, ${feature.optional}, %T, %T::class)""",
-                                feature.originalName,
-                                feature.uid,
-                                feature.type.resolved.conceptObjectType(),
-                                feature.type.resolved.nodeWrapperInterfaceType()
-                            )
-                            .build())
+                        addProperty(
+                            PropertySpec.builder(feature.generatedName, feature.generatedReferenceLinkType())
+                                .initializer(
+                                    """newReferenceLink(%S, %S, ${feature.optional}, %T, %T::class)""",
+                                    feature.originalName,
+                                    feature.uid,
+                                    feature.type.resolved.conceptObjectType(),
+                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                )
+                                .build()
+                        )
                     }
                 }
             }
@@ -244,15 +324,26 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             }
             for (feature in concept.getOwnRoles()) {
                 when (feature) {
-                    is ProcessedProperty -> addProperty(PropertySpec.builder(feature.generatedName, GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType()))
-                        .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
-                        .build())
-                    is ProcessedChildLink -> addProperty(PropertySpec.builder(feature.generatedName, feature.generatedChildLinkType())
-                        .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
-                        .build())
-                    is ProcessedReferenceLink -> addProperty(PropertySpec.builder(feature.generatedName, feature.generatedReferenceLinkType())
-                        .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
-                        .build())
+                    is ProcessedProperty -> addProperty(
+                        PropertySpec.builder(
+                            feature.generatedName,
+                            GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType())
+                        )
+                            .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
+                            .build()
+                    )
+
+                    is ProcessedChildLink -> addProperty(
+                        PropertySpec.builder(feature.generatedName, feature.generatedChildLinkType())
+                            .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
+                            .build()
+                    )
+
+                    is ProcessedReferenceLink -> addProperty(
+                        PropertySpec.builder(feature.generatedName, feature.generatedReferenceLinkType())
+                            .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
+                            .build()
+                    )
                 }
             }
 
@@ -260,16 +351,20 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                 addSuperinterface(concept.conceptWrapperInterfaceType())
                 val t = if (concept.abstract) IConceptOfTypedNode::class else INonAbstractConcept::class
                 addSuperinterface(t.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
-                addFunction(FunSpec.builder(IConceptOfTypedNode<*>::getInstanceInterface.name)
-                    .addModifiers(KModifier.OVERRIDE)
-                    .returns(KClass::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
-                    .addStatement("return %T::class", concept.nodeWrapperInterfaceType())
-                    .build())
-                addFunction(FunSpec.builder(ITypedConcept::untyped.name)
-                    .returns(IConcept::class)
-                    .addModifiers(KModifier.OVERRIDE)
-                    .addStatement("return %T", concept.conceptObjectType())
-                    .build())
+                addFunction(
+                    FunSpec.builder(IConceptOfTypedNode<*>::getInstanceInterface.name)
+                        .addModifiers(KModifier.OVERRIDE)
+                        .returns(KClass::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
+                        .addStatement("return %T::class", concept.nodeWrapperInterfaceType())
+                        .build()
+                )
+                addFunction(
+                    FunSpec.builder(ITypedConcept::untyped.name)
+                        .returns(IConcept::class)
+                        .addModifiers(KModifier.OVERRIDE)
+                        .addStatement("return %T", concept.conceptObjectType())
+                        .build()
+                )
             }.build())
         }.build()
     }
@@ -277,17 +372,28 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     private fun generateNodeWrapperImpl(concept: ProcessedConcept): TypeSpec {
         return TypeSpec.classBuilder(concept.nodeWrapperImplType()).apply {
             addModifiers(KModifier.OPEN)
-            addProperty(PropertySpec.builder(TypedNodeImpl::_concept.name, concept.conceptWrapperInterfaceType(), KModifier.OVERRIDE)
-                .getter(FunSpec.getterBuilder().addStatement("""return %T""", concept.conceptWrapperInterfaceClass()).build())
-                .build())
+            addProperty(
+                PropertySpec.builder(
+                    TypedNodeImpl::_concept.name,
+                    concept.conceptWrapperInterfaceType(),
+                    KModifier.OVERRIDE
+                )
+                    .getter(
+                        FunSpec.getterBuilder().addStatement("""return %T""", concept.conceptWrapperInterfaceClass())
+                            .build()
+                    )
+                    .build()
+            )
 
             if (concept.extends.size > 1) {
                 // fix kotlin warning about ambiguity in case of multiple inheritance
-                addFunction(FunSpec.builder(ITypedNode::unwrap.name)
-                    .addModifiers(KModifier.OVERRIDE)
-                    .returns(INode::class)
-                    .addStatement("return " + TypedNodeImpl::wrappedNode.name)
-                    .build())
+                addFunction(
+                    FunSpec.builder(ITypedNode::unwrap.name)
+                        .addModifiers(KModifier.OVERRIDE)
+                        .returns(INode::class)
+                        .addStatement("return " + TypedNodeImpl::wrappedNode.name)
+                        .build()
+                )
             }
             primaryConstructor(FunSpec.constructorBuilder().addParameter("_node", INode::class).build())
             if (concept.extends.isEmpty()) {
@@ -297,77 +403,104 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                 superclass(concept.extends.first().resolved.nodeWrapperImplType())
                 addSuperclassConstructorParameter("_node")
                 for (extended in concept.extends.drop(1)) {
-                    addSuperinterface(extended.resolved.nodeWrapperInterfaceType(), CodeBlock.of("%T(_node)", extended.resolved.nodeWrapperImplType()))
+                    addSuperinterface(
+                        extended.resolved.nodeWrapperInterfaceType(),
+                        CodeBlock.of("%T(_node)", extended.resolved.nodeWrapperImplType())
+                    )
                 }
             }
             addSuperinterface(concept.nodeWrapperInterfaceType())
             for (feature in concept.getOwnAndDuplicateRoles()) {
                 when (feature) {
                     is ProcessedProperty -> {
-                        addProperty(PropertySpec.builder(feature.generatedName, feature.asKotlinType())
-                            .addModifiers(KModifier.OVERRIDE)
-                            .mutable(true)
-                            .delegate(
-                                """%T(unwrap(), %T.%N)""",
-                                TypedPropertyAccessor::class.asTypeName(),
-                                feature.concept.conceptObjectType(),
-                                feature.generatedName,
+                        addProperty(
+                            PropertySpec.builder(feature.generatedName, feature.asKotlinType())
+                                .addModifiers(KModifier.OVERRIDE)
+                                .mutable(true)
+                                .delegate(
+                                    """%T(unwrap(), %T.%N)""",
+                                    TypedPropertyAccessor::class.asTypeName(),
+                                    feature.concept.conceptObjectType(),
+                                    feature.generatedName,
+                                )
+                                .build()
+                        )
+                        addProperty(
+                            PropertySpec.builder(
+                                "raw_" + feature.generatedName,
+                                String::class.asTypeName().copy(nullable = true)
                             )
-                            .build())
-                        addProperty(PropertySpec.builder("raw_" + feature.generatedName, String::class.asTypeName().copy(nullable = true))
-                            .addModifiers(KModifier.OVERRIDE)
-                            .mutable(true)
-                            .delegate(
-                                """%T(unwrap(), %T.%N.untyped())""",
-                                RawPropertyAccessor::class.asTypeName(),
-                                feature.concept.conceptObjectType(),
-                                feature.generatedName,
-                            )
-                            .build())
+                                .addModifiers(KModifier.OVERRIDE)
+                                .mutable(true)
+                                .delegate(
+                                    """%T(unwrap(), %T.%N.untyped())""",
+                                    RawPropertyAccessor::class.asTypeName(),
+                                    feature.concept.conceptObjectType(),
+                                    feature.generatedName,
+                                )
+                                .build()
+                        )
                     }
+
                     is ProcessedChildLink -> {
                         // TODO resolve link.type and ensure it exists
-                        val accessorSubclass = if (feature.multiple) ChildListAccessor::class else SingleChildAccessor::class
+                        val accessorSubclass =
+                            if (feature.multiple) ChildListAccessor::class else SingleChildAccessor::class
                         val type = accessorSubclass.asClassName()
                             .parameterizedBy(
-                                feature.type.resolved.nodeWrapperInterfaceType())
-                        addProperty(PropertySpec.builder(feature.generatedName, type)
-                            .addModifiers(KModifier.OVERRIDE)
-                            .initializer(
-                                """%T(%N(), %T.%N, %T, %T::class)""",
-                                accessorSubclass.asTypeName(),
-                                ITypedNode::unwrap.name,
-                                feature.concept.conceptObjectType(),
-                                feature.generatedName,
-                                feature.type.resolved.conceptObjectType(),
                                 feature.type.resolved.nodeWrapperInterfaceType()
                             )
-                            .build())
+                        addProperty(
+                            PropertySpec.builder(feature.generatedName, type)
+                                .addModifiers(KModifier.OVERRIDE)
+                                .initializer(
+                                    """%T(%N(), %T.%N, %T, %T::class)""",
+                                    accessorSubclass.asTypeName(),
+                                    ITypedNode::unwrap.name,
+                                    feature.concept.conceptObjectType(),
+                                    feature.generatedName,
+                                    feature.type.resolved.conceptObjectType(),
+                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                )
+                                .build()
+                        )
                     }
+
                     is ProcessedReferenceLink -> {
-                        val accessorClass = if (feature.optional) OptionalReferenceAccessor::class else MandatoryReferenceAccessor::class
-                        addProperty(PropertySpec.builder(feature.generatedName, feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional))
-                            .addModifiers(KModifier.OVERRIDE)
-                            .mutable(true)
-                            .delegate(
-                                """%T(%N(), %T.%N, %T::class)""",
-                                accessorClass.asTypeName(),
-                                ITypedNode::unwrap.name,
-                                feature.concept.conceptObjectType(),
+                        val accessorClass =
+                            if (feature.optional) OptionalReferenceAccessor::class else MandatoryReferenceAccessor::class
+                        addProperty(
+                            PropertySpec.builder(
                                 feature.generatedName,
-                                feature.type.resolved.nodeWrapperInterfaceType()
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
                             )
-                            .build())
-                        addProperty(PropertySpec.builder("raw_" + feature.generatedName, INode::class.asTypeName().copy(nullable = true))
-                            .addModifiers(KModifier.OVERRIDE)
-                            .mutable(true)
-                            .delegate(
-                                """%T(${ITypedNode::unwrap.name}(), %T.%N)""",
-                                RawReferenceAccessor::class.asClassName(),
-                                feature.concept.conceptObjectType(),
-                                feature.generatedName,
+                                .addModifiers(KModifier.OVERRIDE)
+                                .mutable(true)
+                                .delegate(
+                                    """%T(%N(), %T.%N, %T::class)""",
+                                    accessorClass.asTypeName(),
+                                    ITypedNode::unwrap.name,
+                                    feature.concept.conceptObjectType(),
+                                    feature.generatedName,
+                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                )
+                                .build()
+                        )
+                        addProperty(
+                            PropertySpec.builder(
+                                "raw_" + feature.generatedName,
+                                INode::class.asTypeName().copy(nullable = true)
                             )
-                            .build())
+                                .addModifiers(KModifier.OVERRIDE)
+                                .mutable(true)
+                                .delegate(
+                                    """%T(${ITypedNode::unwrap.name}(), %T.%N)""",
+                                    RawReferenceAccessor::class.asClassName(),
+                                    feature.concept.conceptObjectType(),
+                                    feature.generatedName,
+                                )
+                                .build()
+                        )
                     }
                 }
             }
@@ -383,79 +516,94 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             for (feature in concept.getOwnRoles()) {
                 when (feature) {
                     is ProcessedProperty -> {
-                        addProperty(PropertySpec.builder(feature.generatedName, feature.asKotlinType())
-                            .mutable(true)
-                            .build())
-                        addProperty(PropertySpec.builder("raw_" + feature.generatedName, String::class.asTypeName().copy(nullable = true))
-                            .mutable(true)
-                            .build())
+                        addProperty(
+                            PropertySpec.builder(feature.generatedName, feature.asKotlinType())
+                                .mutable(true)
+                                .build()
+                        )
+                        addProperty(
+                            PropertySpec.builder(
+                                "raw_" + feature.generatedName,
+                                String::class.asTypeName().copy(nullable = true)
+                            )
+                                .mutable(true)
+                                .build()
+                        )
                     }
+
                     is ProcessedChildLink -> {
                         // TODO resolve link.type and ensure it exists
-                        val accessorSubclass = if (feature.multiple) ChildListAccessor::class else SingleChildAccessor::class
+                        val accessorSubclass =
+                            if (feature.multiple) ChildListAccessor::class else SingleChildAccessor::class
                         val type = accessorSubclass.asClassName()
                             .parameterizedBy(
-                                feature.type.resolved.nodeWrapperInterfaceType())
-                        addProperty(PropertySpec.builder(feature.generatedName, type)
-                            .build())
+                                feature.type.resolved.nodeWrapperInterfaceType()
+                            )
+                        addProperty(
+                            PropertySpec.builder(feature.generatedName, type)
+                                .build()
+                        )
                     }
+
                     is ProcessedReferenceLink -> {
-                        addProperty(PropertySpec.builder(feature.generatedName, feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional))
-                            .mutable(true)
-                            .build())
-                        addProperty(PropertySpec.builder("raw_" + feature.generatedName, INode::class.asTypeName().copy(nullable = true))
-                            .mutable(true)
-                            .build())
+                        addProperty(
+                            PropertySpec.builder(
+                                feature.generatedName,
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
+                            )
+                                .mutable(true)
+                                .build()
+                        )
+                        addProperty(
+                            PropertySpec.builder(
+                                "raw_" + feature.generatedName,
+                                INode::class.asTypeName().copy(nullable = true)
+                            )
+                                .mutable(true)
+                                .build()
+                        )
                     }
                 }
             }
         }.build()
     }
-}
 
-//fun ConceptRef.conceptWrapperImplType() = ClassName(languageName, conceptName.conceptWrapperImplName())
-internal fun ProcessedConcept.conceptWrapperInterfaceType() = conceptWrapperInterfaceClass().parameterizedBy(nodeWrapperInterfaceType())
-internal fun ProcessedConcept.conceptWrapperInterfaceClass() = ClassName(language.name, name.conceptWrapperInterfaceName())
+    private fun ProcessedConcept.conceptWrapperInterfaceType() =
+        conceptWrapperInterfaceClass().parameterizedBy(nodeWrapperInterfaceType())
 
-fun String.languageClassName() = "L_" + this.replace(".", "_")
-internal fun ProcessedLanguage.generatedClassName()  = ClassName(name, name.languageClassName())
-internal fun ProcessedLanguage.simpleClassName()  = this.generatedClassName().simpleName
-internal fun ProcessedConcept.nodeWrapperInterfaceName() = name.nodeWrapperInterfaceName()
-fun String.nodeWrapperInterfaceName() = fqNamePrefix("N_")
-internal fun ProcessedConcept.nodeWrapperImplName() = name.nodeWrapperImplName()
-fun String.nodeWrapperImplName() = fqNamePrefix("_N_TypedImpl_")
-internal fun ProcessedConcept.conceptObjectName() = name.conceptObjectName()
-fun String.conceptObjectName() = fqNamePrefix("_C_UntypedImpl_")
-internal fun ProcessedConcept.conceptWrapperImplName() = name.conceptWrapperImplName()
-fun String.conceptWrapperImplName() = fqNamePrefix("_C_TypedImpl_")
-internal fun ProcessedConcept.conceptWrapperInterfaceName() = name.conceptWrapperInterfaceName()
-fun String.conceptWrapperInterfaceName() = fqNamePrefix("C_")
-private fun String.fqNamePrefix(prefix: String, suffix: String = ""): String {
-    return if (this.contains(".")) {
-        this.substringBeforeLast(".") + "." + prefix + this.substringAfterLast(".")
-    } else {
-        prefix + this
-    } + suffix
-}
+    private fun ProcessedConcept.conceptWrapperInterfaceClass() =
+        ClassName(language.name, nameConfig.conceptWrapperInterfaceName(name))
 
-internal fun ProcessedConcept.getConceptFqName() = language.name + "." + name
-internal fun ProcessedConcept.conceptObjectType() = ClassName(language.name, conceptObjectName())
-internal fun ProcessedConcept.nodeWrapperImplType() = ClassName(language.name, nodeWrapperImplName())
-internal fun ProcessedConcept.nodeWrapperInterfaceType() = ClassName(language.name, nodeWrapperInterfaceName())
-//fun LanguageSet.ConceptInLanguage.conceptWrapperImplType() = ClassName(language.name, concept.conceptWrapperImplName())
+    private fun ProcessedLanguage.generatedClassName() = ClassName(name, nameConfig.languageClassName(name))
+    private fun ProcessedConcept.nodeWrapperInterfaceName() = nameConfig.nodeWrapperInterfaceName(name)
+    private fun ProcessedConcept.nodeWrapperImplName() = nameConfig.nodeWrapperImplName(name)
+    private fun ProcessedConcept.conceptObjectName() = nameConfig.conceptObjectName(name)
+    //private fun ProcessedConcept.conceptWrapperImplName() = nameConfig.conceptWrapperImplName(name)
+    //private fun ProcessedConcept.conceptWrapperInterfaceName() = nameConfig.conceptWrapperInterfaceName(name)
 
-internal fun ProcessedRole.kotlinRef() = CodeBlock.of("%T.%N", concept.conceptObjectType(), generatedName)
-internal fun ProcessedRole.returnKotlinRef() = CodeBlock.of("return %T.%N", concept.conceptObjectType(), generatedName)
-internal fun ProcessedChildLink.generatedChildLinkType(): TypeName {
-    val childConcept = type.resolved
-    val linkClass = if (multiple) GeneratedChildListLink::class else GeneratedSingleChildLink::class
-    return linkClass.asClassName().parameterizedBy(
-        childConcept.nodeWrapperInterfaceType(), childConcept.conceptWrapperInterfaceType())
-}
-internal fun ProcessedReferenceLink.generatedReferenceLinkType(): TypeName {
-    val targetConcept = type.resolved
-    return GeneratedReferenceLink::class.asClassName().parameterizedBy(
-        targetConcept.nodeWrapperInterfaceType(), targetConcept.conceptWrapperInterfaceType())
+    //private fun ProcessedConcept.getConceptFqName() = language.name + "." + name
+    private fun ProcessedConcept.conceptObjectType() = ClassName(language.name, conceptObjectName())
+    private fun ProcessedConcept.nodeWrapperImplType() = ClassName(language.name, nodeWrapperImplName())
+    private fun ProcessedConcept.nodeWrapperInterfaceType() = ClassName(language.name, nodeWrapperInterfaceName())
+
+    //private fun ProcessedRole.kotlinRef() = CodeBlock.of("%T.%N", concept.conceptObjectType(), generatedName)
+    private fun ProcessedRole.returnKotlinRef() =
+        CodeBlock.of("return %T.%N", concept.conceptObjectType(), generatedName)
+
+    private fun ProcessedChildLink.generatedChildLinkType(): TypeName {
+        val childConcept = type.resolved
+        val linkClass = if (multiple) GeneratedChildListLink::class else GeneratedSingleChildLink::class
+        return linkClass.asClassName().parameterizedBy(
+            childConcept.nodeWrapperInterfaceType(), childConcept.conceptWrapperInterfaceType()
+        )
+    }
+
+    private fun ProcessedReferenceLink.generatedReferenceLinkType(): TypeName {
+        val targetConcept = type.resolved
+        return GeneratedReferenceLink::class.asClassName().parameterizedBy(
+            targetConcept.nodeWrapperInterfaceType(), targetConcept.conceptWrapperInterfaceType()
+        )
+    }
 }
 
 private fun List<TypeName>.toListLiteralCodeBlock(): CodeBlock {

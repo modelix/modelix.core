@@ -117,7 +117,6 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
         if (kotlinOutputDir != null) {
             val generator = MetaModelGenerator(kotlinOutputDir.toPath(), nameConfig)
             generator.generate(processedLanguages)
-            generator.generate(languages)
             registrationHelperName.orNull?.let {
                 generator.generateRegistrationHelper(it, processedLanguages)
             }

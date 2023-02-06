@@ -316,7 +316,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
 
     private fun generateConceptWrapperInterface(concept: ProcessedConcept): TypeSpec {
         return TypeSpec.interfaceBuilder(concept.conceptWrapperInterfaceClass()).apply {
-            val nodeT = TypeVariableName("NodeT", ITypedNode::class, variance = KModifier.OUT)
+            val nodeT = TypeVariableName("NodeT", concept.nodeWrapperInterfaceType(), variance = KModifier.OUT)
             addTypeVariable(nodeT)
             addSuperinterface(IConceptOfTypedNode::class.asTypeName().parameterizedBy(nodeT))
             for (extended in concept.getDirectSuperConcepts()) {

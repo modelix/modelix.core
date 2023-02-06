@@ -1,11 +1,12 @@
 package org.modelix.metamodel.generator
 
-import java.nio.file.Path
-import kotlin.io.path.writeText
+import com.squareup.kotlinpoet.ClassName
 import org.modelix.model.data.LanguageData
 import org.modelix.model.data.PropertyType
+import java.nio.file.Path
+import kotlin.io.path.writeText
 
-class TypescriptMMGenerator(val outputDir: Path) {
+class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = NameConfig()) {
 
     private fun LanguageData.packageDir(): Path {
         val packageName = name
@@ -203,18 +204,37 @@ class TypescriptMMGenerator(val outputDir: Path) {
             
         """.trimIndent()
     }
-}
 
-private fun ProcessedConcept.markerPropertyName() = "_is_" + toString().replace(".", "_")
-internal fun ProcessedConcept.tsClassName() = this.language.name.languageClassName() + "." + this.name
-internal fun ProcessedConcept.tsInterfaceRef(contextLanguage: ProcessedLanguage) = languagePrefix(contextLanguage) + nodeWrapperInterfaceName()
-internal fun ProcessedConcept.languagePrefix(contextLanguage: ProcessedLanguage): String {
-    return if (this.language == contextLanguage) {
-        ""
-    } else {
-        this.language.name.languageClassName() + "."
+    private fun ProcessedConcept.nodeWrapperInterfaceName() =
+        nameConfig.typedNode(this.name)
+
+    private fun ProcessedConcept.conceptWrapperImplName() =
+        nameConfig.typedConceptImpl(this.name)
+
+    private fun ProcessedConcept.nodeWrapperImplName() =
+        nameConfig.typedNodeImpl(this.name)
+
+    private fun ProcessedConcept.conceptWrapperInterfaceName() =
+        nameConfig.typedConcept(this.name)
+
+    private fun ProcessedLanguage.generatedClassName() =
+        ClassName(name, nameConfig.languageClass(name))
+
+    private fun ProcessedLanguage.simpleClassName() =
+        this.generatedClassName().simpleName
+
+    private fun ProcessedConcept.markerPropertyName() = "_is_" + toString().replace(".", "_")
+    //private fun ProcessedConcept.tsClassName() = nameConfig.languageClassName(this.language.name) + "." + this.name
+    private fun ProcessedConcept.tsInterfaceRef(contextLanguage: ProcessedLanguage) = languagePrefix(contextLanguage) + nodeWrapperInterfaceName()
+    private fun ProcessedConcept.languagePrefix(contextLanguage: ProcessedLanguage): String {
+        return if (this.language == contextLanguage) {
+            ""
+        } else {
+            nameConfig.languageClass(this.language.name) + "."
+        }
     }
 }
+
 internal fun ProcessedLanguage.languageDependencies(): List<ProcessedLanguage> {
     val languageNames = this.getConcepts()
         .flatMap { it.getAllSuperConceptsAndSelf().flatMap { it.getOwnRoles() } }

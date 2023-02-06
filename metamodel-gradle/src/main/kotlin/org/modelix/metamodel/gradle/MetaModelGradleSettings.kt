@@ -1,6 +1,8 @@
 package org.modelix.metamodel.gradle
 
+import org.gradle.api.Action
 import org.gradle.api.Project
+import org.modelix.metamodel.generator.NameConfig
 import java.io.File
 
 open class MetaModelGradleSettings {
@@ -28,6 +30,12 @@ open class MetaModelGradleSettings {
     var typescriptDir: File? = null
     var registrationHelperName: String? = null
     val taskDependencies: MutableList<Any> = ArrayList()
+
+    internal val nameConfig = NameConfig()
+
+    fun names(action: Action<NameConfig>) {
+        action.execute(nameConfig)
+    }
 
     fun dependsOn(vararg dependency: Any) {
         taskDependencies.addAll(dependency)

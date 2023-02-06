@@ -43,6 +43,10 @@ metamodel {
     typescriptDir = file("" + buildDir + "/ts_gen")
     includeNamespace("jetbrains.mps.baseLanguage")
     exportModules("jetbrains.mps.runtime")
+    names {
+        languageClass.prefix = "TESTLANG"
+        languageClass.suffix = "TESTSUFFIX"
+    }
 }
 """)
 

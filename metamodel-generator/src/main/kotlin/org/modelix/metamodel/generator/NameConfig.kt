@@ -1,18 +1,18 @@
 package org.modelix.metamodel.generator
 
 class NameConfig(
-    private val languagePrefix: String = "",
-    private val languageSuffix: String = "Lang",
-    private val nodeWrapperInterfacePrefix: String = "",
-    private val nodeWrapperInterfaceSuffix: String = "Node",
-    private val nodeWrapperImplPrefix: String = "",
-    private val nodeWrapperImplSuffix: String = "NodeTypedImpl",
-    private val conceptObjectPrefix: String = "",
-    private val conceptObjectSuffix: String = "ConceptUntypedImpl",
-    private val conceptWrapperInterfacePrefix: String = "",
-    private val conceptWrapperInterfaceSuffix: String = "Concept",
-    private val conceptWrapperImplPrefix: String = "",
-    private val conceptWrapperImplSuffix: String = "ConceptTypedImpl"
+    private val languagePrefix: String = "L_",
+    private val languageSuffix: String = "",
+    private val nodeWrapperInterfacePrefix: String = "N_",
+    private val nodeWrapperInterfaceSuffix: String = "",
+    private val nodeWrapperImplPrefix: String = "_N_TypedImpl_",
+    private val nodeWrapperImplSuffix: String = "",
+    private val conceptObjectPrefix: String = "_C_UntypedImpl_",
+    private val conceptObjectSuffix: String = "",
+    private val conceptWrapperInterfacePrefix: String = "C_",
+    private val conceptWrapperInterfaceSuffix: String = "",
+    private val conceptWrapperImplPrefix: String = "_C_TypedImpl_",
+    private val conceptWrapperImplSuffix: String = ""
 ) {
 
     fun languageClassName(baseName: String) =

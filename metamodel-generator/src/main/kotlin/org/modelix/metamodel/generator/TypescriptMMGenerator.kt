@@ -206,19 +206,19 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
     }
 
     private fun ProcessedConcept.nodeWrapperInterfaceName() =
-        nameConfig.nodeWrapperInterfaceName(this.name)
+        nameConfig.nodeWrapperInterface(this.name)
 
     private fun ProcessedConcept.conceptWrapperImplName() =
-        nameConfig.conceptWrapperImplName(this.name)
+        nameConfig.conceptWrapperImpl(this.name)
 
     private fun ProcessedConcept.nodeWrapperImplName() =
-        nameConfig.nodeWrapperImplName(this.name)
+        nameConfig.nodeWrapperImpl(this.name)
 
     private fun ProcessedConcept.conceptWrapperInterfaceName() =
-        nameConfig.conceptWrapperInterfaceName(this.name)
+        nameConfig.conceptWrapperInterface(this.name)
 
     private fun ProcessedLanguage.generatedClassName() =
-        ClassName(name, nameConfig.languageClassName(name))
+        ClassName(name, nameConfig.languageClass(name))
 
     private fun ProcessedLanguage.simpleClassName() =
         this.generatedClassName().simpleName
@@ -230,7 +230,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         return if (this.language == contextLanguage) {
             ""
         } else {
-            nameConfig.languageClassName(this.language.name) + "."
+            nameConfig.languageClass(this.language.name) + "."
         }
     }
 }

@@ -572,12 +572,12 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
         conceptWrapperInterfaceClass().parameterizedBy(nodeWrapperInterfaceType())
 
     private fun ProcessedConcept.conceptWrapperInterfaceClass() =
-        ClassName(language.name, nameConfig.conceptWrapperInterfaceName(name))
+        ClassName(language.name, nameConfig.conceptWrapperInterface(name))
 
-    private fun ProcessedLanguage.generatedClassName() = ClassName(name, nameConfig.languageClassName(name))
-    private fun ProcessedConcept.nodeWrapperInterfaceName() = nameConfig.nodeWrapperInterfaceName(name)
-    private fun ProcessedConcept.nodeWrapperImplName() = nameConfig.nodeWrapperImplName(name)
-    private fun ProcessedConcept.conceptObjectName() = nameConfig.conceptObjectName(name)
+    private fun ProcessedLanguage.generatedClassName() = ClassName(name, nameConfig.languageClass(name))
+    private fun ProcessedConcept.nodeWrapperInterfaceName() = nameConfig.nodeWrapperInterface(name)
+    private fun ProcessedConcept.nodeWrapperImplName() = nameConfig.nodeWrapperImpl(name)
+    private fun ProcessedConcept.conceptObjectName() = nameConfig.conceptObject(name)
     //private fun ProcessedConcept.conceptWrapperImplName() = nameConfig.conceptWrapperImplName(name)
     //private fun ProcessedConcept.conceptWrapperInterfaceName() = nameConfig.conceptWrapperInterfaceName(name)
 

@@ -4,11 +4,11 @@ import java.io.Serializable
 
 class NameConfig : Serializable {
     val languageClass = ConfigurableName(baseNameConversion = { it.replace(".", "_") })
-    val nodeWrapperInterface = ConfigurableName(prefix = "N_")
-    val nodeWrapperImpl = ConfigurableName(prefix = "_N_TypedImpl_")
-    val conceptObject = ConfigurableName(prefix = "_C_UntypedImpl_")
-    val conceptWrapperInterface = ConfigurableName(prefix = "C_")
-    val conceptWrapperImpl = ConfigurableName(prefix = "_C_TypedImpl_")
+    val typedNode = ConfigurableName(prefix = "N_")
+    val typedNodeImpl = ConfigurableName(prefix = "_N_TypedImpl_")
+    val untypedConcept = ConfigurableName(prefix = "_C_UntypedImpl_")
+    val typedConcept = ConfigurableName(prefix = "C_")
+    val typedConceptImpl = ConfigurableName(prefix = "_C_TypedImpl_")
 }
 
 private val UNMODIFED_SIMPLE_NAME: (String) -> String = {

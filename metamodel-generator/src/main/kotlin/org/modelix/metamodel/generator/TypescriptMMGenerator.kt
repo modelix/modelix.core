@@ -206,16 +206,16 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
     }
 
     private fun ProcessedConcept.nodeWrapperInterfaceName() =
-        nameConfig.nodeWrapperInterface(this.name)
+        nameConfig.typedNode(this.name)
 
     private fun ProcessedConcept.conceptWrapperImplName() =
-        nameConfig.conceptWrapperImpl(this.name)
+        nameConfig.typedConceptImpl(this.name)
 
     private fun ProcessedConcept.nodeWrapperImplName() =
-        nameConfig.nodeWrapperImpl(this.name)
+        nameConfig.typedNodeImpl(this.name)
 
     private fun ProcessedConcept.conceptWrapperInterfaceName() =
-        nameConfig.conceptWrapperInterface(this.name)
+        nameConfig.typedConcept(this.name)
 
     private fun ProcessedLanguage.generatedClassName() =
         ClassName(name, nameConfig.languageClass(name))

@@ -59,4 +59,11 @@ metamodel {
     kotlinProject = project
     includeNamespace("jetbrains")
     //exportModules("jetbrains.mps.baseLanguage")
+
+    names {
+        languageClass.prefix = "L_"
+        languageClass.baseNameConversion = { it.replace(".", "_") }
+        typedNode.prefix = ""
+        typedNodeImpl.suffix = "Impl"
+    }
 }

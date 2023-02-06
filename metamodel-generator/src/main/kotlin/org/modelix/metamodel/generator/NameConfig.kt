@@ -1,37 +1,46 @@
 package org.modelix.metamodel.generator
 
+import java.io.Serializable
+
 class NameConfig(
-    private val languagePrefix: String = "L_",
-    private val languageSuffix: String = "",
-    private val nodeWrapperInterfacePrefix: String = "N_",
-    private val nodeWrapperInterfaceSuffix: String = "",
-    private val nodeWrapperImplPrefix: String = "_N_TypedImpl_",
-    private val nodeWrapperImplSuffix: String = "",
-    private val conceptObjectPrefix: String = "_C_UntypedImpl_",
-    private val conceptObjectSuffix: String = "",
-    private val conceptWrapperInterfacePrefix: String = "C_",
-    private val conceptWrapperInterfaceSuffix: String = "",
-    private val conceptWrapperImplPrefix: String = "_C_TypedImpl_",
-    private val conceptWrapperImplSuffix: String = ""
-) {
+    languagePrefix: String = "L_",
+    languageSuffix: String = "",
+    nodeWrapperInterfacePrefix: String = "N_",
+    nodeWrapperInterfaceSuffix: String = "",
+    nodeWrapperImplPrefix: String = "_N_TypedImpl_",
+    nodeWrapperImplSuffix: String = "",
+    conceptObjectPrefix: String = "_C_UntypedImpl_",
+    conceptObjectSuffix: String = "",
+    conceptWrapperInterfacePrefix: String = "C_",
+    conceptWrapperInterfaceSuffix: String = "",
+    conceptWrapperImplPrefix: String = "_C_TypedImpl_",
+    conceptWrapperImplSuffix: String = ""
+) : Serializable {
+
+    val language = NameConfigPair(languagePrefix, languageSuffix)
+    val nodeWrapperInterface = NameConfigPair(nodeWrapperInterfacePrefix, nodeWrapperInterfaceSuffix)
+    val nodeWrapperImpl = NameConfigPair(nodeWrapperImplPrefix, nodeWrapperImplSuffix)
+    val conceptObject = NameConfigPair(conceptObjectPrefix, conceptObjectSuffix)
+    val conceptWrapperInterface = NameConfigPair(conceptWrapperInterfacePrefix, conceptWrapperInterfaceSuffix)
+    val conceptWrapperImpl = NameConfigPair(conceptWrapperImplPrefix, conceptWrapperImplSuffix)
 
     fun languageClassName(baseName: String) =
-        languagePrefix + baseName.replace(".", "_") + languageSuffix
+        language.prefix + baseName.replace(".", "_") + language.suffix
 
     fun nodeWrapperInterfaceName(baseName: String) =
-        baseName.fqNamePrefix(nodeWrapperInterfacePrefix, nodeWrapperInterfaceSuffix)
+        baseName.fqNamePrefix(nodeWrapperInterface.prefix, nodeWrapperInterface.suffix)
 
     fun nodeWrapperImplName(baseName: String) =
-        baseName.fqNamePrefix(nodeWrapperImplPrefix, nodeWrapperImplSuffix)
+        baseName.fqNamePrefix(nodeWrapperImpl.prefix, nodeWrapperImpl.suffix)
 
     fun conceptObjectName(baseName: String) =
-        baseName.fqNamePrefix(conceptObjectPrefix, conceptObjectSuffix)
+        baseName.fqNamePrefix(conceptObject.prefix, conceptObject.suffix)
 
     fun conceptWrapperInterfaceName(baseName: String) =
-        baseName.fqNamePrefix(conceptWrapperInterfacePrefix, conceptWrapperInterfaceSuffix)
+        baseName.fqNamePrefix(conceptWrapperInterface.prefix, conceptWrapperInterface.suffix)
 
     fun conceptWrapperImplName(baseName: String) =
-        baseName.fqNamePrefix(conceptWrapperImplPrefix, conceptWrapperImplSuffix)
+        baseName.fqNamePrefix(conceptWrapperImpl.prefix, conceptWrapperImpl.suffix)
 
     private fun String.fqNamePrefix(prefix: String, suffix: String): String {
         return if (this.contains(".")) {
@@ -41,4 +50,6 @@ class NameConfig(
         } + suffix
     }
 }
+
+data class NameConfigPair(var prefix: String, var suffix: String) : Serializable
 

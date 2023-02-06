@@ -44,8 +44,8 @@ metamodel {
     includeNamespace("jetbrains.mps.baseLanguage")
     exportModules("jetbrains.mps.runtime")
     names {
-        language.prefix = "TESTLANG"
-        language.suffix = "TESTSUFFIX"
+        languageClass.prefix = "TESTLANG"
+        languageClass.suffix = "TESTSUFFIX"
     }
 }
 """)

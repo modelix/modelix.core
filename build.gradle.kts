@@ -1,4 +1,3 @@
-
 plugins {
     kotlin("multiplatform") version "1.7.21" apply false
     kotlin("plugin.serialization") version "1.7.21" apply false
@@ -20,7 +19,7 @@ fun computeVersion(): Any {
     return if (versionFile.exists()) {
         versionFile.readText().trim()
     } else {
-        gitVersion().let{ if (it.endsWith("-SNAPSHOT")) it else "$it-SNAPSHOT" }.also { versionFile.writeText(it) }
+        gitVersion().let { if (it.endsWith("-SNAPSHOT")) it else "$it-SNAPSHOT" }.also { versionFile.writeText(it) }
     }
 }
 
@@ -48,6 +47,16 @@ subprojects {
                     credentials {
                         username = project.findProperty("artifacts.itemis.cloud.user").toString()
                         password = project.findProperty("artifacts.itemis.cloud.pw").toString()
+                    }
+                }
+            }
+            if ("true" == project.findProperty("publishGHP")) {
+                maven {
+                    name = "GitHubPackages"
+                    url = uri("https://maven.pkg.github.com/modelix/modelix.core")
+                    credentials {
+                        username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
+                        password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
                     }
                 }
             }

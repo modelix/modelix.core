@@ -7,3 +7,4 @@
 *.iml
 kotlin_gen
 /version.txt
+/node_modules

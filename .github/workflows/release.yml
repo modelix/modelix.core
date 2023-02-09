@@ -1,0 +1,17 @@
+name: Release
+on:
+  push:
+    branches:
+      - main
+  pull_request: {}
+
+jobs:
+  lint-commits:
+    name: Lint PR commits
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v5

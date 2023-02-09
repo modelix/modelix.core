@@ -99,13 +99,20 @@ object KeycloakUtils {
         return JWT.decode(authzClient.obtainAccessToken().token)
     }
 
-    private fun queryPermissions(accessToken: DecodedJWT): List<Permission> {
+    private fun queryPermissions(token: DecodedJWT): List<Permission> {
         try {
-            val rpt = authzClient.authorization(accessToken.token).authorize(AuthorizationRequest()).token
+            val rpt = if (token.getClaim("authorization").isNull) {
+                // The token was probably created by the OAuth proxy after login.
+                // The token contains no permission information yet. Query them from keycloak.
+                authzClient.authorization(token.token).authorize(AuthorizationRequest()).token
+            } else {
+                // The token was probably created using KeycloakUtils.createToken
+                token.token
+            }
             val introspect = authzClient.protection().introspectRequestingPartyToken(rpt)
             return introspect.permissions
         } catch (e: Exception) {
-            throw RuntimeException("Can't get permissions for token: ${accessToken.token}", e)
+            throw RuntimeException("Can't get permissions for token: ${token.token}", e)
         }
     }
 
@@ -124,15 +131,16 @@ object KeycloakUtils {
     }
 
     @Synchronized
-    private fun grantPermission(user: DecodedJWT, resourceSpec: KeycloakResource, scopes: Set<KeycloakScope>): Boolean {
-        val resource = ensureResourcesExists(resourceSpec, user)
-        val ticketResponse = authzClient.protection(user.token).permission()
-            .create(PermissionRequest(resource.id, *scopes.map { it.name }.toTypedArray()))
-
-        val authResponse = authzClient.authorization(/* service account */)
-            .authorize(AuthorizationRequest(ticketResponse.ticket))
-
-        return authResponse.isUpgraded
+    fun createToken(permissions: List<Pair<KeycloakResource, Set<KeycloakScope>>>): DecodedJWT {
+        val requests = permissions.map {
+            PermissionRequest(
+                ensureResourcesExists(it.first, null).id,
+                *it.second.map { it.name }.toTypedArray()
+            )
+        }
+        val ticketResponse = authzClient.protection().permission().create(requests)
+        val authResponse = authzClient.authorization(/* service account */).authorize(AuthorizationRequest(ticketResponse.ticket))
+        return JWT.decode(authResponse.token)
     }
 
     @Synchronized

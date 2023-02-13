@@ -1,10 +1,13 @@
 package org.modelix.client.light
 
+import kotlinx.coroutines.delay
 import org.modelix.model.api.*
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 import org.modelix.model.server.api.*
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private const val TEMP_ID_PREFIX = "tmp-"
 
@@ -119,6 +122,24 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
                 fullConsistencyCheck()
             }
         }
+    }
+
+    suspend fun waitForRootNode(): INode? {
+        var result : INode? = null
+        kotlinx.coroutines.withTimeout(5.seconds) {
+            while (true) {
+                checkException()
+                val node = runRead { getRootNode() }
+                if (node != null && runRead { node.isValid }) {
+                    runRead {
+                        result = node
+                    }
+                    break
+                }
+                delay(10.milliseconds)
+            }
+        }
+        return result
     }
 
     fun getRepositoryId(): String? = repositoryId

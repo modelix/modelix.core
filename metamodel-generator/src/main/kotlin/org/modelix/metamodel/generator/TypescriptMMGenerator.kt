@@ -223,7 +223,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
     private fun ProcessedLanguage.simpleClassName() =
         this.generatedClassName().simpleName
 
-    private fun ProcessedConcept.markerPropertyName() = "_is_" + toString().replace(".", "_")
+    private fun ProcessedConcept.markerPropertyName() = "_is_" + this.fqName().replace(".", "_")
     //private fun ProcessedConcept.tsClassName() = nameConfig.languageClassName(this.language.name) + "." + this.name
     private fun ProcessedConcept.tsInterfaceRef(contextLanguage: ProcessedLanguage) = languagePrefix(contextLanguage) + nodeWrapperInterfaceName()
     private fun ProcessedConcept.languagePrefix(contextLanguage: ProcessedLanguage): String {

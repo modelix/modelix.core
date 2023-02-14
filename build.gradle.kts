@@ -29,12 +29,35 @@ subprojects {
     group = rootProject.group
 
     repositories {
-        mavenLocal()
-        maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+        // mavenLocal()
+        // maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
         maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
-        maven { url = uri("https://maven.pkg.github.com/mbeddr") }
-        maven { url = uri("https://maven.pkg.github.com/modelix") }
         mavenCentral()
+
+        val ghp_username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
+        val ghp_password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
+
+        maven {
+            url = uri("https://maven.pkg.github.com/mbeddr/build.publish.mps")
+            credentials {
+                username = ghp_username
+                password = ghp_password
+            }
+        }
+        maven {
+            url = uri("https://maven.pkg.github.com/modelix/modelix")
+            credentials {
+                username = ghp_username
+                password = ghp_password
+            }
+        }
+        maven {
+            url = uri("https://maven.pkg.github.com/modelix/incremental")
+            credentials {
+                username = ghp_username
+                password = ghp_password
+            }
+        }
     }
 
     publishing {
@@ -53,13 +76,15 @@ subprojects {
                     }
                 }
             }
-            if ("true" == project.findProperty("publishGHP")) {
+            val ghp_username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
+            val ghp_password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
+            if (ghp_username != null && ghp_password != null) {
                 maven {
                     name = "GitHubPackages"
                     url = uri("https://maven.pkg.github.com/modelix/modelix.core")
                     credentials {
-                        username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
-                        password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
+                        username = ghp_username
+                        password = ghp_password
                     }
                 }
             }

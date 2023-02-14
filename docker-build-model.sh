@@ -10,8 +10,6 @@ TAG=$( ./modelix-version.sh )
   -t "modelix/modelix-model:${TAG}" .
 )
 
-# docker tag modelix/modelix-model:latest "modelix/modelix-model:${TAG}"
-
 if [ -f "../modelix/helm" ]; then
   sed -i.bak -E "s/  model: \".*\"/  model: \"${TAG}\"/" ../modelix/helm/dev.yaml
   rm ../modelix/helm/dev.yaml.bak

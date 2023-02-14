@@ -11,4 +11,4 @@ else
     echo "$MODELIX_VERSION" > $FILE
 fi
 
-echo "${MODELIX_VERSION}-ci-test"
+echo "$MODELIX_VERSION"

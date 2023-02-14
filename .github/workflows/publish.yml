@@ -25,10 +25,8 @@ jobs:
           java-version: '11'
       - name: Use tag as version
         run: echo "${GITHUB_REF#refs/*/}" > version.txt
-      - name: Build and Publish Artifacts
-        run: ./gradlew build publish -PciBuild=true -Partifacts.itemis.cloud.user=${{secrets.ARTIFACTS_ITEMIS_CLOUD_USER}} -Partifacts.itemis.cloud.pw=${{secrets.ARTIFACTS_ITEMIS_CLOUD_PW}}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTS_ITEMIS_CLOUD_NPM_TOKEN }}
+      - name: Build
+        run: ./gradlew build -PciBuild=true
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx

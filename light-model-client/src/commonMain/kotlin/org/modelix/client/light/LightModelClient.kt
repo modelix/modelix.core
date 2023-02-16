@@ -1,5 +1,7 @@
 package org.modelix.client.light
 
+import io.ktor.client.*
+import io.ktor.client.plugins.websocket.*
 import kotlinx.coroutines.delay
 import org.modelix.model.api.*
 import org.modelix.model.area.IArea
@@ -11,7 +13,9 @@ import kotlin.time.Duration.Companion.seconds
 
 private const val TEMP_ID_PREFIX = "tmp-"
 
-class LightModelClient(val connection: IConnection, val debugName: String = "") {
+class LightModelClient(
+    val connection: IConnection = WebsocketConnection(HttpClient { install(WebSockets) }, "ws://localhost:48302/ws"),
+    val debugName: String = "") {
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
     private val area = Area()

@@ -8,6 +8,7 @@ import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 import org.modelix.model.server.api.*
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -128,9 +129,9 @@ class LightModelClient(
         }
     }
 
-    suspend fun waitForRootNode(): INode? {
+    suspend fun waitForRootNode(timeout: Duration = 5.seconds, coroutineDelay: Duration = 10.milliseconds): INode? {
         var result : INode? = null
-        kotlinx.coroutines.withTimeout(5.seconds) {
+        kotlinx.coroutines.withTimeout(timeout) {
             while (true) {
                 checkException()
                 val node = runRead { getRootNode() }
@@ -140,7 +141,7 @@ class LightModelClient(
                     }
                     break
                 }
-                delay(10.milliseconds)
+                delay(coroutineDelay)
             }
         }
         return result

@@ -14,9 +14,10 @@ import kotlin.time.Duration.Companion.seconds
 
 private const val TEMP_ID_PREFIX = "tmp-"
 
-class LightModelClient(
-    val connection: IConnection = WebsocketConnection(HttpClient { install(WebSockets) }, "ws://localhost:48302/ws"),
-    val debugName: String = "") {
+class LightModelClient(val connection: IConnection, val debugName: String = "") {
+
+    constructor(host: String = "localhost", port: Int = 48302, debugName: String = "")
+            : this(WebsocketConnection(HttpClient { install(WebSockets) }, "ws://$host:$port/ws"), debugName)
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
     private val area = Area()

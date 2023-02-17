@@ -1,20 +1,9 @@
 import org.modelix.gradle.mpsbuild.MPSBuildSettings
 
-buildscript {
-    repositories {
-        mavenLocal()
-        maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
-    }
-    dependencies {
-        classpath("org.modelix.mpsbuild:gradle-mpsbuild-plugin:1.0.8")
-    }
-}
-
 plugins {
     base
+    id("org.modelix.mpsbuild") version "1.0.8"
 }
-
-apply(plugin = "modelix-gradle-mpsbuild-plugin")
 
 val generatorLibs by configurations.creating
 

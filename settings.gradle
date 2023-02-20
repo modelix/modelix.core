@@ -1,3 +1,12 @@
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+        maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+        mavenCentral()
+    }
+}
+
 rootProject.name = 'modelix.core'
 
 include 'authorization'
@@ -12,3 +21,4 @@ include 'model-client'
 include 'model-server'
 include 'model-server-api'
 include 'ts-model-api'
+

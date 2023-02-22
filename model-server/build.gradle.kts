@@ -131,7 +131,7 @@ tasks.named("assemble") {
 }
 
 application {
-    mainClassName = "org.modelix.model.server.Main"
+    mainClass.set("org.modelix.model.server.Main")
 }
 
 publishing {

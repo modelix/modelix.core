@@ -122,8 +122,8 @@ tasks.jacocoTestReport {
     executionData.setFrom(files("${buildDir}/jacoco/jvmTest.exec"))
 
     reports {
-        xml.enabled true
-        html.enabled true
+        xml.required = true
+        html.required = true
     }
 }
 

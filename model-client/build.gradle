@@ -2,7 +2,7 @@
 plugins {
     id 'maven-publish'
     id "org.jetbrains.kotlin.multiplatform"
-    id "com.diffplug.gradle.spotless"
+    id "com.diffplug.spotless"
     id "org.jlleitschuh.gradle.ktlint"
     id "java-library"
     id 'jacoco'

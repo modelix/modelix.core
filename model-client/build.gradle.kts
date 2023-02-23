@@ -24,12 +24,16 @@ java {
 }
 
 ktlint {
-    disabledRules.set(setOf("no-wildcard-imports"))
+    disabledRules.add("no-wildcard-imports")
 }
 
 tasks.named("check") {
     dependsOn("ktlintCheck")
 }
+
+val kotlinCoroutinesVersion: String by rootProject
+val kotlinLoggingVersion: String by rootProject
+val ktorVersion: String by rootProject
 
 kotlin {
     jvm()
@@ -38,7 +42,7 @@ kotlin {
         nodejs {
             testTask {
                 useMocha {
-                    timeout = "30000"
+                    timeout = "30s"
                 }
             }
         }
@@ -49,9 +53,7 @@ kotlin {
                 api(project(":model-api"))
                 kotlin("stdlib-common")
                 implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.4")
-                val kotlinCoroutinesVersion by rootProject.properties
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
-                val kotlinLoggingVersion by rootProject.properties
                 implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
             }
@@ -82,7 +84,6 @@ kotlin {
                 implementation("com.google.oauth-client:google-oauth-client:$oauthVersion")
                 implementation("com.google.oauth-client:google-oauth-client-jetty:$oauthVersion")
 
-                val ktorVersion by rootProject.properties
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 implementation("io.ktor:ktor-client-auth:$ktorVersion")

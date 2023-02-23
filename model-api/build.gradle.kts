@@ -45,7 +45,7 @@ kotlin {
         nodejs {
             testTask {
                 useMocha {
-                    timeout = "10000"
+                    timeout = "10s"
                 }
             }
         }
@@ -90,5 +90,9 @@ kotlin {
 }
 
 tasks.named("runKtlintCheckOverJsMainSourceSet") {
+    dependsOn("jsIrGenerateExternalsIntegrated")
+}
+
+tasks.named("jsSourcesJar") {
     dependsOn("jsIrGenerateExternalsIntegrated")
 }

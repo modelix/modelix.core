@@ -123,7 +123,7 @@ tasks.named("test") {
 
 task("copyLibs", Sync::class) {
     into("$buildDir/dependency-libs")
-    from(configurations.default)
+    from(configurations.compileClasspath)
 }
 
 tasks.named("assemble") {

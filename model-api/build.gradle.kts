@@ -32,6 +32,10 @@ tasks.named("check") {
     dependsOn("ktlintCheck")
 }
 
+tasks.named("sourcesJar") {
+    dependsOn("jsIrGenerateExternalsIntegrated")
+}
+
 val kotlinLoggingVersion: String by rootProject
 val kotlinxSerializationVersion: String by rootProject
 
@@ -83,4 +87,8 @@ kotlin {
             }
         }
     }
+}
+
+tasks.named("runKtlintCheckOverJsMainSourceSet") {
+    dependsOn("jsIrGenerateExternalsIntegrated")
 }

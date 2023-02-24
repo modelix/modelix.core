@@ -74,7 +74,7 @@ testing {
 
             dependencies {
                 // functionalTest test suite depends on the production code in tests
-                implementation(project(":"))
+                implementation(project(":metamodel-gradle"))
                 implementation(project(":model-api"))
                 implementation(project(":metamodel-generator"))
                 implementation(project(":metamodel-export-mps"))

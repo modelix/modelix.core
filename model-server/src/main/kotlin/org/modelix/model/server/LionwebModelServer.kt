@@ -20,6 +20,11 @@ import io.ktor.server.html.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
+import io.ktor.websocket.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.html.body
 import kotlinx.html.table
 import kotlinx.html.td
@@ -30,13 +35,14 @@ import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
+import org.modelix.model.IKeyListener
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.*
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.operations.OTBranch
+import org.modelix.model.operations.*
 import org.modelix.model.persistent.CPVersion
 import java.util.*
 
@@ -173,7 +179,81 @@ class LionwebModelServer(val client: LocalModelClient) {
 
             respondJson(subtreeAsJson(PNodeAdapter(formNode.id, TreePointer(version.tree)), version.hash))
         }
+        webSocket("/{repositoryId}/ws") {
+            val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
+            val userId = call.getUserName()
+
+            var lastVersion: CLVersion? = null
+            val deltaMutex = Mutex()
+            val sendDelta: suspend (CLVersion)->Unit = { newVersion ->
+                deltaMutex.withLock {
+                    newVersion.operations.forEach { send(operation2json(it).toString()) }
+                }
+            }
+
+            val listener = object : IKeyListener {
+                override fun changed(key: String, value: String?) {
+                    if (value == null) return
+                    launch {
+                        val newVersion = CLVersion.loadFromHash(value, client.storeCache)
+                        sendDelta(newVersion)
+                    }
+                }
+            }
+
+            client.listen(repositoryId.getBranchKey(), listener)
+            try {
+                sendDelta(getCurrentVersion(repositoryId))
+                for (frame in incoming) {
+                    when (frame) {
+                        is Frame.Text -> {
+                            val updateData = JSONArray(frame.readText())
+                            val mergedVersion = applyUpdate(lastVersion!!, updateData, repositoryId, userId)
+                            sendDelta(mergedVersion)
+                        }
+                        else -> {}
+                    }
+                }
+            } finally {
+                client.removeListener(repositoryId.getBranchKey(), listener)
+            }
+        }
     }
+
+    private fun operation2json(operation: IOperation): JSONObject =
+            when (operation) {
+                is AddNewChildOp -> JSONObject()
+                        .put("_id", operation.childId.toString())
+                        .put("_type", "NodeAdded")
+                        .put("_concept", operation.concept?.getUID())
+                        .put("location", position2json(operation.position))
+
+                is MoveNodeOp -> JSONObject()
+                        .put("_id", operation.childId.toString())
+                        .put("_type", "NodeMoved")
+//                        .put("oldLocation", position2json(TODO()))
+                        .put("newLocation", position2json(operation.targetPosition))
+
+                is DeleteNodeOp -> JSONObject()
+                        .put("_id", operation.childId.toString())
+                        .put("_type", "NodeDeleted")
+//                        .put("location", position2json(TODO()))
+
+                is SetPropertyOp -> JSONObject()
+                        .put("_id", operation.nodeId.toString())
+                        .put("_type", "PropertyChanged")
+                        .put("property", operation.role)
+                        .put("newValue", operation.value)
+//                        .put("oldValue", TODO())
+
+                else -> throw UnsupportedOperationException("Unsupported operation class: ${operation.javaClass}")
+            }
+
+    private fun position2json(position: PositionInRole): JSONObject =
+            JSONObject(mapOf<String, Any>(
+                    "parent" to position.nodeId.toString(),
+                    "role" to position.role!!,
+                    "index" to position.index.toString()))
 
     private fun applyUpdate(
         baseVersion: CLVersion,
@@ -288,6 +368,77 @@ class LionwebModelServer(val client: LocalModelClient) {
         val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
         return subtreeAsJson(rootNode, version.hash)
     }
+
+//    private fun diffAsJson(version: CLVersion, oldVersion: CLVersion): JSONObject {
+//        val branch = TreePointer(version.tree)
+//        val json = JSONArray()
+//
+//        version.tree.visitChanges(oldVersion.tree, object : ITreeChangeVisitorEx {
+//            // Form
+//            //   itemGroup IG1:
+//            //     item i11
+//            //   itemGroup IG2:
+//            //     item i21
+//            //     item i22
+//            //
+//            // scenario 1: move item i22 to itemGroup IG1
+//            // * Modelix delta:
+//            //   * childrenChanged(IG1)
+//            //   * childrenChanged(IG2)
+//            //   * containmentChanged(i22)
+//            // * Lionweb delta:
+//            //   * NodeMoved(i22, IG2@2 -> IG1@1)
+//            //
+//            // scenario 2: delete item i22
+//            // * Modelix
+//            //   * childrenChanged(IG2)
+//            //   * nodeRemoved(i22)
+//            // * Lionweb delta:
+//            //   * NodeDeleted(i22)
+//            //
+//            // scenario 3: move item i22 before i21
+//            // * Modelix
+//            //   * childrenChanged(IG2)
+//            // * Lionweb delta:
+//            //   * NodeMoved(i22, IG2@2 -> IG2@1)
+//
+//
+//            // 1. childrenChanged(nodeId: N, role: R)
+//            //    - old children: [C1, C2], new children: [C1, C3]
+//            //    => C2 was deleted or moved
+//            //    => C3 was added or moved
+//            // 2a. nodeDeleted(C2) => C2 was deleted
+//            // 2b. containmentChanged(C2) => C2 was moved
+//
+//            override fun childrenChanged(nodeId: Long, role: String?) {
+//
+//
+//                oldVersion.tree.getChildren(nodeId, role)
+//            }
+//
+//            override fun containmentChanged(nodeId: Long) {
+//
+//            }
+//
+//            override fun propertyChanged(nodeId: Long, role: String) {
+//                nodesToInclude += nodeId
+//            }
+//
+//            override fun referenceChanged(nodeId: Long, role: String) {
+//                nodesToInclude += nodeId
+//            }
+//
+//            override fun nodeAdded(nodeId: Long) {
+//                nodesToInclude += nodeId
+//            }
+//
+//            override fun nodeRemoved(nodeId: Long) {}
+//        })
+//        val changedNodes = nodesToInclude.map { node2json(PNodeAdapter(it, branch), false) }.toJsonArray()
+//        json.put("nodes", changedNodes)
+//        version.tree
+//        return json
+//    }
 
     private fun subtreeAsJson(rootNode: PNodeAdapter, version: String): JSONObject {
         val json = JSONObject()

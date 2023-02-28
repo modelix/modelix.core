@@ -160,6 +160,19 @@ class LionwebModelServer(val client: LocalModelClient) {
                 put("last", ids.last)
             })
         }
+        get("/{repositoryId}/the-form") {
+            val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
+            val versionHash = client.asyncStore.get(repositoryId.getBranchReference().getKey())!!
+            // TODO 404 if it doesn't exist
+            val version = CLVersion.loadFromHash(versionHash, getStore())
+
+            val FORM_CONCEPT_ID = "mps:1b1e4cbb-850f-4943-a2a8-9a345d1e7e25/7344893323394389269"
+            val formNode = version.tree.getDescendants(ITree.ROOT_ID, false).first {
+                it.concept == FORM_CONCEPT_ID
+            }
+
+            respondJson(subtreeAsJson(PNodeAdapter(formNode.id, TreePointer(version.tree)), version.hash))
+        }
     }
 
     private fun applyUpdate(
@@ -267,18 +280,20 @@ class LionwebModelServer(val client: LocalModelClient) {
     }
 
     private suspend fun CallContext.respondVersion(version: CLVersion) {
-        val json = versionAsJson(version)
-        respondJson(json)
+        respondJson(versionAsJson(version))
     }
 
     private fun versionAsJson(version: CLVersion): JSONObject {
         val branch = TreePointer(version.tree)
         val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
+        return subtreeAsJson(rootNode, version.hash)
+    }
+
+    private fun subtreeAsJson(rootNode: PNodeAdapter, version: String): JSONObject {
         val json = JSONObject()
         json.put("serializationFormatVersion", "1")
-        json.put("__version", version.hash)
+        json.put("__version", version)
         json.put("nodes", rootNode.getDescendants(true).map(::node2json).toList())
-
         return json
     }
 

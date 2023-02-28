@@ -66,7 +66,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                kotlin("stdlib-jdk8:1.6.21")
+                kotlin("stdlib-jdk8")
 
                 implementation("io.vavr:vavr:0.10.3")
                 implementation("org.apache.commons:commons-lang3:3.11")

@@ -18,6 +18,8 @@ package org.modelix.model.server.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Serializable
 sealed class QueryOwner {
@@ -27,7 +29,9 @@ sealed class QueryOwner {
 @Serializable
 data class ModelQuery(
     override val queries: List<Subquery>
-) : QueryOwner()
+) : QueryOwner() {
+    fun toJson() = Json.encodeToString(this)
+}
 
 @Serializable
 sealed class Subquery() : QueryOwner() {

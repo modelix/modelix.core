@@ -24,8 +24,11 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
@@ -49,6 +52,7 @@ import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
 import java.time.Duration
 import java.util.*
+import kotlin.time.Duration.Companion.seconds
 
 class LightModelServer(val port: Int, val rootNode: INode) {
     companion object {
@@ -59,7 +63,7 @@ class LightModelServer(val port: Int, val rootNode: INode) {
     private val sessions: MutableSet<SessionData> = Collections.synchronizedSet(HashSet())
 
     fun start() {
-        LOG.trace { "server starting ..." }
+        LOG.trace { "server starting on port $port ..." }
         server = embeddedServer(Netty, port = port) {
             init()
         }
@@ -127,9 +131,12 @@ class LightModelServer(val port: Int, val rootNode: INode) {
     }
 
     private suspend fun DefaultWebSocketServerSession.handleWebsocket(session: SessionData) {
-        session.sendMessage(getArea().executeRead {
-            session.createUpdateMessage()
-        })
+        LOG.trace { "New client connected" }
+        withTimeout(10.seconds) {
+            session.sendMessage(getArea().executeRead {
+                session.createUpdateMessage()
+            })
+        }
 
         for (frame in incoming) {
             when (frame) {
@@ -139,7 +146,13 @@ class LightModelServer(val port: Int, val rootNode: INode) {
                     val message = MessageFromClient.fromJson(json)
                     message.query?.let { session.replaceQuery(it) }
                     val ops = message.operations ?: emptyList()
-                    val response = getArea().executeWrite { session.applyUpdate(ops, message.changeSetId) }
+                    val response = if (ops.isNotEmpty()) {
+                        withContext(Dispatchers.Main) { // write access in MPS is only allowed from EDT
+                            getArea().executeWrite { session.applyUpdate(ops, message.changeSetId) }
+                        }
+                    } else {
+                        getArea().executeRead { session.applyUpdate(ops, message.changeSetId) }
+                    }
                     send(response.toJson())
                 }
                 else -> {}

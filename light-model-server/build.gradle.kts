@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":model-api"))
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:$kotlinCoroutinesVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
 
     implementation("io.ktor", "ktor-server-core", ktorVersion)

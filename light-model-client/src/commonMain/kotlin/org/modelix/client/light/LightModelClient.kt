@@ -1,6 +1,7 @@
 package org.modelix.client.light
 
 import io.ktor.client.*
+import io.ktor.client.engine.*
 import io.ktor.client.plugins.websocket.*
 import kotlinx.coroutines.delay
 import org.modelix.model.api.*
@@ -15,9 +16,6 @@ import kotlin.time.Duration.Companion.seconds
 private const val TEMP_ID_PREFIX = "tmp-"
 
 class LightModelClient(val connection: IConnection, val debugName: String = "") {
-
-    constructor(host: String = "localhost", port: Int = 48302, debugName: String = "")
-            : this(WebsocketConnection(HttpClient { install(WebSockets) }, "ws://$host:$port/ws"), debugName)
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
     private val area = Area()
@@ -49,6 +47,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
 
     fun changeQuery(query: ModelQuery) {
         synchronized {
+            LOG.trace { "Changing query to ${query.toJson()}" }
             if (initialized) {
                 connection.sendMessage(MessageFromClient(query = query))
             } else {
@@ -324,7 +323,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     private fun getNodeData(id: NodeId): NodeData {
         return synchronized {
             nodes[id]
-                ?: throw IllegalArgumentException("Node with ID $id doesn't exist")
+                ?: throw IllegalArgumentException("Node with ID $id doesn't exist or wasn't loaded.")
         }
     }
 
@@ -356,7 +355,9 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         override val parent: NodeAdapter?
             get() = synchronizedRead { getData().parent?.let { getNodeAdapter(it) } }
 
-        override fun getChildren(role: String?): List<NodeAdapter> = synchronizedRead { allChildren.filter { it.roleInParent == role } }
+        override fun getChildren(role: String?): List<NodeAdapter> {
+            return synchronizedRead { getData().children[role]?.map { getNodeAdapter(it) } ?: emptyList() }
+        }
 
         override val allChildren: List<NodeAdapter>
             get() = synchronizedRead { getData().children.flatMap { it.value }.map { getNodeAdapter(it) } }
@@ -639,8 +640,10 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         private val LOG = mu.KotlinLogging.logger {}
 
         init {
-            INodeReferenceSerializer.register(LightClientReferenceSerializer)
+            LightClientReferenceSerializer.register()
         }
+
+        fun builder() = LightModelClientBuilder()
     }
 
     interface IConnection {
@@ -655,7 +658,75 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 }
 
-private object LightClientReferenceSerializer : INodeReferenceSerializer {
+class LightModelClientBuilder {
+    private var host: String = "localhost"
+    private var port: Int = 48302
+    private var url: String? = null
+    private var connection: LightModelClient.IConnection? = null
+    private var httpClient: HttpClient? = null
+    private var httpEngine: HttpClientEngine? = null
+    private var httpEngineFactory: HttpClientEngineFactory<*>? = null
+    private var debugName: String = ""
+
+    fun build(): LightModelClient {
+        return LightModelClient(
+            connection ?: (
+                WebsocketConnection((httpClient ?: (
+                        httpEngine?.let { HttpClient(it) } ?: httpEngineFactory?.let { HttpClient(it) } ?: HttpClient()
+                    )
+                ).config {
+                    install(WebSockets)
+                }, url ?: (
+                    "ws://$host:$port/ws"
+                ))
+            ),
+            debugName
+        )
+    }
+
+    fun debugName(debugName: String): LightModelClientBuilder {
+        this.debugName = debugName
+        return this
+    }
+    fun host(host: String): LightModelClientBuilder {
+        this.host = host
+        return this
+    }
+    fun port(port: Int): LightModelClientBuilder {
+        this.port = port
+        return this
+    }
+    fun url(url: String): LightModelClientBuilder {
+        this.url = url
+        return this
+    }
+    fun connection(connection: LightModelClient.IConnection): LightModelClientBuilder {
+        this.connection = connection
+        return this
+    }
+    fun httpClient(httpClient: HttpClient): LightModelClientBuilder {
+        this.httpClient = httpClient
+        return this
+    }
+    fun httpEngine(httpEngine: HttpClientEngine): LightModelClientBuilder {
+        this.httpEngine = httpEngine
+        return this
+    }
+    fun httpEngine(httpEngineFactory: HttpClientEngineFactory<*>): LightModelClientBuilder {
+        this.httpEngineFactory = httpEngineFactory
+        return this
+    }
+}
+
+object LightClientReferenceSerializer : INodeReferenceSerializer {
+    fun register() {
+        INodeReferenceSerializer.register(LightClientReferenceSerializer)
+    }
+
+    fun unregister() {
+        INodeReferenceSerializer.unregister(LightClientReferenceSerializer)
+    }
+
     override fun serialize(ref: INodeReference): String? {
         if (ref is LightModelClient.NodeAdapter) {
             throw UnsupportedOperationException("Don't use this reference type outside the " + LightModelClient::class.simpleName)

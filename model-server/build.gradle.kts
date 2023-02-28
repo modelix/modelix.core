@@ -3,7 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTra
 
 plugins {
     application
-    id("com.diffplug.gradle.spotless")
+    id("com.diffplug.spotless")
     `maven-publish`
     id("com.adarshr.test-logger") version "2.1.0"
     id("org.jetbrains.kotlin.jvm")
@@ -123,7 +123,7 @@ tasks.named("test") {
 
 task("copyLibs", Sync::class) {
     into("$buildDir/dependency-libs")
-    from(configurations.default)
+    from(configurations.runtimeClasspath)
 }
 
 tasks.named("assemble") {

@@ -1,14 +1,23 @@
 package org.modelix.client.light
 
+import io.ktor.client.*
+import io.ktor.client.plugins.websocket.*
+import kotlinx.coroutines.delay
 import org.modelix.model.api.*
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 import org.modelix.model.server.api.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private const val TEMP_ID_PREFIX = "tmp-"
 
 class LightModelClient(val connection: IConnection, val debugName: String = "") {
+
+    constructor(host: String = "localhost", port: Int = 48302, debugName: String = "")
+            : this(WebsocketConnection(HttpClient { install(WebSockets) }, "ws://$host:$port/ws"), debugName)
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
     private val area = Area()
@@ -119,6 +128,24 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
                 fullConsistencyCheck()
             }
         }
+    }
+
+    suspend fun waitForRootNode(timeout: Duration = 5.seconds, coroutineDelay: Duration = 10.milliseconds): INode? {
+        var result : INode? = null
+        kotlinx.coroutines.withTimeout(timeout) {
+            while (true) {
+                checkException()
+                val node = runRead { getRootNode() }
+                if (node != null && runRead { node.isValid }) {
+                    runRead {
+                        result = node
+                    }
+                    break
+                }
+                delay(coroutineDelay)
+            }
+        }
+        return result
     }
 
     fun getRepositoryId(): String? = repositoryId

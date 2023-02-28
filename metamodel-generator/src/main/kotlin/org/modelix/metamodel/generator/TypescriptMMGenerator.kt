@@ -1,14 +1,12 @@
 package org.modelix.metamodel.generator
 
+import com.squareup.kotlinpoet.ClassName
+import org.modelix.model.data.LanguageData
+import org.modelix.model.data.PropertyType
 import java.nio.file.Path
 import kotlin.io.path.writeText
-import org.modelix.model.data.LanguageData
-import org.modelix.model.data.PropertyData
-import org.modelix.model.data.ChildLinkData
-import org.modelix.model.data.ReferenceLinkData
-import org.modelix.model.data.PropertyType
 
-class TypescriptMMGenerator(val outputDir: Path) {
+class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = NameConfig()) {
 
     private fun LanguageData.packageDir(): Path {
         val packageName = name
@@ -21,18 +19,22 @@ class TypescriptMMGenerator(val outputDir: Path) {
         return packageDir
     }
 
-    fun generate(languages: LanguageSet) {
+    fun generate(languages: IProcessedLanguageSet) {
+        generate(languages as ProcessedLanguageSet)
+    }
+
+    internal fun generate(languages: ProcessedLanguageSet) {
         for (language in languages.getLanguages()) {
             // TODO delete old files from previous generation
             outputDir
-                .resolve(language.language.generatedClassName().simpleName + ".ts")
+                .resolve(language.generatedClassName().simpleName + ".ts")
                 .writeText(generateLanguage(language))
 
             generateRegistry(languages)
         }
     }
 
-    private fun generateRegistry(languages: LanguageSet) {
+    private fun generateRegistry(languages: ProcessedLanguageSet) {
         outputDir.resolve("index.ts").writeText("""
             import { LanguageRegistry } from "@modelix/ts-model-api";
             ${languages.getLanguages().joinToString("\n") { """
@@ -46,9 +48,9 @@ class TypescriptMMGenerator(val outputDir: Path) {
         """.trimIndent())
     }
 
-    private fun generateLanguage(language: LanguageSet.LanguageInSet): String {
-        val conceptNamesList = language.getConceptsInLanguage()
-            .joinToString(", ") { it.concept.conceptWrapperInterfaceName() }
+    private fun generateLanguage(language: ProcessedLanguage): String {
+        val conceptNamesList = language.getConcepts()
+            .joinToString(", ") { it.conceptWrapperInterfaceName() }
 
         return """
             import {
@@ -71,8 +73,8 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 constructor() {
                     super("${language.name}")
                     
-                    ${language.getConceptsInLanguage().joinToString("\n") { concept -> """
-                        this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.concept.nodeWrapperImplName()}(node))
+                    ${language.getConcepts().joinToString("\n") { concept -> """
+                        this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.nodeWrapperImplName()}(node))
                     """.trimIndent() }}
                 }
                 public getConcepts() {
@@ -80,22 +82,22 @@ class TypescriptMMGenerator(val outputDir: Path) {
                 }
             }
             
-            ${language.getConceptsInLanguage().joinToString("\n") { generateConcept(it) }.replaceIndent("            ")}
+            ${language.getConcepts().joinToString("\n") { generateConcept(it) }.replaceIndent("            ")}
         """.trimIndent()
     }
 
-    private fun generateConcept(concept: LanguageSet.ConceptInLanguage): String {
-        val featuresImpl = concept.allFeatures().joinToString("\n") { feature ->
-            when (val data = feature.data) {
-                is PropertyData -> {
+    private fun generateConcept(concept: ProcessedConcept): String {
+        val featuresImpl = concept.getAllSuperConceptsAndSelf().flatMap { it.getOwnRoles() }.joinToString("\n") { feature ->
+            when (feature) {
+                is ProcessedProperty -> {
                     val rawValueName = feature.rawValueName()
-                    when (data.type) {
+                    when (feature.type) {
                         PropertyType.INT -> {
                             """
-                                public set ${feature.validName}(value: number) {
+                                public set ${feature.generatedName}(value: number) {
                                     this.${rawValueName} = value.toString();
                                 }
-                                public get ${feature.validName}(): number {
+                                public get ${feature.generatedName}(): number {
                                     let str = this.${rawValueName};
                                     return str ? parseInt(str) : 0;
                                 }
@@ -104,10 +106,10 @@ class TypescriptMMGenerator(val outputDir: Path) {
                         }
                         PropertyType.BOOLEAN -> {
                             """
-                                public set ${feature.validName}(value: boolean) {
+                                public set ${feature.generatedName}(value: boolean) {
                                     this.${rawValueName} = value ? "true" : "false";
                                 }
-                                public get ${feature.validName}(): boolean {
+                                public get ${feature.generatedName}(): boolean {
                                     return this.${rawValueName} === "true";
                                 }
                                 
@@ -116,40 +118,40 @@ class TypescriptMMGenerator(val outputDir: Path) {
                         else -> ""
                     } + """
                         public set $rawValueName(value: string | undefined) {
-                            this.node.setPropertyValue("${data.name}", value)
+                            this.node.setPropertyValue("${feature.originalName}", value)
                         }
                         public get $rawValueName(): string | undefined {
-                            return this.node.getPropertyValue("${data.name}")
+                            return this.node.getPropertyValue("${feature.originalName}")
                         }
                     """.trimIndent()
                 }
-                is ReferenceLinkData -> """
+                is ProcessedReferenceLink -> """
                     
                 """.trimIndent()
-                is ChildLinkData -> {
-                    val accessorClassName = if (data.multiple) "ChildListAccessor" else "SingleChildAccessor"
-                    val typeRef = data.type.parseConceptRef(concept.language)
-                    val languagePrefix = typeRef.languagePrefix(concept.language.name)
+                is ProcessedChildLink -> {
+                    val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
+                    val typeRef = feature.type.resolved
+                    val languagePrefix = typeRef.languagePrefix(concept.language)
                     """
-                        public ${feature.validName}: $accessorClassName<$languagePrefix${typeRef.conceptName.nodeWrapperInterfaceName()}> = new $accessorClassName(this.node, "${data.name}")
+                        public ${feature.generatedName}: $accessorClassName<$languagePrefix${typeRef.nodeWrapperInterfaceName()}> = new $accessorClassName(this.node, "${feature.originalName}")
                     """.trimIndent()
                 }
                 else -> ""
             }
         }
-        val features = concept.directFeatures().joinToString("\n") { feature ->
-            when (val data = feature.data) {
-                is PropertyData -> {
-                    when (data.type) {
+        val features = concept.getOwnRoles().joinToString("\n") { feature ->
+            when (feature) {
+                is ProcessedProperty -> {
+                    when (feature.type) {
                         PropertyType.BOOLEAN -> {
                             """
-                                ${feature.validName}: boolean
+                                ${feature.generatedName}: boolean
                                 
                             """.trimIndent()
                         }
                         PropertyType.INT -> {
                             """
-                                ${feature.validName}: number
+                                ${feature.generatedName}: number
                                 
                             """.trimIndent()
                         }
@@ -159,79 +161,96 @@ class TypescriptMMGenerator(val outputDir: Path) {
                         ${feature.rawValueName()}: string | undefined
                     """.trimIndent()
                 }
-                is ReferenceLinkData -> """
+                is ProcessedReferenceLink -> """
                     
                 """.trimIndent()
-                is ChildLinkData -> {
-                    val accessorClassName = if (data.multiple) "ChildListAccessor" else "SingleChildAccessor"
+                is ProcessedChildLink -> {
+                    val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     """
-                        ${feature.validName}: $accessorClassName<${data.type.parseConceptRef(concept.language).tsInterfaceRef(concept.language.name)}>
+                        ${feature.generatedName}: $accessorClassName<${feature.type.resolved.tsInterfaceRef(concept.language)}>
                     """.trimIndent()
                 }
                 else -> ""
             }
         }
-        val interfaceList = concept.directSuperConcepts().joinToString(", ") { it.ref().tsInterfaceRef(concept.language.name) }.ifEmpty { "ITypedNode" }
+        val interfaceList = concept.getDirectSuperConcepts().joinToString(", ") { it.tsInterfaceRef(concept.language) }.ifEmpty { "ITypedNode" }
         // TODO extend first super concept do reduce the number of generated members
         return """
             
-            export class ${concept.concept.conceptWrapperImplName()} extends GeneratedConcept {
+            export class ${concept.conceptWrapperImplName()} extends GeneratedConcept {
               constructor(uid: string) {
                 super(uid);
               }
               getDirectSuperConcepts(): Array<IConceptJS> {
-                return [${concept.directSuperConcepts().joinToString(",") { it.ref().languagePrefix(concept.language.name) + it.concept.conceptWrapperInterfaceName() }}];
+                return [${concept.getDirectSuperConcepts().joinToString(",") { it.languagePrefix(concept.language) + it.conceptWrapperInterfaceName() }}];
               }
             }
-            export const ${concept.concept.conceptWrapperInterfaceName()} = new ${concept.concept.conceptWrapperImplName()}("${concept.uid}")
+            export const ${concept.conceptWrapperInterfaceName()} = new ${concept.conceptWrapperImplName()}("${concept.uid}")
             
-            export interface ${concept.concept.nodeWrapperInterfaceName()} extends $interfaceList {
+            export interface ${concept.nodeWrapperInterfaceName()} extends $interfaceList {
                 ${features}
             }
             
-            export function isOfConcept_${concept.concept.name}(node: ITypedNode): node is ${concept.concept.nodeWrapperInterfaceName()} {
-                return '${concept.ref().markerPropertyName()}' in node.constructor;
+            export function isOfConcept_${concept.name}(node: ITypedNode): node is ${concept.nodeWrapperInterfaceName()} {
+                return '${concept.markerPropertyName()}' in node.constructor;
             }
             
-            export class ${concept.concept.nodeWrapperImplName()} extends TypedNode implements ${concept.concept.nodeWrapperInterfaceName()} {
-                ${concept.allSuperConceptsAndSelf().joinToString("\n") {
-                    """public static readonly ${it.ref().markerPropertyName()}: boolean = true"""
+            export class ${concept.nodeWrapperImplName()} extends TypedNode implements ${concept.nodeWrapperInterfaceName()} {
+                ${concept.getAllSuperConceptsAndSelf().joinToString("\n") {
+                    """public static readonly ${it.markerPropertyName()}: boolean = true"""
                 }}
                 ${featuresImpl.replaceIndent("                ")}
             }
             
         """.trimIndent()
     }
-}
 
-private fun ConceptRef.markerPropertyName() = "_is_" + toString().replace(".", "_")
-fun ConceptRef.tsClassName() = this.languageName.languageClassName() + "." + this.conceptName
-fun ConceptRef.tsInterfaceRef(contextLanguage: String) = languagePrefix(contextLanguage) + this.conceptName.nodeWrapperInterfaceName()
-fun ConceptRef.languagePrefix(contextLanguage: String): String {
-    return if (this.languageName == contextLanguage) {
-        ""
-    } else {
-        this.languageName.languageClassName() + "."
+    private fun ProcessedConcept.nodeWrapperInterfaceName() =
+        nameConfig.typedNode(this.name)
+
+    private fun ProcessedConcept.conceptWrapperImplName() =
+        nameConfig.typedConceptImpl(this.name)
+
+    private fun ProcessedConcept.nodeWrapperImplName() =
+        nameConfig.typedNodeImpl(this.name)
+
+    private fun ProcessedConcept.conceptWrapperInterfaceName() =
+        nameConfig.typedConcept(this.name)
+
+    private fun ProcessedLanguage.generatedClassName() =
+        ClassName(name, nameConfig.languageClass(name))
+
+    private fun ProcessedLanguage.simpleClassName() =
+        this.generatedClassName().simpleName
+
+    private fun ProcessedConcept.markerPropertyName() = "_is_" + this.fqName().replace(".", "_")
+    //private fun ProcessedConcept.tsClassName() = nameConfig.languageClassName(this.language.name) + "." + this.name
+    private fun ProcessedConcept.tsInterfaceRef(contextLanguage: ProcessedLanguage) = languagePrefix(contextLanguage) + nodeWrapperInterfaceName()
+    private fun ProcessedConcept.languagePrefix(contextLanguage: ProcessedLanguage): String {
+        return if (this.language == contextLanguage) {
+            ""
+        } else {
+            nameConfig.languageClass(this.language.name) + "."
+        }
     }
 }
-fun LanguageSet.ConceptInLanguage.tsClassName() = ConceptRef(language.name, concept.name).tsClassName()
-fun LanguageSet.LanguageInSet.languageDependencies(): List<LanguageSet.LanguageInSet> {
-    val languageNames = this.getConceptsInLanguage()
-        .flatMap { it.allFeatures() }
+
+internal fun ProcessedLanguage.languageDependencies(): List<ProcessedLanguage> {
+    val languageNames = this.getConcepts()
+        .flatMap { it.getAllSuperConceptsAndSelf().flatMap { it.getOwnRoles() } }
         .mapNotNull {
-            when (val data = it.data) {
-                is ChildLinkData -> data.type
-                is ReferenceLinkData -> data.type
+            when (it) {
+                is ProcessedLink -> it.type.resolved
                 else -> null
-            }?.parseConceptRef(language)
+            }
         }
-        .plus(this.getConceptsInLanguage().flatMap { it.directSuperConcepts() }.map { it.ref() })
-        .map { it.languageName }
+        .plus(this.getConcepts().flatMap { it.getDirectSuperConcepts() })
+        .map { it.language.name }
         .toSet()
-    return getLanguageSet().getLanguages().filter { languageNames.contains(it.name) }.minus(this)
+    return languageSet.getLanguages().filter { languageNames.contains(it.name) }.minus(this)
 }
 
-private fun FeatureInConcept.rawValueName() = when ((data as PropertyData).type) {
-    PropertyType.STRING -> validName
-    else -> "raw_" + validName
+private fun ProcessedProperty.rawValueName() = when (type) {
+    PropertyType.STRING -> generatedName
+    else -> "raw_" + generatedName
 }

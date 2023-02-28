@@ -13,7 +13,9 @@ import org.gradle.api.tasks.TaskAction
 import org.modelix.model.data.LanguageData
 import org.modelix.metamodel.generator.LanguageSet
 import org.modelix.metamodel.generator.MetaModelGenerator
+import org.modelix.metamodel.generator.NameConfig
 import org.modelix.metamodel.generator.TypescriptMMGenerator
+import org.modelix.metamodel.generator.process
 import javax.inject.Inject
 
 abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) : DefaultTask() {
@@ -34,6 +36,8 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
     @get:Input
     @Optional
     val registrationHelperName: Property<String> = of.property(String::class.java)
+    @get: Input
+    val nameConfig: Property<NameConfig> = of.property(NameConfig::class.java)
 
     @TaskAction
     fun generate() {
@@ -70,19 +74,21 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
 
         println("${languages.getLanguages().size} of $previousLanguageCount languages included")
 
+        val processedLanguages = languages.process()
+
         val kotlinOutputDir = this.kotlinOutputDir.orNull?.asFile
         if (kotlinOutputDir != null) {
-            val generator = MetaModelGenerator(kotlinOutputDir.toPath())
-            generator.generate(languages)
+            val generator = MetaModelGenerator(kotlinOutputDir.toPath(), nameConfig.get())
+            generator.generate(processedLanguages)
             registrationHelperName.orNull?.let {
-                generator.generateRegistrationHelper(it, languages)
+                generator.generateRegistrationHelper(it, processedLanguages)
             }
         }
 
         val typescriptOutputDir = this.typescriptOutputDir.orNull?.asFile
         if (typescriptOutputDir != null) {
-            val tsGenerator = TypescriptMMGenerator(typescriptOutputDir.toPath())
-            tsGenerator.generate(languages)
+            val tsGenerator = TypescriptMMGenerator(typescriptOutputDir.toPath(), nameConfig.get())
+            tsGenerator.generate(processedLanguages)
         }
     }
 }

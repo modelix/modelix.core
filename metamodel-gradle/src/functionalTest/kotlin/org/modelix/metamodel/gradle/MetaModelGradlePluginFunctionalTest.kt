@@ -4,10 +4,10 @@
 package org.modelix.metamodel.gradle
 
 import java.io.File
-import kotlin.test.assertTrue
-import kotlin.test.Test
 import org.gradle.testkit.runner.GradleRunner
+import org.junit.Assert.assertTrue
 import org.junit.Rule
+import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.modelix.model.data.LanguageData
 
@@ -15,13 +15,15 @@ import org.modelix.model.data.LanguageData
  * A simple functional test for the 'org.modelix.metamodel.gradle.greeting' plugin.
  */
 class MetaModelGradlePluginFunctionalTest {
-    @get:Rule val tempFolder = TemporaryFolder()
+    @get:Rule
+    val tempFolder = TemporaryFolder()
 
     private fun getProjectDir() = tempFolder.root
     private fun getBuildFile() = getProjectDir().resolve("build.gradle")
     private fun getSettingsFile() = getProjectDir().resolve("settings.gradle")
 
-    @Test fun `can run task`() {
+    @Test
+    fun `can run task`() {
         // Setup the test build
         getSettingsFile().writeText("")
         getBuildFile().writeText("""
@@ -43,6 +45,10 @@ metamodel {
     typescriptDir = file("" + buildDir + "/ts_gen")
     includeNamespace("jetbrains.mps.baseLanguage")
     exportModules("jetbrains.mps.runtime")
+    names {
+        languageClass.prefix = "TESTLANG"
+        languageClass.suffix = "TESTSUFFIX"
+    }
 }
 """)
 

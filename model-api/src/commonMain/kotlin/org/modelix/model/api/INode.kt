@@ -51,7 +51,7 @@ interface INode {
     fun getReferenceRoles(): List<String>
 }
 
-private fun IRole.key(): String = name
+private fun IRole.key(): String = name // TODO use .getUID(), but this is a breaking change
 fun INode.getChildren(link: IChildLink): Iterable<INode> = getChildren(link.key())
 fun INode.moveChild(role: IChildLink, index: Int, child: INode): Unit = moveChild(role.key(), index, child)
 fun INode.addNewChild(role: IChildLink, index: Int, concept: IConcept?) = addNewChild(role.key(), index, concept)

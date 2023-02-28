@@ -19,7 +19,7 @@ fun IConcept.typed(): ITypedConcept = when (this) {
     else -> FallbackTypedConcept(this)
 }
 
-interface IConceptOfTypedNode<NodeT : ITypedNode> : ITypedConcept {
+interface IConceptOfTypedNode<out NodeT : ITypedNode> : ITypedConcept {
     fun getInstanceInterface(): KClass<out NodeT>
 }
 
@@ -28,7 +28,7 @@ fun <NodeT : ITypedNode> IConceptOfTypedNode<NodeT>.getInstanceClass(): KClass<o
     return getInstanceInterface()
 }
 
-interface INonAbstractConcept<NodeT : ITypedNode> : IConceptOfTypedNode<NodeT>
+interface INonAbstractConcept<out NodeT : ITypedNode> : IConceptOfTypedNode<NodeT>
 
 interface ITypedConceptFeature
 

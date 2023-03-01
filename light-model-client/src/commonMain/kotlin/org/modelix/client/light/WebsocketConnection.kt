@@ -30,14 +30,25 @@ import org.modelix.model.server.api.MessageFromServer
 class WebsocketConnection(val httpClient: HttpClient, val url: String) : LightModelClient.IConnection {
     val coroutineScope = CoroutineScope(Dispatchers.Default)
     val outgoingMessagesChannel = Channel<MessageFromClient>(capacity = Channel.UNLIMITED)
+    private var session: WebSocketSession? = null
     override fun sendMessage(message: MessageFromClient) {
         outgoingMessagesChannel.trySend(message)
     }
 
+    override fun disconnect() {
+        val s = session ?: throw IllegalStateException("not connected")
+        session = null
+        coroutineScope.launch {
+            s.close(CloseReason(CloseReason.Codes.NORMAL, "disposed"))
+        }
+    }
+
     override fun connect(messageReceiver: (message: MessageFromServer) -> Unit) {
+        if (session != null) throw IllegalStateException("already connected")
         coroutineScope.launch {
             httpClient.webSocket(url) {
-                launch {
+                session = this
+                this.launch {
                     for (msg in outgoingMessagesChannel) {
                         send(msg.toJson())
                     }

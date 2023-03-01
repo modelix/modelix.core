@@ -45,6 +45,10 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
     }
 
+    fun dispose() {
+        connection.disconnect()
+    }
+
     fun changeQuery(query: ModelQuery) {
         synchronized {
             LOG.trace { "Changing query to ${query.toJson()}" }
@@ -649,6 +653,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     interface IConnection {
         fun sendMessage(message: MessageFromClient)
         fun connect(messageReceiver: (message: MessageFromServer)->Unit)
+        fun disconnect()
     }
 
     private enum class AccessType(val canRead: Boolean, val canWrite: Boolean) {

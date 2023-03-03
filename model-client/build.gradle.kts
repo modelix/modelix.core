@@ -37,7 +37,7 @@ val ktorVersion: String by rootProject
 
 kotlin {
     jvm()
-    js(BOTH) {
+    js(IR) {
         // browser {}
         nodejs {
             testTask {

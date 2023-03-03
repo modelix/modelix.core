@@ -21,7 +21,7 @@ repositories {
 }
 
 plugins {
-    kotlin("jvm") version "1.7.21"
+    kotlin("jvm") version "1.8.10"
     id("base")
     id("org.modelix.metamodel.gradle")
 }

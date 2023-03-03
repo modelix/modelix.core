@@ -69,39 +69,7 @@ class LightModelClientTest {
             //println("init: $response")
 
             val createConnection: ()->LightModelClient.IConnection = {
-                object : LightModelClient.IConnection {
-                    val coroutineScope = CoroutineScope(Dispatchers.IO.limitedParallelism(1))
-                    val outgoingMessagesChannel = Channel<MessageFromClient>(capacity = Channel.UNLIMITED)
-                    override fun sendMessage(message: MessageFromClient) {
-                        outgoingMessagesChannel.trySend(message)
-                    }
-
-                    override fun connect(messageReceiver: (message: MessageFromServer) -> Unit) {
-                        coroutineScope.launch {
-                            httpClient.webSocket("ws://localhost/json/v2/test-repo/ws") {
-                                launch {
-                                    for (msg in outgoingMessagesChannel) {
-                                        send(msg.toJson())
-                                    }
-                                }
-                                try {
-                                    for (frame in incoming) {
-                                        when (frame) {
-                                            is Frame.Text -> {
-                                                val text = frame.readText()
-                                                // println("message on client: $text")
-                                                messageReceiver(MessageFromServer.fromJson(text))
-                                            }
-                                            else -> {}
-                                        }
-                                    }
-                                } catch (ex : ClosedReceiveChannelException) {
-                                    println("WebSocket closed")
-                                }
-                            }
-                        }
-                    }
-                }
+                WebsocketConnection(httpClient, "ws://localhost/json/v2/test-repo/ws")
             }
 
             val createClient: suspend (debugName: String)->LightModelClient = { debugName ->

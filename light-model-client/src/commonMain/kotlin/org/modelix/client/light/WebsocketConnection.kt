@@ -21,6 +21,8 @@ import io.ktor.client.plugins.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
@@ -40,6 +42,7 @@ class WebsocketConnection(val httpClient: HttpClient, val url: String) : LightMo
         session = null
         coroutineScope.launch {
             s.close(CloseReason(CloseReason.Codes.NORMAL, "disposed"))
+            while (outgoingMessagesChannel.tryReceive().isSuccess) { /* clear remaining messages */ }
         }
     }
 

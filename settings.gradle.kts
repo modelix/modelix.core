@@ -1,4 +1,9 @@
 pluginManagement {
+    val kotlinVersion: String by settings
+    plugins {
+        kotlin("multiplatform") version kotlinVersion apply false
+        kotlin("plugin.serialization") version kotlinVersion apply false
+    }
     repositories {
         mavenLocal()
         gradlePluginPortal()

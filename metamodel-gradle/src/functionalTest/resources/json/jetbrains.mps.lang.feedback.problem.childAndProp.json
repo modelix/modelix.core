@@ -1,0 +1,25 @@
+{
+    "uid": "cddf55b3-117e-46ec-837c-ff50eb7b89b0",
+    "name": "jetbrains.mps.lang.feedback.problem.childAndProp",
+    "concepts": [
+        {
+            "uid": "mps:cddf55b3-117e-46ec-837c-ff50eb7b89b0/24399255755597574",
+            "name": "FailingPropertyConstraintsProblem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "cddf55b3-117e-46ec-837c-ff50eb7b89b0/24399255755597574/24399255755615671",
+                    "name": "property",
+                    "type": "jetbrains.mps.lang.structure.PropertyDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot"
+            ]
+        }
+    ]
+}

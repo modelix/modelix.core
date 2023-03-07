@@ -1,0 +1,132 @@
+{
+    "uid": "7127d409-29f0-43e8-917f-f016ea288944",
+    "name": "jetbrains.mps.lang.feedback.problem.structural",
+    "concepts": [
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/5724083730281438001",
+            "name": "MissingPropertyInConceptProblem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot",
+                "jetbrains.mps.lang.feedback.problem.structural.InConceptProblem"
+            ]
+        },
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/2554379189374329844",
+            "name": "MissingChildInConceptProblem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot",
+                "jetbrains.mps.lang.feedback.problem.structural.InConceptProblem"
+            ]
+        },
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/1640022677634386488",
+            "name": "MissingRefInConceptProblem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot",
+                "jetbrains.mps.lang.feedback.problem.structural.InConceptProblem"
+            ]
+        },
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/2559059706675257210",
+            "name": "NoChildInObligatoryRoleProblem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot",
+                "jetbrains.mps.lang.feedback.problem.structural.InConceptProblem"
+            ]
+        },
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/5741876244398306563",
+            "name": "NoRefInObligatoryRoleProblem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot",
+                "jetbrains.mps.lang.feedback.problem.structural.InConceptProblem"
+            ]
+        },
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/5741876244398306564",
+            "name": "MultipleChildrenInSingleRoleProblem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot",
+                "jetbrains.mps.lang.feedback.problem.structural.InConceptProblem"
+            ]
+        },
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/1135569809051362833",
+            "name": "InConceptProblem",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.Problem"
+            ]
+        },
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/7574732359718311403",
+            "name": "TargetConceptIncorrectChild",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot",
+                "jetbrains.mps.lang.feedback.problem.structural.InConceptProblem"
+            ]
+        },
+        {
+            "uid": "mps:7127d409-29f0-43e8-917f-f016ea288944/7574732359718312109",
+            "name": "TargetConceptIncorrectRef",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot",
+                "jetbrains.mps.lang.feedback.problem.structural.InConceptProblem"
+            ]
+        }
+    ]
+}

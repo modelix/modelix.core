@@ -1,0 +1,214 @@
+{
+    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a",
+    "name": "jetbrains.mps.baseLanguage.tuples",
+    "concepts": [
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1238852151516",
+            "name": "IndexedTupleType",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1238852151516/1238852204892",
+                    "name": "componentType",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Type",
+                "jetbrains.mps.baseLanguage.IGenericType"
+            ]
+        },
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1238853782547",
+            "name": "IndexedTupleLiteral",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1238853782547/1238853845806",
+                    "name": "component",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1238857743184",
+            "name": "IndexedTupleMemberAccessExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1238857743184/1238857764950",
+                    "name": "tuple",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                },
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1238857743184/1238857834412",
+                    "name": "index",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1239360506533",
+            "name": "NamedTupleDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239360506533/1239529553065",
+                    "name": "component",
+                    "type": "jetbrains.mps.baseLanguage.tuples.NamedTupleComponentDeclaration",
+                    "multiple": true
+                },
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239360506533/322547369016009796",
+                    "name": "extended",
+                    "type": "jetbrains.mps.baseLanguage.tuples.NamedTupleType"
+                },
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239360506533/2423993921025641700",
+                    "name": "implements",
+                    "type": "jetbrains.mps.baseLanguage.ClassifierType",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Classifier",
+                "jetbrains.mps.baseLanguage.IBLDeprecatable"
+            ]
+        },
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1239462176079",
+            "name": "NamedTupleComponentDeclaration",
+            "properties": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239462176079/1240400839614",
+                    "name": "final",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239462176079/1239462974287",
+                    "name": "type",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IValidIdentifier",
+                "jetbrains.mps.baseLanguage.HasAnnotation",
+                "jetbrains.mps.baseLanguage.TypeDerivable",
+                "jetbrains.mps.baseLanguage.TypeAnnotable",
+                "jetbrains.mps.lang.core.IResolveInfo"
+            ]
+        },
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1239531918181",
+            "name": "NamedTupleType",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ClassifierType",
+                "jetbrains.mps.baseLanguage.IGenericType"
+            ]
+        },
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1239559992092",
+            "name": "NamedTupleLiteral",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239559992092/1239560910577",
+                    "name": "componentRef",
+                    "type": "jetbrains.mps.baseLanguage.tuples.NamedTupleComponentReference",
+                    "multiple": true
+                }
+            ],
+            "references": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239559992092/1239560008022",
+                    "name": "tupleDeclaration",
+                    "type": "jetbrains.mps.baseLanguage.tuples.NamedTupleDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1239560581441",
+            "name": "NamedTupleComponentReference",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239560581441/1239560837729",
+                    "name": "value",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239560581441/1239560595302",
+                    "name": "componentDeclaration",
+                    "type": "jetbrains.mps.baseLanguage.tuples.NamedTupleComponentDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:a247e09e-2435-45ba-b8d2-07e93feba96a/1239576519914",
+            "name": "NamedTupleComponentAccessOperation",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "a247e09e-2435-45ba-b8d2-07e93feba96a/1239576519914/1239576542472",
+                    "name": "component",
+                    "type": "jetbrains.mps.baseLanguage.tuples.NamedTupleComponentDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IOperation"
+            ]
+        }
+    ]
+}

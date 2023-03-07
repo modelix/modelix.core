@@ -1,0 +1,26 @@
+{
+    "uid": "cd17a113-ca4e-472f-a8de-c49008f9eea8",
+    "name": "jetbrains.mps.lang.feedback",
+    "concepts": [
+        {
+            "uid": "mps:cd17a113-ca4e-472f-a8de-c49008f9eea8/6285588811486118729",
+            "name": "Feedback",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "cd17a113-ca4e-472f-a8de-c49008f9eea8/6285588811486118729/6285588811486118732",
+                    "name": "problem",
+                    "type": "jetbrains.mps.lang.feedback.problem.Problem",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.skeleton.FeedbackRootMember"
+            ]
+        }
+    ]
+}

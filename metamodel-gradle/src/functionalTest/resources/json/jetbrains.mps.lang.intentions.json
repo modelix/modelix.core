@@ -1,0 +1,326 @@
+{
+    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20",
+    "name": "jetbrains.mps.lang.intentions",
+    "concepts": [
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1192794744107",
+            "name": "IntentionDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.intentions.BaseIntentionDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1192794782375",
+            "name": "DescriptionBlock",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1192795771125",
+            "name": "IsApplicableBlock",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1192795911897",
+            "name": "ExecuteBlock",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1192796902958",
+            "name": "ConceptFunctionParameter_node",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1240316299033",
+            "name": "QueryBlock",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/1240316299033/1240393479918",
+                    "name": "paramType",
+                    "type": "jetbrains.mps.baseLanguage.Type"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1240322627579",
+            "name": "IntentionParameter",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1240395258925",
+            "name": "ParameterizedIntentionDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/1240395258925/1240395532443",
+                    "name": "queryFunction",
+                    "type": "jetbrains.mps.lang.intentions.QueryBlock"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.intentions.IntentionDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/3618415754251190715",
+            "name": "ChildFilterFunction",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/3618415754251192144",
+            "name": "ConceptFunctionParameter_childNode",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638091381",
+            "name": "BaseIntentionDeclaration",
+            "properties": [
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638091381/2522969319638091385",
+                    "name": "isErrorIntention",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638091381/2522969319638091386",
+                    "name": "isAvailableInChildNodes",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638091381/2522969319638093993",
+                    "name": "descriptionFunction",
+                    "type": "jetbrains.mps.lang.intentions.DescriptionBlock",
+                    "optional": false
+                },
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638091381/2522969319638093994",
+                    "name": "childFilterFunction",
+                    "type": "jetbrains.mps.lang.intentions.ChildFilterFunction"
+                },
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638091381/2522969319638093995",
+                    "name": "isApplicableFunction",
+                    "type": "jetbrains.mps.lang.intentions.IsApplicableBlock"
+                },
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638091381/2522969319638198291",
+                    "name": "executeFunction",
+                    "type": "jetbrains.mps.lang.intentions.ExecuteBlock",
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638091381/2522969319638198290",
+                    "name": "forConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IValidIdentifier",
+                "jetbrains.mps.lang.checkedName.ICheckedNamePolicy",
+                "jetbrains.mps.lang.structure.IConceptAspect",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/2522969319638198293",
+            "name": "SurroundWithIntentionDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.intentions.BaseIntentionDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1812109616120608865",
+            "name": "ParameterizedDescriptionBlock",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.intentions.DescriptionBlock"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/1812109616120795373",
+            "name": "ParameterizedExecuteBlock",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.intentions.ExecuteBlock"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/8214474548715792907",
+            "name": "Intention",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/8214474548715792907/6431842707461916273",
+                    "name": "priority",
+                    "type": "jetbrains.mps.lang.intentions.ErrorIntentionPriority"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/8214474548715792907/75717156636551009",
+                    "name": "forConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ClassConcept",
+                "jetbrains.mps.baseLanguage.lightweightdsl.AutoInitDSLClass",
+                "jetbrains.mps.baseLanguage.IValidIdentifier"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/7388353295030897530",
+            "name": "Parameter",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/7388353295030897530/7388353295030898576",
+                    "name": "parameterType",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.InstanceMethodDeclaration",
+                "jetbrains.mps.baseLanguage.lightweightdsl.MemberInstance"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/4958616572666404607",
+            "name": "ForConceptMethodParameter",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ParameterDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/6431842707461916181",
+            "name": "ErrorIntentionPriority",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.intentions.IntentionPriority"
+            ]
+        },
+        {
+            "uid": "mps:d7a92d38-f7db-40d0-8431-763b0c3c9f20/6431842707461916183",
+            "name": "IntentionPriority",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        }
+    ]
+}

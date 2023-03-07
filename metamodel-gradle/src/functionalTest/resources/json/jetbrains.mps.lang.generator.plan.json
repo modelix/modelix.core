@@ -1,0 +1,372 @@
+{
+    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00",
+    "name": "jetbrains.mps.lang.generator.plan",
+    "concepts": [
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471803",
+            "name": "Plan",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471803/1820634577908471815",
+                    "name": "steps",
+                    "type": "jetbrains.mps.lang.generator.plan.Step",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471804",
+            "name": "Step",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471809",
+            "name": "Checkpoint",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471809/3750601816081740498",
+                    "name": "cpSpec",
+                    "type": "jetbrains.mps.lang.generator.plan.CheckpointSpecification",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.plan.Step"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471810",
+            "name": "Transform",
+            "properties": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471810/2209292798354050154",
+                    "name": "individualStepPerGenerator",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471810/2944629966652439181",
+                    "name": "languages",
+                    "type": "jetbrains.mps.lang.smodel.LanguageIdentity",
+                    "multiple": true
+                },
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1820634577908471810/1152961914448142326",
+                    "name": "entries",
+                    "type": "jetbrains.mps.lang.generator.plan.LanguageEntry",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.plan.Step"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/8296877263936070001",
+            "name": "ApplyGenerators",
+            "properties": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/8296877263936070001/869728027904938835",
+                    "name": "withExtended",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/8296877263936070001/1113384811373540783",
+                    "name": "withPriorityRules",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/8296877263936070001/8296877263936660572",
+                    "name": "generator",
+                    "type": "jetbrains.mps.lang.smodel.GeneratorIdentity",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.plan.Step"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/869728027904920839",
+            "name": "CheckpointSynchronization",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/869728027904920839/3750601816087335480",
+                    "name": "checkpoint",
+                    "type": "jetbrains.mps.lang.generator.plan.CheckpointSpecification",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.plan.Step"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/6257322641293267918",
+            "name": "CheckpointDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.plan.Step",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3750601816081736033",
+            "name": "InPlaceCheckpointSpec",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.plan.CheckpointSpecification",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3750601816081736036",
+            "name": "CheckpointSpecification",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3750601816081740541",
+            "name": "DeclaredCheckpointSpec",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3750601816081740541/3750601816081740544",
+                    "name": "cpDecl",
+                    "type": "jetbrains.mps.lang.generator.plan.CheckpointDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.plan.CheckpointSpecification"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3750601816081740588",
+            "name": "InPlaceCheckpointRefSpec",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3750601816081740588/3750601816081740591",
+                    "name": "checkpoint",
+                    "type": "jetbrains.mps.lang.generator.plan.Checkpoint",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.plan.CheckpointSpecification"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3705377275350227759",
+            "name": "IncludePlan",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3705377275350227759/3705377275350227762",
+                    "name": "plan",
+                    "type": "jetbrains.mps.lang.generator.plan.Plan",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.plan.Step"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/894680215637491805",
+            "name": "DocumentationStep",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/894680215637491805/894680215637528532",
+                    "name": "comments",
+                    "type": "jetbrains.mps.lang.generator.plan.DocumentationLine",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.plan.Step"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/894680215637528423",
+            "name": "DocumentationLine",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/2959971211779300533",
+            "name": "TextDocLine",
+            "properties": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/2959971211779300533/2959971211779300563",
+                    "name": "text"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.plan.DocumentationLine"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3167863533095527371",
+            "name": "Fork",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3167863533095527371/2209292798354253807",
+                    "name": "filter",
+                    "type": "jetbrains.mps.lang.generator.plan.ForkSelector"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/3167863533095527371/3167863533095527372",
+                    "name": "plan",
+                    "type": "jetbrains.mps.lang.generator.plan.Plan",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.plan.Step"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1152961914448136207",
+            "name": "LanguageEntry",
+            "properties": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1152961914448136207/1152961914448142318",
+                    "name": "kind"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/1152961914448136207/1152961914448136208",
+                    "name": "language",
+                    "type": "jetbrains.mps.lang.smodel.LanguageIdentity",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/2209292798354253806",
+            "name": "ForkSelector",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/2209292798354253810",
+            "name": "ConceptListSelector",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "7ab1a6fa-0a11-4b95-9e48-75f363d6cb00/2209292798354253810/2209292798354253813",
+                    "name": "concepts",
+                    "type": "jetbrains.mps.lang.smodel.ConceptReference",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.plan.ForkSelector"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,70 @@
+{
+    "uid": "69b8a993-9b87-4d96-bf0c-3559f4bb0c63",
+    "name": "jetbrains.mps.lang.slanguage",
+    "concepts": [
+        {
+            "uid": "mps:69b8a993-9b87-4d96-bf0c-3559f4bb0c63/6171083915388330090",
+            "name": "AspectModelRefExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "69b8a993-9b87-4d96-bf0c-3559f4bb0c63/6171083915388330090/6171083915388330091",
+                    "name": "lang",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "69b8a993-9b87-4d96-bf0c-3559f4bb0c63/6171083915388330090/6171083915388597767",
+                    "name": "aspect",
+                    "type": "jetbrains.mps.lang.aspect.SimpleLanguageAspectDescriptor",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:69b8a993-9b87-4d96-bf0c-3559f4bb0c63/2030416617761226491",
+            "name": "Model_IsAspectOperation",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "69b8a993-9b87-4d96-bf0c-3559f4bb0c63/2030416617761226491/2030416617761226680",
+                    "name": "aspect",
+                    "type": "jetbrains.mps.lang.aspect.SimpleLanguageAspectDescriptor",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.SNodeOperation"
+            ]
+        },
+        {
+            "uid": "mps:69b8a993-9b87-4d96-bf0c-3559f4bb0c63/5932042262275638696",
+            "name": "OfAspectOperation",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "69b8a993-9b87-4d96-bf0c-3559f4bb0c63/5932042262275638696/8994852683961272056",
+                    "name": "requestedAspect",
+                    "type": "jetbrains.mps.lang.aspect.SimpleLanguageAspectDescriptor",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.collections.SequenceOperation",
+                "jetbrains.mps.lang.smodel.query.OperationHelpProvider"
+            ]
+        }
+    ]
+}

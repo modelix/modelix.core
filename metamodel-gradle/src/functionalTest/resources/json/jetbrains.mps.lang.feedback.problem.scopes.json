@@ -1,0 +1,25 @@
+{
+    "uid": "feec32f9-bc8f-4da8-8efd-7f3f9dd4101b",
+    "name": "jetbrains.mps.lang.feedback.problem.scopes",
+    "concepts": [
+        {
+            "uid": "mps:feec32f9-bc8f-4da8-8efd-7f3f9dd4101b/1592627013225787355",
+            "name": "RefOutOfScopeProblem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "feec32f9-bc8f-4da8-8efd-7f3f9dd4101b/1592627013225787355/1592627013225788494",
+                    "name": "ref",
+                    "type": "jetbrains.mps.lang.structure.LinkDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot"
+            ]
+        }
+    ]
+}

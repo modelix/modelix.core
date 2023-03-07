@@ -1,0 +1,152 @@
+{
+    "uid": "5dc5fc0d-37ef-4782-8192-8b5ce1f69f80",
+    "name": "jetbrains.mps.baseLanguage.extensionMethods",
+    "concepts": [
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/1894531970723270160",
+            "name": "TypeExtension",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/1894531970723270160/1894531970723323134",
+                    "name": "type",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.extensionMethods.BaseExtensionMethodContainer"
+            ]
+        },
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/1550313277221324859",
+            "name": "ExtensionMethodCall",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IOperation",
+                "jetbrains.mps.baseLanguage.IMethodCall"
+            ]
+        },
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/1550313277222152185",
+            "name": "ExtensionMethodDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/1550313277222152185/8022092943109605394",
+                    "name": "extendedType",
+                    "type": "jetbrains.mps.baseLanguage.Type"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.BaseMethodDeclaration",
+                "jetbrains.mps.baseLanguage.ClassifierMember"
+            ]
+        },
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/3316739663067157299",
+            "name": "ThisExtensionExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/8022092943109322131",
+            "name": "SimpleExtensionMethodsContainer",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.extensionMethods.BaseExtensionMethodContainer"
+            ]
+        },
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/8022092943110829337",
+            "name": "BaseExtensionMethodContainer",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/8022092943110829337/8022092943110829339",
+                    "name": "methods",
+                    "type": "jetbrains.mps.baseLanguage.extensionMethods.ExtensionMethodDeclaration",
+                    "multiple": true
+                },
+                {
+                    "uid": "5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/8022092943110829337/1973189701690661983",
+                    "name": "staticFields",
+                    "type": "jetbrains.mps.baseLanguage.extensionMethods.ExtensionStaticFieldDeclaration",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.GenericDeclaration",
+                "jetbrains.mps.baseLanguage.IVisible",
+                "jetbrains.mps.baseLanguage.IMemberContainer"
+            ]
+        },
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/1973189701690850247",
+            "name": "ExtensionStaticFieldReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.VariableReference"
+            ]
+        },
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/1973189701691027447",
+            "name": "ExtensionStaticFieldDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.VariableDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:5dc5fc0d-37ef-4782-8192-8b5ce1f69f80/7685333756920172912",
+            "name": "LocalExtendedMethodCall",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.BaseMethodCall"
+            ]
+        }
+    ]
+}

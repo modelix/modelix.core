@@ -1,0 +1,41 @@
+{
+    "uid": "1839bec5-cea6-41df-b9e0-c405ff35c41e",
+    "name": "jetbrains.mps.lang.editor.imageGen",
+    "concepts": [
+        {
+            "uid": "mps:1839bec5-cea6-41df-b9e0-c405ff35c41e/2359976223559993484",
+            "name": "ImageGenerator",
+            "properties": [
+                {
+                    "uid": "1839bec5-cea6-41df-b9e0-c405ff35c41e/2359976223559993484/2359976223560030855",
+                    "name": "fileName"
+                },
+                {
+                    "uid": "1839bec5-cea6-41df-b9e0-c405ff35c41e/2359976223559993484/3245637733309852966",
+                    "name": "id"
+                },
+                {
+                    "uid": "1839bec5-cea6-41df-b9e0-c405ff35c41e/2359976223559993484/1380214350862969083",
+                    "name": "imageFormat"
+                },
+                {
+                    "uid": "1839bec5-cea6-41df-b9e0-c405ff35c41e/2359976223559993484/1380214350862971625",
+                    "name": "scale"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "1839bec5-cea6-41df-b9e0-c405ff35c41e/2359976223559993484/3245637733310277398",
+                    "name": "node",
+                    "type": "jetbrains.mps.lang.core.BaseConcept"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        }
+    ]
+}

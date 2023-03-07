@@ -1,0 +1,32 @@
+{
+    "uid": "3ad5badc-1d9c-461c-b7b1-fa2fcd0a0ae7",
+    "name": "jetbrains.mps.lang.context",
+    "concepts": [
+        {
+            "uid": "mps:3ad5badc-1d9c-461c-b7b1-fa2fcd0a0ae7/24399255755667773",
+            "name": "Context",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "3ad5badc-1d9c-461c-b7b1-fa2fcd0a0ae7/24399255755667773/7291380803376071326",
+                    "name": "defs",
+                    "type": "jetbrains.mps.lang.context.defs.NativeDef",
+                    "multiple": true,
+                    "optional": false
+                },
+                {
+                    "uid": "3ad5badc-1d9c-461c-b7b1-fa2fcd0a0ae7/24399255755667773/8018723092206206171",
+                    "name": "conceptParameter",
+                    "type": "jetbrains.mps.lang.context.defs.ContextConceptParameter"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.ScopeProvider"
+            ]
+        }
+    ]
+}

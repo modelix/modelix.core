@@ -1,0 +1,674 @@
+{
+    "uid": "97a52717-898f-4598-8150-573d9fd03868",
+    "name": "jetbrains.mps.lang.dataFlow.analyzers",
+    "concepts": [
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/6618572076229093257",
+            "name": "Analyzer",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093257/4746038179140588765",
+                    "name": "initialFunction",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.AnalyzerInitialFunction",
+                    "optional": false
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093257/4746038179140586188",
+                    "name": "mergeFunction",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.AnalyzerMergeFunction",
+                    "optional": false
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093257/4746038179140588766",
+                    "name": "funFunction",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.AnalyzerFunFunction",
+                    "optional": false
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093257/9177062368042220440",
+                    "name": "direction",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.AnalysisDirection",
+                    "optional": false
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093257/9177062368042359739",
+                    "name": "latticeElementType",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093257/3325264799421088056",
+                    "name": "instruction",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.Instruction",
+                    "multiple": true
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093257/3993089038373544707",
+                    "name": "constructorParameters",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.AnalyzerConstructorParameter",
+                    "multiple": true
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093257/8350235189170141188",
+                    "name": "usedContainers",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.CustomInstructionsContainerReference",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.structure.INamedAspect"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/6618572076229093258",
+            "name": "Instruction",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/6618572076229093258/3325264799421088068",
+                    "name": "parameter",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.InstructionParameter",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/6393434056522580745",
+            "name": "AnalyzerMergeFunction",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4746038179140566716",
+            "name": "AnalyzerParameterProgram",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4746038179140566725",
+            "name": "AnalyzerMergeParameterInput",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4746038179140588744",
+            "name": "AnalyzerInitialFunction",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4746038179140588745",
+            "name": "AnalyzerFunFunction",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4746038179140588754",
+            "name": "AnalyzerFunParameterProgramState",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4746038179140588756",
+            "name": "AnalyzerFunParameterInput",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/9177062368042220422",
+            "name": "AnalysisDirection",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/9177062368042220424",
+            "name": "ForwardDirection",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.dataFlow.analyzers.AnalysisDirection"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/9177062368042220438",
+            "name": "BackwardDirection",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.dataFlow.analyzers.AnalysisDirection"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/9177062368042364839",
+            "name": "AnalyzerFunctionResultType",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Type"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/430844094082168520",
+            "name": "Rule",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/430844094082168520/4943044633101742986",
+                    "name": "actions",
+                    "type": "jetbrains.mps.baseLanguage.StatementList"
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/430844094082168520/3325264799421290838",
+                    "name": "condition",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.ApplicableCondition",
+                    "optional": false
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/430844094082168520/7966224008969473787",
+                    "name": "modes",
+                    "type": "jetbrains.mps.lang.dataFlow.IBuilderMode",
+                    "multiple": true
+                }
+            ],
+            "references": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/430844094082168520/4130591939054429248",
+                    "name": "analyzer",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.Analyzer",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.structure.INamedAspect"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/430844094082202272",
+            "name": "InstructionParameter",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/430844094082202272/430844094082202274",
+                    "name": "type",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/3325264799421290200",
+            "name": "ApplicableCondition",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/3325264799421303651",
+            "name": "PatternCondition",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/3325264799421303651/3325264799421304898",
+                    "name": "pattern",
+                    "type": "jetbrains.mps.lang.pattern.PatternExpression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.dataFlow.analyzers.ApplicableCondition"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4217760266503579796",
+            "name": "EmitInstruction",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/4217760266503579796/4217760266503650651",
+                    "name": "instructionRef",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.InstructionReference",
+                    "optional": false
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/4217760266503579796/323410281720600578",
+                    "name": "target",
+                    "type": "jetbrains.mps.baseLanguage.Expression"
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/4217760266503579796/24089196731087404",
+                    "name": "position",
+                    "type": "jetbrains.mps.lang.pattern.InsertPosition",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.pattern.ActionStatement"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4217760266503638748",
+            "name": "InstructionReference",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/4217760266503638748/4217760266503638749",
+                    "name": "argument",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "multiple": true
+                }
+            ],
+            "references": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/4217760266503638748/4217760266503638757",
+                    "name": "instruction",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.Instruction",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/752944717341640112",
+            "name": "RuleReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/752944717341640112/752944717341640113",
+                    "name": "rule",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.Rule",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/2045671745393426211",
+            "name": "AnalyzerRunnerType",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Type"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/95073643532950033",
+            "name": "AnalyzerRunnerAnalyzeOperation",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IOperation"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/95073643532950038",
+            "name": "AnalyzerRunnerCreator",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/95073643532950038/178770917832625312",
+                    "name": "nodeToCheck",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/95073643532950038/3993089038374473158",
+                    "name": "parameters",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "multiple": true
+                },
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/95073643532950038/3364696741418270074",
+                    "name": "mode",
+                    "type": "jetbrains.mps.lang.dataFlow.IBuilderMode"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/95073643532950038/95073643532950039",
+                    "name": "analyzer",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.Analyzer",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/7985661997283714146",
+            "name": "IsOperation",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/7985661997283714146/7985661997283737329",
+                    "name": "left",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/7985661997283714146/7985661997283714147",
+                    "name": "instruction",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.Instruction",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4943044633101449694",
+            "name": "ConceptCondition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/4943044633101449694/4943044633101738901",
+                    "name": "concept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.dataFlow.analyzers.ApplicableCondition",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/4943044633102057744",
+            "name": "ApplicableNodeReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/4943044633102057744/4943044633102057745",
+                    "name": "applicableNode",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.ConceptCondition",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/8424563347437821087",
+            "name": "InsertBeforePosition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/8424563347437829923",
+            "name": "InsertPosition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/8424563347437829924",
+            "name": "InsertAfterPosition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/1417545764634752447",
+            "name": "AnalyzerRunnerClassKeeper",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/1417545764634752447/4445029770708541867",
+                    "name": "member",
+                    "type": "jetbrains.mps.baseLanguage.ClassifierMember",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/3993089038373626032",
+            "name": "AnalyzerConstructorParameter",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.BaseVariableDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/3993089038373626360",
+            "name": "AnalyzerConstructorParameterReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.BaseVariableReference"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/9120988775422995278",
+            "name": "AnalyzerFunParameterStateValues",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/3727642986272245276",
+            "name": "ProgramParameter",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/8350235189170059441",
+            "name": "CustomInstructionsContainer",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/8350235189170059441/8350235189170065641",
+                    "name": "instruction",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.Instruction",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:97a52717-898f-4598-8150-573d9fd03868/8350235189170112408",
+            "name": "CustomInstructionsContainerReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "97a52717-898f-4598-8150-573d9fd03868/8350235189170112408/8350235189170112409",
+                    "name": "containter",
+                    "type": "jetbrains.mps.lang.dataFlow.analyzers.CustomInstructionsContainer",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        }
+    ]
+}

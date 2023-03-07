@@ -1,0 +1,441 @@
+{
+    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a",
+    "name": "jetbrains.mps.lang.smodel.query",
+    "concepts": [
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/8483375838963816171",
+            "name": "UsagesExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/8483375838963816171/8483375838963816172",
+                    "name": "node",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryExpression"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/7738379549910147341",
+            "name": "InstancesExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/7738379549910147341/7738379549910147342",
+                    "name": "conceptArg",
+                    "type": "jetbrains.mps.lang.smodel.IRefConceptArg",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryExpression"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2822369470875160718",
+            "name": "NodesExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryExpression"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/6322385757202370749",
+            "name": "ReferencesExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryExpression"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/6864030874027862829",
+            "name": "ModelsExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryExpression"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/6864030874028745314",
+            "name": "ModulesExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryExpression"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004131544317",
+            "name": "QueryExpression",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004131544317/4307205004132279624",
+                    "name": "parameter",
+                    "type": "jetbrains.mps.lang.smodel.query.QueryParameterList"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression",
+                "jetbrains.mps.lang.smodel.query.ExpressionHelpProvider"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004131544565",
+            "name": "QueryParameter",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004132277753",
+            "name": "QueryParameterList",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004132277753/4307205004141421222",
+                    "name": "parameter",
+                    "type": "jetbrains.mps.lang.smodel.query.QueryParameter",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004132412550",
+            "name": "QueryParameterIncludeReadOnly_old",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryParameter"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004132412719",
+            "name": "QueryParameterScope_old",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004132412719/4307205004134707081",
+                    "name": "value_old",
+                    "type": "jetbrains.mps.lang.smodel.query.ScopeParameter_old",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryParameter"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4307205004134636875",
+            "name": "ScopeParameter_old",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2755216049126692157",
+            "name": "ModulesScope_old",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2755216049126692157/3492877759607928680",
+                    "name": "modules_old",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.ScopeParameter_old"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/3492877759608408142",
+            "name": "ModelsScope_old",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/3492877759608408142/3492877759608408143",
+                    "name": "models_old",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.ScopeParameter_old"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/3492877759611762121",
+            "name": "CustomScope_old",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/3492877759611762121/3492877759611770126",
+                    "name": "scope_old",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.ScopeParameter_old"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/7006261637496548496",
+            "name": "ExpressionHelpProvider",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.HelpProvider"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/5932042262275648515",
+            "name": "OperationHelpProvider",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.HelpProvider"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/473081947981012231",
+            "name": "HelpProvider",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4234138103881610891",
+            "name": "WithStatement",
+            "properties": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4234138103881610891/192970713427626335",
+                    "name": "includeNonEditable",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4234138103881610891/4234138103881610892",
+                    "name": "stmts",
+                    "type": "jetbrains.mps.baseLanguage.StatementList",
+                    "optional": false
+                },
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/4234138103881610891/4234138103881610935",
+                    "name": "scope",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Statement",
+                "jetbrains.mps.baseLanguage.IStatementListContainer",
+                "jetbrains.mps.lang.smodel.query.QueryExpressionScopeProvider"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/677787792397344112",
+            "name": "QueryParameterExact",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryParameter"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/505947336487701511",
+            "name": "QueryExpressionScopeProvider",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062178",
+            "name": "ScopeParameter",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062179",
+            "name": "QueryParameterScope",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062179/2362304834939062180",
+                    "name": "value",
+                    "type": "jetbrains.mps.lang.smodel.query.ScopeParameter",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.QueryParameter"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062181",
+            "name": "ModulesScope",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062181/2362304834939062182",
+                    "name": "modules",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.ScopeParameter"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062183",
+            "name": "ModelsScope",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062183/2362304834939062184",
+                    "name": "models",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.ScopeParameter"
+            ]
+        },
+        {
+            "uid": "mps:1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062185",
+            "name": "CustomScope",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "1a8554c4-eb84-43ba-8c34-6f0d90c6e75a/2362304834939062185/2362304834939062186",
+                    "name": "scope",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.query.ScopeParameter"
+            ]
+        }
+    ]
+}

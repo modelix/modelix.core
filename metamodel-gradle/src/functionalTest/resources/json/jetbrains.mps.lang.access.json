@@ -1,0 +1,147 @@
+{
+    "uid": "63650c59-16c8-498a-99c8-005c7ee9515d",
+    "name": "jetbrains.mps.lang.access",
+    "concepts": [
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348170",
+            "name": "BaseExecuteCommandStatement",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348170/8974276187400348171",
+                    "name": "commandClosureLiteral",
+                    "type": "jetbrains.mps.lang.access.CommandClosureLiteral",
+                    "optional": false
+                },
+                {
+                    "uid": "63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348170/1423104411234567454",
+                    "name": "repo",
+                    "type": "jetbrains.mps.baseLanguage.Expression"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Statement"
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348172",
+            "name": "BaseExecuteCommandStatementSync",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.access.BaseExecuteCommandStatement"
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348173",
+            "name": "CommandClosureLiteral",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.closures.ClosureLiteral"
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348174",
+            "name": "ExecuteCommandInEDTStatement",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.access.BaseExecuteCommandStatement"
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348177",
+            "name": "ExecuteCommandStatement",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.access.BaseExecuteCommandStatementSync"
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348179",
+            "name": "ExecuteEDTCommandStatement",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.access.BaseExecuteCommandStatement"
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348181",
+            "name": "ExecuteLightweightCommandStatement",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.access.BaseExecuteCommandStatementSync"
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348183",
+            "name": "ExecuteWriteActionStatement",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.access.BaseExecuteCommandStatementSync"
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/8974276187400348185",
+            "name": "IExecuteCommandStatementSync",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:63650c59-16c8-498a-99c8-005c7ee9515d/5332677359380589431",
+            "name": "ExecuteTransparentCommandStatement",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.access.BaseExecuteCommandStatementSync"
+            ]
+        }
+    ]
+}

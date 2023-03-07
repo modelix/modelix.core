@@ -1,0 +1,61 @@
+{
+    "uid": "033598a4-76a9-47e1-ac89-a300c0fceab8",
+    "name": "jetbrains.mps.lang.feedback.problem",
+    "concepts": [
+        {
+            "uid": "mps:033598a4-76a9-47e1-ac89-a300c0fceab8/6285588811486000940",
+            "name": "Problem",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:033598a4-76a9-47e1-ac89-a300c0fceab8/24399255755750911",
+            "name": "ProblemKind",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "033598a4-76a9-47e1-ac89-a300c0fceab8/24399255755750911/24399255755751437",
+                    "name": "context",
+                    "type": "jetbrains.mps.lang.context.Context",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.core.ScopeProvider"
+            ]
+        },
+        {
+            "uid": "mps:033598a4-76a9-47e1-ac89-a300c0fceab8/7716791493892884282",
+            "name": "ProblemPointsToKindRoot",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "033598a4-76a9-47e1-ac89-a300c0fceab8/7716791493892884282/7716791493892884283",
+                    "name": "kind",
+                    "type": "jetbrains.mps.lang.feedback.problem.ProblemKind",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.feedback.problem.Problem",
+                "jetbrains.mps.lang.core.ScopeProvider"
+            ]
+        }
+    ]
+}

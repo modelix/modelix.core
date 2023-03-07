@@ -1,0 +1,185 @@
+{
+    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1",
+    "name": "jetbrains.mps.lang.behavior",
+    "concepts": [
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194240794",
+            "name": "ConceptBehavior",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194240794/1225194240801",
+                    "name": "constructor",
+                    "type": "jetbrains.mps.lang.behavior.ConceptConstructorDeclaration",
+                    "optional": false
+                },
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194240794/1225194240805",
+                    "name": "method",
+                    "type": "jetbrains.mps.lang.behavior.ConceptMethodDeclaration",
+                    "multiple": true
+                }
+            ],
+            "references": [
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194240794/1225194240799",
+                    "name": "concept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.baseLanguage.IMemberContainer",
+                "jetbrains.mps.baseLanguage.IExtractMethodAvailable",
+                "jetbrains.mps.lang.structure.IConceptAspect"
+            ]
+        },
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194413805",
+            "name": "ConceptConstructorDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194472830",
+            "name": "ConceptMethodDeclaration",
+            "properties": [
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194472830/1225194472832",
+                    "name": "isVirtual",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194472830/1225194472833",
+                    "name": "isPrivate",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194472830/1225194472834",
+                    "name": "isAbstract",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194472830/5864038008284099149",
+                    "name": "isStatic",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194472830/1225194472831",
+                    "name": "overriddenMethod",
+                    "type": "jetbrains.mps.lang.behavior.ConceptMethodDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.BaseMethodDeclaration",
+                "jetbrains.mps.baseLanguage.IVisible"
+            ]
+        },
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194628440",
+            "name": "SuperNodeExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194628440/5299096511375896640",
+                    "name": "superConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression",
+                "jetbrains.mps.lang.behavior.SuperExpression"
+            ]
+        },
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/1225194691553",
+            "name": "ThisNodeExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression",
+                "jetbrains.mps.baseLanguage.IThisExpression"
+            ]
+        },
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/6496299201655527393",
+            "name": "LocalBehaviorMethodCall",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.BaseMethodCall"
+            ]
+        },
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/1703835097132541506",
+            "name": "ThisConceptExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression",
+                "jetbrains.mps.baseLanguage.IThisExpression"
+            ]
+        },
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/7613853987897845671",
+            "name": "SuperConceptExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "af65afd8-f0dd-4942-87d9-63a55f2a9db1/7613853987897845671/7613853987897845672",
+                    "name": "superConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression",
+                "jetbrains.mps.lang.behavior.SuperExpression"
+            ]
+        },
+        {
+            "uid": "mps:af65afd8-f0dd-4942-87d9-63a55f2a9db1/2668211767468819683",
+            "name": "SuperExpression",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        }
+    ]
+}

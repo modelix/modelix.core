@@ -1,0 +1,94 @@
+{
+    "uid": "c9d137c4-3259-44f8-80ff-33ab2b506ee4",
+    "name": "jetbrains.mps.lang.util.order",
+    "concepts": [
+        {
+            "uid": "mps:c9d137c4-3259-44f8-80ff-33ab2b506ee4/2450897840534683975",
+            "name": "OrderDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "c9d137c4-3259-44f8-80ff-33ab2b506ee4/2450897840534683975/2450897840534683977",
+                    "name": "seq",
+                    "type": "jetbrains.mps.lang.util.order.OrderParticipantReference",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.util.order.Order",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:c9d137c4-3259-44f8-80ff-33ab2b506ee4/2450897840534683973",
+            "name": "Order",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:c9d137c4-3259-44f8-80ff-33ab2b506ee4/2450897840534688273",
+            "name": "OrderReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c9d137c4-3259-44f8-80ff-33ab2b506ee4/2450897840534688273/2450897840534688274",
+                    "name": "order",
+                    "type": "jetbrains.mps.lang.util.order.OrderDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.util.order.Order"
+            ]
+        },
+        {
+            "uid": "mps:c9d137c4-3259-44f8-80ff-33ab2b506ee4/2450897840534683979",
+            "name": "OrderParticipantReference",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c9d137c4-3259-44f8-80ff-33ab2b506ee4/2450897840534683979/2450897840534683980",
+                    "name": "target",
+                    "type": "jetbrains.mps.lang.util.order.OrderParticipant",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:c9d137c4-3259-44f8-80ff-33ab2b506ee4/2343319097655214556",
+            "name": "OrderParticipant",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        }
+    ]
+}

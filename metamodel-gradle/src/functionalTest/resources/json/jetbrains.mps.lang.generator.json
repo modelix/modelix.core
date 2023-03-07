@@ -1,0 +1,2265 @@
+{
+    "uid": "b401a680-8325-4110-8fd3-84331ff25bef",
+    "name": "jetbrains.mps.lang.generator",
+    "concepts": [
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1087833241328",
+            "name": "PropertyMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1087833241328/1167756362303",
+                    "name": "propertyValueFunction",
+                    "type": "jetbrains.mps.lang.generator.PropertyMacro_GetPropertyValue",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.PropertyAttribute",
+                "jetbrains.mps.lang.generator.AbstractMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1087833466690",
+            "name": "NodeMacro",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1087833466690/1200912223215",
+                    "name": "mappingLabel",
+                    "type": "jetbrains.mps.lang.generator.MappingLabelDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.generator.AbstractMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1088761943574",
+            "name": "ReferenceMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1088761943574/1167770376702",
+                    "name": "referentFunction",
+                    "type": "jetbrains.mps.lang.generator.ReferenceMacro_GetReferent",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.LinkAttribute",
+                "jetbrains.mps.lang.generator.AbstractMacro",
+                "jetbrains.mps.lang.core.ISuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1092059087312",
+            "name": "TemplateDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1092059087312/1092060348987",
+                    "name": "contentNode",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1092059087312/1168285871518",
+                    "name": "applicableConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.structure.IConceptAspect",
+                "jetbrains.mps.lang.generator.IParameterizedTemplate",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1095416546421",
+            "name": "MappingConfiguration",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1184950341882",
+                    "name": "topPriorityGroup",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/7830515785164764091",
+                    "name": "condition",
+                    "type": "jetbrains.mps.lang.generator.MappingConfiguration_Condition"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1167514678247",
+                    "name": "rootMappingRule",
+                    "type": "jetbrains.mps.lang.generator.Root_MappingRule",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1167172143858",
+                    "name": "weavingMappingRule",
+                    "type": "jetbrains.mps.lang.generator.Weaving_MappingRule",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1167328349397",
+                    "name": "reductionMappingRule",
+                    "type": "jetbrains.mps.lang.generator.Reduction_MappingRule",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1805153994416813171",
+                    "name": "patternReductionRule",
+                    "type": "jetbrains.mps.lang.generator.PatternReduction_MappingRule",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1167088157977",
+                    "name": "createRootRule",
+                    "type": "jetbrains.mps.lang.generator.CreateRootRule",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1219952894531",
+                    "name": "dropRootRule",
+                    "type": "jetbrains.mps.lang.generator.DropRootRule",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1195502100749",
+                    "name": "preMappingScript",
+                    "type": "jetbrains.mps.lang.generator.MappingScriptReference",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1195502346405",
+                    "name": "postMappingScript",
+                    "type": "jetbrains.mps.lang.generator.MappingScriptReference",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/1200911492601",
+                    "name": "mappingLabel",
+                    "type": "jetbrains.mps.lang.generator.MappingLabelDeclaration",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/2456082753387314114",
+                    "name": "generationParameters",
+                    "type": "jetbrains.mps.lang.generator.GeneratorParameterReference",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/7473026166162327259",
+                    "name": "dropAttrubuteRule",
+                    "type": "jetbrains.mps.lang.generator.DropAttributeRule",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095416546421/8612733435393315377",
+                    "name": "referenceReductionRule",
+                    "type": "jetbrains.mps.lang.generator.ReferenceReductionRule",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.baseLanguage.IMemberContainer",
+                "jetbrains.mps.lang.structure.IConceptAspect",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1095672379244",
+            "name": "TemplateFragment",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1095672379244/1200916687663",
+                    "name": "labelDeclaration",
+                    "type": "jetbrains.mps.lang.generator.MappingLabelDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.ICanSuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1112730859144",
+            "name": "TemplateSwitch",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1112730859144/1167340453568",
+                    "name": "reductionMappingRule",
+                    "type": "jetbrains.mps.lang.generator.Reduction_MappingRule",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1112730859144/1168558750579",
+                    "name": "defaultConsequence",
+                    "type": "jetbrains.mps.lang.generator.RuleConsequence"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1112730859144/1226355936225",
+                    "name": "nullInputMessage",
+                    "type": "jetbrains.mps.lang.generator.GeneratorMessage"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1112730859144/1112820671508",
+                    "name": "modifiedSwitch",
+                    "type": "jetbrains.mps.lang.generator.TemplateSwitch"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.generator.IParameterizedTemplate",
+                "jetbrains.mps.lang.structure.IConceptAspect",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1112911581741",
+            "name": "TemplateSwitchReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1112911581741/1112911598335",
+                    "name": "templateSwitch",
+                    "type": "jetbrains.mps.lang.generator.TemplateSwitch",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1114706874351",
+            "name": "CopySrcNodeMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1114706874351/1168024447342",
+                    "name": "sourceNodeQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodeQuery"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.SourceSubstituteMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1114729360583",
+            "name": "CopySrcListMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1114729360583/1168278589236",
+                    "name": "sourceNodesQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodesQuery",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.SourceSubstituteMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1118773211870",
+            "name": "IfMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1118773211870/1167945861827",
+                    "name": "conditionFunction",
+                    "type": "jetbrains.mps.lang.generator.IfMacro_Condition",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1118773211870/1194989344771",
+                    "name": "alternativeConsequence",
+                    "type": "jetbrains.mps.lang.generator.RuleConsequence"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.NodeMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1118786554307",
+            "name": "LoopMacro",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1118786554307/7430509679011668804",
+                    "name": "counterVarName"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1118786554307/1167952069335",
+                    "name": "sourceNodesQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodesQuery",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.SourceSubstituteMacro",
+                "jetbrains.mps.lang.generator.ContextVariableProvider"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1131073187192",
+            "name": "MapSrcNodeMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1131073187192/1168281849769",
+                    "name": "sourceNodeQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodeQuery"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1131073187192/1170725844563",
+                    "name": "mapperFunction",
+                    "type": "jetbrains.mps.lang.generator.MapSrcMacro_MapperFunction"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1131073187192/1225229330048",
+                    "name": "postMapperFunction",
+                    "type": "jetbrains.mps.lang.generator.MapSrcMacro_PostMapperFunction"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.SourceSubstituteMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1133037731736",
+            "name": "MapSrcListMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1133037731736/1168291362368",
+                    "name": "sourceNodesQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodesQuery",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1133037731736/1170871384825",
+                    "name": "mapperFunction",
+                    "type": "jetbrains.mps.lang.generator.MapSrcMacro_MapperFunction"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1133037731736/1225229689103",
+                    "name": "postMapperFunction",
+                    "type": "jetbrains.mps.lang.generator.MapSrcMacro_PostMapperFunction"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.SourceSubstituteMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167087469898",
+            "name": "CreateRootRule",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167087469898/1167087469900",
+                    "name": "conditionFunction",
+                    "type": "jetbrains.mps.lang.generator.CreateRootRule_Condition"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167087469898/1167087469901",
+                    "name": "templateNode",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167087469898/1200923511980",
+                    "name": "label",
+                    "type": "jetbrains.mps.lang.generator.MappingLabelDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167087518662",
+            "name": "CreateRootRule_Condition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167168920554",
+            "name": "BaseMappingRule_Condition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167169188348",
+            "name": "TemplateFunctionParameter_sourceNode",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167169308231",
+            "name": "BaseMappingRule",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167169308231/1167272244852",
+                    "name": "applyToConceptInheritors",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167169308231/7898029224680692134",
+                    "name": "description"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167169308231/1167169362365",
+                    "name": "conditionFunction",
+                    "type": "jetbrains.mps.lang.generator.BaseMappingRule_Condition"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167169308231/1167169349424",
+                    "name": "applicableConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167169308231/1200917515464",
+                    "name": "labelDeclaration",
+                    "type": "jetbrains.mps.lang.generator.MappingLabelDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167171569011",
+            "name": "Weaving_MappingRule",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167171569011/1169570368028",
+                    "name": "ruleConsequence",
+                    "type": "jetbrains.mps.lang.generator.RuleConsequence",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167171569011/1184616230853",
+                    "name": "contextNodeQuery",
+                    "type": "jetbrains.mps.lang.generator.Weaving_MappingRule_ContextNodeQuery",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167171569011/1021062414717374968",
+                    "name": "anchorQuery",
+                    "type": "jetbrains.mps.lang.generator.WeavingAnchorQuery"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.BaseMappingRule",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167327847730",
+            "name": "Reduction_MappingRule",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167327847730/1169672767469",
+                    "name": "ruleConsequence",
+                    "type": "jetbrains.mps.lang.generator.RuleConsequence",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.BaseMappingRule",
+                "jetbrains.mps.lang.generator.ReductionRule"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167514355419",
+            "name": "Root_MappingRule",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167514355419/1177959072138",
+                    "name": "keepSourceRoot"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167514355419/1167514355421",
+                    "name": "template",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.BaseMappingRule",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167756080639",
+            "name": "PropertyMacro_GetPropertyValue",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167756221419",
+            "name": "TemplateFunctionParameter_templatePropertyValue",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167770111131",
+            "name": "ReferenceMacro_GetReferent",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167770229866",
+            "name": "TemplateFunctionParameter_templateReferent",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167945743726",
+            "name": "IfMacro_Condition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167951328751",
+            "name": "SourceSubstituteMacro",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.NodeMacro",
+                "jetbrains.mps.lang.core.ISuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1167951910403",
+            "name": "SourceSubstituteMacro_SourceNodesQuery",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1168024337012",
+            "name": "SourceSubstituteMacro_SourceNodeQuery",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1168559098955",
+            "name": "RuleConsequence",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1168559333462",
+            "name": "TemplateDeclarationReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.RuleConsequence",
+                "jetbrains.mps.lang.generator.ITemplateCall"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1168559512253",
+            "name": "DismissTopMappingRule",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1168559512253/1169669152123",
+                    "name": "generatorMessage",
+                    "type": "jetbrains.mps.lang.generator.GeneratorMessage"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.RuleConsequence"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1168619357332",
+            "name": "RootTemplateAnnotation",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1168619357332/1168619429071",
+                    "name": "applicableConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.ImplementationPart",
+                "jetbrains.mps.lang.core.ISuppressErrors",
+                "jetbrains.mps.lang.core.ICanSuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1169569792945",
+            "name": "WeaveEach_RuleConsequence",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169569792945/1169569939267",
+                    "name": "sourceNodesQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodesQuery",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169569792945/7771219649169827299",
+                    "name": "templateCall",
+                    "type": "jetbrains.mps.lang.generator.TemplateCall",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.RuleConsequence"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1169670156577",
+            "name": "GeneratorMessage",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169670156577/1169670356567",
+                    "name": "messageType"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169670156577/1169670173015",
+                    "name": "messageText"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1170725621272",
+            "name": "MapSrcMacro_MapperFunction",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1177093525992",
+            "name": "InlineTemplate_RuleConsequence",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1177093525992/1177093586806",
+                    "name": "templateNode",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.RuleConsequence",
+                "jetbrains.mps.lang.core.ICanSuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1184374096829",
+            "name": "TemplateFunctionParameter_mainContextNode",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1184616041890",
+            "name": "Weaving_MappingRule_ContextNodeQuery",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1184690432998",
+            "name": "TemplateFunctionParameter_outputNode",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1184792613450",
+            "name": "TemplateFunctionParameter_parentOutputNode",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1195158154974",
+            "name": "InlineSwitch_RuleConsequence",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195158154974/1195158408710",
+                    "name": "case",
+                    "type": "jetbrains.mps.lang.generator.InlineSwitch_Case",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195158154974/1195158241124",
+                    "name": "defaultConsequence",
+                    "type": "jetbrains.mps.lang.generator.RuleConsequence",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.RuleConsequence"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1195158388553",
+            "name": "InlineSwitch_Case",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195158388553/1195158608805",
+                    "name": "conditionFunction",
+                    "type": "jetbrains.mps.lang.generator.BaseMappingRule_Condition",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195158388553/1195158637244",
+                    "name": "caseConsequence",
+                    "type": "jetbrains.mps.lang.generator.RuleConsequence",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1195499912406",
+            "name": "MappingScript",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195499912406/1195595592106",
+                    "name": "scriptKind"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195499912406/1195595611951",
+                    "name": "modifiesModel",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195499912406/1195501105008",
+                    "name": "codeBlock",
+                    "type": "jetbrains.mps.lang.generator.MappingScript_CodeBlock",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1195500722856",
+            "name": "MappingScript_CodeBlock",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1195502151594",
+            "name": "MappingScriptReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195502151594/1195502167610",
+                    "name": "mappingScript",
+                    "type": "jetbrains.mps.lang.generator.MappingScript",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1200911316486",
+            "name": "MappingLabelDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1200911316486/1200911342686",
+                    "name": "sourceConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1200911316486/3541437991299124310",
+                    "name": "sourceConcept2",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1200911316486/1200913004646",
+                    "name": "targetConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1202776937179",
+            "name": "AbandonInput_RuleConsequence",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.RuleConsequence"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1216768419888",
+            "name": "TemplateQueryBase",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1219952072943",
+            "name": "DropRootRule",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1219952072943/1219952317655",
+                    "name": "conditionFunction",
+                    "type": "jetbrains.mps.lang.generator.DropRootRule_Condition"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1219952072943/1219952338328",
+                    "name": "applicableConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1219952151850",
+            "name": "DropRootRule_Condition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1225228973247",
+            "name": "MapSrcMacro_PostMapperFunction",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1227303129915",
+            "name": "AbstractMacro",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1227303129915/3265704088513289864",
+                    "name": "comment"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1805153994415891174",
+            "name": "TemplateParameterDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1805153994415891174/1805153994415893199",
+                    "name": "type",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IValidIdentifier"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1805153994416516020",
+            "name": "PatternReduction_MappingRule",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1805153994416516020/1805153994416556314",
+                    "name": "pattern",
+                    "type": "jetbrains.mps.lang.pattern.PatternExpression",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1805153994416516020/1805153994416516024",
+                    "name": "ruleConsequence",
+                    "type": "jetbrains.mps.lang.generator.RuleConsequence",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1805153994416516020/1805153994416516021",
+                    "name": "conditionFunction",
+                    "type": "jetbrains.mps.lang.generator.BaseMappingRule_Condition"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1805153994416516020/1805153994416516026",
+                    "name": "labelDeclaration",
+                    "type": "jetbrains.mps.lang.generator.MappingLabelDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.ReductionRule"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1722980698497626400",
+            "name": "ITemplateCall",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1722980698497626400/1722980698497626405",
+                    "name": "actualArgument",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "multiple": true
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1722980698497626400/1722980698497626483",
+                    "name": "template",
+                    "type": "jetbrains.mps.lang.generator.IParameterizedTemplate",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.TypeDerivable"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/4035562641222585520",
+            "name": "TemplateArgumentQueryExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/4035562641222585520/4035562641222618754",
+                    "name": "query",
+                    "type": "jetbrains.mps.lang.generator.TemplateArgumentQuery",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/4035562641222622437",
+            "name": "TemplateArgumentQuery",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/4665309944889425032",
+            "name": "TemplateArgumentPatternVarRefExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/4665309944889425032/4665309944889425604",
+                    "name": "patternVarDecl",
+                    "type": "jetbrains.mps.lang.pattern.PatternVariableDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateArgumentPatternRef"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3860274746541219069",
+            "name": "ReductionRule",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/4816349095291127781",
+            "name": "TemplateArgumentPatternRef",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/4816349095291149799",
+            "name": "TemplateArgumentPropertyPatternRefExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/4816349095291149799/4816349095291149801",
+                    "name": "propertyPattern",
+                    "type": "jetbrains.mps.lang.pattern.PropertyPatternVariableDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateArgumentPatternRef"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/4816349095291149800",
+            "name": "TemplateArgumentLinkPatternRefExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/4816349095291149800/4816349095291149802",
+                    "name": "patternVar",
+                    "type": "jetbrains.mps.lang.pattern.LinkPatternVariableDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateArgumentPatternRef"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1510949579266781519",
+            "name": "TemplateCallMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1510949579266781519/1510949579266801461",
+                    "name": "sourceNodeQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodeQuery"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.SourceSubstituteMacro",
+                "jetbrains.mps.lang.generator.ITemplateCall"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/8900764248744213868",
+            "name": "InlineTemplateWithContext_RuleConsequence",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/8900764248744213868/8900764248744213871",
+                    "name": "contentNode",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.RuleConsequence",
+                "jetbrains.mps.lang.core.ICanSuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/650531548511609556",
+            "name": "IGeneratorParameter",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/650531548511609556/650531548511609557",
+                    "name": "type",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/650531548511911818",
+            "name": "GeneratorParameterReference",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/650531548511911818/5540778578667478296",
+                    "name": "isOptional",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/650531548511911818/650531548511911820",
+                    "name": "declaration",
+                    "type": "jetbrains.mps.lang.generator.IGeneratorParameter",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/5005282049925926521",
+            "name": "TemplateArgumentParameterExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/5005282049925926521/5005282049925926522",
+                    "name": "parameter",
+                    "type": "jetbrains.mps.lang.generator.TemplateParameterDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/7830515785164762753",
+            "name": "MappingConfiguration_Condition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/5133195082121471908",
+            "name": "LabelMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/5133195082121471908/3541437991299113739",
+                    "name": "input1",
+                    "type": "jetbrains.mps.lang.generator.LabelMacroInputQuery"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/5133195082121471908/3541437991299113741",
+                    "name": "input2",
+                    "type": "jetbrains.mps.lang.generator.LabelMacroInputQuery"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.NodeMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1311078761699563726",
+            "name": "InsertMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1311078761699563726/1311078761699602381",
+                    "name": "createNodeQuery",
+                    "type": "jetbrains.mps.lang.generator.InsertMacro_CreateNodeQuery",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.NodeMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1311078761699563727",
+            "name": "InsertMacro_CreateNodeQuery",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3462145372628071891",
+            "name": "WeaveMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3462145372628071891/3462145372628083181",
+                    "name": "ruleConsequence",
+                    "type": "jetbrains.mps.lang.generator.TemplateDeclarationReference",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3462145372628071891/3462145372628083179",
+                    "name": "nodesToWeaveQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodesQuery",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3462145372628071891/2614815860187382413",
+                    "name": "anchorQuery",
+                    "type": "jetbrains.mps.lang.generator.WeavingAnchorQuery"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.NodeMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/5015072279636592410",
+            "name": "VarMacro_ValueQuery",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3118009927543452571",
+            "name": "TraceMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3118009927543452571/3118009927543452625",
+                    "name": "sourceNodeQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodeQuery",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.NodeMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/982871510068000147",
+            "name": "TemplateSwitchMacro",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/982871510068000147/982871510068000158",
+                    "name": "sourceNodeQuery",
+                    "type": "jetbrains.mps.lang.generator.SourceSubstituteMacro_SourceNodeQuery"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.SourceSubstituteMacro",
+                "jetbrains.mps.lang.generator.ITemplateCall"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/982871510064032177",
+            "name": "IParameterizedTemplate",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/982871510064032177/1796073355504430601",
+                    "name": "needCallSite",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/982871510064032177/982871510064032342",
+                    "name": "parameter",
+                    "type": "jetbrains.mps.lang.generator.TemplateParameterDeclaration",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2338220375237995425",
+            "name": "GeneratorInternal_ReferenceDescriptor",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375237995425/2338220375238055294",
+                    "name": "targetModel"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375237995425/2338220375238055296",
+                    "name": "targetNodeId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.GeneratorInternal_AbstractReferenceDescriptor"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2338220375238032411",
+            "name": "GeneratorInternal_InternalReferenceDescriptor",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375238032411/2338220375238042931",
+                    "name": "templateNodeId"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375238032411/2338220375238042933",
+                    "name": "resolveInfo"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.GeneratorInternal_AbstractReferenceDescriptor"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2338220375236868589",
+            "name": "GeneratorInternal_PropertyDescriptor",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375236868589/8389748773577451513",
+                    "name": "propertyValue"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375236868589/3413262193425582356",
+                    "name": "propertyIndex",
+                    "type": "INT"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375236868589/2836521009934148516",
+                    "name": "propertyIdentity",
+                    "type": "jetbrains.mps.lang.smodel.PropertyId",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2338220375238032426",
+            "name": "GeneratorInternal_AbstractReferenceDescriptor",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375238032426/3413262193426811125",
+                    "name": "linkIndex",
+                    "type": "INT"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2338220375238032426/521066010460921405",
+                    "name": "role",
+                    "type": "jetbrains.mps.lang.smodel.AssociationIdentity",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/7430509679011384492",
+            "name": "ContextVariableProvider",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/7430509679011469471",
+            "name": "ContextVariableDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/7430509679011469471/7430509679011528948",
+                    "name": "type",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1021062414717307707",
+            "name": "WeavingAnchorQuery",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3864140621129707969",
+            "name": "GeneratorDebug_Mappings",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129707969/3864140621129713349",
+                    "name": "labels",
+                    "type": "jetbrains.mps.lang.generator.GeneratorDebug_LabelEntry",
+                    "multiple": true
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129707969/2471977144750369546",
+                    "name": "records",
+                    "type": "jetbrains.mps.lang.generator.CP_LabelRecord",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713348",
+            "name": "GeneratorDebug_LabelEntry",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713348/3864140621129715945",
+                    "name": "label"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713348/3864140621129715947",
+                    "name": "entries",
+                    "type": "jetbrains.mps.lang.generator.GeneratorDebug_NodeMapEntry",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713351",
+            "name": "GeneratorDebug_NodeMapEntry",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713351/5843998055530255671",
+                    "name": "isNewRoot",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713351/5808518347809748862",
+                    "name": "inputNode",
+                    "type": "jetbrains.mps.lang.generator.GeneratorDebug_InputNode"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713351/3864140621129713365",
+                    "name": "outputNode",
+                    "type": "jetbrains.mps.lang.generator.GeneratorDebug_NodeRef",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713351/3864140621129713371",
+                    "name": "inputOrigin",
+                    "type": "jetbrains.mps.lang.core.BaseConcept"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713362",
+            "name": "GeneratorDebug_NodeRef",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3864140621129713362/3864140621129713363",
+                    "name": "node",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/7473026166162297926",
+            "name": "DropAttributeRule_Condition",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/7473026166162297915",
+            "name": "DropAttributeRule",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/7473026166162297915/1515402509390413598",
+                    "name": "applyToSubConcepts",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/7473026166162297915/7473026166162322215",
+                    "name": "condition",
+                    "type": "jetbrains.mps.lang.generator.DropAttributeRule_Condition"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/7473026166162297915/7473026166162297918",
+                    "name": "applicableConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/5808518347809715508",
+            "name": "GeneratorDebug_InputNode",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/5808518347809715508/5808518347809748738",
+                    "name": "presentation"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/5808518347809715508/5808518347810439643",
+                    "name": "modelName"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/5808518347809715508/5808518347809747118",
+                    "name": "node",
+                    "type": "jetbrains.mps.lang.generator.NodeIdentity"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/5808518347809715508/5808518347809748735",
+                    "name": "nodePtr",
+                    "type": "jetbrains.mps.lang.core.BaseConcept"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/8612733435392875258",
+            "name": "ReferenceReductionRule",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/8612733435392875258/3145152795238947898",
+                    "name": "referentFunction",
+                    "type": "jetbrains.mps.lang.generator.ReferenceMacro_GetReferent",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/8612733435392875258/518316622382812505",
+                    "name": "conditionFunction",
+                    "type": "jetbrains.mps.lang.generator.BaseMappingRule_Condition"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/8612733435392875258/8612733435392875261",
+                    "name": "link",
+                    "type": "jetbrains.mps.lang.structure.LinkDeclaration",
+                    "optional": false
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/8612733435392875258/518316622382812518",
+                    "name": "applicableConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.ReductionRule"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/9032177546941580387",
+            "name": "TrivialNodeId",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/9032177546941580387/9032177546941580392",
+                    "name": "nodeId"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/9032177546941580387/8557539026538618631",
+                    "name": "cncpt",
+                    "type": "jetbrains.mps.lang.smodel.ConceptIdentity",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.NodeIdentity"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/9032177546941555544",
+            "name": "NodeIdentity",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3637169702552512264",
+            "name": "ElementaryNodeId",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/3637169702552512264/3637169702552512269",
+                    "name": "nodeId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.NodeIdentity"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/7980339663309897032",
+            "name": "OriginTrace",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/7980339663309897032/7980339663309897037",
+                    "name": "origin",
+                    "type": "jetbrains.mps.lang.generator.NodeIdentity",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/7771219649169826771",
+            "name": "TemplateCall",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.ITemplateCall"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1048903277984099198",
+            "name": "VarMacro2",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1048903277984099198/1048903277984099213",
+                    "name": "variables",
+                    "type": "jetbrains.mps.lang.generator.VarDeclaration",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.NodeMacro",
+                "jetbrains.mps.lang.core.ScopeProvider"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1048903277984099206",
+            "name": "VarDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1048903277984099206/1048903277984099209",
+                    "name": "type",
+                    "type": "jetbrains.mps.baseLanguage.Type"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1048903277984099206/1048903277984099210",
+                    "name": "value",
+                    "type": "jetbrains.mps.lang.generator.VarMacro_ValueQuery",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1048903277989260815",
+            "name": "TemplateArgumentVarRefExpression2",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1048903277989260815/1048903277989260816",
+                    "name": "vardecl",
+                    "type": "jetbrains.mps.lang.generator.VarDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/5324767449430213525",
+            "name": "InsertCallSiteMacro",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.NodeMacro"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/3541437991299094512",
+            "name": "LabelMacroInputQuery",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.TemplateQueryBase"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2880994019885263230",
+            "name": "AbstractNodeMacroNamespace",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2880994019885263148",
+            "name": "LoopMacroNamespaceAccessor",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2880994019885263148/1501378878163388321",
+                    "name": "variable"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.generator.AbstractNodeMacroNamespace"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333947",
+            "name": "CP_InputKey",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333948",
+            "name": "CP_InputNode",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333948/2471977144750438736",
+                    "name": "nodeId"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333948/2471977144750389791",
+                    "name": "presentation"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333948/2471977144750389792",
+                    "name": "modelName"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333948/2471977144750389802",
+                    "name": "nodePtr",
+                    "type": "jetbrains.mps.lang.core.BaseConcept"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333948/2471977144750333941",
+                    "name": "inputOrigin",
+                    "type": "jetbrains.mps.lang.core.BaseConcept"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.generator.CP_InputKey"
+            ]
+        },
+        {
+            "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333938",
+            "name": "CP_LabelRecord",
+            "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333938/2471977144750333939",
+                    "name": "label"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333938/2471977144750333964",
+                    "name": "isNewRoot",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333938/2471977144750333957",
+                    "name": "input1",
+                    "type": "jetbrains.mps.lang.generator.CP_InputKey"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333938/2471977144750333960",
+                    "name": "input2",
+                    "type": "jetbrains.mps.lang.generator.CP_InputKey"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2471977144750333938/2471977144750333943",
+                    "name": "output",
+                    "type": "jetbrains.mps.lang.generator.GeneratorDebug_NodeRef",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        }
+    ]
+}

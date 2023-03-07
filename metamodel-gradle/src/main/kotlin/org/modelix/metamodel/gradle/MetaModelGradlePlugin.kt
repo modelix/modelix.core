@@ -52,8 +52,8 @@ class MetaModelGradlePlugin: Plugin<Project> {
 
             val mpsHome = getMpsHome()
             val antVariables = listOf(
-                "mps.home" to mpsHome.absolutePath,
-                "mps_home" to mpsHome.absolutePath,
+                "mps.home" to mpsHome?.absolutePath,
+                "mps_home" to mpsHome?.absolutePath,
                 "build.dir" to getBuildOutputDir().absolutePath,
             ).map { (key, value) -> "-D$key=$value" }
             task.args(antVariables)
@@ -116,11 +116,12 @@ class MetaModelGradlePlugin: Plugin<Project> {
 
     private fun getAntScriptFile() = getBuildOutputDir().resolve("export-languages.xml")
 
-    private fun getMpsHome(checkExistence: Boolean = false): File {
+    private fun getMpsHome(checkExistence: Boolean = false): File? {
         val mpsHome = this.settings.mpsHome
-        require(mpsHome != null) { "'mpsHome' is not set in the 'metamodel' settings" }
+        val jsonDir = this.settings.jsonDir
+        require(mpsHome != null || jsonDir != null) { "'mpsHome' is not set in the 'metamodel' settings" }
         if (checkExistence) {
-            require(mpsHome.exists()) { "'mpsHome' doesn't exist: ${mpsHome.absolutePath}" }
+            require(mpsHome?.exists() ?: false) { "'mpsHome' doesn't exist: ${mpsHome?.absolutePath}" }
         }
         return mpsHome
     }

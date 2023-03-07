@@ -1,0 +1,101 @@
+{
+    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3",
+    "name": "jetbrains.mps.baseLanguage.logging",
+    "concepts": [
+        {
+            "uid": "mps:760a0a8c-eabb-4521-8bfd-65db761a9ba3/1168401810208",
+            "name": "PrintStatement",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/1168401810208/1168401864803",
+                    "name": "textExpression",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Statement"
+            ]
+        },
+        {
+            "uid": "mps:760a0a8c-eabb-4521-8bfd-65db761a9ba3/2034914114981261497",
+            "name": "LogLowLevelStatement",
+            "properties": [
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/2034914114981261497/2034914114981261751",
+                    "name": "severity"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/2034914114981261497/2034914114981261753",
+                    "name": "message",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                },
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/2034914114981261497/2034914114981261755",
+                    "name": "throwable",
+                    "type": "jetbrains.mps.baseLanguage.Expression"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Statement",
+                "jetbrains.mps.baseLanguage.logging.IMessage"
+            ]
+        },
+        {
+            "uid": "mps:760a0a8c-eabb-4521-8bfd-65db761a9ba3/6332851714983831325",
+            "name": "MsgStatement",
+            "properties": [
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/6332851714983831325/6332851714983843871",
+                    "name": "severity"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/6332851714983831325/5721587534047265374",
+                    "name": "message",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                },
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/6332851714983831325/5721587534047265375",
+                    "name": "throwable",
+                    "type": "jetbrains.mps.baseLanguage.Expression"
+                },
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/6332851714983831325/5721587534047265560",
+                    "name": "project",
+                    "type": "jetbrains.mps.baseLanguage.Expression"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Statement",
+                "jetbrains.mps.baseLanguage.logging.IMessage"
+            ]
+        },
+        {
+            "uid": "mps:760a0a8c-eabb-4521-8bfd-65db761a9ba3/6332851714983849654",
+            "name": "IMessage",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        }
+    ]
+}

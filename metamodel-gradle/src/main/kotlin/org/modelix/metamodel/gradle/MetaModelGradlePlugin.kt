@@ -23,11 +23,13 @@ class MetaModelGradlePlugin: Plugin<Project> {
         val modelixCoreVersion = readModelixCoreVersion() ?: throw RuntimeException("modelix.core version not found")
         project.dependencies.add(exporterDependencies.name, "org.modelix:metamodel-export-mps:$modelixCoreVersion")
         val downloadExporterDependencies = project.tasks.register("downloadMetaModelExporter", Sync::class.java) { task ->
+            task.enabled = settings.jsonDir == null
             task.from(exporterDependencies.resolve().map { project.zipTree(it) })
             task.into(exporterDir)
         }
 
         val generateAntScriptForMpsMetaModelExport = project.tasks.register("generateAntScriptForMpsMetaModelExport", GenerateAntScriptForMpsMetaModelExport::class.java) { task ->
+            task.enabled = settings.jsonDir == null
             task.dependsOn(downloadExporterDependencies)
             task.dependsOn(*settings.taskDependencies.toTypedArray())
             task.mpsHome.set(getMpsHome())
@@ -43,14 +45,15 @@ class MetaModelGradlePlugin: Plugin<Project> {
 
         val exportedLanguagesDir = getBuildOutputDir().resolve("exported-languages")
         val exportMetaModelFromMps = project.tasks.register("exportMetaModelFromMps", JavaExec::class.java) { task ->
+            task.enabled = settings.jsonDir == null
             task.workingDir = getBuildOutputDir()
             task.mainClass.set("org.apache.tools.ant.launch.Launcher")
             task.classpath(antDependencies)
 
             val mpsHome = getMpsHome()
             val antVariables = listOf(
-                "mps.home" to mpsHome.absolutePath,
-                "mps_home" to mpsHome.absolutePath,
+                "mps.home" to mpsHome?.absolutePath,
+                "mps_home" to mpsHome?.absolutePath,
                 "build.dir" to getBuildOutputDir().absolutePath,
             ).map { (key, value) -> "-D$key=$value" }
             task.args(antVariables)
@@ -83,9 +86,14 @@ class MetaModelGradlePlugin: Plugin<Project> {
                 task.includedNamespaces.addAll(settings.includedLanguageNamespaces)
                 task.includedLanguages.addAll(settings.includedLanguages)
                 task.includedConcepts.addAll(settings.includedConcepts)
-                task.exportedLanguagesDir.set(exportedLanguagesDir)
+                if (settings.jsonDir != null) {
+                    task.exportedLanguagesDir.set(settings.jsonDir)
+                } else {
+                    task.exportedLanguagesDir.set(exportedLanguagesDir)
+                }
                 settings.registrationHelperName?.let { task.registrationHelperName.set(it) }
                 task.nameConfig.set(settings.nameConfig)
+
             }
         }
 
@@ -108,11 +116,12 @@ class MetaModelGradlePlugin: Plugin<Project> {
 
     private fun getAntScriptFile() = getBuildOutputDir().resolve("export-languages.xml")
 
-    private fun getMpsHome(checkExistence: Boolean = false): File {
+    private fun getMpsHome(checkExistence: Boolean = false): File? {
         val mpsHome = this.settings.mpsHome
-        require(mpsHome != null) { "'mpsHome' is not set in the 'metamodel' settings" }
+        val jsonDir = this.settings.jsonDir
+        require(mpsHome != null || jsonDir != null) { "'mpsHome' is not set in the 'metamodel' settings" }
         if (checkExistence) {
-            require(mpsHome.exists()) { "'mpsHome' doesn't exist: ${mpsHome.absolutePath}" }
+            require(mpsHome?.exists() ?: false) { "'mpsHome' doesn't exist: ${mpsHome?.absolutePath}" }
         }
         return mpsHome
     }

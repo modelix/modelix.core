@@ -1,0 +1,165 @@
+{
+    "uid": "68015e26-cc4d-49db-8715-b643faea1769",
+    "name": "jetbrains.mps.lang.test.generator",
+    "concepts": [
+        {
+            "uid": "mps:68015e26-cc4d-49db-8715-b643faea1769/554465258093187774",
+            "name": "GeneratorTest",
+            "properties": [
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/554465258093187774/554465258093190244",
+                    "name": "description"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/554465258093187774/554465258093190247",
+                    "name": "arguments",
+                    "type": "jetbrains.mps.lang.test.generator.TestArgument",
+                    "multiple": true
+                },
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/554465258093187774/554465258093203559",
+                    "name": "tests",
+                    "type": "jetbrains.mps.lang.test.generator.TestAssertion",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.structure.INamedAspect"
+            ]
+        },
+        {
+            "uid": "mps:68015e26-cc4d-49db-8715-b643faea1769/554465258093190250",
+            "name": "TestArgument",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:68015e26-cc4d-49db-8715-b643faea1769/554465258093190254",
+            "name": "ModelArgument",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/554465258093190254/554465258093190258",
+                    "name": "param",
+                    "type": "jetbrains.mps.lang.modelapi.ModelIdentity",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.test.generator.TestArgument"
+            ]
+        },
+        {
+            "uid": "mps:68015e26-cc4d-49db-8715-b643faea1769/554465258093203543",
+            "name": "TransformationMatchAssertion",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/554465258093203543/554465258093203550",
+                    "name": "inputModel",
+                    "type": "jetbrains.mps.lang.test.generator.ArgumentReference",
+                    "optional": false
+                },
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/554465258093203543/554465258093203552",
+                    "name": "referenceModel",
+                    "type": "jetbrains.mps.lang.test.generator.ArgumentReference",
+                    "optional": false
+                },
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/554465258093203543/554465258093203555",
+                    "name": "transformationPlan",
+                    "type": "jetbrains.mps.lang.test.generator.ArgumentReference"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.test.generator.TestAssertion"
+            ]
+        },
+        {
+            "uid": "mps:68015e26-cc4d-49db-8715-b643faea1769/554465258093203544",
+            "name": "TestAssertion",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:68015e26-cc4d-49db-8715-b643faea1769/554465258093203547",
+            "name": "ArgumentReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/554465258093203547/554465258093203548",
+                    "name": "arg",
+                    "type": "jetbrains.mps.lang.test.generator.TestArgument",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:68015e26-cc4d-49db-8715-b643faea1769/6346338635721157081",
+            "name": "TransformationMatchManyAssertion",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/6346338635721157081/554465258093203550",
+                    "name": "inputModel",
+                    "type": "jetbrains.mps.lang.test.generator.ArgumentReference",
+                    "optional": false
+                },
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/6346338635721157081/554465258093203552",
+                    "name": "referenceModels",
+                    "type": "jetbrains.mps.lang.test.generator.ArgumentReference",
+                    "multiple": true,
+                    "optional": false
+                },
+                {
+                    "uid": "68015e26-cc4d-49db-8715-b643faea1769/6346338635721157081/554465258093203555",
+                    "name": "transformationPlan",
+                    "type": "jetbrains.mps.lang.test.generator.ArgumentReference"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.test.generator.TestAssertion"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,356 @@
+{
+    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470",
+    "name": "jetbrains.mps.lang.script",
+    "concepts": [
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821",
+            "name": "MigrationScript",
+            "properties": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821/1177457669450",
+                    "name": "title"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821/1206123256132",
+                    "name": "migrationFromBuild"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821/1206123296179",
+                    "name": "category"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821/5299416737274925395",
+                    "name": "type"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821/5299416737274925397",
+                    "name": "toBuild"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821/1177458178889",
+                    "name": "part",
+                    "type": "jetbrains.mps.lang.script.MigrationScriptPart",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IValidIdentifier",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457850499",
+            "name": "MigrationScriptPart_Instance",
+            "properties": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457850499/1177457972041",
+                    "name": "description"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457850499/1225457189692",
+                    "name": "showAsIntention",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457850499/1177457957478",
+                    "name": "affectedInstancePredicate",
+                    "type": "jetbrains.mps.lang.script.MigrationScriptPart_Instance_Predicate"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457850499/1177458005323",
+                    "name": "affectedInstanceUpdater",
+                    "type": "jetbrains.mps.lang.script.MigrationScriptPart_Instance_Updater",
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457850499/1177457957477",
+                    "name": "affectedInstanceConcept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.MigrationScriptPart"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177458061340",
+            "name": "MigrationScriptPart_Instance_Predicate",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177458237937",
+            "name": "MigrationScriptPart_node",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177458491964",
+            "name": "MigrationScriptPart_Instance_Updater",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunction"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/2598676492883164205",
+            "name": "FactoryMigrationScriptPart",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/2598676492883164205/2598676492883164207",
+                    "name": "factoryMethod",
+                    "type": "jetbrains.mps.baseLanguage.StaticMethodCall",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.MigrationScriptPart"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/2598676492883244606",
+            "name": "WhitespaceMigrationScriptPart",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.MigrationScriptPart"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/6970965131508596229",
+            "name": "MigrationScriptPart",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/6655357163912204546",
+            "name": "CommentMigrationScriptPart",
+            "properties": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/6655357163912204546/6655357163912204547",
+                    "name": "text"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.MigrationScriptPart"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/6655357163912246425",
+            "name": "ExtractInterfaceMigration",
+            "properties": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/6655357163912246425/7867202088808133349",
+                    "name": "updateClassifierTypes",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/6655357163912246425/5434557751112108415",
+                    "name": "oldClassifier",
+                    "type": "jetbrains.mps.lang.script.AbstractClassifierSpecification",
+                    "optional": false
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/6655357163912246425/849077997121893197",
+                    "name": "pullUpMethods",
+                    "type": "jetbrains.mps.lang.script.PullUpMethod",
+                    "multiple": true
+                }
+            ],
+            "references": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/6655357163912246425/6655357163912246427",
+                    "name": "newClassifier",
+                    "type": "jetbrains.mps.baseLanguage.Classifier",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.MigrationScriptPart"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/849077997121870276",
+            "name": "PullUpMethod",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/849077997121870276/4774682482449846913",
+                    "name": "oldMethodSpecification",
+                    "type": "jetbrains.mps.lang.script.AbstractMethodSpecification"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/849077997121870276/4242940223545038298",
+                    "name": "newMethodDeclaration",
+                    "type": "jetbrains.mps.baseLanguage.BaseMethodDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5434557751112081978",
+            "name": "AbstractClassifierSpecification",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5434557751112207651",
+            "name": "DirectClassifierSpecification",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5434557751112207651/5434557751112207965",
+                    "name": "classifier",
+                    "type": "jetbrains.mps.baseLanguage.Classifier",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.AbstractClassifierSpecification"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5434557751112207835",
+            "name": "FQNameClassifierSpecification",
+            "properties": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5434557751112207835/5434557751112752962",
+                    "name": "classifierFQName"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5434557751112207835/5434557751113468451",
+                    "name": "smodelReference"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5434557751112207835/8915466921781754528",
+                    "name": "snodeId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.AbstractClassifierSpecification"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/4774682482449847011",
+            "name": "FQNameMethodSpecification",
+            "properties": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/4774682482449847011/2291767839160466985",
+                    "name": "snodeId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.AbstractMethodSpecification"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/4774682482449869981",
+            "name": "AbstractMethodSpecification",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0eddeefa-c2d6-4437-bc2c-de50fd4ce470/2291767839159498115",
+            "name": "DirectMethodSpecification",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/2291767839159498115/2291767839159499865",
+                    "name": "methodDeclaration",
+                    "type": "jetbrains.mps.baseLanguage.BaseMethodDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.script.AbstractMethodSpecification"
+            ]
+        }
+    ]
+}

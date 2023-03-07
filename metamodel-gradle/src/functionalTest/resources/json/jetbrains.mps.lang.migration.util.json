@@ -1,0 +1,46 @@
+{
+    "uid": "9882f4ad-1955-46fe-8269-94189e5dbbf2",
+    "name": "jetbrains.mps.lang.migration.util",
+    "concepts": [
+        {
+            "uid": "mps:9882f4ad-1955-46fe-8269-94189e5dbbf2/3211321119092784894",
+            "name": "StringData",
+            "properties": [
+                {
+                    "uid": "9882f4ad-1955-46fe-8269-94189e5dbbf2/3211321119092784894/3211321119092784906",
+                    "name": "data"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:9882f4ad-1955-46fe-8269-94189e5dbbf2/7417095922908669705",
+            "name": "StepData",
+            "properties": [
+                {
+                    "uid": "9882f4ad-1955-46fe-8269-94189e5dbbf2/7417095922908669705/1973338949477451252",
+                    "name": "script"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "9882f4ad-1955-46fe-8269-94189e5dbbf2/7417095922908669705/7417095922908725798",
+                    "name": "data",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        }
+    ]
+}

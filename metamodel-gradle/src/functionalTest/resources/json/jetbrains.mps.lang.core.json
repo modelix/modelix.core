@@ -1,0 +1,650 @@
+{
+    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c",
+    "name": "jetbrains.mps.lang.core",
+    "concepts": [
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626",
+            "name": "BaseConcept",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626/1156234966388",
+                    "name": "shortDescription"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626/1193676396447",
+                    "name": "virtualPackage"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626/5169995583184591170",
+                    "name": "smodelAttribute",
+                    "type": "jetbrains.mps.lang.core.Attribute",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1169194658468",
+            "name": "INamedConcept",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/1169194658468/1169194664001",
+                    "name": "name"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1196978630214",
+            "name": "IResolveInfo",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/1196978630214/1196978656277",
+                    "name": "resolveInfo"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1221647093812",
+            "name": "IWrapper",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1224608834445",
+            "name": "IDeprecatable",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1233160296597",
+            "name": "IContainer",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1234971358450",
+            "name": "IType",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/201537367881071930",
+            "name": "IMetaLevelChanger",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/5169995583184591161",
+            "name": "Attribute",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049745",
+            "name": "LinkAttribute",
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049745/1757699476691236116",
+                    "name": "role_DebugInfo"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049745/1341860900488019036",
+                    "name": "linkId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.Attribute"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049748",
+            "name": "NodeAttribute",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.Attribute"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049750",
+            "name": "PropertyAttribute",
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049750/1757699476691236117",
+                    "name": "name_DebugInfo"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049750/1341860900487648621",
+                    "name": "propertyId"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049750/1189424455254633007",
+                    "name": "enumUsageMigrated",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.Attribute"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3734116213129792499",
+            "name": "ScopeProvider",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1047408822409601647",
+            "name": "IAntisuppressErrors",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3393165121846091586",
+            "name": "ICanSuppressErrors",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3393165121846091587",
+            "name": "ISuppressErrors",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/4222318806802425298",
+            "name": "SuppressErrorsAnnotation",
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/4222318806802425298/2423417345669755629",
+                    "name": "filter"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/4222318806802425298/8575328350543493365",
+                    "name": "message"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/4222318806802425298/8575328350543493371",
+                    "name": "comment"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.ISuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1835621062190663819",
+            "name": "IDontSubstituteByDefault",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3361475375157466558",
+            "name": "ScopeFacade",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1319728274783077719",
+            "name": "ImplementationPart",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.ScopeFacade"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1319728274783151479",
+            "name": "ImplementationContainer",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1319728274784973096",
+            "name": "InterfacePart",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/6999738288738427190",
+            "name": "ImplementationWithStubPart",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.ImplementationPart"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/155087542027447621",
+            "name": "IStubForAnotherConcept",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853369165",
+            "name": "SideTransformInfo",
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853369165/779128492853699361",
+                    "name": "side"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853369165/779128492853934523",
+                    "name": "cellId"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853369165/779128492853935960",
+                    "name": "anchorTag"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/4452961908202556907",
+            "name": "BaseCommentAttribute",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/4452961908202556907/3078666699043039389",
+                    "name": "commentedNode",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.ChildAttribute",
+                "jetbrains.mps.lang.core.ISkipConstraintsChecking",
+                "jetbrains.mps.lang.core.IDontApplyTypesystemRules",
+                "jetbrains.mps.lang.core.ISuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/709746936026466394",
+            "name": "ChildAttribute",
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/709746936026466394/709746936026609029",
+                    "name": "role_DebugInfo"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/709746936026466394/709746936026609031",
+                    "name": "linkId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.Attribute"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/5831887615299457091",
+            "name": "ISkipConstraintsChecking",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/2216760464199502422",
+            "name": "IDontApplyTypesystemRules",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/4123120730935488432",
+            "name": "IOldCommentContainer",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/7094926192234036184",
+            "name": "ISmartReferent",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/2482611074346661065",
+            "name": "ReviewMigration_old",
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/2482611074346661065/2482611074346661078",
+                    "name": "reasonShort"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/2482611074346661065/2482611074346661073",
+                    "name": "todo"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/2482611074346661065/2482611074347169514",
+                    "name": "readableId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.MigrationAnnotation_old"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/2482611074347614920",
+            "name": "MigrationAnnotation_old",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3717301156197626279",
+            "name": "BasePlaceholder",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/3717301156197626279/3717301156197626301",
+                    "name": "content",
+                    "type": "jetbrains.mps.lang.core.IPlaceholderContent"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.ChildAttribute"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/4058177569375150038",
+            "name": "IPlaceholderContent",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/8703179436978668945",
+            "name": "MigrationDataAnnotation",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/8703179436978668945/6807933448470330574",
+                    "name": "dataNode",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.MigrationAnnotation"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/8703179436979359251",
+            "name": "MigrationAnnotation",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/8703179436979359251/8703179436979359252",
+                    "name": "createdByScript"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.MigrationAnnotation_old"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/8703179436979359238",
+            "name": "ReviewMigration",
+            "properties": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/8703179436979359238/8703179436979359239",
+                    "name": "reasonShort"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/8703179436979359238/8703179436979359240",
+                    "name": "todo"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/8703179436979359238/8703179436979359241",
+                    "name": "readableId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.MigrationAnnotation"
+            ]
+        },
+        {
+            "uid": "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/5259630923505770665",
+            "name": "TypeAnnotated",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/5259630923505770665/5259630923505770666",
+                    "name": "annotation",
+                    "type": "jetbrains.mps.lang.core.BaseConcept"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        }
+    ]
+}

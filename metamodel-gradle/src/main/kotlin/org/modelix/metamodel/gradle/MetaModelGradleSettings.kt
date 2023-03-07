@@ -37,6 +37,8 @@ open class MetaModelGradleSettings {
         action.execute(nameConfig)
     }
 
+    var jsonDir: File? = null
+
     fun dependsOn(vararg dependency: Any) {
         taskDependencies.addAll(dependency)
     }

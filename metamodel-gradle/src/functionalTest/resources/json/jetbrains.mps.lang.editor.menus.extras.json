@@ -1,0 +1,79 @@
+{
+    "uid": "cffe907e-d3de-433f-89d6-57d9c449c0e2",
+    "name": "jetbrains.mps.lang.editor.menus.extras",
+    "concepts": [
+        {
+            "uid": "mps:cffe907e-d3de-433f-89d6-57d9c449c0e2/2926686622729992785",
+            "name": "TransformationMenuPart_Intention",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "cffe907e-d3de-433f-89d6-57d9c449c0e2/2926686622729992785/2926686622729992786",
+                    "name": "intention",
+                    "type": "jetbrains.mps.lang.intentions.BaseIntentionDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.editor.TransformationMenuPart",
+                "jetbrains.mps.lang.editor.IExtensibleTransformationMenuPart"
+            ]
+        },
+        {
+            "uid": "mps:cffe907e-d3de-433f-89d6-57d9c449c0e2/2468431357014363369",
+            "name": "QueryFunctionParameter_IntentionExecutable",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:cffe907e-d3de-433f-89d6-57d9c449c0e2/4736696158595695479",
+            "name": "TransformationMenuPart_Refactoring",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "cffe907e-d3de-433f-89d6-57d9c449c0e2/4736696158595695479/4736696158595695482",
+                    "name": "refactoring",
+                    "type": "jetbrains.mps.lang.refactoring.Refactoring",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.editor.TransformationMenuPart",
+                "jetbrains.mps.lang.editor.IExtensibleTransformationMenuPart"
+            ]
+        },
+        {
+            "uid": "mps:cffe907e-d3de-433f-89d6-57d9c449c0e2/2319156231054332300",
+            "name": "TransformationMenuPart_PluginAction",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "cffe907e-d3de-433f-89d6-57d9c449c0e2/2319156231054332300/2319156231054332308",
+                    "name": "action",
+                    "type": "jetbrains.mps.lang.plugin.ActionDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.editor.TransformationMenuPart",
+                "jetbrains.mps.lang.editor.IExtensibleTransformationMenuPart"
+            ]
+        }
+    ]
+}

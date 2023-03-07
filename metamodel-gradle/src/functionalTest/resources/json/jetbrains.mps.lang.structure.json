@@ -1,0 +1,808 @@
+{
+    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7",
+    "name": "jetbrains.mps.lang.structure",
+    "concepts": [
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298",
+            "name": "LinkDeclaration",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/1071599776563",
+                    "name": "role"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/1071599937831",
+                    "name": "metaClass"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/1071599893252",
+                    "name": "sourceCardinality"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/2395585628928459314",
+                    "name": "unordered",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/241647608299431140",
+                    "name": "linkId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/1071599698500",
+                    "name": "specializedLink",
+                    "type": "jetbrains.mps.lang.structure.LinkDeclaration"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/1071599976176",
+                    "name": "target",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.InterfacePart",
+                "jetbrains.mps.lang.structure.IStructureDeprecatable",
+                "jetbrains.mps.lang.structure.INamedStructureElement",
+                "jetbrains.mps.lang.structure.DocumentationObjective"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288299",
+            "name": "PropertyDeclaration",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288299/241647608299431129",
+                    "name": "propertyId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288299/1082985295845",
+                    "name": "dataType",
+                    "type": "jetbrains.mps.lang.structure.DataTypeDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.InterfacePart",
+                "jetbrains.mps.lang.structure.INamedStructureElement",
+                "jetbrains.mps.lang.structure.IStructureDeprecatable",
+                "jetbrains.mps.lang.structure.DocumentationObjective"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164218",
+            "name": "DataTypeDeclaration",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164218/7791109065626895363",
+                    "name": "datatypeId"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164218/7791109065626895364",
+                    "name": "languageId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.structure.INamedStructureElement",
+                "jetbrains.mps.lang.structure.IStructureDeprecatable"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1082978499127",
+            "name": "ConstrainedDataTypeDeclaration",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978499127/1083066089218",
+                    "name": "constraint"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.structure.DataTypeDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1083171877298",
+            "name": "EnumerationMemberDeclaration_Old",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1083171877298/1083923523171",
+                    "name": "internalValue"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1083171877298/1083923523172",
+                    "name": "externalValue"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1083171877298/1192116978809",
+                    "name": "javaIdentifier"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1083243159079",
+            "name": "PrimitiveDataTypeDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.structure.DataTypeDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135",
+            "name": "AbstractConceptDeclaration",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/2465654535473034588",
+                    "name": "oldHelpURL"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/5092175715804935370",
+                    "name": "conceptAlias"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/4628067390765907488",
+                    "name": "conceptShortDescription"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/4628067390765956802",
+                    "name": "abstract",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/4628067390765956807",
+                    "name": "final",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/1587916991969465369",
+                    "name": "intConceptId",
+                    "type": "INT"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/6714410169261853888",
+                    "name": "conceptId"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/9005308665739310115",
+                    "name": "languageId"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/1071489727083",
+                    "name": "linkDeclaration",
+                    "type": "jetbrains.mps.lang.structure.LinkDeclaration",
+                    "multiple": true
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/1071489727084",
+                    "name": "propertyDeclaration",
+                    "type": "jetbrains.mps.lang.structure.PropertyDeclaration",
+                    "multiple": true
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/1780177113170204155",
+                    "name": "helpURL",
+                    "type": "jetbrains.mps.lang.resources.HelpURL"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125787135/5023950685592517420",
+                    "name": "sourceNode",
+                    "type": "jetbrains.mps.lang.core.BaseConcept"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.structure.INamedStructureElement",
+                "jetbrains.mps.lang.core.InterfacePart",
+                "jetbrains.mps.lang.structure.IStructureDeprecatable",
+                "jetbrains.mps.lang.structure.DocumentationObjective"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1169125989551",
+            "name": "InterfaceConceptDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169125989551/1169127546356",
+                    "name": "extends",
+                    "type": "jetbrains.mps.lang.structure.InterfaceConceptReference",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.structure.AbstractConceptDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1169127622168",
+            "name": "InterfaceConceptReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1169127622168/1169127628841",
+                    "name": "intfc",
+                    "type": "jetbrains.mps.lang.structure.InterfaceConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1224240836180",
+            "name": "DeprecatedNodeAnnotation",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1224240836180/1225118929411",
+                    "name": "build"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1224240836180/1225118933224",
+                    "name": "comment"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1224848324737",
+            "name": "IStructureDeprecatable",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.IDeprecatable"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/2621449412040133764",
+            "name": "IConceptAspect",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/2992811758677295509",
+            "name": "AttributeInfo",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/2992811758677295509/7588428831955550663",
+                    "name": "role"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/2992811758677295509/7588428831955550186",
+                    "name": "multiple",
+                    "type": "jetbrains.mps.lang.structure.AttributeInfo_IsMultiple"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/2992811758677295509/7588428831947959310",
+                    "name": "attributed",
+                    "type": "jetbrains.mps.lang.structure.AttributeInfo_AttributedConcept",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/6054523464626862044",
+            "name": "AttributeInfo_IsMultiple",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6054523464626862044/6054523464626875854",
+                    "name": "value",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/6054523464627964745",
+            "name": "AttributeInfo_AttributedConcept",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6054523464627964745/6054523464627965081",
+                    "name": "concept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/5717188120689018936",
+            "name": "ReferenceLinkDeclartionScopeKind",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/5717188120689019441",
+            "name": "AggregationLinkDeclarationScopeKind",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/7862711839422615221",
+            "name": "DocumentationObjectiveRef",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/7862711839422615221/7862711839422615222",
+                    "name": "target",
+                    "type": "jetbrains.mps.lang.structure.DocumentationObjective",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/7862711839422615214",
+            "name": "DocumentationObjective",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/7862711839422615209",
+            "name": "DocumentedNodeAnnotation",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/7862711839422615209/7862711839422615217",
+                    "name": "text"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/7862711839422615209/7862711839422615224",
+                    "name": "seeAlso",
+                    "type": "jetbrains.mps.lang.structure.DocumentationObjectiveRef",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/8842732777748207592",
+            "name": "SmartReferenceAttribute",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/8842732777748207592/8842732777748474935",
+                    "name": "refPresentationTemplate",
+                    "type": "jetbrains.mps.lang.structure.RefPresentationTemplate"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/8842732777748207592/8842732777748207597",
+                    "name": "charactersticReference",
+                    "type": "jetbrains.mps.lang.structure.LinkDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/8842732777748464990",
+            "name": "RefPresentationTemplate",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/8842732777748464990/4307758654697524057",
+                    "name": "prefix"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/8842732777748464990/4307758654697524060",
+                    "name": "suffix"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219",
+            "name": "EnumerationDataTypeDeclaration_Old",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219/1197591154882",
+                    "name": "memberIdentifierPolicy"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219/1212080844762",
+                    "name": "hasNoDefaultMember",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219/1212087449254",
+                    "name": "noValueText"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219/1083172003582",
+                    "name": "member",
+                    "type": "jetbrains.mps.lang.structure.EnumerationMemberDeclaration_Old",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219/1083171729157",
+                    "name": "memberDataType",
+                    "type": "jetbrains.mps.lang.structure.PrimitiveDataTypeDeclaration",
+                    "optional": false
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219/1083241965437",
+                    "name": "defaultMember",
+                    "type": "jetbrains.mps.lang.structure.EnumerationMemberDeclaration_Old"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.structure.DataTypeDeclaration",
+                "jetbrains.mps.lang.structure.IEnumeration"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1071489090640",
+            "name": "ConceptDeclaration",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489090640/1096454100552",
+                    "name": "rootable",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489090640/1160488491229",
+                    "name": "iconPath"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489090640/5404671619616246344",
+                    "name": "staticScope"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489090640/1169129564478",
+                    "name": "implements",
+                    "type": "jetbrains.mps.lang.structure.InterfaceConceptReference",
+                    "multiple": true
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489090640/6327362524875300597",
+                    "name": "icon",
+                    "type": "jetbrains.mps.lang.resources.Icon"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489090640/1071489389519",
+                    "name": "extends",
+                    "type": "jetbrains.mps.lang.structure.ConceptDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                "jetbrains.mps.lang.core.ISmartReferent"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/3348158742936976479",
+            "name": "EnumerationDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3348158742936976479/3348158742936976577",
+                    "name": "members",
+                    "type": "jetbrains.mps.lang.structure.EnumerationMemberDeclaration",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3348158742936976479/1075010451642646892",
+                    "name": "defaultMember",
+                    "type": "jetbrains.mps.lang.structure.EnumerationMemberDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.structure.DataTypeDeclaration",
+                "jetbrains.mps.lang.structure.IEnumeration"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/3348158742936976480",
+            "name": "EnumerationMemberDeclaration",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3348158742936976480/672037151186491528",
+                    "name": "presentation"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3348158742936976480/1421157252384165432",
+                    "name": "memberId"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3348158742936976480/899069222106091871",
+                    "name": "oldMember",
+                    "type": "jetbrains.mps.lang.structure.EnumerationMemberDeclaration_Old"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.structure.INamedStructureElement"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1075010451653667301",
+            "name": "IEnumeration",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1588368162880629653",
+            "name": "INamedStructureElement",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.structure.IStructureElement"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1588368162880706270",
+            "name": "IStructureElement",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/1588368162884797030",
+            "name": "EnumMigrationInfo",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1588368162884797030/6491077959634650670",
+                    "name": "nameOpMigration"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1588368162884797030/6491077959634662372",
+                    "name": "valueOpMigration"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1588368162884797030/6491077959632451996",
+                    "name": "oldEnum",
+                    "type": "jetbrains.mps.lang.structure.EnumerationDataTypeDeclaration_Old",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.ISuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959632463275",
+            "name": "EnumPropertyMigrationInfo",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959632463275/6491077959632463286",
+                    "name": "oldProperty",
+                    "type": "jetbrains.mps.lang.structure.PropertyDeclaration",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.ISuppressErrors"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017219",
+            "name": "EnumCustomMethodReplacementInfo",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017219/3355805929432017222",
+                    "name": "kind"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017219/3355805929432017224",
+                    "name": "enum",
+                    "type": "jetbrains.mps.lang.structure.EnumerationDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/418049251856799813",
+            "name": "ExperimentalAPINodeAttribute",
+            "properties": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/418049251856799813/418049251856799816",
+                    "name": "build"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/418049251856799813/418049251856799817",
+                    "name": "comment"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.core.InterfacePart"
+            ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/7954147563045283296",
+            "name": "INamedAspect",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        }
+    ]
+}

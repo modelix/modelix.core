@@ -18,6 +18,8 @@ class MetaModelGradlePluginFunctionalTest {
     @get:Rule
     val tempFolder = TemporaryFolder()
 
+    val jsonPath = File("src/functionalTest/resources/json").absolutePath
+
     private fun getProjectDir() = tempFolder.root
     private fun getBuildFile() = getProjectDir().resolve("build.gradle")
     private fun getSettingsFile() = getProjectDir().resolve("settings.gradle")
@@ -67,6 +69,53 @@ metamodel {
         println("${jsonFiles.size} languages exported")
         val parsedFiles = jsonFiles.map { LanguageData.fromJson(it.readText()) }
         assertTrue(parsedFiles.isNotEmpty())
+
+        val kotlinGenDir = getProjectDir().resolve("build/kotlin_gen")
+        val tsGenDir = getProjectDir().resolve("build/ts_gen")
+        val numKotlinFiles = kotlinGenDir.walk().filter { it.extension.lowercase() == "kt" }.count()
+        val numTsFiles = tsGenDir.walk().filter { it.extension.lowercase() == "ts" }.count()
+        println("$numKotlinFiles kotlin files generated")
+        println("$numTsFiles typescript files generated")
+        assertTrue(numKotlinFiles > 0)
+        assertTrue(numTsFiles > 0)
+    }
+
+    @Test
+    fun `can generate from json`() {
+        // Setup the test build
+        getSettingsFile().writeText("")
+        getBuildFile().writeText("""
+plugins {
+    id('org.modelix.metamodel.gradle')
+}
+
+repositories {
+    mavenLocal()
+    maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+    mavenCentral()
+}
+
+metamodel {
+    kotlinDir = file("" + buildDir + "/kotlin_gen")
+    registrationHelperName = "org.modelix.metamodel.gradle.functionalTest.Languages"
+    typescriptDir = file("" + buildDir + "/ts_gen")
+    includeNamespace("jetbrains.mps.baseLanguage")
+    jsonDir = file("$jsonPath")
+    exportModules("jetbrains.mps.runtime")
+    names {
+        languageClass.prefix = "TESTLANG"
+        languageClass.suffix = "TESTSUFFIX"
+    }
+}
+""")
+
+        // Run the build
+        val runner = GradleRunner.create()
+        runner.forwardOutput()
+        runner.withPluginClasspath()
+        runner.withArguments("generateMetaModelSources")
+        runner.withProjectDir(getProjectDir())
+        val result = runner.build()
 
         val kotlinGenDir = getProjectDir().resolve("build/kotlin_gen")
         val tsGenDir = getProjectDir().resolve("build/ts_gen")

@@ -1,0 +1,184 @@
+{
+    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af",
+    "name": "jetbrains.mps.lang.aspect",
+    "concepts": [
+        {
+            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/3274906159125934214",
+            "name": "LanguageAspectDescriptor",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ClassConcept",
+                "jetbrains.mps.baseLanguage.lightweightdsl.AutoInitDSLClass"
+            ]
+        },
+        {
+            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374",
+            "name": "SimpleLanguageAspectDescriptor",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/6106419185511570295",
+                    "name": "mainLanguages",
+                    "type": "jetbrains.mps.lang.smodel.LanguageIdentity",
+                    "multiple": true,
+                    "optional": false
+                },
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/6106419185511570301",
+                    "name": "additionalLanguages",
+                    "type": "jetbrains.mps.lang.smodel.LanguageIdentity",
+                    "multiple": true
+                },
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/8222125370833980146",
+                    "name": "devkit",
+                    "type": "jetbrains.mps.lang.smodel.DevkitIdentity"
+                },
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/3433054418425083029",
+                    "name": "icon",
+                    "type": "jetbrains.mps.lang.resources.Icon"
+                },
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/4726480899534753275",
+                    "name": "helpUrl",
+                    "type": "jetbrains.mps.lang.resources.HelpURL"
+                },
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/2343319097654255233",
+                    "name": "order",
+                    "type": "jetbrains.mps.lang.util.order.Order"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IValidIdentifier",
+                "jetbrains.mps.lang.util.order.OrderParticipant"
+            ]
+        },
+        {
+            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/6641743975991294767",
+            "name": "GenerationDescriptor_Class",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/6641743975991294767/6422667311313188829",
+                    "name": "implTemplate",
+                    "type": "jetbrains.mps.baseLanguage.ClassConcept",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.aspect.GenerationDescriptor"
+            ]
+        },
+        {
+            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/6659466008484795896",
+            "name": "GenerationDescriptor",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/6659466008484795896/8999016044020882995",
+                    "name": "mainIntfcClass",
+                    "type": "jetbrains.mps.baseLanguage.Classifier",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.baseLanguage.IValidIdentifier"
+            ]
+        },
+        {
+            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206123",
+            "name": "GenerationDescriptor_ByInterface",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206123/5386558680326206125",
+                    "name": "methods",
+                    "type": "jetbrains.mps.lang.aspect.AspectMethodDescriptor",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.aspect.GenerationDescriptor"
+            ]
+        },
+        {
+            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206128",
+            "name": "AspectMethodDescriptor",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206128/5386558680326206132",
+                    "name": "baseConceptFunc",
+                    "type": "jetbrains.mps.baseLanguage.closures.ClosureLiteral"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206128/5386558680326206129",
+                    "name": "method",
+                    "type": "jetbrains.mps.baseLanguage.MethodDeclaration",
+                    "optional": false
+                },
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206128/5386558680326206137",
+                    "name": "cncpt",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/8921494878338859209",
+            "name": "IAspectConcept",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/174635545557784815",
+            "name": "SimpleAspectOrderRef",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.util.order.OrderParticipantReference"
+            ]
+        }
+    ]
+}

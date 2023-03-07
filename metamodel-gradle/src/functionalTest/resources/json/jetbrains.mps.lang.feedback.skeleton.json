@@ -1,0 +1,46 @@
+{
+    "uid": "517077fd-e44f-4338-a475-1d29781dfdb8",
+    "name": "jetbrains.mps.lang.feedback.skeleton",
+    "concepts": [
+        {
+            "uid": "mps:517077fd-e44f-4338-a475-1d29781dfdb8/7291380803381892615",
+            "name": "FeedbackPerConceptRoot",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "517077fd-e44f-4338-a475-1d29781dfdb8/7291380803381892615/7291380803381927154",
+                    "name": "feedbacks",
+                    "type": "jetbrains.mps.lang.feedback.skeleton.FeedbackRootMember",
+                    "multiple": true
+                }
+            ],
+            "references": [
+                {
+                    "uid": "517077fd-e44f-4338-a475-1d29781dfdb8/7291380803381892615/7188575577281228125",
+                    "name": "concept",
+                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.lang.structure.IConceptAspect"
+            ]
+        },
+        {
+            "uid": "mps:517077fd-e44f-4338-a475-1d29781dfdb8/6285588811486094606",
+            "name": "FeedbackRootMember",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        }
+    ]
+}

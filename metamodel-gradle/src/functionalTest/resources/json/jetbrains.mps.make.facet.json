@@ -1,0 +1,413 @@
+{
+    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0",
+    "name": "jetbrains.mps.make.facet",
+    "concepts": [
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029521",
+            "name": "IFacet",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029523",
+            "name": "FacetDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029523/6447445394688422654",
+                    "name": "extended",
+                    "type": "jetbrains.mps.make.facet.ExtendsFacetReference",
+                    "multiple": true
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029523/6447445394688422656",
+                    "name": "required",
+                    "type": "jetbrains.mps.make.facet.RelatedFacetReference",
+                    "multiple": true
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029523/6447445394688422657",
+                    "name": "optional",
+                    "type": "jetbrains.mps.make.facet.RelatedFacetReference",
+                    "multiple": true
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029523/6418371274763146558",
+                    "name": "targetDeclaration",
+                    "type": "jetbrains.mps.make.facet.TargetDeclaration",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.baseLanguage.IWillBeClassifier"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565",
+            "name": "TargetDeclaration",
+            "properties": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/1675547159918562088",
+                    "name": "resourcesPolicy"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/7219266275016360389",
+                    "name": "optional",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/184542595914096177",
+                    "name": "weight",
+                    "type": "INT"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/7320828025189219295",
+                    "name": "parameters",
+                    "type": "jetbrains.mps.make.facet.ParametersDeclaration"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/6418371274763146553",
+                    "name": "dependency",
+                    "type": "jetbrains.mps.make.facet.TargetDependency",
+                    "multiple": true
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/2360002718792633290",
+                    "name": "job",
+                    "type": "jetbrains.mps.make.script.JobDeclaration",
+                    "optional": false
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/119022571401949664",
+                    "name": "input",
+                    "type": "jetbrains.mps.make.facet.ResourceTypeDeclaration"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/119022571401949665",
+                    "name": "output",
+                    "type": "jetbrains.mps.make.facet.ResourceTypeDeclaration"
+                }
+            ],
+            "references": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/6418371274763029589",
+                    "name": "overrides",
+                    "type": "jetbrains.mps.make.facet.TargetDeclaration"
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept",
+                "jetbrains.mps.baseLanguage.IWillBeClassifier"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029600",
+            "name": "TargetDependency",
+            "properties": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029600/8351679702044326377",
+                    "name": "qualifier"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029600/6418371274763029603",
+                    "name": "dependsOn",
+                    "type": "jetbrains.mps.make.facet.TargetDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/6447445394688422642",
+            "name": "FacetReference",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6447445394688422642/6447445394688422643",
+                    "name": "facet",
+                    "type": "jetbrains.mps.make.facet.FacetDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/6447445394688555033",
+            "name": "ExtendsFacetReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.make.facet.FacetReference"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/8351679702044320297",
+            "name": "RelatedFacetReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.make.facet.FacetReference"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/7320828025189345662",
+            "name": "ParametersDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.tuples.NamedTupleDeclaration"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/7320828025189375154",
+            "name": "LocalParametersExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/7320828025189375155",
+            "name": "LocalParametersComponentExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.DotExpression",
+                "jetbrains.mps.make.facet.IPropertyExpression"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/3344436107830227888",
+            "name": "ForeignParametersExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/3344436107830227888/3344436107830227902",
+                    "name": "target",
+                    "type": "jetbrains.mps.make.facet.TargetDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/3344436107830227889",
+            "name": "ForeignParametersComponentExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.DotExpression",
+                "jetbrains.mps.make.facet.IPropertyExpression"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/119022571401949652",
+            "name": "ResourceTypeDeclaration",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/119022571401949652/119022571401949655",
+                    "name": "resourceType",
+                    "type": "jetbrains.mps.make.facet.ResourceClassifierType",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/119022571402207412",
+            "name": "ResourceClassifierType",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ClassifierType"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/7178445679340358576",
+            "name": "FacetReferenceExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/7178445679340358576/7178445679340358578",
+                    "name": "reference",
+                    "type": "jetbrains.mps.make.facet.NamedFacetReference",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/1919086248986845077",
+            "name": "NamedFacetReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.make.facet.FacetReference"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/2191561637326275574",
+            "name": "ResourceSpecificPropertiesExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/2191561637326275574/2191561637326275575",
+                    "name": "properties",
+                    "type": "jetbrains.mps.make.facet.IPropertyExpression",
+                    "optional": false
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/2191561637326275574/2191561637326275592",
+                    "name": "resource",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/2191561637326275576",
+            "name": "IPropertyExpression",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/2191561637326275576/8170824575195151990",
+                    "name": "resource",
+                    "type": "jetbrains.mps.baseLanguage.Expression"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/8703512757937156087",
+            "name": "TargetReferenceExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/8703512757937156087/8703512757937161134",
+                    "name": "facetRef",
+                    "type": "jetbrains.mps.make.facet.FacetReferenceExpression",
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/8703512757937156087/8703512757937161148",
+                    "name": "target",
+                    "type": "jetbrains.mps.make.facet.TargetDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        },
+        {
+            "uid": "mps:696c1165-4a59-463b-bc5d-902caab85dd0/1894767564088417428",
+            "name": "FacetJavaClassExpression",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/1894767564088417428/1894767564088417695",
+                    "name": "facet",
+                    "type": "jetbrains.mps.make.facet.FacetDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression"
+            ]
+        }
+    ]
+}

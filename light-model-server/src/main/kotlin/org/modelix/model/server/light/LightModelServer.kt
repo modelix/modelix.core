@@ -166,9 +166,8 @@ class LightModelServer(val port: Int, val rootNode: INode) {
     }
 
     inner class SessionData(val websocketSession: DefaultWebSocketServerSession) {
-        private val cleanNodesOnClient: MutableSet<INodeReference> = HashSet()
-        private val dirtyNodesOnClient: MutableSet<INodeReference> = HashSet()
         private var query: ModelQuery = buildModelQuery {}
+        private val queryExecutor = IncrementalModelQueryExecutor(rootNode)
 
         @Synchronized
         fun replaceQuery(newQuery: ModelQuery) {
@@ -177,20 +176,14 @@ class LightModelServer(val port: Int, val rootNode: INode) {
 
         @Synchronized
         fun nodeChanged(node: INode) {
-            val ref = node.reference
-            if (cleanNodesOnClient.remove(ref)) {
-                dirtyNodesOnClient.add(ref)
-            }
+            queryExecutor.invalidate(setOf(node.reference))
         }
 
         @Synchronized
         fun createUpdate(): VersionData {
-            val queryResult = query.execute(rootNode).associateBy { it.reference }
-            val nodesToUpdate = queryResult - cleanNodesOnClient
-            val nodeDataList = nodesToUpdate.values.map { it.toData() }
-            cleanNodesOnClient.removeAll(cleanNodesOnClient - nodesToUpdate.keys)
-            cleanNodesOnClient.addAll(nodesToUpdate.keys)
-            dirtyNodesOnClient.clear()
+            val nodesToUpdate: MutableSet<INode> = HashSet()
+            queryExecutor.update(query) { nodesToUpdate += it }
+            val nodeDataList = nodesToUpdate.map { it.toData() }
             return VersionData(
                 repositoryId = null,
                 versionHash = null,
@@ -223,8 +216,6 @@ class LightModelServer(val port: Int, val rootNode: INode) {
             try {
                 val updateSession = UpdateSession()
                 operations.forEach { updateSession.applyOperation(it) }
-                dirtyNodesOnClient.addAll(updateSession.modifiedNodes)
-                cleanNodesOnClient.removeAll(updateSession.modifiedNodes)
                 return MessageFromServer(
                     version = createUpdate(),
                     replacedIds = updateSession.replacedIds,

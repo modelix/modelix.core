@@ -15,6 +15,8 @@ dependencies {
     implementation(project(":model-server-api"))
     implementation(project(":model-api"))
     implementation(kotlin("stdlib"))
+    implementation("org.modelix:incremental:$modelixIncrementalVersion")
+
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:$kotlinCoroutinesVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")

@@ -21,22 +21,57 @@ fun buildModelQuery(body: ModelQueryBuilder.() -> Unit): ModelQuery {
 }
 
 
-class ModelQueryBuilder : QueryOwnerBuilder() {
-    fun build() = ModelQuery(subqueries)
+class ModelQueryBuilder {
+    private val rootQueries = ArrayList<RootQuery>()
+    fun build() = ModelQuery(rootQueries)
+    fun root(body: RootNodeBuilder.() -> Unit) {
+        rootQueries += RootNodeBuilder().also(body).build()
+    }
+    fun resolve(nodeId: NodeId, body: ByIdBuilder.() -> Unit = {}) {
+        rootQueries += ByIdBuilder(nodeId).also(body).build()
+    }
 }
 
-abstract class QueryOwnerBuilder {
-    protected val subqueries = ArrayList<Subquery>()
+open class FilterListBuilder {
     protected val filters = ArrayList<Filter>()
-    protected fun addSubquery(sq: Subquery) {
-        subqueries.add(sq)
-    }
+
     protected fun addFilter(filter: Filter) {
         filters.add(filter)
     }
-    fun root(body: RootNodeBuilder.() -> Unit) {
-        addSubquery(RootNodeBuilder().also(body).build())
+
+    fun whereProperty(role: String) = StringFilterBuilder { FilterByProperty(role, it) }
+
+    fun whereConceptName() = StringFilterBuilder { FilterByConceptLongName(it) }
+
+    fun whereConcept(conceptUID: String?) {
+        addFilter(FilterByConceptId(conceptUID))
     }
+
+    fun and(body: FilterListBuilder.() -> Unit) {
+        addFilter(AndFilter(FilterListBuilder().also(body).filters))
+    }
+
+    fun or(body: FilterListBuilder.() -> Unit) {
+        addFilter(OrFilter(FilterListBuilder().also(body).filters))
+    }
+
+    inner class StringFilterBuilder(val filterBuilder: (StringOperator) -> Filter) {
+        fun startsWith(prefix: String) { addFilter(filterBuilder(StartsWithOperator(prefix))) }
+        fun endsWith(suffix: String) { addFilter(filterBuilder(EndsWithOperator(suffix))) }
+        fun contains(substring: String) { addFilter(filterBuilder(ContainsOperator(substring))) }
+        fun equalTo(value: String) { addFilter(filterBuilder(EqualsOperator(value))) }
+        fun matches(pattern: Regex) { addFilter(filterBuilder(MatchesRegexOperator(pattern.pattern))) }
+        fun isNotNull() { addFilter(filterBuilder(IsNotNullOperator)) }
+        fun isNull() { addFilter(filterBuilder(IsNullOperator)) }
+    }
+}
+
+abstract class QueryOwnerBuilder : FilterListBuilder() {
+    protected val subqueries = ArrayList<Subquery>()
+    protected fun addSubquery(sq: Subquery) {
+        subqueries.add(sq)
+    }
+
     fun children(role: String?, body: ChildrenBuilder.() -> Unit) {
         addSubquery(ChildrenBuilder(role).also(body).build())
     }
@@ -55,37 +90,23 @@ abstract class QueryOwnerBuilder {
     fun parent(body: ParentBuilder.() -> Unit) {
         addSubquery(ParentBuilder().also(body).build())
     }
-    fun resolve(nodeId: NodeId, body: ByIdBuilder.() -> Unit = {}) {
-        addSubquery(ByIdBuilder(nodeId).also(body).build())
-    }
-    fun whereProperty(role: String) = StringFilterBuilder { FilterByProperty(role, it) }
-    fun whereConceptName() = StringFilterBuilder { FilterByConceptLongName(it) }
 
-    fun whereConcept(conceptUID: String?) {
-        addFilter(FilterByConceptId(conceptUID))
-    }
+}
 
-    inner class StringFilterBuilder(val filterBuilder: (StringOperator) -> Filter) {
-        fun startsWith(prefix: String) { addFilter(filterBuilder(StartsWithOperator(prefix))) }
-        fun endsWith(suffix: String) { addFilter(filterBuilder(EndsWithOperator(suffix))) }
-        fun contains(substring: String) { addFilter(filterBuilder(ContainsOperator(substring))) }
-        fun equalTo(value: String) { addFilter(filterBuilder(EqualsOperator(value))) }
-        fun matches(pattern: Regex) { addFilter(filterBuilder(MatchesRegexOperator(pattern.pattern))) }
-        fun isNotNull() { addFilter(filterBuilder(IsNotNullOperator)) }
-        fun isNull() { addFilter(filterBuilder(IsNullOperator)) }
-    }
+sealed class RootQueryBuilder : QueryOwnerBuilder() {
+    abstract fun build(): RootQuery
 }
 
 sealed class SubqueryBuilder : QueryOwnerBuilder() {
     abstract fun build(): Subquery
 }
 
-class RootNodeBuilder() : SubqueryBuilder() {
-    override fun build() = QueryRootNode(subqueries, filters)
+class RootNodeBuilder() : RootQueryBuilder() {
+    override fun build() = QueryRootNode(subqueries)
 }
 
-class ByIdBuilder(val id: String) : SubqueryBuilder() {
-    override fun build() = QueryById(id, subqueries, filters)
+class ByIdBuilder(val id: String) : RootQueryBuilder() {
+    override fun build() = QueryById(id, subqueries)
 }
 
 class ChildrenBuilder(val role: String?) : SubqueryBuilder() {
@@ -112,8 +133,12 @@ class ParentBuilder() : SubqueryBuilder() {
 private val sandbox = buildModelQuery {
     resolve("mps-module:5622e615-959d-4843-9df6-ef04ee578c18(org.modelix.model.mpsadapters)") {
         children("models") {
-            whereProperty("name").isNotNull()
-            whereConcept(null)
+            or {
+                and {
+                    whereProperty("name").isNotNull()
+                    whereConcept(null)
+                }
+            }
             descendants {
                 whereConcept(null)
             }

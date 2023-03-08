@@ -23,35 +23,43 @@ import kotlinx.serialization.json.Json
 
 @Serializable
 sealed class QueryOwner {
-    abstract val queries: List<Subquery>
+    abstract val queries: List<RootOrSubquery>
 }
 
 @Serializable
 data class ModelQuery(
-    override val queries: List<Subquery>
+    override val queries: List<RootQuery>
 ) : QueryOwner() {
     fun toJson() = Json.encodeToString(this)
 }
 
+sealed class RootOrSubquery : QueryOwner() {
+    abstract override val queries: List<Subquery>
+}
+
 @Serializable
-sealed class Subquery() : QueryOwner() {
+sealed class Subquery() : RootOrSubquery() {
+    abstract override val queries: List<Subquery>
     abstract val filters: List<Filter>
+}
+
+@Serializable
+sealed class RootQuery : RootOrSubquery() {
+    abstract override val queries: List<Subquery>
 }
 
 @Serializable
 @SerialName("resolve")
 data class QueryById(
     val nodeId: NodeId,
-    override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
-) : Subquery()
+    override val queries: List<Subquery> = emptyList()
+) : RootQuery()
 
 @Serializable
 @SerialName("root")
 data class QueryRootNode(
-    override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
-) : Subquery()
+    override val queries: List<Subquery> = emptyList()
+) : RootQuery()
 
 @Serializable
 @SerialName("allChildren")
@@ -100,9 +108,22 @@ data class QueryParent(
 @Serializable
 sealed class Filter
 
+sealed class LogicalOperatorFilter : Filter() {
+    abstract val filters: List<Filter>
+}
+
+@Serializable
+@SerialName("or")
+data class OrFilter(override val filters: List<Filter>) : LogicalOperatorFilter()
+
+@Serializable
+@SerialName("and")
+data class AndFilter(override val filters: List<Filter>) : LogicalOperatorFilter()
+
 @Serializable
 @SerialName("conceptId")
 data class FilterByConceptId(val conceptUID: String?) : Filter()
+
 @Serializable
 @SerialName("conceptName")
 data class FilterByConceptLongName(val operator: StringOperator) : Filter()

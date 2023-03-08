@@ -20,6 +20,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.api.getAncestors
 import org.modelix.model.api.getDescendants
+import org.modelix.model.server.api.AndFilter
 import org.modelix.model.server.api.ContainsOperator
 import org.modelix.model.server.api.EndsWithOperator
 import org.modelix.model.server.api.EqualsOperator
@@ -31,6 +32,7 @@ import org.modelix.model.server.api.IsNotNullOperator
 import org.modelix.model.server.api.IsNullOperator
 import org.modelix.model.server.api.MatchesRegexOperator
 import org.modelix.model.server.api.ModelQuery
+import org.modelix.model.server.api.OrFilter
 import org.modelix.model.server.api.QueryAllChildren
 import org.modelix.model.server.api.QueryAncestors
 import org.modelix.model.server.api.QueryById
@@ -39,6 +41,7 @@ import org.modelix.model.server.api.QueryDescendants
 import org.modelix.model.server.api.QueryParent
 import org.modelix.model.server.api.QueryReference
 import org.modelix.model.server.api.QueryRootNode
+import org.modelix.model.server.api.RootOrSubquery
 import org.modelix.model.server.api.StartsWithOperator
 import org.modelix.model.server.api.StringOperator
 import org.modelix.model.server.api.Subquery
@@ -52,7 +55,7 @@ private class ModelQueryExecutor(val rootNode: INode) {
         return includedNodes
     }
 
-    private fun execute(contextNode: INode, query: Subquery) {
+    private fun execute(contextNode: INode, query: RootOrSubquery) {
         when (query) {
             is QueryAllChildren -> {
                 contextNode.allChildren.forEach { visitNode(it, query) }
@@ -80,9 +83,11 @@ private class ModelQueryExecutor(val rootNode: INode) {
         }
     }
 
-    private fun visitNode(node: INode, query: Subquery) {
-        for (filter in query.filters) {
-            if (!applyFilter(node, filter)) return
+    private fun visitNode(node: INode, query: RootOrSubquery) {
+        if (query is Subquery) {
+            for (filter in query.filters) {
+                if (!applyFilter(node, filter)) return
+            }
         }
         includedNodes.add(node)
         for (childQuery in query.queries) {
@@ -92,6 +97,8 @@ private class ModelQueryExecutor(val rootNode: INode) {
 
     private fun applyFilter(node: INode, filter: Filter): Boolean {
         return when (filter) {
+            is AndFilter -> filter.filters.all { applyFilter(node, it) }
+            is OrFilter -> filter.filters.isEmpty() || filter.filters.any { applyFilter(node, it) }
             is FilterByConceptId -> node.getConceptReference()?.getUID() == filter.conceptUID
             is FilterByProperty -> applyStringOperator(node.getPropertyValue(filter.role), filter.operator)
             is FilterByConceptLongName -> applyStringOperator(node.concept?.getLongName(), filter.operator)

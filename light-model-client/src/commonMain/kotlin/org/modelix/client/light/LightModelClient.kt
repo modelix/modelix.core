@@ -341,17 +341,15 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
     }
 
-    inner class NodeAdapter(var nodeId: NodeId) : INode, INodeReference {
+    inner class NodeAdapter(var nodeId: NodeId) : INode {
         fun getData() = synchronizedRead { getNodeData(nodeId) }
-
-        override fun resolveNode(area: IArea?): INode? = this
 
         override fun getArea(): IArea = area
 
         override val isValid: Boolean
             get() = synchronizedRead { nodes.containsKey(nodeId) }
         override val reference: INodeReference
-            get() = this
+            get() = LightClientNodeReference(nodeId)
         override val concept: IConcept?
             get() = synchronizedRead { getConceptReference()?.resolve() }
         override val roleInParent: String?
@@ -487,18 +485,18 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun getReferenceTarget(role: String): NodeAdapter? {
-            return getReferenceTargetRef(role)
+            return getReferenceTargetRef(role)?.let { getNode(it.nodeId) }
         }
 
-        override fun getReferenceTargetRef(role: String): NodeAdapter? {
-            return synchronizedRead { getData().references[role]?.let { NodeAdapter(it) } }
+        override fun getReferenceTargetRef(role: String): LightClientNodeReference? {
+            return synchronizedRead { getData().references[role]?.let { LightClientNodeReference(it) } }
         }
 
         override fun setReferenceTarget(role: String, target: INodeReference?) {
             synchronizedWrite {
                 val targetId: NodeId? = when (target) {
                     null -> null
-                    is NodeAdapter -> target.nodeId
+                    is LightClientNodeReference -> target.nodeId
                     is NodeReferenceById -> target.nodeId
                     else -> throw IllegalArgumentException("Unsupported reference: $target")
                 }
@@ -575,6 +573,8 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     inner class Area : IArea {
+        fun getClient(): LightModelClient = this@LightModelClient
+
         override fun getRoot(): INode {
             return synchronizedRead {rootNodeId?.let { getNodeAdapter(it) } ?: throw IllegalStateException("Root node ID unknown") }
         }
@@ -591,7 +591,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         override fun resolveOriginalNode(ref: INodeReference): INode? {
             return synchronizedRead {
                 when (ref) {
-                    is NodeAdapter -> ref
+                    is LightClientNodeReference -> getNode(ref.nodeId)
                     else -> null
                 }
             }
@@ -723,7 +723,17 @@ class LightModelClientBuilder {
     }
 }
 
+class LightClientNodeReference(val nodeId: NodeId) : INodeReference {
+    override fun resolveNode(area: IArea?): INode? {
+        return when (area) {
+            is LightModelClient.Area -> area.getClient().getNode(nodeId)
+            else -> null
+        }
+    }
+}
+
 object LightClientReferenceSerializer : INodeReferenceSerializer {
+    val PREFIX = "light-client:"
     fun register() {
         INodeReferenceSerializer.register(LightClientReferenceSerializer)
     }
@@ -733,13 +743,16 @@ object LightClientReferenceSerializer : INodeReferenceSerializer {
     }
 
     override fun serialize(ref: INodeReference): String? {
-        if (ref is LightModelClient.NodeAdapter) {
-            throw UnsupportedOperationException("Don't use this reference type outside the " + LightModelClient::class.simpleName)
+        return when (ref) {
+            is LightClientNodeReference -> PREFIX + ref.nodeId
+            else -> null
         }
-        return null
     }
 
     override fun deserialize(serialized: String): INodeReference? {
+        if (serialized.startsWith(PREFIX)) {
+            return LightClientNodeReference(serialized.substring(PREFIX.length))
+        }
         return null
     }
 }

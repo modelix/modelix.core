@@ -143,7 +143,7 @@ private class NodeCacheEntry(override val parent: CacheEntry, val node: INode, v
     private var children: List<SubqueryCacheEntry> = emptyList()
 
     override fun doValidate(validationVisitor: IValidationVisitor) {
-        filterResult = applyFilters()
+        filterResult = producedByQuery.applyFilters(node)
         if (filterResult) validationVisitor(node)
         children = if (filterResult) {
             producedByQuery.queries.map { SubqueryCacheEntry(this, it) }
@@ -158,37 +158,6 @@ private class NodeCacheEntry(override val parent: CacheEntry, val node: INode, v
 
     protected override fun updateListOfAllNodeEntries() {
         listOfAllNodeEntries = IncrementalList.concat((sequenceOf(IncrementalList.of(node.reference to this)) + getChildren().map { it.listOfAllNodeEntries }).toList())
-    }
-
-    private fun applyFilters(): Boolean {
-        return when (producedByQuery) {
-            is RootQuery -> true
-            is Subquery -> producedByQuery.filters.all { applyFilter(it) }
-        }
-    }
-
-    private fun applyFilter(filter: Filter): Boolean {
-        // When adding new types of filters the invalidation algorithm might be adjusted if the filter has
-        // dependencies outside the node.
-        return when (filter) {
-            is AndFilter -> filter.filters.all { applyFilter(it) }
-            is OrFilter -> filter.filters.isEmpty() || filter.filters.any { applyFilter(it) }
-            is FilterByConceptId -> node.getConceptReference()?.getUID() == filter.conceptUID
-            is FilterByProperty -> applyStringOperator(node.getPropertyValue(filter.role), filter.operator)
-            is FilterByConceptLongName -> applyStringOperator(node.concept?.getLongName(), filter.operator)
-        }
-    }
-
-    private fun applyStringOperator(value: String?, operator: StringOperator): Boolean {
-        return when (operator) {
-            is ContainsOperator -> value?.contains(operator.substring) ?: false
-            is EndsWithOperator -> value?.endsWith(operator.suffix) ?: false
-            is EqualsOperator -> value == operator.value
-            is IsNotNullOperator -> value != null
-            is IsNullOperator -> value == null
-            is MatchesRegexOperator -> value?.matches(Regex(operator.pattern)) ?: false
-            is StartsWithOperator -> value?.startsWith(operator.prefix) ?: false
-        }
     }
 }
 
@@ -209,33 +178,13 @@ private sealed class QueryCacheEntry(parent: CacheEntry) : CacheEntry() {
 
 private class SubqueryCacheEntry(override val parent: NodeCacheEntry, override val query: Subquery) : QueryCacheEntry(parent) {
     override fun queryNodes(): Sequence<INode> {
-        return when (query) {
-            is QueryAllChildren -> parent.node.allChildren.asSequence()
-            is QueryAncestors -> parent.node.getAncestors(false)
-            is QueryChildren -> parent.node.getChildren(query.role).asSequence()
-            is QueryDescendants -> parent.node.getDescendants(false)
-            is QueryParent -> listOfNotNull(parent.node.parent).asSequence()
-            is QueryReference -> listOfNotNull(parent.node.getReferenceTarget(query.role)).asSequence()
-        }
+        return query.queryNodes(parent.node)
     }
 }
 
 private class RootQueryCacheEntry(override val parent: ModelQueryCacheEntry, override val query: RootQuery) : QueryCacheEntry(parent) {
     override fun queryNodes(): Sequence<INode> {
-        return when (query) {
-            is QueryById -> {
-                val resolved = INodeReferenceSerializer.deserialize(query.nodeId).resolveNode(parent.rootNode.getArea())
-                if (resolved != null) {
-                    sequenceOf(resolved)
-                } else {
-                    emptySequence()
-                }
-            }
-
-            is QueryRootNode -> {
-                sequenceOf(parent.rootNode)
-            }
-        }
+        return query.queryNodes(parent.rootNode)
     }
 }
 

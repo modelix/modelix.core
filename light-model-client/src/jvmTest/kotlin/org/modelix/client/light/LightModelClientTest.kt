@@ -68,12 +68,12 @@ class LightModelClientTest {
             val response = httpClient.post("http://localhost/json/test-repo/init").status
             //println("init: $response")
 
-            val createConnection: ()->LightModelClient.IConnection = {
-                WebsocketConnection(httpClient, "ws://localhost/json/v2/test-repo/ws")
-            }
-
             val createClient: suspend (debugName: String)->LightModelClient = { debugName ->
-                val client = LightModelClient(createConnection(), debugName)
+                val client = LightModelClientJVM.builder()
+                    .httpClient(httpClient)
+                    .url("ws://localhost/json/v2/test-repo/ws")
+                    .debugName(debugName)
+                    .build()
                 wait {client.isInitialized() }
                 client
             }

@@ -33,6 +33,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     private val unappliedVersions: MutableList<VersionData> = ArrayList()
     private var exceptions: MutableList<ExceptionData> = ArrayList()
     private var currentAccessType: AccessType = AccessType.NONE
+    private var currentModelQuery: ModelQuery? = null
     private var unappliedQuery: ModelQuery? = null
 
     init {
@@ -133,19 +134,24 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
     }
 
-    suspend fun waitForRootNode(timeout: Duration = 5.seconds, coroutineDelay: Duration = 10.milliseconds): INode? {
+    suspend fun waitForRootNode(timeout: Duration = 30.seconds): INode? {
+        val query = currentModelQuery ?: unappliedQuery
+        if (query != null && query.queries.filterIsInstance<QueryRootNode>().isEmpty()) {
+            throw IllegalStateException("The root node is not included in the model query: ${query.toJson()}")
+        }
+
         var result : INode? = null
         kotlinx.coroutines.withTimeout(timeout) {
-            while (true) {
+            while (result == null) {
                 checkException()
-                val node = runRead { getRootNode() }
-                if (node != null && runRead { node.isValid }) {
-                    runRead {
+                runRead {
+                    val node = getRootNode()
+                    if (node != null && node.isValid) {
                         result = node
                     }
-                    break
                 }
-                delay(coroutineDelay)
+                if (result != null) break
+                delay(10.milliseconds)
             }
         }
         return result
@@ -245,6 +251,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
             }
             if (unappliedQuery != null) {
                 connection.sendMessage(MessageFromClient(query = unappliedQuery))
+                currentModelQuery = unappliedQuery
                 unappliedQuery = null
             }
             fullConsistencyCheck()

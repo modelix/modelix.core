@@ -51,6 +51,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     fun changeQuery(query: ModelQuery) {
+        // TODO get rid of node data that is not selected by the query anymore
         synchronized {
             LOG.trace { "Changing query to ${query.toJson()}" }
             if (initialized) {

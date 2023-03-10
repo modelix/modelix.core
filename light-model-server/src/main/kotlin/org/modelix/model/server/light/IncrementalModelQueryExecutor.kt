@@ -20,34 +20,9 @@ import org.modelix.incremental.IncrementalIndex
 import org.modelix.incremental.IncrementalList
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.INodeReferenceSerializer
-import org.modelix.model.api.getAncestors
-import org.modelix.model.api.getDescendants
-import org.modelix.model.server.api.AndFilter
-import org.modelix.model.server.api.ContainsOperator
-import org.modelix.model.server.api.EndsWithOperator
-import org.modelix.model.server.api.EqualsOperator
-import org.modelix.model.server.api.Filter
-import org.modelix.model.server.api.FilterByConceptId
-import org.modelix.model.server.api.FilterByConceptLongName
-import org.modelix.model.server.api.FilterByProperty
-import org.modelix.model.server.api.IsNotNullOperator
-import org.modelix.model.server.api.IsNullOperator
-import org.modelix.model.server.api.MatchesRegexOperator
 import org.modelix.model.server.api.ModelQuery
-import org.modelix.model.server.api.OrFilter
-import org.modelix.model.server.api.QueryAllChildren
-import org.modelix.model.server.api.QueryAncestors
-import org.modelix.model.server.api.QueryById
-import org.modelix.model.server.api.QueryChildren
-import org.modelix.model.server.api.QueryDescendants
-import org.modelix.model.server.api.QueryParent
-import org.modelix.model.server.api.QueryReference
-import org.modelix.model.server.api.QueryRootNode
 import org.modelix.model.server.api.RootOrSubquery
 import org.modelix.model.server.api.RootQuery
-import org.modelix.model.server.api.StartsWithOperator
-import org.modelix.model.server.api.StringOperator
 import org.modelix.model.server.api.Subquery
 
 /**
@@ -66,7 +41,7 @@ class IncrementalModelQueryExecutor(val rootNode: INode) {
     /**
      * Returns the nodes that changed since the last execution
      */
-    fun update(query: ModelQuery, visitor: (INode) -> Unit): Set<INode> {
+    fun update(query: ModelQuery, visitor: (INode) -> Unit) {
         if (currentUpdateSession != null) throw IllegalStateException("Already executing a query")
         val updateSession = UpdateSession(lastUpdateSession?.cacheEntry?.takeIf { it.modelQuery == query } ?: ModelQueryCacheEntry(query, rootNode))
         try {
@@ -79,12 +54,9 @@ class IncrementalModelQueryExecutor(val rootNode: INode) {
         } finally {
             currentUpdateSession = null
         }
-        return updateSession.changedNodes
     }
 
     private inner class UpdateSession(val cacheEntry: ModelQueryCacheEntry) {
-        val changedNodes: Set<INode> = HashSet()
-
         fun invalidate(invalidatedNodes: Set<INodeReference>) {
             invalidatedNodes.asSequence().flatMap { nodeEntriesIndex.lookup(it) }.forEach { it.invalidate() }
         }

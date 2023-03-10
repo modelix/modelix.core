@@ -28,6 +28,7 @@ import org.modelix.model.server.api.FilterByProperty
 import org.modelix.model.server.api.IsNotNullOperator
 import org.modelix.model.server.api.IsNullOperator
 import org.modelix.model.server.api.MatchesRegexOperator
+import org.modelix.model.server.api.NotFilter
 import org.modelix.model.server.api.OrFilter
 import org.modelix.model.server.api.QueryAllChildren
 import org.modelix.model.server.api.QueryAncestors
@@ -76,6 +77,7 @@ fun Filter.apply(node: INode): Boolean {
     // When adding new types of filters the invalidation algorithm might be adjusted if the filter has
     // dependencies outside the node.
     return when (this) {
+        is NotFilter -> !filter.apply(node)
         is AndFilter -> filters.all { it.apply(node) }
         is OrFilter -> filters.isEmpty() || filters.any { it.apply(node) }
         is FilterByConceptId -> node.getConceptReference()?.getUID() == conceptUID

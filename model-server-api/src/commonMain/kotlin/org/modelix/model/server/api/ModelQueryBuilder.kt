@@ -55,6 +55,11 @@ open class FilterListBuilder {
         addFilter(OrFilter(FilterListBuilder().also(body).filters))
     }
 
+    fun not(body: FilterListBuilder.() -> Unit) {
+        val childFilters = FilterListBuilder().also(body).filters
+        addFilter(if (childFilters.size == 1) NotFilter(childFilters.first()) else NotFilter(AndFilter(childFilters)))
+    }
+
     inner class StringFilterBuilder(val filterBuilder: (StringOperator) -> Filter) {
         fun startsWith(prefix: String) { addFilter(filterBuilder(StartsWithOperator(prefix))) }
         fun endsWith(suffix: String) { addFilter(filterBuilder(EndsWithOperator(suffix))) }

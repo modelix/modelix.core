@@ -121,6 +121,10 @@ data class OrFilter(override val filters: List<Filter>) : LogicalOperatorFilter(
 data class AndFilter(override val filters: List<Filter>) : LogicalOperatorFilter()
 
 @Serializable
+@SerialName("not")
+data class NotFilter(val filter: Filter) : Filter()
+
+@Serializable
 @SerialName("conceptId")
 data class FilterByConceptId(val conceptUID: String?) : Filter()
 

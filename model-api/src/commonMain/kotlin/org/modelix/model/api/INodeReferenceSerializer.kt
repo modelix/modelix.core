@@ -65,7 +65,6 @@ interface INodeReferenceSerializer {
                 legacySerializers.map { it.serialize(ref) }.firstOrNull { it != null }
                     ?: throw RuntimeException("No serializer found for ${ref::class}")
             }
-
         }
 
         fun deserialize(serialized: String): INodeReference {

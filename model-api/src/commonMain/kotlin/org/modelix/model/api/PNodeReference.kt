@@ -16,7 +16,6 @@
 package org.modelix.model.api
 
 import org.modelix.model.area.IArea
-import kotlin.reflect.KClass
 
 data class PNodeReference(val id: Long, val branchId: String) : INodeReference {
     init {

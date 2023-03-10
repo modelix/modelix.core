@@ -9,6 +9,7 @@ import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 import org.modelix.model.server.api.*
+import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -740,8 +741,10 @@ class LightClientNodeReference(val nodeId: NodeId) : INodeReference {
     }
 }
 
-object LightClientReferenceSerializer : INodeReferenceSerializer {
-    val PREFIX = "light-client:"
+object LightClientReferenceSerializer : INodeReferenceSerializerEx {
+    override val prefix: String = "light-client"
+    override val supportedReferenceClasses = setOf(LightClientNodeReference::class)
+
     fun register() {
         INodeReferenceSerializer.register(LightClientReferenceSerializer)
     }
@@ -750,18 +753,12 @@ object LightClientReferenceSerializer : INodeReferenceSerializer {
         INodeReferenceSerializer.unregister(LightClientReferenceSerializer)
     }
 
-    override fun serialize(ref: INodeReference): String? {
-        return when (ref) {
-            is LightClientNodeReference -> PREFIX + ref.nodeId
-            else -> null
-        }
+    override fun serialize(ref: INodeReference): String {
+        return (ref as LightClientNodeReference).nodeId
     }
 
-    override fun deserialize(serialized: String): INodeReference? {
-        if (serialized.startsWith(PREFIX)) {
-            return LightClientNodeReference(serialized.substring(PREFIX.length))
-        }
-        return null
+    override fun deserialize(serialized: String): INodeReference {
+        return LightClientNodeReference(serialized)
     }
 }
 

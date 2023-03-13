@@ -51,14 +51,25 @@ interface INode {
     fun getReferenceRoles(): List<String>
 }
 
+interface INodeEx : INode {
+    fun getChildren(link: IChildLink): Iterable<INode>
+    fun moveChild(role: IChildLink, index: Int, child: INode)
+    fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode
+    fun getReferenceTarget(link: IReferenceLink): INode?
+    fun setReferenceTarget(link: IReferenceLink, target: INode?)
+    fun getPropertyValue(property: IProperty): String?
+    fun setPropertyValue(property: IProperty, value: String?)
+}
+
 private fun IRole.key(): String = name // TODO use .getUID(), but this is a breaking change
-fun INode.getChildren(link: IChildLink): Iterable<INode> = getChildren(link.key())
-fun INode.moveChild(role: IChildLink, index: Int, child: INode): Unit = moveChild(role.key(), index, child)
-fun INode.addNewChild(role: IChildLink, index: Int, concept: IConcept?) = addNewChild(role.key(), index, concept)
-fun INode.getReferenceTarget(link: IReferenceLink): INode? = getReferenceTarget(link.key())
-fun INode.setReferenceTarget(link: IReferenceLink, target: INode?): Unit = setReferenceTarget(link.key(), target)
-fun INode.getPropertyValue(property: IProperty): String? = getPropertyValue(property.key())
-fun INode.setPropertyValue(property: IProperty, value: String?): Unit = setPropertyValue(property.key(), value)
+fun INode.getChildren(link: IChildLink): Iterable<INode> = if (this is INodeEx) getChildren(link) else getChildren(link.key())
+fun INode.moveChild(role: IChildLink, index: Int, child: INode): Unit = if (this is INodeEx) moveChild(role, index, child) else moveChild(role.key(), index, child)
+fun INode.addNewChild(role: IChildLink, index: Int, concept: IConcept?) = if (this is INodeEx) addNewChild(role, index, concept) else addNewChild(role.key(), index, concept)
+fun INode.getReferenceTarget(link: IReferenceLink): INode? = if (this is INodeEx) getReferenceTarget(link) else getReferenceTarget(link.key())
+fun INode.setReferenceTarget(link: IReferenceLink, target: INode?): Unit = if (this is INodeEx) setReferenceTarget(link, target) else setReferenceTarget(link.key(), target)
+fun INode.getPropertyValue(property: IProperty): String? = if (this is INodeEx) getPropertyValue(property) else getPropertyValue(property.key())
+fun INode.setPropertyValue(property: IProperty, value: String?): Unit = if (this is INodeEx) setPropertyValue(property, value) else setPropertyValue(property.key(), value)
+
 fun INode.getConcept(): IConcept? = getConceptReference()?.resolve()
 fun INode.getResolvedReferenceTarget(role: String): INode? = getReferenceTargetRef(role)?.resolveNode(getArea())
 fun INode.getResolvedConcept(): IConcept? = getConceptReference()?.resolve()

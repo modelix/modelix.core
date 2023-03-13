@@ -55,7 +55,7 @@ class CLTree : ITree, IBulkTree {
                 arrayOf()
             )
             val idToHash = storeElement(root, CLHamtInternal.createEmpty(store))
-            this.data = CPTree(repositoryId.id, KVEntryReference(idToHash.getData()))
+            this.data = CPTree(repositoryId.id, KVEntryReference(idToHash.getData()), true)
         } else {
             this.data = data
         }
@@ -71,11 +71,15 @@ class CLTree : ITree, IBulkTree {
         if (treeId == null) {
             treeId = random().id
         }
-        data = CPTree(treeId, KVEntryReference(idToHash.getData()))
+        data = CPTree(treeId, KVEntryReference(idToHash.getData()), true)
         this.store = store
 
         // TODO remove
         this.nodesMap!![ITree.ROOT_ID]
+    }
+
+    override fun usesRoleIds(): Boolean {
+        return data.usesRoleIds
     }
 
     override fun getId(): String {

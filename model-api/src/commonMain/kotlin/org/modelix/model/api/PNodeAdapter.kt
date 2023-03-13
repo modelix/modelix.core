@@ -19,7 +19,7 @@ import org.modelix.model.area.ContextArea
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
 
-open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode {
+open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx {
 
     init {
         require(nodeId != 0L, { "Invalid node 0" })
@@ -44,6 +44,8 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode {
         // TODO
 //    DependencyBroadcaster.INSTANCE.dependencyAccessed(new PNodeDependency(branch, nodeId));
     }
+
+    override fun usesRoleIds() = branch.transaction.tree.usesRoleIds()
 
     override fun moveChild(role: String?, index: Int, child: INode) {
         if (child !is PNodeAdapter)

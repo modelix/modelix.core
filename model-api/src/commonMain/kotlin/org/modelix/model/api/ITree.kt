@@ -16,6 +16,7 @@
 package org.modelix.model.api
 
 interface ITree {
+    fun usesRoleIds(): Boolean
     fun getId(): String?
     fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor)
     fun containsNode(nodeId: Long): Boolean

@@ -37,6 +37,7 @@ import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.api.IRole
 import org.modelix.model.api.remove
 import org.modelix.model.api.serialize
+import org.modelix.model.api.usesRoleIds
 import org.modelix.model.server.api.AddNewChildNodeOpData
 import org.modelix.model.server.api.ChangeSetId
 import org.modelix.model.server.api.DeleteNodeOpData
@@ -191,6 +192,7 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 repositoryId = null,
                 versionHash = null,
                 rootNodeId = rootNode.nodeId(),
+                usesRoleIds = rootNode.usesRoleIds(),
                 nodes = nodeDataList
             )
         }

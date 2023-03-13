@@ -45,14 +45,14 @@ class TreeSerializationTest {
     fun serializeAndDeserialize() {
         // the hash only ensures that JVM and JS produce the same serialized data
         // it can just be updated if the test fails
-        serializeAndDeserialize(false, "Ci8-C*weNQv09_2eGp9Mvxo8l6VtuGU3n35qP1sQYw2Y")
+        serializeAndDeserialize(false, "RfOjz*_ucNWvGVEjSlTLdLLpf9vCEfm0Ud3Q8aweKD1U")
     }
 
     @Test
     fun serializeAndDeserialize_AddNewChildSubtreeOp() {
         // the hash only ensures that JVM and JS produce the same serialized data
         // it can just be updated if the test fails
-        serializeAndDeserialize(true, "50ZVC*SITjLf3YkIUx5stSZfX8nPem80o9E2LwG0B6To")
+        serializeAndDeserialize(true, "I93pF*lmKS7ZoTHfi2dOugdeIKLGqyjmzIPc1mVUTkJ0")
     }
 
     fun serializeAndDeserialize(moreThan10ops: Boolean, expectedVersionHash: String) {

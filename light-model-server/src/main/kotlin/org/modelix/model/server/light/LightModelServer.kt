@@ -30,9 +30,11 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.IRole
 import org.modelix.model.api.remove
 import org.modelix.model.api.serialize
 import org.modelix.model.server.api.AddNewChildNodeOpData
@@ -54,13 +56,14 @@ import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
-class LightModelServer(val port: Int, val rootNode: INode) {
+class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set<IRole> = emptySet()) {
     companion object {
         private val LOG = mu.KotlinLogging.logger {  }
     }
 
     private var server: NettyApplicationEngine? = null
     private val sessions: MutableSet<SessionData> = Collections.synchronizedSet(HashSet())
+    private val ignoredRolesCache: MutableMap<IConceptReference, IgnoredRoles> = HashMap()
 
     fun start() {
         LOG.trace { "server starting on port $port ..." }
@@ -280,8 +283,17 @@ class LightModelServer(val port: Int, val rootNode: INode) {
     }
 
     private fun INode.toData(): NodeData {
+        val conceptRef = concept?.getReference()
+        val ignored = if (conceptRef == null) IgnoredRoles.EMPTY else ignoredRolesCache.getOrPut(conceptRef) {
+            val ignoredChildRoles = concept?.getAllChildLinks()?.intersect(ignoredRoles)?.map { it.name }?.toSet() ?: emptySet()
+            val ignoredPropertyRoles = concept?.getAllProperties()?.intersect(ignoredRoles)?.map { it.name }?.toSet() ?: emptySet()
+            val ignoredReferenceRoles = concept?.getAllReferenceLinks()?.intersect(ignoredRoles)?.map { it.name }?.toSet() ?: emptySet()
+            IgnoredRoles(ignoredChildRoles, ignoredPropertyRoles, ignoredReferenceRoles).optimizeEmpty()
+        }
+
         val childrenMap = LinkedHashMap<String?, List<NodeId>>()
         for (group in this.allChildren.groupBy { it.roleInParent }) {
+            if (ignored.children.contains(group.key)) continue
             try {
                 childrenMap[group.key] = group.value.map { it.nodeId() }
             } catch (ex: Exception) {
@@ -293,14 +305,22 @@ class LightModelServer(val port: Int, val rootNode: INode) {
             concept = this.getConceptReference()?.getUID(),
             parent = this.parent?.reference?.serialize(),
             role = this.roleInParent,
-            properties = this.getPropertyRoles().associateWithNotNull { this.getPropertyValue(it) },
-            references = this.getReferenceRoles().associateWithNotNull { this.getReferenceTargetRef(it)?.serialize() },
+            properties = this.getPropertyRoles().minus(ignored.properties)
+                .associateWithNotNull { this.getPropertyValue(it) },
+            references = this.getReferenceRoles().minus(ignored.references)
+                .associateWithNotNull { this.getReferenceTargetRef(it)?.serialize() },
             children = childrenMap,
         )
     }
 }
 
-
+private class IgnoredRoles(val children: Set<String>, val properties: Set<String>, val references: Set<String>) {
+    fun isEmpty() = children.isEmpty() && properties.isEmpty() && references.isEmpty()
+    fun optimizeEmpty() = if (isEmpty()) EMPTY else this
+    companion object {
+        val EMPTY = IgnoredRoles(emptySet(), emptySet(), emptySet())
+    }
+}
 
 private fun INode.nodeId() = reference.serialize()
 private fun INodeReference.nodeId() = serialize()

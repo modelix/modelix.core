@@ -18,17 +18,29 @@ interface INodeReferenceSerializer {
         }
 
         fun register(serializer: INodeReferenceSerializer) {
+            register(serializer, true)
+        }
+
+        fun register(serializer: INodeReferenceSerializer, replace: Boolean) {
             if (serializer is INodeReferenceSerializerEx) {
                 val prefix = serializer.prefix
                 val existingDeserializer = deserializerForPrefix[prefix]
                 if (existingDeserializer != null) {
-                    throw IllegalStateException("Deserializer for '$prefix:' already registered: $existingDeserializer")
+                    if (replace) {
+                        unregister(existingDeserializer)
+                    } else {
+                        throw IllegalStateException("Deserializer for '$prefix:' already registered: $existingDeserializer")
+                    }
                 }
                 val supportedClasses = serializer.supportedReferenceClasses
                 for (supportedClass in supportedClasses) {
                     val existingSerializer = serializersForClass[supportedClass]
                     if (existingSerializer != null) {
-                        throw IllegalStateException("Serializer for $supportedClass already registered: $existingSerializer")
+                        if (replace) {
+                            unregister(existingSerializer)
+                        } else {
+                            throw IllegalStateException("Serializer for $supportedClass already registered: $existingSerializer")
+                        }
                     }
                 }
                 deserializerForPrefix[prefix] = serializer

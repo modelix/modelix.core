@@ -773,3 +773,7 @@ fun NodeData.asUpdateData(): NodeUpdateData {
         children = children
     )
 }
+
+fun INode.isLoaded() = isValid
+fun Iterable<INode>.filterLoaded() = filter { it.isLoaded() }
+fun Sequence<INode>.filterLoaded() = filter { it.isLoaded() }

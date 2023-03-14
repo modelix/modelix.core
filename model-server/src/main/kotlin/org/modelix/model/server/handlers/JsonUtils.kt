@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.server
+package org.modelix.model.server.handlers
 
 import org.json.JSONArray
 import org.json.JSONObject

@@ -21,13 +21,15 @@ import java.util.Arrays;
 import java.util.HashSet;
 import org.json.JSONArray;
 import org.junit.Test;
+import org.modelix.model.server.handlers.KeyValueLikeModelServer;
+import org.modelix.model.server.store.InMemoryStoreClient;
 
 public class RestModelServerTest {
 
     @Test
     public void testCollectUnexistingKey() {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        KtorModelServer rms = new KtorModelServer(storeClient);
+        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("unexistingKey");
         assertEquals(1, result.length());
         assertEquals(new HashSet<>(Arrays.asList("key")), result.getJSONObject(0).keySet());
@@ -38,7 +40,7 @@ public class RestModelServerTest {
     public void testCollectExistingKeyNotHash() {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
         storeClient.put("existingKey", "foo");
-        KtorModelServer rms = new KtorModelServer(storeClient);
+        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("existingKey");
         assertEquals(1, result.length());
         assertEquals(
@@ -52,7 +54,7 @@ public class RestModelServerTest {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
         storeClient.put("existingKey", "hash-*0123456789-0123456789-0123456789-00001");
         storeClient.put("hash-*0123456789-0123456789-0123456789-00001", "bar");
-        KtorModelServer rms = new KtorModelServer(storeClient);
+        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("existingKey");
         assertEquals(2, result.length());
 
@@ -81,7 +83,7 @@ public class RestModelServerTest {
                 "hash-*0123456789-0123456789-0123456789-00003",
                 "hash-*0123456789-0123456789-0123456789-00004");
         storeClient.put("hash-*0123456789-0123456789-0123456789-00004", "end");
-        KtorModelServer rms = new KtorModelServer(storeClient);
+        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("root");
         assertEquals(5, result.length());
 
@@ -124,7 +126,7 @@ public class RestModelServerTest {
         storeClient.put(
                 "hash-*0123456789-0123456789-0123456789-00003",
                 "hash-*0123456789-0123456789-0123456789-00001");
-        KtorModelServer rms = new KtorModelServer(storeClient);
+        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("root");
         assertEquals(4, result.length());
 

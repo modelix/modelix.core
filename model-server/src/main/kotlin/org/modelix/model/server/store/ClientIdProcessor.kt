@@ -12,7 +12,7 @@
  * specific language governing permissions and limitations
  * under the License. 
  */
-package org.modelix.model.server
+package org.modelix.model.server.store
 
 import javax.cache.processor.EntryProcessor
 import javax.cache.processor.EntryProcessorException
@@ -24,7 +24,7 @@ class ClientIdProcessor : EntryProcessor<String?, String?, Long> {
         val idStr = mutableEntry.value
         var id = idStr?.toLong() ?: 0
         id++
-        mutableEntry.value = java.lang.Long.toString(id)
+        mutableEntry.value = id.toString()
         return id
     }
 }

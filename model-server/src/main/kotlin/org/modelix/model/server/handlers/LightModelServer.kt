@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.server
+package org.modelix.model.server.handlers
 
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -54,6 +54,7 @@ import org.modelix.model.server.api.OperationData
 import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
+import org.modelix.model.server.store.LocalModelClient
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -72,7 +73,7 @@ import kotlin.collections.plusAssign
 import kotlin.collections.set
 import kotlin.collections.toTypedArray
 
-class JsonModelServer2(val client: LocalModelClient) {
+class LightModelServer(val client: LocalModelClient) {
 
     fun getStore() = client.storeCache!!
 

@@ -12,9 +12,8 @@
  * specific language governing permissions and limitations
  * under the License. 
  */
-package org.modelix.model.server
+package org.modelix.model.server.store
 
-import ch.qos.logback.classic.Logger
 import org.modelix.model.IKeyListener
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader

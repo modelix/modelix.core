@@ -12,7 +12,7 @@
  * specific language governing permissions and limitations
  * under the License. 
  */
-package org.modelix.model.server
+package org.modelix.model.server.store
 
 import org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect
 import org.apache.ignite.internal.util.typedef.F

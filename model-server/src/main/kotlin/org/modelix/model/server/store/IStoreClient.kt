@@ -12,11 +12,10 @@
  * specific language governing permissions and limitations
  * under the License. 
  */
-package org.modelix.model.server
+package org.modelix.model.server.store
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.sync.Semaphore
 import org.modelix.model.IKeyListener
 import kotlin.time.Duration.Companion.seconds
 

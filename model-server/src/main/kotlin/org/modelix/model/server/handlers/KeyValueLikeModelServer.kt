@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.server
+package org.modelix.model.server.handlers
 
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -27,10 +27,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.authorization.*
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.store.IStoreClient
+import org.modelix.model.server.store.pollEntry
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.net.InetAddress
-import java.net.UnknownHostException
 import java.util.*
 import java.util.regex.Pattern
 
@@ -45,9 +45,9 @@ private class NotFoundException(description: String?) : RuntimeException(descrip
 
 typealias CallContext = PipelineContext<Unit, ApplicationCall>
 
-class KtorModelServer(val storeClient: IStoreClient) {
+class KeyValueLikeModelServer(val storeClient: IStoreClient) {
     companion object {
-        private val LOG = LoggerFactory.getLogger(KtorModelServer::class.java)
+        private val LOG = LoggerFactory.getLogger(KeyValueLikeModelServer::class.java)
         val HASH_PATTERN = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
         const val PROTECTED_PREFIX = "$$$"
         val HEALTH_KEY = PROTECTED_PREFIX + "health2"

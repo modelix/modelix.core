@@ -103,7 +103,7 @@
                             <property name="dataSourceBean" value="dataSource" />
                             <property name="sqlEscapeAll" value="true" />
                             <property name="dialect">
-                                <bean class="org.modelix.model.server.PostgresDialect"/>
+                                <bean class="org.modelix.model.server.store.PostgresDialect"/>
                             </property>
                             <property name="types">
 

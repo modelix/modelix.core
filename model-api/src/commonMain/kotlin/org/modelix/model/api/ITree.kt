@@ -46,3 +46,5 @@ interface ITree {
         const val DETACHED_NODES_ROLE = "detached"
     }
 }
+
+fun IRole.key(tree: ITree): String = if (tree.usesRoleIds()) getUID() else name

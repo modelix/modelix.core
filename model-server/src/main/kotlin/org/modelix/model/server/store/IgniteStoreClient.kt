@@ -12,7 +12,7 @@
  * specific language governing permissions and limitations
  * under the License. 
  */
-package org.modelix.model.server
+package org.modelix.model.server.store
 
 import com.google.common.collect.MultimapBuilder
 import org.apache.ignite.Ignite

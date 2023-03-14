@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import org.json.JSONArray;
 import org.junit.Test;
+import org.modelix.model.server.handlers.KtorModelServer;
+import org.modelix.model.server.store.InMemoryStoreClient;
 
 public class RestModelServerTest {
 

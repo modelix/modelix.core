@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.server
+package org.modelix.model.server.handlers
 
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -27,10 +27,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.authorization.*
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.store.IStoreClient
+import org.modelix.model.server.store.pollEntry
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.net.InetAddress
-import java.net.UnknownHostException
 import java.util.*
 import java.util.regex.Pattern
 

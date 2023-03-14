@@ -32,6 +32,13 @@ import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.installAuthentication
+import org.modelix.model.server.handlers.HistoryHandler
+import org.modelix.model.server.handlers.JsonModelServer
+import org.modelix.model.server.handlers.KtorModelServer
+import org.modelix.model.server.store.IStoreClient
+import org.modelix.model.server.store.IgniteStoreClient
+import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.LocalModelClient
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileReader

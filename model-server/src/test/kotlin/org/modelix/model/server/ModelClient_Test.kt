@@ -23,6 +23,8 @@ import org.junit.Test
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.IKeyListener
 import org.modelix.model.client.RestWebModelClient
+import org.modelix.model.server.handlers.KtorModelServer
+import org.modelix.model.server.store.InMemoryStoreClient
 import java.util.*
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds

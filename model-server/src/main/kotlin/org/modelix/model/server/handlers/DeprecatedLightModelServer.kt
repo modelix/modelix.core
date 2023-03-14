@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.server
+package org.modelix.model.server.handlers
 
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -43,6 +43,8 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
+import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.pollEntry
 import java.util.*
 
 class JsonModelServer(val client: LocalModelClient) {

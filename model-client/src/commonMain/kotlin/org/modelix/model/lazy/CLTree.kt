@@ -66,12 +66,12 @@ class CLTree : ITree, IBulkTree {
         this.nodesMap!![ITree.ROOT_ID]
     }
 
-    private constructor(treeId_: String, idToHash: CLHamtNode, store: IDeserializingKeyValueStore) {
+    private constructor(treeId_: String, idToHash: CLHamtNode, store: IDeserializingKeyValueStore, usesRoleIds: Boolean) {
         var treeId: String? = treeId_
         if (treeId == null) {
             treeId = random().id
         }
-        data = CPTree(treeId, KVEntryReference(idToHash.getData()), true)
+        data = CPTree(treeId, KVEntryReference(idToHash.getData()), usesRoleIds)
         this.store = store
 
         // TODO remove
@@ -116,7 +116,7 @@ class CLTree : ITree, IBulkTree {
         var newIdToHash = nodesMap
         val newNodeData = resolveElement(nodeId)!!.getData().withPropertyValue(role, value)
         newIdToHash = newIdToHash!!.put(newNodeData)
-        return CLTree(data.id, newIdToHash!!, store)
+        return CLTree(data.id, newIdToHash!!, store, data.usesRoleIds)
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConceptReference?): ITree {
@@ -159,7 +159,7 @@ class CLTree : ITree, IBulkTree {
             arrayOf()
         )
         newIdToHash = newIdToHash!!.put(newChildData)!!
-        return CLTree(data.id, newIdToHash, store)
+        return CLTree(data.id, newIdToHash, store, data.usesRoleIds)
     }
 
     /**
@@ -210,7 +210,7 @@ class CLTree : ITree, IBulkTree {
             parent.getData().referenceTargets
         )
         newIdToHash = newIdToHash!!.put(newParentData)
-        return CLTree(data.id, newIdToHash!!, store)
+        return CLTree(data.id, newIdToHash!!, store, data.usesRoleIds)
     }
 
     override fun setReferenceTarget(sourceId: Long, role: String, target: INodeReference?): ITree {
@@ -229,7 +229,7 @@ class CLTree : ITree, IBulkTree {
         var newIdToHash = nodesMap
         val newNodeData = source.getData().withReferenceTarget(role, refData)
         newIdToHash = newIdToHash!!.put(newNodeData)
-        return CLTree(data.id, newIdToHash!!, store)
+        return CLTree(data.id, newIdToHash!!, store, data.usesRoleIds)
     }
 
     override fun deleteNode(nodeId: Long): ITree {
@@ -263,7 +263,7 @@ class CLTree : ITree, IBulkTree {
             newIdToHash = deleteElements(node.getData(), newIdToHash)
                 ?: throw RuntimeException("Unexpected empty nodes map. There should be at least the root node.")
         }
-        return CLTree(data.id, newIdToHash, store)
+        return CLTree(data.id, newIdToHash, store, data.usesRoleIds)
     }
 
     override fun containsNode(nodeId: Long): Boolean {

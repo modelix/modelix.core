@@ -26,7 +26,8 @@ class CPTree(
     override var isWritten: Boolean = false
 
     override fun serialize(): String {
-        return "$id/$PERSISTENCE_VERSION/${idToHash.getHash()}"
+        val pv = if (usesRoleIds) PERSISTENCE_VERSION else NAMED_BASED_PERSISTENCE_VERSION
+        return "$id/$pv/${idToHash.getHash()}"
     }
 
     override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }

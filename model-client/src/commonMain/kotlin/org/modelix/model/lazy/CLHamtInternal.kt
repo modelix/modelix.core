@@ -44,9 +44,15 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
     }
 
     override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
+        val childRefs = data.children
         return bulkQuery
-            .map(data.children.asIterable(), { bulkQuery.get(it) })
-            .mapBulk { bulkQuery.map(it) { create(it, store)?.calculateSize(bulkQuery) ?: bulkQuery.constant(0L) } }
+            .map(childRefs.asIterable(), { bulkQuery.get(it) })
+            .mapBulk { resolvedChildren: List<CPHamtNode?> ->
+                val resolvedChildrenNN = resolvedChildren.mapIndexed { index, child ->
+                    child ?: throw RuntimeException("Entry not found in store: " + childRefs[index].getHash())
+                }
+                bulkQuery.map(resolvedChildrenNN) { create(it, store).calculateSize(bulkQuery) }
+            }
             .map { it.reduce { a, b -> a + b } }
     }
 
@@ -86,7 +92,7 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
 
     protected fun getChild(logicalIndex: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CLHamtNode?> {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
-            return bulkQuery.constant(null) as IBulkQuery.Value<CLHamtNode?>
+            return bulkQuery.constant(null as CLHamtNode?)
         }
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
         require(physicalIndex < data.children.size) { "Invalid physical index ($physicalIndex). N. children: ${data.children.size}. Logical index: $logicalIndex" }
@@ -94,8 +100,11 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
         return getChild(childHash, bulkQuery)
     }
 
-    protected fun getChild(childHash: KVEntryReference<CPHamtNode>, bulkQuery: IBulkQuery): IBulkQuery.Value<CLHamtNode?> {
-        return bulkQuery[childHash].map { childData -> create(childData, store) }
+    protected fun getChild(childHash: KVEntryReference<CPHamtNode>, bulkQuery: IBulkQuery): IBulkQuery.Value<CLHamtNode> {
+        return bulkQuery[childHash].map { childData ->
+            if (childData == null) throw RuntimeException("Entry not found in store: ${childHash.getHash()}")
+            create(childData, store)
+        }
     }
 
     protected fun getChild(logicalIndex: Int): CLHamtNode? {
@@ -158,8 +167,8 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
         return true
     }
 
-    override fun visitChanges(oldNode: CLHamtNode?, shift: Int, visitor: IChangeVisitor) {
-        if (oldNode === this) {
+    override fun visitChanges(oldNode: CLHamtNode?, shift: Int, visitor: IChangeVisitor, bulkQuery: IBulkQuery) {
+        if (oldNode === this || data.hash == oldNode?.getData()?.hash) {
             return
         }
         when (oldNode) {
@@ -170,34 +179,40 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
                         val oldChildHash = oldInternalNode.data.children[i]
                         val newChildHash = data.children[i]
                         if (oldChildHash != newChildHash) {
-                            getChild(newChildHash)!!.visitChanges(oldInternalNode.getChild(oldChildHash), shift + BITS_PER_LEVEL, visitor)
+                            getChild(newChildHash, bulkQuery).map { child ->
+                                oldInternalNode.getChild(oldChildHash, bulkQuery).map { oldChild ->
+                                    child!!.visitChanges(oldChild, shift + BITS_PER_LEVEL, visitor, bulkQuery)
+                                }
+                            }
                         }
                     }
                 } else {
                     for (logicalIndex in 0 until ENTRIES_PER_LEVEL) {
-                        val child = getChild(logicalIndex)
-                        val oldChild = oldInternalNode.getChild(logicalIndex)
-                        if (child == null) {
-                            if (oldChild == null) {
-                                // no change
-                            } else {
-                                if (!visitor.visitChangesOnly()) {
-                                    oldChild.visitEntries { key, value ->
-                                        visitor.entryRemoved(key, value)
-                                        true
+                        getChild(logicalIndex, bulkQuery).map { child ->
+                            oldInternalNode.getChild(logicalIndex, bulkQuery).map { oldChild ->
+                                if (child == null) {
+                                    if (oldChild == null) {
+                                        // no change
+                                    } else {
+                                        if (!visitor.visitChangesOnly()) {
+                                            oldChild.visitEntries { key, value ->
+                                                visitor.entryRemoved(key, value)
+                                                true
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    if (oldChild == null) {
+                                        if (!visitor.visitChangesOnly()) {
+                                            child.visitEntries { key, value ->
+                                                visitor.entryAdded(key, value)
+                                                true
+                                            }
+                                        }
+                                    } else {
+                                        child.visitChanges(oldChild, shift + BITS_PER_LEVEL, visitor, bulkQuery)
                                     }
                                 }
-                            }
-                        } else {
-                            if (oldChild == null) {
-                                if (!visitor.visitChangesOnly()) {
-                                    child.visitEntries { key, value ->
-                                        visitor.entryAdded(key, value)
-                                        true
-                                    }
-                                }
-                            } else {
-                                child.visitChanges(oldChild, shift + BITS_PER_LEVEL, visitor)
                             }
                         }
                     }
@@ -205,9 +220,10 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
             }
             is CLHamtLeaf -> {
                 if (visitor.visitChangesOnly()) {
-                    val newValue = get(oldNode.key, shift, NonBulkQuery(store)).execute()
-                    if (newValue != null && newValue != oldNode.value) {
-                        visitor.entryChanged(oldNode.key, oldNode.value, newValue)
+                    get(oldNode.key, shift, bulkQuery).map { newValue ->
+                        if (newValue != null && newValue != oldNode.value) {
+                            visitor.entryChanged(oldNode.key, oldNode.value, newValue)
+                        }
                     }
                 } else {
                     var oldEntryExists = false
@@ -228,9 +244,9 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
             }
             is CLHamtSingle -> {
                 if (oldNode.getData().numLevels == 1) {
-                    visitChanges(CLHamtInternal.replace(oldNode), shift, visitor)
+                    visitChanges(CLHamtInternal.replace(oldNode), shift, visitor, bulkQuery)
                 } else {
-                    visitChanges(CLHamtInternal.replace(oldNode.splitOneLevel()), shift, visitor)
+                    visitChanges(CLHamtInternal.replace(oldNode.splitOneLevel()), shift, visitor, bulkQuery)
                 }
             }
             else -> {

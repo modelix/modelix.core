@@ -19,6 +19,9 @@ import org.modelix.model.randomUUID
 import kotlin.jvm.JvmStatic
 
 data class RepositoryId(val id: String) {
+    init {
+        require(id.matches(VALID_ID_PATTERN)) { "Invalid repository ID: $id" }
+    }
 
     @Deprecated("Use getBranchReference().getKey()")
     fun getBranchKey(branchName: String?): String {
@@ -37,6 +40,7 @@ data class RepositoryId(val id: String) {
     }
 
     companion object {
+        val VALID_ID_PATTERN = Regex("""[A-Za-z0-9_\-./]+""")
         const val DEFAULT_BRANCH = "master"
 
         @JvmStatic

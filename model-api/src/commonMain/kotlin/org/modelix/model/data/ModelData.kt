@@ -74,3 +74,16 @@ fun NodeData.uid(model: ModelData): String {
         (id ?: throw IllegalArgumentException("Node has no ID"))
 }
 fun ModelData.nodeUID(node: NodeData): String = node.uid(this)
+
+fun INode.asData(): NodeData = NodeData(
+    id = reference.serialize(),
+    concept = concept?.getUID(),
+    role = roleInParent,
+    properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) },
+    references = getReferenceRoles().associateWithNotNull { getReferenceTargetRef(it)?.serialize() },
+    children = allChildren.map { it.asData() }
+)
+
+public inline fun <K, V : Any> Iterable<K>.associateWithNotNull(valueSelector: (K) -> V?): Map<K, V> {
+    return associateWith { valueSelector(it) }.filterValues { it != null } as Map<K, V>
+}

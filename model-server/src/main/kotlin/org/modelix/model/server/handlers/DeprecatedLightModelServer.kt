@@ -42,6 +42,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
@@ -122,11 +123,10 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         get("/{repositoryId}/{versionHash}/poll") {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val versionHash = call.parameters["versionHash"]!!
-            pollEntry(client.store, repositoryId.getBranchKey(), versionHash) { newValue ->
-                val version = CLVersion.loadFromHash(newValue!!, getStore())
-                val oldVersion = CLVersion.loadFromHash(versionHash, getStore())
-                respondVersion(version, oldVersion)
-            }
+            val newValue = pollEntry(client.store, repositoryId.getBranchKey(), versionHash)
+            val version = CLVersion.loadFromHash(newValue!!, getStore())
+            val oldVersion = CLVersion.loadFromHash(versionHash, getStore())
+            respondVersion(version, oldVersion)
         }
         webSocket("/{repositoryId}/ws") {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)

@@ -33,7 +33,7 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
     }
 
     override fun put(key: String, value: String?) {
-        store.put(key, value)
+        store.put(key, value,)
     }
 
     override fun getAll(keys_: Iterable<String>): Map<String, String?> {
@@ -47,7 +47,7 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
     }
 
     override fun putAll(entries: Map<String, String?>) {
-        store.putAll(entries)
+        store.putAll(entries,)
     }
 
     override fun prefetch(key: String) {

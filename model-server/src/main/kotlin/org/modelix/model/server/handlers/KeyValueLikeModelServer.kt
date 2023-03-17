@@ -57,15 +57,25 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
         private fun randomUUID(): String {
             return UUID.randomUUID().toString().replace("[^a-zA-Z0-9]".toRegex(), "")
         }
+
+        fun initServerId(storeClient: IStoreClient) {
+            storeClient.runTransaction {
+                var serverId = storeClient[SERVER_ID_KEY]
+                if (serverId == null) {
+                    serverId = storeClient[LEGACY_SERVER_ID_KEY] ?: randomUUID()
+                    storeClient.put(SERVER_ID_KEY, serverId)
+                    storeClient.put(LEGACY_SERVER_ID_KEY, serverId)
+                }
+            }
+        }
+
+        fun getServerId(storeClient: IStoreClient): String {
+            return storeClient[SERVER_ID_KEY]!!
+        }
     }
 
     fun init(application: Application) {
-        var serverId = storeClient.get(SERVER_ID_KEY)
-        if (serverId == null) {
-            serverId = storeClient.get(LEGACY_SERVER_ID_KEY) ?: randomUUID()
-            storeClient.put(SERVER_ID_KEY, serverId)
-            storeClient.put(LEGACY_SERVER_ID_KEY, serverId)
-        }
+        initServerId(storeClient)
         application.apply {
             modelServerModule()
         }
@@ -97,9 +107,8 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
                     val key: String = call.parameters["key"]!!
                     val lastKnownValue = call.request.queryParameters["lastKnownValue"]
                     checkKeyPermission(key, EPermissionType.READ)
-                    pollEntry(storeClient, key, lastKnownValue) { newValue ->
-                        respondValue(key, newValue)
-                    }
+                    val newValue = pollEntry(storeClient, key, lastKnownValue)
+                    respondValue(key, newValue)
                 }
 
                 get("/getEmail") {
@@ -173,15 +182,6 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
             requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.WRITE) {
 
             }
-        }
-
-        install(CORS) {
-            anyHost()
-            allowHeader(HttpHeaders.ContentType)
-            allowMethod(HttpMethod.Options)
-            allowMethod(HttpMethod.Get)
-            allowMethod(HttpMethod.Put)
-            allowMethod(HttpMethod.Post)
         }
     }
 
@@ -287,6 +287,9 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
         if (key.startsWith(PROTECTED_PREFIX)) {
             throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
         }
+        if (key.startsWith(RepositoriesManager.KEY_PREFIX)) {
+            throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
+        }
         if ((key == SERVER_ID_KEY || key == LEGACY_SERVER_ID_KEY) && type.includes(EPermissionType.WRITE)) {
             throw NoPermissionException("'$key' is read-only.")
         }
@@ -303,7 +306,7 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
 
     fun isHealthy(): Boolean {
         val value = toLong(storeClient[HEALTH_KEY]) + 1
-        storeClient.put(HEALTH_KEY, java.lang.Long.toString(value))
+        storeClient.put(HEALTH_KEY, java.lang.Long.toString(value),)
         return toLong(storeClient[HEALTH_KEY]) >= value
     }
 }

@@ -39,7 +39,7 @@ public class RestModelServerTest {
     @Test
     public void testCollectExistingKeyNotHash() {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        storeClient.put("existingKey", "foo");
+        storeClient.put("existingKey", "foo", false);
         KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("existingKey");
         assertEquals(1, result.length());
@@ -52,8 +52,8 @@ public class RestModelServerTest {
     @Test
     public void testCollectExistingKeyHash() {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        storeClient.put("existingKey", "hash-*0123456789-0123456789-0123456789-00001");
-        storeClient.put("hash-*0123456789-0123456789-0123456789-00001", "bar");
+        storeClient.put("existingKey", "hash-*0123456789-0123456789-0123456789-00001", false);
+        storeClient.put("hash-*0123456789-0123456789-0123456789-00001", "bar", false);
         KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("existingKey");
         assertEquals(2, result.length());
@@ -72,17 +72,20 @@ public class RestModelServerTest {
     @Test
     public void testCollectExistingKeyHashChained() {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001");
+        storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001", false);
         storeClient.put(
                 "hash-*0123456789-0123456789-0123456789-00001",
-                "hash-*0123456789-0123456789-0123456789-00002");
+                "hash-*0123456789-0123456789-0123456789-00002",
+                false);
         storeClient.put(
                 "hash-*0123456789-0123456789-0123456789-00002",
-                "hash-*0123456789-0123456789-0123456789-00003");
+                "hash-*0123456789-0123456789-0123456789-00003",
+                false);
         storeClient.put(
                 "hash-*0123456789-0123456789-0123456789-00003",
-                "hash-*0123456789-0123456789-0123456789-00004");
-        storeClient.put("hash-*0123456789-0123456789-0123456789-00004", "end");
+                "hash-*0123456789-0123456789-0123456789-00004",
+                false);
+        storeClient.put("hash-*0123456789-0123456789-0123456789-00004", "end", false);
         KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("root");
         assertEquals(5, result.length());
@@ -116,16 +119,19 @@ public class RestModelServerTest {
     @Test
     public void testCollectExistingKeyHashChainedWithRepetitions() {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001");
+        storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001", false);
         storeClient.put(
                 "hash-*0123456789-0123456789-0123456789-00001",
-                "hash-*0123456789-0123456789-0123456789-00002");
+                "hash-*0123456789-0123456789-0123456789-00002",
+                false);
         storeClient.put(
                 "hash-*0123456789-0123456789-0123456789-00002",
-                "hash-*0123456789-0123456789-0123456789-00003");
+                "hash-*0123456789-0123456789-0123456789-00003",
+                false);
         storeClient.put(
                 "hash-*0123456789-0123456789-0123456789-00003",
-                "hash-*0123456789-0123456789-0123456789-00001");
+                "hash-*0123456789-0123456789-0123456789-00001",
+                false);
         KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
         JSONArray result = rms.collect("root");
         assertEquals(4, result.length());

@@ -28,7 +28,7 @@
 
     <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="location">
-            <value>org/modelix/model/server/database.properties</value>
+            <value>org/modelix/model/server/store/database.properties</value>
         </property>
         <property name="systemPropertiesMode" value="2"/>
     </bean>
@@ -80,7 +80,7 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="model"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="backups" value="0"/>
                     <property name="onheapCacheEnabled" value="false"/>
                     <property name="statisticsEnabled" value="true"/>

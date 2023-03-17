@@ -83,17 +83,19 @@ class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
         return cache.getAll(keys)
     }
 
-    override fun put(key: String, value: String?) {
-        putAll(Collections.singletonMap(key, value))
+    override fun put(key: String, value: String?, silent: Boolean) {
+        putAll(Collections.singletonMap(key, value), silent)
     }
 
-    override fun putAll(entries: Map<String, String?>) {
+    override fun putAll(entries: Map<String, String?>, silent: Boolean) {
         val deletes = entries.filterValues { it == null }
         val puts = entries.filterValues { it != null }
         if (deletes.isNotEmpty()) cache.removeAll(deletes.keys)
         if (puts.isNotEmpty()) cache.putAll(puts)
-        for ((key, value) in entries) {
-            ignite.message().send(key, value ?: IKeyListener.NULL_VALUE)
+        if (!silent) {
+            for ((key, value) in entries) {
+                ignite.message().send(key, value ?: IKeyListener.NULL_VALUE)
+            }
         }
     }
 
@@ -130,6 +132,15 @@ class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
 
     override fun generateId(key: String): Long {
         return cache.invoke(key, ClientIdProcessor())
+    }
+
+    override fun <T> runTransaction(body: () -> T): T {
+        val transactions = ignite.transactions()
+        transactions.txStart().use { tx ->
+            val result = body()
+            tx.commit()
+            return result
+        }
     }
 
     fun dispose() {

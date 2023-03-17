@@ -60,8 +60,8 @@ abstract class CLHamtNode(val store: IDeserializingKeyValueStore) {
     abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int): CLHamtNode?
     abstract fun remove(key: Long, shift: Int): CLHamtNode?
     abstract fun visitEntries(visitor: (Long, KVEntryReference<CPNode>?) -> Boolean): Boolean
-    abstract fun visitChanges(oldNode: CLHamtNode?, shift: Int, visitor: IChangeVisitor)
-    fun visitChanges(oldNode: CLHamtNode?, visitor: IChangeVisitor) = visitChanges(oldNode, 0, visitor)
+    abstract fun visitChanges(oldNode: CLHamtNode?, shift: Int, visitor: IChangeVisitor, bulkQuery: IBulkQuery)
+    fun visitChanges(oldNode: CLHamtNode?, visitor: IChangeVisitor, bulkQuery: IBulkQuery) = visitChanges(oldNode, 0, visitor, bulkQuery)
     interface IChangeVisitor {
         fun visitChangesOnly(): Boolean
         fun entryAdded(key: Long, value: KVEntryReference<CPNode>?)
@@ -78,9 +78,8 @@ abstract class CLHamtNode(val store: IDeserializingKeyValueStore) {
         const val MAX_LEVELS = (MAX_BITS + BITS_PER_LEVEL - 1) / BITS_PER_LEVEL
 
         @JvmStatic
-        fun create(data: CPHamtNode?, store: IDeserializingKeyValueStore): CLHamtNode? {
+        fun create(data: CPHamtNode, store: IDeserializingKeyValueStore): CLHamtNode {
             return when (data) {
-                null -> null
                 is CPHamtLeaf -> {
                     CLHamtLeaf(data, store)
                 }

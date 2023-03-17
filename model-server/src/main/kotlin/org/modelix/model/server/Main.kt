@@ -15,10 +15,14 @@
 package org.modelix.model.server
 
 import com.beust.jcommander.JCommander
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.html.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -114,7 +118,7 @@ object Main {
             }
             var i = 0
             while (i < cmdLineArgs.setValues.size) {
-                storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
+                storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1],)
                 i += 2
             }
             val modelServer = KeyValueLikeModelServer(storeClient)
@@ -133,6 +137,17 @@ object Main {
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)
                 install(WebSockets)
+                install(ContentNegotiation) {
+                    json()
+                }
+                install(CORS) {
+                    anyHost()
+                    allowHeader(HttpHeaders.ContentType)
+                    allowMethod(HttpMethod.Options)
+                    allowMethod(HttpMethod.Get)
+                    allowMethod(HttpMethod.Put)
+                    allowMethod(HttpMethod.Post)
+                }
 
                 modelServer.init(this)
                 historyHandler.init(this)

@@ -23,6 +23,9 @@ import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.store.DataStoreFactory
 import com.google.api.client.util.store.MemoryDataStoreFactory
+import io.ktor.client.*
+import io.ktor.client.plugins.auth.*
+import io.ktor.client.plugins.auth.providers.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -55,6 +58,48 @@ object ModelixOAuthClient {
                 .build()
             val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("127.0.0.1").build()
             AuthorizationCodeInstalledApp(flow, receiver).authorize("user")
+        }
+    }
+
+    fun installAuth(config: HttpClientConfig<*>, baseUrl: String, authTokenProvider: (() -> String?)? = null) {
+        config.apply {
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        val tp = authTokenProvider
+                        if (tp == null) {
+                            ModelixOAuthClient.getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
+                        } else {
+                            val token = tp()
+                            if (token == null) {
+//                            connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
+                                null
+                            } else {
+                                BearerTokens(token, "")
+                            }
+                        }
+                    }
+                    refreshTokens {
+                        val tp = authTokenProvider
+                        if (tp == null) {
+                            var url = baseUrl
+                            if (!url.endsWith("/")) url += "/"
+                            if (url.endsWith("/model/")) url = url.substringBeforeLast("/model/")
+//                        connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
+                            val tokens = ModelixOAuthClient.authorize(url)
+                            BearerTokens(tokens.accessToken, tokens.refreshToken)
+                        } else {
+                            val providedToken = tp()
+                            if (providedToken != null && providedToken != this.oldTokens?.accessToken) {
+                                BearerTokens(providedToken, "")
+                            } else {
+//                            connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
+                                null
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -45,23 +45,25 @@ class InMemoryStoreClient : IStoreClient {
     }
 
     @Synchronized
-    override fun put(key: String, value: String?) {
+    override fun put(key: String, value: String?, silent: Boolean) {
         values[key] = value
-        listeners[key]?.toList()?.forEach {
-            try {
-                it.changed(key, value)
-            } catch (ex : Exception) {
-                println(ex.message)
-                ex.printStackTrace()
-                LOG.error("Failed to notify listeners after put '$key' = '$value'", ex)
+        if (!silent) {
+            listeners[key]?.toList()?.forEach {
+                try {
+                    it.changed(key, value)
+                } catch (ex : Exception) {
+                    println(ex.message)
+                    ex.printStackTrace()
+                    LOG.error("Failed to notify listeners after put '$key' = '$value'", ex)
+                }
             }
         }
     }
 
     @Synchronized
-    override fun putAll(entries: Map<String, String?>) {
+    override fun putAll(entries: Map<String, String?>, silent: Boolean) {
         for ((key, value) in entries) {
-            put(key, value)
+            put(key, value, silent)
         }
     }
 
@@ -82,7 +84,7 @@ class InMemoryStoreClient : IStoreClient {
         } catch (e : NumberFormatException) {
             0L
         } + 1L
-        put(key, id.toString())
+        put(key, id.toString(), false)
         return id
     }
 
@@ -108,5 +110,10 @@ class InMemoryStoreClient : IStoreClient {
                 n[0]++
             }
         return n[0]
+    }
+
+    @Synchronized
+    override fun <T> runTransaction(body: () -> T): T {
+        return body()
     }
 }

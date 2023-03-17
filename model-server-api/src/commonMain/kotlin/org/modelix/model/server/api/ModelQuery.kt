@@ -18,6 +18,7 @@ package org.modelix.model.server.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -31,6 +32,9 @@ data class ModelQuery(
     override val queries: List<RootQuery>
 ) : QueryOwner() {
     fun toJson() = Json.encodeToString(this)
+    companion object {
+        fun fromJson(json: String) = Json.decodeFromString<ModelQuery>(json)
+    }
 }
 
 sealed class RootOrSubquery : QueryOwner() {

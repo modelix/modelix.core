@@ -34,6 +34,7 @@ tasks.named("check") {
 val kotlinCoroutinesVersion: String by rootProject
 val kotlinLoggingVersion: String by rootProject
 val ktorVersion: String by rootProject
+val kotlinxSerializationVersion: String by rootProject
 
 kotlin {
     jvm()
@@ -51,11 +52,16 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":model-api"))
+                implementation(project(":model-server-api"))
                 kotlin("stdlib-common")
                 implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.4")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
                 implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
+                implementation("io.ktor:ktor-client-core:$ktorVersion")
+                implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
             }
         }
         val commonTest by getting {

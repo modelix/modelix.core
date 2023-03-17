@@ -36,7 +36,10 @@ class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValue
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
         if (maskBits(key, shift) == data.bits) {
             return bulkQuery.get(data.child)
-                .mapBulk { create(it, store)!!.get(key, shift + data.numLevels * BITS_PER_LEVEL, bulkQuery) }
+                .mapBulk {
+                    val childData = it ?: throw RuntimeException("Entry not found in store: " + data.child.getHash())
+                    create(childData, store).get(key, shift + data.numLevels * BITS_PER_LEVEL, bulkQuery)
+                }
         } else {
             return bulkQuery.constant(null)
         }
@@ -99,13 +102,20 @@ class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValue
         return getChild(NonBulkQuery(store)).execute().visitEntries(visitor)
     }
 
-    override fun visitChanges(oldNode: CLHamtNode?, shift: Int, visitor: IChangeVisitor) {
+    override fun visitChanges(oldNode: CLHamtNode?, shift: Int, visitor: IChangeVisitor, bulkQuery: IBulkQuery) {
+        if (oldNode === this || data.hash == oldNode?.getData()?.hash) {
+            return
+        }
         if (oldNode is CLHamtSingle && oldNode.data.numLevels == data.numLevels) {
-            getChild().visitChanges(oldNode.getChild(), shift + data.numLevels * BITS_PER_LEVEL, visitor)
+            getChild(bulkQuery).map { child ->
+                oldNode.getChild(bulkQuery).map { oldNode ->
+                    child.visitChanges(oldNode, shift + data.numLevels * BITS_PER_LEVEL, visitor, bulkQuery)
+                }
+            }
         } else if (data.numLevels == 1) {
-            CLHamtInternal.replace(this).visitChanges(oldNode, shift, visitor)
+            CLHamtInternal.replace(this).visitChanges(oldNode, shift, visitor, bulkQuery)
         } else {
-            splitOneLevel().visitChanges(oldNode, shift, visitor)
+            splitOneLevel().visitChanges(oldNode, shift, visitor, bulkQuery)
         }
     }
 

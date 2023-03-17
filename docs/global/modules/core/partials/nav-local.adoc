@@ -1,0 +1,23 @@
+* Core
+** xref:core:index.adoc[]
+** Tutorials
++
+--
+include::core:partial$nav-tutorial.adoc[]
+--
+** How-To Guides
++
+--
+include::core:partial$nav-howto.adoc[]
+--
+** Reference
++
+--
+include::core:partial$nav-reference.adoc[]
+--
+** Explanation
++
+--
+include::core:partial$nav-explanation.adoc[]
+--
+

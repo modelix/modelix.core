@@ -1,0 +1,7 @@
+name: core
+title: modelix.core
+version: true
+start_page: core:index.adoc
+nav:
+  - modules/core/partials/nav-local.adoc
+

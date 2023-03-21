@@ -43,7 +43,7 @@ jobs:
         run: npm ci
       - name: Dry-run release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         # We need to convince semantic-release to not pick up some
         # configuration from the CI environment by removing the variable that
         # is used for CI detection.
@@ -71,5 +71,5 @@ jobs:
         run: npm ci
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: npx semantic-release

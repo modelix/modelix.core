@@ -11,7 +11,7 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
     protected val parent: INode,
     protected val role: IChildLink,
     protected val childConcept: IConcept,
-    protected val childType: KClass<ChildT>,
+    val childType: KClass<ChildT>,
 ): Iterable<ChildT> {
     fun isEmpty(): Boolean = !iterator().hasNext()
 
@@ -19,8 +19,10 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         return this.count()
     }
 
+    fun untypedNodes() : Iterable<INode> = parent.getChildren(role)
+
     override fun iterator(): Iterator<ChildT> {
-        return parent.getChildren(role).map {
+        return untypedNodes().map {
             when (childConcept) {
                 is GeneratedConcept<*, *> -> it.typed(childType)
                 else -> throw RuntimeException("Unsupported concept type: ${childConcept::class} (${childConcept.getLongName()})")
@@ -43,4 +45,8 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
     fun remove(child: TypedNodeImpl) {
         removeUnwrapped(child.unwrap())
     }
+}
+
+fun <ChildT : ITypedNode> ChildAccessor<ChildT>.filterLoaded(): List<ChildT> {
+    return untypedNodes().asSequence().filter { it.isValid }.map { it.typed(childType) }.toList()
 }

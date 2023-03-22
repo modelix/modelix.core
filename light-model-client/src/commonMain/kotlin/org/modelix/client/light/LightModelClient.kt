@@ -86,14 +86,12 @@ class LightModelClient(
         lastUnconfirmedChangeSetId == null && pendingOperations.isEmpty() && unappliedVersions.isEmpty()
     }
 
-    private inline fun <T> requiresRead(body: ()->T): T {
-        checkRead()
-        return body()
+    private fun <T> requiresRead(body: () -> T): T {
+        return transactionManager.requiresRead(body)
     }
 
-    private inline fun <T> requiresWrite(body: ()->T): T {
-        checkWrite()
-        return body()
+    private fun <T> requiresWrite(body: () -> T): T {
+        return transactionManager.requiresWrite(body)
     }
 
     fun <T> runRead(body: () -> T): T {

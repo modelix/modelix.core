@@ -33,7 +33,7 @@ tasks.named("check") {
 }
 
 tasks.named("sourcesJar") {
-    dependsOn("jsIrGenerateExternalsIntegrated")
+    dependsOn("jsGenerateExternalsIntegrated")
 }
 
 val kotlinLoggingVersion: String by rootProject
@@ -41,7 +41,7 @@ val kotlinxSerializationVersion: String by rootProject
 
 kotlin {
     jvm()
-    js(BOTH) {
+    js(IR) {
         nodejs {
             testTask {
                 useMocha {
@@ -90,9 +90,9 @@ kotlin {
 }
 
 tasks.named("runKtlintCheckOverJsMainSourceSet") {
-    dependsOn("jsIrGenerateExternalsIntegrated")
+    dependsOn("jsGenerateExternalsIntegrated")
 }
 
 tasks.named("jsSourcesJar") {
-    dependsOn("jsIrGenerateExternalsIntegrated")
+    dependsOn("jsGenerateExternalsIntegrated")
 }

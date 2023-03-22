@@ -9,7 +9,7 @@ val mpsExtensionsVersion: String by rootProject
 
 kotlin {
     jvm()
-    js(BOTH) {
+    js(IR) {
         browser {
         }
         nodejs {

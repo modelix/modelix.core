@@ -15,9 +15,10 @@ import kotlin.time.Duration.Companion.seconds
 
 private const val TEMP_ID_PREFIX = "tmp-"
 
-class LightModelClient(
+class LightModelClient internal constructor(
     val connection: IConnection,
     val transactionManager: ITransactionManager,
+    val autoFilterNonLoadedNodes: Boolean,
     val debugName: String = ""
 ) {
 
@@ -326,11 +327,17 @@ class LightModelClient(
             get() = requiresRead { getData().parent?.let { getNodeAdapter(it) } }
 
         override fun getChildren(role: String?): List<NodeAdapter> {
-            return requiresRead { getData().children[role]?.map { getNodeAdapter(it) } ?: emptyList() }
+            return requiresRead {
+                val children = getData().children[role]?.map { getNodeAdapter(it) } ?: emptyList()
+                if (autoFilterNonLoadedNodes) children.filterLoaded() else children
+            }
         }
 
         override val allChildren: List<NodeAdapter>
-            get() = requiresRead { getData().children.flatMap { it.value }.map { getNodeAdapter(it) } }
+            get() = requiresRead {
+                val children = getData().children.flatMap { it.value }.map { getNodeAdapter(it) }
+                if (autoFilterNonLoadedNodes) children.filterLoaded() else children
+            }
 
         override fun getConceptReference(): IConceptReference? {
             return requiresRead { getData().concept?.let { ConceptReference(it) } }
@@ -454,6 +461,7 @@ class LightModelClient(
 
         override fun getReferenceTarget(role: String): NodeAdapter? {
             return getReferenceTargetRef(role)?.let { getNode(it.nodeId) }
+                ?.takeIf { !autoFilterNonLoadedNodes || it.isLoaded() }
         }
 
         override fun getReferenceTargetRef(role: String): LightClientNodeReference? {
@@ -684,6 +692,7 @@ class LightModelClientBuilder {
     private var httpEngineFactory: HttpClientEngineFactory<*>? = null
     private var debugName: String = ""
     private var transactionManager: ITransactionManager = ReadWriteLockTransactionManager()
+    private var autoFilterNonLoadedNodes: Boolean = false
 
     fun build(): LightModelClient {
         return LightModelClient(
@@ -698,8 +707,13 @@ class LightModelClientBuilder {
                 ))
             ),
             transactionManager,
-            debugName
+            autoFilterNonLoadedNodes = autoFilterNonLoadedNodes,
+            debugName = debugName
         )
+    }
+    fun autoFilterNonLoadedNodes(value: Boolean = true): LightModelClientBuilder {
+        autoFilterNonLoadedNodes = value
+        return this
     }
     fun autoTransactions(): LightModelClientBuilder {
         transactionManager = AutoTransactions(transactionManager)
@@ -786,5 +800,5 @@ fun NodeData.asUpdateData(): NodeUpdateData {
 }
 
 fun INode.isLoaded() = isValid
-fun Iterable<INode>.filterLoaded() = filter { it.isLoaded() }
-fun Sequence<INode>.filterLoaded() = filter { it.isLoaded() }
+fun <T : INode> Iterable<T>.filterLoaded() = filter { it.isLoaded() }
+fun <T : INode> Sequence<T>.filterLoaded() = filter { it.isLoaded() }

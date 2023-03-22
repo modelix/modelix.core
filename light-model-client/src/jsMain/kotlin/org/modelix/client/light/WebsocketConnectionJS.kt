@@ -25,7 +25,7 @@ fun createLightModelClient(url: String = "ws://localhost:48302/ws", query: Model
     val httpClient = HttpClient(Js) {
         install(WebSockets)
     }
-    val modelClient = LightModelClient(WebsocketConnection(httpClient, url))
+    val modelClient = LightModelClient.builder().httpClient(httpClient).url(url).build()
     if (query != null) modelClient.changeQuery(query)
     return modelClient
 }

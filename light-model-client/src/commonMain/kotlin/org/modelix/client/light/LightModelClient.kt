@@ -9,7 +9,6 @@ import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 import org.modelix.model.server.api.*
-import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -27,13 +26,13 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     private var temporaryIdsSequence: Long = 0
     private var changeSetIdSequence: Int = 0
     private val nodesReferencingTemporaryIds = HashSet<NodeId>()
-    private var synchronizationLevel: Int = 0
+    private var writeLevel: Int = 0
+    private val readWriteLock = ReadWriteLock()
     private val temporaryNodeAdapters: MutableMap<String, NodeAdapter> = HashMap()
     private var initialized = false
     private var lastUnconfirmedChangeSetId: ChangeSetId? = null
     private val unappliedVersions: MutableList<VersionData> = ArrayList()
     private var exceptions: MutableList<ExceptionData> = ArrayList()
-    private var currentAccessType: AccessType = AccessType.NONE
     private var currentModelQuery: ModelQuery? = null
     private var unappliedQuery: ModelQuery? = null
 
@@ -53,7 +52,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
 
     fun changeQuery(query: ModelQuery) {
         // TODO get rid of node data that is not selected by the query anymore
-        synchronized {
+        runWrite {
             LOG.trace { "Changing query to ${query.toJson()}" }
             if (initialized) {
                 connection.sendMessage(MessageFromClient(query = query))
@@ -72,66 +71,40 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     private fun checkRead() {
-        synchronized {
-            if (!currentAccessType.canRead) throw IllegalStateException("Not in a read transaction")
-        }
+        if (!readWriteLock.canRead()) throw IllegalStateException("Not in a read transaction")
     }
 
     private fun checkWrite() {
-        synchronized {
-            if (!currentAccessType.canWrite) throw IllegalStateException("Not in a write transaction")
-        }
+        if (!readWriteLock.canWrite()) throw IllegalStateException("Not in a write transaction")
     }
 
-    fun isInSync(): Boolean = synchronized {
+    fun isInSync(): Boolean = runRead {
         checkException()
         lastUnconfirmedChangeSetId == null && pendingOperations.isEmpty() && unappliedVersions.isEmpty()
     }
 
-    private fun <T> synchronizedRead(body: ()->T): T {
-        return synchronized {
-            checkRead()
-            body()
-        }
+    private inline fun <T> requiresRead(body: ()->T): T {
+        checkRead()
+        return body()
     }
 
-    private fun <T> synchronizedWrite(body: ()->T): T {
-        return synchronized {
-            checkWrite()
-            body()
-        }
+    private inline fun <T> requiresWrite(body: ()->T): T {
+        checkWrite()
+        return body()
     }
 
-    fun <T> runRead(body: () -> T): T = synchronized {
-        if (currentAccessType.canRead) {
-            body()
-        } else {
-            val previousType = currentAccessType
-            currentAccessType = when (previousType) {
-                AccessType.NONE, AccessType.WRITE -> AccessType.READ
-                AccessType.READ -> throw RuntimeException("Read is already allowed")
-            }
+    fun <T> runRead(body: () -> T): T {
+        return readWriteLock.runRead(body)
+    }
+
+    fun <T> runWrite(body: () -> T): T {
+        return readWriteLock.runWrite {
+            writeLevel++
             try {
                 body()
             } finally {
-                currentAccessType = previousType
-            }
-        }
-    }
-
-    fun <T> runWrite(body: () -> T): T = synchronized {
-        if (currentAccessType.canWrite) {
-            body()
-        } else if (currentAccessType.canRead) {
-            throw IllegalStateException("Cannot run write from read")
-        } else {
-            val previousType = currentAccessType
-            currentAccessType = AccessType.WRITE
-            try {
-                body()
-            } finally {
-                currentAccessType = previousType
-                fullConsistencyCheck()
+                writeLevel--
+                if (writeLevel == 0) flush()
             }
         }
     }
@@ -162,18 +135,18 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     fun getRepositoryId(): String? = repositoryId
 
     fun getRootNode(): INode? {
-        return synchronizedRead {
+        return requiresRead {
             rootNodeId?.let { getNodeAdapter(it) }
         }
     }
 
     fun getNodeIfLoaded(nodeId: NodeId): INode? {
-        return synchronized {
+        return requiresRead {
             if (nodes.containsKey(nodeId)) getNodeAdapter(nodeId) else null
         }
     }
 
-    fun isInitialized(): Boolean = synchronized { initialized }
+    fun isInitialized(): Boolean = requiresRead { initialized }
 
     private fun fullConsistencyCheck() {
 //        runRead {
@@ -189,34 +162,19 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
 //        }
     }
 
-    fun hasTemporaryIds(): Boolean = synchronized {
+    fun hasTemporaryIds(): Boolean = requiresRead {
         temporaryNodeAdapters.isNotEmpty() || nodesReferencingTemporaryIds.isNotEmpty()
     }
 
     fun getNode(nodeId: NodeId): NodeAdapter {
-        return synchronizedRead {
+        return requiresRead {
             getNodeData(nodeId) // fail fast if it doesn't exist
-            return@synchronizedRead getNodeAdapter(nodeId)
+            return@requiresRead getNodeAdapter(nodeId)
         }
     }
 
-    private fun generateTemporaryNodeId(): String = synchronized {
+    private fun generateTemporaryNodeId(): String = requiresRead {
         TEMP_ID_PREFIX + (++temporaryIdsSequence).toString(16)
-    }
-    
-    private fun <R> synchronized(block: () -> R): R {
-        runSynchronized(this) {
-            try {
-                synchronizationLevel++
-                val result = block()
-                return result
-            } finally {
-                synchronizationLevel--
-                if (synchronizationLevel == 0) {
-                    flush()
-                }
-            }
-        }
     }
 
     private fun flush() {
@@ -236,7 +194,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     private fun messageReceived(message: MessageFromServer) {
-        synchronized {
+        runWrite {
             // println("$debugName processing on client: " + message.toJson())
             if (message.exception != null) {
                 exceptions.add(message.exception!!)
@@ -261,7 +219,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     private fun applyVersion(version: VersionData) {
-        synchronized {
+        runWrite {
             initialized = true
             if (version.repositoryId != null && version.repositoryId != repositoryId) {
                 repositoryId = version.repositoryId
@@ -291,7 +249,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     private fun replaceIds(replacements: Map<String, String>) {
-        synchronized {
+        runWrite {
             require(pendingOperations.isEmpty()) { "Flush pending updates first" }
             val nodesReferencingTemporaryIdsSaved = ArrayList(nodesReferencingTemporaryIds)
             val noTempReferencesLeft = ArrayList<String>(nodesReferencingTemporaryIds.size)
@@ -334,14 +292,14 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     private fun getNodeData(id: NodeId): NodeData {
-        return synchronized {
+        return requiresRead {
             nodes[id]
                 ?: throw IllegalArgumentException("Node with ID $id doesn't exist or wasn't loaded.")
         }
     }
 
     private fun getNodeAdapter(nodeId: NodeId): NodeAdapter {
-        return synchronized {
+        return requiresRead {
             if (nodeId.startsWith(TEMP_ID_PREFIX)) {
                 temporaryNodeAdapters.getOrPut(nodeId) { NodeAdapter(nodeId) }
             } else {
@@ -351,35 +309,35 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     inner class NodeAdapter(var nodeId: NodeId) : INode {
-        fun getData() = synchronizedRead { getNodeData(nodeId) }
+        fun getData() = requiresRead { getNodeData(nodeId) }
 
         override fun getArea(): IArea = area
 
         override val isValid: Boolean
-            get() = synchronizedRead { nodes.containsKey(nodeId) }
+            get() = requiresRead { nodes.containsKey(nodeId) }
         override val reference: INodeReference
             get() = LightClientNodeReference(nodeId)
         override val concept: IConcept?
-            get() = synchronizedRead { getConceptReference()?.resolve() }
+            get() = requiresRead { getConceptReference()?.resolve() }
         override val roleInParent: String?
-            get() = synchronizedRead { getData().role }
+            get() = requiresRead { getData().role }
         override val parent: NodeAdapter?
-            get() = synchronizedRead { getData().parent?.let { getNodeAdapter(it) } }
+            get() = requiresRead { getData().parent?.let { getNodeAdapter(it) } }
 
         override fun getChildren(role: String?): List<NodeAdapter> {
-            return synchronizedRead { getData().children[role]?.map { getNodeAdapter(it) } ?: emptyList() }
+            return requiresRead { getData().children[role]?.map { getNodeAdapter(it) } ?: emptyList() }
         }
 
         override val allChildren: List<NodeAdapter>
-            get() = synchronizedRead { getData().children.flatMap { it.value }.map { getNodeAdapter(it) } }
+            get() = requiresRead { getData().children.flatMap { it.value }.map { getNodeAdapter(it) } }
 
         override fun getConceptReference(): IConceptReference? {
-            return synchronizedRead { getData().concept?.let { ConceptReference(it) } }
+            return requiresRead { getData().concept?.let { ConceptReference(it) } }
         }
 
         override fun moveChild(role: String?, index: Int, child: INode) {
             require(child is NodeAdapter && child.getClient() == getClient()) { "Not part of this client: $child" }
-            synchronizedWrite {
+            requiresWrite {
                 require(!getAncestors(includeSelf = true).contains(child)) { "Attempt to create a cyclic containment" }
                 val oldParent = child.parent!! as NodeAdapter
                 val oldRole = child.roleInParent
@@ -410,7 +368,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
-            return synchronizedWrite {
+            return requiresWrite {
                 val size = getChildren(role).size
                 require(index == -1 || index in (0..size)) { "Invalid index: $index, size: $size" }
                 val childId = generateTemporaryNodeId()
@@ -432,13 +390,13 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
                 val childNode = getNodeAdapter(childId)
                 checkContainmentConsistency()
                 childNode.checkContainmentConsistency()
-                return@synchronizedWrite childNode
+                return@requiresWrite childNode
             }
         }
 
         override fun removeChild(child: INode) {
             require(child is NodeAdapter && child.getClient() == getClient()) { "Unsupported child type: $child" }
-            synchronizedWrite {
+            requiresWrite {
                 require(child.parent == this) { "$child is not a child of $this" }
                 require(child.allChildren.isEmpty()) { "$child is not empty" }
 
@@ -498,11 +456,11 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun getReferenceTargetRef(role: String): LightClientNodeReference? {
-            return synchronizedRead { getData().references[role]?.let { LightClientNodeReference(it) } }
+            return requiresRead { getData().references[role]?.let { LightClientNodeReference(it) } }
         }
 
         override fun setReferenceTarget(role: String, target: INodeReference?) {
-            synchronizedWrite {
+            requiresWrite {
                 val targetId: NodeId? = when (target) {
                     null -> null
                     is LightClientNodeReference -> target.nodeId
@@ -520,7 +478,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun setReferenceTarget(role: String, target: INode?) {
-            synchronizedWrite {  setReferenceTarget(role, target?.reference) }
+            requiresWrite {  setReferenceTarget(role, target?.reference) }
         }
 
         override fun getPropertyValue(role: String): String? {
@@ -528,7 +486,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun setPropertyValue(propertyRole: String, value: String?) {
-            synchronizedWrite {
+            requiresWrite {
                 val oldData = getData()
                 nodes[nodeId] = with(oldData) {
                     NodeData(
@@ -546,11 +504,11 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun getPropertyRoles(): List<String> {
-            return synchronizedRead { getData().properties.keys.toList() }
+            return requiresRead { getData().properties.keys.toList() }
         }
 
         override fun getReferenceRoles(): List<String> {
-            return synchronizedRead { getData().references.keys.toList() }
+            return requiresRead { getData().references.keys.toList() }
         }
 
         override fun equals(other: Any?): Boolean {
@@ -559,7 +517,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
 
             other as NodeAdapter
 
-            val sameNodeId = synchronized { nodeId == other.nodeId }
+            val sameNodeId = runRead { nodeId == other.nodeId }
             if (!sameNodeId) return false
             if (getClient() != other.getClient()) return false
 
@@ -585,7 +543,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         fun getClient(): LightModelClient = this@LightModelClient
 
         override fun getRoot(): INode {
-            return synchronizedRead {rootNodeId?.let { getNodeAdapter(it) } ?: throw IllegalStateException("Root node ID unknown") }
+            return requiresRead { rootNodeId?.let { getNodeAdapter(it) } ?: throw IllegalStateException("Root node ID unknown") }
         }
 
         @Deprecated("use ILanguageRepository.resolveConcept")
@@ -594,11 +552,11 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun resolveNode(ref: INodeReference): INode? {
-            return synchronizedRead { resolveOriginalNode(ref) }
+            return requiresRead { resolveOriginalNode(ref) }
         }
 
         override fun resolveOriginalNode(ref: INodeReference): INode? {
-            return synchronizedRead {
+            return requiresRead {
                 when (ref) {
                     is LightClientNodeReference -> getNode(ref.nodeId)
                     else -> null
@@ -623,19 +581,19 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun <T> executeRead(f: () -> T): T {
-            return synchronized { f() }
+            return runRead { f() }
         }
 
         override fun <T> executeWrite(f: () -> T): T {
-            return synchronized { f() }
+            return runWrite { f() }
         }
 
         override fun canRead(): Boolean {
-            return synchronized { this@LightModelClient.currentAccessType.canRead }
+            return readWriteLock.canRead()
         }
 
         override fun canWrite(): Boolean {
-            return synchronized { this@LightModelClient.currentAccessType.canWrite }
+            return readWriteLock.canWrite()
         }
 
         override fun addListener(l: IAreaListener) {

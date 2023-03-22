@@ -15,7 +15,11 @@ import kotlin.time.Duration.Companion.seconds
 
 private const val TEMP_ID_PREFIX = "tmp-"
 
-class LightModelClient(val connection: IConnection, val debugName: String = "") {
+class LightModelClient(
+    val connection: IConnection,
+    val transactionManager: ITransactionManager,
+    val debugName: String = ""
+) {
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
     private val area = Area()
@@ -27,7 +31,6 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     private var changeSetIdSequence: Int = 0
     private val nodesReferencingTemporaryIds = HashSet<NodeId>()
     private var writeLevel: Int = 0
-    private val readWriteLock = ReadWriteLock()
     private val temporaryNodeAdapters: MutableMap<String, NodeAdapter> = HashMap()
     private var initialized = false
     private var lastUnconfirmedChangeSetId: ChangeSetId? = null
@@ -71,11 +74,11 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     private fun checkRead() {
-        if (!readWriteLock.canRead()) throw IllegalStateException("Not in a read transaction")
+        if (!transactionManager.canRead()) throw IllegalStateException("Not in a read transaction")
     }
 
     private fun checkWrite() {
-        if (!readWriteLock.canWrite()) throw IllegalStateException("Not in a write transaction")
+        if (!transactionManager.canWrite()) throw IllegalStateException("Not in a write transaction")
     }
 
     fun isInSync(): Boolean = runRead {
@@ -94,11 +97,11 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     fun <T> runRead(body: () -> T): T {
-        return readWriteLock.runRead(body)
+        return transactionManager.runRead(body)
     }
 
     fun <T> runWrite(body: () -> T): T {
-        return readWriteLock.runWrite {
+        return transactionManager.runWrite {
             writeLevel++
             try {
                 body()
@@ -146,7 +149,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
     }
 
-    fun isInitialized(): Boolean = requiresRead { initialized }
+    fun isInitialized(): Boolean = runRead { initialized }
 
     private fun fullConsistencyCheck() {
 //        runRead {
@@ -589,11 +592,11 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
 
         override fun canRead(): Boolean {
-            return readWriteLock.canRead()
+            return transactionManager.canRead()
         }
 
         override fun canWrite(): Boolean {
-            return readWriteLock.canWrite()
+            return transactionManager.canWrite()
         }
 
         override fun addListener(l: IAreaListener) {
@@ -630,6 +633,49 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 }
 
+interface ITransactionManager {
+    fun <T> requiresRead(body: () -> T): T
+    fun <T> requiresWrite(body: () -> T): T
+    fun <T> runRead(body: () -> T): T
+    fun <T> runWrite(body: () -> T): T
+    fun canRead(): Boolean
+    fun canWrite(): Boolean
+}
+
+class ReadWriteLockTransactionManager : ITransactionManager {
+    private val lock = ReadWriteLock()
+    override fun <T> requiresRead(body: ()->T): T {
+        if (!lock.canRead()) throw IllegalStateException("Not in a read transaction")
+        return body()
+    }
+    override fun <T> requiresWrite(body: ()->T): T {
+        if (!lock.canWrite()) throw IllegalStateException("Not in a write transaction")
+        return body()
+    }
+    override fun <T> runRead(body: () -> T): T = lock.runRead(body)
+    override fun <T> runWrite(body: () -> T): T = lock.runWrite(body)
+    override fun canRead(): Boolean = lock.canRead()
+    override fun canWrite(): Boolean = lock.canWrite()
+}
+
+class AutoTransactions(val delegate: ITransactionManager) : ITransactionManager by delegate {
+    override fun <T> requiresRead(body: () -> T): T {
+        return if (canRead()) {
+            body()
+        } else {
+            runRead(body)
+        }
+    }
+
+    override fun <T> requiresWrite(body: () -> T): T {
+        return if (canWrite()) {
+            body()
+        } else {
+            runWrite(body)
+        }
+    }
+}
+
 class LightModelClientBuilder {
     private var host: String = "localhost"
     private var port: Int = 48302
@@ -639,6 +685,7 @@ class LightModelClientBuilder {
     private var httpEngine: HttpClientEngine? = null
     private var httpEngineFactory: HttpClientEngineFactory<*>? = null
     private var debugName: String = ""
+    private var transactionManager: ITransactionManager = ReadWriteLockTransactionManager()
 
     fun build(): LightModelClient {
         return LightModelClient(
@@ -652,10 +699,18 @@ class LightModelClientBuilder {
                     "ws://$host:$port/ws"
                 ))
             ),
+            transactionManager,
             debugName
         )
     }
-
+    fun autoTransactions(): LightModelClientBuilder {
+        transactionManager = AutoTransactions(transactionManager)
+        return this
+    }
+    fun transactionManager(tm: ITransactionManager): LightModelClientBuilder {
+        this.transactionManager = tm
+        return this
+    }
     fun debugName(debugName: String): LightModelClientBuilder {
         this.debugName = debugName
         return this

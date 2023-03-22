@@ -74,7 +74,7 @@ class LightModelClientTest {
                     .url("ws://localhost/json/v2/test-repo/ws")
                     .debugName(debugName)
                     .build()
-                wait {client.isInitialized() }
+                wait { client.isInitialized() }
                 client
             }
             block(createClient)

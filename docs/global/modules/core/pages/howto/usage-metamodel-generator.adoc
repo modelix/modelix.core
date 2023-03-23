@@ -137,7 +137,7 @@ metamodel {
 [...]
 --
 
-. The `org.modelix.metamodel.gradle` Gradle helper provides an additional target which will integrate into you build, so a simple re-build of your Gradle project should be sufficient. Alternatively, you can directly trigger the API generation via
+. The `org.modelix.metamodel.gradle` Gradle helper provides an additional target which will integrate into your build, so a simple re-build of your Gradle project should be sufficient. Alternatively, you can directly trigger the API generation via
 +
 [source,bash]
 --

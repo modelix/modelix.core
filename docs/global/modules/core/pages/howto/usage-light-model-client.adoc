@@ -39,8 +39,8 @@ client.runRead {
 }
 --
 
-CAUTION: If you try to access a node that is not included in you *model query* an exception is thrown.
+CAUTION: If you try to access a node that is not included in your *model query* an exception is thrown.
 
-You can use `INode.isLoaded()` to check is a node was loaded on the client to prevent this exception.
+You can use `INode.isLoaded()` to check if a node was loaded on the client to prevent this exception.
 You can also filter a list of nodes like this: `node.getChildren("modules").filterLoaded()`, to iterate only over the nodes that are included in your query.
 

@@ -19,7 +19,7 @@ NOTE: If you are interested in a more practical usage of what is presented here,
 [modelix.core] $ ./gradlew model-server:run --args='-jdbcconf path-to-my-database.properties'
 --
 
-- During development or to perform tests it is recommended  to start the `model-server` with in-memory storage:
+- During development or to perform tests it is recommended to start the `model-server` with in-memory storage:
 +
 [source,bash]
 --

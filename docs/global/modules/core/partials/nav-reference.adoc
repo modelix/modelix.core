@@ -1,2 +1,4 @@
-* xref:core:reference/index.adoc[]
-
+* xref:core:reference/component-model-server.adoc[]
+* xref:core:reference/component-metamodel-generator.adoc[]
+* xref:core:reference/component-metamodel-generator-gradle.adoc[]
+* xref:core:reference/component-light-model-client.adoc[]

@@ -1,0 +1,56 @@
+= A Cloud Model Storage/Repository: The modelix `model-server`
+:navtitle: `model-server`
+
+:tip-caption: 🔗 Quick Links
+[TIP]
+--
+https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmodel-server%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-server/build.gradle.kts[Buildfile^]
+--
+
+
+
+The `model-server` component provides a storage for models.
+
+Bringing models to the cloud requires an alternative to the file system (and git) based storage of models.
+Modelix implements a data structure that allows replication between all MPS instances connected to the same `model-server`.
+It is very similar to the git storage format, but instead of files it stores nodes in its key-value data store.
+
+
+== Real-Time Collaboration and Operational Transformation
+
+To support real-time collaboration, in addition to the snapshot of a version, the `model-server` also stores the operations that were applied on the previous version to produce the new version.
+Conflicts between concurrent modification are resolved using operational transformation (OT).
+The usually hard part of OT is to guarantee convergence, meaning that all clients end up with the same result independent of the order in which they receive changes.
+This problem becomes trivial, because versions are identified by a hash over all the content.
+Any divergence will result in a different hash which can easily be detected.
+
+The remaining problem is what to do when a divergence is detected.
+From git we know that switching between versions is fast, because it only has to apply the difference between these versions.
+The same is true here: Fixing a divergence is as easy as switching to the correct version.
+If a client does not have any local changes it does not even need to apply the change operations itself - it can just switch to the new version.
+So in the rare case of a divergence fixing it is nothing special and is an operation that happens all the time.
+
+
+== MPS and the `model-server`
+
+While this component is independent of MPS, it is possible to replicates the data of the MPS internal module repository into a running `model-server`.
+//TODO add correct link to mps plugin here
+This can be achieved using the modelix MPS plugin: One can connect an MPS instances to a `model-server`, upload the current module repository, and keep it synchronized.
+This can also be a local MPS instance without a web editor - both options are supported at the same time.
+
+
+== Development
+
+To reformat and add license header to all files run:
+
+[source,bash]
+--
+../gradlew spotlessApply
+--
+
+== APIs
+
+Valid keys are keys starting with the PROTECTED_PREFIX ($$$).
+
+For details please refer to the OpenAPI documentation under `doc/model-server.json`.
+

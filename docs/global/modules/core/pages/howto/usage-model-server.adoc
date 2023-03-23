@@ -1,0 +1,28 @@
+= How-To start a local `model-server`
+:navtitle: Start a `model-server`
+
+
+NOTE: If you are interested in a more practical usage of what is presented here, check out the https://github.com/modelix/modelix.samples[samples project^]
+
+
+- To run the model-server with default configuration run:
++
+[source,bash]
+--
+[modelix.core] $ ./gradlew model-server:run'
+--
+
+- To specify a different jdbc configuration, you can add the `-jdbcconf` arguement:
++
+[source,bash]
+--
+[modelix.core] $ ./gradlew model-server:run --args='-jdbcconf path-to-my-database.properties'
+--
+
+- During development or to perform tests it is recommended to start the `model-server` with in-memory storage:
++
+[source,bash]
+--
+[modelix.core] $ ./gradlew model-server:run --args='-inmemory'
+--
+

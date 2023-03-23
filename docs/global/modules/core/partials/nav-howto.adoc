@@ -1,2 +1,4 @@
-* xref:core:howto/index.adoc[]
+* xref:core:howto/usage-model-server.adoc[]
+* xref:core:howto/usage-metamodel-generator.adoc[]
+* xref:core:howto/usage-light-model-client.adoc[]
 

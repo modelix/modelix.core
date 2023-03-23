@@ -1,1 +1,12 @@
-TODO modelix.core self description
+The `modelix.core` repository contains the core components of the modelix platform.
+These components include among others the
+
+- xref:core:reference/component-model-server.adoc[`model-server`],
+- xref:core:reference/component-metamodel-generator.adoc[`metamodel-generator`],
+- xref:core:reference/component-metamodel-generator-gradle.adoc[`metamodel-generator-gradle`], and
+- xref:core:reference/component-light-model-client.adoc[`light-model-client`].
+
+All components in this repository are have no dependencies to JetBrains MPS.
+//TODO add correct link here
+// If you are looking for MPS related modelix components, see xref:mps:index.adoc[]..
+

@@ -1,0 +1,17 @@
+= Accessing models: The `light-model-client`
+:navtitle: `light-model-client`
+
+:tip-caption: 🔗 Quick Links
+[TIP]
+--
+https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Flight-model-client%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/light-model-client/build.gradle.kts[Buildfile^]
+--
+
+
+The `light-model-client` is designed to connect to either an MPS instance or a Modelix `model-server`.
+It is implemented in Kotlin multi-platform so that it can also be run in the browser.
+
+
+// TODO: correct link to advanced model client
+While the alternative "advanced model client" provides more features and should be used for long-running processes, the `light-model-client` is optimized for a lower resource consumption and short living processes like in a browser tab.
+The server is responsible for resolving conflicts and to keep the client side model in a valid state.

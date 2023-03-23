@@ -3,8 +3,6 @@
 
 == Introduction
 
-TODO
-
 include::core:partial$short-description.adoc[]
 
 

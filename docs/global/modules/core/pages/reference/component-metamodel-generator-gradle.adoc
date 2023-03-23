@@ -5,7 +5,7 @@
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
-https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmetamodel-generator%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/metamodel-generator/build.gradle.kts[Buildfile^]
+https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmetamodel-gradle%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/metamodel-gradle/build.gradle.kts[Buildfile^]
 --
 
 

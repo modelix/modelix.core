@@ -1,6 +1,14 @@
 = Model API Generator
 :navtitle: `metamodel.generator`
 
+
+:tip-caption: 🔗 Quick Links
+[TIP]
+--
+https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmetamodel-generator%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/metamodel-generator/build.gradle.kts[Buildfile^]
+--
+
+
 The `metamodel.generator` is a kotlin components which generates a domain-specific model API.
 Currently, the generator supports either Kotlin and TypeScipt as target languages.
 As a source for the generated API, the `metamodel.generator` consumes a given meta-model in YAML format.

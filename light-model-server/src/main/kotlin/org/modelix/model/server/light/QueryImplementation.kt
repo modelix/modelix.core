@@ -37,6 +37,8 @@ import org.modelix.model.server.api.QueryChildren
 import org.modelix.model.server.api.QueryDescendants
 import org.modelix.model.server.api.QueryParent
 import org.modelix.model.server.api.QueryReference
+import org.modelix.model.server.api.QueryReferences
+import org.modelix.model.server.api.QueryReferencesAndChildren
 import org.modelix.model.server.api.QueryRootNode
 import org.modelix.model.server.api.RootOrSubquery
 import org.modelix.model.server.api.RootQuery
@@ -52,6 +54,8 @@ fun RootOrSubquery.queryNodes(node: INode): Sequence<INode> {
         is QueryDescendants -> node.getDescendants(false)
         is QueryParent -> listOfNotNull(node.parent).asSequence()
         is QueryReference -> listOfNotNull(node.getReferenceTarget(this.role)).asSequence()
+        is QueryReferences -> node.getAllReferences()
+        is QueryReferencesAndChildren -> node.getReferencesAndChildren(recursive)
         is QueryById -> {
             val resolved = INodeReferenceSerializer.deserialize(this.nodeId).resolveNode(node.getArea())
             if (resolved != null) {
@@ -63,6 +67,17 @@ fun RootOrSubquery.queryNodes(node: INode): Sequence<INode> {
         is QueryRootNode -> {
             sequenceOf(node)
         }
+    }
+}
+
+private fun INode.getAllReferences() = getReferenceRoles().asSequence().mapNotNull { getReferenceTarget(it) }
+
+private fun INode.getReferencesAndChildren(recursive: Boolean): Sequence<INode> {
+    val referencesAndChildren = (getAllReferences() + allChildren.asSequence())
+    return if (recursive) {
+        referencesAndChildren.flatMap { sequenceOf(it) + it.getReferencesAndChildren(true) }
+    } else {
+        referencesAndChildren
     }
 }
 

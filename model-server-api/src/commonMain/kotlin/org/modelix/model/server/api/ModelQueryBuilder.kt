@@ -20,7 +20,6 @@ fun buildModelQuery(body: ModelQueryBuilder.() -> Unit): ModelQuery {
     return ModelQueryBuilder().also(body).build()
 }
 
-
 class ModelQueryBuilder {
     private val rootQueries = ArrayList<RootQuery>()
     fun build() = ModelQuery(rootQueries)
@@ -83,6 +82,15 @@ abstract class QueryOwnerBuilder : FilterListBuilder() {
     fun reference(role: String, body: ReferenceBuilder.() -> Unit) {
         addSubquery(ReferenceBuilder(role).also(body).build())
     }
+    fun references(body: ReferencesBuilder.() -> Unit) {
+        addSubquery(ReferencesBuilder().also(body).build())
+    }
+    fun referencesAndChildren(body: ReferencesAndChildrenBuilder.() -> Unit) {
+        addSubquery(ReferencesAndChildrenBuilder(false).also(body).build())
+    }
+    fun referencesAndChildrenRecursive(body: ReferencesAndChildrenBuilder.() -> Unit) {
+        addSubquery(ReferencesAndChildrenBuilder(true).also(body).build())
+    }
     fun allChildren(body: AllChildrenBuilder.() -> Unit) {
         addSubquery(AllChildrenBuilder().also(body).build())
     }
@@ -120,6 +128,12 @@ class ChildrenBuilder(val role: String?) : SubqueryBuilder() {
 
 class ReferenceBuilder(val role: String) : SubqueryBuilder() {
     override fun build() = QueryReference(role, subqueries, filters)
+}
+class ReferencesBuilder() : SubqueryBuilder() {
+    override fun build() = QueryReferences(subqueries, filters)
+}
+class ReferencesAndChildrenBuilder(private val recursive: Boolean) : SubqueryBuilder() {
+    override fun build() = QueryReferencesAndChildren(recursive, subqueries, filters)
 }
 
 class AllChildrenBuilder() : SubqueryBuilder() {

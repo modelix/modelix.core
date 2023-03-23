@@ -85,6 +85,21 @@ data class QueryReference(
 ) : Subquery()
 
 @Serializable
+@SerialName("references")
+data class QueryReferences(
+    override val queries: List<Subquery> = emptyList(),
+    override val filters: List<Filter> = emptyList()
+) : Subquery()
+
+@Serializable
+@SerialName("referencesAndChildren")
+data class QueryReferencesAndChildren(
+    val recursive: Boolean = false,
+    override val queries: List<Subquery> = emptyList(),
+    override val filters: List<Filter> = emptyList()
+) : Subquery()
+
+@Serializable
 @SerialName("descendants")
 data class QueryDescendants(
     override val queries: List<Subquery> = emptyList(),

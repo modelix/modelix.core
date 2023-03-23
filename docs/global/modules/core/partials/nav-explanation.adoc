@@ -1,2 +1,2 @@
-* xref:core:explanation/index.adoc[]
+// * xref:core:explanation/index.adoc[]
 

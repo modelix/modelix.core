@@ -14,7 +14,7 @@
 package org.modelix.model.api
 
 class SimpleChildLink(
-    override val name: String,
+    private val simpleName: String,
     override val isMultiple: Boolean,
     override val isOptional: Boolean,
     override val targetConcept: IConcept
@@ -26,6 +26,8 @@ class SimpleChildLink(
 
     override fun getUID(): String {
         val o = owner
-        return (if (o == null) name else o.getUID() + "." + name)
+        return (if (o == null) simpleName else o.getUID() + "." + simpleName)
     }
+
+    override fun getSimpleName(): String = simpleName
 }

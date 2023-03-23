@@ -20,6 +20,7 @@ data class VersionData(
     val repositoryId: String? = null,
     val versionHash: String? = null,
     val rootNodeId: String? = null,
+    val usesRoleIds: Boolean = false,
     val nodes: List<NodeData>,
 )
 
@@ -37,6 +38,7 @@ fun VersionData.merge(older: VersionData): VersionData {
         repositoryId = repositoryId ?: older.repositoryId,
         versionHash = versionHash,
         rootNodeId = rootNodeId ?: older.rootNodeId,
+        usesRoleIds = usesRoleIds || older.usesRoleIds,
         nodes = filteredMergedNodes.values.toList()
     )
 }

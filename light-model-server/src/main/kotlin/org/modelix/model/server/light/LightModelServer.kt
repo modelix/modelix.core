@@ -35,8 +35,10 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.api.IRole
+import org.modelix.model.api.key
 import org.modelix.model.api.remove
 import org.modelix.model.api.serialize
+import org.modelix.model.api.usesRoleIds
 import org.modelix.model.server.api.AddNewChildNodeOpData
 import org.modelix.model.server.api.ChangeSetId
 import org.modelix.model.server.api.DeleteNodeOpData
@@ -191,6 +193,7 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 repositoryId = null,
                 versionHash = null,
                 rootNodeId = rootNode.nodeId(),
+                usesRoleIds = rootNode.usesRoleIds(),
                 nodes = nodeDataList
             )
         }
@@ -285,9 +288,9 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
     private fun INode.toData(): NodeData {
         val conceptRef = concept?.getReference()
         val ignored = if (conceptRef == null) IgnoredRoles.EMPTY else ignoredRolesCache.getOrPut(conceptRef) {
-            val ignoredChildRoles = concept?.getAllChildLinks()?.intersect(ignoredRoles)?.map { it.name }?.toSet() ?: emptySet()
-            val ignoredPropertyRoles = concept?.getAllProperties()?.intersect(ignoredRoles)?.map { it.name }?.toSet() ?: emptySet()
-            val ignoredReferenceRoles = concept?.getAllReferenceLinks()?.intersect(ignoredRoles)?.map { it.name }?.toSet() ?: emptySet()
+            val ignoredChildRoles = concept?.getAllChildLinks()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
+            val ignoredPropertyRoles = concept?.getAllProperties()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
+            val ignoredReferenceRoles = concept?.getAllReferenceLinks()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
             IgnoredRoles(ignoredChildRoles, ignoredPropertyRoles, ignoredReferenceRoles).optimizeEmpty()
         }
 

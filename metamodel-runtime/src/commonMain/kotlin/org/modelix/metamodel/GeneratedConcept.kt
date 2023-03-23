@@ -84,19 +84,19 @@ abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
         }
     }
 
-    override fun getChildLink(name: String): IChildLink {
-        return getAllChildLinks().find { it.name == name }
-            ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain child link $name")
+    override fun getChildLink(roleKey: String): IChildLink {
+        return getAllChildLinks().find { RoleAccessContext.getKey(it) == roleKey }
+            ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain child link $roleKey")
     }
 
-    override fun getProperty(name: String): IProperty {
-        return getAllProperties().find { it.name == name }
-            ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain property $name")
+    override fun getProperty(roleKey: String): IProperty {
+        return getAllProperties().find { RoleAccessContext.getKey(it) == roleKey }
+            ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain property $roleKey")
     }
 
-    override fun getReferenceLink(name: String): IReferenceLink {
-        return getAllReferenceLinks().find { it.name == name }
-            ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain reference link $name")
+    override fun getReferenceLink(roleKey: String): IReferenceLink {
+        return getAllReferenceLinks().find { RoleAccessContext.getKey(it) == roleKey }
+            ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain reference link $roleKey")
     }
 
     override fun getReference(): IConceptReference {
@@ -162,24 +162,26 @@ abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
 
 class GeneratedProperty<ValueT>(
     private val owner: IConcept,
-    override val name: String,
+    private val simpleName: String,
     private val uid: String?,
     override val isOptional: Boolean,
     private val serializer: IPropertyValueSerializer<ValueT>
 ) : ITypedProperty<ValueT>, IProperty {
     override fun getConcept(): IConcept = owner
-    override fun getUID(): String = uid ?: (getConcept().getUID() + "." + name)
+    override fun getUID(): String = uid ?: (getConcept().getUID() + "." + simpleName)
     override fun untyped(): IProperty = this
 
     override fun serializeValue(value: ValueT): String? = serializer.serialize(value)
 
     override fun deserializeValue(serialized: String?): ValueT = serializer.deserialize(serialized)
+
+    override fun getSimpleName(): String = simpleName
 }
 fun IProperty.typed() = this as? ITypedProperty<*>
 
 abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
     private val owner: IConcept,
-    override val name: String,
+    private val simpleName: String,
     private val uid: String?,
     override val isMultiple: Boolean,
     override val isOptional: Boolean,
@@ -191,7 +193,7 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IType
 
     override fun getConcept(): IConcept = owner
 
-    override fun getUID(): String = uid ?: (getConcept().getUID() + "." + name)
+    override fun getUID(): String = uid ?: (getConcept().getUID() + "." + simpleName)
 
     override fun untyped(): IChildLink {
         return this
@@ -200,6 +202,8 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IType
     override fun castChild(childNode: INode): ChildNodeT {
         return childNode.typed(childNodeInterface)
     }
+
+    override fun getSimpleName(): String = simpleName
 }
 fun IChildLink.typed() = this as? ITypedChildLink<ITypedNode>
 
@@ -227,7 +231,7 @@ class GeneratedChildListLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConc
 
 class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : ITypedConcept>(
     private val owner: IConcept,
-    override val name: String,
+    private val simpleName: String,
     private val uid: String?,
     override val isOptional: Boolean,
     override val targetConcept: IConcept,
@@ -236,13 +240,15 @@ class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : ITypedCo
 
     override fun getConcept(): IConcept = owner
 
-    override fun getUID(): String = uid ?: (getConcept().getUID() + "." + name)
+    override fun getUID(): String = uid ?: (getConcept().getUID() + "." + simpleName)
 
     override fun untyped(): IReferenceLink = this
 
     override fun castTarget(target: INode): TargetNodeT {
         return target.typed(targetNodeInterface)
     }
+
+    override fun getSimpleName(): String = simpleName
 }
 fun IReferenceLink.typed() = this as? ITypedReferenceLink<ITypedNode>
 

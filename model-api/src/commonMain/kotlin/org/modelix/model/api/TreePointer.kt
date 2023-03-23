@@ -22,19 +22,19 @@ class TreePointer(private var tree_: ITree, val idGenerator: IIdGenerator = IdGe
         }
 
     override fun runRead(runnable: () -> Unit) {
-        runnable()
+        computeRead(runnable)
     }
 
     override fun <T> computeRead(computable: () -> T): T {
-        return computable()
+        return RoleAccessContext.runWith(tree.usesRoleIds()) { computable() }
     }
 
     override fun runWrite(runnable: () -> Unit) {
-        runnable()
+        computeWrite(runnable)
     }
 
     override fun <T> computeWrite(computable: () -> T): T {
-        return computable()
+        return RoleAccessContext.runWith(tree.usesRoleIds()) { computable() }
     }
 
     override fun canRead(): Boolean {

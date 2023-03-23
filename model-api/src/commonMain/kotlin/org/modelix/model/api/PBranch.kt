@@ -28,8 +28,10 @@ class PBranch constructor(@field:Volatile private var tree: ITree, private val i
         return branchId
     }
 
-    fun runWithTransaction(transaction: ITransaction, runnable: () -> Unit) {
-        contextTransactions.computeWith(transaction as Transaction, runnable)
+    private fun <T> runWithTransaction(transaction: ITransaction, runnable: () -> T): T {
+        return RoleAccessContext.runWith(transaction.tree.usesRoleIds()) {
+            contextTransactions.computeWith(transaction as Transaction, runnable)
+        }
     }
 
     override fun runRead(runnable: () -> Unit) {
@@ -39,7 +41,7 @@ class PBranch constructor(@field:Volatile private var tree: ITree, private val i
         } else {
             val currentTree = prevTransaction?.tree ?: tree
             val t = ReadTransaction(currentTree, this)
-            contextTransactions.computeWith(t, runnable)
+            runWithTransaction(t, runnable)
         }
     }
 
@@ -51,7 +53,7 @@ class PBranch constructor(@field:Volatile private var tree: ITree, private val i
             val oldTree: ITree = prevWrite?.tree ?: tree
             val newWrite = WriteTransaction(oldTree, this, idGenerator)
             try {
-                contextTransactions.computeWith(newWrite, runnable)
+                runWithTransaction(newWrite, runnable)
                 newWrite.close()
                 val newTree: ITree = newWrite.tree
                 if (prevWrite == null) {

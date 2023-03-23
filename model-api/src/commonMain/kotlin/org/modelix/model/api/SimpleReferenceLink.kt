@@ -14,7 +14,7 @@
 package org.modelix.model.api
 
 class SimpleReferenceLink(
-    override val name: String,
+    private val simpleName: String,
     override val isOptional: Boolean,
     override var targetConcept: IConcept
 ) : IReferenceLink {
@@ -24,6 +24,8 @@ class SimpleReferenceLink(
 
     override fun getUID(): String {
         val o = owner
-        return (if (o == null) name else o.getUID() + "." + name)
+        return (if (o == null) simpleName else o.getUID() + "." + simpleName)
     }
+
+    override fun getSimpleName(): String = simpleName
 }

@@ -16,6 +16,7 @@
 package org.modelix.model.api
 
 interface ITree {
+    fun usesRoleIds(): Boolean
     fun getId(): String?
     fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor)
     fun containsNode(nodeId: Long): Boolean
@@ -45,3 +46,5 @@ interface ITree {
         const val DETACHED_NODES_ROLE = "detached"
     }
 }
+
+fun IRole.key(tree: ITree): String = if (tree.usesRoleIds()) getUID() else getSimpleName()

@@ -320,6 +320,7 @@ class LightModelServer(val client: LocalModelClient) {
             repositoryId = version.tree.getId(),
             versionHash = version.hash,
             rootNodeId = if (oldVersion == null) ITree.ROOT_ID.toString(16) else null,
+            usesRoleIds = version.tree.usesRoleIds(),
             nodes = nodeDataList
         )
     }

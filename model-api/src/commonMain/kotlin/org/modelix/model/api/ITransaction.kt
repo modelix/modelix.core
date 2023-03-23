@@ -32,3 +32,5 @@ interface ITransaction {
     fun getUserObject(key: Any): Any?
     fun putUserObject(key: Any, value: Any?)
 }
+
+fun IRole.key(t: ITransaction): String = if (t.tree.usesRoleIds()) getUID() else getSimpleName()

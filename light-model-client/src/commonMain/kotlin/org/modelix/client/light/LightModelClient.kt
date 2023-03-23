@@ -24,6 +24,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     private var lastMergedVersionHash: String? = null
     private val pendingOperations: MutableList<OperationData> = ArrayList()
     private var rootNodeId: NodeId? = null
+    private var usesRoleIds: Boolean = true
     private var temporaryIdsSequence: Long = 0
     private var changeSetIdSequence: Int = 0
     private val nodesReferencingTemporaryIds = HashSet<NodeId>()
@@ -269,6 +270,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
             if (version.rootNodeId != null && version.rootNodeId != rootNodeId) {
                 rootNodeId = version.rootNodeId
             }
+            usesRoleIds = version.usesRoleIds
             lastMergedVersionHash = version.versionHash
 
             val oldChildNodes: Set<NodeId> = version.nodes.mapNotNull { nodes[it.nodeId] }.flatMap { it.children.values.flatten() }.toSet()
@@ -350,8 +352,10 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
     }
 
-    inner class NodeAdapter(var nodeId: NodeId) : INode {
+    inner class NodeAdapter(var nodeId: NodeId) : INodeEx {
         fun getData() = synchronizedRead { getNodeData(nodeId) }
+
+        override fun usesRoleIds(): Boolean = usesRoleIds
 
         override fun getArea(): IArea = area
 

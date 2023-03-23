@@ -57,6 +57,7 @@ class SimpleConcept(
     }
 
     override fun getChildLink(name: String): IChildLink {
+        // This usage of .name is correct
         return getAllChildLinks().find { it.name == name } ?: throw RuntimeException("child link $conceptName.$name not found")
     }
 
@@ -66,10 +67,12 @@ class SimpleConcept(
     }
 
     override fun getProperty(name: String): IProperty {
+        // This usage of .name is correct
         return getAllProperties().find { it.name == name } ?: throw RuntimeException("property $conceptName.$name not found")
     }
 
     override fun getReferenceLink(name: String): IReferenceLink {
+        // This usage of .name is correct
         return getAllReferenceLinks().find { it.name == name } ?: throw RuntimeException("reference link $conceptName.$name not found")
     }
 

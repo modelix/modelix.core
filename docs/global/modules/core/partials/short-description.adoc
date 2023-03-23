@@ -7,5 +7,6 @@ These components include among others the
 - xref:core:reference/component-light-model-client.adoc[`light-model-client`].
 
 All components in this repository are have no dependencies to JetBrains MPS.
-If you are looking for MPS related modelix components, see xref:mps:index.adoc[].
+//TODO add correct link here
+// If you are looking for MPS related modelix components, see xref:mps:index.adoc[]..
 

@@ -1,3 +1,0 @@
-= modelix.core Reference
-
-TODO

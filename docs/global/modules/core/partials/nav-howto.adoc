@@ -1,2 +1,2 @@
-* xref:core:howto/index.adoc[]
+* xref:core:howto/usage-metamodel-generator.adoc[]
 

@@ -1,0 +1,149 @@
+= How-To apply the Meta-Model Generator using the Gradle Plugin
+:navtitle: Generate `Kotlin`/ `Typescript` API from MPS language
+
+NOTE: If you are interested in a more practical usage of what is presented here, check out the https://github.com/modelix/modelix.samples[samples project^]
+
+. To apply the xref:core:reference/component-metamodel-generator-gradle.adoc[] to an existing JetBrains MPS language, it is necessary to build the project via Gradle.
++
+This How-To assumes a folder structure as follows
++
+[source,]
+--
+.
+├── mps
+│   ├── build
+│   ├── metamodel
+│   │   └── [kotlin gradle sub-project]
+│   │
+│   ├── languages
+│   │   └── [your MPS languages]
+│   └── solutions
+│       └── [your MPS solutions]
+│
+├── settings.gradle.kts
+├── gradle.properties
+├── gradle.properties
+├── build.gradle.kts
+└── [...]
+--
+
+. Once you have your Gradle setup done, add the following lines the respective files.
+
+.. `gradle.properties` file:
++
+[source,kotlin]
+--
+modelixCoreVersion=1.4.10
+mpsVersion=2021.3.2
+
+[...]
+--
++
+NOTE: The versions listed here are not the latest versions, refer to the repositories or use our latest release.
+//TODO add 'latest release ref'
+
+
+.. `settings.gradle.kts` file:
++
+[source,kotlin]
+--
+pluginManagement {
+    val modelixCoreVersion: String by settings
+    plugins {
+        // the gradle plugin that provides easy access to the meta-model generator
+        id("org.modelix.metamodel.gradle") version modelixCoreVersion
+
+        [...]
+    }
+    repositories {
+        maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+
+        [...]
+    }
+}
+
+[...]
+--
+
+.. `build.gradle.kts` file:
++
+[source,kotlin]
+--
+plugins {
+    id("org.modelix.metamodel.gradle")
+}
+
+val mpsVersion: String by rootProject
+val modelixCoreVersion: String by rootProject
+
+// ensure that the MPS directory name is correct
+val mpsDir = buildDir.resolve("mps")
+
+val mps by configurations.creating
+val mpsDependencies by configurations.creating
+
+dependencies {
+    mps("com.jetbrains:mps:$mpsVersion")
+
+    [...]
+}
+
+// you might already have this if you use Gradle to build your MPS languages
+val resolveMps by tasks.registering(Sync::class) {
+    from(mps.resolve().map { zipTree(it) })
+    into(mpsDir)
+}
+
+// the specific addition of the meta-model generator Gradle helper
+metamodel {
+    dependsOn(resolveMps)
+    mpsHome = mpsDir
+
+
+    // Source
+
+    // ensure that your languages and solutions you want to generate are listed here
+    modulesFrom(projectDir.resolve("languages"))
+    modulesFrom(projectDir.resolve("solutions"))
+
+    // further restrictions can be made to filter namespaces, languages or concepts
+    includeNamespace("org.example")
+    includeLanguage("language.fq.name")
+    includeConcept("concept.fq.name")
+
+    // this example imports dependencies from the shared dependencies folder
+    modulesFrom(projectDir.resolve("build/dependencies"))
+    // and specifically adds repository related concepts
+    includeLanguage("org.modelix.model.repositoryconcepts")
+
+
+
+    // Target
+
+    // Kotlin
+    // the target project into which the kotlin API will be build (requires the project to exist in the gradle setup)
+    kotlinDir = project(":mps:metamodel").projectDir.resolve("src/main/kotlin")
+    // an alternative to the line above
+    // kotlinProject = project(":my-kotlin-project")
+
+    // you can set the name of the registration helper class here
+    registrationHelperName = "org.example.MyLanguages"
+
+    // TypeScript
+    // similar to the Kotlin API above, the typescript directory can be set to enable TS API generation
+    typescriptDir = project(":my-typescript-project").projectDir.resolve("src/gen")
+}
+
+[...]
+--
+
+. The `org.modelix.metamodel.gradle` Gradle helper provides an additional target which will integrate into you build, so a simple re-build of your Gradle project should be sufficient. Alternatively, you can directly trigger the API generation via
++
+[source,bash]
+--
+./gradlew mps:metamodel:build
+--
+
+. Done. You can now use the generated Classes in your code Kotlin (or TypeScript) project in the `mps/metamodel` sub-project.
+
+

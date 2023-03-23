@@ -1,0 +1,36 @@
+= Model API Generator
+:navtitle: `metamodel.generator`
+
+The `metamodel.generator` is a kotlin components which generates a domain-specific model API.
+Currently, the generator supports either Kotlin and TypeScipt as target languages.
+As a source for the generated API, the `metamodel.generator` consumes a given meta-model in YAML format.
+
+An example input of the consumed JSON format is as follows
+
+[source,yaml]
+--
+name: org.modelix.entities
+concepts:
+- name: Entity
+  properties:
+  - name: name
+  children:
+  - name: properties
+    type: Property
+    multiple: true
+    optional: true
+- name: Property
+  children:
+  - name: type
+    type: Type
+    optional: false
+- name: Type
+- name: EntityType
+  extends:
+  - Type
+  references:
+  - name: entity
+    type: Entity
+    optional: false
+--
+

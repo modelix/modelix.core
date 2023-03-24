@@ -13,13 +13,15 @@
  */
 package org.modelix.model.api
 
-class SimpleProperty(override val name: String, override val isOptional: Boolean = true) : IProperty {
+class SimpleProperty(private val simpleName: String, override val isOptional: Boolean = true) : IProperty {
     var owner: SimpleConcept? = null
 
     override fun getConcept(): IConcept = owner!!
 
     override fun getUID(): String {
         val o = owner
-        return (if (o == null) name else o.getUID() + "." + name)
+        return (if (o == null) simpleName else o.getUID() + "." + simpleName)
     }
+
+    override fun getSimpleName(): String = simpleName
 }

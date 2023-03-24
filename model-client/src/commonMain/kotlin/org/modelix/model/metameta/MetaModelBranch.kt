@@ -53,7 +53,7 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
         if (localConcept is PersistedConcept) {
             var uid = localConcept.uid
             if (uid == null && tree.containsNode(localConcept.id)) {
-                uid = tree.getProperty(localConcept.id, MetaMetaLanguage.property_IHasUID_uid.name)
+                uid = tree.getProperty(localConcept.id, MetaMetaLanguage.property_IHasUID_uid.key(tree))
             }
             if (uid == null) throw RuntimeException("Concept ${localConcept.id} has no UID")
             val concept = ILanguageRepository.resolveConcept(ConceptReference(uid))
@@ -69,7 +69,7 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
             var uid: String? = null
             val conceptNodeId = SerializationUtil.longFromHex(serialized)
             if (tree.containsNode(conceptNodeId)) {
-                uid = tree.getProperty(conceptNodeId, MetaMetaLanguage.property_IHasUID_uid.name)
+                uid = tree.getProperty(conceptNodeId, MetaMetaLanguage.property_IHasUID_uid.key(tree))
             }
             return toGlobalConcept(PersistedConcept(conceptNodeId, uid), tree)
         }
@@ -81,7 +81,7 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
         if (serialized matches hexLongPattern) {
             val conceptNodeId = SerializationUtil.longFromHex(serialized)
             if (tree.containsNode(conceptNodeId)) {
-                val uid = tree.getProperty(conceptNodeId, MetaMetaLanguage.property_IHasUID_uid.name)
+                val uid = tree.getProperty(conceptNodeId, MetaMetaLanguage.property_IHasUID_uid.key(tree))
                 if (uid != null) return ConceptReference(uid)
             }
             return resolveConcept(localConceptRef, tree).getReference()

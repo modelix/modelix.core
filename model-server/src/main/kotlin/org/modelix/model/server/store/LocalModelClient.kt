@@ -12,7 +12,7 @@
  * specific language governing permissions and limitations
  * under the License. 
  */
-package org.modelix.model.server
+package org.modelix.model.server.store
 
 import org.apache.commons.collections4.IterableUtils
 import org.modelix.model.IKeyListener
@@ -33,7 +33,7 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
     }
 
     override fun put(key: String, value: String?) {
-        store.put(key, value)
+        store.put(key, value,)
     }
 
     override fun getAll(keys_: Iterable<String>): Map<String, String?> {
@@ -47,7 +47,7 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
     }
 
     override fun putAll(entries: Map<String, String?>) {
-        store.putAll(entries)
+        store.putAll(entries,)
     }
 
     override fun prefetch(key: String) {

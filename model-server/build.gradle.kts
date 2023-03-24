@@ -26,10 +26,11 @@ val ktorVersion: String by rootProject
 val kotlinCoroutinesVersion: String by rootProject
 val kotlinVersion: String by rootProject
 val logbackVersion: String by rootProject
+val kotlinxSerializationVersion: String by rootProject
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
 
     implementation(project(":model-api"))
@@ -53,6 +54,8 @@ dependencies {
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.ktor:ktor-server-forwarded-header:$ktorVersion")
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 
     val igniteVersion = "2.13.0"
     implementation("org.apache.ignite:ignite-core:$igniteVersion")

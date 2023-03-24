@@ -15,7 +15,11 @@
 
 package org.modelix.model.lazy
 
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import org.modelix.model.IVersion
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.ITree
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.operations.*
@@ -23,7 +27,7 @@ import org.modelix.model.persistent.CPOperationsList
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
 
-class CLVersion {
+class CLVersion : IVersion {
     var store: IDeserializingKeyValueStore
     var data: CPVersion? = null
         private set
@@ -79,7 +83,11 @@ class CLVersion {
         write()
     }
 
-    constructor(hash: String, store: IDeserializingKeyValueStore) : this(store.get<CPVersion>(hash, { CPVersion.deserialize(it) }), store)
+    constructor(hash: String, store: IDeserializingKeyValueStore) : this(
+        store.get<CPVersion>(hash, { CPVersion.deserialize(it) })
+            ?: throw IllegalArgumentException("version '$hash' not found"),
+        store
+    )
     constructor(data: CPVersion?, store: IDeserializingKeyValueStore) {
         if (data == null) {
             throw NullPointerException("data is null")
@@ -101,8 +109,12 @@ class CLVersion {
     val hash: String
         get() = data!!.hash
 
+    override fun getShaHash(): String = data!!.hash
+
     val tree: CLTree
         get() = CLTree(treeHash!!.getValue(store), store)
+
+    override fun getTree(): ITree = tree
 
     val baseVersion: CLVersion?
         get() {
@@ -195,6 +207,22 @@ class CLVersion {
             mergedVersion1 = null,
             mergedVersion2 = null,
             operations = OperationsCompressor(tree).compressOperations(operations)
+        )
+
+        fun createRegularVersion(
+            id: Long,
+            time: Instant = Clock.System.now(),
+            author: String?,
+            tree: CLTree,
+            baseVersion: CLVersion?,
+            operations: Array<IOperation>
+        ): CLVersion = createRegularVersion(
+            id = id,
+            time = time.epochSeconds.toString(),
+            author = author,
+            tree = tree,
+            baseVersion = baseVersion,
+            operations = operations
         )
 
         fun loadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion {

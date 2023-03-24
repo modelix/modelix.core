@@ -31,13 +31,13 @@ class CLTree : ITree, IBulkTree {
     val store: IDeserializingKeyValueStore
     val data: CPTree
 
-    constructor(hash: String?, store: IDeserializingKeyValueStore) : this(if (hash == null) null else store.get<CPTree>(hash) { CPTree.deserialize(it) }, null, store)
-    constructor(store: IDeserializingKeyValueStore) : this(null as CPTree?, null, store)
     constructor(id: RepositoryId?, store: IDeserializingKeyValueStore) : this(null, id, store)
-    constructor(data: CPTree?, store: IDeserializingKeyValueStore) : this(data, null, store)
+    constructor(hash: String?, store: IDeserializingKeyValueStore) : this(if (hash == null) null else store.get<CPTree>(hash) { CPTree.deserialize(it) }, store)
+    constructor(store: IDeserializingKeyValueStore) : this(null as CPTree?, store)
+    constructor(data: CPTree?, store_: IDeserializingKeyValueStore) : this(data, null as RepositoryId?, store_)
     private constructor(data: CPTree?, repositoryId_: RepositoryId?, store_: IDeserializingKeyValueStore) {
-        var store = store_
         var repositoryId = repositoryId_
+        var store = store_
         if (data == null) {
             if (repositoryId == null) {
                 repositoryId = random()
@@ -389,74 +389,87 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {
-        if (oldVersion !is CLTree) throw IllegalArgumentException("Diff is only supported between two instances of CLTree")
+        val bulkQuery = BulkQuery(store)
+        visitChanges(oldVersion, visitor, bulkQuery)
+        bulkQuery.process()
+    }
+
+    fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor, bulkQuery: IBulkQuery) {
+        require(oldVersion is CLTree) { "Diff is only supported between two instances of CLTree" }
         if (data.idToHash == oldVersion.data.idToHash) return
-        val changesOnly = visitor !is ITreeChangeVisitorEx
-        nodesMap!!.visitChanges(
-            oldVersion.nodesMap,
-            object : CLHamtNode.IChangeVisitor {
-                override fun visitChangesOnly(): Boolean {
-                    return changesOnly
-                }
+        NonBulkQuery.runWithDisabled {
+            val changesOnly = visitor !is ITreeChangeVisitorEx
+            nodesMap!!.visitChanges(
+                oldVersion.nodesMap,
+                object : CLHamtNode.IChangeVisitor {
+                    override fun visitChangesOnly(): Boolean {
+                        return changesOnly
+                    }
 
-                override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
-                    if (visitor is ITreeChangeVisitorEx) {
-                        val element = createElement(value)
-                        visitor.nodeAdded(element!!.id)
-                    }
-                }
-
-                override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
-                    if (visitor is ITreeChangeVisitorEx) {
-                        val element = oldVersion.createElement(value)
-                        visitor.nodeRemoved(element!!.id)
-                    }
-                }
-
-                override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>?, newValue: KVEntryReference<CPNode>?) {
-                    val oldElement = oldVersion.createElement(oldValue)
-                    val newElement = createElement(newValue)
-                    if (oldElement!!::class != newElement!!::class) {
-                        throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
-                    }
-                    if (oldElement.parentId != newElement.parentId || oldElement.roleInParent != newElement.roleInParent) {
-                        visitor.containmentChanged(key)
-                    }
-                    oldElement.getData().propertyRoles.asSequence()
-                        .plus(newElement.getData().propertyRoles.asSequence())
-                        .distinct()
-                        .forEach { role: String ->
-                            if (oldElement.getData().getPropertyValue(role) != newElement.getData().getPropertyValue(role)) {
-                                visitor.propertyChanged(newElement.id, role)
+                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
+                        if (visitor is ITreeChangeVisitorEx) {
+                            createElement(value, bulkQuery).map { element ->
+                                visitor.nodeAdded(element!!.id)
                             }
                         }
-                    oldElement.getData().referenceRoles.asSequence()
-                        .plus(newElement.getData().referenceRoles.asSequence())
-                        .distinct()
-                        .forEach { role: String ->
-                            if (oldElement.getData().getReferenceTarget(role) != newElement.getData().getReferenceTarget(role)) {
-                                visitor.referenceChanged(newElement.id, role)
+                    }
+
+                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
+                        if (visitor is ITreeChangeVisitorEx) {
+                            oldVersion.createElement(value, bulkQuery).map { element ->
+                                visitor.nodeRemoved(element!!.id)
                             }
                         }
-                    val oldChildren: MutableMap<String?, MutableList<CLNode>> = HashMap()
-                    val newChildren: MutableMap<String?, MutableList<CLNode>> = HashMap()
-                    oldElement.getChildren(BulkQuery(store)).execute().forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
-                    newElement.getChildren(BulkQuery(store)).execute().forEach { newChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
-                    val roles: MutableSet<String?> = HashSet()
-                    roles.addAll(oldChildren.keys)
-                    roles.addAll(newChildren.keys)
-                    for (role in roles) {
-                        val oldChildrenInRole = oldChildren[role]
-                        val newChildrenInRole = newChildren[role]
-                        val oldValues = oldChildrenInRole?.map { it.id }
-                        val newValues = newChildrenInRole?.map { it.id }
-                        if (oldValues != newValues) {
-                            visitor.childrenChanged(newElement.id, role)
+                    }
+
+                    override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>?, newValue: KVEntryReference<CPNode>?) {
+                        oldVersion.createElement(oldValue, bulkQuery).map { oldElement ->
+                            createElement(newValue, bulkQuery).map { newElement ->
+                                if (oldElement!!::class != newElement!!::class) {
+                                    throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
+                                }
+                                if (oldElement.parentId != newElement.parentId || oldElement.roleInParent != newElement.roleInParent) {
+                                    visitor.containmentChanged(key)
+                                }
+                                oldElement.getData().propertyRoles.asSequence()
+                                    .plus(newElement.getData().propertyRoles.asSequence())
+                                    .distinct()
+                                    .forEach { role: String ->
+                                        if (oldElement.getData().getPropertyValue(role) != newElement.getData().getPropertyValue(role)) {
+                                            visitor.propertyChanged(newElement.id, role)
+                                        }
+                                    }
+                                oldElement.getData().referenceRoles.asSequence()
+                                    .plus(newElement.getData().referenceRoles.asSequence())
+                                    .distinct()
+                                    .forEach { role: String ->
+                                        if (oldElement.getData().getReferenceTarget(role) != newElement.getData().getReferenceTarget(role)) {
+                                            visitor.referenceChanged(newElement.id, role)
+                                        }
+                                    }
+                                val oldChildren: MutableMap<String?, MutableList<CLNode>> = HashMap()
+                                val newChildren: MutableMap<String?, MutableList<CLNode>> = HashMap()
+                                oldElement.getChildren(BulkQuery(store)).execute().forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
+                                newElement.getChildren(BulkQuery(store)).execute().forEach { newChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
+                                val roles: MutableSet<String?> = HashSet()
+                                roles.addAll(oldChildren.keys)
+                                roles.addAll(newChildren.keys)
+                                for (role in roles) {
+                                    val oldChildrenInRole = oldChildren[role]
+                                    val newChildrenInRole = newChildren[role]
+                                    val oldValues = oldChildrenInRole?.map { it.id }
+                                    val newValues = newChildrenInRole?.map { it.id }
+                                    if (oldValues != newValues) {
+                                        visitor.childrenChanged(newElement.id, role)
+                                    }
+                                }
+                            }
                         }
                     }
-                }
-            }
-        )
+                },
+                bulkQuery
+            )
+        }
     }
 
     protected fun deleteElements(node: CPNode, idToHash: CLHamtNode): CLHamtNode? {
@@ -505,7 +518,7 @@ class CLTree : ITree, IBulkTree {
         val ids = ids_.toList()
         val a: IBulkQuery.Value<List<KVEntryReference<CPNode>?>> = nodesMap!!.getAll(ids, bulkQuery)
         val b: IBulkQuery.Value<List<KVEntryReference<CPNode>>> = a.map { hashes: List<KVEntryReference<CPNode>?> ->
-            hashes.mapIndexed { index, s -> s ?: throw RuntimeException("node with ID 0x${SerializationUtil.longToHex(ids[index])}/${ids[index]} not found") }
+            hashes.mapIndexed { index, s -> s ?: throw NodeNotFoundException(ids[index]) }
         }
         return b.mapBulk { hashes -> createElements(hashes, bulkQuery) }
     }

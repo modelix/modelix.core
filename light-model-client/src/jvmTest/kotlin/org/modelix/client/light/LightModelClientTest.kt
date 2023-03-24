@@ -19,10 +19,6 @@ import io.ktor.client.request.*
 import io.ktor.server.application.*
 import io.ktor.server.testing.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -30,12 +26,10 @@ import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
-import org.modelix.model.server.InMemoryStoreClient
-import org.modelix.model.server.JsonModelServer
-import org.modelix.model.server.JsonModelServer2
-import org.modelix.model.server.LocalModelClient
-import org.modelix.model.server.api.MessageFromClient
-import org.modelix.model.server.api.MessageFromServer
+import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.handlers.DeprecatedLightModelServer
+import org.modelix.model.server.handlers.LightModelServer
+import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.random.Random
 import kotlin.test.Ignore
@@ -54,8 +48,8 @@ class LightModelClientTest {
             install(io.ktor.server.websocket.WebSockets)
             val modelClient = LocalModelClient(InMemoryStoreClient())
             localModelClient = modelClient
-            JsonModelServer(modelClient).init(this)
-            JsonModelServer2(modelClient).init(this)
+            DeprecatedLightModelServer(modelClient).init(this)
+            LightModelServer(modelClient).init(this)
         }
         val client = createClient {
             install(WebSockets)

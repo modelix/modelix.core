@@ -15,160 +15,48 @@
 package org.modelix.model.server
 
 import com.beust.jcommander.JCommander
-import com.beust.jcommander.Parameter
-import com.beust.jcommander.converters.BooleanConverter
-import com.beust.jcommander.converters.IntegerConverter
-import com.beust.jcommander.converters.StringConverter
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.html.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import kotlinx.html.*
+import kotlinx.html.a
+import kotlinx.html.body
+import kotlinx.html.br
+import kotlinx.html.div
+import kotlinx.html.head
+import kotlinx.html.li
+import kotlinx.html.style
+import kotlinx.html.ul
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.installAuthentication
+import org.modelix.model.server.handlers.HistoryHandler
+import org.modelix.model.server.handlers.DeprecatedLightModelServer
+import org.modelix.model.server.handlers.KeyValueLikeModelServer
+import org.modelix.model.server.store.IStoreClient
+import org.modelix.model.server.store.IgniteStoreClient
+import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.LocalModelClient
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.sql.Connection
-import java.sql.DatabaseMetaData
-import java.sql.ResultSet
-import java.sql.SQLException
-import java.util.*
 import javax.sql.DataSource
-
-internal class CmdLineArgs {
-    @Parameter(names = ["-secret"], description = "Path to the secretfile", converter = FileConverter::class)
-    var secretFile = File("/secrets/modelsecret/modelsecret.txt")
-
-    @Parameter(
-        names = ["-jdbcconf"],
-        description = "Path to the JDBC configuration file",
-        converter = FileConverter::class
-    )
-    var jdbcConfFile: File? = null
-
-    @Parameter(names = ["-inmemory"], description = "Use in-memory storage", converter = BooleanConverter::class)
-    var inmemory = false
-
-    @Parameter(names = ["-dumpout"], description = "Dump in memory storage", converter = StringConverter::class)
-    var dumpOutName: String? = null
-
-    @Parameter(names = ["-dumpin"], description = "Read dump in memory storage", converter = StringConverter::class)
-    var dumpInName: String? = null
-
-    @Parameter(names = ["-port"], description = "Set port", converter = IntegerConverter::class)
-    var port: Int? = null
-
-    @Parameter(names = ["-set"], description = "Set values", arity = 2)
-    var setValues: List<String> = LinkedList<String>()
-
-    @Parameter(
-        names = ["-schemainit"],
-        description = "Initialize the schema, if necessary",
-        converter = BooleanConverter::class
-    )
-    var schemaInit = false
-}
-
-internal class SqlUtils(private val connection: Connection) {
-    @Throws(SQLException::class)
-    fun isSchemaExisting(schemaName: String?): Boolean {
-        val metadata: DatabaseMetaData = connection.metaData
-        val schemasRS: ResultSet = metadata.getSchemas()
-        while (schemasRS.next()) {
-            if (schemasRS.getString("table_schem") == schemaName) {
-                return true
-            }
-        }
-        return false
-    }
-
-    @Throws(SQLException::class)
-    fun isTableExisting(schemaName: String?, tableName: String): Boolean {
-        val metadata: DatabaseMetaData = connection.metaData
-        val schemasRS: ResultSet = metadata.getTables(null, schemaName, tableName, null)
-        while (schemasRS.next()) {
-            if (schemasRS.getString("table_schem") == schemaName && schemasRS.getString("table_name") == tableName) {
-                return true
-            }
-        }
-        return false
-    }
-
-    @Throws(SQLException::class)
-    fun ensureTableIsPresent(
-        schemaName: String?, username: String?, tableName: String, creationSql: String?
-    ) {
-        if (!isTableExisting(schemaName, tableName)) {
-            val stmt = connection.createStatement()
-            stmt.execute(creationSql)
-        }
-        val stmt = connection.createStatement()
-        stmt.execute(
-            "GRANT ALL ON TABLE $schemaName.$tableName TO $username;"
-        )
-    }
-
-    @Throws(SQLException::class)
-    fun ensureSchemaIsPresent(schemaName: String?, username: String?) {
-        if (!isSchemaExisting(schemaName)) {
-            val stmt = connection.createStatement()
-            stmt.execute("CREATE SCHEMA $schemaName;")
-        }
-        val stmt = connection.createStatement()
-        stmt.execute("GRANT ALL ON SCHEMA $schemaName TO $username;")
-    }
-
-    companion object {
-        private val LOG = LoggerFactory.getLogger(SqlUtils::class.java)
-    }
-}
 
 object Main {
     private val LOG = LoggerFactory.getLogger(Main::class.java)
     const val DEFAULT_PORT = 28101
-    private const val DEFAULT_DB_USER_NAME = "modelix"
-    private const val DEFAULT_SCHEMA_NAME = "modelix"
-    private fun ensureSchemaInitialization(dataSource: DataSource) {
-        var userName = System.getProperty("jdbc.user")
-        if (userName == null) {
-            userName = DEFAULT_DB_USER_NAME
-        }
-        var schemaName = System.getProperty("jdbc.schema")
-        if (schemaName == null) {
-            schemaName = DEFAULT_SCHEMA_NAME
-        }
-        LOG.info("ensuring schema initialization")
-        LOG.info("  schema: $schemaName")
-        LOG.info("  db username: $userName")
-        try {
-            val sqlUtils = SqlUtils(dataSource.connection)
-            sqlUtils.ensureSchemaIsPresent(schemaName, userName)
-            sqlUtils.ensureTableIsPresent(
-                schemaName,
-                userName,
-                "model",
-                """CREATE TABLE $schemaName.model
-(
-    key character varying NOT NULL,
-    value character varying,
-    reachable boolean,
-    CONSTRAINT kv_pkey PRIMARY KEY (key)
-);"""
-            )
-        } catch (e: SQLException) {
-            e.printStackTrace()
-        }
-    }
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -225,15 +113,15 @@ object Main {
                     val dataSource: DataSource = Ignition.loadSpringBean<DataSource>(
                         Main::class.java.getResource("ignite.xml"), "dataSource"
                     )
-                    ensureSchemaInitialization(dataSource)
+                    SqlUtils(dataSource.connection).ensureSchemaInitialization()
                 }
             }
             var i = 0
             while (i < cmdLineArgs.setValues.size) {
-                storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
+                storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1],)
                 i += 2
             }
-            val modelServer = KtorModelServer(storeClient)
+            val modelServer = KeyValueLikeModelServer(storeClient)
             val localModelClient = LocalModelClient(storeClient)
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {
@@ -243,12 +131,23 @@ object Main {
             }
 
             val historyHandler = HistoryHandler(localModelClient)
-            val jsonModelServer = JsonModelServer(localModelClient)
+            val jsonModelServer = DeprecatedLightModelServer(localModelClient)
             val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port) {
                 install(Routing)
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)
                 install(WebSockets)
+                install(ContentNegotiation) {
+                    json()
+                }
+                install(CORS) {
+                    anyHost()
+                    allowHeader(HttpHeaders.ContentType)
+                    allowMethod(HttpMethod.Options)
+                    allowMethod(HttpMethod.Get)
+                    allowMethod(HttpMethod.Put)
+                    allowMethod(HttpMethod.Post)
+                }
 
                 modelServer.init(this)
                 historyHandler.init(this)
@@ -297,13 +196,11 @@ object Main {
                     ktorServer.stop()
                     LOG.info("Server stopped")
                 } catch (ex: Exception) {
-                    System.err.println("Exception: " + ex.message)
-                    ex.printStackTrace()
+                    LOG.error("", ex)
                 }
             })
         } catch (ex: Exception) {
-            println("Server failed: " + ex.message)
-            ex.printStackTrace()
+            LOG.error("", ex)
         }
     }
 

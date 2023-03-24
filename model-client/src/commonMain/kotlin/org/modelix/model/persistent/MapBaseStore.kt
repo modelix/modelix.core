@@ -18,7 +18,7 @@ package org.modelix.model.persistent
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 
-class MapBaseStore : IKeyValueStore {
+open class MapBaseStore : IKeyValueStore {
     private val map: MutableMap<String?, String?> = HashMap()
     override fun get(key: String): String? {
         return map[key]
@@ -27,7 +27,7 @@ class MapBaseStore : IKeyValueStore {
     override fun getPendingSize(): Int = 0
 
     override fun put(key: String, value: String?) {
-        map[key] = value
+        putAll(mapOf(key to value))
     }
 
     override fun getAll(keys: Iterable<String>): Map<String, String?> {

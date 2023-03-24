@@ -76,14 +76,15 @@ class CLHamtLeaf : CLHamtNode {
         return visitor(data.key, data.value)
     }
 
-    override fun visitChanges(oldNode: CLHamtNode?, shift: Int, visitor: IChangeVisitor) {
-        if (oldNode === this) {
+    override fun visitChanges(oldNode: CLHamtNode?, shift: Int, visitor: IChangeVisitor, bulkQuery: IBulkQuery) {
+        if (oldNode === this || data.hash == oldNode?.getData()?.hash) {
             return
         }
         if (visitor.visitChangesOnly()) {
             if (oldNode != null) {
-                val oldValue = oldNode.get(key, shift, NonBulkQuery(store)).execute()
-                if (oldValue != null && value != oldValue) visitor.entryChanged(key, oldValue, value)
+                oldNode.get(key, shift, bulkQuery).map { oldValue ->
+                    if (oldValue != null && value != oldValue) visitor.entryChanged(key, oldValue, value)
+                }
             }
         } else {
             var oldValue: KVEntryReference<CPNode>? = null

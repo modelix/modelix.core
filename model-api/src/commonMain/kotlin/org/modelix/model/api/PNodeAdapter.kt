@@ -153,7 +153,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode {
     }
 
     override fun getReferenceRoles(): List<String> {
-        return branch.transaction.getPropertyRoles(nodeId).toList()
+        return branch.transaction.getReferenceRoles(nodeId).toList()
     }
 
     override fun equals(o: Any?): Boolean {
@@ -205,3 +205,6 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode {
         notifyAccess()
     }
 }
+
+fun IBranch.getNode(id: Long): INode = PNodeAdapter(id, this)
+fun IBranch.getRootNode(): INode = getNode(ITree.ROOT_ID)

@@ -12,11 +12,10 @@
  * specific language governing permissions and limitations
  * under the License. 
  */
-package org.modelix.model.server
+package org.modelix.model.server.store
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.sync.Semaphore
 import org.modelix.model.IKeyListener
 import kotlin.time.Duration.Companion.seconds
 
@@ -24,19 +23,21 @@ interface IStoreClient {
     operator fun get(key: String): String?
     fun getAll(keys: List<String>): List<String?>
     fun getAll(keys: Set<String>): Map<String, String?>
-    fun put(key: String, value: String?)
-    fun putAll(entries: Map<String, String?>)
+    fun put(key: String, value: String?, silent: Boolean = false)
+    fun putAll(entries: Map<String, String?>, silent: Boolean = false)
     fun listen(key: String, listener: IKeyListener)
     fun removeListener(key: String, listener: IKeyListener)
     fun generateId(key: String): Long
+    fun <T> runTransaction(body: () -> T): T
 }
 
-suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: String?, handler: suspend (String?)->Unit) {
+suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: String?): String? {
+    var result: String? = null
     coroutineScope {
         var handlerCalled = false
         val callHandler: suspend (String?)->Unit = {
             handlerCalled = true
-            handler(it)
+            result = it
         }
 
         val channel = Channel<Unit>(Channel.RENDEZVOUS)
@@ -72,6 +73,7 @@ suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: St
         } finally {
             storeClient.removeListener(key, listener)
         }
-        if (!handlerCalled) handler(storeClient[key])
+        if (!handlerCalled) result = storeClient[key]
     }
+    return result
 }

@@ -23,6 +23,8 @@ import org.junit.Test
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.IKeyListener
 import org.modelix.model.client.RestWebModelClient
+import org.modelix.model.server.handlers.KeyValueLikeModelServer
+import org.modelix.model.server.store.InMemoryStoreClient
 import java.util.*
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
@@ -32,7 +34,7 @@ class ModelClient_Test {
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
-            KtorModelServer(InMemoryStoreClient()).init(this)
+            KeyValueLikeModelServer(InMemoryStoreClient()).init(this)
         }
         block()
     }

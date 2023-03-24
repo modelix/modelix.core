@@ -18,6 +18,10 @@ package org.modelix.model.lazy
 import org.modelix.model.persistent.IKVValue
 
 class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
+    init {
+        if (instantiationDisabled) throw IllegalStateException("instantiation not allowed")
+    }
+
     override fun <I, O> map(input_: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
         val list = input_.map(f).map { it.execute() }.toList()
         return Value(list)
@@ -46,6 +50,19 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
 
         override fun onSuccess(handler: (T) -> Unit) {
             handler(value)
+        }
+    }
+
+    companion object {
+        private var instantiationDisabled = false
+        fun <T> runWithDisabled(body: () -> T): T {
+//            val wasDisabled = instantiationDisabled
+//            try {
+//                instantiationDisabled = true
+            return body()
+//            } finally {
+//                instantiationDisabled = wasDisabled
+//            }
         }
     }
 }

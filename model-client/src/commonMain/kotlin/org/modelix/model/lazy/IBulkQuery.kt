@@ -21,7 +21,7 @@ interface IBulkQuery {
     fun <I, O> map(input_: Iterable<I>, f: (I) -> Value<O>): Value<List<O>>
     fun <T> constant(value: T): Value<T>
     operator fun <T : IKVValue> get(hash: KVEntryReference<T>): Value<T?>
-    interface Value<T> {
+    interface Value<out T> {
         fun execute(): T
         fun <R> mapBulk(handler: (T) -> Value<R>): Value<R>
         fun <R> map(handler: (T) -> R): Value<R>

@@ -26,6 +26,7 @@ import org.modelix.model.operations.*
 import org.modelix.model.persistent.CPOperationsList
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
+import kotlin.jvm.JvmName
 
 class CLVersion : IVersion {
     var store: IDeserializingKeyValueStore
@@ -106,15 +107,18 @@ class CLVersion : IVersion {
     val time: String?
         get() = data!!.time
 
+    @Deprecated("Use getContentHash()", ReplaceWith("getContentHash()"))
     val hash: String
         get() = data!!.hash
 
-    override fun getShaHash(): String = data!!.hash
+    override fun getContentHash(): String = data!!.hash
 
+    @Deprecated("Use getTree()", ReplaceWith("getTree()"))
+    @get:JvmName("getTree_()")
     val tree: CLTree
         get() = CLTree(treeHash!!.getValue(store), store)
 
-    override fun getTree(): ITree = tree
+    override fun getTree(): CLTree = tree
 
     val baseVersion: CLVersion?
         get() {

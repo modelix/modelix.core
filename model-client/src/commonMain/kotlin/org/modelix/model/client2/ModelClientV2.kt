@@ -115,7 +115,7 @@ class ModelClientV2(
                 takeFrom(baseUrl)
                 appendPathSegments("versions", versionHash)
                 if (baseVersion != null) {
-                    parameters["lastKnown"] = (baseVersion as CLVersion).getShaHash()
+                    parameters["lastKnown"] = (baseVersion as CLVersion).getContentHash()
                 }
             }
         }

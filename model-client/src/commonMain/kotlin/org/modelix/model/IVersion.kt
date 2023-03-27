@@ -16,6 +16,6 @@ package org.modelix.model
 import org.modelix.model.api.ITree
 
 interface IVersion {
-    fun getShaHash(): String
+    fun getContentHash(): String
     fun getTree(): ITree
 }

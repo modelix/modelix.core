@@ -85,10 +85,10 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
 
     private suspend fun remoteVersionReceived(newRemoteVersion: CLVersion) {
         checkDisposed()
-        if (lastRemoteVersion.getShaHash() == newRemoteVersion.getShaHash()) return
+        if (lastRemoteVersion.getContentHash() == newRemoteVersion.getContentHash()) return
         lastRemoteVersion = newRemoteVersion
         mergeMutex.withLock {
-            if (newRemoteVersion.getShaHash() != localVersion.getShaHash()) {
+            if (newRemoteVersion.getContentHash() != localVersion.getContentHash()) {
                 otBranch.runWrite {
                     applyPendingLocalChanges()
                     localVersion = VersionMerger(newRemoteVersion.store, client.getIdGenerator())

@@ -112,7 +112,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
         if (targetRef is PNodeReference) {
             return targetRef.resolveNode(PArea(branch))
         }
-        val area = ContextArea.CONTEXT_VALUE.getValue()
+        val area = ContextArea.getArea()
             ?: throw RuntimeException(IArea::class.simpleName + " not available")
         return targetRef.resolveNode(area)
     }

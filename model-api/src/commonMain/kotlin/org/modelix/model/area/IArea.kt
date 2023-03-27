@@ -76,7 +76,7 @@ fun IArea.asModelList(): IModelList {
     )
 }
 
-data class ModelAsArea(val model: IModel): IArea, IAreaReference {
+data class ModelAsArea(val model: IModel) : IArea, IAreaReference {
     init {
         require(model !is IArea) { "$model is already an IArea" }
     }
@@ -129,16 +129,14 @@ data class ModelAsArea(val model: IModel): IArea, IAreaReference {
     }
 
     override fun addListener(l: IAreaListener) {
-
     }
 
     override fun removeListener(l: IAreaListener) {
-
     }
 }
 
 fun IReferenceResolutionScope.asArea(): IArea {
-    return when(this) {
+    return when (this) {
         is IArea -> this
         is IModel -> ModelAsArea(this)
         is IModelList -> CompositeArea(getModels().map { it.asArea() })

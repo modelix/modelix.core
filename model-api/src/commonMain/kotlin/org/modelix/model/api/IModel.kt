@@ -29,8 +29,8 @@ interface IModelTransactionManager {
     fun canWrite(): Boolean
 }
 
-//interface IModelListener {
+// interface IModelListener {
 //    fun modelChanged(changes: List<ModelChangeEvent>)
-//}
+// }
 //
-//class ModelChangeEvent
+// class ModelChangeEvent

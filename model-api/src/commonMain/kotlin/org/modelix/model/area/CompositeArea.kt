@@ -15,6 +15,7 @@ package org.modelix.model.area
 
 import org.modelix.model.api.*
 
+@Deprecated("Use ModelList")
 class CompositeArea : IArea {
     private val areas: List<IArea>
     private val rootNode = Root()

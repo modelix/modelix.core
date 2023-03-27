@@ -22,5 +22,6 @@ import org.modelix.model.area.IArea
  * Two INodeReferences that are not equal can resolve to the same INode.
  */
 interface INodeReference {
-    fun resolveNode(area: IArea?): INode?
+    @Deprecated("Use IReferenceResolutionScope.resolveNode(this)")
+    fun resolveNode(area: IArea?): INode? = area?.resolveNode(this)
 }

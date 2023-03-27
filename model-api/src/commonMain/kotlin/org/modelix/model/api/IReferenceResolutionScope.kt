@@ -13,19 +13,10 @@
  */
 package org.modelix.model.api
 
-expect class ContextValue<E> {
+interface IReferenceResolutionScope {
+    fun resolveNode(ref: INodeReference): INode?
 
-    constructor()
-    constructor(defaultValue: E)
-
-    fun getValue(): E?
-    fun <T> computeWith(newValue: E, r: () -> T): T
-}
-
-fun <ReturnT, ValueT> ContextValue<ValueT>.offer(newValue: ValueT, body: () -> ReturnT): ReturnT {
-    return if (getValue() == null) {
-        computeWith(newValue, body)
-    } else {
-        body()
+    companion object {
+        val contextScope = ContextValue<IReferenceResolutionScope>()
     }
 }

@@ -15,6 +15,7 @@ package org.modelix.model.area
 
 import org.modelix.model.api.*
 
+@Deprecated("Not supported anymore")
 class AreaWithMounts(val rootArea: IArea, mounts: Map<INode, IArea>) : IArea {
     private val mounts: Map<INode, IArea>
     private val mountedRoot2hiddenNode: Map<INode, INode>

@@ -22,11 +22,16 @@ import org.modelix.model.api.*
  * It's like a unix filesystem with mount points. The model inside an area can also be an MPS model that is not a
  * persistent data structure.
  */
-interface IArea {
+@Deprecated("Use IModel, IReferenceResolutionScope or IModelTransactionManager")
+interface IArea : IModelTransactionManager, IModel {
+    override fun getTransactionManager(): IModelTransactionManager = this
+
     /**
      * The root of an area is not allowed to change
      */
     fun getRoot(): INode
+
+    override fun getRootNode(): INode? = getRoot()
 
     @Deprecated("use ILanguageRepository.resolveConcept")
     fun resolveConcept(ref: IConceptReference): IConcept?
@@ -37,7 +42,7 @@ interface IArea {
      *
      * This method requires resolveNode().getNode() == this
      */
-    fun resolveNode(ref: INodeReference): INode?
+    override fun resolveNode(ref: INodeReference): INode?
 
     /**
      * This method allows resolveOriginalNode().getArea() != this
@@ -48,13 +53,95 @@ interface IArea {
     fun getReference(): IAreaReference
     fun resolveArea(ref: IAreaReference): IArea?
 
-    fun <T> executeRead(f: () -> T): T
-    fun <T> executeWrite(f: () -> T): T
-    fun canRead(): Boolean
-    fun canWrite(): Boolean
+    override fun <T> executeRead(f: () -> T): T
+    override fun <T> executeWrite(f: () -> T): T
+    override fun canRead(): Boolean
+    override fun canWrite(): Boolean
     /** bigger numbers are locked first */
     fun getLockOrderingPriority(): Long = 0
 
     fun addListener(l: IAreaListener)
     fun removeListener(l: IAreaListener)
+
+    override fun addListener(l: IModelListener) {}
+
+    override fun removeListener(l: IModelListener) {}
+}
+
+fun IArea.asModelList(): IModelList {
+    return ModelList(
+        collectAreas()
+            .filter { it !is CompositeArea && it !is AreaWithMounts }
+            .sortedByDescending { it.getLockOrderingPriority() }
+    )
+}
+
+data class ModelAsArea(val model: IModel): IArea, IAreaReference {
+    init {
+        require(model !is IArea) { "$model is already an IArea" }
+    }
+    override fun getRoot(): INode {
+        return model.getRootNode() ?: throw RuntimeException("Model $model has no root node")
+    }
+
+    override fun resolveConcept(ref: IConceptReference): IConcept? {
+        return ILanguageRepository.resolveConcept(ref)
+    }
+
+    override fun resolveNode(ref: INodeReference): INode? {
+        return model.resolveNode(ref)
+    }
+
+    override fun resolveOriginalNode(ref: INodeReference): INode? {
+        return model.resolveNode(ref)
+    }
+
+    override fun resolveBranch(id: String): IBranch? {
+        return model.resolveBranch(id)
+    }
+
+    override fun collectAreas(): List<IArea> {
+        return listOf(this)
+    }
+
+    override fun getReference(): IAreaReference {
+        return this
+    }
+
+    override fun resolveArea(ref: IAreaReference): IArea? {
+        return this.takeIf { it == ref }
+    }
+
+    override fun <T> executeRead(f: () -> T): T {
+        return model.getTransactionManager().executeRead(f)
+    }
+
+    override fun <T> executeWrite(f: () -> T): T {
+        return model.getTransactionManager().executeWrite(f)
+    }
+
+    override fun canRead(): Boolean {
+        return model.getTransactionManager().canRead()
+    }
+
+    override fun canWrite(): Boolean {
+        return model.getTransactionManager().canWrite()
+    }
+
+    override fun addListener(l: IAreaListener) {
+
+    }
+
+    override fun removeListener(l: IAreaListener) {
+
+    }
+}
+
+fun IReferenceResolutionScope.asArea(): IArea {
+    return when(this) {
+        is IArea -> this
+        is IModel -> ModelAsArea(this)
+        is IModelList -> CompositeArea(getModels().map { it.asArea() })
+        else -> throw IllegalArgumentException("Unsupported: $this")
+    }
 }

@@ -83,3 +83,7 @@ class PArea(val branch: IBranch) : IArea {
 }
 
 fun IBranch.getArea() = PArea(this)
+
+fun IModelList.resolveBranch(id: String): IBranch? {
+    return getModels().filterIsInstance<PArea>().map { it.branch }.find { it.getId() == id }
+}

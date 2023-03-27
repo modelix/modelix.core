@@ -13,26 +13,28 @@
  */
 package org.modelix.model.area
 
-import org.modelix.model.api.ContextValue
+import org.modelix.model.api.IModelList
+import org.modelix.model.api.IReferenceResolutionScope
+import org.modelix.model.api.concat
 
+@Deprecated("Use IReferenceResolutionScope.contextScope")
 object ContextArea {
-    val CONTEXT_VALUE = ContextValue<IArea>()
 
-    fun getArea() = CONTEXT_VALUE.getValue()
+    fun getArea(): IArea? = IReferenceResolutionScope.contextScope.getValue()?.asArea()
 
     fun <T> withAdditionalContext(area: IArea, runnable: () -> T): T {
-        val activeContext = CONTEXT_VALUE.getValue()
+        val activeContext: IModelList? = IReferenceResolutionScope.contextScope.getValue() as IModelList?
         return if (activeContext == null) {
-            CONTEXT_VALUE.computeWith(area, runnable)
+            IReferenceResolutionScope.contextScope.computeWith(area, runnable)
         } else {
-            CONTEXT_VALUE.computeWith(CompositeArea(listOf(area, activeContext)), runnable)
+            IReferenceResolutionScope.contextScope.computeWith(activeContext.concat(area.asModelList()), runnable)
         }
     }
 
     fun <T> offer(area: IArea, r: () -> T): T {
-        val current = CONTEXT_VALUE.getValue()
-        return if (current == null || !current.collectAreas().contains(area)) {
-            CONTEXT_VALUE.computeWith(area, r)
+        val current = IReferenceResolutionScope.contextScope.getValue() as IModelList?
+        return if (current == null || !current.getModels().contains(area)) {
+            IReferenceResolutionScope.contextScope.computeWith(area, r)
         } else {
             r()
         }

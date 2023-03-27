@@ -17,6 +17,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 
+@Deprecated("IArea was replaced by IModel/IModelList")
 abstract class AbstractArea : IArea {
 
     override fun resolveNode(ref: INodeReference): INode? = resolveOriginalNode(ref)

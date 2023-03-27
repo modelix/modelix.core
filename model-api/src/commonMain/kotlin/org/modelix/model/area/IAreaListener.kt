@@ -13,6 +13,7 @@
  */
 package org.modelix.model.area
 
+@Deprecated("use IModelListener")
 interface IAreaListener {
     fun areaChanged(changes: IAreaChangeList)
 }

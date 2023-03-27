@@ -13,19 +13,24 @@
  */
 package org.modelix.model.api
 
-expect class ContextValue<E> {
-
-    constructor()
-    constructor(defaultValue: E)
-
-    fun getValue(): E?
-    fun <T> computeWith(newValue: E, r: () -> T): T
+interface IModel : IReferenceResolutionScope, IModelList {
+    override fun getModels(): List<IModel> = listOf(this)
+    fun getRootNode(): INode?
+    fun addListener(l: IModelListener)
+    fun removeListener(l: IModelListener)
 }
 
-fun <ReturnT, ValueT> ContextValue<ValueT>.offer(newValue: ValueT, body: () -> ReturnT): ReturnT {
-    return if (getValue() == null) {
-        computeWith(newValue, body)
-    } else {
-        body()
-    }
+fun IModel.asModelList(): ModelList = ModelList(listOf(this))
+
+interface IModelTransactionManager {
+    fun <T> executeRead(f: () -> T): T
+    fun <T> executeWrite(f: () -> T): T
+    fun canRead(): Boolean
+    fun canWrite(): Boolean
 }
+
+interface IModelListener {
+    fun modelChanged(changes: List<ModelChangeEvent>)
+}
+
+class ModelChangeEvent

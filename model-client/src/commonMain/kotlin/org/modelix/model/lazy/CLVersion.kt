@@ -19,7 +19,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.modelix.model.IVersion
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.ITree
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.operations.*

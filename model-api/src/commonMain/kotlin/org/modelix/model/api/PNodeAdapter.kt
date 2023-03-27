@@ -15,17 +15,15 @@
 
 package org.modelix.model.api
 
-import org.modelix.model.area.ContextArea
-import org.modelix.model.area.IArea
-import org.modelix.model.area.PArea
-
 open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx {
 
     init {
         require(nodeId != 0L, { "Invalid node 0" })
     }
 
-    override fun getArea(): PArea = PArea(branch)
+    override fun getModel(): IModel {
+        return PModel(branch)
+    }
 
     protected fun unwrap(node: INode?): Long {
         if (node == null) {
@@ -38,11 +36,6 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
             throw RuntimeException("Node belongs to a different branch. Expected $branch but was ${node.branch}")
         }
         return node.nodeId
-    }
-
-    protected fun notifyAccess() {
-        // TODO
-//    DependencyBroadcaster.INSTANCE.dependencyAccessed(new PNodeDependency(branch, nodeId));
     }
 
     override fun usesRoleIds() = branch.transaction.tree.usesRoleIds()
@@ -61,13 +54,11 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
 
     override val allChildren: Iterable<INode>
         get() {
-            notifyAccess()
             return branch.transaction.getAllChildren(nodeId)
                 .map { id: Long -> wrap(id) ?: throw RuntimeException("Unexpected null child") }
         }
 
     override fun getChildren(role: String?): Iterable<INode> {
-        notifyAccess()
         return branch.transaction.getChildren(nodeId, role)
             .map { id: Long -> wrap(id) ?: throw RuntimeException("Unexpected null child") }
     }
@@ -75,7 +66,6 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
     override val concept: IConcept?
         get() {
             try {
-                notifyAccess()
                 return branch.computeRead { branch.transaction.getConcept(nodeId) }
             } catch (e: RuntimeException) {
                 throw RuntimeException("Issue getting concept for $nodeId in branch $branch", e)
@@ -84,7 +74,6 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
 
     override fun getConceptReference(): IConceptReference? {
         try {
-            notifyAccess()
             return branch.computeRead { branch.transaction.getConceptReference(nodeId) }
         } catch (e: RuntimeException) {
             throw RuntimeException("Issue getting concept for $nodeId in branch $branch", e)
@@ -93,13 +82,11 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
 
     override val parent: INode?
         get() {
-            notifyAccess()
             val parent = branch.transaction.getParent(nodeId)
             return if (parent == 0L) null else wrap(parent)
         }
 
     override fun getPropertyValue(role: String): String? {
-        notifyAccess()
         return branch.transaction.getProperty(nodeId, role)
     }
 
@@ -107,30 +94,26 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
         get() = PNodeReference(nodeId, branch.getId())
 
     override fun getReferenceTarget(role: String): INode? {
-        notifyAccess()
         val targetRef = getReferenceTargetRef(role) ?: return null
         if (targetRef is PNodeReference) {
-            return targetRef.resolveNode(PArea(branch))
+            val resolvedLocal = branch.asModel().resolveNode(targetRef)
+            if (resolvedLocal != null) return resolvedLocal
         }
-        val area = ContextArea.getArea()
-            ?: throw RuntimeException(IArea::class.simpleName + " not available")
-        return targetRef.resolveNode(area)
+        val scope = IReferenceResolutionScope.contextScope.getValue()
+        return scope?.resolveNode(targetRef)
     }
 
     override fun getReferenceTargetRef(role: String): INodeReference? {
-        notifyAccess()
         return branch.transaction.getReferenceTarget(nodeId, role)
     }
 
     override val roleInParent: String?
         get() {
-            notifyAccess()
             return branch.transaction.getRole(nodeId)
         }
 
     override val isValid: Boolean
         get() {
-            notifyAccess()
             return branch.transaction.containsNode(nodeId)
         }
 
@@ -204,7 +187,6 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
 
     init {
         if (this.nodeId == 0L) throw IllegalArgumentException("ID 0 not allowed")
-        notifyAccess()
     }
 }
 

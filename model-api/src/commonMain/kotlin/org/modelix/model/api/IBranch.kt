@@ -41,3 +41,10 @@ interface IBranch {
     fun addListener(l: IBranchListener)
     fun removeListener(l: IBranchListener)
 }
+
+class BranchTransactionManager(val branch: IBranch) : IModelTransactionManager {
+    override fun <T> executeRead(f: () -> T): T = branch.computeRead(f)
+    override fun <T> executeWrite(f: () -> T): T = branch.computeWrite(f)
+    override fun canRead(): Boolean = branch.canRead()
+    override fun canWrite(): Boolean = branch.canWrite()
+}

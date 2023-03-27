@@ -13,24 +13,21 @@
  */
 package org.modelix.model.api
 
-interface IModel : IReferenceResolutionScope, IModelList {
-    override fun getModels(): List<IModel> = listOf(this)
-    fun getRootNode(): INode?
-//    fun addListener(l: IModelListener)
-//    fun removeListener(l: IModelListener)
+data class PModel(val branch: IBranch) : IModel {
+    override fun getRootNode(): INode {
+        return PNodeAdapter(ITree.ROOT_ID, branch)
+    }
+
+    override fun resolveNode(ref: INodeReference): INode? {
+        return if (ref is PNodeReference &&
+            branch.getId() == ref.branchId &&
+            branch.transaction.containsNode(ref.id)
+        ) PNodeAdapter(ref.id, branch) else null
+    }
+
+    override fun getTransactionManager(): IModelTransactionManager {
+        return BranchTransactionManager(branch)
+    }
 }
 
-fun IModel.asModelList(): ModelList = ModelList(listOf(this))
-
-interface IModelTransactionManager {
-    fun <T> executeRead(f: () -> T): T
-    fun <T> executeWrite(f: () -> T): T
-    fun canRead(): Boolean
-    fun canWrite(): Boolean
-}
-
-//interface IModelListener {
-//    fun modelChanged(changes: List<ModelChangeEvent>)
-//}
-//
-//class ModelChangeEvent
+fun IBranch.asModel(): IModel = PModel(this)

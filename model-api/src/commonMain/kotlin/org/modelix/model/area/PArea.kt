@@ -15,6 +15,7 @@ package org.modelix.model.area
 
 import org.modelix.model.api.*
 
+@Deprecated("Use branch.asModel()")
 class PArea(val branch: IBranch) : IArea {
 
     override fun getRoot(): INode = PNodeAdapter(ITree.ROOT_ID, branch)
@@ -82,8 +83,9 @@ class PArea(val branch: IBranch) : IArea {
     data class AreaReference(val branchId: String?) : IAreaReference
 }
 
-fun IBranch.getArea() = PArea(this)
+@Deprecated("use .getModel()")
+fun IBranch.getArea() = asModel().asArea()
 
 fun IModelList.resolveBranch(id: String): IBranch? {
-    return getModels().filterIsInstance<PArea>().map { it.branch }.find { it.getId() == id }
+    return getModels().filterIsInstance<PModel>().map { it.branch }.find { it.getId() == id }
 }

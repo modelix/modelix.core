@@ -14,10 +14,10 @@
 package org.modelix.model
 
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.IReferenceResolutionScope
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.area.IArea
-import org.modelix.model.area.PArea
+import org.modelix.model.api.asModel
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.PrefetchCache
 import org.modelix.model.lazy.unwrap
@@ -29,21 +29,21 @@ object ModelMigrations {
             val tree = t.tree.unwrap()
             PrefetchCache.with(tree) {
                 (tree as? CLTree)?.prefetchAll()
-                useCanonicalReferences(t, PArea(branch), ITree.ROOT_ID)
+                useCanonicalReferences(t, branch.asModel(), ITree.ROOT_ID)
             }
         }
     }
 
-    private fun useCanonicalReferences(t: IWriteTransaction, area: IArea, node: Long) {
+    private fun useCanonicalReferences(t: IWriteTransaction, scope: IReferenceResolutionScope, node: Long) {
         for (role in t.getReferenceRoles(node)) {
             val original = t.getReferenceTarget(node, role) ?: continue
-            val canonical = original.resolveNode(area)?.reference ?: continue
+            val canonical = scope.resolveNode(original)?.reference ?: continue
             if (canonical != original) {
                 t.setReferenceTarget(node, role, canonical)
             }
         }
         for (child in t.getAllChildren(node)) {
-            useCanonicalReferences(t, area, child)
+            useCanonicalReferences(t, scope, child)
         }
     }
 }

@@ -15,7 +15,7 @@ package org.modelix.model.area
 
 import org.modelix.model.api.*
 
-@Deprecated("Use branch.asModel()")
+@Deprecated("Use branch.asModel() and if necessary .asArea()")
 class PArea(val branch: IBranch) : IArea {
 
     override fun getRoot(): INode = PNodeAdapter(ITree.ROOT_ID, branch)

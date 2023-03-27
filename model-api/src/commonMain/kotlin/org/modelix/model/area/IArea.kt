@@ -62,10 +62,6 @@ interface IArea : IModelTransactionManager, IModel {
 
     fun addListener(l: IAreaListener)
     fun removeListener(l: IAreaListener)
-
-    override fun addListener(l: IModelListener) {}
-
-    override fun removeListener(l: IModelListener) {}
 }
 
 fun IArea.asModelList(): IModelList {
@@ -135,6 +131,7 @@ data class ModelAsArea(val model: IModel) : IArea, IAreaReference {
     }
 }
 
+@Deprecated("IArea is deprecated")
 fun IReferenceResolutionScope.asArea(): IArea {
     return when (this) {
         is IArea -> this

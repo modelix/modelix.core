@@ -18,7 +18,7 @@ private const val TEMP_ID_PREFIX = "tmp-"
 class LightModelClient(val connection: IConnection, val debugName: String = "") {
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
-    private val area = Area()
+    private val model = Model()
     private var repositoryId: String? = null
     private var lastMergedVersionHash: String? = null
     private val pendingOperations: MutableList<OperationData> = ArrayList()
@@ -356,7 +356,7 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
 
         override fun usesRoleIds(): Boolean = usesRoleIds
 
-        override fun getArea(): IArea = area
+        override fun getModel(): IModel = model
 
         override val isValid: Boolean
             get() = synchronizedRead { nodes.containsKey(nodeId) }
@@ -584,45 +584,18 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
         }
     }
 
-    inner class Area : IArea {
+    inner class Model : IModel, IModelTransactionManager {
         fun getClient(): LightModelClient = this@LightModelClient
 
-        override fun getRoot(): INode {
-            return synchronizedRead {rootNodeId?.let { getNodeAdapter(it) } ?: throw IllegalStateException("Root node ID unknown") }
-        }
-
-        @Deprecated("use ILanguageRepository.resolveConcept")
-        override fun resolveConcept(ref: IConceptReference): IConcept? {
-            TODO("Not yet implemented")
+        override fun getRootNode(): INode {
+            return synchronizedRead { rootNodeId?.let { getNodeAdapter(it) } ?: throw IllegalStateException("Root node ID unknown") }
         }
 
         override fun resolveNode(ref: INodeReference): INode? {
-            return synchronizedRead { resolveOriginalNode(ref) }
-        }
-
-        override fun resolveOriginalNode(ref: INodeReference): INode? {
-            return synchronizedRead {
-                when (ref) {
-                    is LightClientNodeReference -> getNode(ref.nodeId)
-                    else -> null
-                }
+            return when (ref) {
+                is LightClientNodeReference -> synchronizedRead { getNode(ref.nodeId) }
+                else -> null
             }
-        }
-
-        override fun resolveBranch(id: String): IBranch? {
-            return null
-        }
-
-        override fun collectAreas(): List<IArea> {
-            return listOf(this)
-        }
-
-        override fun getReference(): IAreaReference {
-            return AreaReference(repositoryId)
-        }
-
-        override fun resolveArea(ref: IAreaReference): IArea? {
-            return if (ref is AreaReference && ref.branchId == repositoryId) this else null
         }
 
         override fun <T> executeRead(f: () -> T): T {
@@ -641,16 +614,10 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
             return synchronized { this@LightModelClient.currentAccessType.canWrite }
         }
 
-        override fun addListener(l: IAreaListener) {
-            TODO("Not yet implemented")
-        }
-
-        override fun removeListener(l: IAreaListener) {
-            TODO("Not yet implemented")
+        override fun getTransactionManager(): IModelTransactionManager {
+            return this
         }
     }
-
-    data class AreaReference(val branchId: String?) : IAreaReference
 
     companion object {
         private val LOG = mu.KotlinLogging.logger {}
@@ -735,14 +702,7 @@ class LightModelClientBuilder {
     }
 }
 
-class LightClientNodeReference(val nodeId: NodeId) : INodeReference {
-    override fun resolveNode(area: IArea?): INode? {
-        return when (area) {
-            is LightModelClient.Area -> area.getClient().getNode(nodeId)
-            else -> null
-        }
-    }
-}
+class LightClientNodeReference(val nodeId: NodeId) : INodeReference
 
 object LightClientReferenceSerializer : INodeReferenceSerializerEx {
     override val prefix: String = "light-client"

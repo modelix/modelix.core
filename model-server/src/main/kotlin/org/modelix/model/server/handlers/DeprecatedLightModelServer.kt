@@ -173,7 +173,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         post("/{repositoryId}/init") {
             // TODO error if it already exists
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val newTree = CLTree(repositoryId, getStore())
+            val newTree = CLTree.builder(getStore()).repositoryId(repositoryId).build()
             val userId = call.getUserName()
             val newVersion = CLVersion.createRegularVersion(
                 client.idGenerator.generate(),

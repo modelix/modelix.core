@@ -250,7 +250,7 @@ actual open class ReplicatedRepository actual constructor(
         var initialVersion = if (versionHash.isNullOrEmpty()) null else loadFromHash(versionHash, store)
         val initialTree = MutableObject<CLTree>()
         if (initialVersion == null) {
-            initialTree.setValue(CLTree(branchReference.repositoryId, store))
+            initialTree.setValue(CLTree.builder(store).repositoryId(branchReference.repositoryId).build())
             initialVersion = createVersion(initialTree.value, arrayOf(), null)
             client.asyncStore!!.put(branchReference.getKey(), initialVersion.hash)
         } else {

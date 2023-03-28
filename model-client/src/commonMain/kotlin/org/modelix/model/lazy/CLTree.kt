@@ -35,7 +35,7 @@ class CLTree : ITree, IBulkTree {
     constructor(hash: String?, store: IDeserializingKeyValueStore) : this(if (hash == null) null else store.get<CPTree>(hash) { CPTree.deserialize(it) }, store)
     constructor(store: IDeserializingKeyValueStore) : this(null as CPTree?, store)
     constructor(data: CPTree?, store_: IDeserializingKeyValueStore) : this(data, null as RepositoryId?, store_)
-    private constructor(data: CPTree?, repositoryId_: RepositoryId?, store_: IDeserializingKeyValueStore) {
+    private constructor(data: CPTree?, repositoryId_: RepositoryId?, store_: IDeserializingKeyValueStore, useRoleIds: Boolean = false) {
         var repositoryId = repositoryId_
         var store = store_
         if (data == null) {
@@ -564,5 +564,32 @@ class CLTree : ITree, IBulkTree {
 
     companion object {
         var roleNamePattern: Regex = Regex("""[a-zA-Z]+""")
+        fun builder(store: IDeserializingKeyValueStore) = Builder(store)
+    }
+
+    class Builder(var store: IDeserializingKeyValueStore) {
+        private var repositoryId: RepositoryId? = null
+        private var useRoleIds: Boolean = false
+
+        fun useRoleIds(value: Boolean = true): Builder {
+            this.useRoleIds = value
+            return this
+        }
+
+        fun repositoryId(id: RepositoryId): Builder {
+            this.repositoryId = id
+            return this
+        }
+
+        fun repositoryId(id: String): Builder = repositoryId(RepositoryId(id))
+
+        fun build(): CLTree {
+            return CLTree(
+                data = null as CPTree?,
+                repositoryId_ = repositoryId ?: RepositoryId.random(),
+                store_ = store,
+                useRoleIds = useRoleIds
+            )
+        }
     }
 }

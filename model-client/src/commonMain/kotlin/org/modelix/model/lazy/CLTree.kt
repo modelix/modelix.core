@@ -113,7 +113,7 @@ class CLTree : ITree, IBulkTree {
         get() = resolveElement(ITree.ROOT_ID)
 
     override fun setProperty(nodeId: Long, role: String, value: String?): ITree {
-        checkRoleId(nodeId, role)
+        checkPropertyRoleId(nodeId, role)
         var newIdToHash = nodesMap
         val newNodeData = resolveElement(nodeId)!!.getData().withPropertyValue(role, value)
         newIdToHash = newIdToHash!!.put(newNodeData)
@@ -121,7 +121,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConceptReference?): ITree {
-        checkRoleId(parentId, role)
+        checkChildRoleId(parentId, role)
         if (containsNode(childId)) {
             throw DuplicateNodeId("Node ID already exists: ${childId.toString(16)}")
         }
@@ -129,17 +129,17 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?): ITree {
-        checkRoleId(parentId, role)
+        checkChildRoleId(parentId, role)
         return addNewChild(parentId, role, index, childId, concept?.getReference())
     }
 
     override fun addNewChildren(parentId: Long, role: String?, index: Int, newIds: LongArray, concepts: Array<IConcept?>): ITree {
-        checkRoleId(parentId, role)
+        checkChildRoleId(parentId, role)
         throw UnsupportedOperationException("Not implemented yet")
     }
 
     override fun addNewChildren(parentId: Long, role: String?, index: Int, newIds: LongArray, concepts: Array<IConceptReference?>): ITree {
-        checkRoleId(parentId, role)
+        checkChildRoleId(parentId, role)
         TODO("Not yet implemented")
     }
 
@@ -219,7 +219,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun setReferenceTarget(sourceId: Long, role: String, target: INodeReference?): ITree {
-        checkRoleId(sourceId, role)
+        checkReferenceRoleId(sourceId, role)
         val source = resolveElement(sourceId)!!
         val refData: CPNodeRef? = when (target) {
             null -> null
@@ -303,7 +303,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> {
-        checkRoleId(parentId, role)
+        checkChildRoleId(parentId, role)
         val parent = resolveElement(parentId)
         val children = parent!!.getChildren(BulkQuery(store)).execute()
         return children
@@ -340,7 +340,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun getProperty(nodeId: Long, role: String): String? {
-        checkRoleId(nodeId, role)
+        checkPropertyRoleId(nodeId, role)
         val node = resolveElement(nodeId)
         return node!!.getData().getPropertyValue(role)
     }
@@ -356,7 +356,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun getReferenceTarget(sourceId: Long, role: String): INodeReference? {
-        checkRoleId(sourceId, role)
+        checkReferenceRoleId(sourceId, role)
         val node = resolveElement(sourceId)!!
         val targetRef = node.getData().getReferenceTarget(role)
         return when {
@@ -373,7 +373,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun moveChild(targetParentId: Long, targetRole: String?, targetIndex_: Int, childId: Long): ITree {
-        checkRoleId(targetParentId, targetRole)
+        checkChildRoleId(targetParentId, targetRole)
         if (childId == ITree.ROOT_ID) throw RuntimeException("Moving the root node is not allowed")
         var ancestor = targetParentId
         while (ancestor != ITree.ROOT_ID) {
@@ -556,14 +556,19 @@ class CLTree : ITree, IBulkTree {
         return "CLTree[$hash]"
     }
 
-    private fun checkRoleId(nodeId: Long, role: String?) {
-        if (role != null && usesRoleIds() && role.matches(roleNamePattern) && getConceptReference(nodeId) != null) {
-            throw IllegalArgumentException("A role UID is expected, but this looks like a name: $role")
+    private fun checkChildRoleId(nodeId: Long, role: String?) = checkRoleId(nodeId, role) { it.getAllChildLinks() }
+    private fun checkReferenceRoleId(nodeId: Long, role: String?) = checkRoleId(nodeId, role) { it.getAllReferenceLinks() }
+    private fun checkPropertyRoleId(nodeId: Long, role: String?) = checkRoleId(nodeId, role) { it.getAllProperties() }
+    private fun checkRoleId(nodeId: Long, role: String?, rolesGetter: (IConcept) -> Iterable<IRole>) {
+        if (role != null && usesRoleIds()) {
+            val concept = getConceptReference(nodeId)?.tryResolve()
+            if (concept != null && rolesGetter(concept).any { it.getSimpleName() == role }) {
+                throw IllegalArgumentException("A role UID is expected, but a name was provided: $role")
+            }
         }
     }
 
     companion object {
-        var roleNamePattern: Regex = Regex("""[a-zA-Z]+""")
         fun builder(store: IDeserializingKeyValueStore) = Builder(store)
     }
 

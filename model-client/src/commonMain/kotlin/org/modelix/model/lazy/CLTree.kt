@@ -55,7 +55,7 @@ class CLTree : ITree, IBulkTree {
                 arrayOf()
             )
             val idToHash = storeElement(root, CLHamtInternal.createEmpty(store))
-            this.data = CPTree(repositoryId.id, KVEntryReference(idToHash.getData()), false)
+            this.data = CPTree(repositoryId.id, KVEntryReference(idToHash.getData()), useRoleIds)
         } else {
             this.data = data
         }

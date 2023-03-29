@@ -6,11 +6,7 @@
         </encoder>
     </appender>
 
-    <logger name="org.modelix" level="DEBUG">
-        <appender-ref ref="console"/>
-    </logger>
-
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="console" />
     </root>
 </configuration>

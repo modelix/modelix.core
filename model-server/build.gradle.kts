@@ -43,7 +43,7 @@ dependencies {
     implementation("org.java-websocket:Java-WebSocket:1.5.0")
     implementation("org.apache.commons:commons-collections4:4.4")
     implementation("io.lettuce:lettuce-core:5.1.8.RELEASE")
-    implementation("ch.qos.logback:logback-classic:1.2.9")
+    implementation("ch.qos.logback:logback-classic:1.4.6")
 
     implementation("io.ktor", "ktor-server-core", ktorVersion)
     implementation("io.ktor", "ktor-server-cors", ktorVersion)

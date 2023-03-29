@@ -2,7 +2,7 @@ import org.modelix.gradle.mpsbuild.MPSBuildSettings
 
 plugins {
     base
-    id("org.modelix.mpsbuild") version "1.0.8"
+    id("org.modelix.mpsbuild") version "1.0.10"
 }
 
 val generatorLibs by configurations.creating
@@ -32,6 +32,7 @@ extensions.configure<MPSBuildSettings> {
     dependsOn(copyLibs)
     mpsVersion("2021.1.4")
     search(".")
+    disableParentPublication()
 
     publication("metamodel-export-mps") {
         module("org.modelix.metamodel.export")

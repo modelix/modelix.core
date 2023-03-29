@@ -53,7 +53,10 @@ private fun toLong(value: String?): Long {
  * client sends. This allows more validations and more responsibilities on the server side.
  */
 @OptIn(ExperimentalSerializationApi::class)
-class ModelReplicationServer(val storeClient: IStoreClient) {
+class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
+    constructor(modelClient: LocalModelClient) : this(RepositoriesManager(modelClient))
+    constructor(storeClient: IStoreClient) : this(LocalModelClient(storeClient))
+
     companion object {
         private val LOG = LoggerFactory.getLogger(ModelReplicationServer::class.java)
 
@@ -62,13 +65,12 @@ class ModelReplicationServer(val storeClient: IStoreClient) {
         }
     }
 
-    private val modelClient: LocalModelClient = LocalModelClient(storeClient)
-    private val repositoriesManager = RepositoriesManager(modelClient)
+    private val modelClient: LocalModelClient get() = repositoriesManager.client
+    private val storeClient: IStoreClient get() = modelClient.store
 
     fun init(application: Application) {
         KeyValueLikeModelServer.initServerId(storeClient)
         application.apply {
-            install(WebSockets)
             routing {
                 route("v2") {
                     installHandlers()
@@ -85,7 +87,7 @@ class ModelReplicationServer(val storeClient: IStoreClient) {
             call.respondText(KeyValueLikeModelServer.getServerId(storeClient))
         }
         get("user-id") {
-            call.respondText(call.getUserName() ?: "")
+            call.respondText(call.getUserName() ?: call.request.origin.remoteHost)
         }
         route("repositories") {
             get {

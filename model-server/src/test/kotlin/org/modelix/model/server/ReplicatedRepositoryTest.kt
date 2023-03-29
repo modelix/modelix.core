@@ -19,6 +19,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.testing.*
+import io.ktor.server.websocket.*
 import kotlinx.coroutines.delay
 import org.junit.Test
 import org.modelix.authorization.installAuthentication
@@ -47,6 +48,7 @@ class ReplicatedRepositoryTest {
             install(ContentNegotiation) {
                 json()
             }
+            install(WebSockets)
             ModelReplicationServer(InMemoryStoreClient()).init(this)
         }
         block()

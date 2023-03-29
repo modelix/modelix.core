@@ -89,7 +89,7 @@ class ModelReplicationServer(val storeClient: IStoreClient) {
         }
         route("repositories") {
             get {
-                call.respondText(repositoriesManager.getRepositoryNames().joinToString("\n"))
+                call.respondText(repositoriesManager.getRepositories().joinToString("\n") { it.id })
             }
             route("{repository}") {
                 fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)

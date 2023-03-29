@@ -88,6 +88,7 @@ class HistoryHandler(private val client: IModelClient) {
         client.put(repositoryAndBranch.branchKey, newVersion.write())
     }
 
+    @Deprecated("Use RepositoriesManager")
     val knownRepositoryIds: Set<RepositoryAndBranch>
         get() {
             val result: MutableSet<RepositoryAndBranch> = HashSet()
@@ -326,6 +327,7 @@ class HistoryHandler(private val client: IModelClient) {
         return defaultValue
     }
 
+    @Deprecated("Use BranchReference")
     data class RepositoryAndBranch(val repository: String, val branch: String = RepositoryId.DEFAULT_BRANCH) {
         val branchKey: String
             get() = RepositoryId(repository).getBranchKey(branch)

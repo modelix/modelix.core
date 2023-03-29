@@ -23,12 +23,12 @@ data class RepositoryId(val id: String) {
         require(id.matches(VALID_ID_PATTERN)) { "Invalid repository ID: $id" }
     }
 
-    @Deprecated("Use getBranchReference().getKey()")
+    @Deprecated("Use getBranchReference().getKey()", ReplaceWith("getBranchReference(branchName).getKey()"))
     fun getBranchKey(branchName: String?): String {
         return getBranchReference(branchName).getKey()
     }
 
-    @Deprecated("Use getBranchReference().getKey()")
+    @Deprecated("Use getBranchReference().getKey()", ReplaceWith("getBranchReference().getKey()"))
     fun getBranchKey(): String = getBranchKey(null)
 
     fun getBranchReference(branchName: String? = DEFAULT_BRANCH): BranchReference {

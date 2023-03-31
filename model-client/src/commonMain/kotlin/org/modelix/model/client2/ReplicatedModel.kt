@@ -91,8 +91,13 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
             if (newRemoteVersion.getContentHash() != localVersion.getContentHash()) {
                 otBranch.runWrite {
                     applyPendingLocalChanges()
-                    localVersion = VersionMerger(newRemoteVersion.store, client.getIdGenerator())
-                        .mergeChange(localVersion, newRemoteVersion)
+                    try {
+                        localVersion = VersionMerger(newRemoteVersion.store, client.getIdGenerator())
+                            .mergeChange(localVersion, newRemoteVersion)
+                    } catch (ex: Exception) {
+                        LOG.warn(ex) { "Failed to merge remote version $newRemoteVersion into local version $localVersion. Resetting to remote version." }
+                        localVersion = newRemoteVersion
+                    }
                     rawBranch.writeTransaction.tree = localVersion.tree
                 }
             }
@@ -135,6 +140,10 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
         Starting,
         Started,
         Disposed
+    }
+
+    companion object {
+        private val LOG = mu.KotlinLogging.logger {  }
     }
 }
 

@@ -35,7 +35,6 @@ class AutoTransactionsBranch(private val branch: IBranch) : IBranch by branch, I
     override fun unwrapBranch(): IBranch = branch
 }
 
-
 open class AutoTransaction(override val branch: IBranch) : ITransaction {
     override val tree: ITree
         get() = branch.computeReadT { it.tree }

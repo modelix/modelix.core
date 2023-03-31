@@ -143,7 +143,7 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {  }
+        private val LOG = mu.KotlinLogging.logger { }
     }
 }
 

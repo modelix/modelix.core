@@ -52,7 +52,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":model-api"))
-                implementation(project(":model-server-api"))
+                api(project(":model-server-api"))
                 kotlin("stdlib-common")
                 implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.4")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")

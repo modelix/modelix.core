@@ -16,25 +16,23 @@ package org.modelix.model.server.handlers
 
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.util.pipeline.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.DecodeSequenceMode
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.decodeToSequence
 import kotlinx.serialization.json.encodeToStream
-import org.modelix.authorization.*
+import org.modelix.authorization.getUserName
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.ModelQuery
@@ -121,7 +119,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                             call.respondDelta(versionHash, baseVersionHash)
                         }
                         post {
-                            val deltaFromClient = Json.decodeFromStream<VersionDelta>(call.receiveStream())
+                            val deltaFromClient = call.receive<VersionDelta>()
                             storeClient.putAll(deltaFromClient.objects.associateBy { HashUtil.sha256(it) })
                             val mergedHash = repositoriesManager.mergeChanges(branchRef(), deltaFromClient.versionHash)
                             call.respondDelta(mergedHash, deltaFromClient.versionHash)
@@ -168,11 +166,14 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         }
         route("objects") {
             post {
-                Json.decodeToSequence<String>(call.receiveStream(), DecodeSequenceMode.ARRAY_WRAPPED)
-                    .chunked(5000)
-                    .forEach { values ->
-                        storeClient.putAll(values.associateBy { HashUtil.sha256(it) }, true)
-                    }
+                withContext(Dispatchers.IO) {
+                    Json.decodeToSequence<String>(call.receiveStream(), DecodeSequenceMode.ARRAY_WRAPPED)
+                        .chunked(5000)
+                        .forEach { values ->
+                            storeClient.putAll(values.associateBy { HashUtil.sha256(it) }, true)
+                        }
+                }
+                call.respondText("OK")
             }
             get("{hash}") {
                 val key = call.parameters["hash"]!!

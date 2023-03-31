@@ -41,3 +41,9 @@ interface IBranch {
     fun addListener(l: IBranchListener)
     fun removeListener(l: IBranchListener)
 }
+
+interface IBranchWrapper : IBranch {
+    fun unwrapBranch(): IBranch
+}
+
+fun IBranch.deepUnwrap(): IBranch = if (this is IBranchWrapper) unwrapBranch().deepUnwrap() else this

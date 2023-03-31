@@ -3,10 +3,13 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+val kotlinxSerializationVersion: String by rootProject
+val kotlinCollectionsImmutableVersion: String by rootProject
+
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:$kotlinCollectionsImmutableVersion")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
     implementation("com.charleskorn.kaml:kaml:0.40.0")
     implementation(project(":metamodel-runtime"))
     implementation("com.squareup:kotlinpoet:1.12.0")

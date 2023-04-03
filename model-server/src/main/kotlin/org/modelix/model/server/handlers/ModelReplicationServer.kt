@@ -100,7 +100,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 }
                 route("branches") {
                     get {
-                        call.respondText(repositoriesManager.getBranches(repositoryId()).joinToString("\n"))
+                        call.respondText(repositoriesManager.getBranchNames(repositoryId()).joinToString("\n"))
                     }
                     route("{branch}") {
                         fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)

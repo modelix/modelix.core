@@ -71,8 +71,15 @@ class RepositoriesManager(val client: LocalModelClient) {
         return initialVersion!!
     }
 
-    fun getBranches(repositoryId: RepositoryId): Set<String> {
+    fun getBranchNames(repositoryId: RepositoryId): Set<String> {
         return store[branchListKey(repositoryId)]?.lines()?.toSet() ?: emptySet()
+    }
+
+    fun getBranches(repositoryId: RepositoryId): Set<BranchReference> {
+        return getBranchNames(repositoryId)
+            .map { repositoryId.getBranchReference(it) }
+            .sortedBy { it.branchName }
+            .toSet()
     }
 
     /**
@@ -124,6 +131,10 @@ class RepositoriesManager(val client: LocalModelClient) {
             result = mergedHash
         }
         return result!!
+    }
+
+    fun getVersion(branch: BranchReference): CLVersion? {
+        return getVersionHash(branch)?.let { CLVersion.loadFromHash(it, client.storeCache) }
     }
 
     fun getVersionHash(branch: BranchReference): String? {

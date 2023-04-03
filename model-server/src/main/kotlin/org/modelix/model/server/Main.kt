@@ -132,9 +132,9 @@ object Main {
                 )
             }
 
-            val historyHandler = HistoryHandler(localModelClient)
             val jsonModelServer = DeprecatedLightModelServer(localModelClient)
             val repositoriesManager = RepositoriesManager(localModelClient)
+            val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val modelReplicationServer = ModelReplicationServer(repositoriesManager)
             val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port) {
                 install(Routing)

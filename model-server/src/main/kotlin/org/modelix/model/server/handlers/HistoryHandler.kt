@@ -17,6 +17,7 @@ import org.modelix.authorization.requiresPermission
 import org.modelix.model.LinearHistory
 import org.modelix.model.api.*
 import org.modelix.model.client.IModelClient
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.createRegularVersion
@@ -33,7 +34,8 @@ import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class HistoryHandler(private val client: IModelClient) {
+class HistoryHandler(val client: IModelClient, val repositoriesManager: RepositoriesManager) {
+
 
     fun init(application: Application) {
         application.routing {
@@ -43,39 +45,38 @@ class HistoryHandler(private val client: IModelClient) {
                 }
             }
             get("/history/{repoId}/{branch}/") {
-                val repositoryId = call.parameters["repoId"]!!
-                val branch = call.parameters["branch"]!!
+                val repositoryId = RepositoryId(call.parameters["repoId"]!!)
+                val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
                 val params = call.request.queryParameters
                 val limit = toInt(params["limit"], 500)
                 val skip = toInt(params["skip"], 0)
                 call.respondTextWriter(contentType = ContentType.Text.Html) {
-                    buildRepositoryPage(PrintWriter(this), RepositoryAndBranch(repositoryId, branch), params["head"], skip, limit)
+                    buildRepositoryPage(PrintWriter(this), branch, params["head"], skip, limit)
                 }
             }
             requiresPermission("history".asResource(), KeycloakScope.WRITE) {
                 post("/history/{repoId}/{branch}/revert") {
-                    val repositoryId = call.parameters["repoId"]!!
-                    val branch = call.parameters["branch"]!!
+                    val repositoryId = RepositoryId(call.parameters["repoId"]!!)
+                    val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
                     val params = call.receiveParameters()
                     val fromVersion = params["from"]!!
                     val toVersion = params["to"]!!
                     val user = getUserName()
-                    revert(RepositoryAndBranch(repositoryId, branch), fromVersion, toVersion, user)
+                    revert(branch, fromVersion, toVersion, user)
                     call.respondRedirect(".")
                 }
-                post("/history/{repoId}/{branch}/delete") {
-                    val repositoryId = call.parameters["repoId"]!!
-                    val branch = call.parameters["branch"]!!
-                    client.put(RepositoryId(repositoryId).getBranchKey(branch), null)
-                    call.respondRedirect(".")
-                }
+//                post("/history/{repoId}/{branch}/delete") {
+//                    val repositoryId = call.parameters["repoId"]!!
+//                    val branch = call.parameters["branch"]!!
+//                    client.put(RepositoryId(repositoryId).getBranchKey(branch), null)
+//                    call.respondRedirect(".")
+//                }
             }
         }
     }
 
-    fun revert(repositoryAndBranch: RepositoryAndBranch, from: String?, to: String?, author: String?) {
-        val versionHash = client[repositoryAndBranch.branchKey]
-        val version = CLVersion(versionHash!!, client.storeCache!!)
+    fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
+        val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch doesn't exist: $repositoryAndBranch")
         val branch = OTBranch(PBranch(version.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.runWriteT { t ->
             t.applyOperation(RevertToOp(KVEntryReference(from!!, DESERIALIZER), KVEntryReference(to!!, DESERIALIZER)))
@@ -89,7 +90,7 @@ class HistoryHandler(private val client: IModelClient) {
             version,
             ops.map { it.getOriginalOp() }.toTypedArray()
         )
-        client.put(repositoryAndBranch.branchKey, newVersion.write())
+        repositoriesManager.mergeChanges(repositoryAndBranch, newVersion.getContentHash())
     }
 
     @Deprecated("Use RepositoriesManager")
@@ -115,13 +116,15 @@ class HistoryHandler(private val client: IModelClient) {
         }
 
     fun buildMainPage(out: PrintWriter) {
-        val content = if (knownRepositoryIds.isEmpty()) {
+        val branches = repositoriesManager.getRepositories().sortedBy { it.id }
+            .flatMap { repositoriesManager.getBranches(it) }
+        val content = if (branches.isEmpty()) {
             "<p><i>No repositories available, add one</i></p>"
         } else {
             """<ul>
-                | ${knownRepositoryIds.map { repositoryAndBranch -> """
+                | ${branches.map { branch -> """
                 <li>
-                    <a href='${escapeURL(repositoryAndBranch.repository)}/${escapeURL(repositoryAndBranch.branch)}/'>${escape(repositoryAndBranch.toString())}</a>
+                    <a href='${escapeURL(branch.repositoryId.id)}/${escapeURL(branch.branchName)}/'>${escape(branch.repositoryId.id)}/${escape(branch.branchName)}</a>
                 </li>
                 """ }.joinToString("\n")}
                 |</ul>
@@ -142,7 +145,7 @@ class HistoryHandler(private val client: IModelClient) {
             """)
     }
 
-    protected fun buildRepositoryPage(out: PrintWriter, repositoryAndBranch: RepositoryAndBranch, headHash: String?, skip: Int, limit: Int) {
+    protected fun buildRepositoryPage(out: PrintWriter, repositoryAndBranch: BranchReference, headHash: String?, skip: Int, limit: Int) {
         out.append("""
             <html>
             <head>
@@ -212,7 +215,7 @@ class HistoryHandler(private val client: IModelClient) {
             </head>
             <body>
             """)
-        val latestVersion = CLVersion(client[repositoryAndBranch.branchKey]!!, client.storeCache!!)
+        val latestVersion = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch not found: $repositoryAndBranch")
         val headVersion = if (headHash == null || headHash.length == 0) latestVersion else CLVersion(headHash, client.storeCache!!)
         var version: CLVersion? = headVersion
         var rowIndex = 0
@@ -220,13 +223,13 @@ class HistoryHandler(private val client: IModelClient) {
         out.append(escape(repositoryAndBranch.toString()))
         out.append("</h1>")
 
-        out.append("""
-            <div>
-            <form action='delete' method='POST'>
-            <input type='submit' value='Delete'/>
-            </form>
-            </div>
-        """)
+//        out.append("""
+//            <div>
+//            <form action='delete' method='POST'>
+//            <input type='submit' value='Delete'/>
+//            </form>
+//            </div>
+//        """)
 
         val buttons = Runnable {
             out.append("<div class='BtnGroup'>")

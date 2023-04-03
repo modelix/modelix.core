@@ -29,4 +29,8 @@ data class ConceptReference(val uid: String) : IConceptReference {
     override fun serialize(): String {
         return uid
     }
+
+    override fun toString(): String {
+        return uid
+    }
 }

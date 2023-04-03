@@ -17,6 +17,8 @@ package org.modelix.model.lazy
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import org.modelix.model.IVersion
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.LocalPNodeReference
@@ -103,8 +105,20 @@ class CLVersion : IVersion {
     val id: Long
         get() = data!!.id
 
+    @Deprecated("Use getTimestamp()")
     val time: String?
         get() = data!!.time
+
+    fun getTimestamp(): Instant? {
+        val dateTimeStr = data!!.time ?: return null
+        try {
+            return Instant.fromEpochSeconds(dateTimeStr.toLong())
+        } catch (ex: Exception) {}
+        try {
+            return kotlinx.datetime.LocalDateTime.parse(dateTimeStr).toInstant(TimeZone.currentSystemDefault())
+        } catch (ex: Exception) {}
+        return null
+    }
 
     @Deprecated("Use getContentHash()", ReplaceWith("getContentHash()"))
     val hash: String

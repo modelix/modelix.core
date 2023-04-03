@@ -5,6 +5,10 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toLocalDateTime
 import org.apache.commons.lang3.StringEscapeUtils
 import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
@@ -275,7 +279,7 @@ class HistoryHandler(private val client: IModelClient) {
             <span class='hash'>${version.hash}"</span>
         </td>
         <td>${nbsp(escape(version.author))}</td>
-        <td style='white-space: nowrap;'>${escape(reformatTime(version.time))}</td>
+        <td style='white-space: nowrap;'>${escape(version.getTimestamp()?.let { reformatTime(it) } ?: version.time)}</td>
         <td>""")
         val opsDescription = if (version.isMerge()) {
             "merge " + version.getMergedVersion1()!!.id + " + " + version.getMergedVersion2()!!.id + " (base " + version.baseVersion + ")"
@@ -299,10 +303,9 @@ class HistoryHandler(private val client: IModelClient) {
         """)
     }
 
-    private fun reformatTime(dateTimeStr: String?): String {
-        if (dateTimeStr == null) return ""
-        val dateTime = LocalDateTime.parse(dateTimeStr)
-        return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+    private fun reformatTime(dateTime: Instant): String {
+        return dateTime.toLocalDateTime(TimeZone.currentSystemDefault()).toJavaLocalDateTime()
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
     }
 
     private fun escape(text: String?): String? {

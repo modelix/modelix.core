@@ -1,4 +1,4 @@
-= How-To use the `light-model-client
+= How-To use the `light-model-client`
 :navtitle: Use the `light-model-client`
 
 

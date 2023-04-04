@@ -2,7 +2,7 @@ import org.modelix.gradle.mpsbuild.MPSBuildSettings
 
 plugins {
     base
-    id("org.modelix.mpsbuild") version "1.0.10"
+    id("org.modelix.mps.build-tools") version "1.0.11"
 }
 
 val generatorLibs by configurations.creating

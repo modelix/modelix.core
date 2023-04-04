@@ -9,7 +9,6 @@ import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 import org.modelix.model.server.api.*
-import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -39,13 +38,13 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     private var unappliedQuery: ModelQuery? = null
 
     init {
-        connection.connect { message ->
-            try {
-                messageReceived(message)
-            } catch (ex: Exception) {
-                LOG.error(ex) { "Failed to process message: $message" }
-            }
-        }
+        connection.onMessage(::messageReceived)
+        connection.onDisconnect(::handleDisconnect)
+        connection.connect()
+    }
+
+    private fun handleDisconnect() {
+        unappliedQuery = currentModelQuery
     }
 
     fun dispose() {
@@ -664,8 +663,10 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 
     interface IConnection {
+        fun onMessage(messageHandler: (message: MessageFromServer)->Unit)
+        fun onDisconnect(handler: () -> Unit)
         fun sendMessage(message: MessageFromClient)
-        fun connect(messageReceiver: (message: MessageFromServer)->Unit)
+        fun connect()
         fun disconnect()
     }
 

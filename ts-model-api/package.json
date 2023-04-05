@@ -20,7 +20,6 @@
     "dist/*.d.ts"
   ],
   "main": "dist/index",
-  "module": "dist/index.mjs",
   "typings": "dist/index.d.ts",
   "types": "dist/index.d.ts",
   "scripts": {

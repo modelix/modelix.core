@@ -16,7 +16,7 @@ rootProject.name = "modelix.core"
 
 include("authorization")
 include("light-model-client")
-include("light-model-server")
+include("model-server-lib")
 include("metamodel-export")
 include("model-api-gen")
 include("model-api-gen-gradle")

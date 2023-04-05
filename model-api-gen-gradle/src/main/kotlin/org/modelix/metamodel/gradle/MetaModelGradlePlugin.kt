@@ -21,7 +21,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
         val exporterDependencies = project.configurations.create("metamodel-mps-dependencies")
         val exporterDir = getBuildOutputDir().resolve("mpsExporter")
         val modelixCoreVersion = readModelixCoreVersion() ?: throw RuntimeException("modelix.core version not found")
-        project.dependencies.add(exporterDependencies.name, "org.modelix:metamodel-export-mps:$modelixCoreVersion")
+        project.dependencies.add(exporterDependencies.name, "org.modelix.mps:metamodel-export:$modelixCoreVersion")
         val downloadExporterDependencies = project.tasks.register("downloadMetaModelExporter", Sync::class.java) { task ->
             task.enabled = settings.jsonDir == null
             task.from(exporterDependencies.resolve().map { project.zipTree(it) })

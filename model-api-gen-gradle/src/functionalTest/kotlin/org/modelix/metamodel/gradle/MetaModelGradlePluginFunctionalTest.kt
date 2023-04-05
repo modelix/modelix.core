@@ -12,7 +12,7 @@ import org.junit.rules.TemporaryFolder
 import org.modelix.model.data.LanguageData
 
 /**
- * A simple functional test for the 'org.modelix.metamodel.gradle.greeting' plugin.
+ * A simple functional test for the 'org.modelix.model-api-gen' plugin.
  */
 class MetaModelGradlePluginFunctionalTest {
     @get:Rule
@@ -30,7 +30,7 @@ class MetaModelGradlePluginFunctionalTest {
         getSettingsFile().writeText("")
         getBuildFile().writeText("""
 plugins {
-    id('org.modelix.metamodel.gradle')
+    id('org.modelix.model-api-gen')
 }
 
 repositories {
@@ -43,7 +43,7 @@ metamodel {
     mpsHome = file("${File("build/mps").absolutePath}")
     mpsHeapSize = "2g"
     kotlinDir = file("" + buildDir + "/kotlin_gen")
-    registrationHelperName = "org.modelix.metamodel.gradle.functionalTest.Languages"
+    registrationHelperName = "org.modelix.model-api-gen-gradle.functionalTest.Languages"
     typescriptDir = file("" + buildDir + "/ts_gen")
     includeNamespace("jetbrains.mps.baseLanguage")
     exportModules("jetbrains.mps.runtime")
@@ -86,7 +86,7 @@ metamodel {
         getSettingsFile().writeText("")
         getBuildFile().writeText("""
 plugins {
-    id('org.modelix.metamodel.gradle')
+    id('org.modelix.model-api-gen')
 }
 
 repositories {
@@ -97,7 +97,7 @@ repositories {
 
 metamodel {
     kotlinDir = file("" + buildDir + "/kotlin_gen")
-    registrationHelperName = "org.modelix.metamodel.gradle.functionalTest.Languages"
+    registrationHelperName = "org.modelix.model-api-gen-gradle.functionalTest.Languages"
     typescriptDir = file("" + buildDir + "/ts_gen")
     includeNamespace("jetbrains.mps.baseLanguage")
     jsonDir = file("$jsonPath")

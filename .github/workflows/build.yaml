@@ -21,7 +21,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew build publishToMavenLocal -PciBuild=true
-      - name: Test Metamodel Gradle Plugin
+      - name: Test Model API Generator Gradle Plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: model-api-gen-gradle-test/ci.sh

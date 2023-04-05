@@ -107,5 +107,5 @@ tasks.named<Task>("check") {
 
 tasks.named("functionalTest") {
     dependsOn(resolveMps)
-    dependsOn(":metamodel-export-mps:publish_metamodel-export-mps_PublicationToMavenLocal")
+    dependsOn(":metamodel-export:publish_metamodel-export_PublicationToMavenLocal")
 }

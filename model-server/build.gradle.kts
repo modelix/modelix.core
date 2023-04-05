@@ -147,9 +147,9 @@ publishing {
             from(components["java"])
         }
 
-        create<MavenPublication>("modelServerFatJar") {
+        create<MavenPublication>("modelServerWithDependencies") {
             groupId = project.group as String
-            artifactId = "model-server-fatjar"
+            artifactId = "model-server-with-dependencies"
             artifact(fatJarArtifact)
         }
     }

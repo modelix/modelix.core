@@ -74,7 +74,7 @@ testing {
 
             dependencies {
                 // functionalTest test suite depends on the production code in tests
-                implementation(project(":metamodel-gradle"))
+                implementation(project(":model-api-gen-gradle"))
                 implementation(project(":model-api"))
                 implementation(project(":model-api-gen"))
                 implementation(project(":metamodel-export-mps"))
@@ -93,7 +93,7 @@ testing {
 gradlePlugin {
     // Define the plugin
     val mpsMetaModel by plugins.creating {
-        id = "org.modelix.metamodel.gradle"
+        id = "org.modelix.model-api-gen"
         implementationClass = "org.modelix.metamodel.gradle.MetaModelGradlePlugin"
     }
 }

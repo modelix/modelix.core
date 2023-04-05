@@ -1,7 +1,7 @@
 pluginManagement {
     val modelixCoreVersion: String = file("../version.txt").readText()
     plugins {
-        id("org.modelix.metamodel.gradle") version modelixCoreVersion
+        id("org.modelix.model-api-gen") version modelixCoreVersion
     }
     resolutionStrategy {
     }

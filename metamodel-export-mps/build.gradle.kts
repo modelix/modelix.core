@@ -9,7 +9,7 @@ val generatorLibs by configurations.creating
 
 dependencies {
     generatorLibs(project(":metamodel-runtime"))
-    generatorLibs(project(":metamodel-generator"))
+    generatorLibs(project(":model-api-gen"))
 }
 
 val copyLibs by tasks.registering(Sync::class) {

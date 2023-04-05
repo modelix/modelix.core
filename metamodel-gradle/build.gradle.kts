@@ -28,7 +28,7 @@ dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
-    implementation(project(":metamodel-generator"))
+    implementation(project(":model-api-gen"))
     implementation(project(":model-api"))
 }
 
@@ -76,7 +76,7 @@ testing {
                 // functionalTest test suite depends on the production code in tests
                 implementation(project(":metamodel-gradle"))
                 implementation(project(":model-api"))
-                implementation(project(":metamodel-generator"))
+                implementation(project(":model-api-gen"))
                 implementation(project(":metamodel-export-mps"))
             }
 

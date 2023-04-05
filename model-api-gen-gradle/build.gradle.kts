@@ -77,7 +77,7 @@ testing {
                 implementation(project(":model-api-gen-gradle"))
                 implementation(project(":model-api"))
                 implementation(project(":model-api-gen"))
-                implementation(project(":metamodel-export-mps"))
+                implementation(project(":metamodel-export"))
             }
 
             targets {

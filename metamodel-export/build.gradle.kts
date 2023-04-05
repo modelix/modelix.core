@@ -5,6 +5,8 @@ plugins {
     id("org.modelix.mps.build-tools") version "1.0.11"
 }
 
+group = "org.modelix.mps"
+
 val generatorLibs by configurations.creating
 
 dependencies {
@@ -34,7 +36,8 @@ extensions.configure<MPSBuildSettings> {
     search(".")
     disableParentPublication()
 
-    publication("metamodel-export-mps") {
+
+    publication("metamodel-export") {
         module("org.modelix.metamodel.export")
     }
 }

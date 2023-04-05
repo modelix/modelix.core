@@ -38,7 +38,7 @@ val modelixCoreVersion: String = projectDir.resolve("../version.txt").readText()
 
 dependencies {
     mps("com.jetbrains:mps:2021.1.4")
-    implementation("org.modelix:metamodel-runtime:$modelixCoreVersion")
+    implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
 }
 
 val resolveMps by tasks.registering(Sync::class) {

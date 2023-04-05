@@ -8,7 +8,7 @@ plugins {
 val generatorLibs by configurations.creating
 
 dependencies {
-    generatorLibs(project(":metamodel-runtime"))
+    generatorLibs(project(":model-api-gen-runtime"))
     generatorLibs(project(":model-api-gen"))
 }
 

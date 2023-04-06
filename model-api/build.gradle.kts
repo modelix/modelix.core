@@ -17,17 +17,13 @@ ktlint {
     outputToConsole.set(true)
     this.filter {
         this.exclude {
-            it.file.toPath().toAbsolutePath().startsWith(buildDir.toPath().toAbsolutePath())
+            it.file.toPath().toAbsolutePath().startsWith(project(":ts-model-api").buildDir.toPath().toAbsolutePath())
         }
     }
 }
 
 tasks.named("check") {
     dependsOn("ktlintCheck")
-}
-
-tasks.named("sourcesJar") {
-    dependsOn("jsGenerateExternalsIntegrated")
 }
 
 val kotlinLoggingVersion: String by rootProject
@@ -72,8 +68,9 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                api(npm("@modelix/ts-model-api", rootDir.resolve("ts-model-api"), generateExternals = true))
+                api(npm("@modelix/ts-model-api", rootDir.resolve("ts-model-api")))
             }
+            kotlin.srcDir(rootDir.resolve("ts-model-api").resolve("build/dukat"))
         }
         val jsTest by getting {
             dependencies {
@@ -83,10 +80,9 @@ kotlin {
     }
 }
 
-tasks.named("runKtlintCheckOverJsMainSourceSet") {
-    dependsOn("jsGenerateExternalsIntegrated")
-}
-
-tasks.named("jsSourcesJar") {
-    dependsOn("jsGenerateExternalsIntegrated")
+listOf("sourcesJar", "runKtlintCheckOverJsMainSourceSet", "jsSourcesJar", "jsPackageJson", "compileKotlinJs", "jsProcessResources").forEach {
+    tasks.named(it) {
+        dependsOn(":ts-model-api:npm_run_build")
+        dependsOn(":ts-model-api:npm_run_generateKotlin")
+    }
 }

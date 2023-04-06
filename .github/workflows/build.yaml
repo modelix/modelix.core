@@ -21,10 +21,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew build publishToMavenLocal -PciBuild=true
-      - name: Test Metamodel Gradle Plugin
+      - name: Test Model API Generator Gradle Plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: metamodel-gradle-test/ci.sh
+        run: model-api-gen-gradle-test/ci.sh
       - name: Archive test report
         uses: actions/upload-artifact@v3
         if: always()

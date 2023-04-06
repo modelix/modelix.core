@@ -9,7 +9,7 @@ NOTE: If you are interested in a more practical usage of what is presented here,
 +
 [source,bash]
 --
-[modelix.core] $ ./gradlew model-server:run'
+[modelix.core] $ ./gradlew model-server:run
 --
 
 - To specify a different jdbc configuration, you can add the `-jdbcconf` arguement:

@@ -33,7 +33,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":model-api"))
-                implementation(project(":metamodel-runtime"))
+                implementation(project(":model-api-gen-runtime"))
                 implementation(project(":model-server-api"))
                 implementation("io.ktor:ktor-client-websockets:$ktorVersion")
                 implementation(kotlin("stdlib-common"))

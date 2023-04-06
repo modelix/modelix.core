@@ -8,3 +8,5 @@
 kotlin_gen
 /version.txt
 /node_modules
+**/.ideaconfig
+**/.mpsconfig

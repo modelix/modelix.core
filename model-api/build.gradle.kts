@@ -12,13 +12,6 @@ configurations {
 
 description = "API to access models stored in Modelix"
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-    kotlinOptions {
-        jvmTarget = "11"
-        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
-    }
-}
-
 ktlint {
     disabledRules.add("no-wildcard-imports")
     outputToConsole.set(true)

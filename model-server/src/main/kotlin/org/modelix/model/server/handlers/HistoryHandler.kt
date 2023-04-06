@@ -2,9 +2,38 @@ package org.modelix.model.server.handlers
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.html.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.html.FormMethod
+import kotlinx.html.HTML
+import kotlinx.html.TBODY
+import kotlinx.html.a
+import kotlinx.html.body
+import kotlinx.html.br
+import kotlinx.html.div
+import kotlinx.html.form
+import kotlinx.html.h1
+import kotlinx.html.head
+import kotlinx.html.hiddenInput
+import kotlinx.html.i
+import kotlinx.html.li
+import kotlinx.html.p
+import kotlinx.html.span
+import kotlinx.html.style
+import kotlinx.html.submitInput
+import kotlinx.html.table
+import kotlinx.html.tbody
+import kotlinx.html.td
+import kotlinx.html.th
+import kotlinx.html.thead
+import kotlinx.html.tr
+import kotlinx.html.ul
 import org.apache.commons.lang3.StringEscapeUtils
 import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
@@ -13,6 +42,7 @@ import org.modelix.authorization.requiresPermission
 import org.modelix.model.LinearHistory
 import org.modelix.model.api.*
 import org.modelix.model.client.IModelClient
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.createRegularVersion
@@ -29,49 +59,49 @@ import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class HistoryHandler(private val client: IModelClient) {
+class HistoryHandler(val client: IModelClient, val repositoriesManager: RepositoriesManager) {
+
 
     fun init(application: Application) {
         application.routing {
             get("/history/") {
-                call.respondTextWriter(contentType = ContentType.Text.Html) {
-                    buildMainPage(PrintWriter(this))
+                call.respondHtml {
+                    buildMainPage()
                 }
             }
             get("/history/{repoId}/{branch}/") {
-                val repositoryId = call.parameters["repoId"]!!
-                val branch = call.parameters["branch"]!!
+                val repositoryId = RepositoryId(call.parameters["repoId"]!!)
+                val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
                 val params = call.request.queryParameters
                 val limit = toInt(params["limit"], 500)
                 val skip = toInt(params["skip"], 0)
-                call.respondTextWriter(contentType = ContentType.Text.Html) {
-                    buildRepositoryPage(PrintWriter(this), RepositoryAndBranch(repositoryId, branch), params["head"], skip, limit)
+                call.respondHtml {
+                    buildRepositoryPage(branch, params["head"], skip, limit)
                 }
             }
             requiresPermission("history".asResource(), KeycloakScope.WRITE) {
                 post("/history/{repoId}/{branch}/revert") {
-                    val repositoryId = call.parameters["repoId"]!!
-                    val branch = call.parameters["branch"]!!
+                    val repositoryId = RepositoryId(call.parameters["repoId"]!!)
+                    val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
                     val params = call.receiveParameters()
                     val fromVersion = params["from"]!!
                     val toVersion = params["to"]!!
                     val user = getUserName()
-                    revert(RepositoryAndBranch(repositoryId, branch), fromVersion, toVersion, user)
+                    revert(branch, fromVersion, toVersion, user)
                     call.respondRedirect(".")
                 }
-                post("/history/{repoId}/{branch}/delete") {
-                    val repositoryId = call.parameters["repoId"]!!
-                    val branch = call.parameters["branch"]!!
-                    client.put(RepositoryId(repositoryId).getBranchKey(branch), null)
-                    call.respondRedirect(".")
-                }
+//                post("/history/{repoId}/{branch}/delete") {
+//                    val repositoryId = call.parameters["repoId"]!!
+//                    val branch = call.parameters["branch"]!!
+//                    client.put(RepositoryId(repositoryId).getBranchKey(branch), null)
+//                    call.respondRedirect(".")
+//                }
             }
         }
     }
 
-    fun revert(repositoryAndBranch: RepositoryAndBranch, from: String?, to: String?, author: String?) {
-        val versionHash = client[repositoryAndBranch.branchKey]
-        val version = CLVersion(versionHash!!, client.storeCache!!)
+    fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
+        val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch doesn't exist: $repositoryAndBranch")
         val branch = OTBranch(PBranch(version.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.runWriteT { t ->
             t.applyOperation(RevertToOp(KVEntryReference(from!!, DESERIALIZER), KVEntryReference(to!!, DESERIALIZER)))
@@ -85,236 +115,241 @@ class HistoryHandler(private val client: IModelClient) {
             version,
             ops.map { it.getOriginalOp() }.toTypedArray()
         )
-        client.put(repositoryAndBranch.branchKey, newVersion.write())
+        repositoriesManager.mergeChanges(repositoryAndBranch, newVersion.getContentHash())
     }
 
-    @Deprecated("Use RepositoriesManager")
-    val knownRepositoryIds: Set<RepositoryAndBranch>
-        get() {
-            val result: MutableSet<RepositoryAndBranch> = HashSet()
-            val infoVersionHash = client[RepositoryId("info").getBranchKey()] ?: return emptySet()
-            val infoVersion = CLVersion(infoVersionHash, client.storeCache!!)
-            val infoBranch: IBranch = MetaModelBranch(PBranch(infoVersion.tree, IdGeneratorDummy()))
-            infoBranch.runReadT { t: IReadTransaction ->
-                for (infoNodeId in t.getChildren(ITree.ROOT_ID, "info")) {
-                    for (repositoryNodeId in t.getChildren(infoNodeId, "repositories")) {
-                        val repositoryId = t.getProperty(repositoryNodeId, "id") ?: continue
-                        result.add(RepositoryAndBranch(repositoryId))
-                        for (branchNodeId in t.getChildren(repositoryNodeId, "branches")) {
-                            val branchName = t.getProperty(branchNodeId, "name") ?: continue
-                            result.add(RepositoryAndBranch(repositoryId, branchName))
-                        }
-                    }
-                }
-            }
-            return result
-        }
-
-    fun buildMainPage(out: PrintWriter) {
-        val content = if (knownRepositoryIds.isEmpty()) {
-            "<p><i>No repositories available, add one</i></p>"
-        } else {
-            """<ul>
-                | ${knownRepositoryIds.map { repositoryAndBranch -> """
-                <li>
-                    <a href='${escapeURL(repositoryAndBranch.repository)}/${escapeURL(repositoryAndBranch.branch)}/'>${escape(repositoryAndBranch.toString())}</a>
-                </li>
-                """ }.joinToString("\n")}
-                |</ul>
-            """.trimMargin()
-        }
-
-        out.append("""
-            <html>
-                <head>
-                    <style>
-                    </style>
-                </head>
-                <body>
-                    <h1>Choose Repository</h1>
-                    $content
-                </body>
-            </html>
-            """)
-    }
-
-    protected fun buildRepositoryPage(out: PrintWriter, repositoryAndBranch: RepositoryAndBranch, headHash: String?, skip: Int, limit: Int) {
-        out.append("""
-            <html>
-            <head>
-            <style>
-                table {
-                  border-collapse: collapse;
-                  font-family: sans-serif;
-                  margin: 25px 0;
-                  font-size: 0.9em;
-                  border-radius:6px;
-                }
-                thead tr {
-                  background-color: #009879;
-                  color: #ffffff;
-                  text-align: left;
-                }
-                th {
-                  padding: 12px 15px;
-                }
-                td {
-                  padding: 3px 15px;
-                }
-                tbody tr {
-                  border-bottom: 1px solid #dddddd;
-                  border-left: 1px solid #dddddd;
-                  border-right: 1px solid #dddddd;
-                }
-                tbody tr:nth-of-type(even) {
-                  background-color: #f3f3f3;
-                }
-                tbody tr:last-of-type
-                  border-bottom: 2px solid #009879;
-                }
-                tbody tr.active-row {
-                  font-weight: bold;
-                  color: #009879;
-                }
-                ul {
-                  padding-left: 15px;
-                }
-                .hash {
-                  color: #888;
-                }
-                .BtnGroup {
-                  display: inline-block;
-                  vertical-align: middle;
-                }
-                .BtnGroup-item {
-                  background-color: #f6f8fa;
-                  border: 1px solid rgba(27,31,36,0.15);
-                  padding: 5px 16px;
-                  position: relative;
-                  float: left;
-                  border-right-width: 0;
-                  border-radius: 0;
-                }
-                .BtnGroup-item:first-child {
-                  border-top-left-radius: 6px;
-                  border-bottom-left-radius: 6px;
-                }
-                .BtnGroup-item:last-child {
-                  border-right-width: 1px;
-                  border-top-right-radius: 6px;
-                  border-bottom-right-radius: 6px;
-                }
-            </style>
-            </head>
-            <body>
-            """)
-        val latestVersion = CLVersion(client[repositoryAndBranch.branchKey]!!, client.storeCache!!)
-        val headVersion = if (headHash == null || headHash.length == 0) latestVersion else CLVersion(headHash, client.storeCache!!)
-        var version: CLVersion? = headVersion
-        var rowIndex = 0
-        out.append("<h1>History for Repository ")
-        out.append(escape(repositoryAndBranch.toString()))
-        out.append("</h1>")
-
-        out.append("""
-            <div>
-            <form action='delete' method='POST'>
-            <input type='submit' value='Delete'/>
-            </form>
-            </div>
-        """)
-
-        val buttons = Runnable {
-            out.append("<div class='BtnGroup'>")
-            if (skip == 0) {
-                out.append("<a class='BtnGroup-item' href='?head=" + escapeURL(latestVersion.hash) + "&skip=0&limit=" + limit + "'>Newer</a>")
+    private fun HTML.buildMainPage() {
+        body {
+            h1 { +"Choose Repository" }
+            val repositories = repositoriesManager.getRepositories()
+            if (repositories.isEmpty()) {
+                p { i { +"No repositories available, add one" } }
             } else {
-                out.append("<a class='BtnGroup-item' href='?head=" + escapeURL(headVersion.hash) + "&skip=" + Math.max(0, skip - limit) + "&limit=" + limit + "'>Newer</a>")
-            }
-            out.append("<a class='BtnGroup-item' href='?head=" + escapeURL(headVersion.hash) + "&skip=" + (skip + limit) + "&limit=" + limit + "'>Older</a>")
-            out.append("</div>")
-        }
-        buttons.run()
-        out.append("<table>")
-        out.append("<thead><tr><th>ID<br/>Hash</th><th>Author</th><th>Time</th><th>Operations</th><th></th></tr></thead><tbody>")
-        try {
-            while (version != null) {
-                if (rowIndex >= skip) {
-                    createTableRow(out, version, latestVersion)
-                    if (version.isMerge()) {
-                        for (v in LinearHistory(version.baseVersion!!.hash).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
-                            createTableRow(out, v, latestVersion)
-                            rowIndex++
-                            if (rowIndex >= skip + limit) {
-                                break
+                table {
+                    tr {
+                        th { +"Repository" }
+                        th { +"Branch" }
+                    }
+                    for (repository in repositories) {
+                        val branches = repositoriesManager.getBranches(repository)
+                        tr {
+                            td {
+                                rowSpan = branches.size.coerceAtLeast(1).toString()
+                                +repository.id
+                            }
+                            if (branches.isEmpty()) {
+                                td { }
+                            } else {
+                                for (branch in branches) {
+                                    td {
+                                        a {
+                                            href = "${branch.repositoryId.id}/${branch.branchName}/"
+                                            +branch.branchName
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                rowIndex++
-                if (rowIndex >= skip + limit) {
-                    break
+            }
+        }
+    }
+
+    private fun HTML.buildRepositoryPage(repositoryAndBranch: BranchReference, headHash: String?, skip: Int, limit: Int) {
+        head {
+            style {
+                +"""
+                    table {
+                      border-collapse: collapse;
+                      font-family: sans-serif;
+                      margin: 25px 0;
+                      font-size: 0.9em;
+                      border-radius:6px;
+                    }
+                    thead tr {
+                      background-color: #009879;
+                      color: #ffffff;
+                      text-align: left;
+                    }
+                    th {
+                      padding: 12px 15px;
+                    }
+                    td {
+                      padding: 3px 15px;
+                    }
+                    tbody tr {
+                      border-bottom: 1px solid #dddddd;
+                      border-left: 1px solid #dddddd;
+                      border-right: 1px solid #dddddd;
+                    }
+                    tbody tr:nth-of-type(even) {
+                      background-color: #f3f3f3;
+                    }
+                    tbody tr:last-of-type
+                      border-bottom: 2px solid #009879;
+                    }
+                    tbody tr.active-row {
+                      font-weight: bold;
+                      color: #009879;
+                    }
+                    ul {
+                      padding-left: 15px;
+                    }
+                    .hash {
+                      color: #888;
+                      white-space: nowrap;
+                    }
+                    .BtnGroup {
+                      display: inline-block;
+                      vertical-align: middle;
+                    }
+                    .BtnGroup-item {
+                      background-color: #f6f8fa;
+                      border: 1px solid rgba(27,31,36,0.15);
+                      padding: 5px 16px;
+                      position: relative;
+                      float: left;
+                      border-right-width: 0;
+                      border-radius: 0;
+                    }
+                    .BtnGroup-item:first-child {
+                      border-top-left-radius: 6px;
+                      border-bottom-left-radius: 6px;
+                    }
+                    .BtnGroup-item:last-child {
+                      border-right-width: 1px;
+                      border-top-right-radius: 6px;
+                      border-bottom-right-radius: 6px;
+                    }
+                """.trimIndent()
+            }
+        }
+        body {
+            val latestVersion = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch not found: $repositoryAndBranch")
+            val headVersion = if (headHash == null || headHash.length == 0) latestVersion else CLVersion(headHash, client.storeCache!!)
+            var rowIndex = 0
+            h1 {
+                +"History for Repository "
+                +repositoryAndBranch.repositoryId.id
+                +"/"
+                +repositoryAndBranch.branchName
+            }
+
+//        out.append("""
+//            <div>
+//            <form action='delete' method='POST'>
+//            <input type='submit' value='Delete'/>
+//            </form>
+//            </div>
+//        """)
+
+            fun buttons() {
+                div("BtnGroup") {
+                    if (skip == 0) {
+                        a(classes = "BtnGroup-item") {
+                            href = "?head=${latestVersion.getContentHash()}&skip=0&limit=$limit"
+                            +"Newer"
+                        }
+                    } else {
+                        a(classes = "BtnGroup-item") {
+                            href = "?head=${headVersion.getContentHash()}&skip=${Math.max(0, skip - limit)}&limit=$limit"
+                            +"Newer"
+                        }
+                    }
+                    a(classes = "BtnGroup-item") {
+                        href = "?head=${headVersion.getContentHash()}&skip=${skip + limit}&limit=$limit"
+                        +"Older"
+                    }
                 }
-                version = version.baseVersion
             }
-        } catch (ex: Exception) {
-            out.append("""<tr><td colspan="5"><pre>${escape(ex.toString())}\n${ex.stackTraceToString()}</pre></td></tr>""")
+            buttons()
+            table {
+                thead {
+                    tr {
+                        th {
+                            +"ID"
+                            br {  }
+                            +"Hash"
+                        }
+                        th { +"Author" }
+                        th { +"Time" }
+                        th { +"Operations" }
+                        th { }
+                    }
+                }
+                tbody {
+                    var version: CLVersion? = headVersion
+                    while (version != null) {
+                        if (rowIndex >= skip) {
+                            createTableRow(version, latestVersion)
+                            if (version.isMerge()) {
+                                for (v in LinearHistory(version.baseVersion!!.getContentHash()).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
+                                    createTableRow(v, latestVersion)
+                                    rowIndex++
+                                    if (rowIndex >= skip + limit) {
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                        rowIndex++
+                        if (rowIndex >= skip + limit) {
+                            break
+                        }
+                        version = version.baseVersion
+                    }
+                }
+            }
+            buttons()
         }
-        out.append("</tbody></table>")
-        buttons.run()
-        out.append("</body>")
-        out.append("</html>")
     }
 
-    fun createTableRow(out: PrintWriter, version: CLVersion, latestVersion: CLVersion) {
-        out.append("""
-            <tr>
-        <td>
-            ${java.lang.Long.toHexString(version.id)}
-            <br/>
-            <span class='hash'>${version.hash}"</span>
-        </td>
-        <td>${nbsp(escape(version.author))}</td>
-        <td style='white-space: nowrap;'>${escape(reformatTime(version.time))}</td>
-        <td>""")
-        val opsDescription = if (version.isMerge()) {
-            "merge " + version.getMergedVersion1()!!.id + " + " + version.getMergedVersion2()!!.id + " (base " + version.baseVersion + ")"
-        } else {
-            if (version.operationsInlined()) {
-                "<ul><li>" + version.operations.joinToString("</li><li>") { it.toString() } + "</li></ul>"
-            } else {
-                "(" + version.numberOfOperations + ") "
+    private fun TBODY.createTableRow(version: CLVersion, latestVersion: CLVersion) {
+        tr {
+            td {
+                +version.id.toString(16)
+                br {  }
+                span(classes = "hash") { +version.getContentHash() }
+            }
+            td {
+                style = "white-space: nowrap;"
+                text(version.author ?: "")
+            }
+            td {
+                style = "white-space: nowrap;"
+                +(version.getTimestamp()?.let { reformatTime(it) } ?: version.time ?: "")
+            }
+            td {
+                if (version.isMerge()) {
+                    +"merge ${version.getMergedVersion1()!!.id} + ${version.getMergedVersion2()!!.id} (base ${version.baseVersion})"
+                } else {
+                    if (version.operationsInlined()) {
+                        ul {
+                            for (operation in version.operations) {
+                                li {
+                                    +operation.toString()
+                                }
+                            }
+                        }
+                    } else {
+                        +"(${version.numberOfOperations}) "
+                    }
+                }
+            }
+            td {
+                form(action = "revert", method = FormMethod.post) {
+                    hiddenInput(name = "from") { value = latestVersion.getContentHash() }
+                    hiddenInput(name = "to") { value = version.getContentHash() }
+                    submitInput { value = "Revert To" }
+                }
             }
         }
-        out.append(opsDescription)
-        out.append("""</td>
-            <td>
-            <form action='revert' method='POST'>
-            <input type='hidden' name='from' value='${escapeURL(latestVersion.hash)}'/>
-            <input type='hidden' name='to' value='${escapeURL(version.hash)}'/>
-            <input type='submit' value='Revert To'/>
-            </form>
-            </td>
-            </tr>
-        """)
     }
 
-    private fun reformatTime(dateTimeStr: String?): String {
-        if (dateTimeStr == null) return ""
-        val dateTime = LocalDateTime.parse(dateTimeStr)
-        return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-    }
-
-    private fun escape(text: String?): String? {
-        return StringEscapeUtils.escapeHtml4(text)
-    }
-
-    private fun escapeURL(text: String?): String? {
-        return URLEncoder.encode(text, StandardCharsets.UTF_8)
-    }
-
-    private fun nbsp(text: String?): String? {
-        return text?.replace(" ", "&nbsp;")
+    private fun reformatTime(dateTime: Instant): String {
+        return dateTime.toLocalDateTime(TimeZone.currentSystemDefault()).toJavaLocalDateTime()
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
     }
 
     private fun toInt(text: String?, defaultValue: Int): Int {
@@ -325,13 +360,5 @@ class HistoryHandler(private val client: IModelClient) {
         } catch (ex: NumberFormatException) {
         }
         return defaultValue
-    }
-
-    @Deprecated("Use BranchReference")
-    data class RepositoryAndBranch(val repository: String, val branch: String = RepositoryId.DEFAULT_BRANCH) {
-        val branchKey: String
-            get() = RepositoryId(repository).getBranchKey(branch)
-
-        override fun toString() = "$repository/$branch"
     }
 }

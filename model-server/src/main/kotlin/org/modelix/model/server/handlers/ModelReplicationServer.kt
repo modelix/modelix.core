@@ -23,15 +23,9 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.util.pipeline.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.DecodeSequenceMode
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeToSequence
-import kotlinx.serialization.json.encodeToStream
 import org.modelix.authorization.getUserName
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
@@ -42,15 +36,10 @@ import org.modelix.model.server.store.LocalModelClient
 import org.slf4j.LoggerFactory
 import java.util.*
 
-private fun toLong(value: String?): Long {
-    return if (value == null || value.isEmpty()) 0 else value.toLong()
-}
-
 /**
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
  * client sends. This allows more validations and more responsibilities on the server side.
  */
-@OptIn(ExperimentalSerializationApi::class)
 class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
     constructor(modelClient: LocalModelClient) : this(RepositoriesManager(modelClient))
     constructor(storeClient: IStoreClient) : this(LocalModelClient(storeClient))
@@ -96,11 +85,11 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
                 post("init") {
                     val initialVersion = repositoriesManager.createRepository(repositoryId(), call.getUserName())
-                    call.respondDelta(initialVersion.hash, null)
+                    call.respondDelta(initialVersion.getContentHash(), null)
                 }
                 route("branches") {
                     get {
-                        call.respondText(repositoriesManager.getBranches(repositoryId()).joinToString("\n"))
+                        call.respondText(repositoriesManager.getBranchNames(repositoryId()).joinToString("\n"))
                     }
                     route("{branch}") {
                         fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
@@ -166,13 +155,8 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         }
         route("objects") {
             post {
-                withContext(Dispatchers.IO) {
-                    Json.decodeToSequence<String>(call.receiveStream(), DecodeSequenceMode.ARRAY_WRAPPED)
-                        .chunked(5000)
-                        .forEach { values ->
-                            storeClient.putAll(values.associateBy { HashUtil.sha256(it) }, true)
-                        }
-                }
+                val values = call.receive<List<String>>()
+                storeClient.putAll(values.associateBy { HashUtil.sha256(it) }, true)
                 call.respondText("OK")
             }
             get("{hash}") {
@@ -196,7 +180,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 val query = ModelQuery.fromJson(queryFromClient)
                 val json = query.toJson()
                 val hash = HashUtil.sha256(json)
-                storeClient.put(hash, json,)
+                storeClient.put(hash, json)
                 call.respondText(text = hash)
             }
             get("{hash}") {
@@ -212,14 +196,12 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         }
     }
 
-    suspend fun ApplicationCall.respondDelta(versionHash: String, baseVersionHash: String?) {
+    private suspend fun ApplicationCall.respondDelta(versionHash: String, baseVersionHash: String?) {
         val delta = VersionDelta(
             versionHash,
             baseVersionHash,
             repositoriesManager.computeDelta(versionHash, baseVersionHash).values.filterNotNull().toSet()
         )
-        respondOutputStream(contentType = ContentType.Application.Json) {
-            Json.encodeToStream(delta, this)
-        }
+        respond(delta)
     }
 }

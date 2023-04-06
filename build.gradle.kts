@@ -28,6 +28,13 @@ subprojects {
     version = rootProject.version
     group = rootProject.group
 
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
+        kotlinOptions {
+            jvmTarget = "11"
+            freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+        }
+    }
+
     repositories {
         mavenLocal()
         maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }

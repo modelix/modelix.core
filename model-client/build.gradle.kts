@@ -11,12 +11,6 @@ configurations {
     ktlint
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-}
-
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(11))

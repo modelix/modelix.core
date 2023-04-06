@@ -21,7 +21,7 @@ repositories {
 }
 
 plugins {
-    kotlin("jvm") version "1.8.10"
+    kotlin("jvm") version "1.8.20"
     id("base")
     id("org.modelix.model-api-gen")
 }

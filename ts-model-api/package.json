@@ -30,13 +30,14 @@
     "prepublishOnly": "npm run lint && npm run build",
     "test": "shx echo 'Write your own tests'",
     "ts": "tsc",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "generateKotlin": "dukat -m \"@modelix/ts-model-api\" -d build/dukat dist/*.d.ts"
   },
-  "dependencies": {},
   "devDependencies": {
     "@reallyland/tsconfig": "^2.0.0",
     "@reallyland/tslint-config": "^1.1.1",
     "@types/node": "^13.9.8",
+    "dukat": "^0.5.8-rc.4-dev.20221020",
     "husky": "^4.2.3",
     "shx": "^0.3.2",
     "tslint": "^6.1.0",

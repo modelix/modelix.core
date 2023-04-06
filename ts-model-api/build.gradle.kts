@@ -22,6 +22,7 @@ tasks.named("npm_run_build") {
 
 tasks.named("assemble") {
   dependsOn("npm_run_build")
+  dependsOn("npm_run_generateKotlin")
 }
 
 val updateVersion = tasks.register<NpmTask>("updateVersion") {

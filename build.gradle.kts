@@ -37,42 +37,37 @@ subprojects {
 
     publishing {
         repositories {
-            if (project.hasProperty("artifacts.itemis.cloud.user")) {
-                maven {
-                    name = "itemis"
-                    url = if (version.toString().contains("SNAPSHOT"))
-                        uri("https://artifacts.itemis.cloud/repository/maven-mps-snapshots/")
-                    else
-                        uri("https://artifacts.itemis.cloud/repository/maven-mps-releases/")
-                    credentials {
-                        username = project.findProperty("artifacts.itemis.cloud.user").toString()
-                        password = project.findProperty("artifacts.itemis.cloud.pw").toString()
-                    }
+            maven {
+                name = "itemis"
+                url = if (version.toString().contains("SNAPSHOT")) {
+                    uri("https://artifacts.itemis.cloud/repository/maven-mps-snapshots/")
+                } else {
+                    uri("https://artifacts.itemis.cloud/repository/maven-mps-releases/")
+                }
+                credentials {
+                    username = project.findProperty("artifacts.itemis.cloud.user").toString()
+                    password = project.findProperty("artifacts.itemis.cloud.pw").toString()
                 }
             }
-            val ghp_username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
-            val ghp_password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
-            if (ghp_username != null && ghp_password != null) {
-                maven {
-                    name = "GitHubPackages"
-                    // we moved some components from modelix/modelix to modelix/modelix.core but github packages
-                    // cannot handle this situation. basically we suffer from what is described here:
-                    //     https://github.com/orgs/community/discussions/23474
-                    // this is a simple workaround for the affected components.
-                    // consequently, when obtaining these dependencies, the repo url is the old modelix/modelix one...
-                    if (project.name in arrayOf("model-client",
-                                    "model-client-js",
-                                    "model-client-jvm",
-                                    "model-server",
-                                    "model-server-api")) {
-                        url = uri("https://maven.pkg.github.com/modelix/modelix")
-                    } else {
-                        url = uri("https://maven.pkg.github.com/modelix/modelix.core")
-                    }
-                    credentials {
-                        username = ghp_username
-                        password = ghp_password
-                    }
+            maven {
+                name = "GitHubPackages"
+                // we moved some components from modelix/modelix to modelix/modelix.core but github packages
+                // cannot handle this situation. basically we suffer from what is described here:
+                //     https://github.com/orgs/community/discussions/23474
+                // this is a simple workaround for the affected components.
+                // consequently, when obtaining these dependencies, the repo url is the old modelix/modelix one...
+                if (project.name in arrayOf("model-client",
+                                "model-client-js",
+                                "model-client-jvm",
+                                "model-server",
+                                "model-server-api")) {
+                    url = uri("https://maven.pkg.github.com/modelix/modelix")
+                } else {
+                    url = uri("https://maven.pkg.github.com/modelix/modelix.core")
+                }
+                credentials {
+                    username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
+                    password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
                 }
             }
         }

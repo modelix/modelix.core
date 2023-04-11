@@ -69,10 +69,6 @@ subprojects {
                                 "model-server",
                                 "model-server-api")){
                     url = uri("https://maven.pkg.github.com/modelix/modelix")
-                } else if (project.name in arrayOf( "model-api",
-                                "model-api-js",
-                                "model-api-jvm")) {
-                    url = uri("https://maven.pkg.github.com/modelix/model-api")
                 } else {
                     url = uri("https://maven.pkg.github.com/modelix/modelix.core")
                 }

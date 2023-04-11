@@ -27,7 +27,7 @@ jobs:
       - name: Use tag as version
         run: echo "${GITHUB_REF#refs/*/}" > version.txt
       - name: Build and Publish Artifacts
-        run: ./gradlew build publish -PciBuild=true -Partifacts.itemis.cloud.user=${{secrets.ARTIFACTS_ITEMIS_CLOUD_USER}} -Partifacts.itemis.cloud.pw=${{secrets.ARTIFACTS_ITEMIS_CLOUD_PW}} -Pgpr.user=${{ github.actor }} -Pgpr.key=${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew build publish -PciBuild=true -Partifacts.itemis.cloud.user=${{secrets.ARTIFACTS_ITEMIS_CLOUD_USER}} -Partifacts.itemis.cloud.pw=${{secrets.ARTIFACTS_ITEMIS_CLOUD_PW}} -Pgpr.user=${{ github.actor }} -Pgpr.key=${{ secrets.GITHUB_TOKEN }} -Pgpr.universalkey=${{ secrets.GHP_UNIVERSAL_PUBLISH_TOKEN }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTS_ITEMIS_CLOUD_NPM_TOKEN }}
       - name: Set up QEMU

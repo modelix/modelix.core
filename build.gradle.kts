@@ -69,12 +69,16 @@ subprojects {
                                 "model-server",
                                 "model-server-api")){
                     url = uri("https://maven.pkg.github.com/modelix/modelix")
+                    credentials {
+                        username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
+                        password = project.findProperty("gpr.universalkey") as? String ?: System.getenv("GHP_UNIVERSAL_TOKEN")
+                    }
                 } else {
                     url = uri("https://maven.pkg.github.com/modelix/modelix.core")
-                }
-                credentials {
-                    username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
-                    password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
+                    credentials {
+                        username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
+                        password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
+                    }
                 }
             }
         }

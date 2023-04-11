@@ -13,10 +13,9 @@
  */
 package org.modelix.client.light
 
+import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
 
-@Deprecated("Use LightModelClient", ReplaceWith("LightModelClient"))
-object LightModelClientJVM {
-    @JvmStatic
-    fun builder() = LightModelClient.builder().also { it.httpEngine(CIO) }
+actual class PlatformSpecificLightModelClientBuilder : LightModelClientBuilder() {
+    override fun getDefaultEngineFactory(): HttpClientEngineFactory<*> = CIO
 }

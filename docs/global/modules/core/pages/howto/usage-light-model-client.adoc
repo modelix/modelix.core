@@ -9,7 +9,7 @@ Creating an instance that loads the entire model from the server can be done lik
 
 [source,kotlin]
 --
-val client = LightModelClientJVM.builder()
+val client = LightModelClient.builder()
     .url("ws://localhost/json/v2/test-repo/ws") // optional, by default it connects to the MPS plugin
     .build()
 --

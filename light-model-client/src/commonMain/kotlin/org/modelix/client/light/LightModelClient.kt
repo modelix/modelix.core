@@ -9,7 +9,7 @@ import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 import org.modelix.model.server.api.*
-import kotlin.reflect.KClass
+import kotlin.jvm.JvmStatic
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -660,7 +660,8 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
             LightClientReferenceSerializer.register()
         }
 
-        fun builder() = LightModelClientBuilder()
+        @JvmStatic
+        fun builder(): LightModelClientBuilder = PlatformSpecificLightModelClientBuilder()
     }
 
     interface IConnection {
@@ -676,7 +677,9 @@ class LightModelClient(val connection: IConnection, val debugName: String = "") 
     }
 }
 
-class LightModelClientBuilder {
+expect class PlatformSpecificLightModelClientBuilder() : LightModelClientBuilder
+
+abstract class LightModelClientBuilder {
     private var host: String = "localhost"
     private var port: Int = 48302
     private var url: String? = null
@@ -686,11 +689,13 @@ class LightModelClientBuilder {
     private var httpEngineFactory: HttpClientEngineFactory<*>? = null
     private var debugName: String = ""
 
+    protected abstract fun getDefaultEngineFactory(): HttpClientEngineFactory<*>
+
     fun build(): LightModelClient {
         return LightModelClient(
             connection ?: (
                 WebsocketConnection((httpClient ?: (
-                        httpEngine?.let { HttpClient(it) } ?: httpEngineFactory?.let { HttpClient(it) } ?: HttpClient()
+                        httpEngine?.let { HttpClient(it) } ?: (httpEngineFactory ?: getDefaultEngineFactory()).let { HttpClient(it) }
                     )
                 ).config {
                     install(WebSockets)

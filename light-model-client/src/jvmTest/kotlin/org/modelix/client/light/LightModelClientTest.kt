@@ -63,7 +63,7 @@ class LightModelClientTest {
             //println("init: $response")
 
             val createClient: suspend (debugName: String)->LightModelClient = { debugName ->
-                val client = LightModelClientJVM.builder()
+                val client = LightModelClient.builder()
                     .httpClient(httpClient)
                     .url("ws://localhost/json/v2/test-repo/ws")
                     .debugName(debugName)

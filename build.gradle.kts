@@ -67,7 +67,10 @@ subprojects {
                                 "model-client-js",
                                 "model-client-jvm",
                                 "model-server",
-                                "model-server-api")) {
+                                "model-server-api",
+                                "model-api",
+                                "model-api-js",
+                                "model-api-jvm")) {
                     url = uri("https://maven.pkg.github.com/modelix/modelix")
                 } else {
                     url = uri("https://maven.pkg.github.com/modelix/modelix.core")

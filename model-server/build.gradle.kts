@@ -15,10 +15,11 @@ description = "Model Server offering access to model storage"
 
 defaultTasks.add("build")
 
-/*compileJava {
-    sourceCompatibility = '11'
-    targetCompatibility = '11'
-}*/
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
 
 val mpsExtensionsVersion: String by project
 val modelixCoreVersion: String by rootProject

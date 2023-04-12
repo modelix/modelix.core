@@ -29,6 +29,12 @@ tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+
 publishing {
     publications {
         create<MavenPublication>("maven") {

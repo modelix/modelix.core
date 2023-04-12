@@ -27,14 +27,7 @@ import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import kotlinx.html.a
-import kotlinx.html.body
-import kotlinx.html.br
-import kotlinx.html.div
-import kotlinx.html.head
-import kotlinx.html.li
-import kotlinx.html.style
-import kotlinx.html.ul
+import kotlinx.html.*
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.authorization.KeycloakUtils
@@ -44,6 +37,7 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileReader
@@ -157,9 +151,11 @@ object Main {
                 modelReplicationServer.init(this)
                 routing {
                     get("/") {
-                        call.respondHtml {
-                            head {
+                        call.respondHtmlTemplate(PageWithMenuBar("root", ".")) {
+                            headContent {
                                 style { +"""
+                                    body {
+                                        font-family: sans-serif;
                                     table {
                                         border-collapse: collapse;
                                     }
@@ -169,9 +165,8 @@ object Main {
                                     }
                                 """.trimIndent() }
                             }
-                            body {
-                                div { +"Model Server" }
-                                br {}
+                            bodyContent {
+                                h1 { +"Model Server" }
                                 ul {
                                     li {
                                         a("history/") { +"Model History" }

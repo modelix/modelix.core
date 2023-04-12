@@ -2,12 +2,11 @@ package org.modelix.model.server.templates
 
 import io.ktor.server.html.*
 import kotlinx.html.*
-import java.security.KeyStore.Entry
 
 class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HTML> {
 
     val headContent = Placeholder<HEAD>()
-    val content = Placeholder<FlowContent>()
+    val bodyContent = Placeholder<FlowContent>()
 
     override fun HTML.apply() {
         head {
@@ -77,8 +76,7 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
                     }
                 }
             }
-            insert(content)
+            insert(bodyContent)
         }
     }
-
 }

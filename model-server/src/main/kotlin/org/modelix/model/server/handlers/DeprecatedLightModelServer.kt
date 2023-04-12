@@ -24,10 +24,7 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.html.body
-import kotlinx.html.table
-import kotlinx.html.td
-import kotlinx.html.tr
+import kotlinx.html.*
 import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.authorization.KeycloakScope
@@ -42,10 +39,10 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
-import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
+import org.modelix.model.server.templates.PageWithMenuBar
 import java.util.*
 
 class DeprecatedLightModelServer(val client: LocalModelClient) {
@@ -71,8 +68,20 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
 
     private fun Route.initRouting() {
         get("/") {
-            call.respondHtml(HttpStatusCode.OK) {
-                body {
+            call.respondHtmlTemplate(PageWithMenuBar("json/", ".."), status=HttpStatusCode.OK) {
+                headContent {
+                    title("JSON API")
+                    style {
+                        unsafe {
+                            +"""
+                            body {
+                                font-family: sans-serif;    
+                            }""".trimMargin()
+                        }
+                    }
+                }
+                bodyContent {
+                    h1 { +"JSON API" }
                     table {
                         tr {
                             td { +"GET /{repositoryId}/" }

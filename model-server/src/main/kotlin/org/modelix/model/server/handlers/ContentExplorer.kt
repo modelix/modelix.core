@@ -49,7 +49,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
             get("/content/") {
                 call.respondHtmlTemplate(PageWithMenuBar("content/", "..")) {
                     headContent {contentOverviewHead()}
-                    content {contentOverviewBody()}
+                    bodyContent {contentOverviewBody()}
                 }
             }
             get("/content/{versionHash}/") {
@@ -62,7 +62,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
                 call.respondHtmlTemplate(PageWithMenuBar("content/", "../..")) {
                     headContent {contentPageHead()}
-                    content {contentPageBody(rootNode)}
+                    bodyContent {contentPageBody(rootNode)}
                 }
             }
             get("/content/{versionHash}/{nodeId}/") {

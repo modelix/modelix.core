@@ -1,6 +1,5 @@
 package org.modelix.model.server.handlers
 
-import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
 import io.ktor.server.request.*
@@ -10,52 +9,21 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.html.FormMethod
-import kotlinx.html.HTML
-import kotlinx.html.TBODY
-import kotlinx.html.a
-import kotlinx.html.body
-import kotlinx.html.br
-import kotlinx.html.div
-import kotlinx.html.form
-import kotlinx.html.h1
-import kotlinx.html.head
-import kotlinx.html.hiddenInput
-import kotlinx.html.i
-import kotlinx.html.li
-import kotlinx.html.p
-import kotlinx.html.span
-import kotlinx.html.style
-import kotlinx.html.submitInput
-import kotlinx.html.table
-import kotlinx.html.tbody
-import kotlinx.html.td
-import kotlinx.html.th
-import kotlinx.html.thead
-import kotlinx.html.tr
-import kotlinx.html.ul
-import org.apache.commons.lang3.StringEscapeUtils
+import kotlinx.html.*
 import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.model.LinearHistory
-import org.modelix.model.api.*
+import org.modelix.model.api.PBranch
 import org.modelix.model.client.IModelClient
-import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.*
 import org.modelix.model.lazy.CLVersion.Companion.createRegularVersion
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RevertToOp
 import org.modelix.model.operations.applyOperation
 import org.modelix.model.persistent.CPVersion.Companion.DESERIALIZER
-import java.io.PrintWriter
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+import org.modelix.model.server.templates.PageWithMenuBar
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -65,8 +33,19 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
     fun init(application: Application) {
         application.routing {
             get("/history/") {
-                call.respondHtml {
-                    buildMainPage()
+                call.respondHtmlTemplate(PageWithMenuBar("history/","..")) {
+                    headContent {
+                        style {
+                            +"""
+                            body {
+                                font-family: sans-serif;
+                            }
+                            """.trimMargin()
+                        }
+                    }
+                    bodyContent {
+                        buildMainPage()
+                    }
                 }
             }
             get("/history/{repoId}/{branch}/") {
@@ -75,8 +54,20 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
                 val params = call.request.queryParameters
                 val limit = toInt(params["limit"], 500)
                 val skip = toInt(params["skip"], 0)
-                call.respondHtml {
-                    buildRepositoryPage(branch, params["head"], skip, limit)
+                call.respondHtmlTemplate(PageWithMenuBar("history/", "../../..")) {
+                    headContent {
+                        style {
+                            +"""
+                            body {
+                                font-family: sans-serif;
+                            }
+                            """.trimIndent()
+                        }
+                        repositoryPageStyle()
+                    }
+                    bodyContent {
+                        buildRepositoryPage(branch, params["head"], skip, limit)
+                    }
                 }
             }
             requiresPermission("history".asResource(), KeycloakScope.WRITE) {
@@ -118,34 +109,32 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
         repositoriesManager.mergeChanges(repositoryAndBranch, newVersion.getContentHash())
     }
 
-    private fun HTML.buildMainPage() {
-        body {
-            h1 { +"Choose Repository" }
-            val repositories = repositoriesManager.getRepositories()
-            if (repositories.isEmpty()) {
-                p { i { +"No repositories available, add one" } }
-            } else {
-                table {
+    private fun FlowContent.buildMainPage() {
+        h1 { +"Choose Repository" }
+        val repositories = repositoriesManager.getRepositories()
+        if (repositories.isEmpty()) {
+            p { i { +"No repositories available, add one" } }
+        } else {
+            table {
+                tr {
+                    th { +"Repository" }
+                    th { +"Branch" }
+                }
+                for (repository in repositories) {
+                    val branches = repositoriesManager.getBranches(repository)
                     tr {
-                        th { +"Repository" }
-                        th { +"Branch" }
-                    }
-                    for (repository in repositories) {
-                        val branches = repositoriesManager.getBranches(repository)
-                        tr {
-                            td {
-                                rowSpan = branches.size.coerceAtLeast(1).toString()
-                                +repository.id
-                            }
-                            if (branches.isEmpty()) {
-                                td { }
-                            } else {
-                                for (branch in branches) {
-                                    td {
-                                        a {
-                                            href = "${branch.repositoryId.id}/${branch.branchName}/"
-                                            +branch.branchName
-                                        }
+                        td {
+                            rowSpan = branches.size.coerceAtLeast(1).toString()
+                            +repository.id
+                        }
+                        if (branches.isEmpty()) {
+                            td { }
+                        } else {
+                            for (branch in branches) {
+                                td {
+                                    a {
+                                        href = "${branch.repositoryId.id}/${branch.branchName}/"
+                                        +branch.branchName
                                     }
                                 }
                             }
@@ -156,85 +145,85 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
         }
     }
 
-    private fun HTML.buildRepositoryPage(repositoryAndBranch: BranchReference, headHash: String?, skip: Int, limit: Int) {
-        head {
-            style {
-                +"""
-                    table {
-                      border-collapse: collapse;
-                      font-family: sans-serif;
-                      margin: 25px 0;
-                      font-size: 0.9em;
-                      border-radius:6px;
-                    }
-                    thead tr {
-                      background-color: #009879;
-                      color: #ffffff;
-                      text-align: left;
-                    }
-                    th {
-                      padding: 12px 15px;
-                    }
-                    td {
-                      padding: 3px 15px;
-                    }
-                    tbody tr {
-                      border-bottom: 1px solid #dddddd;
-                      border-left: 1px solid #dddddd;
-                      border-right: 1px solid #dddddd;
-                    }
-                    tbody tr:nth-of-type(even) {
-                      background-color: #f3f3f3;
-                    }
-                    tbody tr:last-of-type
-                      border-bottom: 2px solid #009879;
-                    }
-                    tbody tr.active-row {
-                      font-weight: bold;
-                      color: #009879;
-                    }
-                    ul {
-                      padding-left: 15px;
-                    }
-                    .hash {
-                      color: #888;
-                      white-space: nowrap;
-                    }
-                    .BtnGroup {
-                      display: inline-block;
-                      vertical-align: middle;
-                    }
-                    .BtnGroup-item {
-                      background-color: #f6f8fa;
-                      border: 1px solid rgba(27,31,36,0.15);
-                      padding: 5px 16px;
-                      position: relative;
-                      float: left;
-                      border-right-width: 0;
-                      border-radius: 0;
-                    }
-                    .BtnGroup-item:first-child {
-                      border-top-left-radius: 6px;
-                      border-bottom-left-radius: 6px;
-                    }
-                    .BtnGroup-item:last-child {
-                      border-right-width: 1px;
-                      border-top-right-radius: 6px;
-                      border-bottom-right-radius: 6px;
-                    }
-                """.trimIndent()
+    private fun HEAD.repositoryPageStyle() {
+        style {
+            +"""
+            table {
+              border-collapse: collapse;
+              font-family: sans-serif;
+              margin: 25px 0;
+              font-size: 0.9em;
+              border-radius:6px;
             }
+            thead tr {
+              background-color: #009879;
+              color: #ffffff;
+              text-align: left;
+            }
+            th {
+              padding: 12px 15px;
+            }
+            td {
+              padding: 3px 15px;
+            }
+            tbody tr {
+              border-bottom: 1px solid #dddddd;
+              border-left: 1px solid #dddddd;
+              border-right: 1px solid #dddddd;
+            }
+            tbody tr:nth-of-type(even) {
+              background-color: #f3f3f3;
+            }
+            tbody tr:last-of-type
+              border-bottom: 2px solid #009879;
+            }
+            tbody tr.active-row {
+              font-weight: bold;
+              color: #009879;
+            }
+            ul {
+              padding-left: 15px;
+            }
+            .hash {
+              color: #888;
+              white-space: nowrap;
+            }
+            .BtnGroup {
+              display: inline-block;
+              vertical-align: middle;
+            }
+            .BtnGroup-item {
+              background-color: #f6f8fa;
+              border: 1px solid rgba(27,31,36,0.15);
+              padding: 5px 16px;
+              position: relative;
+              float: left;
+              border-right-width: 0;
+              border-radius: 0;
+            }
+            .BtnGroup-item:first-child {
+              border-top-left-radius: 6px;
+              border-bottom-left-radius: 6px;
+            }
+            .BtnGroup-item:last-child {
+              border-right-width: 1px;
+              border-top-right-radius: 6px;
+              border-bottom-right-radius: 6px;
+            }
+        """.trimIndent()
         }
-        body {
-            val latestVersion = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch not found: $repositoryAndBranch")
-            val headVersion = if (headHash == null || headHash.length == 0) latestVersion else CLVersion(headHash, client.storeCache!!)
-            var rowIndex = 0
-            h1 {
-                +"History for Repository "
-                +repositoryAndBranch.repositoryId.id
-                +"/"
-                +repositoryAndBranch.branchName
-            }
+    }
+
+    private fun FlowContent.buildRepositoryPage(repositoryAndBranch: BranchReference, headHash: String?, skip: Int, limit: Int) {
+        val latestVersion = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch not found: $repositoryAndBranch")
+        val headVersion = if (headHash == null || headHash.length == 0) latestVersion else CLVersion(headHash, client.storeCache!!)
+        var rowIndex = 0
+        h1 {
+            +"History for Repository "
+            +repositoryAndBranch.repositoryId.id
+            +"/"
+            +repositoryAndBranch.branchName
+        }
 
 //        out.append("""
 //            <div>
@@ -244,65 +233,64 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
 //            </div>
 //        """)
 
-            fun buttons() {
-                div("BtnGroup") {
-                    if (skip == 0) {
-                        a(classes = "BtnGroup-item") {
-                            href = "?head=${latestVersion.getContentHash()}&skip=0&limit=$limit"
-                            +"Newer"
-                        }
-                    } else {
-                        a(classes = "BtnGroup-item") {
-                            href = "?head=${headVersion.getContentHash()}&skip=${Math.max(0, skip - limit)}&limit=$limit"
-                            +"Newer"
-                        }
-                    }
+        fun buttons() {
+            div("BtnGroup") {
+                if (skip == 0) {
                     a(classes = "BtnGroup-item") {
-                        href = "?head=${headVersion.getContentHash()}&skip=${skip + limit}&limit=$limit"
-                        +"Older"
+                        href = "?head=${latestVersion.getContentHash()}&skip=0&limit=$limit"
+                        +"Newer"
                     }
+                } else {
+                    a(classes = "BtnGroup-item") {
+                        href = "?head=${headVersion.getContentHash()}&skip=${Math.max(0, skip - limit)}&limit=$limit"
+                        +"Newer"
+                    }
+                }
+                a(classes = "BtnGroup-item") {
+                    href = "?head=${headVersion.getContentHash()}&skip=${skip + limit}&limit=$limit"
+                    +"Older"
                 }
             }
-            buttons()
-            table {
-                thead {
-                    tr {
-                        th {
-                            +"ID"
-                            br {  }
-                            +"Hash"
-                        }
-                        th { +"Author" }
-                        th { +"Time" }
-                        th { +"Operations" }
-                        th { }
+        }
+        buttons()
+        table {
+            thead {
+                tr {
+                    th {
+                        +"ID"
+                        br {  }
+                        +"Hash"
                     }
+                    th { +"Author" }
+                    th { +"Time" }
+                    th { +"Operations" }
+                    th { }
                 }
-                tbody {
-                    var version: CLVersion? = headVersion
-                    while (version != null) {
-                        if (rowIndex >= skip) {
-                            createTableRow(version, latestVersion)
-                            if (version.isMerge()) {
-                                for (v in LinearHistory(version.baseVersion!!.getContentHash()).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
-                                    createTableRow(v, latestVersion)
-                                    rowIndex++
-                                    if (rowIndex >= skip + limit) {
-                                        break
-                                    }
+            }
+            tbody {
+                var version: CLVersion? = headVersion
+                while (version != null) {
+                    if (rowIndex >= skip) {
+                        createTableRow(version, latestVersion)
+                        if (version.isMerge()) {
+                            for (v in LinearHistory(version.baseVersion!!.getContentHash()).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
+                                createTableRow(v, latestVersion)
+                                rowIndex++
+                                if (rowIndex >= skip + limit) {
+                                    break
                                 }
                             }
                         }
-                        rowIndex++
-                        if (rowIndex >= skip + limit) {
-                            break
-                        }
-                        version = version.baseVersion
                     }
+                    rowIndex++
+                    if (rowIndex >= skip + limit) {
+                        break
+                    }
+                    version = version.baseVersion
                 }
             }
-            buttons()
         }
+        buttons()
     }
 
     private fun TBODY.createTableRow(version: CLVersion, latestVersion: CLVersion) {

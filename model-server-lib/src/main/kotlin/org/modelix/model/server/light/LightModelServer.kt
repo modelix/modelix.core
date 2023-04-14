@@ -116,12 +116,15 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
         }
         routing {
             webSocket("/ws") {
+                var session: SessionData? = null
                 try {
-                    val session = SessionData(this)
+                    session = SessionData(this)
                     sessions.add(session)
                     handleWebsocket(session)
                 } catch (ex: Exception) {
                     LOG.error(ex) { "Error in websocket handler" }
+                } finally {
+                    sessions.remove(session)
                 }
             }
         }

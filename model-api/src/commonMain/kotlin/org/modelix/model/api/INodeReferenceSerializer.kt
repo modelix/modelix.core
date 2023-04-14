@@ -72,7 +72,7 @@ interface INodeReferenceSerializer {
 
             val serializer = serializersForClass[ref::class]
             return if (serializer != null) {
-                serializer.serialize(ref)
+                serializer.prefix + INodeReferenceSerializerEx.SEPARATOR + serializer.serialize(ref)
             } else {
                 legacySerializers.map { it.serialize(ref) }.firstOrNull { it != null }
                     ?: throw RuntimeException("No serializer found for ${ref::class}")
@@ -101,7 +101,7 @@ interface INodeReferenceSerializerEx : INodeReferenceSerializer {
     override fun deserialize(serialized: String): INodeReference
 
     companion object {
-        val SEPARATOR = ":"
+        const val SEPARATOR = ":"
     }
 }
 

@@ -1,0 +1,17 @@
+= Model API Generator
+:navtitle: `model-api-gen`
+
+
+:tip-caption: 🔗 Quick Links
+[TIP]
+--
+https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmodel-api-gen%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-api-gen/build.gradle.kts[Buildfile^]
+--
+
+
+The *Model API Generator* (`model-api-gen`) is a Kotlin component which generates a domain-specific model API.
+Currently, the generator supports either Kotlin and TypeScipt as target languages.
+As a source for the generated API, `model-api-gen` consumes a given metamodel specified by JSON files.
+
+The Model API Generator is mainly used in the corresponding gradle plugin xref:core:reference/component-model-api-gen-gradle.adoc[model-api-gen-gradle].
+

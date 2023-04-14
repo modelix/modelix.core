@@ -1,9 +1,9 @@
-= How-To apply the Meta-Model Generator using the Gradle Plugin
+= How-To apply the Model API Generator using the Gradle Plugin
 :navtitle: Generate `Kotlin`/ `Typescript` API from MPS language
 
 NOTE: If you are interested in a more practical usage of what is presented here, check out the https://github.com/modelix/modelix.samples[samples project^]
 
-. To apply the xref:core:reference/component-metamodel-generator-gradle.adoc[] to an existing JetBrains MPS language, it is necessary to build the project via Gradle.
+. To apply xref:core:reference/component-model-api-gen-gradle.adoc[model-api-gen] to an existing JetBrains MPS language, it is necessary to build the project via Gradle.
 +
 This How-To assumes a folder structure as follows
 +
@@ -51,7 +51,7 @@ pluginManagement {
     val modelixCoreVersion: String by settings
     plugins {
         // the gradle plugin that provides easy access to the meta-model generator
-        id("org.modelix.metamodel.gradle") version modelixCoreVersion
+        id("org.modelix.model-api-gen.gradle") version modelixCoreVersion
 
         [...]
     }
@@ -137,7 +137,7 @@ metamodel {
 [...]
 --
 
-. The `org.modelix.metamodel.gradle` Gradle helper provides an additional target which will integrate into your build, so a simple re-build of your Gradle project should be sufficient. Alternatively, you can directly trigger the API generation via
+. The `org.modelix.model-api-gen.gradle` Gradle helper provides an additional target which will integrate into your build, so a simple re-build of your Gradle project should be sufficient. Alternatively, you can directly trigger the API generation via
 +
 [source,bash]
 --

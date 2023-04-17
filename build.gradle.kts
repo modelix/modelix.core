@@ -6,6 +6,13 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint") version "10.3.0" apply false
     id("com.diffplug.spotless") version "5.0.0" apply false
     id("com.dorongold.task-tree") version "2.1.0"
+    id("org.jetbrains.dokka") version "1.8.10"
+}
+
+repositories {
+    mavenLocal()
+    maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+    mavenCentral()
 }
 
 group = "org.modelix"
@@ -25,6 +32,7 @@ fun computeVersion(): Any {
 
 subprojects {
     apply(plugin = "maven-publish")
+    apply(plugin = "org.jetbrains.dokka")
     version = rootProject.version
     group = rootProject.group
 

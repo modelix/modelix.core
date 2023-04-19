@@ -6,6 +6,7 @@
     "declarationDir": "dist",
     "noUnusedLocals": false
   },
+  "module": "commonjs",
   "include": ["src/**/*.ts"],
   "exclude": ["dist"]
 }

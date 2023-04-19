@@ -1,5 +1,6 @@
 package org.modelix.model.api
 
+import TypedNode
 import kotlinx.browser.window
 
 @JsExport
@@ -43,13 +44,7 @@ object NodeAdapterCache {
     private fun toINode(node: Any): INode {
         if (node is INode) return node
         if (node is NodeAdapterJS) return node.node
-
-        // if (node is TypedNode) return toINode(node.node)
-
-        // Workaround, because the line above fails with 'TypedNode is not defined'.
-        // The import for '@modelix/ts-model-api' seems to be missing in the generated JS.
-        val unwrapped = node.asDynamic().node
-        if (unwrapped != null) return toINode(unwrapped)
+        if (node is TypedNode) return toINode(node.node)
 
         throw IllegalArgumentException("Unsupported node type: $node")
     }

@@ -4,7 +4,9 @@
     "rootDir": "src",
     "outDir": "dist",
     "declarationDir": "dist",
-    "noUnusedLocals": false
+    "noUnusedLocals": false,
+    "module": "UMD",
+    "resolveJsonModule": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist"]

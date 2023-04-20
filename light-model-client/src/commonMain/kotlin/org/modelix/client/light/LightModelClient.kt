@@ -5,9 +5,7 @@ import io.ktor.client.engine.*
 import io.ktor.client.plugins.websocket.*
 import kotlinx.coroutines.delay
 import org.modelix.model.api.*
-import org.modelix.model.area.IArea
-import org.modelix.model.area.IAreaListener
-import org.modelix.model.area.IAreaReference
+import org.modelix.model.area.*
 import org.modelix.model.server.api.*
 import kotlin.jvm.JvmStatic
 import kotlin.time.Duration
@@ -18,13 +16,14 @@ private const val TEMP_ID_PREFIX = "tmp-"
 
 class LightModelClient internal constructor(
     val connection: IConnection,
-    val transactionManager: ITransactionManager,
+    private val transactionManager: ITransactionManager,
     val autoFilterNonLoadedNodes: Boolean,
     val debugName: String = ""
 ) {
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
     private val area = Area()
+    private var areaListeners: Set<IAreaListener> = emptySet()
     private var repositoryId: String? = null
     private var lastMergedVersionHash: String? = null
     private val pendingOperations: MutableList<OperationData> = ArrayList()
@@ -48,6 +47,18 @@ class LightModelClient internal constructor(
                 messageReceived(message)
             } catch (ex: Exception) {
                 LOG.error(ex) { "Failed to process message: $message" }
+            }
+        }
+        transactionManager.afterWrite {
+            val changes = object : IAreaChangeList {
+                override fun visitChanges(visitor: (IAreaChangeEvent) -> Boolean) {}
+            }
+            areaListeners.forEach { l ->
+                try {
+                    l.areaChanged(changes)
+                } catch (ex: Exception) {
+                    LOG.error(ex) { "" }
+                }
             }
         }
     }
@@ -611,11 +622,11 @@ class LightModelClient internal constructor(
         }
 
         override fun addListener(l: IAreaListener) {
-            TODO("Not yet implemented")
+            areaListeners += l
         }
 
         override fun removeListener(l: IAreaListener) {
-            TODO("Not yet implemented")
+            areaListeners -= l
         }
     }
 
@@ -645,16 +656,18 @@ class LightModelClient internal constructor(
     }
 }
 
-interface ITransactionManager {
+internal interface ITransactionManager {
     fun <T> requiresRead(body: () -> T): T
     fun <T> requiresWrite(body: () -> T): T
     fun <T> runRead(body: () -> T): T
     fun <T> runWrite(body: () -> T): T
     fun canRead(): Boolean
     fun canWrite(): Boolean
+    fun afterWrite(listener: () -> Unit)
 }
 
-class ReadWriteLockTransactionManager : ITransactionManager {
+private class ReadWriteLockTransactionManager : ITransactionManager {
+    private var writeListener: (() -> Unit)? = null
     private val lock = ReadWriteLock()
     override fun <T> requiresRead(body: ()->T): T {
         if (!lock.canRead()) throw IllegalStateException("Not in a read transaction")
@@ -665,12 +678,30 @@ class ReadWriteLockTransactionManager : ITransactionManager {
         return body()
     }
     override fun <T> runRead(body: () -> T): T = lock.runRead(body)
-    override fun <T> runWrite(body: () -> T): T = lock.runWrite(body)
+    override fun <T> runWrite(body: () -> T): T {
+        if (canWrite()) {
+            return body()
+        } else {
+            try {
+                return lock.runWrite(body)
+            } finally {
+                try {
+                    writeListener?.invoke()
+                } catch (ex: Exception) {
+                    mu.KotlinLogging.logger {  }.error(ex) { "Exception in write listener" }
+                }
+            }
+        }
+    }
     override fun canRead(): Boolean = lock.canRead()
     override fun canWrite(): Boolean = lock.canWrite()
+    override fun afterWrite(listener: () -> Unit) {
+        if (writeListener != null) throw IllegalStateException("Only one listener is supported")
+        writeListener = listener
+    }
 }
 
-class AutoTransactions(val delegate: ITransactionManager) : ITransactionManager by delegate {
+private class AutoTransactions(val delegate: ITransactionManager) : ITransactionManager by delegate {
     override fun <T> requiresRead(body: () -> T): T {
         return if (canRead()) {
             body()
@@ -726,10 +757,9 @@ abstract class LightModelClientBuilder {
         return this
     }
     fun autoTransactions(): LightModelClientBuilder {
-        transactionManager = AutoTransactions(transactionManager)
-        return this
+        return transactionManager(AutoTransactions(transactionManager))
     }
-    fun transactionManager(tm: ITransactionManager): LightModelClientBuilder {
+    private fun transactionManager(tm: ITransactionManager): LightModelClientBuilder {
         this.transactionManager = tm
         return this
     }

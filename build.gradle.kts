@@ -1,3 +1,12 @@
+import kotlinx.html.*
+import kotlinx.html.stream.createHTML
+
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.dokka:versioning-plugin:1.8.10")
+    }
+}
+
 plugins {
     kotlin("multiplatform") apply false
     kotlin("plugin.serialization") apply false
@@ -28,6 +37,10 @@ fun computeVersion(): Any {
     } else {
         gitVersion().let { if (it.endsWith("-SNAPSHOT")) it else "$it-SNAPSHOT" }.also { versionFile.writeText(it) }
     }
+}
+
+dependencies {
+    dokkaPlugin("org.jetbrains.dokka:versioning-plugin:1.8.10")
 }
 
 subprojects {
@@ -95,4 +108,63 @@ subprojects {
 
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask> {
     dependsOn(":ts-model-api:npm_run_build")
+}
+val docsDir = buildDir.resolve("dokka")
+
+tasks.dokkaHtmlMultiModule {
+    outputDirectory.set(docsDir.resolve("$version"))
+    doLast {
+        val index = file(docsDir.resolve("index.html"))
+        index.writeText(createDocsIndexPage())
+    }
+}
+
+fun createDocsIndexPage(): String {
+    return createHTML().html {
+        head {
+            style {
+            +"""
+                body { 
+                    font-family: sans-serif; 
+                }
+                
+                ul {
+                    list-style-type: none;
+                }
+                .wrapper {
+                    margin: auto;
+                    width: 50%;
+                    border: 1px solid;
+                    border-radius: 15px;
+                    padding: 20px;
+                    text-align: center;
+                }
+            """.trimIndent()
+            }
+        }
+        body {
+            header {
+                h1 { +"Modelix Core API Reference" }
+            }
+            div("wrapper") {
+
+                ul {
+                    val versionDirs = docsDir.listFiles()
+                        ?.filter { it.isDirectory }
+                        ?.sortedByDescending { it.name }
+                        ?: return@ul
+                    for (versionDir in versionDirs) {
+                        val versionIndex = versionDir.resolve("index.html")
+                        if (versionIndex.exists()) {
+                            li {
+                                a(href = versionIndex.relativeTo(docsDir).path) {
+                                    +"modelix.core ${versionDir.name}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

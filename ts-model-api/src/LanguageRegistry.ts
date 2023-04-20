@@ -1,6 +1,6 @@
 import type {GeneratedLanguage} from "./GeneratedLanguage";
 import type {INodeJS} from "./INodeJS";
-import {ITypedNode, TypedNode} from "./TypedNode";
+import {ITypedNode, TypedNode, UnknownTypedNode} from "./TypedNode";
 import type {IConceptJS} from "./IConceptJS";
 
 export class LanguageRegistry {
@@ -42,10 +42,7 @@ export class LanguageRegistry {
     let conceptUID = node.getConceptUID();
     if (conceptUID === undefined) return new TypedNode(node)
     let wrapper = this.nodeWrappers.get(conceptUID)
-    if (wrapper === undefined) {
-      throw Error("No node wrapper found for concept " + conceptUID)
-    }
-    let wrapped = wrapper(node);
+    let wrapped = wrapper === undefined ? new UnknownTypedNode(node) : wrapper(node);
     return this.wrapperCache ? this.wrapperCache(wrapped) : wrapped
   }
 

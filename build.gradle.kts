@@ -122,43 +122,59 @@ tasks.dokkaHtmlMultiModule {
 fun createDocsIndexPage(): String {
     return createHTML().html {
         head {
+            link(href = "./$version/styles/style.css", rel = "Stylesheet")
+            title("modelix.core API Reference")
             style {
-            +"""
-                body { 
-                    font-family: sans-serif; 
+                unsafe {
+                    +"""
+                    .library-name {
+                        padding-top: 6px;
+                        padding-bottom: 6px;
+                    }
+                """.trimIndent()
                 }
-                
-                ul {
-                    list-style-type: none;
-                }
-                .wrapper {
-                    margin: auto;
-                    width: 50%;
-                    border: 1px solid;
-                    border-radius: 15px;
-                    padding: 20px;
-                    text-align: center;
-                }
-            """.trimIndent()
             }
         }
         body {
-            header {
-                h1 { +"Modelix Core API Reference" }
+            div("navigation-wrapper") {
+                id = "navigation-wrapper"
+                div("library-name") {
+                    a { +"modelix.core API Reference" }
+                }
             }
             div("wrapper") {
-
-                ul {
-                    val versionDirs = docsDir.listFiles()
-                        ?.filter { it.isDirectory }
-                        ?.sortedByDescending { it.name }
-                        ?: return@ul
-                    for (versionDir in versionDirs) {
-                        val versionIndex = versionDir.resolve("index.html")
-                        if (versionIndex.exists()) {
-                            li {
-                                a(href = versionIndex.relativeTo(docsDir).path) {
-                                    +"modelix.core ${versionDir.name}"
+                id = "container"
+                div {
+                    id ="leftColumn"
+                }
+                div {
+                    id = "main"
+                    div("main-content") {
+                        id ="content"
+                        div("breadcrumbs")
+                        div("cover") {
+                            h2 { +"Available versions:" }
+                            div("table") {
+                                val versionDirs = docsDir.listFiles()
+                                    ?.filter { it.isDirectory }
+                                    ?.sortedByDescending { it.name }
+                                if (versionDirs != null) {
+                                    for (versionDir in versionDirs) {
+                                        val versionIndex = versionDir.resolve("index.html")
+                                        if (versionIndex.exists()) {
+                                            div("table-row") {
+                                                div("main-subrow") {
+                                                    div("w-100") {
+                                                        span("inline-flex") {
+                                                            a( href = versionIndex.relativeTo(docsDir).path) {
+                                                                +"modelix.core ${versionDir.name}"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

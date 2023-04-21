@@ -4,25 +4,41 @@ import IConceptJS
 import INodeJS
 import INodeReferenceJS
 import LanguageRegistry
+import TypedNode
 
 @ExperimentalJsExport
 @JsExport
 object JSNodeConverter {
-    fun nodeToJs(node: INode): Any {
+    fun nodeToJs(node: INode?): Any? {
+        if (node == null) return node
         // return type is Any because the import for INodeJS is missing in the generated .d.ts
         return NodeAdapterJS(node)
     }
 
-    fun nodeFromJs(node: Any): Any {
+    fun nodeFromJs(node: Any?): Any? {
+        if (node == null) return node
         return (node as NodeAdapterJS).node
     }
 
-    fun unwrapNode(node: Any): Any {
+    fun unwrapNode(node: Any?): Any? {
+        if (node == null) return node
         return if (node is NodeAdapterJS) node.node else node
     }
 
-    fun isJsNode(node: Any): Boolean {
+    fun isJsNode(node: Any?): Boolean {
         return node is NodeAdapterJS
+    }
+
+    fun toINode(node: Any): INode {
+        if (node is INode) return node
+        if (node is NodeAdapterJS) return node.node
+        if (node is TypedNode) return toINode(node.node)
+
+        // Workaround, because ts-model-api is loaded twice by webpack making the instanceof check on TypedNode fail.
+        val unwrapped = node.asDynamic().node
+        if (unwrapped != null) return toINode(unwrapped)
+
+        throw IllegalArgumentException("Unsupported node type: $node")
     }
 }
 

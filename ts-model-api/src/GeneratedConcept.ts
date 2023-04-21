@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type {IConceptJS} from "./IConceptJS";
+import type {IConceptJS} from "./IConceptJS.js";
 
 export abstract class GeneratedConcept implements IConceptJS {
 

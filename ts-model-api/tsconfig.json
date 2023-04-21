@@ -5,8 +5,9 @@
     "outDir": "dist",
     "declarationDir": "dist",
     "noUnusedLocals": false,
-    "module": "UMD",
-    "resolveJsonModule": false
+    "module": "CommonJS",
+    "resolveJsonModule": false,
+    "target": "ES2020"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist"]

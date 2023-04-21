@@ -1,4 +1,4 @@
-import type {IConceptJS} from "./IConceptJS";
+import type {IConceptJS} from "./IConceptJS.js";
 
 export interface INodeJS {
   getConcept(): IConceptJS | undefined

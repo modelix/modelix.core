@@ -1,7 +1,7 @@
-import type {GeneratedLanguage} from "./GeneratedLanguage";
-import type {INodeJS} from "./INodeJS";
-import {ITypedNode, TypedNode, UnknownTypedNode} from "./TypedNode";
-import type {IConceptJS} from "./IConceptJS";
+import type {GeneratedLanguage} from "./GeneratedLanguage.js";
+import type {INodeJS} from "./INodeJS.js";
+import {ITypedNode, TypedNode, UnknownTypedNode} from "./TypedNode.js";
+import type {IConceptJS} from "./IConceptJS.js";
 
 export class LanguageRegistry {
   public static INSTANCE: LanguageRegistry = new LanguageRegistry();

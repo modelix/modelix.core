@@ -48,7 +48,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         application.routing {
             get("/content/") {
                 call.respondHtmlTemplate(PageWithMenuBar("content/", "..")) {
-                    headContent {contentOverviewHead()}
+                    headContent {title("Content Explorer")}
                     bodyContent {contentOverviewBody()}
                 }
             }
@@ -61,7 +61,11 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
                 val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
                 call.respondHtmlTemplate(PageWithMenuBar("content/", "../..")) {
-                    headContent {contentPageHead()}
+                    headContent {
+                        title("Content Explorer")
+                        link("../../public/content-explorer.css", rel = "stylesheet")
+                        script("text/javascript", src = "../../public/content-explorer.js") {}
+                    }
                     bodyContent {contentPageBody(rootNode)}
                 }
             }
@@ -84,19 +88,6 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         }
     }
 
-    private fun HEAD.contentOverviewHead() {
-        title("Content Explorer")
-        style {
-            unsafe {
-                +"""
-                body {
-                    font-family: sans-serif;
-                }
-                """.trimIndent()
-            }
-        }
-    }
-
     private fun FlowContent.contentOverviewBody() {
         h1 { +"Model Server Content" }
         h2 { +"Select a Version" }
@@ -114,181 +105,18 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         }
     }
 
-    private fun HEAD.contentPageHead() {
-        title("Content Explorer")
-        style {
-            +"""
-                body {
-                    font-family: sans-serif;
-                }
-                table {
-                  border-collapse: collapse;
-                  font-family: sans-serif;
-                  font-size: 0.9em;
-                  border-radius:6px;
-                }
-                thead tr {
-                  background-color: #009879;
-                  color: #ffffff;
-                  text-align: left;
-                }
-                th {
-                  padding: 8px 10px;
-                }
-                td {
-                  padding: 5px 10px;
-                }
-                tbody tr {
-                  border-bottom: 1px solid #dddddd;
-                  border-left: 1px solid #dddddd;
-                  border-right: 1px solid #dddddd;
-                }
-                tbody tr:nth-of-type(even) {
-                  background-color: #f3f3f3;
-                }
-                tbody tr:last-of-type
-                  border-bottom: 2px solid #009879;
-                }
-                tbody tr.active-row {
-                  font-weight: bold;
-                  color: #009879;
-                }
-                .expander {
-                    cursor: pointer;
-                    margin-top: 12px;
-                    font-size: 20px;
-                    float: left;
-                }
-                .expander-expanded {
-                    transition: .1s linear;
-                    transform: rotate(90deg);
-                    transform-origin: center center;
-                }
-                .nested {
-                    display: none;
-                    margin-left: 9px;
-                    border-left: 1px solid #999999;
-                }
-                .active {
-                    display: block;
-                }
-                .nodeTree {
-                    list-style-type: none;
-                }
-                .treeRoot {
-                    list-style-type: none;
-                    margin-top: 5px;
-                    float: left;
-                }
-                .referenceRoles {
-                    margin-top: 5px;
-                }
-                .nodeItem {
-                    padding-top: 10px;
-                }
-                .nameField {
-                    margin-left: 30px;
-                    padding: 5px;
-                    border: 1px solid;
-                    border-radius: 10px;
-                    width: fit-content;
-                    cursor: pointer;
-                }
-                .nameField:hover {
-                    background-color: #e6e6e6;
-                }
-                .selectedNameField {
-                    background-color: #c9c9c9;
-                }
-                #treeWrapper {
-                    position: absolute;
-                }
-                #nodeInspector {
-                    position: fixed;
-                    top: 10%;
-                    left: 65%;
-                    width: 35%;
-                    overflow-scroll;
-                    z-index: 1;
-                    display: none;
-                    background-color: #ffffff;
-                }
-            """.trimIndent()
-        }
-        script("text/javascript") {
-            unsafe {
-                +"""
-                async function createInspectorDetails(nodeId) {
-                    let response = await window.fetch(window.location.pathname + nodeId + '/');
-                    let nodeInspector = document.getElementById('nodeInspector');
-                    nodeInspector.innerHTML = await response.text();
-                    nodeInspector.style.display = 'block';
-                }
-                document.addEventListener('DOMContentLoaded', () => {
-                    var expander = document.getElementsByClassName('expander');
-                    var nameField = document.getElementsByClassName('nameField');
-                    var expandAllBtn = document.getElementById('expandAllBtn');
-                    var collapseAllBtn = document.getElementById('collapseAllBtn');
-            
-                    for (let i = 0; i < nameField.length; i++) {
-                        nameField[i].addEventListener('click', function() {
-                             let isSelected = this.classList.contains('selectedNameField');
-                             if (isSelected) {
-                                document.getElementById('nodeInspector').style.display = 'none';
-                             } else {
-                                createInspectorDetails(this.dataset.nodeid);
-                             }
-                             let selected = document.getElementsByClassName('selectedNameField');
-                             for (let j = 0; j < selected.length; j++) {
-                                selected[j].classList.remove('selectedNameField');
-                             }
-                             if (!isSelected) {
-                                this.classList.add('selectedNameField');
-                             }
-                        });
-                    }
-            
-                    for (let i = 0; i < expander.length; i++) {
-                        expander[i].addEventListener('click', function() {
-                            this.parentElement.querySelector(".nested").classList.toggle('active');
-                            this.classList.toggle('expander-expanded');
-                        });
-                    }
-            
-                    expandAllBtn.addEventListener('click', function () {
-                        var nested = document.getElementsByClassName("nested")
-                        for (let i=0; i < nested.length; i++) {
-                            nested[i].classList.add('active');
-                        }
-                        for (let i = 0; i < expander.length; i++) {
-                            expander[i].classList.add('expander-expanded')
-                        }
-                    });
-            
-                    collapseAllBtn.addEventListener('click', function () {
-                        var nested = document.getElementsByClassName('nested')
-                        for (let i=0; i < nested.length; i++) {
-                            nested[i].classList.remove('active');
-                        }
-                        for (let i = 0; i < expander.length; i++) {
-                            expander[i].classList.remove('expander-expanded')
-                        }
-                    });
-                });
-            """.trimIndent()
-            }
-        }
-    }
-
     private fun FlowContent.contentPageBody(rootNode: PNodeAdapter) {
         h1 {+"Model Server Content"}
-        button {
-            id = "expandAllBtn"
-            +"Expand all"
-        }
-        button {
-            id = "collapseAllBtn"
-            +"Collapse all"
+        div {
+            style = "display: flex;"
+            button(classes="btn") {
+                id = "expandAllBtn"
+                +"Expand all"
+            }
+            button(classes="btn") {
+                id = "collapseAllBtn"
+                +"Collapse all"
+            }
         }
         div {
             id = "treeWrapper"
@@ -370,8 +198,11 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
             }
             for (referenceRole in node.getReferenceRoles()) {
                 tr {
-                    td { +"$referenceRole" }
-                    td { +"Not yet implemented" }
+                    td { +referenceRole }
+                    td {
+                        // TODO MODELIX-387
+                        // +"${node.getReferenceTarget(referenceRole)}"
+                    }
                 }
             }
         }

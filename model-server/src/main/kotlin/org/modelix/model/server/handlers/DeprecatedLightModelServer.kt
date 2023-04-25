@@ -71,45 +71,45 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             call.respondHtmlTemplate(PageWithMenuBar("json/", ".."), status=HttpStatusCode.OK) {
                 headContent {
                     title("JSON API")
-                    style {
-                        unsafe {
-                            +"""
-                            body {
-                                font-family: sans-serif;    
-                            }""".trimMargin()
-                        }
-                    }
                 }
                 bodyContent {
                     h1 { +"JSON API" }
                     table {
-                        tr {
-                            td { +"GET /{repositoryId}/" }
-                            td { + "Returns the model content of the latest version on the master branch." }
-                        }
-                        tr {
-                            td { +"GET /{repositoryId}/{versionHash}/" }
-                            td { + "Returns the model content of the specified version on the master branch." }
-                        }
-                        tr {
-                            td { +"GET /{repositoryId}/{versionHash}/poll" }
-                            td { + "" }
-                        }
-                        tr {
-                            td { +"POST /{repositoryId}/init" }
-                            td { + "Initializes a new repository." }
-                        }
-                        tr {
-                            td { +"POST /{repositoryId}/{versionHash}/update" }
-                            td {
-                                + "Applies the delta to the specified version of the model and merges"
-                                +" it into the master branch. Return the model content after the merge."
+                        thead {
+                            tr {
+                                th { +"Route" }
+                                th { +"Description" }
                             }
                         }
-                        tr {
-                            td { +"WEBSOCKET /{repositoryId}/ws" }
-                            td {
-                                + "WebSocket for exchanging model deltas."
+                        tbody {
+                            tr {
+                                td { +"GET /{repositoryId}/" }
+                                td { +"Returns the model content of the latest version on the master branch." }
+                            }
+                            tr {
+                                td { +"GET /{repositoryId}/{versionHash}/" }
+                                td { +"Returns the model content of the specified version on the master branch." }
+                            }
+                            tr {
+                                td { +"GET /{repositoryId}/{versionHash}/poll" }
+                                td { +"" }
+                            }
+                            tr {
+                                td { +"POST /{repositoryId}/init" }
+                                td { +"Initializes a new repository." }
+                            }
+                            tr {
+                                td { +"POST /{repositoryId}/{versionHash}/update" }
+                                td {
+                                    +"Applies the delta to the specified version of the model and merges"
+                                    +" it into the master branch. Return the model content after the merge."
+                                }
+                            }
+                            tr {
+                                td { +"WEBSOCKET /{repositoryId}/ws" }
+                                td {
+                                    +"WebSocket for exchanging model deltas."
+                                }
                             }
                         }
                     }

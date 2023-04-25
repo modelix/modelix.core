@@ -97,15 +97,6 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
             get("/headers") {
                 val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
                 call.respondHtmlTemplate(PageWithMenuBar("headers",".")) {
-                    headContent {
-                        style {
-                            +"""
-                            body {
-                                font-family: sans-serif;   
-                            }
-                            """.trimIndent()
-                        }
-                    }
                     bodyContent {
                         h1 { +"HTTP Headers" }
                         div {

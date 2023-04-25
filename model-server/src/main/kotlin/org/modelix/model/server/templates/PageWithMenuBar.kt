@@ -10,60 +10,29 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
 
     override fun HTML.apply() {
         head {
+            link("$baseUrl/public/modelix-base.css", rel="stylesheet")
+            link("$baseUrl/public/menu-bar.css", rel="stylesheet")
             insert(headContent)
-            style {
-                unsafe {
-                    +"""
-                    .menuList {
-                        list-style-type: none;
-                        margin: 0;
-                        padding: 8px;
-                        text-align: center;
-                        overflow: hidden;
-                        background-color: #282828;
-                        border-radius: 10px;
-                        position: sticky;
-                        top: 0;
-                        z-index: 2;
-                    }
-                    .menuItem {
-                        float: left;
-                        font-family: sans-serif;
-                        font-size: 14pt;
-                        background-color: #282828;
-                        margin-right: 5px;
-                    }
-                    .menuItem > a {
-                        display: block;
-                        text-decoration: none;
-                        color: #ffffff;
-                        text-align: center;
-                        padding: 12px 20px;
-                        background-color: #282828;
-                        border-radius: 10px;
-                    }
-                    .menuItem > a:hover{
-                        background-color: #404040;
-                    }
-                    .menuItemActive > a {
-                        background-color: #6290c3;
-                    }  
-                    """.trimIndent()
-                }
-            }
         }
         body {
-            val menuItems = mapOf("history/" to "History",
-                "content/" to "Content",
-                "json/" to "JSON API",
-                "headers" to "HTTP Headers",
-                "user" to "JWT token and permissions")
-            ul("menuList") {
+            div("menu") {
+                a("$baseUrl/../", classes="logo") {
+                    img("Modelix Logo") {
+                        src = "$baseUrl/public/logo-dark.svg"
+                        width = "70px"
+                        height = "70px"
+                    }
+                }
+                val menuItems = mapOf("history/" to "History",
+                    "content/" to "Content",
+                    "json/" to "JSON API",
+                    "headers" to "HTTP Headers",
+                    "user" to "JWT token and permissions")
                 var classes = "menuItem"
                 if (activePage == "root") {
                     classes += " menuItemActive"
                 }
-                li(classes) {
+                div(classes) {
                     a(href="$baseUrl/") { +"Model Server"}
                 }
                 for (entry in menuItems) {
@@ -71,12 +40,15 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
                     if (activePage == entry.key) {
                         entryClasses += " menuItemActive"
                     }
-                    li(entryClasses) {
+                    div(entryClasses) {
                         a(href="$baseUrl/${entry.key}") { +entry.value }
                     }
                 }
             }
-            insert(bodyContent)
+            div {
+                style = "display: flex; flex-direction: column; align-items: center;"
+                insert(bodyContent)
+            }
         }
     }
 }

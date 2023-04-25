@@ -35,13 +35,7 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
             get("/history/") {
                 call.respondHtmlTemplate(PageWithMenuBar("history/","..")) {
                     headContent {
-                        style {
-                            +"""
-                            body {
-                                font-family: sans-serif;
-                            }
-                            """.trimMargin()
-                        }
+                        title("History: Choose Repository")
                     }
                     bodyContent {
                         buildMainPage()
@@ -116,25 +110,29 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
             p { i { +"No repositories available, add one" } }
         } else {
             table {
-                tr {
-                    th { +"Repository" }
-                    th { +"Branch" }
-                }
-                for (repository in repositories) {
-                    val branches = repositoriesManager.getBranches(repository)
+                thead {
                     tr {
-                        td {
-                            rowSpan = branches.size.coerceAtLeast(1).toString()
-                            +repository.id
-                        }
-                        if (branches.isEmpty()) {
-                            td { }
-                        } else {
-                            for (branch in branches) {
-                                td {
-                                    a {
-                                        href = "${branch.repositoryId.id}/${branch.branchName}/"
-                                        +branch.branchName
+                        th { +"Repository" }
+                        th { +"Branch" }
+                    }
+                }
+                tbody {
+                    for (repository in repositories) {
+                        val branches = repositoriesManager.getBranches(repository)
+                        tr {
+                            td {
+                                rowSpan = branches.size.coerceAtLeast(1).toString()
+                                +repository.id
+                            }
+                            if (branches.isEmpty()) {
+                                td { }
+                            } else {
+                                for (branch in branches) {
+                                    td {
+                                        a {
+                                            href = "${branch.repositoryId.id}/${branch.branchName}/"
+                                            +branch.branchName
+                                        }
                                     }
                                 }
                             }
@@ -148,39 +146,6 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
     private fun HEAD.repositoryPageStyle() {
         style {
             +"""
-            table {
-              border-collapse: collapse;
-              font-family: sans-serif;
-              margin: 25px 0;
-              font-size: 0.9em;
-              border-radius:6px;
-            }
-            thead tr {
-              background-color: #009879;
-              color: #ffffff;
-              text-align: left;
-            }
-            th {
-              padding: 12px 15px;
-            }
-            td {
-              padding: 3px 15px;
-            }
-            tbody tr {
-              border-bottom: 1px solid #dddddd;
-              border-left: 1px solid #dddddd;
-              border-right: 1px solid #dddddd;
-            }
-            tbody tr:nth-of-type(even) {
-              background-color: #f3f3f3;
-            }
-            tbody tr:last-of-type
-              border-bottom: 2px solid #009879;
-            }
-            tbody tr.active-row {
-              font-weight: bold;
-              color: #009879;
-            }
             ul {
               padding-left: 15px;
             }
@@ -191,6 +156,7 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
             .BtnGroup {
               display: inline-block;
               vertical-align: middle;
+              margin: 10px;
             }
             .BtnGroup-item {
               background-color: #f6f8fa;

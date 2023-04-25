@@ -24,11 +24,7 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.*
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
@@ -191,7 +187,7 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
         fun createUpdate(): VersionData {
             val nodesToUpdate: MutableSet<INode> = HashSet()
             queryExecutor.update(query) { nodesToUpdate += it }
-            val nodeDataList = nodesToUpdate.map { it.toData() }
+            val nodeDataList = nodesToUpdate.mapNotNull { try { it.toData() } catch (ex: Exception) { null } }
             return VersionData(
                 repositoryId = null,
                 versionHash = null,

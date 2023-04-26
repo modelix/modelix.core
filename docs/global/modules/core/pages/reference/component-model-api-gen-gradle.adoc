@@ -1,0 +1,198 @@
+= Gradle Plugin for the Model API Generator
+:navtitle: `model-api-gen-gradle`
+
+
+:tip-caption: 🔗 Quick Links
+[TIP]
+--
+https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmodel-api-gen%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-api-gen-gradle/build.gradle.kts[Buildfile^]
+--
+
+== Overview
+The `model-api-gen.gradle.plugin` is a Gradle plugin that wraps the functionality of xref:core:reference/component-model-api-gen.adoc[model-api-gen].
+It provides an additional Gradle task which will apply a 2-staged process:
+
+. MPS metamodel export to JSON (optional)
++
+In the first step the xref:core:reference/component-metamodel-export.adoc[metamodel-export MPS solution] is executed by the plugin to export the MPS structure aspect (i.e. the metamodel) to JSON files.
+In case your metamodel comes from another source this is an external entry point: As long as you can export your metamodel to JSON, you can use xref:core:reference/component-model-api-gen.adoc[model-api-gen].
++
+To use JSON from another source or JSON files from a previous export, you can skip this step by simply specifying a directory, which contains the JSON files, in the configuration of the gradle task:
++
+[source,kotlin]
+--
+metamodel {
+    //...
+    jsonDir = File("path/to/json/dir")
+}
+--
+As a result, all MPS-specific configuration settings will be ignored and the specified directory will be used for the next step. 
+
+. JSON to model API generation
++
+In the second step, the previously generated JSON files containing the metamodel are being used to generate the typed API using the Kotlin/TypeScript generator in xref:core:reference/component-model-api-gen.adoc[model-api-gen].
+
+== Configuration settings
+
+Inside of the `metamodel` block the following settings can be configured.
+
+=== Configurable Attributes
+[%header, cols="1,1,2"]
+|===
+|setting
+|type
+|description
+
+|`javaExecutable`
+|File
+|Location of the Java executable
+
+|`moduleFolders`
+|ArrayList<File>
+|Directories, that contain the language modules
+
+|`mpsHome`
+|File
+|Home directory of MPS
+
+|`mpsHeapSize`
+|String
+|MPS heap size specified as a String, e.g. "2g" for 2GB
+
+|`includedLanguages`
+|Set<String>
+|Set of languages, for which an API should be generated
+
+|`includedLanguageNamespaces`
+|Set<String>
+|Set of language namespaces, for which an API should be generated
+
+|`includedConcepts`
+|Set<String>
+|Set of concepts, for which an API should be generated
+
+|`includedModules`
+|Set<String>
+|Set of modules, for which an API should be generated
+
+|`jsonDir`
+|File
+|Directory containing JSON files, which represent a metamodel. Will be used as input for the generation. Specifying this will skip the export from MPS and all MPS-specific configurations will be ignored.
+
+|`kotlinDir`
+|File
+|Target Kotlin directory of the generator
+
+|`kotlinProject`
+|Project
+|Target Kotlin project of the generator
+
+|`typescriptDir`
+|File
+|Target TypeScript directory of the generator
+
+|`registrationHelperName`
+|String
+|Name of the registration helper
+
+|`taskDependencies`
+|List<Any>
+|List of tasks, on which the generation process depends
+
+|===
+
+=== Configuration Methods
+[%header, cols="1,1,2"]
+|===
+
+|method
+|parameter type
+|description
+
+|`names`
+|Action<NameConfig>
+|Block used to set a name configuration.
+
+|`dependsOn`
+|vararg Any
+|Adds a dependency to `taskDependencies`
+
+|`javaExecutable`
+|File
+|Sets the java executable.
+
+|`modulesFrom`
+|File
+|Adds a directory to `moduleFolders
+
+|`includeLanguage`
+|String
+|Adds the language specified by this fully qualified name to `ìncludedLanguages`
+
+|`includeNamespace`
+|String
+|Adds the namespace specified by this languagePrefix to `includedNamespaces`
+
+|`includeConcept`
+|String
+|Adds the concept specified by this fully qualified name to `includedConcepts`
+
+|`exportModules`
+|String
+|Adds the module specified by this name prefix to `includedModules`
+
+|===
+=== Name Configuration
+Inside the `metamodel` block a `names` block can be declared to configure `prefix`, `suffix`, and `baseNameConversion` of generated Kotlin/TypeScript elements. This is achieved by setting the attributes of the NameConfig object accordingly.
+
+==== Default Values
+[%header, cols="1,1,1"]
+|===
+|attribute
+|default prefix
+|default suffix
+
+|`languageClass`
+|"L_"
+|""
+
+|`typedNode`
+|"N_"
+|""
+
+|`typedNodeImpl``
+|"\_N_TypedImpl_"
+|""
+
+|`untypedConcept`
+|"\_C_UntypedImpl_"
+|""
+
+|`typedConcept``
+|"C_"
+|""
+
+|`typedConceptImpl``
+|"\_C_TypedImpl_"
+|""
+
+|===
+
+== Example
+
+[source,kotlin]
+--
+metamodel {
+    mpsHome = file("path/to/mps/home")
+    mpsHeapSize = "2g"
+    kotlinDir = file("build/kotlin_gen")
+    registrationHelperName = "org.modelix.Languages"
+    typescriptDir = file("build/ts_gen")
+    includeNamespace("jetbrains.mps.baseLanguage")
+    exportModules("jetbrains.mps.runtime")
+    names {
+        languageClass.prefix = "MyLanguagePrefix"
+        languageClass.suffix = "MyLanguageSuffix"
+    }
+}
+--

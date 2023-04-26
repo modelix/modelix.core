@@ -1,8 +1,8 @@
-import type {ILanguage} from "./ILanguage";
-import {LanguageRegistry} from "./LanguageRegistry";
-import type {INodeJS} from "./INodeJS";
-import type {TypedNode} from "./TypedNode";
-import type {GeneratedConcept} from "./GeneratedConcept";
+import type {ILanguage} from "./ILanguage.js";
+import {LanguageRegistry} from "./LanguageRegistry.js";
+import type {INodeJS} from "./INodeJS.js";
+import type {TypedNode} from "./TypedNode.js";
+import type {GeneratedConcept} from "./GeneratedConcept.js";
 
 export abstract class GeneratedLanguage implements ILanguage {
 

@@ -39,6 +39,7 @@ kotlin {
                 }
             }
         }
+        useCommonJs()
     }
     sourceSets {
         val commonMain by getting {
@@ -83,6 +84,6 @@ kotlin {
 listOf("sourcesJar", "runKtlintCheckOverJsMainSourceSet", "jsSourcesJar", "jsPackageJson", "compileKotlinJs", "jsProcessResources").forEach {
     tasks.named(it) {
         dependsOn(":ts-model-api:npm_run_build")
-        dependsOn(":ts-model-api:npm_run_generateKotlin")
+        dependsOn(":ts-model-api:patchKotlinExternals")
     }
 }

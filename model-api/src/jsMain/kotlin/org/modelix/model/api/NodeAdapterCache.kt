@@ -28,7 +28,7 @@ object NodeAdapterCache {
             }, 0)
         }
 
-        val key = toINode(node)
+        val key = JSNodeConverter.toINode(node)
         var wrapper = caches[0][key]
         if (wrapper == null) {
             wrapper = caches.asSequence().drop(1).mapNotNull { it.remove(key) }.firstOrNull()
@@ -38,19 +38,5 @@ object NodeAdapterCache {
             caches[0][key] = wrapper
         }
         return wrapper as Out
-    }
-
-    private fun toINode(node: Any): INode {
-        if (node is INode) return node
-        if (node is NodeAdapterJS) return node.node
-
-        // if (node is TypedNode) return toINode(node.node)
-
-        // Workaround, because the line above fails with 'TypedNode is not defined'.
-        // The import for '@modelix/ts-model-api' seems to be missing in the generated JS.
-        val unwrapped = node.asDynamic().node
-        if (unwrapped != null) return toINode(unwrapped)
-
-        throw IllegalArgumentException("Unsupported node type: $node")
     }
 }

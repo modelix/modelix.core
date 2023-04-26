@@ -23,6 +23,7 @@ kotlin {
                 }
             }
         }
+        useCommonJs()
     }
 
     sourceSets {

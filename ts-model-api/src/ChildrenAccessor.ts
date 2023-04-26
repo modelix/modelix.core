@@ -1,7 +1,7 @@
-import type {ITypedNode, TypedNode} from "./TypedNode";
-import type {INodeJS} from "./INodeJS";
-import {LanguageRegistry} from "./LanguageRegistry";
-import type {IConceptJS} from "./IConceptJS";
+import type {ITypedNode, TypedNode} from "./TypedNode.js";
+import type {INodeJS} from "./INodeJS.js";
+import {LanguageRegistry} from "./LanguageRegistry.js";
+import type {IConceptJS} from "./IConceptJS.js";
 
 export abstract class ChildrenAccessor<ChildT extends ITypedNode> implements Iterable<ChildT> {
   constructor(public parentNode: INodeJS, public role: string | undefined) {

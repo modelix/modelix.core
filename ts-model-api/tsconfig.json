@@ -4,7 +4,10 @@
     "rootDir": "src",
     "outDir": "dist",
     "declarationDir": "dist",
-    "noUnusedLocals": false
+    "noUnusedLocals": false,
+    "module": "CommonJS",
+    "resolveJsonModule": false,
+    "target": "ES2020"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist"]

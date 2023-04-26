@@ -1,5 +1,7 @@
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
+import org.jetbrains.dokka.base.DokkaBase
+import org.jetbrains.dokka.base.DokkaBaseConfiguration
 
 buildscript {
     dependencies {
@@ -113,9 +115,42 @@ val docsDir = buildDir.resolve("dokka")
 
 tasks.dokkaHtmlMultiModule {
     outputDirectory.set(docsDir.resolve("$version"))
+    pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
+        customAssets += file(projectDir.resolve("dokka/logo-dark.svg"))
+        customStyleSheets += file(projectDir.resolve("dokka/logo-styles.css"))
+        footerMessage = createFooterMessage()
+    }
     doLast {
         val index = file(docsDir.resolve("index.html"))
-        index.writeText(createDocsIndexPage())
+        index.writeText(createDocsIndexPage(), Charsets.ISO_8859_1)
+    }
+}
+
+fun createFooterMessage(): String {
+    return createHTML().span {
+        createFooter()
+    }
+}
+
+fun FlowContent.createFooter() {
+    p {
+        +"For more information visit "
+        a("https://modelix.org") { +"modelix.org" }
+        +", for further documentation visit "
+        a("https://docs.modelix.org") { +"docs.modelix.org" }
+        +"."
+    }
+    p {
+        +"Copyright \u00A9 2021-present by the "
+        a("https://modelix.org") { +"modelix open source project" }
+        +" and the individual contributors. All Rights reserved."
+    }
+    p {
+        +"Except where otherwise noted, "
+        a("https://api.modelix.org")  {+"api.modelix.org"}
+        +", modelix, and the modelix framework, are licensed under the "
+        a("https://www.apache.org/licenses/LICENSE-2.0.html") { +"Apache-2.0 license"}
+        +"."
     }
 }
 
@@ -123,6 +158,7 @@ fun createDocsIndexPage(): String {
     return createHTML().html {
         head {
             link(href = "./$version/styles/style.css", rel = "Stylesheet")
+            link(href = "./$version/styles/logo-styles.css", rel = "Stylesheet")
             title("modelix.core API Reference")
             style {
                 unsafe {
@@ -177,6 +213,16 @@ fun createDocsIndexPage(): String {
                                     }
                                 }
                             }
+                        }
+                    }
+                    div("footer") {
+                        span("go-to-top-icon") {
+                            a("#content") {
+                                id = "go-to-top-link"
+                            }
+                        }
+                        span {
+                            createFooter()
                         }
                     }
                 }

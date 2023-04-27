@@ -2,6 +2,7 @@ import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 buildscript {
     dependencies {
@@ -50,6 +51,12 @@ subprojects {
     apply(plugin = "org.jetbrains.dokka")
     version = rootProject.version
     group = rootProject.group
+
+    tasks.withType<DokkaTaskPartial>().configureEach {
+        pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
+            footerMessage = createFooterMessage()
+        }
+    }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
         kotlinOptions {

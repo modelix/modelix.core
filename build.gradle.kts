@@ -10,13 +10,13 @@ buildscript {
 }
 
 plugins {
-    kotlin("multiplatform") apply false
-    kotlin("plugin.serialization") apply false
     `maven-publish`
-    id("com.palantir.git-version") version "0.13.0"
-    id("org.jlleitschuh.gradle.ktlint") version "10.3.0" apply false
-    id("com.diffplug.spotless") version "5.0.0" apply false
-    id("com.dorongold.task-tree") version "2.1.0"
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.gitVersion)
+    alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.tasktree)
     id("org.jetbrains.dokka") version "1.8.10"
 }
 

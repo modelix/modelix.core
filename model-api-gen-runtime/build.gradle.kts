@@ -3,8 +3,6 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-val kotlinVersion: String by rootProject
-val kotlinLoggingVersion: String by rootProject
 val mpsExtensionsVersion: String by rootProject
 
 kotlin {
@@ -30,8 +28,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+                implementation(libs.kotlin.logging)
+                implementation(libs.kotlin.serialization.json)
                 api(project(":model-api"))
             }
         }
@@ -43,7 +41,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation("com.charleskorn.kaml:kaml:0.48.0")
+                implementation(libs.kotlin.serialization.yaml)
             }
         }
         val jvmTest by getting {

@@ -49,14 +49,14 @@ kotlin {
                 api(project(":model-api"))
                 api(project(":model-server-api"))
                 kotlin("stdlib-common")
-                implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.4")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
-                implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
-                implementation("io.ktor:ktor-client-core:$ktorVersion")
-                implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+                implementation(libs.kotlin.collections.immutable)
+                implementation(libs.kotlin.coroutines.core)
+                implementation(libs.kotlin.logging)
+                implementation(libs.kotlin.datetime)
+                implementation(libs.kotlin.serialization.json)
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.json)
             }
         }
         val commonTest by getting {
@@ -69,27 +69,22 @@ kotlin {
             dependencies {
                 kotlin("stdlib-jdk8")
 
-                implementation("io.vavr:vavr:0.10.3")
-                implementation("org.apache.commons:commons-lang3:3.11")
-                implementation("com.google.guava:guava:29.0-jre")
-                implementation("org.glassfish.jersey.core:jersey-client:2.31")
-                implementation("org.glassfish.jersey.inject:jersey-hk2:2.31")
-                implementation("org.glassfish.jersey.media:jersey-media-sse:2.31")
-                implementation("javax.xml.bind:jaxb-api:2.3.1")
-                implementation("commons-io:commons-io:2.7")
+                implementation(libs.vavr)
+                implementation(libs.apache.commons.lang)
+                implementation(libs.guava)
+                implementation(libs.apache.commons.io)
                 implementation("org.json:json:20200518")
-                implementation("net.sf.trove4j:trove4j:3.0.3")
-                implementation("org.apache.commons:commons-collections4:4.4")
+                implementation(libs.trove4j)
+                implementation(libs.apache.commons.collections)
 
-                val oauthVersion = "1.34.1"
-                implementation("com.google.oauth-client:google-oauth-client:$oauthVersion")
-                implementation("com.google.oauth-client:google-oauth-client-jetty:$oauthVersion")
+                implementation("com.google.oauth-client:google-oauth-client:1.34.1")
+                implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
 
-                implementation("io.ktor:ktor-client-core:$ktorVersion")
-                implementation("io.ktor:ktor-client-cio:$ktorVersion")
-                implementation("io.ktor:ktor-client-auth:$ktorVersion")
-                implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.cio)
+                implementation(libs.ktor.client.auth)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.json)
             }
         }
         val jvmTest by getting {

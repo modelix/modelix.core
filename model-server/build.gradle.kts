@@ -21,46 +21,35 @@ defaultTasks.add("build")
 }*/
 
 val mpsExtensionsVersion: String by project
-val modelixCoreVersion: String by rootProject
-val ktorVersion: String by rootProject
-val kotlinCoroutinesVersion: String by rootProject
-val kotlinVersion: String by rootProject
-val logbackVersion: String by rootProject
-val kotlinxSerializationVersion: String by rootProject
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
+    implementation(kotlin("stdlib"))
+    implementation(libs.kotlin.serialization.json)
+    implementation(libs.kotlin.coroutines.core)
 
     implementation(project(":model-api"))
     implementation(project(":model-server-api"))
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))
     implementation(project(":authorization"))
-    implementation("org.apache.commons:commons-lang3:3.10")
+    implementation(libs.apache.commons.lang)
 
-    implementation("org.json:json:20200518")
-    implementation("org.java-websocket:Java-WebSocket:1.5.0")
-    implementation("org.apache.commons:commons-collections4:4.4")
+    implementation(libs.apache.commons.collections)
     implementation("io.lettuce:lettuce-core:5.1.8.RELEASE")
     implementation("ch.qos.logback:logback-classic:1.4.6")
 
-    implementation("io.ktor", "ktor-server-core", ktorVersion)
-    implementation("io.ktor", "ktor-server-cors", ktorVersion)
-    implementation("io.ktor", "ktor-server-netty", ktorVersion)
-    implementation("io.ktor", "ktor-server-html-builder", ktorVersion)
-    implementation("io.ktor:ktor-server-auth:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
-    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
-    implementation("io.ktor:ktor-server-forwarded-header:$ktorVersion")
-    implementation("io.ktor:ktor-server-websockets:$ktorVersion")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.cors)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.html.builder)
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.auth.jwt)
+    implementation(libs.ktor.server.status.pages)
+    implementation(libs.ktor.server.forwarded.header)
+    implementation(libs.ktor.server.websockets)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.serialization.json)
 
-    val igniteVersion = "2.13.0"
-    implementation("org.apache.ignite:ignite-core:$igniteVersion")
-    implementation("org.apache.ignite:ignite-spring:$igniteVersion")
-    implementation("org.apache.ignite:ignite-indexing:$igniteVersion")
+    implementation(libs.bundles.ignite)
 
     implementation("org.postgresql:postgresql:42.3.3")
 
@@ -72,8 +61,8 @@ dependencies {
 
     testImplementation("junit:junit:4.13.1")
     testImplementation("io.cucumber:cucumber-java:6.2.2")
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlinVersion")
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(kotlin("test"))
     implementation(kotlin("test-junit"))
 }
 

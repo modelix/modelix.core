@@ -124,6 +124,7 @@ tasks.dokkaHtmlMultiModule {
     outputDirectory.set(docsDir.resolve("$version"))
     pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
         customAssets += file(projectDir.resolve("dokka/logo-dark.svg"))
+        customAssets += file(projectDir.resolve("dokka/logo-icon.svg"))
         customStyleSheets += file(projectDir.resolve("dokka/logo-styles.css"))
         footerMessage = createFooterMessage()
     }
@@ -167,6 +168,7 @@ fun createDocsIndexPage(): String {
             meta(charset = "utf-8")
             link(href = "./$version/styles/style.css", rel = "Stylesheet")
             link(href = "./$version/styles/logo-styles.css", rel = "Stylesheet")
+            link(href = "./$version/images/logo-icon.svg", rel = "icon")
             title("modelix.core API Reference")
             style {
                 unsafe {

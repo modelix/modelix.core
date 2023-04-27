@@ -60,7 +60,7 @@ dependencies {
     implementation("org.apache.cxf:cxf-rt-rs-client:3.3.7")
 
     testImplementation("junit:junit:4.13.1")
-    testImplementation("io.cucumber:cucumber-java:6.2.2")
+    testImplementation("io.cucumber:cucumber-java:7.11.2")
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
     implementation(kotlin("test-junit"))

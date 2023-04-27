@@ -64,5 +64,5 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 gitVersion = { id = "com.palantir.git-version", version = "0.13.0" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "10.3.0" }
 spotless = { id = "com.diffplug.spotless", version = "5.0.0" }
-tasktree = { id = "com.dorongold.task-tree", version = "2.1.0" }
+tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.0.11" }

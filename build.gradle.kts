@@ -2,6 +2,7 @@ import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 buildscript {
     dependencies {
@@ -50,6 +51,12 @@ subprojects {
     apply(plugin = "org.jetbrains.dokka")
     version = rootProject.version
     group = rootProject.group
+
+    tasks.withType<DokkaTaskPartial>().configureEach {
+        pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
+            footerMessage = createFooterMessage()
+        }
+    }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
         kotlinOptions {
@@ -117,6 +124,7 @@ tasks.dokkaHtmlMultiModule {
     outputDirectory.set(docsDir.resolve("$version"))
     pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
         customAssets += file(projectDir.resolve("dokka/logo-dark.svg"))
+        customAssets += file(projectDir.resolve("dokka/logo-icon.svg"))
         customStyleSheets += file(projectDir.resolve("dokka/logo-styles.css"))
         footerMessage = createFooterMessage()
     }
@@ -160,6 +168,7 @@ fun createDocsIndexPage(): String {
             meta(charset = "utf-8")
             link(href = "./$version/styles/style.css", rel = "Stylesheet")
             link(href = "./$version/styles/logo-styles.css", rel = "Stylesheet")
+            link(href = "./$version/images/logo-icon.svg", rel = "icon")
             title("modelix.core API Reference")
             style {
                 unsafe {

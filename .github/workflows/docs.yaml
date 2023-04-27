@@ -17,6 +17,11 @@ jobs:
           java-version: '11'
       - name: Use tag as version
         run: echo "${GITHUB_REF#refs/*/}" > version.txt
+      - name: Checkout Old Docs Versions for Index Page
+        uses: actions/checkout@v3
+        with:
+          ref: gh-pages
+          path: build/dokka
       - name: Generate Docs with Dokka
         run: ./gradlew dokkaHtmlMultiModule
       - name: Publish to GitHub Pages

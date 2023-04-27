@@ -122,7 +122,7 @@ tasks.dokkaHtmlMultiModule {
     }
     doLast {
         val index = file(docsDir.resolve("index.html"))
-        index.writeText(createDocsIndexPage(), Charsets.ISO_8859_1)
+        index.writeText(createDocsIndexPage())
     }
 }
 
@@ -157,6 +157,7 @@ fun FlowContent.createFooter() {
 fun createDocsIndexPage(): String {
     return createHTML().html {
         head {
+            meta(charset = "utf-8")
             link(href = "./$version/styles/style.css", rel = "Stylesheet")
             link(href = "./$version/styles/logo-styles.css", rel = "Stylesheet")
             title("modelix.core API Reference")

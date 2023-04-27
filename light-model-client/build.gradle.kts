@@ -3,13 +3,6 @@ plugins {
     `maven-publish`
 }
 
-val kotlinVersion: String by rootProject
-val kotlinCoroutinesVersion: String by rootProject
-val ktorVersion: String by rootProject
-val kotlinLoggingVersion: String by rootProject
-val kotlinxHtmlVersion: String by rootProject
-val modelixIncrementalVersion: String by rootProject
-
 kotlin {
     jvm()
     js(IR) {
@@ -30,10 +23,10 @@ kotlin {
                 implementation(project(":model-api"))
                 implementation(project(":model-api-gen-runtime"))
                 implementation(project(":model-server-api"))
-                implementation("io.ktor:ktor-client-websockets:$ktorVersion")
-                implementation(kotlin("stdlib-common"))
-                implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
+                implementation(libs.ktor.client.websockets)
+                implementation(libs.kotlin.stdlib.common)
+                implementation(libs.kotlin.logging)
+                implementation(libs.kotlin.coroutines.core)
 
 //                implementation("io.ktor:ktor-client-core:$ktorVersion")
 //                implementation("io.ktor:ktor-client-cio:$ktorVersion")
@@ -44,14 +37,14 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutinesVersion")
+                implementation(libs.kotlin.coroutines.test)
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
             }
         }
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-cio:$ktorVersion")
+                implementation(libs.ktor.client.cio)
             }
         }
         val jvmTest by getting {
@@ -61,21 +54,21 @@ kotlin {
 
                 implementation(project(":model-server"))
                 implementation(project(":authorization"))
-                implementation("io.ktor:ktor-server-core:$ktorVersion")
-                implementation("io.ktor:ktor-server-cors:$ktorVersion")
-                implementation("io.ktor:ktor-server-netty:$ktorVersion")
-                implementation("io.ktor:ktor-server-html-builder:$ktorVersion")
-                implementation("io.ktor:ktor-server-auth:$ktorVersion")
-                implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
-                implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
-                implementation("io.ktor:ktor-server-forwarded-header:$ktorVersion")
-                implementation("io.ktor:ktor-server-websockets:$ktorVersion")
-                implementation("io.ktor:ktor-server-test-host:$ktorVersion")
+                implementation(libs.ktor.server.core)
+                implementation(libs.ktor.server.cors)
+                implementation(libs.ktor.server.netty)
+                implementation(libs.ktor.server.html.builder)
+                implementation(libs.ktor.server.auth)
+                implementation(libs.ktor.server.auth.jwt)
+                implementation(libs.ktor.server.status.pages)
+                implementation(libs.ktor.server.forwarded.header)
+                implementation(libs.ktor.server.websockets)
+                implementation(libs.ktor.server.test.host)
             }
         }
         val jsMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-js:$ktorVersion")
+                implementation(libs.ktor.client.js)
             }
         }
         val jsTest by getting {

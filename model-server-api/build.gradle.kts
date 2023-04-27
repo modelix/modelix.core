@@ -4,14 +4,6 @@ plugins {
     `maven-publish`
 }
 
-val kotlinVersion: String by rootProject
-val kotlinCoroutinesVersion: String by rootProject
-val ktorVersion: String by rootProject
-val kotlinLoggingVersion: String by rootProject
-val kotlinxHtmlVersion: String by rootProject
-val kotlinxSerializationVersion: String by rootProject
-val modelixIncrementalVersion: String by rootProject
-
 kotlin {
     jvm()
     js(IR) {
@@ -32,8 +24,8 @@ kotlin {
 //                implementation(project(":model-api"))
 //                implementation(project(":metamodel-runtime"))
                 implementation(kotlin("stdlib-common"))
-                implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
+                implementation(libs.kotlin.logging)
+                implementation(libs.kotlin.serialization.json)
 //                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
 
 //                implementation("io.ktor:ktor-client-core:$ktorVersion")

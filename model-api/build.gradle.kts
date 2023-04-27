@@ -26,9 +26,6 @@ tasks.named("check") {
     dependsOn("ktlintCheck")
 }
 
-val kotlinLoggingVersion: String by rootProject
-val kotlinxSerializationVersion: String by rootProject
-
 kotlin {
     jvm()
     js(IR) {
@@ -45,8 +42,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
+                implementation(libs.kotlin.logging)
+                implementation(libs.kotlin.serialization.json)
             }
         }
         val commonTest by getting {

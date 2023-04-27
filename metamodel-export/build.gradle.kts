@@ -2,7 +2,7 @@ import org.modelix.gradle.mpsbuild.MPSBuildSettings
 
 plugins {
     base
-    id("org.modelix.mps.build-tools") version "1.0.11"
+    alias(libs.plugins.modelix.mps.buildtools)
 }
 
 group = "org.modelix.mps"

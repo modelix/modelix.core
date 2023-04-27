@@ -7,13 +7,13 @@ val kotlinxSerializationVersion: String by rootProject
 val kotlinCollectionsImmutableVersion: String by rootProject
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:$kotlinCollectionsImmutableVersion")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
-    implementation("com.charleskorn.kaml:kaml:0.40.0")
+    implementation(libs.kotlin.collections.immutable)
+    implementation(kotlin("stdlib-jdk8"))
+    implementation(libs.kotlin.serialization.json)
+    implementation(libs.kotlin.serialization.yaml)
     implementation(project(":model-api-gen-runtime"))
-    implementation("com.squareup:kotlinpoet:1.12.0")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation(libs.kotlinpoet)
+    implementation(kotlin("reflect"))
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
 }

@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.util.pmap
@@ -135,7 +135,9 @@ abstract class SmallPMap<K, V> : CustomPMap<K, V> {
             }
             return if (keys.size == 1) {
                 Single(keys[0] as K?, values[0] as V?)
-            } else Multiple<K?, V?>(keys, values)
+            } else {
+                Multiple<K?, V?>(keys, values)
+            }
         }
 
         fun <K, V> createS(keys: Iterable<K>?, values: Iterable<V>?): SmallPMap<K, V> {

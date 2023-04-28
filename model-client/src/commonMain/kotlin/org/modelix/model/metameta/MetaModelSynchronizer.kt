@@ -69,7 +69,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
         }
         id = getIndex().getLanguageId(lang)
         if (id != null) return id
-        val pendingReferences: MutableList<(MetaModelIndex)->Unit> = ArrayList()
+        val pendingReferences: MutableList<(MetaModelIndex) -> Unit> = ArrayList()
         id = storeLanguage(lang, pendingReferences)
         processPendingReferences(getIndex(), pendingReferences)
         return id
@@ -86,7 +86,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
         }
         id = getIndex().getConceptId(concept)
         if (id != null) return id
-        val pendingReferences: MutableList<(MetaModelIndex)->Unit> = ArrayList()
+        val pendingReferences: MutableList<(MetaModelIndex) -> Unit> = ArrayList()
         id = storeConcept(getLanguageId(concept.language!!), concept, pendingReferences)
         processPendingReferences(getIndex(), pendingReferences)
         return id
@@ -103,7 +103,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
         }
         id = getIndex().getPropertyId(property)
         if (id != null) return id
-        val pendingReferences: MutableList<(MetaModelIndex)->Unit> = ArrayList()
+        val pendingReferences: MutableList<(MetaModelIndex) -> Unit> = ArrayList()
         id = storeProperty(getConceptId(property.getConcept()), property, pendingReferences)
         processPendingReferences(getIndex(), pendingReferences)
         return id
@@ -120,7 +120,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
         }
         id = getIndex().getChildLinkId(link)
         if (id != null) return id
-        val pendingReferences: MutableList<(MetaModelIndex)->Unit> = ArrayList()
+        val pendingReferences: MutableList<(MetaModelIndex) -> Unit> = ArrayList()
         id = storeChildLink(getConceptId(link.getConcept()), link, pendingReferences)
         processPendingReferences(getIndex(), pendingReferences)
         return id
@@ -137,17 +137,17 @@ class MetaModelSynchronizer(val branch: IBranch) {
         }
         id = getIndex().getReferenceLinkId(link)
         if (id != null) return id
-        val pendingReferences: MutableList<(MetaModelIndex)->Unit> = ArrayList()
+        val pendingReferences: MutableList<(MetaModelIndex) -> Unit> = ArrayList()
         id = storeReferenceLink(getConceptId(link.getConcept()), link, pendingReferences)
         processPendingReferences(getIndex(), pendingReferences)
         return id
     }
 
-    private fun processPendingReferences(index: MetaModelIndex, pendingReferences: List<(MetaModelIndex)->Unit>) {
+    private fun processPendingReferences(index: MetaModelIndex, pendingReferences: List<(MetaModelIndex) -> Unit>) {
         pendingReferences.forEach { it(index) }
     }
 
-    private fun storeLanguage(lang: ILanguage, pendingReferences: MutableList<(MetaModelIndex)->Unit>): Long {
+    private fun storeLanguage(lang: ILanguage, pendingReferences: MutableList<(MetaModelIndex) -> Unit>): Long {
         val t = branch.transaction
         var id = t.getChildren(ITree.ROOT_ID, MetaModelIndex.LANGUAGES_ROLE)
             .find { t.getProperty(it, MetaMetaLanguage.property_IHasUID_uid.name) == lang.getUID() }
@@ -163,7 +163,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
         return id
     }
 
-    private fun storeConcept(languageId: Long, concept: IConcept, pendingReferences: MutableList<(MetaModelIndex)->Unit>): Long {
+    private fun storeConcept(languageId: Long, concept: IConcept, pendingReferences: MutableList<(MetaModelIndex) -> Unit>): Long {
         val t = branch.transaction
         var id = t.getChildren(languageId, MetaMetaLanguage.childLink_Language_concepts.name)
             .find { t.getProperty(it, MetaMetaLanguage.property_IHasUID_uid.name) == concept.getUID() }
@@ -200,7 +200,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
         return id
     }
 
-    private fun storeProperty(conceptId: Long, property: IProperty, pendingReferences: MutableList<(MetaModelIndex)->Unit>): Long {
+    private fun storeProperty(conceptId: Long, property: IProperty, pendingReferences: MutableList<(MetaModelIndex) -> Unit>): Long {
         val t = branch.transaction
         var id = t.getChildren(conceptId, MetaMetaLanguage.childLink_Concept_properties.name)
             .find { t.getProperty(it, MetaMetaLanguage.property_IHasUID_uid.name) == property.getUID() }
@@ -213,7 +213,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
         return id
     }
 
-    private fun storeChildLink(conceptId: Long, link: IChildLink, pendingReferences: MutableList<(MetaModelIndex)->Unit>): Long {
+    private fun storeChildLink(conceptId: Long, link: IChildLink, pendingReferences: MutableList<(MetaModelIndex) -> Unit>): Long {
         val t = branch.transaction
         var id = t.getChildren(conceptId, MetaMetaLanguage.childLink_Concept_childLinks.name)
             .find { t.getProperty(it, MetaMetaLanguage.property_IHasUID_uid.name) == link.getUID() }
@@ -240,7 +240,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
         return id
     }
 
-    private fun storeReferenceLink(conceptId: Long, link: IReferenceLink, pendingReferences: MutableList<(MetaModelIndex)->Unit>): Long {
+    private fun storeReferenceLink(conceptId: Long, link: IReferenceLink, pendingReferences: MutableList<(MetaModelIndex) -> Unit>): Long {
         val t = branch.transaction
         var id = t.getChildren(conceptId, MetaMetaLanguage.childLink_Concept_referenceLinks.name)
             .find { t.getProperty(it, MetaMetaLanguage.property_IHasUID_uid.name) == link.getUID() }

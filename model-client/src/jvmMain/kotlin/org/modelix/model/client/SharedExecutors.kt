@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.client
@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit
 
 object SharedExecutors {
     private val LOG = mu.KotlinLogging.logger {}
+
     @JvmField
     val FIXED = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1)
     val SCHEDULED = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() + 1)
@@ -54,11 +55,14 @@ object SharedExecutors {
                         {
                             workerTask?.cancel(true)
                         },
-                        timeoutMs, TimeUnit.MILLISECONDS
+                        timeoutMs,
+                        TimeUnit.MILLISECONDS
                     )
                 }
             },
-            periodMs, periodMs, TimeUnit.MILLISECONDS
+            periodMs,
+            periodMs,
+            TimeUnit.MILLISECONDS
         )
     }
 }

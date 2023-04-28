@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model
@@ -71,7 +71,7 @@ class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrap
             while (itr.hasNext()) {
                 val key = itr.next()
                 val value = cache[key]
-                // always put even if null to have the same order in the linked hash map as in the input 
+                // always put even if null to have the same order in the linked hash map as in the input
                 result[key] = value
                 if (value != null) {
                     itr.remove()

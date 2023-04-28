@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.persistent
@@ -43,6 +43,7 @@ class CPTree(
         val PERSISTENCE_VERSION: Int = 3
         val NAMED_BASED_PERSISTENCE_VERSION: Int = 2
         val DESERIALIZER: (String) -> CPTree = { deserialize(it) }
+
         @JvmStatic
         fun deserialize(input: String): CPTree {
             val parts = input.split("/")

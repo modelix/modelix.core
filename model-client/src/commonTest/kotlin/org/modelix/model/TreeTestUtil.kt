@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model
@@ -54,7 +54,9 @@ class TreeTestUtil(private val tree: ITree, private val rand: Random) {
     fun getRandomNode(nodes: Iterable<Long>): Long {
         return if (nodes.count() == 0) {
             0L
-        } else nodes.drop(rand.nextInt(nodes.count())).first()
+        } else {
+            nodes.drop(rand.nextInt(nodes.count())).first()
+        }
     }
 
     val randomLeafNode: Long

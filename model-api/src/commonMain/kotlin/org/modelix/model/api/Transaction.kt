@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.api
@@ -31,10 +31,11 @@ abstract class Transaction(override val branch: IBranch) : ITransaction {
     override fun getProperty(nodeId: Long, role: String): String? = tree.getProperty(nodeId, role)
     override fun getReferenceTarget(sourceId: Long, role: String): INodeReference? {
         val target = tree.getReferenceTarget(sourceId, role)
-        return if (target is LocalPNodeReference)
+        return if (target is LocalPNodeReference) {
             PNodeReference(target.id, branch.getId())
-        else
+        } else {
             target
+        }
     }
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> = tree.getChildren(parentId, role)
     override fun getAllChildren(parentId: Long): Iterable<Long> = tree.getAllChildren(parentId)

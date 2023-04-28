@@ -50,6 +50,7 @@ class SerializationUtil_longHex_Test {
     fun longFromHex_0() {
         assertEquals(0, SerializationUtil.longFromHex("0"))
     }
+
     @Test
     fun longToHex_1() {
         assertEquals("1", SerializationUtil.longToHex(1))

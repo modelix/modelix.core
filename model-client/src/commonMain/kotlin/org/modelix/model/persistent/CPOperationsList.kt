@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.persistent
@@ -22,8 +22,12 @@ class CPOperationsList(val operations: Array<IOperation>) : IKVValue {
     override var isWritten: Boolean = false
 
     override fun serialize(): String {
-        return if (operations.isEmpty()) "" else operations
-            .joinToString(",") { OperationSerializer.INSTANCE.serialize(it) }
+        return if (operations.isEmpty()) {
+            ""
+        } else {
+            operations
+                .joinToString(",") { OperationSerializer.INSTANCE.serialize(it) }
+        }
     }
 
     override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }

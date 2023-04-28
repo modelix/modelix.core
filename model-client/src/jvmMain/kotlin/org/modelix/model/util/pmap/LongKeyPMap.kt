@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.util.pmap
@@ -122,7 +122,9 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
             val newChildren: Array<INode<V?>> = removeAt(children, physicalIndex)
             return if (newChildren.size == 1 && newChildren[0] is LeafNode<*>) {
                 newChildren[0]
-            } else InternalNode(newBitmap, newChildren)
+            } else {
+                InternalNode(newBitmap, newChildren)
+            }
         }
 
         override fun visitEntries(visitor: BiPredicate<Long, V?>): Boolean {
@@ -150,7 +152,7 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
                         val oldChild = (oldNode as InternalNode<V?>).getChild(logicalIndex)
                         if (child == null) {
                             if (oldChild == null) {
-                                // no change 
+                                // no change
                             } else {
                                 oldChild.visitEntries(
                                     BiPredicate { key: Long?, value: V? ->

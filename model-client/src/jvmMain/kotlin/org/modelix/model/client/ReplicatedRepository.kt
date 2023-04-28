@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.client
@@ -46,6 +46,7 @@ actual open class ReplicatedRepository actual constructor(
 ) {
     private val localBranch: IBranch
     private val localOTBranch: OTBranch
+
     @Deprecated("MetaModelBranch is deprecated")
     private val localMMBranch: IBranch
     private val mergeLock = Any()
@@ -131,7 +132,6 @@ actual open class ReplicatedRepository actual constructor(
             override fun run() {
                 val doMerge: Supplier<Boolean> = object : Supplier<Boolean> {
                     override fun get(): Boolean {
-
                         var mergedVersion: CLVersion
                         try {
                             mergedVersion = merger.mergeChange(remoteBase!!, newLocalVersion)

@@ -34,8 +34,7 @@ dependencies {
     implementation(libs.apache.commons.lang)
 
     implementation(libs.apache.commons.collections)
-    implementation("io.lettuce:lettuce-core:5.1.8.RELEASE")
-    implementation("ch.qos.logback:logback-classic:1.4.6")
+    implementation(libs.logback.classic)
 
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.cors)
@@ -51,16 +50,15 @@ dependencies {
 
     implementation(libs.bundles.ignite)
 
-    implementation("org.postgresql:postgresql:42.3.3")
+    implementation(libs.postgresql)
 
-    implementation("commons-io:commons-io:2.7")
-    implementation("com.google.guava:guava:30.0-jre")
-    implementation("com.beust:jcommander:1.7")
-    implementation("org.apache.cxf:cxf-rt-rs-sse:3.3.7")
-    implementation("org.apache.cxf:cxf-rt-rs-client:3.3.7")
+    implementation(libs.apache.commons.io)
+    implementation(libs.guava)
+    implementation(libs.jcommander)
 
-    testImplementation("junit:junit:4.13.1")
-    testImplementation("io.cucumber:cucumber-java:6.2.2")
+    testImplementation(libs.bundles.apache.cxf)
+    testImplementation(libs.junit)
+    testImplementation(libs.cucumber.java)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
     implementation(kotlin("test-junit"))

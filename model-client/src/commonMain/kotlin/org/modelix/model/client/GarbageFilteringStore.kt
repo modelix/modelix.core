@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.client
@@ -44,7 +44,7 @@ class GarbageFilteringStore(private val store: IKeyValueStore) : IKeyValueStoreW
             val itr = keys.iterator()
             while (itr.hasNext()) {
                 val key = itr.next()
-                // always put even if null to have the same order in the linked hash map as in the input 
+                // always put even if null to have the same order in the linked hash map as in the input
                 result[key] = pendingEntries[key]
                 if (pendingEntries.containsKey(key)) {
                     itr.remove()

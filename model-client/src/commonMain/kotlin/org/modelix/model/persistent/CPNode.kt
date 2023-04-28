@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.persistent
@@ -186,6 +186,7 @@ class CPNode private constructor(
     companion object {
         private val EMPTY_LONG_ARRAY = LongArray(0)
         val DESERIALIZER = { s: String -> deserialize(s) }
+
         @JvmStatic
         fun create(
             id: Long,

@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.persistent
@@ -134,12 +134,12 @@ class OperationSerializer private constructor() {
                         return if (parts.size == 4) {
                             MoveNodeOp(
                                 longFromHex(parts[0]),
-                                PositionInRole(longFromHex(parts[1]), unescape(parts[2]), parts[3].toInt()),
+                                PositionInRole(longFromHex(parts[1]), unescape(parts[2]), parts[3].toInt())
                             )
                         } else {
                             MoveNodeOp(
                                 longFromHex(parts[0]),
-                                PositionInRole(longFromHex(parts[4]), unescape(parts[5]), parts[6].toInt()),
+                                PositionInRole(longFromHex(parts[4]), unescape(parts[5]), parts[6].toInt())
                             )
                         }
                     }

@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.operations
@@ -63,9 +63,11 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
         override fun restoreIntend(tree: ITree): List<IOperation> {
             if (!tree.containsNode(childId)) return listOf(NoOp())
             val newSourcePosition = getNodePosition(tree, childId)
-            if (!tree.containsNode(targetPosition.nodeId)) return listOf(
-                withPos(getDetachedNodesEndPosition(tree))
-            )
+            if (!tree.containsNode(targetPosition.nodeId)) {
+                return listOf(
+                    withPos(getDetachedNodesEndPosition(tree))
+                )
+            }
             if (getAncestors(tree, targetPosition.nodeId).contains(childId)) return listOf(NoOp())
             val newTargetPosition = if (tree.containsNode(targetPosition.nodeId)) {
                 val newTargetIndex = capturedTargetPosition.findIndex(tree.getChildren(targetPosition.nodeId, targetPosition.role).toList().toLongArray())

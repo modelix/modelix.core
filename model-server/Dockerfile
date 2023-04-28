@@ -1,4 +1,4 @@
-FROM openjdk:11
+FROM registry.access.redhat.com/ubi8/openjdk-11:1.15-1.1682059493
 WORKDIR /usr/modelix-model
 EXPOSE 28101
 COPY run-model-server.sh /usr/modelix-model/

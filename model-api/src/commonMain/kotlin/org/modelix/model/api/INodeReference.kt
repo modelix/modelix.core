@@ -18,9 +18,17 @@ package org.modelix.model.api
 import org.modelix.model.area.IArea
 
 /**
- * The relation between an INodeReference and an INode is n to 1.
- * Two INodeReferences that are not equal can resolve to the same INode.
+ * Reference to an [INode]-
+ *
+ * The relation between an [INodeReference] and an [INode] is n to 1.
+ * Two [INodeReference]s that are not equal can resolve to the same [INode].
  */
 interface INodeReference {
+    /**
+     * Tries to find the referenced node in the given [IArea].
+     *
+     * @param area area to be searched in
+     * @return the node, or null if the node could not be found
+     */
     fun resolveNode(area: IArea?): INode?
 }

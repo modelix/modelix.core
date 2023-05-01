@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.api
@@ -29,7 +29,9 @@ fun INode?.getAncestor(concept: IConcept?, includeSelf: Boolean): INode? {
     }
     return if (includeSelf && this.concept!!.isSubConceptOf(concept)) {
         this
-    } else this.parent.getAncestor(concept, true)
+    } else {
+        this.parent.getAncestor(concept, true)
+    }
 }
 
 fun INode.getAncestors(includeSelf: Boolean = false): Sequence<INode> {

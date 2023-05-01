@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.persistent
@@ -61,9 +61,13 @@ class CPVersion(
     val numberOfOperations: Int
     override fun serialize(): String {
         val opsPart: String = operationsHash?.getHash()
-            ?: if (operations!!.isEmpty()) "" else operations
-                .map { OperationSerializer.INSTANCE.serialize(it) }
-                .reduce { a: String, b: String -> "$a,$b" }
+            ?: if (operations!!.isEmpty()) {
+                ""
+            } else {
+                operations
+                    .map { OperationSerializer.INSTANCE.serialize(it) }
+                    .reduce { a: String, b: String -> "$a,$b" }
+            }
         return longToHex(id) +
             "/" + escape(time) +
             "/" + escape(author) +

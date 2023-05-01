@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.persistent
@@ -23,7 +23,9 @@ actual object SerializationUtil {
     actual fun escape(value: String?): String {
         return if (value == null) {
             "%00"
-        } else URLEncoder.encode(value, StandardCharsets.UTF_8)
+        } else {
+            URLEncoder.encode(value, StandardCharsets.UTF_8)
+        }
     }
 
     actual fun unescape(value: String?): String? {
@@ -32,7 +34,9 @@ actual object SerializationUtil {
         }
         return if ("%00" == value) {
             null
-        } else URLDecoder.decode(value, StandardCharsets.UTF_8)
+        } else {
+            URLDecoder.decode(value, StandardCharsets.UTF_8)
+        }
     }
 
     actual fun longToHex(value: Long): String {

@@ -8,7 +8,7 @@ fun Char.assertIsHexDigit() {
     assertTrue("Character expected to be hexadecimal digit but is '$this'") { this in '0'..'9' || this in 'a'..'f' }
 }
 
-class PlatformSpecific_Test {
+class PlatformSpecificTest {
     @Test
     fun test_random_uuid() {
         val res = randomUUID()

@@ -33,7 +33,9 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
     override val keyValueStore: IKeyValueStore = store.keyValueStore
 
     override fun <T> get(hash: String, deserializer: (String) -> T): T? {
-        return if (entries.containsKey(hash)) entries[hash] as T? else {
+        return if (entries.containsKey(hash)) {
+            entries[hash] as T?
+        } else {
             val value = store.get(hash, deserializer)
             entries[hash] = value
             value

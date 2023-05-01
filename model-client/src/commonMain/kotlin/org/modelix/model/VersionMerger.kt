@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model
@@ -60,9 +60,11 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
                 try {
                     transformed = it.restoreIntend(t.tree)
                     logger.trace {
-                        if (transformed.size != 1 || transformed[0] != it.getOriginalOp())
+                        if (transformed.size != 1 || transformed[0] != it.getOriginalOp()) {
                             "transformed: ${it.getOriginalOp()} --> $transformed"
-                        else ""
+                        } else {
+                            ""
+                        }
                     }
                 } catch (ex: Exception) {
                     throw RuntimeException("Operation intend failed: ${it.getOriginalOp()}", ex)

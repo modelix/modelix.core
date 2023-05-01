@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 data class LanguageData(
     val uid: String? = null,
     val name: String,
-    val concepts: List<ConceptData>,
+    val concepts: List<ConceptData>
 ) {
 
     fun toJson(): String = prettyJson.encodeToString(this)
@@ -31,7 +31,7 @@ data class ConceptData(
     val properties: List<PropertyData> = emptyList(),
     val children: List<ChildLinkData> = emptyList(),
     val references: List<ReferenceLinkData> = emptyList(),
-    val extends: List<String> = emptyList(),
+    val extends: List<String> = emptyList()
 )
 
 sealed interface IConceptFeatureData {
@@ -57,7 +57,7 @@ data class ChildLinkData(
     override val name: String,
     val type: String,
     val multiple: Boolean = false,
-    val optional: Boolean = true,
+    val optional: Boolean = true
 ) : IConceptFeatureData
 
 @Serializable
@@ -65,5 +65,5 @@ data class ReferenceLinkData(
     override val uid: String? = null,
     override val name: String,
     val type: String,
-    val optional: Boolean = true,
+    val optional: Boolean = true
 ) : IConceptFeatureData

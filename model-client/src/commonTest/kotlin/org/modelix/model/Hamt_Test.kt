@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model
@@ -35,7 +35,7 @@ class Hamt_Test {
         var hamt: CLHamtNode? = CLHamtInternal.createEmpty(storeCache)
         for (i in 0..999) {
             if (expectedMap.isEmpty() || rand.nextBoolean()) {
-                // add entry 
+                // add entry
                 val key = rand.nextInt(1000).toLong()
                 val value = rand.nextLong()
                 hamt = hamt!!.put(key, createEntry(value))
@@ -44,11 +44,11 @@ class Hamt_Test {
                 val keys: List<Long> = ArrayList(expectedMap.keys)
                 val key = keys[rand.nextInt(keys.size)]
                 if (rand.nextBoolean()) {
-                    // remove entry 
+                    // remove entry
                     hamt = hamt!!.remove(key)
                     expectedMap.remove(key)
                 } else {
-                    // replace entry 
+                    // replace entry
                     val value = rand.nextLong()
                     hamt = hamt!!.put(key, createEntry(value))
                     expectedMap[key] = value

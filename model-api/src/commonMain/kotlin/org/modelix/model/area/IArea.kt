@@ -52,6 +52,7 @@ interface IArea {
     fun <T> executeWrite(f: () -> T): T
     fun canRead(): Boolean
     fun canWrite(): Boolean
+
     /** bigger numbers are locked first */
     fun getLockOrderingPriority(): Long = 0
 

@@ -4,6 +4,7 @@ interface IRole {
     fun getConcept(): IConcept
     fun getUID(): String
     fun getSimpleName(): String
+
     @Deprecated("Use getSimpleName() when showing it to the user or when accessing the model use the INode functions that accept an IRole or use IRole.key(...)")
     val name: String get() = RoleAccessContext.getKey(this)
     val isOptional: Boolean

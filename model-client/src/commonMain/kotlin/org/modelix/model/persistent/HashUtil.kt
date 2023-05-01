@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.persistent
@@ -25,7 +25,9 @@ object HashUtil {
     fun isSha256(value: String?): Boolean {
         return if (value == null || value.length != 44) {
             false
-        } else value.matches(HASH_PATTERN)
+        } else {
+            value.matches(HASH_PATTERN)
+        }
     }
 
     fun extractSha256(input: String?): Iterable<String> {

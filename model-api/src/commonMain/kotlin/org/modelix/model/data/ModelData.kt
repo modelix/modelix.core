@@ -9,7 +9,7 @@ import org.modelix.model.api.*
 @Serializable
 data class ModelData(
     val id: String? = null,
-    val root: NodeData,
+    val root: NodeData
 ) {
     fun toJson(): String = prettyJson.encodeToString(this)
     fun toCompactJson(): String = Json.encodeToString(this)
@@ -17,7 +17,7 @@ data class ModelData(
     fun load(branch: IBranch) {
         branch.computeWriteT { t ->
             val createdNodes = HashMap<String, Long>()
-            val pendingReferences = ArrayList<()->Unit>()
+            val pendingReferences = ArrayList<() -> Unit>()
             val parentId = ITree.ROOT_ID
             for (nodeData in root.children) {
                 loadNode(nodeData, t, parentId, createdNodes, pendingReferences)
@@ -65,7 +65,7 @@ data class NodeData(
     val role: String? = null,
     val children: List<NodeData> = emptyList(),
     val properties: Map<String, String> = emptyMap(),
-    val references: Map<String, String> = emptyMap(),
+    val references: Map<String, String> = emptyMap()
 )
 
 fun NodeData.uid(model: ModelData): String {

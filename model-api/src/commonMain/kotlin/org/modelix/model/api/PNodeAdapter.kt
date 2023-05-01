@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.api
@@ -48,10 +48,12 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
     override fun usesRoleIds() = branch.transaction.tree.usesRoleIds()
 
     override fun moveChild(role: String?, index: Int, child: INode) {
-        if (child !is PNodeAdapter)
+        if (child !is PNodeAdapter) {
             throw RuntimeException(child::class.simpleName + " cannot be moved to " + this::class.simpleName)
-        if (child.branch != this.branch)
+        }
+        if (child.branch != this.branch) {
             throw RuntimeException("child in branch ${child.branch.getId()} cannot be moved to parent in branch ${branch.getId()}")
+        }
         branch.writeTransaction.moveChild(nodeId, role, index, child.nodeId)
     }
 

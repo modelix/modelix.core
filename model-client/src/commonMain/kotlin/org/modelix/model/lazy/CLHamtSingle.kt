@@ -81,8 +81,11 @@ class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValue
                 store
             )
         }
-        return if (newChild == null) null else
+        return if (newChild == null) {
+            null
+        } else {
             CLHamtSingle(CPHamtSingle(data.numLevels, data.bits, KVEntryReference(newChild.getData())), store)
+        }
     }
 
     override fun remove(key: Long, shift: Int): CLHamtNode? {

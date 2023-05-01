@@ -42,7 +42,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class ModelClientV2(
     private val httpClient: HttpClient,
-    val baseUrl: String,
+    val baseUrl: String
 ) : IModelClientV2 {
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()

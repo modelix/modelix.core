@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.lazy
@@ -227,8 +227,11 @@ class CLTree : ITree, IBulkTree {
                 local(target.id)
             }
             is PNodeReference -> {
-                if (target.branchId.isEmpty() || target.branchId == getId()) local(target.id)
-                else global(target.branchId, target.id)
+                if (target.branchId.isEmpty() || target.branchId == getId()) {
+                    local(target.id)
+                } else {
+                    global(target.branchId, target.id)
+                }
             }
             else -> foreign(INodeReferenceSerializer.serialize(target))
         }
@@ -538,8 +541,11 @@ class CLTree : ITree, IBulkTree {
     }
 
     fun createElement(hash: KVEntryReference<CPNode>?, query: IBulkQuery): IBulkQuery.Value<CLNode?> {
-        return if (hash == null) query.constant(null)
-        else (query[hash].map { n: CPNode? -> CLNode.create(this@CLTree, n) })
+        return if (hash == null) {
+            query.constant(null)
+        } else {
+            (query[hash].map { n: CPNode? -> CLNode.create(this@CLTree, n) })
+        }
     }
 
     fun createElement(hash: KVEntryReference<CPNode>?): CLNode? {

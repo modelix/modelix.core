@@ -4,7 +4,7 @@
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
-https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmodel-server%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-server/build.gradle.kts[Buildfile^]
+https://api.modelix.org/2.3.0/model-server/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-server/build.gradle.kts[buildfile^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/model-server[Nexus^] https://github.com/modelix/modelix/packages/1077342[GitHub Packages^]
 --
 
 

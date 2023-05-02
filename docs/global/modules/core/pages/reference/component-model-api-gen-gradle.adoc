@@ -5,11 +5,11 @@
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
-https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmodel-api-gen%2Fmaven-metadata.xml[Nexus^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-api-gen-gradle/build.gradle.kts[Buildfile^]
+https://api.modelix.org/2.3.0/model-api-gen-gradle/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-api-gen-gradle/build.gradle.kts[buildfile^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/model-api-gen-gradle/[Nexus^] https://github.com/modelix/modelix.core/packages/1834773[GitHub Packages^]
 --
 
 == Overview
-The `model-api-gen.gradle.plugin` is a Gradle plugin that wraps the functionality of xref:core:reference/component-model-api-gen.adoc[model-api-gen].
+The `model-api-gen.gradle.plugin` is a Gradle plugin that wraps the functionality of the xref:core:reference/component-metamodel-export.adoc[] and xref:core:reference/component-model-api-gen.adoc[].
 It provides an additional Gradle task which will apply a 2-staged process:
 
 . MPS metamodel export to JSON (optional)
@@ -26,7 +26,7 @@ metamodel {
     jsonDir = File("path/to/json/dir")
 }
 --
-As a result, all MPS-specific configuration settings will be ignored and the specified directory will be used for the next step. 
+As a result, all MPS-specific configuration settings will be ignored and the specified directory will be used for the next step.
 
 . JSON to model API generation
 +

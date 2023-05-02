@@ -1,2 +1,289 @@
 = MPS solution for metamodel-export
 :navtitle: `metamodel-export` (MPS)
+
+:tip-caption: 🔗 Quick Links
+[TIP]
+--
+https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/metamodel-export/build.gradle.kts[buildfile^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/mps/metamodel-export/[Nexus^] https://github.com/modelix/modelix.core/packages/1834640[GitHub Packages^]
+--
+
+== Overview
+
+In order to export a meta-model (i.e. the structure aspect of a langauge) from MPS, modelix uses the MPS solution `metamodel-export`.
+This solution maps the structure of a language to corresponding serializable data classes of the https://api.modelix.org/2.3.0/model-api/org.modelix.model.data/index.html[`model-api`] (e.g. `LanguageData` and `ConcepData`).
+Further, the `metamodel-expor` provides a command line interface to export these data classes to a JSON file from outside of MPS.
+
+
+
+.Unfold to see an exemplary JSON file which is generated from the export
+[%collapsible]
+====
+[,json]
+----
+{
+    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca",
+    "name": "University.Schedule",
+    "concepts": [
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010560",
+            "name": "Lecture",
+            "properties": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010560/4128798754188010563",
+                    "name": "description"
+                },
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010560/4128798754188010565",
+                    "name": "maxParticipants",
+                    "type": "INT"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010560/4128798754188058355",
+                    "name": "schedule",
+                    "type": "University.Schedule.Schedule",
+                    "optional": false
+                }
+            ],
+            "references": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010560/4128798754188058364",
+                    "name": "room",
+                    "type": "University.Schedule.Room",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010568",
+            "name": "Schedule",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010568/4128798754188010578",
+                    "name": "at",
+                    "type": "University.Schedule.DateAndTime",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010569",
+            "name": "Recurring",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "University.Schedule.Schedule"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010570",
+            "name": "DateAndTime",
+            "properties": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010570/4128798754188010571",
+                    "name": "date"
+                },
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010570/4128798754188010573",
+                    "name": "time"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010580",
+            "name": "Room",
+            "properties": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010580/4128798754188010583",
+                    "name": "maxPlaces",
+                    "type": "INT"
+                },
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010580/4128798754188010585",
+                    "name": "hasRemoteEquipment",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010588",
+            "name": "Rooms",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188010588/4128798754188010589",
+                    "name": "rooms",
+                    "type": "University.Schedule.Room",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188057192",
+            "name": "Courses",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188057192/4128798754188057193",
+                    "name": "lectures",
+                    "type": "University.Schedule.Lecture",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/4128798754188059567",
+            "name": "OneOff",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "University.Schedule.Schedule"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048449",
+            "name": "Student",
+            "properties": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048449/1648392019017048450",
+                    "name": "name"
+                },
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048449/1648392019017048454",
+                    "name": "semester",
+                    "type": "INT"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048449/1648392019017048452",
+                    "name": "born",
+                    "type": "University.Schedule.DateAndTime",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048457",
+            "name": "Students",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048457/1648392019017048458",
+                    "name": "students",
+                    "type": "University.Schedule.Student",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048460",
+            "name": "LectureAssignments",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048460/1648392019017048466",
+                    "name": "lectures",
+                    "type": "University.Schedule.Assignment",
+                    "multiple": true
+                }
+            ],
+            "references": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048460/1648392019017048461",
+                    "name": "student",
+                    "type": "University.Schedule.Student",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048463",
+            "name": "Assignment",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "96533389-8d4c-46f2-b150-8d89155f7fca/1648392019017048463/1648392019017048464",
+                    "name": "lecture",
+                    "type": "University.Schedule.Lecture",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        }
+    ]
+}
+----
+====
+
+
+The `metamodel-export` is primarily intended to be used by the xref:core:reference/component-model-api-gen.adoc[].
+

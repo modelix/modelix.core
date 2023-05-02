@@ -9,7 +9,7 @@ https://artifacts.itemis.cloud/#browse/browse:maven-mps:org%2Fmodelix%2Fmodel-ap
 --
 
 == Overview
-The `model-api-gen.gradle.plugin` is a Gradle plugin that wraps the functionality of xref:core:reference/component-model-api-gen.adoc[model-api-gen].
+The `model-api-gen.gradle.plugin` is a Gradle plugin that wraps the functionality of the xref:core:reference/component-metamodel-export.adoc[] and xref:core:reference/component-model-api-gen.adoc[].
 It provides an additional Gradle task which will apply a 2-staged process:
 
 . MPS metamodel export to JSON (optional)
@@ -26,7 +26,7 @@ metamodel {
     jsonDir = File("path/to/json/dir")
 }
 --
-As a result, all MPS-specific configuration settings will be ignored and the specified directory will be used for the next step. 
+As a result, all MPS-specific configuration settings will be ignored and the specified directory will be used for the next step.
 
 . JSON to model API generation
 +

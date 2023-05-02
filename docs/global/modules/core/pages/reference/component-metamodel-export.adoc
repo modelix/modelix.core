@@ -1,2 +1,11 @@
 = MPS solution for metamodel-export
 :navtitle: `metamodel-export` (MPS)
+
+== Overview
+
+In order to export a meta-model (i.e. the structure aspect of a langauge) from MPS, modelix uses the MPS solution `metamodel-export`.
+This solution maps the structure of a language to corresponding serializable data classes of the `model-api`[https://api.modelix.org/2.3.0/model-api/org.modelix.model.data/index.html] (e.g. `LanguageData` and `ConcepData`).
+Further, the `metamodel-expor` provides a command line interface to export these data classes to a JSON file from outside of MPS.
+
+The `metamodel-export` is mainly used in the corresponding gradle plugin xref:core:reference/component-model-api-gen-gradle.adoc[model-api-gen-gradle].
+

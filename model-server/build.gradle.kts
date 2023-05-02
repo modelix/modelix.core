@@ -7,7 +7,7 @@ plugins {
     `maven-publish`
     id("com.adarshr.test-logger") version "2.1.0"
     id("org.jetbrains.kotlin.jvm")
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     kotlin("plugin.serialization")
 }
 

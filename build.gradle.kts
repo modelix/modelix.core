@@ -12,6 +12,7 @@ buildscript {
 
 plugins {
     `maven-publish`
+    `version-catalog`
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.gitVersion)
@@ -237,6 +238,22 @@ fun createDocsIndexPage(): String {
                     }
                 }
             }
+        }
+    }
+}
+
+catalog {
+    versionCatalog {
+        from(files("gradle/libs.versions.toml"))
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("versionCatalog") {
+            groupId = "org.modelix"
+            artifactId = "core-version-catalog"
+            from(components["versionCatalog"])
         }
     }
 }

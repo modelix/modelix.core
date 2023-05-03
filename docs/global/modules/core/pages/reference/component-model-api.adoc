@@ -5,8 +5,19 @@
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
-https://api.modelix.org/2.3.0/model-api/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/model-api/[Nexus^] https://github.com/modelix/modelix.core/packages/1834768[GitHub Packages^]
+https://api.modelix.org/2.3.0/model-api/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-api/build.gradle.kts[buildfile^]
 --
+
+:tip-caption: 🔗 Artifacts
+[TIP]
+--
+`org.modelix.model-api`: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/model-api/[Nexus^] https://github.com/modelix/modelix.core/packages/1834768[GitHub Packages^]
+
+// TODO `org.modelix.model-api-jvm`:
+
+// TODO `org.modelix.model-api-js`:
+--
+
 
 == Overview
 
@@ -21,25 +32,28 @@ The `model-api` provides three distinct parts
 3. `org.modelix.model.area`: Model grouping and transactional access
 
 
-=== `org.modelix.model.api`
+=== 1. `org.modelix.model.api`
 
 The following diagram provides a meta-model of the `model-api`
 
 image::model-api.api.png[]
 
-Using the `model-api` an **untyped** access to model content is always possible.
-In case you want to use domain-specific model access, the xref:core:reference/component-model-api-gen.adoc[model-api-gen] provides a generator which generates a typed model API specializes the API provided by the `model-api`.
+An **untyped** access to model content is possible when only using the `model-api`.
+In case you want to use domain-specific model access (i.e. **typed** access), the xref:core:reference/component-model-api-gen.adoc[model-api-gen] provides a generator which generates a typed model API from your existing meta-model.
+This generated API specializes the `model-api`.
 
 
-=== `org.modelix.model.data`
+=== 2.`org.modelix.model.data`
 
 Additionally, the `model-api` provides serializable data classes to represent a meta-model.
 The following diagrams show a class diagram of the data classes for the model and meta-model.
 
-image::model-api.data.model.png[]
+[cols="a,a", frame=none, grid=none]
+|===
+| image::model-api.data.model.png[width=69%]
+| image::model-api.data.metamodel.png[]
+|===
 
-image::model-api.data.metamodel.png[]
 
-
-//=== === `org.modelix.model.area`
+//=== 3. `org.modelix.model.area`
 //TODO

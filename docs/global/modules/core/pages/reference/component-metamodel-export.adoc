@@ -11,7 +11,7 @@ https://github.com/modelix/modelix.core[Repository^] | https://github.com/modeli
 
 In order to export a meta-model (i.e. the structure aspect of a langauge) from MPS, modelix uses the MPS solution `metamodel-export`.
 This solution maps the structure of a language to corresponding serializable data classes of the https://api.modelix.org/2.3.0/model-api/org.modelix.model.data/index.html[`model-api`] (e.g. `LanguageData` and `ConcepData`).
-Further, the `metamodel-expor` provides a command line interface to export these data classes to a JSON file from outside of MPS.
+Further, the `metamodel-export` provides a command line interface to export these data classes to a JSON file from outside of MPS.
 
 
 

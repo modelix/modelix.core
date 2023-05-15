@@ -46,6 +46,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
         val exportedLanguagesDir = getBuildOutputDir().resolve("exported-languages")
         val exportMetaModelFromMps = project.tasks.register("exportMetaModelFromMps", JavaExec::class.java) { task ->
             task.enabled = settings.jsonDir == null
+            task.outputs.cacheIf { task.enabled }
             task.workingDir = getBuildOutputDir()
             task.mainClass.set("org.apache.tools.ant.launch.Launcher")
             task.classpath(antDependencies)

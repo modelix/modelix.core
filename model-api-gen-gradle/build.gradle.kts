@@ -37,7 +37,7 @@ dependencies {
 val mps = configurations.create("mps")
 
 dependencies {
-    mps("com.jetbrains:mps:2021.3.+")
+    mps("com.jetbrains:mps:2022.3.+")
 }
 
 val mpsDir = buildDir.resolve("mps")

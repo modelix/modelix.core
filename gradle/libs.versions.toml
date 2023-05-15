@@ -19,7 +19,7 @@ modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.0.11
 [versions]
 
 kotlin = "1.8.21"
-kotlinCoroutines="1.6.4"
+kotlinCoroutines="1.7.1"
 ktor="2.3.0"
 kotlinHtml="0.8.0"
 kotlinSerialization="1.5.0"

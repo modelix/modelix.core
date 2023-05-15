@@ -29,28 +29,10 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
             return nodeList
         }
 
-    private val allVersions: Set<CLVersion>
-        get() {
-            val versions = linkedSetOf<CLVersion>()
-            for (repoId in repoManager.getRepositories()) {
-                val hash = repoManager.getVersionHash(repoId.getBranchReference()) ?: continue
-                val version = CLVersion(hash, client.storeCache)
-                var current: CLVersion? = version
-                while (current != null) {
-                    versions.add(current)
-                    current = current.baseVersion
-                }
-            }
-            return versions
-        }
-
     fun init(application: Application) {
         application.routing {
             get("/content/") {
-                call.respondHtmlTemplate(PageWithMenuBar("content/", "..")) {
-                    headContent {title("Content Explorer")}
-                    bodyContent {contentOverviewBody()}
-                }
+                call.respondRedirect("../repos/")
             }
             get("/content/{versionHash}/") {
                 val versionHash = call.parameters["versionHash"]
@@ -60,13 +42,13 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 }
                 val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
                 val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
-                call.respondHtmlTemplate(PageWithMenuBar("content/", "../..")) {
+                call.respondHtmlTemplate(PageWithMenuBar("repos/", "../..")) {
                     headContent {
                         title("Content Explorer")
                         link("../../public/content-explorer.css", rel = "stylesheet")
                         script("text/javascript", src = "../../public/content-explorer.js") {}
                     }
-                    bodyContent {contentPageBody(rootNode)}
+                    bodyContent {contentPageBody(rootNode, versionHash)}
                 }
             }
             get("/content/{versionHash}/{nodeId}/") {
@@ -88,25 +70,12 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         }
     }
 
-    private fun FlowContent.contentOverviewBody() {
-        h1 { +"Model Server Content" }
-        h2 { +"Select a Version" }
-
-        if (allVersions.isEmpty()) {
-            span { +"No versions available." }
-        } else {
-            ul {
-                for (version in allVersions) {
-                    li {
-                        a(href = "$version/"){+"$version"}
-                    }
-                }
-            }
-        }
-    }
-
-    private fun FlowContent.contentPageBody(rootNode: PNodeAdapter) {
+    private fun FlowContent.contentPageBody(rootNode: PNodeAdapter, versionHash: String) {
         h1 {+"Model Server Content"}
+        small {
+            style = "color: #888; text-align: center; margin-bottom: 15px;"
+            +versionHash
+        }
         div {
             style = "display: flex;"
             button(classes="btn") {
@@ -175,33 +144,41 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
             div { +"No roles." }
             return
         }
-        table {
-            thead {
-                tr {
-                    th { +"PropertyRole" }
-                    th { +"Value" }
+        if (node.getPropertyRoles().isEmpty()) {
+            div { +"No properties." }
+        } else {
+            table {
+                thead {
+                    tr {
+                        th { +"PropertyRole" }
+                        th { +"Value" }
+                    }
                 }
-            }
-            for (propertyRole in node.getPropertyRoles()) {
-                tr {
-                    td { +propertyRole }
-                    td { +(node.getPropertyValue(propertyRole) ?: "null") }
+                for (propertyRole in node.getPropertyRoles()) {
+                    tr {
+                        td { +propertyRole }
+                        td { +(node.getPropertyValue(propertyRole) ?: "null") }
+                    }
                 }
             }
         }
-        table {
-            thead {
-                tr {
-                    th { +"ReferenceRole" }
-                    th { +"Value" }
+        if (node.getReferenceRoles().isEmpty()) {
+            div { +"No references." }
+        } else {
+            table {
+                thead {
+                    tr {
+                        th { +"ReferenceRole" }
+                        th { +"Value" }
+                    }
                 }
-            }
-            for (referenceRole in node.getReferenceRoles()) {
-                tr {
-                    td { +referenceRole }
-                    td {
-                        // TODO MODELIX-387
-                        // +"${node.getReferenceTarget(referenceRole)}"
+                for (referenceRole in node.getReferenceRoles()) {
+                    tr {
+                        td { +referenceRole }
+                        td {
+                            // TODO MODELIX-387
+                            // +"${node.getReferenceTarget(referenceRole)}"
+                        }
                     }
                 }
             }

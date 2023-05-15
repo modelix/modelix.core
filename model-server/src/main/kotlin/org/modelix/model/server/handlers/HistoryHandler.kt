@@ -27,20 +27,12 @@ import org.modelix.model.server.templates.PageWithMenuBar
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class HistoryHandler(val client: IModelClient, val repositoriesManager: RepositoriesManager) {
-
+class HistoryHandler(val client: IModelClient, private val repositoriesManager: RepositoriesManager) {
 
     fun init(application: Application) {
         application.routing {
             get("/history/") {
-                call.respondHtmlTemplate(PageWithMenuBar("history/","..")) {
-                    headContent {
-                        title("History: Choose Repository")
-                    }
-                    bodyContent {
-                        buildMainPage()
-                    }
-                }
+                call.respondRedirect("../repos/")
             }
             get("/history/{repoId}/{branch}/") {
                 val repositoryId = RepositoryId(call.parameters["repoId"]!!)
@@ -48,7 +40,7 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
                 val params = call.request.queryParameters
                 val limit = toInt(params["limit"], 500)
                 val skip = toInt(params["skip"], 0)
-                call.respondHtmlTemplate(PageWithMenuBar("history/", "../../..")) {
+                call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../..")) {
                     headContent {
                         style {
                             +"""
@@ -101,46 +93,6 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
             ops.map { it.getOriginalOp() }.toTypedArray()
         )
         repositoriesManager.mergeChanges(repositoryAndBranch, newVersion.getContentHash())
-    }
-
-    private fun FlowContent.buildMainPage() {
-        h1 { +"Choose Repository" }
-        val repositories = repositoriesManager.getRepositories()
-        if (repositories.isEmpty()) {
-            p { i { +"No repositories available, add one" } }
-        } else {
-            table {
-                thead {
-                    tr {
-                        th { +"Repository" }
-                        th { +"Branch" }
-                    }
-                }
-                tbody {
-                    for (repository in repositories) {
-                        val branches = repositoriesManager.getBranches(repository)
-                        tr {
-                            td {
-                                rowSpan = branches.size.coerceAtLeast(1).toString()
-                                +repository.id
-                            }
-                            if (branches.isEmpty()) {
-                                td { }
-                            } else {
-                                for (branch in branches) {
-                                    td {
-                                        a {
-                                            href = "${branch.repositoryId.id}/${branch.branchName}/"
-                                            +branch.branchName
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private fun HEAD.repositoryPageStyle() {
@@ -230,7 +182,10 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
                     th { +"Author" }
                     th { +"Time" }
                     th { +"Operations" }
-                    th { }
+                    th {
+                        colSpan = "2"
+                        +"Actions"
+                    }
                 }
             }
             tbody {
@@ -289,6 +244,12 @@ class HistoryHandler(val client: IModelClient, val repositoriesManager: Reposito
                     } else {
                         +"(${version.numberOfOperations}) "
                     }
+                }
+            }
+            td {
+                style = "white-space: nowrap;"
+                a("/../../../content/${version.getContentHash()}/") {
+                    +"Explore Content"
                 }
             }
             td {

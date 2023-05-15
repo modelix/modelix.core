@@ -27,7 +27,6 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.routing.get
 import io.ktor.server.websocket.*
 import kotlinx.html.*
 import org.apache.commons.io.FileUtils
@@ -126,6 +125,7 @@ object Main {
 
             val jsonModelServer = DeprecatedLightModelServer(localModelClient)
             val repositoriesManager = RepositoriesManager(localModelClient)
+            val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
             val modelReplicationServer = ModelReplicationServer(repositoriesManager)
@@ -148,6 +148,7 @@ object Main {
 
                 modelServer.init(this)
                 historyHandler.init(this)
+                repositoryOverview.init(this)
                 contentExplorer.init(this)
                 jsonModelServer.init(this)
                 modelReplicationServer.init(this)
@@ -174,7 +175,7 @@ object Main {
                                 h1 { +"Model Server" }
                                 ul {
                                     li {
-                                        a("history/") { +"Model History" }
+                                        a("repos/") { +"View Repositories on the Model Server" }
                                     }
                                     li {
                                         a("json/") { +"JSON API for JavaScript clients" }

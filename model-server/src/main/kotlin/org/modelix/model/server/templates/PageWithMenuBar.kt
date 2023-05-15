@@ -23,8 +23,7 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
                         height = "70px"
                     }
                 }
-                val menuItems = mapOf("history/" to "History",
-                    "content/" to "Content",
+                val menuItems = mapOf("repos/" to "Repositories",
                     "json/" to "JSON API",
                     "headers" to "HTTP Headers",
                     "user" to "JWT token and permissions")

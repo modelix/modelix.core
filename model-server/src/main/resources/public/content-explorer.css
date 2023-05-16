@@ -1,0 +1,62 @@
+.expander {
+    cursor: pointer;
+    margin-top: 12px;
+    font-size: 20px;
+    float: left;
+}
+.expander-expanded {
+    transition: .1s linear;
+    transform: rotate(90deg);
+    transform-origin: center center;
+}
+.nested {
+    display: none;
+    margin-left: 9px;
+    border-left: 1px solid #999999;
+}
+.active {
+    display: block;
+}
+.nodeTree {
+    list-style-type: none;
+}
+.treeRoot {
+    list-style-type: none;
+    margin-top: 5px;
+    float: left;
+}
+.referenceRoles {
+    margin-top: 5px;
+}
+.nodeItem {
+    padding-top: 10px;
+}
+.nameField {
+    margin-left: 30px;
+    padding: 5px;
+    border: 1px solid;
+    border-radius: 10px;
+    width: fit-content;
+    cursor: pointer;
+}
+.nameField:hover {
+    background-color: #e6e6e6;
+}
+.selectedNameField {
+    background-color: #c9c9c9;
+}
+#treeWrapper {
+    position: absolute;
+    left: 0px;
+    top: 210px;
+}
+#nodeInspector {
+    position: fixed;
+    top: 110px;
+    right: 0px;
+    width: 35%;
+    overflow: auto;
+    z-index: 1;
+    display: none;
+    background-color: #ffffff;
+}

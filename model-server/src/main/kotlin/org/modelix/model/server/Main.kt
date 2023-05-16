@@ -20,6 +20,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.html.*
+import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
@@ -27,27 +28,17 @@ import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import kotlinx.html.a
-import kotlinx.html.body
-import kotlinx.html.br
-import kotlinx.html.div
-import kotlinx.html.head
-import kotlinx.html.li
-import kotlinx.html.style
-import kotlinx.html.ul
+import kotlinx.html.*
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.server.handlers.HistoryHandler
-import org.modelix.model.server.handlers.DeprecatedLightModelServer
-import org.modelix.model.server.handlers.KeyValueLikeModelServer
-import org.modelix.model.server.handlers.ModelReplicationServer
-import org.modelix.model.server.handlers.RepositoriesManager
+import org.modelix.model.server.handlers.*
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileReader
@@ -134,7 +125,9 @@ object Main {
 
             val jsonModelServer = DeprecatedLightModelServer(localModelClient)
             val repositoriesManager = RepositoriesManager(localModelClient)
+            val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
+            val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
             val modelReplicationServer = ModelReplicationServer(repositoriesManager)
             val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port) {
                 install(Routing)
@@ -155,13 +148,20 @@ object Main {
 
                 modelServer.init(this)
                 historyHandler.init(this)
+                repositoryOverview.init(this)
+                contentExplorer.init(this)
                 jsonModelServer.init(this)
                 modelReplicationServer.init(this)
                 routing {
+                    static("/public") {
+                        resources("public")
+                    }
                     get("/") {
-                        call.respondHtml {
-                            head {
+                        call.respondHtmlTemplate(PageWithMenuBar("root", ".")) {
+                            headContent {
                                 style { +"""
+                                    body {
+                                        font-family: sans-serif;
                                     table {
                                         border-collapse: collapse;
                                     }
@@ -171,12 +171,11 @@ object Main {
                                     }
                                 """.trimIndent() }
                             }
-                            body {
-                                div { +"Model Server" }
-                                br {}
+                            bodyContent {
+                                h1 { +"Model Server" }
                                 ul {
                                     li {
-                                        a("history/") { +"Model History" }
+                                        a("repos/") { +"View Repositories on the Model Server" }
                                     }
                                     li {
                                         a("json/") { +"JSON API for JavaScript clients" }

@@ -11,4 +11,17 @@ pluginManagement {
         maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
         mavenCentral()
     }
+    dependencyResolutionManagement {
+        repositories {
+            mavenLocal()
+            gradlePluginPortal()
+            maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+            mavenCentral()
+        }
+        versionCatalogs {
+            create("libs") {
+                from("org.modelix:core-version-catalog:$modelixCoreVersion")
+            }
+        }
+    }
 }

@@ -38,6 +38,10 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         return parent.addNewChild(role, index, concept.untyped()).typed(concept.getInstanceClass())
     }
 
+    fun <NewNodeT : ChildT> addNew(concept: INonAbstractConcept<NewNodeT>): NewNodeT {
+        return addNew(-1, concept)
+    }
+
     fun removeUnwrapped(child: INode) {
         parent.removeChild(child)
     }

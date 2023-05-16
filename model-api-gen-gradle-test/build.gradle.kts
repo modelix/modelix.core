@@ -39,6 +39,28 @@ val modelixCoreVersion: String = projectDir.resolve("../version.txt").readText()
 dependencies {
     mps("com.jetbrains:mps:2021.1.4")
     implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
+    implementation("org.modelix:modelql-typed:$modelixCoreVersion")
+    implementation("org.modelix:modelql-untyped:$modelixCoreVersion")
+
+    testImplementation(kotlin("test-common"))
+    testImplementation(kotlin("test-annotations-common"))
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
+
+    testImplementation("org.modelix:model-client:$modelixCoreVersion")
+    testImplementation("org.modelix:model-server-lib:$modelixCoreVersion")
+    testImplementation("org.modelix:modelql-client:$modelixCoreVersion")
+
+    testImplementation(libs.ktor.server.core)
+    testImplementation(libs.ktor.server.cors)
+    testImplementation(libs.ktor.server.netty)
+    testImplementation(libs.ktor.server.html.builder)
+    testImplementation(libs.ktor.server.auth)
+    testImplementation(libs.ktor.server.auth.jwt)
+    testImplementation(libs.ktor.server.status.pages)
+    testImplementation(libs.ktor.server.forwarded.header)
+    testImplementation(libs.ktor.server.websockets)
+    testImplementation(libs.ktor.server.test.host)
 }
 
 val resolveMps by tasks.registering(Sync::class) {
@@ -66,4 +88,5 @@ metamodel {
         typedNode.prefix = ""
         typedNodeImpl.suffix = "Impl"
     }
+    registrationHelperName = "org.modelix.apigen.test.ApigenTestLanguages"
 }

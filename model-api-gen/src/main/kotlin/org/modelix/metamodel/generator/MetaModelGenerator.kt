@@ -9,6 +9,10 @@ import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
 import java.nio.file.Path
 import kotlin.reflect.KClass
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IProducingStep
+import org.modelix.modelql.typed.TypedModelQL
 
 private val reservedPropertyNames: Set<String> = setOf(
     "constructor", // already exists on JS objects
@@ -178,6 +182,36 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     )
                                     .build()
                             )
+
+                            // typed ModelQL
+                            for (stepType in listOf(IMonoStep::class.asTypeName(), IFluxStep::class.asTypeName())) {
+                                val inputType = stepType.parameterizedBy(concept.nodeWrapperInterfaceType())
+                                val outputElementType = when (feature.type) {
+                                    is EnumPropertyType -> String::class.asTypeName().copy(nullable = true)
+                                    is PrimitivePropertyType -> feature.asKotlinType()
+                                }
+                                val outputType = stepType.parameterizedBy(outputElementType)
+                                val functionName = when (val type = feature.type) {
+                                    is EnumPropertyType -> "rawProperty"
+                                    is PrimitivePropertyType -> when (type.primitive) {
+                                        Primitive.STRING -> "stringProperty"
+                                        Primitive.BOOLEAN -> "booleanProperty"
+                                        Primitive.INT -> "intProperty"
+                                    }
+                                }
+                                addProperty(
+                                    PropertySpec.builder(feature.generatedName, outputType)
+                                        .receiver(inputType)
+                                        .getter(FunSpec.getterBuilder()
+                                            .addStatement("return %T.%N(this, %T.%N)",
+                                                TypedModelQL::class.asTypeName(),
+                                                functionName,
+                                                concept.conceptWrapperInterfaceClass(),
+                                                feature.generatedName)
+                                            .build())
+                                        .build()
+                                )
+                            }
                         }
 
                         is ProcessedChildLink -> {
@@ -192,6 +226,26 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                         FunSpec.getterBuilder()
                                             .addStatement("return flatMap { it.%N }", feature.generatedName).build()
                                     )
+                                    .build()
+                            )
+
+                            // typed ModelQL
+                            val inputStepType = (if (feature.multiple) IProducingStep::class else IMonoStep::class).asTypeName()
+                            val outputStepType = (if (feature.multiple) IFluxStep::class else IMonoStep::class).asTypeName()
+                            val inputType = inputStepType.parameterizedBy(concept.nodeWrapperInterfaceType())
+                            val isOptionalSingle = feature.optional && !feature.multiple
+                            val outputType = outputStepType.parameterizedBy(
+                                targetType.copy(nullable = isOptionalSingle)
+                            )
+                            addProperty(
+                                PropertySpec.builder(feature.generatedName, outputType)
+                                    .receiver(inputType)
+                                    .getter(FunSpec.getterBuilder()
+                                        .addStatement("return %T.children(this, %T.%N)",
+                                            TypedModelQL::class.asTypeName(),
+                                            concept.conceptWrapperInterfaceClass(),
+                                            feature.generatedName)
+                                        .build())
                                     .build()
                             )
                         }
@@ -214,6 +268,18 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             )
                             addProperty(
                                 PropertySpec.builder(
+                                    feature.generatedName + "_orNull",
+                                    List::class.asTypeName().parameterizedBy(targetType.copy(nullable = true))
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return map { it.%N }", feature.generatedName + "_orNull").build()
+                                    )
+                                    .build()
+                            )
+                            addProperty(
+                                PropertySpec.builder(
                                     "raw_" + feature.generatedName,
                                     List::class.asTypeName().parameterizedBy(rawTargetType)
                                 )
@@ -225,6 +291,35 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     )
                                     .build()
                             )
+
+                            // typed ModelQL
+                            for (stepType in listOf(IMonoStep::class.asTypeName(), IFluxStep::class.asTypeName())) {
+                                val inputType = stepType.parameterizedBy(concept.nodeWrapperInterfaceType())
+                                val outputType = stepType.parameterizedBy(targetType.copy(nullable = false))
+                                val outputTypeNullable = stepType.parameterizedBy(targetType.copy(nullable = true))
+                                addProperty(
+                                    PropertySpec.builder(feature.generatedName, outputType)
+                                        .receiver(inputType)
+                                        .getter(FunSpec.getterBuilder()
+                                            .addStatement("return %T.reference(this, %T.%N)",
+                                                TypedModelQL::class.asTypeName(),
+                                                concept.conceptWrapperInterfaceClass(),
+                                                feature.generatedName)
+                                            .build())
+                                        .build()
+                                )
+                                addProperty(
+                                    PropertySpec.builder(feature.generatedName + "_orNull", outputTypeNullable)
+                                        .receiver(inputType)
+                                        .getter(FunSpec.getterBuilder()
+                                            .addStatement("return %T.referenceOrNull(this, %T.%N)",
+                                                TypedModelQL::class.asTypeName(),
+                                                concept.conceptWrapperInterfaceClass(),
+                                                feature.generatedName)
+                                            .build())
+                                        .build()
+                                )
+                            }
                         }
                     }
                 }
@@ -345,11 +440,19 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     }
 
                     is ProcessedChildLink -> {
-                        val methodName = if (feature.multiple) "newChildListLink" else "newSingleChildLink"
+                        val methodName = if (feature.multiple) {
+                            "newChildListLink"
+                        } else {
+                            if (feature.optional) {
+                                "newOptionalSingleChildLink"
+                            } else {
+                                "newMandatorySingleChildLink"
+                            }
+                        }
                         addProperty(
                             PropertySpec.builder(feature.generatedName, feature.generatedChildLinkType())
                                 .initializer(
-                                    """$methodName(%S, %S, ${feature.optional}, %T, %T::class)""",
+                                    """$methodName(%S, %S, ${if (feature.multiple) "${feature.optional}, " else ""}%T, %T::class)""",
                                     feature.originalName,
                                     feature.uid,
                                     feature.type.resolved.conceptObjectType(),
@@ -551,6 +654,23 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         )
                         addProperty(
                             PropertySpec.builder(
+                                feature.generatedName + "_orNull",
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = true)
+                            )
+                                .addModifiers(KModifier.OVERRIDE)
+                                .mutable(false)
+                                .delegate(
+                                    """%T(%N(), %T.%N, %T::class)""",
+                                    OptionalReferenceAccessor::class.asTypeName(),
+                                    ITypedNode::unwrap.name,
+                                    feature.concept.conceptObjectType(),
+                                    feature.generatedName,
+                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                )
+                                .build()
+                        )
+                        addProperty(
+                            PropertySpec.builder(
                                 "raw_" + feature.generatedName,
                                 INode::class.asTypeName().copy(nullable = true)
                             )
@@ -619,6 +739,14 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         )
                         addProperty(
                             PropertySpec.builder(
+                                feature.generatedName + "_orNull",
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = true)
+                            )
+                                .mutable(false)
+                                .build()
+                        )
+                        addProperty(
+                            PropertySpec.builder(
                                 "raw_" + feature.generatedName,
                                 INode::class.asTypeName().copy(nullable = true)
                             )
@@ -655,7 +783,11 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
 
     private fun ProcessedChildLink.generatedChildLinkType(): TypeName {
         val childConcept = type.resolved
-        val linkClass = if (multiple) GeneratedChildListLink::class else GeneratedSingleChildLink::class
+        val linkClass = if (multiple) {
+            GeneratedChildListLink::class
+        } else {
+            if (optional) GeneratedSingleChildLink::class else GeneratedMandatorySingleChildLink::class
+        }
         return linkClass.asClassName().parameterizedBy(
             childConcept.nodeWrapperInterfaceType(), childConcept.conceptWrapperInterfaceType()
         )

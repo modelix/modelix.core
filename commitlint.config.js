@@ -14,6 +14,7 @@ module.exports = {
         "model-api",
         "model-client",
         "model-server",
+        "modelql",
         "ts-model-api",
       ],
     ],

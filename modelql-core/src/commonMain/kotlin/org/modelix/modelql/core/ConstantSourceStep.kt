@@ -1,0 +1,58 @@
+package org.modelix.modelql.core
+
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.serializer
+
+abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), ISourceStep<E>, IMonoStep<E> {
+    override fun run() {
+        forwardToConsumers(element)
+        completeConsumers()
+    }
+
+    override fun toString(): String {
+        return """Mono($element)"""
+    }
+}
+
+class StringSourceStep(element: String) : ConstantSourceStep<String>(element) {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String> {
+        return serializersModule.serializer<String>()
+    }
+
+    override fun createDescriptor() = Descriptor(element)
+
+    @Serializable
+    @SerialName("stringMonoSource")
+    class Descriptor(val element: String) : CoreStepDescriptor() {
+        override fun createStep(): IStep {
+            return StringSourceStep(element)
+        }
+    }
+
+    override fun toString(): String {
+        return """Mono("$element")"""
+    }
+}
+
+class BooleanSourceStep(element: Boolean) : ConstantSourceStep<Boolean>(element) {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
+        return serializersModule.serializer<Boolean>()
+    }
+
+    override fun createDescriptor() = Descriptor(element)
+
+    @Serializable
+    @SerialName("booleanMonoSource")
+    class Descriptor(val element: Boolean) : CoreStepDescriptor() {
+        override fun createStep(): IStep {
+            return BooleanSourceStep(element)
+        }
+    }
+}
+
+fun String.asMono(): IMonoStep<String> = StringSourceStep(this)
+fun Boolean.asMono(): IMonoStep<Boolean> = BooleanSourceStep(this)

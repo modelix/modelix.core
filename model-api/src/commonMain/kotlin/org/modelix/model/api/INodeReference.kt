@@ -15,6 +15,13 @@
 
 package org.modelix.model.api
 
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import org.modelix.model.area.IArea
 
 /**
@@ -23,6 +30,7 @@ import org.modelix.model.area.IArea
  * The relation between an [INodeReference] and an [INode] is n to 1.
  * Two [INodeReference]s that are not equal can resolve to the same [INode].
  */
+@Serializable(with = NodeReferenceKSerializer::class)
 interface INodeReference {
     /**
      * Tries to find the referenced node in the given [IArea].
@@ -31,4 +39,16 @@ interface INodeReference {
      * @return the node, or null if the node could not be found
      */
     fun resolveNode(area: IArea?): INode?
+}
+
+class NodeReferenceKSerializer : KSerializer<INodeReference> {
+    override fun deserialize(decoder: Decoder): INodeReference {
+        return INodeReferenceSerializer.deserialize(decoder.decodeString())
+    }
+
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("modelix.INodeReference", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: INodeReference) {
+        encoder.encodeString(value.serialize())
+    }
 }

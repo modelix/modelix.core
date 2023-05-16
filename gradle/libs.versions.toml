@@ -18,7 +18,7 @@ modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.1.0"
 
 [versions]
 
-kotlin = "1.8.21"
+kotlin = "1.8.22" # 1.8.21 has this regression: https://youtrack.jetbrains.com/issue/KT-58918
 kotlinCoroutines="1.6.4"
 ktor="2.3.0"
 kotlinHtml="0.8.0"
@@ -29,6 +29,7 @@ apacheCxf="3.5.5"
 [libraries]
 
 kotlin-stdlib-common = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-common", version.ref = "kotlin" }
+kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
 kotlin-serialization-yaml = { group = "com.charleskorn.kaml", name = "kaml", version = "0.54.0" }
 kotlin-logging = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }

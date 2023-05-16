@@ -1,0 +1,276 @@
+package org.modelix.modelql.core
+
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
+import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.encoding.*
+import kotlinx.serialization.modules.SerializersModule
+
+open class ZipStep<RemoteCommon, RemoteOut : ZipOutput<RemoteCommon, *, *, *, *, *, *, *, *, *>>() : ProducingStep<RemoteOut>(), IConsumingStep<RemoteCommon>, IFluxStep<RemoteOut> {
+    private val inputPorts = ArrayList<ZipInputPort>()
+    private var stepCompleted: Boolean = false
+
+    fun getSize(): Int = inputPorts.size
+
+    override fun toString(): String {
+        return "zip(${inputPorts.joinToString(", ") { it.producer.toString() }})"
+    }
+
+    override fun reset() {
+        stepCompleted = false
+        inputPorts.forEach { it.reset() }
+    }
+
+    override fun addProducer(producer: IProducingStep<RemoteCommon>) {
+        if (getProducers().contains(producer)) return
+        inputPorts.add(ZipInputPort(producer))
+        producer.addConsumer(this)
+    }
+
+    override fun getProducers(): List<IProducingStep<*>> {
+        return inputPorts.map { it.producer }
+    }
+
+    override fun onNext(element: RemoteCommon, producer: IProducingStep<RemoteCommon>) {
+        inputPorts.first { it.producer == producer }.onNext(element)
+    }
+
+    override fun onComplete(producer: IProducingStep<RemoteCommon>) {
+        inputPorts.first { it.producer == producer }.onComplete()
+    }
+
+    private fun tryEmit() {
+        while (inputPorts.any { it.hasPending() } && inputPorts.all { it.canEmit() }) {
+            forwardToConsumers(ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>(inputPorts.map { it.emit() }) as RemoteOut)
+        }
+    }
+
+    override fun createDescriptor() = Descriptor()
+
+    @Serializable
+    @SerialName("zip")
+    class Descriptor : CoreStepDescriptor() {
+        override fun createStep(): IStep {
+            return ZipStep<Any?, ZipOutput<Any?, *, *, *, *, *, *, *, *, *>>()
+        }
+    }
+
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<*> {
+        val elementSerializers: Array<KSerializer<RemoteCommon>> = inputPorts.map {
+            it.producer.getOutputSerializer(serializersModule) as KSerializer<RemoteCommon>
+        }.toTypedArray()
+        return ZipOutputSerializer<RemoteCommon>(elementSerializers)
+    }
+
+    private inner class ZipInputPort(val producer: IProducingStep<RemoteCommon>) {
+        private var portCompleted = false
+        private val pendingElements = ArrayList<RemoteCommon>()
+        private var lastElement: RemoteCommon? = null
+        private var size = 0
+
+        fun reset() {
+            portCompleted = false
+            pendingElements.clear()
+            lastElement = null
+            size = 0
+        }
+
+        fun onNext(element: RemoteCommon) {
+            pendingElements.add(element)
+            lastElement = element
+            size++
+            tryEmit()
+        }
+
+        fun onComplete() {
+            portCompleted = true
+            tryEmit()
+            if (!stepCompleted) {
+                if (inputPorts.all { it.portCompleted }) {
+                    stepCompleted = true
+                    completeConsumers()
+                }
+            }
+        }
+
+        fun canRepeat(): Boolean = portCompleted && size == 1
+
+        fun repeatLast(): RemoteCommon {
+            require(canRepeat())
+            return lastElement as RemoteCommon
+        }
+
+        fun canEmit() = hasPending() || canRepeat()
+
+        fun emit(): RemoteCommon {
+            return if (hasPending()) {
+                removeFirst()
+            } else if (canRepeat()) {
+                repeatLast()
+            } else {
+                throw IllegalStateException("No elements available")
+            }
+        }
+
+        fun removeFirst(): RemoteCommon = pendingElements.removeFirst()
+
+        fun hasPending() = pendingElements.isNotEmpty()
+
+        fun isComplete() = stepCompleted
+    }
+}
+
+class ZipOutputSerializer<CommonT>(val elementSerializers: Array<KSerializer<CommonT>>) : KSerializer<ZipOutput<CommonT, *, *, *, *, *, *, *, *, *>> {
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun deserialize(decoder: Decoder): ZipOutput<CommonT, *, *, *, *, *, *, *, *, *> {
+        val values = Array<Any?>(elementSerializers.size) { null }
+        decoder.decodeStructure(descriptor) {
+            if (decodeSequentially()) {
+                for (i in elementSerializers.indices) {
+                    values[i] = decodeSerializableElement(descriptor, i, elementSerializers[i])
+                }
+            } else {
+                while (true) {
+                    val i = decodeElementIndex(descriptor)
+                    if (i == CompositeDecoder.DECODE_DONE) break
+                    values[i] = decodeSerializableElement(descriptor, i, elementSerializers[i])
+                }
+            }
+        }
+        return ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>(values.toList()) as ZipOutput<CommonT, *, *, *, *, *, *, *, *, *>
+    }
+
+    override val descriptor: SerialDescriptor = ZipNOutputDesc(elementSerializers.map { it.descriptor }.toTypedArray())
+
+    override fun serialize(encoder: Encoder, value: ZipOutput<CommonT, *, *, *, *, *, *, *, *, *>) {
+        encoder.encodeCollection(descriptor, elementSerializers.size) {
+            value.values.forEachIndexed { index, elementValue ->
+                encodeSerializableElement(elementSerializers[index].descriptor, index, elementSerializers[index], elementValue)
+            }
+        }
+    }
+}
+
+internal class ZipNOutputDesc(val elementDesc: Array<SerialDescriptor>) : SerialDescriptor {
+    @ExperimentalSerializationApi
+    override val elementsCount: Int
+        get() = elementDesc.size
+
+    @ExperimentalSerializationApi
+    override val kind: SerialKind
+        get() = StructureKind.LIST
+
+    @ExperimentalSerializationApi
+    override val serialName: String
+        get() = "modelix.zipN"
+
+    @ExperimentalSerializationApi
+    override fun getElementAnnotations(index: Int): List<Annotation> = emptyList()
+
+    @ExperimentalSerializationApi
+    override fun getElementDescriptor(index: Int): SerialDescriptor = elementDesc[index]
+
+    @ExperimentalSerializationApi
+    override fun getElementIndex(name: String): Int {
+        return name.toIntOrNull() ?: throw IllegalArgumentException("$name is not a valid list index")
+    }
+
+    @ExperimentalSerializationApi
+    override fun getElementName(index: Int): String {
+        return index.toString()
+    }
+
+    @ExperimentalSerializationApi
+    override fun isElementOptional(index: Int): Boolean = false
+}
+
+interface IZipOutput<out Common> { val values: List<Common> }
+interface IZip1Output<out Common, out E1> : IZipOutput<Common> { val first: E1 }
+interface IZip2Output<out Common, out E1, out E2> : IZip1Output<Common, E1> { val second: E2 }
+interface IZip3Output<out Common, out E1, out E2, out E3> : IZip2Output<Common, E1, E2> { val third: E3 }
+interface IZip4Output<out Common, out E1, out E2, out E3, out E4> : IZip3Output<Common, E1, E2, E3> { val forth: E4 }
+interface IZip5Output<out Common, out E1, out E2, out E3, out E4, out E5> : IZip4Output<Common, E1, E2, E3, E4> { val fifth: E5 }
+interface IZip6Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6> : IZip5Output<Common, E1, E2, E3, E4, E5> { val sixth: E6 }
+interface IZip7Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7> : IZip6Output<Common, E1, E2, E3, E4, E5, E6> { val seventh: E7 }
+interface IZip8Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8> : IZip7Output<Common, E1, E2, E3, E4, E5, E6, E7> { val eighth: E8 }
+interface IZip9Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8, out E9> : IZip8Output<Common, E1, E2, E3, E4, E5, E6, E7, E8> { val ninth: E9 }
+
+@Serializable
+@SerialName("modelix.modelql.zip.output")
+data class ZipOutput<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8, out E9>(override val values: List<Common>) : IZip9Output<Common, E1, E2, E3, E4, E5, E6, E7, E8, E9> {
+    operator fun get(index: Int): Common = values[index]
+    override val first: E1 get() = values[0] as E1
+    override val second: E2 get() = values[1] as E2
+    override val third: E3 get() = values[2] as E3
+    override val forth: E4 get() = values[3] as E4
+    override val fifth: E5 get() = values[4] as E5
+    override val sixth: E6 get() = values[5] as E6
+    override val seventh: E7 get() = values[6] as E7
+    override val eighth: E8 get() = values[7] as E8
+    override val ninth: E9 get() = values[8] as E9
+}
+
+fun <Common, T1 : Common, T2 : Common> IProducingStep<T1>.zip(other2: IProducingStep<T2>): IFluxStep<IZip2Output<Common, T1, T2>> {
+    return ZipStep<Common, ZipOutput<Common, T1, T2, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
+        it.connect(this)
+        it.connect(other2)
+    }
+}
+fun <Common, T1 : Common, T2 : Common> IMonoStep<T1>.zip(other2: IMonoStep<T2>): IMonoStep<IZip2Output<Common, T1, T2>> {
+    return ZipStep<Common, ZipOutput<Common, T1, T2, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
+        it.connect(this)
+        it.connect(other2)
+    }.first()
+}
+
+fun <Common, T1 : Common, T2 : Common, T3 : Common> IProducingStep<T1>.zip(other2: IProducingStep<T2>, other3: IProducingStep<T3>): IFluxStep<IZip3Output<Common, T1, T2, T3>> {
+    return ZipStep<Common, ZipOutput<Common, T1, T2, T3, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
+        it.connect(this)
+        it.connect(other2)
+        it.connect(other3)
+    }
+}
+fun <Common, T1 : Common, T2 : Common, T3 : Common> IMonoStep<T1>.zip(other2: IMonoStep<T2>, other3: IMonoStep<T3>): IMonoStep<IZip3Output<Common, T1, T2, T3>> {
+    return ZipStep<Common, ZipOutput<Common, T1, T2, T3, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
+        it.connect(this)
+        it.connect(other2)
+        it.connect(other3)
+    }.first()
+}
+
+fun <Common, T1 : Common, T2 : Common, T3 : Common, T4 : Common> IProducingStep<T1>.zip(other2: IProducingStep<T2>, other3: IProducingStep<T3>, other4: IProducingStep<T4>): IFluxStep<IZip4Output<Common, T1, T2, T3, T4>> {
+    return ZipStep<Common, ZipOutput<Common, T1, T2, T3, T4, Unit, Unit, Unit, Unit, Unit>>().also {
+        it.connect(this)
+        it.connect(other2)
+        it.connect(other3)
+        it.connect(other4)
+    }
+}
+fun <Common, T1 : Common, T2 : Common, T3 : Common, T4 : Common> IMonoStep<T1>.zip(other2: IMonoStep<T2>, other3: IMonoStep<T3>, other4: IMonoStep<T4>): IMonoStep<IZip4Output<Common, T1, T2, T3, T4>> {
+    return ZipStep<Common, ZipOutput<Common, T1, T2, T3, T4, Unit, Unit, Unit, Unit, Unit>>().also {
+        it.connect(this)
+        it.connect(other2)
+        it.connect(other3)
+        it.connect(other4)
+    }.first()
+}
+
+fun <T> IProducingStep<T>.zip(vararg others: IProducingStep<T>): IFluxStep<IZipOutput<T>> = zipList(*others)
+fun <T> IMonoStep<T>.zip(vararg others: IMonoStep<T>): IMonoStep<IZipOutput<T>> = zipList(*others)
+fun <T> IProducingStep<T>.zipList(vararg others: IProducingStep<T>): IFluxStep<IZipOutput<T>> {
+    return ZipStep<T, ZipOutput<T, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
+        it.connect(this)
+        for (other in others) {
+            it.connect(other)
+        }
+    }
+}
+fun <T> IMonoStep<T>.zipList(vararg others: IMonoStep<T>): IMonoStep<IZipOutput<T>> {
+    return ZipStep<T, ZipOutput<T, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
+        it.connect(this)
+        for (other in others) {
+            it.connect(other)
+        }
+    }.first()
+}

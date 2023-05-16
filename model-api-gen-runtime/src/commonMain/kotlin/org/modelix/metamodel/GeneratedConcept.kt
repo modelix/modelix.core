@@ -27,10 +27,9 @@ abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
         }
     }
 
-    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newSingleChildLink(
+    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newOptionalSingleChildLink(
         name: String,
         uid: String?,
-        isOptional: Boolean,
         targetConcept: IConcept,
         childNodeInterface: KClass<ChildNodeT>
     ): GeneratedSingleChildLink<ChildNodeT, ChildConceptT> {
@@ -38,7 +37,24 @@ abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
             this,
             name,
             uid,
-            isOptional,
+            isOptional = true,
+            targetConcept,
+            childNodeInterface
+        ).also {
+            childLinksMap[name] = it
+        }
+    }
+
+    fun <ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept> newMandatorySingleChildLink(
+        name: String,
+        uid: String?,
+        targetConcept: IConcept,
+        childNodeInterface: KClass<ChildNodeT>
+    ): GeneratedMandatorySingleChildLink<ChildNodeT, ChildConceptT> {
+        return GeneratedMandatorySingleChildLink<ChildNodeT, ChildConceptT>(
+            this,
+            name,
+            uid,
             targetConcept,
             childNodeInterface
         ).also {
@@ -207,7 +223,7 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IType
 }
 fun IChildLink.typed() = this as? ITypedChildLink<ITypedNode>
 
-class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
+open class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
     owner: IConcept,
     name: String,
     uid: String?,
@@ -215,6 +231,16 @@ class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedCo
     targetConcept: IConcept,
     childNodeInterface: KClass<ChildNodeT>
 ) : GeneratedChildLink<ChildNodeT, ChildConceptT>(owner, name, uid, false, isOptional, targetConcept, childNodeInterface), ITypedSingleChildLink<ChildNodeT> {
+
+}
+
+class GeneratedMandatorySingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : ITypedConcept>(
+    owner: IConcept,
+    name: String,
+    uid: String?,
+    targetConcept: IConcept,
+    childNodeInterface: KClass<ChildNodeT>
+) : GeneratedSingleChildLink<ChildNodeT, ChildConceptT>(owner, name, uid, isOptional = false, targetConcept, childNodeInterface), ITypedMandatorySingleChildLink<ChildNodeT> {
 
 }
 

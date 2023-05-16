@@ -7,6 +7,11 @@ import kotlinx.coroutines.delay
 import org.modelix.model.api.*
 import org.modelix.model.area.*
 import org.modelix.model.server.api.*
+import org.modelix.modelql.client.ModelQLClient
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.modelapi.ISupportsModelQL
+import org.modelix.modelql.modelapi.asMono
+import org.modelix.modelql.modelapi.resolve
 import kotlin.jvm.JvmStatic
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -40,6 +45,13 @@ class LightModelClient internal constructor(
     private var exceptions: MutableList<ExceptionData> = ArrayList()
     private var currentModelQuery: ModelQuery? = null
     private var unappliedQuery: ModelQuery? = null
+    private val modelQLClient: ModelQLClient? = when (connection) {
+        is WebsocketConnection -> ModelQLClient(
+            connection.url.replace(Regex("ws://(.*)/ws"), "http://$1/query"),
+            connection.httpClient
+        )
+        else -> null
+    }
 
     init {
         connection.connect { message ->
@@ -324,7 +336,7 @@ class LightModelClient internal constructor(
         }
     }
 
-    inner class NodeAdapter(var nodeId: NodeId) : INodeEx {
+    inner class NodeAdapter(var nodeId: NodeId) : INodeEx, ISupportsModelQL {
         fun getData() = requiresRead { getNodeData(nodeId) }
 
         override fun usesRoleIds(): Boolean = usesRoleIds
@@ -561,6 +573,13 @@ class LightModelClient internal constructor(
 
         override fun toString(): String {
             return nodeId
+        }
+
+        override suspend fun <R> query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+            val client = modelQLClient ?: throw IllegalStateException("Connection doesn't support ModelQL: $connection")
+            return client.query { _ ->
+                body(SerializedNodeReference(nodeId).asMono().resolve())
+            }
         }
     }
 

@@ -21,6 +21,8 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
@@ -50,6 +52,9 @@ import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
+import org.modelix.modelql.core.Query
+import org.modelix.modelql.core.QueryDescriptor
+import org.modelix.modelql.modelapi.UntypedModelQL
 import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
@@ -66,7 +71,7 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
     fun start() {
         LOG.trace { "server starting on port $port ..." }
         server = embeddedServer(Netty, port = port) {
-            init()
+            installHandlers()
         }
         server!!.start()
         LOG.trace { "server started" }
@@ -103,7 +108,7 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
 
     private fun getArea() = rootNode.getArea()
 
-    private fun Application.init() {
+    fun Application.installHandlers() {
         install(WebSockets) {
             pingPeriod = Duration.ofSeconds(15)
             timeout = Duration.ofSeconds(15)
@@ -122,6 +127,20 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 } finally {
                     sessions.remove(session)
                 }
+            }
+            post("query") {
+                val serializedQuery = call.receiveText()
+                val queryDescriptor = UntypedModelQL.json.decodeFromString<QueryDescriptor>(serializedQuery)
+                val query = queryDescriptor.createQuery() as Query<INode, Any?>
+                val result: Any? = getArea().executeRead { query.run(rootNode) }
+                println(result)
+                val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule)
+                val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
+                println(serializedResult)
+                call.respond(serializedResult)
+            }
+            get("health") {
+                call.respond("healthy")
             }
         }
         install(CORS) {

@@ -13,8 +13,10 @@
  */
 package org.modelix.model.api
 
+import kotlinx.serialization.Serializable
 import org.modelix.model.area.IArea
 
+@Serializable
 data class ConceptReference(val uid: String) : IConceptReference {
     @Deprecated("use ILanguageRepository.resolveConcept")
     override fun resolve(area: IArea?): IConcept? {

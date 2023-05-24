@@ -47,7 +47,11 @@ fun RootOrSubquery.queryNodes(node: INode): Sequence<INode> {
     return when (this) {
         is QueryAllChildren -> node.allChildren.asSequence()
         is QueryAncestors -> node.getAncestors(false)
-        is QueryChildren -> node.getChildren(this.role).asSequence()
+        is QueryChildren -> try {
+            node.getChildren(this.role).asSequence()
+        } catch (e: RuntimeException) {
+            emptySequence()
+        }
         is QueryDescendants -> node.getDescendants(false)
         is QueryParent -> listOfNotNull(node.parent).asSequence()
         is QueryReference -> {

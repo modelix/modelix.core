@@ -114,9 +114,6 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
                                 |Validation result: $validationError
                                 |
                                 |$claims
-                                |
-                                |Permissions:
-                                |${KeycloakUtils.getPermissions(jwt).joinToString("\n") { "    $it" }}
                                 |""".trimMargin())
                 }
             }

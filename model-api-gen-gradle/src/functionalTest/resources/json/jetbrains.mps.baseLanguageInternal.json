@@ -224,31 +224,6 @@
             ]
         },
         {
-            "uid": "mps:df345b11-b8c7-4213-ac66-48d2a9b75d88/1199964756070",
-            "name": "TypeHintExpression",
-            "properties": [
-            ],
-            "children": [
-                {
-                    "uid": "df345b11-b8c7-4213-ac66-48d2a9b75d88/1199964756070/1199964762556",
-                    "name": "expression",
-                    "type": "jetbrains.mps.baseLanguage.Expression",
-                    "optional": false
-                },
-                {
-                    "uid": "df345b11-b8c7-4213-ac66-48d2a9b75d88/1199964756070/1199964767385",
-                    "name": "typeHint",
-                    "type": "jetbrains.mps.baseLanguage.Type",
-                    "optional": false
-                }
-            ],
-            "references": [
-            ],
-            "extends": [
-                "jetbrains.mps.baseLanguage.Expression"
-            ]
-        },
-        {
             "uid": "mps:df345b11-b8c7-4213-ac66-48d2a9b75d88/1202838164916",
             "name": "InternalThisExpression",
             "properties": [
@@ -663,6 +638,40 @@
             "extends": [
                 "jetbrains.mps.baseLanguage.Expression"
             ]
+        },
+        {
+            "uid": "mps:df345b11-b8c7-4213-ac66-48d2a9b75d88/3329300704499081004",
+            "name": "InternalLambdaExpression",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "df345b11-b8c7-4213-ac66-48d2a9b75d88/3329300704499081004/3329300704499081622",
+                    "name": "returnType",
+                    "type": "jetbrains.mps.baseLanguage.Type"
+                },
+                {
+                    "uid": "df345b11-b8c7-4213-ac66-48d2a9b75d88/3329300704499081004/1199569906740",
+                    "name": "parameter",
+                    "type": "jetbrains.mps.baseLanguage.ParameterDeclaration",
+                    "multiple": true
+                },
+                {
+                    "uid": "df345b11-b8c7-4213-ac66-48d2a9b75d88/3329300704499081004/1199569916463",
+                    "name": "body",
+                    "type": "jetbrains.mps.baseLanguage.StatementList",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Expression",
+                "jetbrains.mps.baseLanguage.IMethodLike",
+                "jetbrains.mps.lang.core.ScopeProvider"
+            ]
         }
+    ],
+    "enums": [
     ]
 }

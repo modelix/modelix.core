@@ -905,5 +905,7 @@
                 "jetbrains.mps.baseLanguage.lightweightdsl.AutoInitDSLClass"
             ]
         }
+    ],
+    "enums": [
     ]
 }

@@ -148,5 +148,7 @@
                 "jetbrains.mps.baseLanguage.BaseMethodCall"
             ]
         }
+    ],
+    "enums": [
     ]
 }

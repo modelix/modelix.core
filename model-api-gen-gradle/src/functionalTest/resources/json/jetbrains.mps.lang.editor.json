@@ -35,7 +35,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1073389214265/1130859485024",
-                    "name": "attractsFocus"
+                    "name": "attractsFocus",
+                    "type": "jetbrains.mps.lang.editor.FocusPolicy"
                 }
             ],
             "children": [
@@ -391,7 +392,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1079353555532/1197893615481",
-                    "name": "defaultCaretPosition"
+                    "name": "defaultCaretPosition",
+                    "type": "jetbrains.mps.lang.editor._CaretPosition_Enum"
                 }
             ],
             "children": [
@@ -636,7 +638,8 @@
                 },
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1136916919141/1141091278922",
-                    "name": "caretPolicy"
+                    "name": "caretPolicy",
+                    "type": "jetbrains.mps.lang.editor.CellKeyMapCaretPolicy"
                 },
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1136916919141/1163507208434",
@@ -782,7 +785,8 @@
                 },
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535280617/1139535298778",
-                    "name": "actionId"
+                    "name": "actionId",
+                    "type": "jetbrains.mps.lang.editor.CellActionId"
                 }
             ],
             "children": [
@@ -918,7 +922,8 @@
                 },
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1140524381322/1156252885376",
-                    "name": "separatorLayoutConstraint"
+                    "name": "separatorLayoutConstraint",
+                    "type": "jetbrains.mps.lang.editor._Layout_Constraints_Enum"
                 }
             ],
             "children": [
@@ -1263,7 +1268,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1165253627126/1165254125954",
-                    "name": "presentation"
+                    "name": "presentation",
+                    "type": "jetbrains.mps.lang.sharedConcepts.NodePresentationOptions"
                 }
             ],
             "children": [
@@ -1888,7 +1894,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1186403694788/1186403713874",
-                    "name": "color"
+                    "name": "color",
+                    "type": "jetbrains.mps.lang.editor._Colors_Enum"
                 }
             ],
             "children": [
@@ -1910,7 +1917,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1186403751766/1186403771423",
-                    "name": "style"
+                    "name": "style",
+                    "type": "jetbrains.mps.lang.editor._FontStyle_Enum"
                 }
             ],
             "children": [
@@ -2034,7 +2042,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1186414999511/1214316229833",
-                    "name": "underlined"
+                    "name": "underlined",
+                    "type": "jetbrains.mps.lang.editor.UnderlineStyle"
                 }
             ],
             "children": [
@@ -2199,7 +2208,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1201268783309/1201268881975",
-                    "name": "position"
+                    "name": "position",
+                    "type": "jetbrains.mps.lang.editor.SelectPosition"
                 }
             ],
             "children": [
@@ -2235,7 +2245,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1214317859050/1214317859051",
-                    "name": "layoutConstraint"
+                    "name": "layoutConstraint",
+                    "type": "jetbrains.mps.lang.editor._Layout_Constraints_Enum"
                 }
             ],
             "children": [
@@ -2278,7 +2289,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1214472762472/1214472762473",
-                    "name": "position"
+                    "name": "position",
+                    "type": "jetbrains.mps.lang.editor._CaretPosition_Enum"
                 }
             ],
             "children": [
@@ -2365,7 +2377,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1216308599511/1216308761668",
-                    "name": "position"
+                    "name": "position",
+                    "type": "jetbrains.mps.lang.editor._NextLine_Enum"
                 }
             ],
             "children": [
@@ -2457,7 +2470,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1216560327200/1216560518566",
-                    "name": "position"
+                    "name": "position",
+                    "type": "jetbrains.mps.lang.editor._NextLine_Enum"
                 }
             ],
             "children": [
@@ -2683,7 +2697,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1226339938453/1226504838901",
-                    "name": "measure"
+                    "name": "measure",
+                    "type": "jetbrains.mps.lang.editor._Enum_Measure"
                 }
             ],
             "children": [
@@ -2784,7 +2799,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1235999440492/1235999920262",
-                    "name": "align"
+                    "name": "align",
+                    "type": "jetbrains.mps.lang.editor.AlignEnum"
                 }
             ],
             "children": [
@@ -3149,7 +3165,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/7620205565664569937/7620205565664606477",
-                    "name": "baseline"
+                    "name": "baseline",
+                    "type": "jetbrains.mps.lang.editor.DefaultBaseLineEnum"
                 }
             ],
             "children": [
@@ -3179,7 +3196,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/8255250703325731016/8255250703325731018",
-                    "name": "script"
+                    "name": "script",
+                    "type": "jetbrains.mps.lang.editor.ScriptSwitchEnum"
                 }
             ],
             "children": [
@@ -3222,7 +3240,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/6820251943131810950/6820251943131810955",
-                    "name": "tableComponent"
+                    "name": "tableComponent",
+                    "type": "jetbrains.mps.lang.editor.TableComponentEnum"
                 }
             ],
             "children": [
@@ -3671,7 +3690,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/3547227755871693971/2162403111523065396",
-                    "name": "cellId"
+                    "name": "cellId",
+                    "type": "jetbrains.mps.lang.editor.PredefinedCellID"
                 }
             ],
             "children": [
@@ -4023,7 +4043,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/3982520150113085419/8714766435264464176",
-                    "name": "inherited"
+                    "name": "inherited",
+                    "type": "jetbrains.mps.lang.editor.StyleAttributeKind"
                 }
             ],
             "children": [
@@ -4948,7 +4969,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/3473224453637651916/3473224453637651917",
-                    "name": "placeInCell"
+                    "name": "placeInCell",
+                    "type": "jetbrains.mps.lang.editor.TransformationLocation_SideTransform_PlaceInCell"
                 }
             ],
             "children": [
@@ -6362,7 +6384,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/5266818545798688928/5266818545798701312",
-                    "name": "value"
+                    "name": "value",
+                    "type": "jetbrains.mps.lang.editor.ShowBoundariesAreaEnum"
                 }
             ],
             "children": [
@@ -7303,7 +7326,8 @@
             "properties": [
                 {
                     "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/5730897613507860227/5730897613507860230",
-                    "name": "actionId"
+                    "name": "actionId",
+                    "type": "jetbrains.mps.lang.editor.CellActionId"
                 }
             ],
             "children": [
@@ -7601,6 +7625,717 @@
                 "jetbrains.mps.lang.editor.MenuType",
                 "jetbrains.mps.baseLanguage.IValidIdentifier"
             ]
+        },
+        {
+            "uid": "mps:18bc6592-03a6-4e29-a83a-7ff23bde13ba/701160265283677816",
+            "name": "TransparentStyleSheetItem",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.editor.BooleanStyleSheetItem"
+            ]
+        },
+        {
+            "uid": "mps:18bc6592-03a6-4e29-a83a-7ff23bde13ba/8899501406397518321",
+            "name": "ConceptFunctionParameter_index",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        },
+        {
+            "uid": "mps:18bc6592-03a6-4e29-a83a-7ff23bde13ba/2906093235281475560",
+            "name": "SpellCheckStyle",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.editor.BooleanStyleSheetItem"
+            ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083928804390",
+            "name": "jetbrains.mps.lang.editor._YesNoDefault_Enum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083928804390/1083928804391",
+                    "name": "yes"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083928804390/1083928804392",
+                    "name": "no"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083928804390/1083928804393",
+                    "name": "none"
+                }
+            ],
+            "defaultIndex": 2
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109",
+            "name": "jetbrains.mps.lang.editor._Colors_Enum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545110",
+                    "name": "none"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545111",
+                    "name": "red"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545112",
+                    "name": "pink"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545113",
+                    "name": "orange"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545114",
+                    "name": "yellow"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545115",
+                    "name": "green"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1101213169706",
+                    "name": "darkGreen"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545116",
+                    "name": "magenta"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1101213185757",
+                    "name": "darkMagenta"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545117",
+                    "name": "cyan"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1083952545118",
+                    "name": "blue"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1216404713420",
+                    "name": "lightBlue"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1101209985304",
+                    "name": "darkBlue"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1084208529765",
+                    "name": "gray"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1084208529766",
+                    "name": "lightGray"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1084208529767",
+                    "name": "darkGray"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/1214395400259",
+                    "name": "white"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1083952545109/7151630269404055096",
+                    "name": "black"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1101211480448",
+            "name": "jetbrains.mps.lang.editor._FontStyle_Enum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1101211480448/1101211523070",
+                    "name": "BOLD"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1101211480448/1101211542532",
+                    "name": "ITALIC"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1101211480448/1101213960346",
+                    "name": "BOLD_ITALIC"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1101211480448/1134577855137",
+                    "name": "PLAIN"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1101211480448/1220973684614",
+                    "name": "QUERY"
+                }
+            ],
+            "defaultIndex": 3
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130847686886",
+            "name": "jetbrains.mps.lang.editor.UnderlineStyle",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130847686886/1130847686918",
+                    "name": "as_is"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130847686886/1130847816499",
+                    "name": "not_underlined"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130847686886/1130847833453",
+                    "name": "underlined"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130926557197",
+            "name": "jetbrains.mps.lang.editor.FocusPolicy",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130926557197/1130926557292",
+                    "name": "noAttraction"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130926557197/1130926591919",
+                    "name": "attractsFocus"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130926557197/1130926603060",
+                    "name": "firstEditableCell"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1130926557197/1227082414196",
+                    "name": "attractsRecursively"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1138197387103",
+            "name": "jetbrains.mps.lang.editor._Layout_Constraints_Enum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1138197387103/1138197387339",
+                    "name": "punctuation"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1138197387103/1138197619454",
+                    "name": "noflow"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1138197387103/1138197631095",
+                    "name": "none"
+                }
+            ],
+            "defaultIndex": 2
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871",
+            "name": "jetbrains.mps.lang.editor.CellActionId",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/1139535329028",
+                    "name": "right_transform_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/1139535387060",
+                    "name": "delete_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/1222746468862079483",
+                    "name": "insert_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/1222746468862079484",
+                    "name": "insert_before_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657675082",
+                    "name": "backspace_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707152",
+                    "name": "delete_to_word_end_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707153",
+                    "name": "copy_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707154",
+                    "name": "cut_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707155",
+                    "name": "paste_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707156",
+                    "name": "paste_before_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707157",
+                    "name": "paste_after_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707158",
+                    "name": "left_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707159",
+                    "name": "right_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707160",
+                    "name": "up_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707161",
+                    "name": "down_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707162",
+                    "name": "next_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707163",
+                    "name": "prev_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707164",
+                    "name": "home_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707165",
+                    "name": "end_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707166",
+                    "name": "page_up_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707167",
+                    "name": "page_down_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707168",
+                    "name": "root_home_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707169",
+                    "name": "root_end_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707170",
+                    "name": "local_home_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707171",
+                    "name": "local_end_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/5087404372099706598",
+                    "name": "select_all_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707172",
+                    "name": "select_left_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707173",
+                    "name": "select_right_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707174",
+                    "name": "select_up_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707175",
+                    "name": "select_down_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707176",
+                    "name": "select_home_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707177",
+                    "name": "select_end_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707178",
+                    "name": "select_local_end_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707179",
+                    "name": "select_local_home_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707180",
+                    "name": "select_next_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707181",
+                    "name": "select_previous_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707182",
+                    "name": "left_transform_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707183",
+                    "name": "complete_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707184",
+                    "name": "complete_smart_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707185",
+                    "name": "fold_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707186",
+                    "name": "unfold_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707187",
+                    "name": "fold_all_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707188",
+                    "name": "unfold_all_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707189",
+                    "name": "toggle_folding_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/9025760234657707190",
+                    "name": "show_message_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/5238877291854096301",
+                    "name": "comment_out_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/1943452258409327855",
+                    "name": "click_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/4058177569375008137",
+                    "name": "insert_placeholder_action_id"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139535328871/474718489010969512",
+                    "name": "insert_placeholder_before_action_id"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139744471051",
+            "name": "jetbrains.mps.lang.editor._ImageAlignment_Enum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139744471051/1139744471411",
+                    "name": "justify"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139744471051/1139744531598",
+                    "name": "center"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1139744471051/1139744545740",
+                    "name": "tile"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1141091053936",
+            "name": "jetbrains.mps.lang.editor.CellKeyMapCaretPolicy",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1141091053936/1141091054266",
+                    "name": "ANY_POSITION"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1141091053936/1141091172402",
+                    "name": "FIRST_POSITION"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1141091053936/1141091209420",
+                    "name": "LAST_POSITION"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1141091053936/1143573566373",
+                    "name": "INTERMEDIATE_POSITION"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1143891911797",
+            "name": "jetbrains.mps.lang.editor._LeftRight_Enum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1143891911797/1143891911798",
+                    "name": "left"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1143891911797/1143891954220",
+                    "name": "right"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1197893505573",
+            "name": "jetbrains.mps.lang.editor._CaretPosition_Enum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1197893505573/1197893505574",
+                    "name": "NONE"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1197893505573/1197893580900",
+                    "name": "FIRST"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1197893505573/1197893584870",
+                    "name": "LAST"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1201268793545",
+            "name": "jetbrains.mps.lang.editor.SelectPosition",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1201268793545/1201268793546",
+                    "name": "before"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1201268793545/1201268803781",
+                    "name": "after"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1216308376568",
+            "name": "jetbrains.mps.lang.editor._NextLine_Enum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1216308376568/1216308507057",
+                    "name": "right"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1216308376568/1216308502931",
+                    "name": "next_line"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1216308376568/1216308376569",
+                    "name": "indented"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1226504633752",
+            "name": "jetbrains.mps.lang.editor._Enum_Measure",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1226504633752/1226504633753",
+                    "name": "PIXELS"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1226504633752/1226504706052",
+                    "name": "SPACES"
+                }
+            ],
+            "defaultIndex": 1
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1235999709834",
+            "name": "jetbrains.mps.lang.editor.AlignEnum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1235999709834/1235999709835",
+                    "name": "LEFT"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1235999709834/1235999738057",
+                    "name": "RIGHT"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/1235999709834/1235999744266",
+                    "name": "CENTER"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/7620205565664606377",
+            "name": "jetbrains.mps.lang.editor.DefaultBaseLineEnum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/7620205565664606377/7620205565664606378",
+                    "name": "FIRST"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/7620205565664606377/7620205565664606380",
+                    "name": "CENTER"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/7620205565664606377/7620205565664606448",
+                    "name": "LAST"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/8255250703325730686",
+            "name": "jetbrains.mps.lang.editor.ScriptSwitchEnum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/8255250703325730686/8255250703325730687",
+                    "name": "NORMAL"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/8255250703325730686/8255250703325731012",
+                    "name": "SUPERSCRIPT"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/8255250703325730686/8255250703325731013",
+                    "name": "SUBSCRIPT"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/6820251943131810951",
+            "name": "jetbrains.mps.lang.editor.TableComponentEnum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/6820251943131810951/6820251943131810953",
+                    "name": "HORIZONTAL_COLLECTION"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/6820251943131810951/6820251943131810954",
+                    "name": "VERTICAL_COLLECTION"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375",
+            "name": "jetbrains.mps.lang.editor.PredefinedCellID",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375/2162403111523060376",
+                    "name": "first"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375/2162403111523062256",
+                    "name": "last"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375/2162403111523062252",
+                    "name": "firstEditable"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375/2162403111523062249",
+                    "name": "lastEditable"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375/2057482661602002109",
+                    "name": "firstError"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375/2057482661602002115",
+                    "name": "lastError"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375/2057482661602002122",
+                    "name": "focusPolicy"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/2162403111523060375/5933946333436767965",
+                    "name": "mostRelevant"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/8714766435264464204",
+            "name": "jetbrains.mps.lang.editor.StyleAttributeKind",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/8714766435264464204/8714766435264464205",
+                    "name": "inherited"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/8714766435264464204/8714766435264464206",
+                    "name": "simple"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/3473224453637651887",
+            "name": "jetbrains.mps.lang.editor.TransformationLocation_SideTransform_PlaceInCell",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/3473224453637651887/3473224453637651889",
+                    "name": "RIGHT"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/3473224453637651887/1838685759388610269",
+                    "name": "LEFT"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/5266818545798429658",
+            "name": "jetbrains.mps.lang.editor.ShowBoundariesAreaEnum",
+            "members": [
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/5266818545798429658/5266818545798429659",
+                    "name": "GUTTER"
+                },
+                {
+                    "uid": "18bc6592-03a6-4e29-a83a-7ff23bde13ba/5266818545798429658/5266818545798429768",
+                    "name": "GUTTER_AND_EDITOR"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

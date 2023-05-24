@@ -15,5 +15,7 @@
                 "jetbrains.mps.baseLanguage.Modifier"
             ]
         }
+    ],
+    "enums": [
     ]
 }

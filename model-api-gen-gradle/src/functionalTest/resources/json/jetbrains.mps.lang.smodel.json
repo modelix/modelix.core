@@ -3625,6 +3625,47 @@
             "extends": [
                 "jetbrains.mps.lang.smodel.SNodeOperation"
             ]
+        },
+        {
+            "uid": "mps:7866978e-a0f0-4cc7-81bc-4d213d9375e1/2285351689971718149",
+            "name": "AggregationLinkType",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Type"
+            ]
+        },
+        {
+            "uid": "mps:7866978e-a0f0-4cc7-81bc-4d213d9375e1/2285351689971718193",
+            "name": "AssociationLinkType",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Type"
+            ]
+        },
+        {
+            "uid": "mps:7866978e-a0f0-4cc7-81bc-4d213d9375e1/8329979535468945057",
+            "name": "Node_PresentationOperation",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.smodel.SNodeOperation"
+            ]
         }
+    ],
+    "enums": [
     ]
 }

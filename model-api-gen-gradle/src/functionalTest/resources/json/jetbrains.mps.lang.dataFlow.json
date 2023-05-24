@@ -547,5 +547,7 @@
                 "jetbrains.mps.lang.dataFlow.IBuilderMode"
             ]
         }
+    ],
+    "enums": [
     ]
 }

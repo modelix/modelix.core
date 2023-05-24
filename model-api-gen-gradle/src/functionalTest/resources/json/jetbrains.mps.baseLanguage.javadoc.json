@@ -649,5 +649,7 @@
                 "jetbrains.mps.baseLanguage.javadoc.BaseBlockDocTag"
             ]
         }
+    ],
+    "enums": [
     ]
 }

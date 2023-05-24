@@ -180,7 +180,8 @@
             "properties": [
                 {
                     "uid": "982eb8df-2c96-4bd7-9963-11712ea622e5/2756621024541675104/2756621024541681857",
-                    "name": "r"
+                    "name": "r",
+                    "type": "jetbrains.mps.lang.resources.Size"
                 }
             ],
             "children": [
@@ -197,7 +198,8 @@
             "properties": [
                 {
                     "uid": "982eb8df-2c96-4bd7-9963-11712ea622e5/2756621024541675105/2756621024541675106",
-                    "name": "r"
+                    "name": "r",
+                    "type": "jetbrains.mps.lang.resources.Size"
                 }
             ],
             "children": [
@@ -433,6 +435,27 @@
             "extends": [
                 "jetbrains.mps.lang.resources.BaseURL"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "982eb8df-2c96-4bd7-9963-11712ea622e5/1571777932759345034",
+            "name": "jetbrains.mps.lang.resources.Size",
+            "members": [
+                {
+                    "uid": "982eb8df-2c96-4bd7-9963-11712ea622e5/1571777932759345034/1571777932759345035",
+                    "name": "big"
+                },
+                {
+                    "uid": "982eb8df-2c96-4bd7-9963-11712ea622e5/1571777932759345034/1571777932759345036",
+                    "name": "medium"
+                },
+                {
+                    "uid": "982eb8df-2c96-4bd7-9963-11712ea622e5/1571777932759345034/1571777932759345039",
+                    "name": "small"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

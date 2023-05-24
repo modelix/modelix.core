@@ -437,5 +437,7 @@
                 "jetbrains.mps.lang.smodel.query.ScopeParameter"
             ]
         }
+    ],
+    "enums": [
     ]
 }

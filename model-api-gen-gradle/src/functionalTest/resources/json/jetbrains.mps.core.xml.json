@@ -506,6 +506,21 @@
             "extends": [
                 "jetbrains.mps.lang.core.BaseConcept"
             ]
+        },
+        {
+            "uid": "mps:479c7a8c-02f9-43b5-9139-d910cb22f298/2301667890727559839",
+            "name": "XmlSingleLineText",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.core.xml.XmlText"
+            ]
         }
+    ],
+    "enums": [
     ]
 }

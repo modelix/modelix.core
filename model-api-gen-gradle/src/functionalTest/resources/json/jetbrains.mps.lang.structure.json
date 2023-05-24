@@ -12,11 +12,13 @@
                 },
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/1071599937831",
-                    "name": "metaClass"
+                    "name": "metaClass",
+                    "type": "jetbrains.mps.lang.structure.LinkMetaclass"
                 },
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/1071599893252",
-                    "name": "sourceCardinality"
+                    "name": "sourceCardinality",
+                    "type": "jetbrains.mps.lang.structure.Cardinality"
                 },
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489288298/2395585628928459314",
@@ -519,7 +521,8 @@
             "properties": [
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219/1197591154882",
-                    "name": "memberIdentifierPolicy"
+                    "name": "memberIdentifierPolicy",
+                    "type": "jetbrains.mps.lang.structure.EnumerationMemberIdentifierPolicy"
                 },
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1082978164219/1212080844762",
@@ -573,7 +576,8 @@
                 },
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1071489090640/5404671619616246344",
-                    "name": "staticScope"
+                    "name": "staticScope",
+                    "type": "jetbrains.mps.lang.structure.StaticScope"
                 }
             ],
             "children": [
@@ -702,11 +706,13 @@
             "properties": [
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1588368162884797030/6491077959634650670",
-                    "name": "nameOpMigration"
+                    "name": "nameOpMigration",
+                    "type": "jetbrains.mps.lang.structure.NameOperationMigrationStrategy"
                 },
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1588368162884797030/6491077959634662372",
-                    "name": "valueOpMigration"
+                    "name": "valueOpMigration",
+                    "type": "jetbrains.mps.lang.structure.ValueOperationMigrationStrategy"
                 }
             ],
             "children": [
@@ -750,7 +756,8 @@
             "properties": [
                 {
                     "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017219/3355805929432017222",
-                    "name": "kind"
+                    "name": "kind",
+                    "type": "jetbrains.mps.lang.structure.EnumCustomMethodReplacementKind"
                 }
             ],
             "children": [
@@ -803,6 +810,208 @@
             "extends": [
                 "jetbrains.mps.lang.core.INamedConcept"
             ]
+        },
+        {
+            "uid": "mps:c72da2b9-7cce-4447-8389-f407dc1158b7/5583843313507852240",
+            "name": "MarkerInterfaceAttribute",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute"
+            ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634650688",
+            "name": "jetbrains.mps.lang.structure.NameOperationMigrationStrategy",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634650688/6491077959634650689",
+                    "name": "by_name"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634650688/6491077959634650690",
+                    "name": "by_presentation"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634650688/6491077959634650693",
+                    "name": "by_custom_methods"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634662333",
+            "name": "jetbrains.mps.lang.structure.ValueOperationMigrationStrategy",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634662333/6491077959634662334",
+                    "name": "string_name"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634662333/6491077959634662335",
+                    "name": "string_presentation"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634662333/6491077959634662342",
+                    "name": "boolean"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634662333/6491077959634662347",
+                    "name": "int_ordinal"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634662333/6491077959634662353",
+                    "name": "int_ordinal_plus_one"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/6491077959634662333/6491077959634662360",
+                    "name": "by_custom_methods"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017205",
+            "name": "jetbrains.mps.lang.structure.EnumCustomMethodReplacementKind",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017205/3355805929432017206",
+                    "name": "memberToValue"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017205/3355805929432017207",
+                    "name": "valueToMember"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017205/3355805929432017210",
+                    "name": "memberToName"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3355805929432017205/3355805929432017214",
+                    "name": "nameToMember"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1084197782722",
+            "name": "jetbrains.mps.lang.structure.Cardinality",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1084197782722/1084197782723",
+                    "name": "_0__1"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1084197782722/1084197782724",
+                    "name": "_1"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1084197782722/1084197782725",
+                    "name": "_0__n"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1084197782722/1084197782726",
+                    "name": "_1__n"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1084199179703",
+            "name": "jetbrains.mps.lang.structure.LinkMetaclass",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1084199179703/1084199179704",
+                    "name": "reference"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1084199179703/1084199179705",
+                    "name": "aggregation"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1197590884613",
+            "name": "jetbrains.mps.lang.structure.EnumerationMemberIdentifierPolicy",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1197590884613/1197590884614",
+                    "name": "derive_from_presentation"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1197590884613/1197591048630",
+                    "name": "derive_from_internal_value"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/1197590884613/1197591075491",
+                    "name": "custom"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/8087047305080774904",
+            "name": "jetbrains.mps.lang.structure.InstanceIncomingReferencesPolicy",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/8087047305080774904/8087047305080775282",
+                    "name": "allowed"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/8087047305080774904/8087047305080775412",
+                    "name": "local"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/8087047305080774904/8087047305080775416",
+                    "name": "forbidden"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3220559764717766993",
+            "name": "jetbrains.mps.lang.structure.ChildrenIncomingReferencesPolicy",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3220559764717766993/3220559764717766994",
+                    "name": "allowed"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3220559764717766993/3220559764717766995",
+                    "name": "local"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/3220559764717766993/3220559764717766998",
+                    "name": "forbidden"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/5404671619616246759",
+            "name": "jetbrains.mps.lang.structure.StaticScope",
+            "members": [
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/5404671619616246759/5404671619616246760",
+                    "name": "global"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/5404671619616246759/5404671619616246761",
+                    "name": "root"
+                },
+                {
+                    "uid": "c72da2b9-7cce-4447-8389-f407dc1158b7/5404671619616246759/5404671619616246764",
+                    "name": "none"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

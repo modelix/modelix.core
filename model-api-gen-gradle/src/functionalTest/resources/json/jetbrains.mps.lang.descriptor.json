@@ -63,6 +63,21 @@
                 "jetbrains.mps.lang.core.BaseConcept",
                 "jetbrains.mps.lang.core.INamedConcept"
             ]
+        },
+        {
+            "uid": "mps:f4ad079d-bc71-4ffb-9600-9328705cf998/6901428176731553243",
+            "name": "AspectDescriptor",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
         }
+    ],
+    "enums": [
     ]
 }

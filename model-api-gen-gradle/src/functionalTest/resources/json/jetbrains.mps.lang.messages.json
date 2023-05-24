@@ -72,5 +72,7 @@
                 "jetbrains.mps.lang.core.BaseConcept"
             ]
         }
+    ],
+    "enums": [
     ]
 }

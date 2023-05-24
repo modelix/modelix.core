@@ -26,8 +26,7 @@
                     "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/6106419185511570295",
                     "name": "mainLanguages",
                     "type": "jetbrains.mps.lang.smodel.LanguageIdentity",
-                    "multiple": true,
-                    "optional": false
+                    "multiple": true
                 },
                 {
                     "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/6106419185511570301",
@@ -57,101 +56,16 @@
                 }
             ],
             "references": [
+                {
+                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/3433054418424672374/8426907848585442521",
+                    "name": "proponent",
+                    "type": "jetbrains.mps.lang.structure.ConceptDeclaration"
+                }
             ],
             "extends": [
                 "jetbrains.mps.lang.core.BaseConcept",
                 "jetbrains.mps.baseLanguage.IValidIdentifier",
                 "jetbrains.mps.lang.util.order.OrderParticipant"
-            ]
-        },
-        {
-            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/6641743975991294767",
-            "name": "GenerationDescriptor_Class",
-            "properties": [
-            ],
-            "children": [
-            ],
-            "references": [
-                {
-                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/6641743975991294767/6422667311313188829",
-                    "name": "implTemplate",
-                    "type": "jetbrains.mps.baseLanguage.ClassConcept",
-                    "optional": false
-                }
-            ],
-            "extends": [
-                "jetbrains.mps.lang.aspect.GenerationDescriptor"
-            ]
-        },
-        {
-            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/6659466008484795896",
-            "name": "GenerationDescriptor",
-            "abstract": true,
-            "properties": [
-            ],
-            "children": [
-            ],
-            "references": [
-                {
-                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/6659466008484795896/8999016044020882995",
-                    "name": "mainIntfcClass",
-                    "type": "jetbrains.mps.baseLanguage.Classifier",
-                    "optional": false
-                }
-            ],
-            "extends": [
-                "jetbrains.mps.lang.core.BaseConcept",
-                "jetbrains.mps.baseLanguage.IValidIdentifier"
-            ]
-        },
-        {
-            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206123",
-            "name": "GenerationDescriptor_ByInterface",
-            "properties": [
-            ],
-            "children": [
-                {
-                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206123/5386558680326206125",
-                    "name": "methods",
-                    "type": "jetbrains.mps.lang.aspect.AspectMethodDescriptor",
-                    "multiple": true,
-                    "optional": false
-                }
-            ],
-            "references": [
-            ],
-            "extends": [
-                "jetbrains.mps.lang.aspect.GenerationDescriptor"
-            ]
-        },
-        {
-            "uid": "mps:f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206128",
-            "name": "AspectMethodDescriptor",
-            "properties": [
-            ],
-            "children": [
-                {
-                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206128/5386558680326206132",
-                    "name": "baseConceptFunc",
-                    "type": "jetbrains.mps.baseLanguage.closures.ClosureLiteral"
-                }
-            ],
-            "references": [
-                {
-                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206128/5386558680326206129",
-                    "name": "method",
-                    "type": "jetbrains.mps.baseLanguage.MethodDeclaration",
-                    "optional": false
-                },
-                {
-                    "uid": "f159adf4-3c93-40f9-9c5a-1f245a8697af/5386558680326206128/5386558680326206137",
-                    "name": "cncpt",
-                    "type": "jetbrains.mps.lang.structure.AbstractConceptDeclaration",
-                    "optional": false
-                }
-            ],
-            "extends": [
-                "jetbrains.mps.lang.core.BaseConcept"
             ]
         },
         {
@@ -180,5 +94,7 @@
                 "jetbrains.mps.lang.util.order.OrderParticipantReference"
             ]
         }
+    ],
+    "enums": [
     ]
 }

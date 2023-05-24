@@ -8,7 +8,8 @@
             "properties": [
                 {
                     "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/7077360340906447917/7077360340906447918",
-                    "name": "result"
+                    "name": "result",
+                    "type": "jetbrains.mps.make.script.Result"
                 }
             ],
             "children": [
@@ -353,7 +354,8 @@
             "properties": [
                 {
                     "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/3668957831723333672/3668957831723333678",
-                    "name": "feedback"
+                    "name": "feedback",
+                    "type": "jetbrains.mps.make.script.Feedback"
                 }
             ],
             "children": [
@@ -499,6 +501,46 @@
             "extends": [
                 "jetbrains.mps.baseLanguage.Expression"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/2360002718792446682",
+            "name": "jetbrains.mps.make.script.Result",
+            "members": [
+                {
+                    "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/2360002718792446682/2360002718792446683",
+                    "name": "SUCCESS"
+                },
+                {
+                    "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/2360002718792446682/2360002718792446684",
+                    "name": "FAILURE"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/3668957831723333674",
+            "name": "jetbrains.mps.make.script.Feedback",
+            "members": [
+                {
+                    "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/3668957831723333674/3668957831723333675",
+                    "name": "INFO"
+                },
+                {
+                    "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/3668957831723333674/3668957831723333676",
+                    "name": "WARNING"
+                },
+                {
+                    "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/3668957831723333674/3668957831723333677",
+                    "name": "ERROR"
+                },
+                {
+                    "uid": "95f8a3e6-f994-4ca0-a65e-763c9bae2d3b/3668957831723333674/6320856973181134892",
+                    "name": "MESSAGE"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

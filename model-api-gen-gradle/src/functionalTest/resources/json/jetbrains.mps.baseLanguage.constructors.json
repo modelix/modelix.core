@@ -206,5 +206,7 @@
                 "jetbrains.mps.baseLanguage.constructors.CustomConstructorParameter"
             ]
         }
+    ],
+    "enums": [
     ]
 }

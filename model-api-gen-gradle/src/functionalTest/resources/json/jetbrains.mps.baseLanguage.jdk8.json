@@ -33,5 +33,7 @@
                 "jetbrains.mps.baseLanguage.JavaModifier"
             ]
         }
+    ],
+    "enums": [
     ]
 }

@@ -3,13 +3,13 @@
  */
 package org.modelix.metamodel.gradle
 
-import java.io.File
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.modelix.model.data.LanguageData
+import java.io.File
 
 /**
  * A simple functional test for the 'org.modelix.model-api-gen' plugin.

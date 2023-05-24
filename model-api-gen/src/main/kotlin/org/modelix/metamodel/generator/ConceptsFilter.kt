@@ -25,7 +25,8 @@ class ConceptsFilter(val languageSet: LanguageSet) {
             .map { lang -> LanguageData(
                 lang.language.uid,
                 lang.name,
-                lang.getConceptsInLanguage().filter { includedConcepts.contains(it.fqName) }.map { it.concept }
+                lang.getConceptsInLanguage().filter { includedConcepts.contains(it.fqName) }.map { it.concept },
+                lang.language.enums
             ) })
     }
 

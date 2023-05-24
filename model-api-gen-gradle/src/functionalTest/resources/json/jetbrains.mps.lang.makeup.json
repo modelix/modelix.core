@@ -19,5 +19,7 @@
                 "jetbrains.mps.lang.core.NodeAttribute"
             ]
         }
+    ],
+    "enums": [
     ]
 }

@@ -21,5 +21,7 @@
                 "jetbrains.mps.lang.feedback.problem.ProblemPointsToKindRoot"
             ]
         }
+    ],
+    "enums": [
     ]
 }

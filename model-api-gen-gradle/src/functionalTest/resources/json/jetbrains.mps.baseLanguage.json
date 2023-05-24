@@ -140,7 +140,8 @@
                 "jetbrains.mps.baseLanguage.VariableDeclaration",
                 "jetbrains.mps.lang.core.IResolveInfo",
                 "jetbrains.mps.baseLanguage.IVariableAssignment",
-                "jetbrains.mps.lang.core.InterfacePart"
+                "jetbrains.mps.lang.core.InterfacePart",
+                "jetbrains.mps.baseLanguage.IInferredExpression"
             ]
         },
         {
@@ -217,7 +218,8 @@
                 "jetbrains.mps.lang.core.ScopeProvider",
                 "jetbrains.mps.baseLanguage.ITypeApplicable",
                 "jetbrains.mps.baseLanguage.IHasModifiers",
-                "jetbrains.mps.lang.core.ImplementationContainer"
+                "jetbrains.mps.lang.core.ImplementationContainer",
+                "jetbrains.mps.baseLanguage.IInferenceContextProvider"
             ]
         },
         {
@@ -360,7 +362,8 @@
                 "jetbrains.mps.baseLanguage.MethodDeclaration",
                 "jetbrains.mps.baseLanguage.ClassifierMethodMember",
                 "jetbrains.mps.baseLanguage.ITypeApplicable",
-                "jetbrains.mps.lang.core.InterfacePart"
+                "jetbrains.mps.lang.core.InterfacePart",
+                "jetbrains.mps.baseLanguage.IInheritableFeature"
             ]
         },
         {
@@ -716,7 +719,8 @@
             ],
             "extends": [
                 "jetbrains.mps.baseLanguage.Expression",
-                "jetbrains.mps.baseLanguage.IBinaryLike"
+                "jetbrains.mps.baseLanguage.IBinaryLike",
+                "jetbrains.mps.baseLanguage.IInferenceContextProvider"
             ]
         },
         {
@@ -926,14 +930,14 @@
             ],
             "children": [
                 {
-                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1081773326031/1081773367579",
-                    "name": "rightExpression",
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1081773326031/1081773367580",
+                    "name": "leftExpression",
                     "type": "jetbrains.mps.baseLanguage.Expression",
                     "optional": false
                 },
                 {
-                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1081773326031/1081773367580",
-                    "name": "leftExpression",
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1081773326031/1081773367579",
+                    "name": "rightExpression",
                     "type": "jetbrains.mps.baseLanguage.Expression",
                     "optional": false
                 }
@@ -1934,7 +1938,8 @@
                 "jetbrains.mps.baseLanguage.IAnonymousClass",
                 "jetbrains.mps.baseLanguage.IControlFlowInterrupter",
                 "jetbrains.mps.lang.traceable.UnitConcept",
-                "jetbrains.mps.lang.core.ScopeProvider"
+                "jetbrains.mps.lang.core.ScopeProvider",
+                "jetbrains.mps.baseLanguage.IGenericClassCreator"
             ]
         },
         {
@@ -2311,7 +2316,8 @@
             ],
             "extends": [
                 "jetbrains.mps.baseLanguage.Expression",
-                "jetbrains.mps.baseLanguage.IBinaryLike"
+                "jetbrains.mps.baseLanguage.IBinaryLike",
+                "jetbrains.mps.baseLanguage.IInferenceContextProvider"
             ]
         },
         {
@@ -2402,7 +2408,8 @@
                 "jetbrains.mps.lang.core.BaseConcept",
                 "jetbrains.mps.baseLanguage.ClassifierMember",
                 "jetbrains.mps.lang.core.INamedConcept",
-                "jetbrains.mps.lang.core.InterfacePart"
+                "jetbrains.mps.lang.core.InterfacePart",
+                "jetbrains.mps.baseLanguage.IInheritableFeature"
             ]
         },
         {
@@ -2619,7 +2626,9 @@
             ],
             "extends": [
                 "jetbrains.mps.baseLanguage.TypeDerivable",
-                "jetbrains.mps.baseLanguage.TypeAnnotable"
+                "jetbrains.mps.baseLanguage.TypeAnnotable",
+                "jetbrains.mps.baseLanguage.IInferenceContextProvider",
+                "jetbrains.mps.baseLanguage.IFixableMethodReference"
             ]
         },
         {
@@ -2769,7 +2778,8 @@
             ],
             "extends": [
                 "jetbrains.mps.baseLanguage.AbstractCreator",
-                "jetbrains.mps.baseLanguage.IMethodCall"
+                "jetbrains.mps.baseLanguage.IMethodCall",
+                "jetbrains.mps.baseLanguage.IGenericClassCreator"
             ]
         },
         {
@@ -2822,7 +2832,8 @@
             ],
             "extends": [
                 "jetbrains.mps.baseLanguage.Expression",
-                "jetbrains.mps.baseLanguage.IBinaryLike"
+                "jetbrains.mps.baseLanguage.IBinaryLike",
+                "jetbrains.mps.baseLanguage.IInferenceContextProvider"
             ]
         },
         {
@@ -3242,7 +3253,8 @@
             "properties": [
                 {
                     "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1225271546410/1225271546413",
-                    "name": "trimKind"
+                    "name": "trimKind",
+                    "type": "jetbrains.mps.baseLanguage.TrimKind"
                 }
             ],
             "children": [
@@ -4169,7 +4181,8 @@
                 "jetbrains.mps.baseLanguage.BaseMethodDeclaration",
                 "jetbrains.mps.baseLanguage.ClassifierMember",
                 "jetbrains.mps.lang.core.IResolveInfo",
-                "jetbrains.mps.lang.core.InterfacePart"
+                "jetbrains.mps.lang.core.InterfacePart",
+                "jetbrains.mps.lang.core.ISmartReferent"
             ]
         },
         {
@@ -4256,39 +4269,6 @@
             ],
             "extends": [
                 "jetbrains.mps.baseLanguage.CommentPart"
-            ]
-        },
-        {
-            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/6329021646629104954",
-            "name": "SingleLineComment",
-            "properties": [
-            ],
-            "children": [
-                {
-                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/6329021646629104954/6329021646629175155",
-                    "name": "commentPart",
-                    "type": "jetbrains.mps.baseLanguage.CommentPart",
-                    "multiple": true
-                },
-                {
-                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/6329021646629104954/1350122676458893092",
-                    "name": "text",
-                    "type": "jetbrains.mps.lang.text.Line",
-                    "multiple": true
-                },
-                {
-                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/6329021646629104954/8356039341262087992",
-                    "name": "line",
-                    "type": "jetbrains.mps.lang.text.Line"
-                }
-            ],
-            "references": [
-            ],
-            "extends": [
-                "jetbrains.mps.baseLanguage.Statement",
-                "jetbrains.mps.lang.core.ScopeProvider",
-                "jetbrains.mps.baseLanguage.IComment",
-                "jetbrains.mps.lang.core.IOldCommentContainer"
             ]
         },
         {
@@ -4562,7 +4542,8 @@
                 "jetbrains.mps.baseLanguage.TypeDerivable",
                 "jetbrains.mps.baseLanguage.TypeAnnotable",
                 "jetbrains.mps.baseLanguage.IVariableDeclaration",
-                "jetbrains.mps.lang.core.IResolveInfo"
+                "jetbrains.mps.lang.core.IResolveInfo",
+                "jetbrains.mps.baseLanguage.IInferenceContextProvider"
             ]
         },
         {
@@ -4653,9 +4634,20 @@
                 {
                     "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/3304084122476667220/3304084122476721463",
                     "name": "className"
+                },
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/3304084122476667220/1513279640923484827",
+                    "name": "inferTypeParameters",
+                    "type": "BOOLEAN"
                 }
             ],
             "children": [
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/3304084122476667220/1830784471015752322",
+                    "name": "typeParameter",
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "multiple": true
+                }
             ],
             "references": [
             ],
@@ -4875,7 +4867,8 @@
                 }
             ],
             "extends": [
-                "jetbrains.mps.baseLanguage.AbstractCreator"
+                "jetbrains.mps.baseLanguage.AbstractCreator",
+                "jetbrains.mps.baseLanguage.IGenericClassCreator"
             ]
         },
         {
@@ -5290,27 +5283,6 @@
             ]
         },
         {
-            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/1732176556423009631",
-            "name": "MultiLineComment",
-            "properties": [
-            ],
-            "children": [
-                {
-                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1732176556423009631/1732176556423038857",
-                    "name": "lines",
-                    "type": "jetbrains.mps.lang.text.Line",
-                    "multiple": true
-                }
-            ],
-            "references": [
-            ],
-            "extends": [
-                "jetbrains.mps.baseLanguage.Statement",
-                "jetbrains.mps.lang.core.ScopeProvider",
-                "jetbrains.mps.baseLanguage.IComment"
-            ]
-        },
-        {
             "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/8118189177080264853",
             "name": "AlternativeType",
             "properties": [
@@ -5547,6 +5519,252 @@
                 "jetbrains.mps.baseLanguage.IOperation",
                 "jetbrains.mps.baseLanguage.IMethodCall"
             ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/852005705577917641",
+            "name": "IInferenceContextProvider",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/6514227258532505652",
+            "name": "IFixableMethodReference",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/6469607165247384022",
+            "name": "IInferredExpression",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/7485977462274819189",
+            "name": "FormatOperation",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/7485977462274819189/7485977462274819664",
+                    "name": "arguments",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "multiple": true,
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.BaseStringOperation"
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/2811173755094579270",
+            "name": "IInheritableFeature",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.IVisible"
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/6329021646629104954",
+            "name": "SingleLineComment",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/6329021646629104954/6329021646629175155",
+                    "name": "commentPart",
+                    "type": "jetbrains.mps.baseLanguage.CommentPart",
+                    "multiple": true
+                },
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/6329021646629104954/1350122676458893092",
+                    "name": "text",
+                    "type": "jetbrains.mps.lang.text.Line",
+                    "multiple": true
+                },
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/6329021646629104954/8356039341262087992",
+                    "name": "line",
+                    "type": "jetbrains.mps.lang.text.Line"
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Statement",
+                "jetbrains.mps.lang.core.ScopeProvider",
+                "jetbrains.mps.baseLanguage.IComment",
+                "jetbrains.mps.lang.core.IOldCommentContainer"
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/1732176556423009631",
+            "name": "MultiLineComment",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1732176556423009631/1732176556423038857",
+                    "name": "lines",
+                    "type": "jetbrains.mps.lang.text.Line",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.Statement",
+                "jetbrains.mps.lang.core.ScopeProvider",
+                "jetbrains.mps.baseLanguage.IComment"
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/8014486391919243719",
+            "name": "IInferredType",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/1513279640883654088",
+            "name": "UnknownInstanceMethodCall",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1513279640883654088/1513279640883656453",
+                    "name": "operand",
+                    "type": "jetbrains.mps.baseLanguage.Expression",
+                    "optional": false
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.UnknownDotCall"
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/3579508212714039859",
+            "name": "InferredClassifierType",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ClassifierType",
+                "jetbrains.mps.baseLanguage.IInternalType",
+                "jetbrains.mps.baseLanguage.IInferredType"
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/1513279640923991009",
+            "name": "IGenericClassCreator",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1513279640923991009/1513279640906337053",
+                    "name": "inferTypeParams",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.IInferredExpression"
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/3427250979995031747",
+            "name": "ICustomConstructorReference",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+            ]
+        },
+        {
+            "uid": "mps:f3061a53-9226-4cc5-a443-f952ceaf5816/5464647624211461279",
+            "name": "EnumConstantCopyPasteOrigin",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/5464647624211461279/5464647624211463158",
+                    "name": "originalEnumConstant",
+                    "type": "jetbrains.mps.baseLanguage.EnumConstantDeclaration",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.NodeAttribute"
+            ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1225271514374",
+            "name": "jetbrains.mps.baseLanguage.TrimKind",
+            "members": [
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1225271514374/1225271514375",
+                    "name": "both"
+                },
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1225271514374/1225271514376",
+                    "name": "leading"
+                },
+                {
+                    "uid": "f3061a53-9226-4cc5-a443-f952ceaf5816/1225271514374/1225271514377",
+                    "name": "trailing"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

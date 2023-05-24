@@ -210,5 +210,7 @@
                 "jetbrains.mps.baseLanguage.IOperation"
             ]
         }
+    ],
+    "enums": [
     ]
 }

@@ -161,5 +161,7 @@
                 "jetbrains.mps.lang.test.generator.TestAssertion"
             ]
         }
+    ],
+    "enums": [
     ]
 }

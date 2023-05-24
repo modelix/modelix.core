@@ -27,7 +27,8 @@
             "properties": [
                 {
                     "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/2034914114981261497/2034914114981261751",
-                    "name": "severity"
+                    "name": "severity",
+                    "type": "jetbrains.mps.baseLanguage.logging.Severity"
                 }
             ],
             "children": [
@@ -56,7 +57,8 @@
             "properties": [
                 {
                     "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/6332851714983831325/6332851714983843871",
-                    "name": "severity"
+                    "name": "severity",
+                    "type": "jetbrains.mps.baseLanguage.logging.Severity"
                 }
             ],
             "children": [
@@ -96,6 +98,39 @@
             ],
             "extends": [
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/1167245107475",
+            "name": "jetbrains.mps.baseLanguage.logging.Severity",
+            "members": [
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/1167245107475/1167245107476",
+                    "name": "fatal"
+                },
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/1167245107475/1167245252932",
+                    "name": "error"
+                },
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/1167245107475/1167245264682",
+                    "name": "warn"
+                },
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/1167245107475/1167245288119",
+                    "name": "debug"
+                },
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/1167245107475/1169477928086",
+                    "name": "info"
+                },
+                {
+                    "uid": "760a0a8c-eabb-4521-8bfd-65db761a9ba3/1167245107475/1167245293010",
+                    "name": "trace"
+                }
+            ],
+            "defaultIndex": 3
         }
     ]
 }

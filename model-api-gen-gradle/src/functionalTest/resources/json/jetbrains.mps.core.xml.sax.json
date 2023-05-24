@@ -510,5 +510,7 @@
                 "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
             ]
         }
+    ],
+    "enums": [
     ]
 }

@@ -573,7 +573,8 @@
             "properties": [
                 {
                     "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1167514355419/1177959072138",
-                    "name": "keepSourceRoot"
+                    "name": "keepSourceRoot",
+                    "type": "jetbrains.mps.lang.sharedConcepts.Options_DefaultTrue"
                 }
             ],
             "children": [
@@ -796,7 +797,8 @@
             "properties": [
                 {
                     "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169670156577/1169670356567",
-                    "name": "messageType"
+                    "name": "messageType",
+                    "type": "jetbrains.mps.lang.generator.GeneratorMessageType"
                 },
                 {
                     "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169670156577/1169670173015",
@@ -953,7 +955,8 @@
             "properties": [
                 {
                     "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195499912406/1195595592106",
-                    "name": "scriptKind"
+                    "name": "scriptKind",
+                    "type": "jetbrains.mps.lang.generator.MappingScriptKind"
                 },
                 {
                     "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195499912406/1195595611951",
@@ -1014,6 +1017,11 @@
             "uid": "mps:b401a680-8325-4110-8fd3-84331ff25bef/1200911316486",
             "name": "MappingLabelDeclaration",
             "properties": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1200911316486/7556128013608567747",
+                    "name": "private",
+                    "type": "BOOLEAN"
+                }
             ],
             "children": [
             ],
@@ -2163,7 +2171,8 @@
             "properties": [
                 {
                     "uid": "b401a680-8325-4110-8fd3-84331ff25bef/2880994019885263148/1501378878163388321",
-                    "name": "variable"
+                    "name": "variable",
+                    "type": "jetbrains.mps.lang.generator.LoopMacroVariable"
                 }
             ],
             "children": [
@@ -2260,6 +2269,57 @@
             "extends": [
                 "jetbrains.mps.lang.core.BaseConcept"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169670215797",
+            "name": "jetbrains.mps.lang.generator.GeneratorMessageType",
+            "members": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169670215797/1169670215798",
+                    "name": "info"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169670215797/1169670280596",
+                    "name": "warning"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1169670215797/1169670287832",
+                    "name": "error"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195595264961",
+            "name": "jetbrains.mps.lang.generator.MappingScriptKind",
+            "members": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195595264961/1195595264962",
+                    "name": "pre_processing"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1195595264961/1195595382324",
+                    "name": "post_processing"
+                }
+            ],
+            "defaultIndex": 1
+        },
+        {
+            "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1501378878163388316",
+            "name": "jetbrains.mps.lang.generator.LoopMacroVariable",
+            "members": [
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1501378878163388316/1501378878163388317",
+                    "name": "inputNode"
+                },
+                {
+                    "uid": "b401a680-8325-4110-8fd3-84331ff25bef/1501378878163388316/1501378878163388318",
+                    "name": "index"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

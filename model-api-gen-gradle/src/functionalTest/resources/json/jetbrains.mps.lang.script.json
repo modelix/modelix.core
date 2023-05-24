@@ -20,7 +20,8 @@
                 },
                 {
                     "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821/5299416737274925395",
-                    "name": "type"
+                    "name": "type",
+                    "type": "jetbrains.mps.lang.script.ScriptType"
                 },
                 {
                     "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/1177457067821/5299416737274925397",
@@ -351,6 +352,23 @@
             "extends": [
                 "jetbrains.mps.lang.script.AbstractMethodSpecification"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5299416737274925392",
+            "name": "jetbrains.mps.lang.script.ScriptType",
+            "members": [
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5299416737274925392/5299416737274925393",
+                    "name": "enhancement"
+                },
+                {
+                    "uid": "0eddeefa-c2d6-4437-bc2c-de50fd4ce470/5299416737274925392/5299416737274925394",
+                    "name": "migration"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

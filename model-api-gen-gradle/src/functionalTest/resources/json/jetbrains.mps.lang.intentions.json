@@ -76,7 +76,8 @@
                 {
                     "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/1240316299033/1240393479918",
                     "name": "paramType",
-                    "type": "jetbrains.mps.baseLanguage.Type"
+                    "type": "jetbrains.mps.baseLanguage.Type",
+                    "optional": false
                 }
             ],
             "references": [
@@ -107,7 +108,8 @@
                 {
                     "uid": "d7a92d38-f7db-40d0-8431-763b0c3c9f20/1240395258925/1240395532443",
                     "name": "queryFunction",
-                    "type": "jetbrains.mps.lang.intentions.QueryBlock"
+                    "type": "jetbrains.mps.lang.intentions.QueryBlock",
+                    "optional": false
                 }
             ],
             "references": [
@@ -322,5 +324,7 @@
             "extends": [
             ]
         }
+    ],
+    "enums": [
     ]
 }

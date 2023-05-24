@@ -380,7 +380,8 @@
             "properties": [
                 {
                     "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853369165/779128492853699361",
-                    "name": "side"
+                    "name": "side",
+                    "type": "jetbrains.mps.lang.core.SideTransformSide"
                 },
                 {
                     "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853369165/779128492853934523",
@@ -645,6 +646,23 @@
             "extends": [
                 "jetbrains.mps.lang.core.BaseConcept"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853700076",
+            "name": "jetbrains.mps.lang.core.SideTransformSide",
+            "members": [
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853700076/779128492853700077",
+                    "name": "right"
+                },
+                {
+                    "uid": "ceab5195-25ea-4f22-9b92-103b95ca8c0c/779128492853700076/779128492853702223",
+                    "name": "left"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

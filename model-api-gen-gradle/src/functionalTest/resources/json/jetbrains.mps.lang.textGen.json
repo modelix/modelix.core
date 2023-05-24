@@ -743,5 +743,7 @@
                 "jetbrains.mps.lang.textGen.FilePathSpec"
             ]
         }
+    ],
+    "enums": [
     ]
 }

@@ -186,6 +186,12 @@
                     "name": "depGenerators",
                     "type": "jetbrains.mps.lang.project.ModuleReference",
                     "multiple": true
+                },
+                {
+                    "uid": "86ef8290-12bb-4ca7-947f-093788f263a9/6370754048397540897/1904102717222527510",
+                    "name": "employedGenerators",
+                    "type": "jetbrains.mps.lang.project.ModuleReference",
+                    "multiple": true
                 }
             ],
             "references": [
@@ -293,7 +299,8 @@
             "properties": [
                 {
                     "uid": "86ef8290-12bb-4ca7-947f-093788f263a9/6370754048397540920/6370754048397540925",
-                    "name": "type"
+                    "name": "type",
+                    "type": "jetbrains.mps.lang.project.RuleType"
                 }
             ],
             "children": [
@@ -519,6 +526,35 @@
             "extends": [
                 "jetbrains.mps.lang.core.BaseConcept"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "86ef8290-12bb-4ca7-947f-093788f263a9/6370754048397540921",
+            "name": "jetbrains.mps.lang.project.RuleType",
+            "members": [
+                {
+                    "uid": "86ef8290-12bb-4ca7-947f-093788f263a9/6370754048397540921/6370754048397540922",
+                    "name": "strictly_before"
+                },
+                {
+                    "uid": "86ef8290-12bb-4ca7-947f-093788f263a9/6370754048397540921/6370754048397540923",
+                    "name": "strictly_together"
+                },
+                {
+                    "uid": "86ef8290-12bb-4ca7-947f-093788f263a9/6370754048397540921/6370754048397540924",
+                    "name": "before_or_together"
+                },
+                {
+                    "uid": "86ef8290-12bb-4ca7-947f-093788f263a9/6370754048397540921/2643213347103734302",
+                    "name": "after_or_together"
+                },
+                {
+                    "uid": "86ef8290-12bb-4ca7-947f-093788f263a9/6370754048397540921/2643213347103734303",
+                    "name": "strictly_after"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

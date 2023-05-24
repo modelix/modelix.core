@@ -75,5 +75,7 @@
                 "jetbrains.mps.lang.editor.IExtensibleTransformationMenuPart"
             ]
         }
+    ],
+    "enums": [
     ]
 }

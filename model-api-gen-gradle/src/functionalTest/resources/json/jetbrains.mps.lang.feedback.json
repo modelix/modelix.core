@@ -22,5 +22,7 @@
                 "jetbrains.mps.lang.feedback.skeleton.FeedbackRootMember"
             ]
         }
+    ],
+    "enums": [
     ]
 }

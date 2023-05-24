@@ -477,7 +477,8 @@
                 },
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1207318242772/6785623076777470797",
-                    "name": "change"
+                    "name": "change",
+                    "type": "jetbrains.mps.lang.plugin.KeyMapChange"
                 }
             ],
             "children": [
@@ -1006,7 +1007,8 @@
             "properties": [
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166197/1562714432501166281",
-                    "name": "keymap"
+                    "name": "keymap",
+                    "type": "jetbrains.mps.lang.plugin.Keymap"
                 },
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166197/8646726056720906098",
@@ -1076,7 +1078,8 @@
             "properties": [
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/6193305307616734266/617467876802702218",
-                    "name": "change"
+                    "name": "change",
+                    "type": "jetbrains.mps.lang.plugin.KeyMapChange"
                 }
             ],
             "children": [
@@ -1185,7 +1188,8 @@
                 },
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/6547237850567458268/2498620720770664572",
-                    "name": "position"
+                    "name": "position",
+                    "type": "jetbrains.mps.lang.plugin.ToolPosition"
                 },
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/6547237850567458268/6547237850567462766",
@@ -1762,11 +1766,17 @@
                 },
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1203071646776/7458746815261976739",
-                    "name": "requiredAccess"
+                    "name": "requiredAccess",
+                    "type": "jetbrains.mps.lang.plugin.ActionAccess"
                 },
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1203071646776/997079742910640235",
                     "name": "fillActionContext",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1203071646776/4692598989365753297",
+                    "name": "updateInBackground",
                     "type": "BOOLEAN"
                 }
             ],
@@ -2319,7 +2329,8 @@
             "properties": [
                 {
                     "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/471625927503603120/471625927503603126",
-                    "name": "keymap"
+                    "name": "keymap",
+                    "type": "jetbrains.mps.lang.plugin.Keymap"
                 }
             ],
             "children": [
@@ -2363,6 +2374,100 @@
             "extends": [
                 "jetbrains.mps.lang.core.BaseConcept"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166200",
+            "name": "jetbrains.mps.lang.plugin.Keymap",
+            "members": [
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166200/1562714432501166201",
+                    "name": "Mac_OS_X"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166200/3121818631993380487",
+                    "name": "Mac_OS_X_Plus"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166200/1911082874216608560",
+                    "name": "XWin"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166200/1911082874216608561",
+                    "name": "GNOME"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166200/1911082874216608562",
+                    "name": "KDE"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/1562714432501166200/2443880313834664128",
+                    "name": "Default"
+                }
+            ],
+            "defaultIndex": 5
+        },
+        {
+            "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/2498620720770664567",
+            "name": "jetbrains.mps.lang.plugin.ToolPosition",
+            "members": [
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/2498620720770664567/2498620720770664568",
+                    "name": "BOTTOM"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/2498620720770664567/2498620720770664569",
+                    "name": "TOP"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/2498620720770664567/2498620720770664570",
+                    "name": "LEFT"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/2498620720770664567/2498620720770664571",
+                    "name": "RIGHT"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/6785623076777453160",
+            "name": "jetbrains.mps.lang.plugin.KeyMapChange",
+            "members": [
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/6785623076777453160/6785623076777453161",
+                    "name": "replace_all"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/6785623076777453160/6785623076777453162",
+                    "name": "remove"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/7458746815261976630",
+            "name": "jetbrains.mps.lang.plugin.ActionAccess",
+            "members": [
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/7458746815261976630/7458746815261976631",
+                    "name": "command"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/7458746815261976630/7458746815261976632",
+                    "name": "none"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/7458746815261976630/7458746815261976720",
+                    "name": "read"
+                },
+                {
+                    "uid": "28f9e497-3b42-4291-aeba-0a1039153ab1/7458746815261976630/7458746815261976724",
+                    "name": "editorCommand"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

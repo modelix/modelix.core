@@ -483,7 +483,8 @@
             "properties": [
                 {
                     "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1176558773329/4614734314076988359",
-                    "name": "strong"
+                    "name": "strong",
+                    "type": "jetbrains.mps.lang.typesystem.InequalityProperty"
                 }
             ],
             "children": [
@@ -611,7 +612,8 @@
             "properties": [
                 {
                     "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1178870617262/7739208407757214262",
-                    "name": "strong"
+                    "name": "strong",
+                    "type": "jetbrains.mps.lang.typesystem.InequalityProperty"
                 }
             ],
             "children": [
@@ -1076,7 +1078,8 @@
             "properties": [
                 {
                     "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056081426/1212056105818",
-                    "name": "inequationPriority"
+                    "name": "inequationPriority",
+                    "type": "jetbrains.mps.lang.typesystem.InequationPriority"
                 },
                 {
                     "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056081426/4778346850551686273",
@@ -1084,11 +1087,13 @@
                 },
                 {
                     "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056081426/7739208407757103785",
-                    "name": "strong"
+                    "name": "strong",
+                    "type": "jetbrains.mps.lang.typesystem.InequalityProperty"
                 },
                 {
                     "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056081426/7739208407757103786",
-                    "name": "orientation"
+                    "name": "orientation",
+                    "type": "jetbrains.mps.lang.typesystem.InequalityProperty"
                 }
             ],
             "children": [
@@ -2281,6 +2286,54 @@
                 "jetbrains.mps.baseLanguage.Statement",
                 "jetbrains.mps.lang.typesystem.MessageStatement"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/7739208407757103780",
+            "name": "jetbrains.mps.lang.typesystem.InequalityProperty",
+            "members": [
+                {
+                    "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/7739208407757103780/7739208407757103781",
+                    "name": "as_is"
+                },
+                {
+                    "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/7739208407757103780/7739208407757103782",
+                    "name": "same_as_inequality"
+                },
+                {
+                    "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/7739208407757103780/7739208407757103783",
+                    "name": "opposite_to_inequality"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056179025",
+            "name": "jetbrains.mps.lang.typesystem.InequationPriority",
+            "members": [
+                {
+                    "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056179025/1212056179026",
+                    "name": "_0"
+                },
+                {
+                    "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056179025/1212056190371",
+                    "name": "_1"
+                },
+                {
+                    "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056179025/1212056192028",
+                    "name": "_2"
+                },
+                {
+                    "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056179025/1212056204513",
+                    "name": "_3"
+                },
+                {
+                    "uid": "7a5dda62-9140-4668-ab76-d5ed1746f2b2/1212056179025/1212056211202",
+                    "name": "inf"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

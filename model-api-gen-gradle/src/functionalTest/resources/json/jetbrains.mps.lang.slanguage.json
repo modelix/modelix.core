@@ -66,5 +66,7 @@
                 "jetbrains.mps.lang.smodel.query.OperationHelpProvider"
             ]
         }
+    ],
+    "enums": [
     ]
 }

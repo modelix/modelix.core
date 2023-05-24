@@ -808,7 +808,8 @@
             "references": [
             ],
             "extends": [
-                "jetbrains.mps.baseLanguage.collections.SequenceOperation"
+                "jetbrains.mps.baseLanguage.collections.SequenceOperation",
+                "jetbrains.mps.baseLanguage.IInferenceContextProvider"
             ]
         },
         {
@@ -1661,7 +1662,8 @@
             "properties": [
                 {
                     "uid": "83888646-71ce-4f1c-9c53-c54016f6ad4f/1240216724530/1240219919705",
-                    "name": "order"
+                    "name": "order",
+                    "type": "jetbrains.mps.baseLanguage.collections.LinkedHashMapOrder"
                 }
             ],
             "children": [
@@ -2871,6 +2873,23 @@
             "extends": [
                 "jetbrains.mps.baseLanguage.collections.NoArgumentsSequenceOperation"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "83888646-71ce-4f1c-9c53-c54016f6ad4f/1240219850850",
+            "name": "jetbrains.mps.baseLanguage.collections.LinkedHashMapOrder",
+            "members": [
+                {
+                    "uid": "83888646-71ce-4f1c-9c53-c54016f6ad4f/1240219850850/1240219850851",
+                    "name": "insertion_order"
+                },
+                {
+                    "uid": "83888646-71ce-4f1c-9c53-c54016f6ad4f/1240219850850/1240219896671",
+                    "name": "access_order"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

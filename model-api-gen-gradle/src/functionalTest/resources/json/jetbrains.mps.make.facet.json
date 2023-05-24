@@ -60,7 +60,8 @@
             "properties": [
                 {
                     "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/1675547159918562088",
-                    "name": "resourcesPolicy"
+                    "name": "resourcesPolicy",
+                    "type": "jetbrains.mps.make.facet.ResourcesPolicy"
                 },
                 {
                     "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029565/7219266275016360389",
@@ -121,7 +122,8 @@
             "properties": [
                 {
                     "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/6418371274763029600/8351679702044326377",
-                    "name": "qualifier"
+                    "name": "qualifier",
+                    "type": "jetbrains.mps.make.facet.TargetDependencyQualifier"
                 }
             ],
             "children": [
@@ -408,6 +410,54 @@
             "extends": [
                 "jetbrains.mps.baseLanguage.Expression"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/8351679702044326370",
+            "name": "jetbrains.mps.make.facet.TargetDependencyQualifier",
+            "members": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/8351679702044326370/8351679702044326371",
+                    "name": "BEFORE"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/8351679702044326370/8351679702044326373",
+                    "name": "NOT_BEFORE"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/8351679702044326370/8351679702044326374",
+                    "name": "AFTER"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/8351679702044326370/8351679702044326375",
+                    "name": "NOT_AFTER"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/1675547159918562083",
+            "name": "jetbrains.mps.make.facet.ResourcesPolicy",
+            "members": [
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/1675547159918562083/1675547159918562084",
+                    "name": "TRANSFORM"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/1675547159918562083/1675547159918562085",
+                    "name": "PASSTHRU"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/1675547159918562083/1675547159918562086",
+                    "name": "CONSUME"
+                },
+                {
+                    "uid": "696c1165-4a59-463b-bc5d-902caab85dd0/1675547159918562083/1675547159918562087",
+                    "name": "PRODUCE"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

@@ -221,5 +221,7 @@
                 "jetbrains.mps.baseLanguage.Expression"
             ]
         }
+    ],
+    "enums": [
     ]
 }

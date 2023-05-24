@@ -514,5 +514,7 @@
                 "jetbrains.mps.baseLanguage.builders.BaseSimpleBuilderDeclaration"
             ]
         }
+    ],
+    "enums": [
     ]
 }

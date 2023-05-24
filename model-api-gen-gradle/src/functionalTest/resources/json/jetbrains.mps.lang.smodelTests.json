@@ -236,11 +236,13 @@
             "properties": [
                 {
                     "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/7060593544921608929/7060593544921608930",
-                    "name": "enumWithDefault"
+                    "name": "enumWithDefault",
+                    "type": "jetbrains.mps.lang.smodelTests.TestEnum_WithDefault"
                 },
                 {
                     "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/7060593544921608929/7060593544921608932",
-                    "name": "enumWODefault"
+                    "name": "enumWODefault",
+                    "type": "jetbrains.mps.lang.smodelTests.TestEnum_WODefault"
                 }
             ],
             "children": [
@@ -250,6 +252,57 @@
             "extends": [
                 "jetbrains.mps.lang.core.BaseConcept"
             ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/6196114570310929906",
+            "name": "jetbrains.mps.lang.smodelTests.TestEnum_WODefault",
+            "members": [
+                {
+                    "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/6196114570310929906/7060593544921608925",
+                    "name": "name_1"
+                },
+                {
+                    "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/6196114570310929906/7060593544921608926",
+                    "name": "name_2"
+                }
+            ],
+            "defaultIndex": 0
+        },
+        {
+            "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/6196114570310929855",
+            "name": "jetbrains.mps.lang.smodelTests.TestEnum_WithDefault",
+            "members": [
+                {
+                    "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/6196114570310929855/1322863731089346298",
+                    "name": "name_1"
+                },
+                {
+                    "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/6196114570310929855/1322863731089346299",
+                    "name": "name_2_def"
+                }
+            ],
+            "defaultIndex": 1
+        },
+        {
+            "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/7978163097785975058",
+            "name": "jetbrains.mps.lang.smodelTests.TestEnum_Switch",
+            "members": [
+                {
+                    "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/7978163097785975058/7978163097785975059",
+                    "name": "option1"
+                },
+                {
+                    "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/7978163097785975058/7978163097785975060",
+                    "name": "option2"
+                },
+                {
+                    "uid": "b02ae39f-4c16-4545-8dfa-88df16804e7e/7978163097785975058/7978163097785975063",
+                    "name": "option3"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

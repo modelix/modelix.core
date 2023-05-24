@@ -437,5 +437,7 @@
                 "jetbrains.mps.baseLanguage.Statement"
             ]
         }
+    ],
+    "enums": [
     ]
 }

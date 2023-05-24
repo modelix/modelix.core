@@ -68,5 +68,7 @@
                 "jetbrains.mps.lang.editor.EditorCellModel"
             ]
         }
+    ],
+    "enums": [
     ]
 }

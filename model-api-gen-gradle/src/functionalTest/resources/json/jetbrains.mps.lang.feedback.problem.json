@@ -57,5 +57,7 @@
                 "jetbrains.mps.lang.core.ScopeProvider"
             ]
         }
+    ],
+    "enums": [
     ]
 }

@@ -143,5 +143,7 @@
                 "jetbrains.mps.lang.access.BaseExecuteCommandStatementSync"
             ]
         }
+    ],
+    "enums": [
     ]
 }

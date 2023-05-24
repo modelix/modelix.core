@@ -43,5 +43,7 @@
                 "jetbrains.mps.lang.core.InterfacePart"
             ]
         }
+    ],
+    "enums": [
     ]
 }

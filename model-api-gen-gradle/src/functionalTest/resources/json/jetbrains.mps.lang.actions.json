@@ -512,6 +512,40 @@
             ],
             "extends": [
             ]
+        },
+        {
+            "uid": "mps:aee9cad2-acd4-4608-aef2-0004f6a1cdbd/1603192173021968503",
+            "name": "NodeSetupFunction_Index",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.ConceptFunctionParameter"
+            ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "aee9cad2-acd4-4608-aef2-0004f6a1cdbd/1215604970641",
+            "name": "jetbrains.mps.lang.actions.Side",
+            "members": [
+                {
+                    "uid": "aee9cad2-acd4-4608-aef2-0004f6a1cdbd/1215604970641/1215604970642",
+                    "name": "right"
+                },
+                {
+                    "uid": "aee9cad2-acd4-4608-aef2-0004f6a1cdbd/1215604970641/1215605024347",
+                    "name": "left"
+                },
+                {
+                    "uid": "aee9cad2-acd4-4608-aef2-0004f6a1cdbd/1215604970641/3609453419537306772",
+                    "name": "both_sides"
+                }
+            ],
+            "defaultIndex": 0
         }
     ]
 }

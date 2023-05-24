@@ -218,5 +218,7 @@
                 "jetbrains.mps.baseLanguage.classifiers.IClassifier"
             ]
         }
+    ],
+    "enums": [
     ]
 }

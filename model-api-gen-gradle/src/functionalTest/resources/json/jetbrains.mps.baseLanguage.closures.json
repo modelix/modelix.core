@@ -117,7 +117,8 @@
             "references": [
             ],
             "extends": [
-                "jetbrains.mps.baseLanguage.Expression"
+                "jetbrains.mps.baseLanguage.Expression",
+                "jetbrains.mps.baseLanguage.closures.IIncompatibleWithJavaLambda"
             ]
         },
         {
@@ -136,7 +137,8 @@
             "references": [
             ],
             "extends": [
-                "jetbrains.mps.baseLanguage.Statement"
+                "jetbrains.mps.baseLanguage.Statement",
+                "jetbrains.mps.baseLanguage.closures.IIncompatibleWithJavaLambda"
             ]
         },
         {
@@ -229,7 +231,8 @@
             "references": [
             ],
             "extends": [
-                "jetbrains.mps.baseLanguage.Statement"
+                "jetbrains.mps.baseLanguage.Statement",
+                "jetbrains.mps.baseLanguage.closures.IIncompatibleWithJavaLambda"
             ]
         },
         {
@@ -372,8 +375,51 @@
             ],
             "extends": [
                 "jetbrains.mps.baseLanguage.closures.FunctionType",
-                "jetbrains.mps.baseLanguage.IInternalType"
+                "jetbrains.mps.baseLanguage.IInternalType",
+                "jetbrains.mps.baseLanguage.IInferredType"
+            ]
+        },
+        {
+            "uid": "mps:fd392034-7849-419d-9071-12563d152375/2524418899405758586",
+            "name": "InferredClosureParameterDeclaration",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.closures.UnboundClosureParameterDeclaration",
+                "jetbrains.mps.baseLanguage.IInferredExpression"
+            ]
+        },
+        {
+            "uid": "mps:fd392034-7849-419d-9071-12563d152375/8992394414545679616",
+            "name": "ClosureVarType",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.baseLanguage.UndefinedType"
+            ]
+        },
+        {
+            "uid": "mps:fd392034-7849-419d-9071-12563d152375/8621757076157993699",
+            "name": "IIncompatibleWithJavaLambda",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
             ]
         }
+    ],
+    "enums": [
     ]
 }

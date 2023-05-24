@@ -13,24 +13,6 @@
  */
 package org.modelix.metamodel
 
-import org.modelix.model.data.PropertyType
-
-fun PropertyType.getSerializer(optional: Boolean): IPropertyValueSerializer<*> {
-    return if (optional) {
-        when (this) {
-            PropertyType.STRING -> OptionalStringPropertySerializer
-            PropertyType.BOOLEAN -> OptionalBooleanPropertySerializer
-            PropertyType.INT -> OptionalIntPropertySerializer
-        }
-    } else {
-        when (this) {
-            PropertyType.STRING -> MandatoryStringPropertySerializer
-            PropertyType.BOOLEAN -> MandatoryBooleanPropertySerializer
-            PropertyType.INT -> MandatoryIntPropertySerializer
-        }
-    }
-}
-
 interface IPropertyValueSerializer<ValueT> {
     fun serialize(value: ValueT): String?
     fun deserialize(serialized: String?): ValueT
@@ -95,3 +77,24 @@ object OptionalIntPropertySerializer : IPropertyValueSerializer<Int?> {
         return serialized?.toInt()
     }
 }
+
+class MandatoryEnumSerializer<E : Enum<*>>(private val valueOf: (String?) -> E) : IPropertyValueSerializer<E> {
+    override fun serialize(value: E): String {
+        return value.name
+    }
+
+    override fun deserialize(serialized: String?): E {
+        return valueOf(serialized)
+    }
+}
+
+class OptionalEnumSerializer<E : Enum<*>>(private val valueOf: (String?) -> E?) : IPropertyValueSerializer<Enum<*>?> {
+    override fun serialize(value: Enum<*>?): String? {
+        return value?.name
+    }
+
+    override fun deserialize(serialized: String?): Enum<*>? {
+        return serialized?.let { valueOf(serialized) }
+    }
+}
+

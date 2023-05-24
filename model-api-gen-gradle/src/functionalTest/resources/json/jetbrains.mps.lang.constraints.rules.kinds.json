@@ -23,5 +23,7 @@
                 "jetbrains.mps.lang.core.INamedConcept"
             ]
         }
+    ],
+    "enums": [
     ]
 }

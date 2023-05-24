@@ -94,5 +94,7 @@
                 "jetbrains.mps.lang.editor.forms.AbstractCheckboxUI"
             ]
         }
+    ],
+    "enums": [
     ]
 }

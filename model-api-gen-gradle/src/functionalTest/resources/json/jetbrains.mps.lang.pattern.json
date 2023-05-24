@@ -646,5 +646,7 @@
                 "jetbrains.mps.baseLanguage.QualifiedReference"
             ]
         }
+    ],
+    "enums": [
     ]
 }

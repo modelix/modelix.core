@@ -71,5 +71,7 @@
                 "jetbrains.mps.core.properties.PropertiesLine"
             ]
         }
+    ],
+    "enums": [
     ]
 }

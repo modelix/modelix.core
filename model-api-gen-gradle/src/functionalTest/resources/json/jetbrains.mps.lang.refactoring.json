@@ -809,5 +809,34 @@
                 "jetbrains.mps.lang.refactoring.ContextMemberOperation"
             ]
         }
+    ],
+    "enums": [
+        {
+            "uid": "3ecd7c84-cde3-45de-886c-135ecc69b742/1209559274358",
+            "name": "jetbrains.mps.lang.refactoring.RefactoringTargetKind_Enum",
+            "members": [
+                {
+                    "uid": "3ecd7c84-cde3-45de-886c-135ecc69b742/1209559274358/1209559274359",
+                    "name": "node"
+                },
+                {
+                    "uid": "3ecd7c84-cde3-45de-886c-135ecc69b742/1209559274358/1209559325846",
+                    "name": "model"
+                },
+                {
+                    "uid": "3ecd7c84-cde3-45de-886c-135ecc69b742/1209559274358/1210084441783",
+                    "name": "language"
+                },
+                {
+                    "uid": "3ecd7c84-cde3-45de-886c-135ecc69b742/1209559274358/1210084444144",
+                    "name": "solution"
+                },
+                {
+                    "uid": "3ecd7c84-cde3-45de-886c-135ecc69b742/1209559274358/1210084445238",
+                    "name": "devkit"
+                }
+            ],
+            "defaultIndex": 0
+        }
     ]
 }

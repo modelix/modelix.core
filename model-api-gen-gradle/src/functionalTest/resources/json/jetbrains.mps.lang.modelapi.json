@@ -171,5 +171,7 @@
                 "jetbrains.mps.lang.modelapi.NodeIdentity"
             ]
         }
+    ],
+    "enums": [
     ]
 }

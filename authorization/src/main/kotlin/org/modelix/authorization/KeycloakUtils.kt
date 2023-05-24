@@ -18,6 +18,7 @@ import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.google.common.cache.CacheBuilder
+import org.keycloak.authorization.client.AuthorizationDeniedException
 import org.keycloak.authorization.client.AuthzClient
 import org.keycloak.authorization.client.Configuration
 import org.keycloak.authorization.client.resource.ProtectedResource
@@ -56,7 +57,7 @@ object KeycloakUtils {
 
     private val permissionCache = CacheBuilder.newBuilder()
         .expireAfterWrite(30, TimeUnit.SECONDS)
-        .build<String, List<Permission>>()
+        .build<Pair<Pair<DecodedJWT, KeycloakResource>, KeycloakScope>, Boolean>()
     private val existingResources = CacheBuilder.newBuilder()
         .expireAfterWrite(3, TimeUnit.MINUTES)
         .build<String, ResourceRepresentation>()
@@ -90,44 +91,61 @@ object KeycloakUtils {
         }
     }
 
-    @Synchronized
-    fun getPermissions(accessToken: DecodedJWT): List<Permission> {
-        return permissionCache.get(accessToken.token) { queryPermissions(accessToken) }
-    }
-
     fun getServiceAccountToken(): DecodedJWT {
         return JWT.decode(authzClient.obtainAccessToken().token)
     }
 
-    private fun queryPermissions(token: DecodedJWT): List<Permission> {
+    private fun isAccessToken(token: DecodedJWT): Boolean {
+        val authClaim = token.getClaim("authorization")
+        return !(authClaim.isNull || authClaim.isMissing)
+    }
+
+    private fun readPermissions(token: DecodedJWT): List<Permission> {
+        require(isAccessToken(token)) { "Not an access token: ${token.token}" }
         try {
-            val rpt = if (token.getClaim("authorization").isNull) {
-                // The token was probably created by the OAuth proxy after login.
-                // The token contains no permission information yet. Query them from keycloak.
-                authzClient.authorization(token.token).authorize(AuthorizationRequest()).token
-            } else {
-                // The token was probably created using KeycloakUtils.createToken
-                token.token
-            }
+            val rpt = token.token
             val introspect = authzClient.protection().introspectRequestingPartyToken(rpt)
-            return introspect.permissions
+            return introspect.permissions ?: emptyList()
         } catch (e: Exception) {
             throw RuntimeException("Can't get permissions for token: ${token.token}", e)
         }
     }
 
+    private fun createAccessToken(identityToken: DecodedJWT, permissions: List<Pair<String, List<String>>>): DecodedJWT {
+        return JWT.decode(authzClient.authorization(identityToken.token).authorize(AuthorizationRequest().also {
+            for (permission in permissions) {
+                it.addPermission(permission.first, permission.second)
+            }
+        }).token)
+    }
+
     @Synchronized
-    fun hasPermission(accessToken: DecodedJWT, resourceSpec: KeycloakResource, scope: KeycloakScope): Boolean {
-        ensureResourcesExists(resourceSpec, accessToken)
-        val allPermissions = getPermissions(accessToken)
-        val forResource = allPermissions.filter { it.resourceName == resourceSpec.name }
-        if (forResource.isEmpty()) return false
-        val scopes: Set<String> = forResource.mapNotNull { it.scopes }.flatten().toSet()
-        if (scopes.isEmpty()) {
-            // If the permissions are not restricted to any scope we assume they are valid for all scopes.
-            return true
+    fun hasPermission(identityOrAccessToken: DecodedJWT, resourceSpec: KeycloakResource, scope: KeycloakScope): Boolean {
+        val key = identityOrAccessToken to resourceSpec to scope
+        return permissionCache.get(key) { checkPermission(identityOrAccessToken, resourceSpec, scope) }
+    }
+
+    private fun checkPermission(identityOrAccessToken: DecodedJWT, resourceSpec: KeycloakResource, scope: KeycloakScope): Boolean {
+        ensureResourcesExists(resourceSpec, identityOrAccessToken)
+
+        if (isAccessToken(identityOrAccessToken)) {
+            val grantedPermissions = readPermissions(identityOrAccessToken)
+            val forResource = grantedPermissions.filter { it.resourceName == resourceSpec.name }
+            if (forResource.isEmpty()) return false
+            val scopes: Set<String> = forResource.mapNotNull { it.scopes }.flatten().toSet()
+            if (scopes.isEmpty()) {
+                // If the permissions are not restricted to any scope we assume they are valid for all scopes.
+                return true
+            }
+            return scopes.contains(scope.name)
+        } else {
+            return try {
+                createAccessToken(identityOrAccessToken, listOf(resourceSpec.name to listOf(scope.name)))
+                true
+            } catch (_: AuthorizationDeniedException) {
+                false
+            }
         }
-        return scopes.contains(scope.name)
     }
 
     @Synchronized

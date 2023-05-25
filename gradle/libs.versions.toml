@@ -14,7 +14,7 @@ gitVersion = { id = "com.palantir.git-version", version = "3.0.0" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "11.3.2" }
 spotless = { id = "com.diffplug.spotless", version = "6.18.0" }
 tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
-modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.0.11" }
+modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.1.0" }
 
 [versions]
 

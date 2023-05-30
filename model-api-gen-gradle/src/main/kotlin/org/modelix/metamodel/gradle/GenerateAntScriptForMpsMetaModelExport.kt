@@ -6,26 +6,31 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.*
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.TaskAction
 import java.util.*
 import javax.inject.Inject
 
+@CacheableTask
 abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: ObjectFactory) : DefaultTask() {
     @get:InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     val mpsHome: DirectoryProperty = of.directoryProperty()
+
     @get:OutputFile
     val antScriptFile: RegularFileProperty = of.fileProperty()
+
     @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     val exporterDir: Property<String> = of.property(String::class.java)
+
     @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
     val moduleFolders: ListProperty<String> = of.listProperty(String::class.java)
+
     @Input
     val heapSize: Property<String> = of.property(String::class.java)
+
     @Input
     @Optional
     val exportModulesFilter: Property<String> = of.property(String::class.java)

@@ -1,7 +1,6 @@
 = Gradle Plugin for the Model API Generator
 :navtitle: `model-api-gen-gradle`
 
-
 :tip-caption: 🔗 Quick Links
 [TIP]
 --

@@ -31,3 +31,14 @@ gradlePlugin {
         implementationClass = "org.modelix.metamodel.gradle.MetaModelGradlePlugin"
     }
 }
+
+val writeVersionFile by tasks.registering {
+    val propertiesFile = projectDir.resolve("src/main/resources/modelix.core.version.properties")
+    propertiesFile.parentFile.mkdirs()
+    propertiesFile.writeText("""
+        modelix.core.version=$version
+    """.trimIndent())
+}
+tasks.named("processResources") {
+    dependsOn(writeVersionFile)
+}

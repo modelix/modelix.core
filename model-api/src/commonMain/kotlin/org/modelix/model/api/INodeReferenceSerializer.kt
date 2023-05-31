@@ -2,9 +2,25 @@ package org.modelix.model.api
 
 import kotlin.reflect.KClass
 
+/**
+ * Serializer for [INodeReference]s.
+ */
 interface INodeReferenceSerializer {
 
+    /**
+     * Serializes the given node reference.
+     *
+     * @param ref the node reference to be serialized
+     * @return node reference as serialized string
+     */
     fun serialize(ref: INodeReference): String?
+
+    /**
+     * Deserializes the given string, which represents a serialized node reference.
+     *
+     * @param string the node reference in serialized form
+     * @return deserialized node reference
+     */
     fun deserialize(serialized: String): INodeReference?
 
     companion object {

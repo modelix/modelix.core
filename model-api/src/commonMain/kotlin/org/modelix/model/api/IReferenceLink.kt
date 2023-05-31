@@ -15,4 +15,7 @@
 
 package org.modelix.model.api
 
+/**
+ * Representation of a non-containment reference link between [IConcept]s.
+ */
 interface IReferenceLink : ILink

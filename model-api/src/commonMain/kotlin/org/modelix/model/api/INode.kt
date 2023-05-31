@@ -17,37 +17,167 @@ package org.modelix.model.api
 
 import org.modelix.model.area.IArea
 
+/**
+ * Representation of a model element.
+ */
 interface INode {
+
+    /**
+     * Returns the area of which this node is part of.
+     */
     fun getArea(): IArea
     val isValid: Boolean
+
+    /**
+     * Reference targeting this node.
+     */
     val reference: INodeReference
+
+    /**
+     * Concept, of which this node is instance of, or null if the node is not instance of any concept.
+     */
     val concept: IConcept?
+
+    /**
+     * Role of this node in its parent node if it exists,or null otherwise.
+     */
     val roleInParent: String?
+
+    /**
+     * Parent node of this node if it exists, or null if this node has no parent node.
+     */
     val parent: INode?
+
+    /**
+     * Returns a concept reference to the concept of which this node is instance of.
+     *
+     * @return concept reference or null if this node is not instance of any concept.
+     */
     fun getConceptReference(): IConceptReference?
 
+    /**
+     * Returns children of this node for the given role.
+     *
+     * @param role the desired role
+     * @return iterable over the child nodes
+     */
     fun getChildren(role: String?): Iterable<INode>
+
+    /**
+     * Iterable over all child nodes of this node.
+     */
     val allChildren: Iterable<INode>
+
+    /**
+     * Moves a child node to the given role and index.
+     *
+     * @param role target role
+     * @param index target index
+     * @param child child node to be moved
+     */
     fun moveChild(role: String?, index: Int, child: INode)
+
+    /**
+     * Adds a new child node to this node.
+     *
+     * Creates and adds a new child node to this node at the specified index.
+     *
+     * @param role role, where the node should be added
+     * @param index index, where the node should be added
+     * @param concept concept, of which the new node is instance of
+     * @return new child node
+     *
+     * @see addNewChild
+     */
     fun addNewChild(role: String?, index: Int, concept: IConcept?): INode
+
+    /**
+     * Adds a new child node to this node.
+     *
+     * Creates and adds a new child node to this node at the specified index.
+     *
+     * @param role role, where the node should be added
+     * @param index index, where the node should be added
+     * @param concept reference to a concept, of which the new node is instance of
+     * @return new child node
+     */
     fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
         return addNewChild(role, index, concept?.resolve())
     }
+
+    /**
+     * Removes the given node from this node's children.
+     *
+     * @param child node to be removed
+     */
     fun removeChild(child: INode)
 
+    /**
+     * Returns the target of the given reference role for this node.
+     *
+     * @param role the desired reference role
+     * @return target node, or null if the target could not be found
+     */
     fun getReferenceTarget(role: String): INode?
+
+    /**
+     * Returns a node reference to the target of the reference.
+     *
+     * @param role the desired reference role
+     * @return node reference to the target, or null if the target could not be found
+     */
     fun getReferenceTargetRef(role: String): INodeReference? {
         return getReferenceTarget(role)?.reference
     }
+
+    /**
+     * Sets the target of the given role reference for this node to the specified target node.
+     *
+     * @param role the desired reference role
+     * @param target new target for this node's reference
+     */
     fun setReferenceTarget(role: String, target: INode?)
+
+    /**
+     * Sets the target of the given role reference for this node
+     * to the node referenced by the specified target reference.
+     *
+     * @param role the desired reference role
+     * @param target reference to the new target for this node's reference
+     */
     fun setReferenceTarget(role: String, target: INodeReference?) {
         // Default implementation for backward compatibility only.
         setReferenceTarget(role, target?.resolveNode(getArea()))
     }
 
+    /**
+     * Returns the value of the given property role for this node.
+     *
+     * @param role the desired property role
+     * @return property value, or null if there is no value
+     */
     fun getPropertyValue(role: String): String?
+
+    /**
+     * Sets the value of the given property role for this node to the specified role.
+     *
+     * @param role the desired property role
+     * @param value the new property value
+     */
     fun setPropertyValue(role: String, value: String?)
+
+    /**
+     * Returns all property roles of this node.
+     *
+     * @return list of all property roles
+     */
     fun getPropertyRoles(): List<String>
+
+    /**
+     * Returns all reference roles of this node.
+     *
+     * @return list of all reference roles
+     */
     fun getReferenceRoles(): List<String>
 }
 

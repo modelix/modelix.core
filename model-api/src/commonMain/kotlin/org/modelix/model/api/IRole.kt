@@ -1,12 +1,39 @@
 package org.modelix.model.api
 
+/**
+ * An [IRole] is a structural feature of a concept.
+ * It can either be an [IProperty] or an [ILink].
+ */
 interface IRole {
+    /**
+     * Returns the concept this role belongs to.
+     *
+     * @return concept
+     */
     fun getConcept(): IConcept
+
+    /**
+     * Returns the uid of this role.
+     *
+     * @return uid
+     */
     fun getUID(): String
+
+    /**
+     * Returns the unqualified name of this role.
+     *
+     * @return simple name
+     */
     fun getSimpleName(): String
 
     @Deprecated("Use getSimpleName() when showing it to the user or when accessing the model use the INode functions that accept an IRole or use IRole.key(...)")
     val name: String get() = RoleAccessContext.getKey(this)
+
+    /**
+     * Returns whether this role's value has to be set or not.
+     *
+     * @return true if this role's value is optional, false otherwise
+     */
     val isOptional: Boolean
 }
 

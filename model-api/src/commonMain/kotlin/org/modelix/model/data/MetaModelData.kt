@@ -1,15 +1,22 @@
 package org.modelix.model.data
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 
 @Serializable
 data class LanguageData(
     val uid: String? = null,
     val name: String,
-    val concepts: List<ConceptData>
+    val concepts: List<ConceptData>,
+    val enums: List<EnumData> = emptyList()
 ) {
 
     fun toJson(): String = prettyJson.encodeToString(this)
@@ -34,6 +41,20 @@ data class ConceptData(
     val extends: List<String> = emptyList()
 )
 
+@Serializable
+data class EnumData(
+    val uid: String? = null,
+    val name: String,
+    val members: List<EnumMemberData> = emptyList(),
+    val defaultIndex: Int
+)
+
+@Serializable
+data class EnumMemberData(
+    val uid: String?,
+    val name: String
+)
+
 sealed interface IConceptFeatureData {
     val uid: String?
     val name: String
@@ -43,13 +64,44 @@ sealed interface IConceptFeatureData {
 data class PropertyData(
     override val uid: String? = null,
     override val name: String,
-    val type: PropertyType = PropertyType.STRING,
+    val type: PropertyType = PrimitivePropertyType(Primitive.STRING),
     val optional: Boolean = true
 ) : IConceptFeatureData
 
-enum class PropertyType {
+class PropertyTypeSerializer : KSerializer<PropertyType> {
+    override fun deserialize(decoder: Decoder): PropertyType {
+        val serialized = decoder.decodeString()
+        return try {
+            PrimitivePropertyType(Primitive.valueOf(serialized))
+        } catch (ex: Exception) {
+            EnumPropertyType(serialized.substringBeforeLast("."), serialized.substringAfterLast("."))
+        }
+    }
+
+    override val descriptor: SerialDescriptor
+        get() = PrimitiveSerialDescriptor("modelix.metamodel.PropertyType", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: PropertyType) {
+        val serialized = when (value) {
+            is EnumPropertyType -> value.pckg + "." + value.enumName
+            is PrimitivePropertyType -> value.primitive.name
+        }
+        encoder.encodeString(serialized)
+    }
+}
+
+@Serializable(with = PropertyTypeSerializer::class)
+sealed interface PropertyType
+
+enum class Primitive {
     STRING, BOOLEAN, INT
 }
+
+@Serializable
+data class PrimitivePropertyType(val primitive: Primitive) : PropertyType
+
+@Serializable
+data class EnumPropertyType(val pckg: String, val enumName: String) : PropertyType
 
 @Serializable
 data class ChildLinkData(

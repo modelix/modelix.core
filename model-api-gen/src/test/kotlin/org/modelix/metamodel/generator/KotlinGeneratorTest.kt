@@ -3,8 +3,8 @@ package org.modelix.metamodel.generator
 import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.decodeFromString
 import org.junit.Test
-import java.io.File
 import org.modelix.model.data.LanguageData
+import java.io.File
 
 class KotlinGeneratorTest {
 
@@ -34,6 +34,7 @@ class KotlinGeneratorTest {
               - name: entity
                 type: Entity
                 optional: false
+            enums: []
         """.trimIndent()
 
         val language = Yaml.default.decodeFromString<LanguageData>(input)

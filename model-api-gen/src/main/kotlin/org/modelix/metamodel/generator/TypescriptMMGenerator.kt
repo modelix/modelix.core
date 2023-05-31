@@ -2,7 +2,8 @@ package org.modelix.metamodel.generator
 
 import com.squareup.kotlinpoet.ClassName
 import org.modelix.model.data.LanguageData
-import org.modelix.model.data.PropertyType
+import org.modelix.model.data.Primitive
+import org.modelix.model.data.PrimitivePropertyType
 import java.nio.file.Path
 import kotlin.io.path.writeText
 
@@ -91,9 +92,18 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
             when (feature) {
                 is ProcessedProperty -> {
                     val rawValueName = feature.rawValueName()
-                    when (feature.type) {
-                        PropertyType.INT -> {
-                            """
+                    val defaultPropertyText = """
+                        public set $rawValueName(value: string | undefined) {
+                            this.node.setPropertyValue("${feature.originalName}", value)
+                        }
+                        public get $rawValueName(): string | undefined {
+                            return this.node.getPropertyValue("${feature.originalName}")
+                        }
+                    """.trimIndent()
+                    if (feature.type is PrimitivePropertyType) {
+                        when((feature.type as PrimitivePropertyType).primitive) {
+                            Primitive.INT -> {
+                                """
                                 public set ${feature.generatedName}(value: number) {
                                     this.${rawValueName} = value.toString();
                                 }
@@ -103,9 +113,9 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                                 }
                                 
                             """.trimIndent()
-                        }
-                        PropertyType.BOOLEAN -> {
-                            """
+                            }
+                            Primitive.BOOLEAN -> {
+                                """
                                 public set ${feature.generatedName}(value: boolean) {
                                     this.${rawValueName} = value ? "true" : "false";
                                 }
@@ -114,16 +124,10 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                                 }
                                 
                             """.trimIndent()
+                            }
+                            else -> defaultPropertyText
                         }
-                        else -> ""
-                    } + """
-                        public set $rawValueName(value: string | undefined) {
-                            this.node.setPropertyValue("${feature.originalName}", value)
-                        }
-                        public get $rawValueName(): string | undefined {
-                            return this.node.getPropertyValue("${feature.originalName}")
-                        }
-                    """.trimIndent()
+                    } else defaultPropertyText
                 }
                 is ProcessedReferenceLink -> """
                     
@@ -142,24 +146,26 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         val features = concept.getOwnRoles().joinToString("\n") { feature ->
             when (feature) {
                 is ProcessedProperty -> {
-                    when (feature.type) {
-                        PropertyType.BOOLEAN -> {
-                            """
+                    val defaultPropertyText = """
+                        ${feature.rawValueName()}: string | undefined
+                    """.trimIndent()
+                    if (feature.type is PrimitivePropertyType) {
+                        when ((feature.type as PrimitivePropertyType).primitive) {
+                            Primitive.BOOLEAN -> {
+                                """
                                 ${feature.generatedName}: boolean
                                 
                             """.trimIndent()
-                        }
-                        PropertyType.INT -> {
-                            """
+                            }
+                            Primitive.INT -> {
+                                """
                                 ${feature.generatedName}: number
                                 
                             """.trimIndent()
+                            }
+                            else -> defaultPropertyText
                         }
-                        else -> ""
-                    } +
-                    """
-                        ${feature.rawValueName()}: string | undefined
-                    """.trimIndent()
+                    } else defaultPropertyText
                 }
                 is ProcessedReferenceLink -> """
                     
@@ -250,7 +256,8 @@ internal fun ProcessedLanguage.languageDependencies(): List<ProcessedLanguage> {
     return languageSet.getLanguages().filter { languageNames.contains(it.name) }.minus(this)
 }
 
-private fun ProcessedProperty.rawValueName() = when (type) {
-    PropertyType.STRING -> generatedName
-    else -> "raw_" + generatedName
-}
+private fun ProcessedProperty.rawValueName() =
+    if (type is PrimitivePropertyType
+        && ((type as PrimitivePropertyType).primitive == Primitive.STRING))
+            generatedName
+    else "raw_$generatedName"

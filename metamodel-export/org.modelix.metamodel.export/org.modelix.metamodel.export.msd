@@ -5,8 +5,6 @@
       <sourceRoot location="models" />
     </modelRoot>
     <modelRoot contentPath="${module}/lib" type="java_classes">
-      <sourceRoot location="metamodel-generator.jar" />
-      <sourceRoot location="metamodel-runtime-jvm.jar" />
       <sourceRoot location="model-api-jvm.jar" />
       <sourceRoot location="kaml-jvm.jar" />
       <sourceRoot location="kotlin-logging-jvm.jar" />
@@ -20,6 +18,9 @@
       <sourceRoot location="kotlinx-serialization-core-jvm.jar" />
       <sourceRoot location="kotlinx-serialization-json-jvm.jar" />
       <sourceRoot location="snakeyaml-engine.jar" />
+      <sourceRoot location="model-api-gen-runtime-jvm.jar" />
+      <sourceRoot location="model-api-gen.jar" />
+      <sourceRoot location="slf4j-api.jar" />
     </modelRoot>
   </models>
   <facets>
@@ -28,8 +29,6 @@
     </facet>
   </facets>
   <stubModelEntries>
-    <stubModelEntry path="${module}/lib/metamodel-generator.jar" />
-    <stubModelEntry path="${module}/lib/metamodel-runtime-jvm.jar" />
     <stubModelEntry path="${module}/lib/model-api-jvm.jar" />
     <stubModelEntry path="${module}/lib/kaml-jvm.jar" />
     <stubModelEntry path="${module}/lib/kotlin-logging-jvm.jar" />
@@ -43,6 +42,9 @@
     <stubModelEntry path="${module}/lib/kotlinx-serialization-core-jvm.jar" />
     <stubModelEntry path="${module}/lib/kotlinx-serialization-json-jvm.jar" />
     <stubModelEntry path="${module}/lib/snakeyaml-engine.jar" />
+    <stubModelEntry path="${module}/lib/model-api-gen-runtime-jvm.jar" />
+    <stubModelEntry path="${module}/lib/model-api-gen.jar" />
+    <stubModelEntry path="${module}/lib/slf4j-api.jar" />
   </stubModelEntries>
   <sourcePath />
   <dependencies>
@@ -62,7 +64,7 @@
     <language slang="l:760a0a8c-eabb-4521-8bfd-65db761a9ba3:jetbrains.mps.baseLanguage.logging" version="0" />
     <language slang="l:ceab5195-25ea-4f22-9b92-103b95ca8c0c:jetbrains.mps.lang.core" version="2" />
     <language slang="l:446c26eb-2b7b-4bf0-9b35-f83fa582753e:jetbrains.mps.lang.modelapi" version="0" />
-    <language slang="l:7866978e-a0f0-4cc7-81bc-4d213d9375e1:jetbrains.mps.lang.smodel" version="17" />
+    <language slang="l:7866978e-a0f0-4cc7-81bc-4d213d9375e1:jetbrains.mps.lang.smodel" version="18" />
     <language slang="l:9ded098b-ad6a-4657-bfd9-48636cfe8bc3:jetbrains.mps.lang.traceable" version="0" />
   </languageVersions>
   <dependencyVersions>
@@ -73,7 +75,6 @@
     <module reference="fdaaf35f-8ee3-4c37-b09d-9efaeaaa7a41(jetbrains.mps.core.tool.environment)" version="0" />
     <module reference="d936855b-48da-4812-a8a0-2bfddd633ac5(jetbrains.mps.lang.behavior.api)" version="0" />
     <module reference="ceab5195-25ea-4f22-9b92-103b95ca8c0c(jetbrains.mps.lang.core)" version="0" />
-    <module reference="9e98f4e2-decf-4e97-bf80-9109e8b759aa(jetbrains.mps.lang.feedback.context)" version="0" />
     <module reference="d7eb0a2a-bd50-4576-beae-e4a89db35f20(jetbrains.mps.lang.scopes.runtime)" version="0" />
     <module reference="c72da2b9-7cce-4447-8389-f407dc1158b7(jetbrains.mps.lang.structure)" version="0" />
     <module reference="e52a4421-48a2-4de1-8327-d9414e799c67(org.modelix.metamodel.export)" version="0" />

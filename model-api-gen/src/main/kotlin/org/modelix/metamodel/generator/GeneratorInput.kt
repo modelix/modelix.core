@@ -15,6 +15,7 @@ package org.modelix.metamodel.generator
 
 import org.modelix.model.api.IConcept
 import org.modelix.model.data.ConceptData
+import org.modelix.model.data.EnumData
 import org.modelix.model.data.LanguageData
 import org.modelix.model.data.PropertyType
 import kotlin.reflect.KClass
@@ -48,6 +49,7 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
         for (data in dataList) {
             addLanguage(ProcessedLanguage(data.name, data.uid).also { lang ->
                 lang.load(data.concepts)
+                lang.loadEnums(data.enums)
             })
         }
         process()
@@ -137,6 +139,7 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
 internal class ProcessedLanguage(var name: String, var uid: String?) {
     lateinit var languageSet: ProcessedLanguageSet
     private val concepts: MutableList<ProcessedConcept> = ArrayList()
+    private val enums: MutableList<ProcessedEnum> = ArrayList()
     lateinit var simpleName2concept: Map<String, ProcessedConcept>
 
     fun addConcept(concept: ProcessedConcept) {
@@ -146,11 +149,29 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
 
     fun getConcepts(): List<ProcessedConcept> = concepts
 
+    fun addEnum(enum: ProcessedEnum) {
+        enums.add(enum)
+        enum.language = this
+    }
+
+    fun getEnums(): List<ProcessedEnum> = enums
+
     fun load(dataList: List<ConceptData>) {
         for (data in dataList) {
             addConcept(ProcessedConcept(data.name, data.uid, data.abstract, data.extends.map { ProcessedConceptReference(it) }.toMutableList()).also { concept ->
                 concept.loadRoles(data)
             })
+        }
+    }
+
+    fun loadEnums(dataList: List<EnumData>) {
+        for (data in dataList) {
+            val enum = ProcessedEnum(data.name, data.uid, maxOf(0, data.defaultIndex))
+            for (memberData in data.members) {
+                val member = ProcessedEnumMember(memberData.name, memberData.uid)
+                enum.addMember(member)
+            }
+            addEnum(enum)
         }
     }
 
@@ -161,6 +182,22 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
 
 internal class ProcessedConceptReference(var name: String) {
     lateinit var resolved: ProcessedConcept
+}
+
+internal class ProcessedEnum(var name: String, var uid: String?, var defaultIndex: Int) {
+    lateinit var language: ProcessedLanguage
+    private val members: MutableList<ProcessedEnumMember> = ArrayList()
+
+    fun getAllMembers() = members
+
+    fun addMember(member: ProcessedEnumMember) {
+        members.add(member)
+        member.enum = this
+    }
+}
+
+internal class ProcessedEnumMember(var name: String, var uid: String?) {
+    lateinit var enum: ProcessedEnum
 }
 
 internal class ProcessedConcept(var name: String, var uid: String?, var abstract: Boolean, val extends: MutableList<ProcessedConceptReference>) {

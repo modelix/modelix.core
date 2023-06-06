@@ -6,7 +6,7 @@ import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 buildscript {
     dependencies {
-        classpath("org.jetbrains.dokka:versioning-plugin:1.8.10")
+        classpath("org.jetbrains.dokka:versioning-plugin:1.8.20")
     }
 }
 
@@ -44,7 +44,7 @@ fun computeVersion(): Any {
 }
 
 dependencies {
-    dokkaPlugin("org.jetbrains.dokka:versioning-plugin:1.8.10")
+    dokkaPlugin("org.jetbrains.dokka:versioning-plugin:1.8.20")
 }
 
 subprojects {

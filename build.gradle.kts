@@ -19,7 +19,7 @@ plugins {
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.tasktree)
-    id("org.jetbrains.dokka") version "1.8.10"
+    id("org.jetbrains.dokka") version "1.8.20"
 }
 
 repositories {

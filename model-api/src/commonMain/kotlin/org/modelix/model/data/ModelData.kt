@@ -1,7 +1,6 @@
 package org.modelix.model.data
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.model.api.*
@@ -19,6 +18,7 @@ data class ModelData(
             val createdNodes = HashMap<String, Long>()
             val pendingReferences = ArrayList<() -> Unit>()
             val parentId = ITree.ROOT_ID
+            setOriginalId(root, t, parentId)
             for (nodeData in root.children) {
                 loadNode(nodeData, t, parentId, createdNodes, pendingReferences)
             }
@@ -37,6 +37,7 @@ data class ModelData(
         val createdId = t.addNewChild(parentId, nodeData.role, -1, conceptRef)
         if (nodeData.id != null) {
             createdNodes[nodeData.id] = createdId
+            setOriginalId(nodeData, t, createdId)
         }
         for (propertyData in nodeData.properties) {
             t.setProperty(createdId, propertyData.key, propertyData.value)
@@ -50,6 +51,18 @@ data class ModelData(
         for (childData in nodeData.children) {
             loadNode(childData, t, createdId, createdNodes, pendingReferences)
         }
+    }
+
+    private fun setOriginalId(
+        nodeData: NodeData,
+        t: IWriteTransaction,
+        nodeId: Long
+    ) {
+        val key = "originalId"
+        val originalId = if (nodeData.properties.containsKey(key))
+            nodeData.properties[key]
+        else nodeData.id
+        t.setProperty(nodeId, key, originalId)
     }
 
     companion object {

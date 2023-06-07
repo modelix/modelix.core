@@ -1,0 +1,24 @@
+{
+  "root": {
+    "id": "node:001",
+    "children": [
+      {
+        "id": "node:002",
+        "properties": {
+          "name": "newNameValue",
+          "description": "newDescriptionValue"
+        },
+        "references": {
+          "sibling": "node:003"
+        }
+      },
+      {
+        "id": "node:003",
+        "references": {
+          "root": "node:001",
+          "sibling": "node:002"
+        }
+      }
+    ]
+  }
+}

@@ -59,10 +59,7 @@ data class ModelData(
         nodeId: Long
     ) {
         val key = "originalId"
-        val originalId = if (nodeData.properties.containsKey(key))
-            nodeData.properties[key]
-        else nodeData.id
-        t.setProperty(nodeId, key, originalId)
+        t.setProperty(nodeId, key, nodeData.properties[key] ?: nodeData.id)
     }
 
     companion object {

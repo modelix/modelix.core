@@ -62,10 +62,25 @@ class ModelImporter(private val branch: IBranch, private val data: ModelData) {
 
         toBeAdded.forEach {
             val index = nodeData.children.indexOf(it)
-            node.addNewChild(it.role, index, it.concept?.let { s -> ConceptReference(s) })
+            val createdNode = node.addNewChild(it.role, index, it.concept?.let { s -> ConceptReference(s) })
+            createdNode.setPropertyValue(idRole, it.properties[idRole] ?: it.id)
         }
         toBeRemoved.forEach { node.removeChild(it) }
+            syncChildOrder(node, nodeData)
+    }
 
+    private fun syncChildOrder(node: INode, nodeData: NodeData) {
+        val existingChildren = node.allChildren.toList()
+        val specifiedChildren = nodeData.children
+        require(existingChildren.size == specifiedChildren.size)
+
+        for ((actualNode, specifiedNode) in existingChildren zip specifiedChildren) {
+            val actualId = actualNode.originalId()
+            if (actualId != specifiedNode.originalId() ) {
+                val targetIndex = specifiedChildren.indexOfFirst { actualId == it.originalId() }
+                node.moveChild(actualNode.roleInParent, targetIndex, actualNode)
+            }
+        }
     }
 
     private fun INode.originalId(): String? {
@@ -73,7 +88,7 @@ class ModelImporter(private val branch: IBranch, private val data: ModelData) {
     }
 
     private fun NodeData.originalId(): String? {
-        return this.properties[idRole]
+        return properties[idRole] ?: id
     }
 
 }

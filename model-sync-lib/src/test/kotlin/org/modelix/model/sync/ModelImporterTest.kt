@@ -63,4 +63,15 @@ class ModelImporterTest {
             assertEquals(branch.getRootNode(), node1.getReferenceTarget("root"))
         }
     }
+
+    @Test
+    fun `can sync children`() {
+        branch.runRead {
+            val index = 2
+            val node = branch.getRootNode().allChildren.toList()[index]
+            val specifiedOrder = newModel.root.children[index].children.map { it.properties[ModelImporter.idRole] ?: it.id }
+            val actualOrder = node.allChildren.map { it.getPropertyValue(ModelImporter.idRole) }
+            assertEquals(specifiedOrder, actualOrder)
+        }
+    }
 }

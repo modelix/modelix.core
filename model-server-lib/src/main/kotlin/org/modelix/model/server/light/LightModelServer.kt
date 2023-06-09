@@ -56,8 +56,7 @@ import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
-class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck>) {
-    constructor(port: Int, rootNode: INode, ignoredRoles: Set<IRole> = emptySet()) : this(port, rootNode, ignoredRoles, emptyList())
+class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: INode, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
 
     companion object {
         private val LOG = mu.KotlinLogging.logger {  }

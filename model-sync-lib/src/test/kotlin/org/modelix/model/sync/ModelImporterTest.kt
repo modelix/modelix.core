@@ -3,6 +3,7 @@ package org.modelix.model.sync
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
@@ -32,11 +33,11 @@ class ModelImporterTest {
 
             branch.runWrite {
                 model.load(branch)
-                println("PRE-SPEC ${model.toJson()}")
-                println("PRE-LOADED ${branch.getRootNode().toJson()}")
+//                println("PRE-SPEC ${model.toJson()}")
+//                println("PRE-LOADED ${branch.getRootNode().toJson()}")
                 ModelImporter(branch, newModel).import()
-                println("POST-SPEC ${newModel.root.toJson()}")
-                println("POST-LOADED ${branch.getRootNode().toJson()}")
+//                println("POST-SPEC ${newModel.root.toJson()}")
+//                println("POST-LOADED ${branch.getRootNode().toJson()}")
             }
         }
     }
@@ -72,6 +73,22 @@ class ModelImporterTest {
             val specifiedOrder = newModel.root.children[index].children.map { it.properties[ModelImporter.idRole] ?: it.id }
             val actualOrder = node.allChildren.map { it.getPropertyValue(ModelImporter.idRole) }
             assertEquals(specifiedOrder, actualOrder)
+        }
+    }
+
+    @Test
+    fun `can bulk import`() {
+        val tree = CLTree(ObjectStoreCache(MapBaseStore()))
+        val tempBranch = PBranch(tree, IdGenerator.getInstance(1))
+        tempBranch.runWrite {
+            assertDoesNotThrow {
+                ModelImporter(tempBranch, newModel).import()
+            }
+            val children = tempBranch.getRootNode().allChildren.toList()
+            assertEquals(newModel.root.children.size, children.size)
+            for ((expected, actual) in newModel.root.children zip children) {
+                assertEquals(expected.children.size, actual.allChildren.toList().size)
+            }
         }
     }
 }

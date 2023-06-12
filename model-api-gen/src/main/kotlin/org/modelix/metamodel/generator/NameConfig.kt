@@ -9,6 +9,7 @@ class NameConfig : Serializable {
     val untypedConcept = ConfigurableName(prefix = "_C_UntypedImpl_")
     val typedConcept = ConfigurableName(prefix = "C_")
     val typedConceptImpl = ConfigurableName(prefix = "_C_TypedImpl_")
+    val conceptTypeAlias = ConfigurableName(prefix = "CN_")
 }
 
 private val UNMODIFIED_SIMPLE_NAME: (String) -> String = {

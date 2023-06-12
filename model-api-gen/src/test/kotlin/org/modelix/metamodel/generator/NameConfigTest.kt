@@ -28,6 +28,16 @@ class NameConfigTest {
     }
 
     @Test
+    fun `Concept type alias`() {
+        val input = "MyConcept"
+        val nameConfig = NameConfig().apply {
+            conceptTypeAlias.prefix = "PRE"
+            conceptTypeAlias.suffix = "SUF"
+        }
+        assertEquals("PREMyConceptSUF", nameConfig.conceptTypeAlias(input))
+    }
+
+    @Test
     fun `ConfigurableName - simple`() {
         val input = "MyInterface"
         val nameConfig = ConfigurableName().apply {

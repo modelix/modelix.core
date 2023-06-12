@@ -62,7 +62,8 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                 INodeJS,
                 ITypedNode, 
                 SingleChildAccessor,
-                TypedNode
+                TypedNode,
+                LanguageRegistry
             } from "@modelix/ts-model-api";
             
             ${language.languageDependencies().joinToString("\n") {
@@ -129,9 +130,19 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         }
                     } else defaultPropertyText
                 }
-                is ProcessedReferenceLink -> """
-                    
+                is ProcessedReferenceLink -> {
+                    val typeRef = feature.type.resolved
+                    val languagePrefix = typeRef.languagePrefix(concept.language)
+                    val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
+                    """
+                    public set ${feature.generatedName}(value: $entityType | undefined) {
+                        this.node.setReferenceTargetNode("${feature.originalName}", value.unwrap());
+                    }
+                    public get ${feature.generatedName}: $entityType | undefined {
+                        return LanguageRegistry.INSTANCE.wrapNode(this.node.getReferenceTargetNode("${feature.originalName}"));
+                    }
                 """.trimIndent()
+                }
                 is ProcessedChildLink -> {
                     val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     val typeRef = feature.type.resolved
@@ -167,9 +178,15 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         }
                     } else defaultPropertyText
                 }
-                is ProcessedReferenceLink -> """
-                    
-                """.trimIndent()
+                is ProcessedReferenceLink -> {
+                    val typeRef = feature.type.resolved
+                    val languagePrefix = typeRef.languagePrefix(concept.language)
+                    val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
+                        """
+                        set ${feature.generatedName}(value: $entityType | undefined);
+                        get ${feature.generatedName}: $entityType | undefined;
+                    """.trimIndent()
+                }
                 is ProcessedChildLink -> {
                     val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     """

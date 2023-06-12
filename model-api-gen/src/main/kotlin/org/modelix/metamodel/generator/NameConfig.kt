@@ -11,14 +11,14 @@ class NameConfig : Serializable {
     val typedConceptImpl = ConfigurableName(prefix = "_C_TypedImpl_")
 }
 
-private val UNMODIFED_SIMPLE_NAME: (String) -> String = {
+private val UNMODIFIED_SIMPLE_NAME: (String) -> String = {
     require(!it.contains(".")) { "Simple name expected, but full-qualified name provided: $it" }
     it
 }
 class ConfigurableName(
     var prefix: String = "",
     var suffix: String = "",
-    var baseNameConversion: (String) -> String = UNMODIFED_SIMPLE_NAME
+    var baseNameConversion: (String) -> String = UNMODIFIED_SIMPLE_NAME
 ) : Serializable {
     operator fun invoke(baseName: String): String {
         return prefix + baseNameConversion(baseName) + suffix

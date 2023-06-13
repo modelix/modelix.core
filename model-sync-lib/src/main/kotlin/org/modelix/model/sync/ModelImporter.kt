@@ -4,7 +4,7 @@ import org.modelix.model.api.*
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 
-class ModelImporter(private val branch: IBranch, private val data: ModelData) {
+class ModelImporter(private val branch: IBranch) {
 
     companion object {
         const val idRole = "originalId"
@@ -12,7 +12,7 @@ class ModelImporter(private val branch: IBranch, private val data: ModelData) {
 
     private lateinit var originalIdToRef: MutableMap<String, INodeReference>
 
-    fun import() {
+    fun import(data: ModelData) {
         originalIdToRef = mutableMapOf()
         branch.runWrite {
             val rootNode = branch.getRootNode()

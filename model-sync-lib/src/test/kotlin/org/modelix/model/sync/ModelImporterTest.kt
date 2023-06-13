@@ -35,7 +35,7 @@ class ModelImporterTest {
                 model.load(branch)
 //                println("PRE-SPEC ${model.toJson()}")
 //                println("PRE-LOADED ${branch.getRootNode().toJson()}")
-                ModelImporter(branch, newModel).import()
+                ModelImporter(branch).import(newModel)
 //                println("POST-SPEC ${newModel.root.toJson()}")
 //                println("POST-LOADED ${branch.getRootNode().toJson()}")
             }
@@ -82,7 +82,7 @@ class ModelImporterTest {
         val tempBranch = PBranch(tree, IdGenerator.getInstance(1))
         tempBranch.runWrite {
             assertDoesNotThrow {
-                ModelImporter(tempBranch, newModel).import()
+                ModelImporter(tempBranch).import(newModel)
             }
             val children = tempBranch.getRootNode().allChildren.toList()
             assertEquals(newModel.root.children.size, children.size)

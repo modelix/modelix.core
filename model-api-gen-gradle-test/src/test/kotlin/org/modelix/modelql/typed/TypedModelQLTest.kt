@@ -78,7 +78,7 @@ class TypedModelQLTest {
     fun simpleTest() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
         val result: Int = client.query { root ->
-            root.children("classes").typed<ClassConcept>()
+            root.children("classes").ofConcept(C_ClassConcept)
                 .member
                 .ofConcept(C_StaticMethodDeclaration)
                 .count()
@@ -90,7 +90,7 @@ class TypedModelQLTest {
     fun test() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
         val result: List<Pair<String, String>> = client.query { root ->
-            root.children("classes").typed<ClassConcept>()
+            root.children("classes").ofConcept(C_ClassConcept)
                 .member
                 .ofConcept(C_StaticMethodDeclaration)
                 .filter { it.visibility.instanceOf(C_PublicVisibility) }
@@ -104,7 +104,7 @@ class TypedModelQLTest {
     fun testReferences() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
         val usedVariables: Set<String> = client.query { root ->
-            root.children("classes").typed<ClassConcept>()
+            root.children("classes").ofConcept(C_ClassConcept)
                 .member
                 .ofConcept(C_StaticMethodDeclaration)
                 .descendants()
@@ -120,7 +120,7 @@ class TypedModelQLTest {
     fun testReferencesFqName() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
         val usedVariables: Set<String> = client.query { root ->
-            root.children("classes").typed<ClassConcept>()
+            root.children("classes").ofConcept(C_ClassConcept)
                 .member
                 .ofConcept(C_StaticMethodDeclaration)
                 .map { method ->
@@ -143,7 +143,7 @@ class TypedModelQLTest {
     fun testNodeSerialization() = runTest { httpClient ->
         val client = ModelQLClient.builder().also { it.url("http://localhost/query") }.httpClient(httpClient).build()
         val result: List<StaticMethodDeclaration> = client.query { root ->
-            root.children("classes").typed<ClassConcept>()
+            root.children("classes").ofConcept(C_ClassConcept)
                 .member
                 .ofConcept(C_StaticMethodDeclaration)
                 .filter { it.visibility.instanceOf(C_PublicVisibility) }
@@ -157,7 +157,7 @@ class TypedModelQLTest {
     fun returnTypedNode() = runTest { httpClient ->
         val client = ModelQLClient.builder().also { it.url("http://localhost/query") }.httpClient(httpClient).build()
         val result: List<StaticMethodDeclaration> = client.query { root ->
-            root.children("classes").typed<ClassConcept>()
+            root.children("classes").ofConcept(C_ClassConcept)
                 .member
                 .ofConcept(C_StaticMethodDeclaration)
                 .filter { it.visibility.instanceOf(C_PublicVisibility) }

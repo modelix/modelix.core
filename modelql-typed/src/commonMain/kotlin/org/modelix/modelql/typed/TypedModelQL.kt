@@ -1,11 +1,7 @@
 package org.modelix.modelql.typed
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.SerialKind
-import kotlinx.serialization.descriptors.StructureKind
-import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
@@ -54,20 +50,20 @@ object TypedModelQL {
     }
 
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IMonoStep<ParentT>, link: ITypedMandatorySingleChildLink<ChildT>): IMonoStep<ChildT> {
-        return input.untyped().children(link.untyped().key()).typed(link.getTypedChildConcept().getInstanceInterface()).first()
+        return input.untyped().children(link.untyped().key()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()).first()
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IMonoStep<ParentT>, link: ITypedSingleChildLink<ChildT>): IMonoStep<ChildT?> {
-        return input.untyped().children(link.untyped().key()).typed(link.getTypedChildConcept().getInstanceInterface()).firstOrNull()
+        return input.untyped().children(link.untyped().key()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()).firstOrNull()
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IProducingStep<ParentT>, link: ITypedChildListLink<ChildT>): IFluxStep<ChildT> {
-        return input.flatMap { it.untyped().children(link.untyped().key()).typed(link.getTypedChildConcept().getInstanceInterface()) }
+        return input.flatMap { it.untyped().children(link.untyped().key()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()) }
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IFluxStep<ParentT>, link: ITypedChildLink<ChildT>): IFluxStep<ChildT> {
-        return input.untyped().flatMap { it.children(link.untyped().key()) }.typed(link.getTypedChildConcept().getInstanceInterface())
+        return input.untyped().flatMap { it.children(link.untyped().key()) }.typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
     }
 
     fun <SourceT : ITypedNode, TargetT : ITypedNode> reference(input: IMonoStep<SourceT>, link: ITypedReferenceLink<TargetT>): IMonoStep<TargetT> {
-        return input.untyped().reference(link.untyped().key()).typed<TargetT>(link.getTypedTargetConcept().getInstanceInterface())
+        return input.untyped().reference(link.untyped().key()).typedUnsafe<TargetT>(link.getTypedTargetConcept().getInstanceInterface())
     }
     fun <SourceT : ITypedNode, TargetT : ITypedNode> reference(input: IFluxStep<SourceT>, link: ITypedReferenceLink<TargetT>): IFluxStep<TargetT> {
         return input.map { reference(it, link) }
@@ -80,10 +76,14 @@ object TypedModelQL {
     }
 }
 
-inline fun <reified Typed : ITypedNode> IMonoStep<INode>.typed(): IMonoStep<Typed> = typed(Typed::class)
-inline fun <reified Typed : ITypedNode> IFluxStep<INode>.typed(): IFluxStep<Typed> = typed(Typed::class)
-fun <Typed : ITypedNode> IMonoStep<INode>.typed(nodeClass: KClass<out Typed>): IMonoStep<Typed> = TypedNodeStep<Typed>(nodeClass).also { connect(it) }
-fun <Typed : ITypedNode> IFluxStep<INode>.typed(nodeClass: KClass<out Typed>): IFluxStep<Typed> = map { it.typed(nodeClass) }
+/** Doesn't check the concept when executed remotely. Use .ofConcept() to convert a node in a type safe way. */
+inline fun <reified Typed : ITypedNode> IMonoStep<INode>.typedUnsafe(): IMonoStep<Typed> = typedUnsafe(Typed::class)
+/** Doesn't check the concept when executed remotely. Use .ofConcept() to convert a node in a type safe way. */
+inline fun <reified Typed : ITypedNode> IFluxStep<INode>.typedUnsafe(): IFluxStep<Typed> = typedUnsafe(Typed::class)
+/** Doesn't check the concept when executed remotely. Use .ofConcept() to convert a node in a type safe way. */
+fun <Typed : ITypedNode> IMonoStep<INode>.typedUnsafe(nodeClass: KClass<out Typed>): IMonoStep<Typed> = TypedNodeStep(nodeClass).also { connect(it) }
+/** Doesn't check the concept when executed remotely. Use .ofConcept() to convert a node in a type safe way. */
+fun <Typed : ITypedNode> IFluxStep<INode>.typedUnsafe(nodeClass: KClass<out Typed>): IFluxStep<Typed> = map { it.typedUnsafe(nodeClass) }
 
 fun IMonoStep<ITypedNode>.untyped(): IMonoStep<INode> = UntypedNodeStep().also { connect(it) }
 fun IFluxStep<ITypedNode>.untyped(): IFluxStep<INode> = map { it.untyped() }
@@ -149,7 +149,7 @@ fun <In : ITypedNode, Out : In> IMonoStep<In?>.instanceOf(concept: IConceptOfTyp
 
 @JvmName("ofConcept_untyped")
 fun <Out : ITypedNode> IFluxStep<INode?>.ofConcept(concept: IConceptOfTypedNode<Out>): IFluxStep<Out> {
-    return filterNotNull().filter { it.instanceOf(concept) }.typed(concept.getInstanceInterface())
+    return filterNotNull().filter { it.instanceOf(concept) }.typedUnsafe(concept.getInstanceInterface())
 }
 @JvmName("ofConcept")
 fun <In : ITypedNode, Out : In> IFluxStep<In?>.ofConcept(concept: IConceptOfTypedNode<Out>): IFluxStep<Out> {
@@ -158,7 +158,7 @@ fun <In : ITypedNode, Out : In> IFluxStep<In?>.ofConcept(concept: IConceptOfType
 
 @JvmName("ofConcept_untyped")
 fun <Out : ITypedNode> IMonoStep<INode?>.ofConcept(concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
-    return filterNotNull().filter { it.instanceOf(concept) }.typed(concept.getInstanceInterface())
+    return filterNotNull().filter { it.instanceOf(concept) }.typedUnsafe(concept.getInstanceInterface())
 }
 @JvmName("ofConcept")
 fun <In : ITypedNode, Out : In> IMonoStep<In?>.ofConcept(concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
@@ -168,8 +168,8 @@ fun <In : ITypedNode, Out : In> IMonoStep<In?>.ofConcept(concept: IConceptOfType
 fun IMonoStep<ITypedNode>.conceptReference(): IMonoStep<ConceptReference?> = untyped().conceptReference()
 fun IFluxStep<ITypedNode>.conceptReference(): IFluxStep<ConceptReference?> = map { it.conceptReference() }
 
-fun IMonoStep<ITypedNode>.descendants(includeSelf: Boolean = false): IFluxStep<ITypedNode> = untyped().descendants(includeSelf).typed()
-fun IFluxStep<ITypedNode>.descendants(includeSelf: Boolean = false): IFluxStep<ITypedNode> = untyped().descendants(includeSelf).typed()
+fun IMonoStep<ITypedNode>.descendants(includeSelf: Boolean = false): IFluxStep<ITypedNode> = untyped().descendants(includeSelf).typedUnsafe()
+fun IFluxStep<ITypedNode>.descendants(includeSelf: Boolean = false): IFluxStep<ITypedNode> = untyped().descendants(includeSelf).typedUnsafe()
 
 fun IMonoStep<ITypedNode>.nodeReferenceAsString(): IMonoStep<String> = untyped().nodeReferenceAsString()
 fun IFluxStep<ITypedNode>.nodeReferenceAsString(): IFluxStep<String> = untyped().nodeReferenceAsString()

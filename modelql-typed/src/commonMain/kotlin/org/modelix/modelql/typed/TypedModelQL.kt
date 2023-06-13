@@ -1,6 +1,13 @@
 package org.modelix.modelql.typed
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
+import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.buildSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.metamodel.*
@@ -8,6 +15,7 @@ import org.modelix.model.api.*
 import org.modelix.modelql.core.*
 import org.modelix.modelql.modelapi.*
 import kotlin.jvm.JvmName
+import kotlin.reflect.KClass
 
 object TypedModelQL {
     val serializersModule = SerializersModule {
@@ -46,20 +54,20 @@ object TypedModelQL {
     }
 
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IMonoStep<ParentT>, link: ITypedMandatorySingleChildLink<ChildT>): IMonoStep<ChildT> {
-        return input.untyped().children(link.untyped().key()).typed<ChildT>().first()
+        return input.untyped().children(link.untyped().key()).typed(link.getTypedChildConcept().getInstanceInterface()).first()
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IMonoStep<ParentT>, link: ITypedSingleChildLink<ChildT>): IMonoStep<ChildT?> {
-        return input.untyped().children(link.untyped().key()).typed<ChildT>().firstOrNull()
+        return input.untyped().children(link.untyped().key()).typed(link.getTypedChildConcept().getInstanceInterface()).firstOrNull()
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IProducingStep<ParentT>, link: ITypedChildListLink<ChildT>): IFluxStep<ChildT> {
-        return input.flatMap { it.untyped().children(link.untyped().key()).typed<ChildT>() }
+        return input.flatMap { it.untyped().children(link.untyped().key()).typed(link.getTypedChildConcept().getInstanceInterface()) }
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IFluxStep<ParentT>, link: ITypedChildLink<ChildT>): IFluxStep<ChildT> {
-        return input.untyped().flatMap { it.children(link.untyped().key()) }.typed<ChildT>()
+        return input.untyped().flatMap { it.children(link.untyped().key()) }.typed(link.getTypedChildConcept().getInstanceInterface())
     }
 
     fun <SourceT : ITypedNode, TargetT : ITypedNode> reference(input: IMonoStep<SourceT>, link: ITypedReferenceLink<TargetT>): IMonoStep<TargetT> {
-        return input.untyped().reference(link.untyped().key()).typed<TargetT>()
+        return input.untyped().reference(link.untyped().key()).typed<TargetT>(link.getTypedTargetConcept().getInstanceInterface())
     }
     fun <SourceT : ITypedNode, TargetT : ITypedNode> reference(input: IFluxStep<SourceT>, link: ITypedReferenceLink<TargetT>): IFluxStep<TargetT> {
         return input.map { reference(it, link) }
@@ -72,18 +80,21 @@ object TypedModelQL {
     }
 }
 
-fun <Typed : ITypedNode> IMonoStep<INode>.typed(): IMonoStep<Typed> = TypedNodeStep<Typed>().also { connect(it) }
-fun <Typed : ITypedNode> IFluxStep<INode>.typed(): IFluxStep<Typed> = map { it.typed<Typed>() }
+inline fun <reified Typed : ITypedNode> IMonoStep<INode>.typed(): IMonoStep<Typed> = typed(Typed::class)
+inline fun <reified Typed : ITypedNode> IFluxStep<INode>.typed(): IFluxStep<Typed> = typed(Typed::class)
+fun <Typed : ITypedNode> IMonoStep<INode>.typed(nodeClass: KClass<out Typed>): IMonoStep<Typed> = TypedNodeStep<Typed>(nodeClass).also { connect(it) }
+fun <Typed : ITypedNode> IFluxStep<INode>.typed(nodeClass: KClass<out Typed>): IFluxStep<Typed> = map { it.typed(nodeClass) }
+
 fun IMonoStep<ITypedNode>.untyped(): IMonoStep<INode> = UntypedNodeStep().also { connect(it) }
 fun IFluxStep<ITypedNode>.untyped(): IFluxStep<INode> = map { it.untyped() }
 
-class TypedNodeStep<Typed : ITypedNode> : MonoTransformingStep<INode, Typed>() {
+class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : MonoTransformingStep<INode, Typed>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Typed> {
-        throw UnsupportedOperationException("use .untyped() before returning the result")
+        return TypedNodeSerializer(nodeClass, serializersModule.serializer<INode>())
     }
 
     override fun transform(element: INode): Sequence<Typed> {
-        return sequenceOf(element.typedUnsafe())
+        return sequenceOf(element.typed(nodeClass))
     }
 
     override fun createDescriptor(): StepDescriptor {
@@ -92,6 +103,18 @@ class TypedNodeStep<Typed : ITypedNode> : MonoTransformingStep<INode, Typed>() {
 
     override fun toString(): String {
         return "${getProducers().single()}.typed()"
+    }
+}
+
+class TypedNodeSerializer<Typed : ITypedNode>(val nodeClass: KClass<out Typed>, val untypedSerializer: KSerializer<INode>) : KSerializer<Typed> {
+    override fun deserialize(decoder: Decoder): Typed {
+        return decoder.decodeSerializableValue(untypedSerializer).typed(nodeClass)
+    }
+
+    override val descriptor: SerialDescriptor = untypedSerializer.descriptor
+
+    override fun serialize(encoder: Encoder, value: Typed) {
+        encoder.encodeSerializableValue(untypedSerializer, value.untyped())
     }
 }
 
@@ -126,7 +149,7 @@ fun <In : ITypedNode, Out : In> IMonoStep<In?>.instanceOf(concept: IConceptOfTyp
 
 @JvmName("ofConcept_untyped")
 fun <Out : ITypedNode> IFluxStep<INode?>.ofConcept(concept: IConceptOfTypedNode<Out>): IFluxStep<Out> {
-    return filterNotNull().filter { it.instanceOf(concept) }.typed()
+    return filterNotNull().filter { it.instanceOf(concept) }.typed(concept.getInstanceInterface())
 }
 @JvmName("ofConcept")
 fun <In : ITypedNode, Out : In> IFluxStep<In?>.ofConcept(concept: IConceptOfTypedNode<Out>): IFluxStep<Out> {
@@ -135,7 +158,7 @@ fun <In : ITypedNode, Out : In> IFluxStep<In?>.ofConcept(concept: IConceptOfType
 
 @JvmName("ofConcept_untyped")
 fun <Out : ITypedNode> IMonoStep<INode?>.ofConcept(concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
-    return filterNotNull().filter { it.instanceOf(concept) }.typed()
+    return filterNotNull().filter { it.instanceOf(concept) }.typed(concept.getInstanceInterface())
 }
 @JvmName("ofConcept")
 fun <In : ITypedNode, Out : In> IMonoStep<In?>.ofConcept(concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {

@@ -152,4 +152,17 @@ class TypedModelQLTest {
         }.map { it.typed<StaticMethodDeclaration>() }
         assertEquals("plus", branch.computeRead { result[0].name })
     }
+
+    @Test
+    fun returnTypedNode() = runTest { httpClient ->
+        val client = ModelQLClient.builder().also { it.url("http://localhost/query") }.httpClient(httpClient).build()
+        val result: List<StaticMethodDeclaration> = client.query { root ->
+            root.children("classes").typed<ClassConcept>()
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .filter { it.visibility.instanceOf(C_PublicVisibility) }
+                .toList()
+        }
+        assertEquals("plus", branch.computeRead { result[0].name })
+    }
 }

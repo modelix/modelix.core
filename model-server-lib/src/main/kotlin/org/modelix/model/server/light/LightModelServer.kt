@@ -132,11 +132,10 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 val serializedQuery = call.receiveText()
                 val queryDescriptor = UntypedModelQL.json.decodeFromString<QueryDescriptor>(serializedQuery)
                 val query = queryDescriptor.createQuery() as Query<INode, Any?>
+                LOG.debug { "query: $query" }
                 val result: Any? = getArea().executeRead { query.run(rootNode) }
-                println(result)
                 val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule)
                 val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
-                println(serializedResult)
                 call.respond(serializedResult)
             }
             get("health") {

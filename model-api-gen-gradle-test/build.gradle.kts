@@ -39,6 +39,16 @@ val modelixCoreVersion: String = projectDir.resolve("../version.txt").readText()
 dependencies {
     mps("com.jetbrains:mps:2021.1.4")
     implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
+    testImplementation(kotlin("test"))
+    testImplementation("org.modelix:model-api:$modelixCoreVersion")
+    testImplementation("org.modelix:model-client:$modelixCoreVersion")
+    testImplementation(files("$buildDir/metamodel/kotlin_gen") {
+        builtBy("generateMetaModelSources")
+    })
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 val resolveMps by tasks.registering(Sync::class) {
@@ -58,7 +68,7 @@ metamodel {
     kotlinDir = kotlinGenDir
     kotlinProject = project
     includeNamespace("jetbrains")
-    //exportModules("jetbrains.mps.baseLanguage")
+    exportModules("jetbrains.mps.baseLanguage")
 
     names {
         languageClass.prefix = "L_"

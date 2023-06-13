@@ -18,6 +18,9 @@ data class ModelData(
             val createdNodes = HashMap<String, Long>()
             val pendingReferences = ArrayList<() -> Unit>()
             val parentId = ITree.ROOT_ID
+            if (root.id != null) {
+                createdNodes[root.id] = parentId
+            }
             setOriginalId(root, t, parentId)
             for (nodeData in root.children) {
                 loadNode(nodeData, t, parentId, createdNodes, pendingReferences)
@@ -94,6 +97,6 @@ fun INode.asData(): NodeData = NodeData(
     children = allChildren.map { it.asData() }
 )
 
-public inline fun <K, V : Any> Iterable<K>.associateWithNotNull(valueSelector: (K) -> V?): Map<K, V> {
+inline fun <K, V : Any> Iterable<K>.associateWithNotNull(valueSelector: (K) -> V?): Map<K, V> {
     return associateWith { valueSelector(it) }.filterValues { it != null } as Map<K, V>
 }

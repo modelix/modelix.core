@@ -175,3 +175,11 @@ fun IMonoStep<ITypedNode>.nodeReferenceAsString(): IMonoStep<String> = untyped()
 fun IFluxStep<ITypedNode>.nodeReferenceAsString(): IFluxStep<String> = untyped().nodeReferenceAsString()
 fun IMonoStep<ITypedNode>.nodeReference(): IMonoStep<INodeReference> = untyped().nodeReference()
 fun IFluxStep<ITypedNode>.nodeReference(): IFluxStep<INodeReference> = untyped().nodeReference()
+
+suspend inline fun <reified NodeT : ITypedNode, R> NodeT.query(noinline body: (IMonoStep<NodeT>) -> IMonoStep<R>): R {
+    return query(NodeT::class, body)
+}
+
+suspend fun <NodeT : ITypedNode, R> NodeT.query(nodeClass: KClass<out NodeT>, body: (IMonoStep<NodeT>) -> IMonoStep<R>): R {
+    return untyped().query { body(it.typedUnsafe(nodeClass)) }
+}

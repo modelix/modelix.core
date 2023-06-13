@@ -99,8 +99,7 @@ class Query<RemoteIn, RemoteOut>(val inputStep: QueryInput<RemoteIn>, val output
                 subclass(org.modelix.modelql.core.StringSourceStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringToBooleanStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringToIntStep.Descriptor::class)
-                subclass(org.modelix.modelql.core.ZipElementAccessStep_first.Descriptor::class)
-                subclass(org.modelix.modelql.core.ZipElementAccessStep_second.Descriptor::class)
+                subclass(org.modelix.modelql.core.ZipElementAccessStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ZipStep.Descriptor::class)
             }
         }

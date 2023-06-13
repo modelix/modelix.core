@@ -141,7 +141,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
         FileSpec.builder(concept.language.name, concept.name)
             .addFileComment(headerComment)
             .addType(generateConceptObject(concept))
-            .addTypeAlias(TypeAliasSpec.builder("CN_" + concept.name, concept.conceptWrapperInterfaceType()).build())
+            .addTypeAlias(TypeAliasSpec.builder(concept.conceptTypeAliasName(), concept.conceptWrapperInterfaceType()).build())
             .addType(generateConceptWrapperInterface(concept))
 //            .addType(generateConceptWrapperImpl(concept))
             .addType(generateNodeWrapperInterface(concept))
@@ -641,6 +641,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     private fun ProcessedConcept.nodeWrapperInterfaceName() = nameConfig.typedNode(name)
     private fun ProcessedConcept.nodeWrapperImplName() = nameConfig.typedNodeImpl(name)
     private fun ProcessedConcept.conceptObjectName() = nameConfig.untypedConcept(name)
+    private fun ProcessedConcept.conceptTypeAliasName() = nameConfig.conceptTypeAlias(name)
     //private fun ProcessedConcept.conceptWrapperImplName() = nameConfig.conceptWrapperImplName(name)
     //private fun ProcessedConcept.conceptWrapperInterfaceName() = nameConfig.conceptWrapperInterfaceName(name)
 

@@ -175,6 +175,10 @@ Inside the `metamodel` block a `names` block can be declared to configure `prefi
 |"\_C_TypedImpl_"
 |""
 
+|`conceptTypeAlias`
+|"CN_"
+|""
+
 |===
 
 == Example

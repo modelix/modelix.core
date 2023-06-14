@@ -2,7 +2,6 @@ package org.modelix.model.data
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -51,8 +50,10 @@ data class EnumData(
 
 @Serializable
 data class EnumMemberData(
-    val uid: String?,
-    val name: String
+    val uid: String? = null,
+    val memberId: String,
+    val name: String,
+    val presentation: String? = null
 )
 
 sealed interface IConceptFeatureData {

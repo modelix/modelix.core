@@ -16,8 +16,10 @@ package org.modelix.model.api
 interface IAsyncNode : INode {
     fun visitContainmentLink(visitor: IVisitor<IChildLink?>)
 
+    fun visitParent(visitor: IVisitor<INode>)
     fun visitChildren(link: IChildLink, visitor: IVisitor<INode>)
     fun visitAllChildren(visitor: IVisitor<INode>)
+    fun visitDescendants(visitor: IVisitor<INode>)
 
     fun visitReferenceTarget(link: IReferenceLink, visitor: IVisitor<INode>)
     fun visitReferenceTargetRef(link: IReferenceLink, visitor: IVisitor<INodeReference>)
@@ -58,6 +60,12 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode, INode by node {
         }
     }
 
+    override fun visitParent(visitor: IAsyncNode.IVisitor<INode>) {
+        visitor.process {
+            parent?.let { visitor.onNext(it) }
+        }
+    }
+
     override fun visitChildren(link: IChildLink, visitor: IAsyncNode.IVisitor<INode>) {
         visitor.process {
             getChildren(link).forEach { visitor.onNext(it) }
@@ -67,6 +75,12 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode, INode by node {
     override fun visitAllChildren(visitor: IAsyncNode.IVisitor<INode>) {
         visitor.process {
             allChildren.forEach { visitor.onNext(it) }
+        }
+    }
+
+    override fun visitDescendants(visitor: IAsyncNode.IVisitor<INode>) {
+        visitor.process {
+            getDescendants(false).forEach { visitor.onNext(it) }
         }
     }
 

@@ -41,6 +41,7 @@ interface INode {
     /**
      * Role of this node in its parent node if it exists,or null otherwise.
      */
+    @Deprecated("use getContainmentLink()")
     val roleInParent: String?
 
     /**

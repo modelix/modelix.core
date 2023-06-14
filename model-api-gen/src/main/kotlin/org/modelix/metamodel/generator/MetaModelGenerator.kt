@@ -117,15 +117,43 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     private fun generateEnumFile(enum: ProcessedEnum) {
         val builder = TypeSpec.enumBuilder(enum.name)
 
+        builder.primaryConstructor(
+            FunSpec.constructorBuilder()
+                .addParameter("presentation", String::class.asTypeName().copy(nullable = true))
+                .build()
+        )
+
+        val getLiteralFunBuilder = FunSpec.builder("getLiteralByMemberId")
+            .addParameter("memberId", String::class)
+        val getLiteralCodeBuilder = CodeBlock.builder().beginControlFlow("return when (memberId) {")
+
         for (member in enum.getAllMembers()) {
-            builder.addEnumConstant(member.name)
+            builder.addEnumConstant(
+                member.name,
+                TypeSpec.anonymousClassBuilder()
+                    .addSuperclassConstructorParameter(
+                        if (member.presentation == null) "null" else "%S",
+                        member.presentation ?: "")
+                    .build()
+            )
+            getLiteralCodeBuilder.addStatement("%S -> %L", member.memberId, member.name)
         }
+
+        getLiteralFunBuilder.addCode(
+            getLiteralCodeBuilder
+                .addStatement("else -> defaultValue()")
+                .endControlFlow()
+                .build()
+        )
 
         val companion = TypeSpec.companionObjectBuilder()
             .addFunction(
                 FunSpec.builder("defaultValue")
                     .addCode("return values()[%L]", enum.defaultIndex)
                     .build())
+            .addFunction(
+                getLiteralFunBuilder.build()
+            )
             .build()
 
         val generatedEnum = builder.addType(companion).build()
@@ -317,7 +345,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         if (feature.type is EnumPropertyType) {
                             if (serializer == MandatoryEnumSerializer::class.asTypeName()) {
                                 propBuilder.initializer(
-                                    """newProperty(%S, %S, %T { if (it != null) %T.valueOf(it) else %T.defaultValue() }, ${feature.optional})""",
+                                    """newProperty(%S, %S, %T { if (it != null) %T.getLiteralByMemberId(it) else %T.defaultValue() }, ${feature.optional})""",
                                     feature.originalName,
                                     feature.uid,
                                     serializer,
@@ -326,7 +354,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 )
                             } else {
                                 propBuilder.initializer(
-                                    """newProperty(%S, %S, %T { %T.valueOf(it) }, ${feature.optional})""",
+                                    """newProperty(%S, %S, %T { %T.getLiteralByMemberId(it) }, ${feature.optional})""",
                                     feature.originalName,
                                     feature.uid,
                                     serializer,

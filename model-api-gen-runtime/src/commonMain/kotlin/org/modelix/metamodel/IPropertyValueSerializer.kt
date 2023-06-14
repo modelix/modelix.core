@@ -84,7 +84,8 @@ class MandatoryEnumSerializer<E : Enum<*>>(private val valueOf: (String?) -> E) 
     }
 
     override fun deserialize(serialized: String?): E {
-        return valueOf(serialized)
+        val id = serialized?.substringBefore('/')
+        return valueOf(id)
     }
 }
 

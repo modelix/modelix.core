@@ -12,7 +12,6 @@ import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.*
-import org.modelix.modelql.modelapi.*
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.nodeReference

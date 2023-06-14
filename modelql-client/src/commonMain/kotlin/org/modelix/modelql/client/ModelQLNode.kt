@@ -3,7 +3,7 @@ package org.modelix.modelql.client
 import org.modelix.model.api.*
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.*
-import org.modelix.modelql.modelapi.*
+import org.modelix.modelql.untyped.*
 
 abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL {
 

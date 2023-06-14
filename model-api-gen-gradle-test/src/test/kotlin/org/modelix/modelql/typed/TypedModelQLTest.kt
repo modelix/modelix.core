@@ -17,8 +17,8 @@ import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.*
-import org.modelix.modelql.modelapi.children
-import org.modelix.modelql.modelapi.conceptReference
+import org.modelix.modelql.untyped.children
+import org.modelix.modelql.untyped.conceptReference
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

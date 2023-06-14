@@ -9,9 +9,9 @@ import org.modelix.model.area.*
 import org.modelix.model.server.api.*
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
-import org.modelix.modelql.modelapi.ISupportsModelQL
-import org.modelix.modelql.modelapi.asMono
-import org.modelix.modelql.modelapi.resolve
+import org.modelix.modelql.untyped.ISupportsModelQL
+import org.modelix.modelql.untyped.asMono
+import org.modelix.modelql.untyped.resolve
 import kotlin.jvm.JvmStatic
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds

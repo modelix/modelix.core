@@ -54,7 +54,7 @@ import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
 import org.modelix.modelql.core.Query
 import org.modelix.modelql.core.QueryDescriptor
-import org.modelix.modelql.modelapi.UntypedModelQL
+import org.modelix.modelql.untyped.UntypedModelQL
 import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds

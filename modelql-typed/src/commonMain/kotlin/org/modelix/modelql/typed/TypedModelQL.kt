@@ -9,7 +9,7 @@ import kotlinx.serialization.serializer
 import org.modelix.metamodel.*
 import org.modelix.model.api.*
 import org.modelix.modelql.core.*
-import org.modelix.modelql.modelapi.*
+import org.modelix.modelql.untyped.*
 import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 

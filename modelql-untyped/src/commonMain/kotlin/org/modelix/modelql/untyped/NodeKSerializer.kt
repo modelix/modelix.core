@@ -1,4 +1,4 @@
-package org.modelix.modelql.modelapi
+package org.modelix.modelql.untyped
 
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.nullable

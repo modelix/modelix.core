@@ -11,7 +11,7 @@ import org.modelix.model.area.ContextArea
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.Query
-import org.modelix.modelql.modelapi.UntypedModelQL
+import org.modelix.modelql.untyped.UntypedModelQL
 
 class ModelQLClient(val url: String, val client: HttpClient, includedSerializersModule: SerializersModule = UntypedModelQL.serializersModule) {
     val serializersModule = SerializersModule {

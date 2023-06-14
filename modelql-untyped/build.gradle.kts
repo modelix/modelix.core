@@ -21,8 +21,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":model-api"))
-                implementation(project(":modelql-core"))
+                api(project(":model-api"))
+                api(project(":modelql-core"))
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.serialization.json)

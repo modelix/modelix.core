@@ -4,7 +4,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.*
 import kotlinx.serialization.modules.SerializersModule
 import org.modelix.model.api.INode
-import org.modelix.modelql.modelapi.UntypedModelQL
+import org.modelix.modelql.untyped.UntypedModelQL
 
 abstract class ModelQLClientBuilder() {
     private var url: String? = null

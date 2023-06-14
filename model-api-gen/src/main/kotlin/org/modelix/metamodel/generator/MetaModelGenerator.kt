@@ -115,22 +115,33 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     }
 
     private fun generateEnumFile(enum: ProcessedEnum) {
-        val builder = TypeSpec.enumBuilder(enum.name)
+        val constructorSpec = FunSpec.constructorBuilder()
+            .addParameter("memberId", String::class)
+            .addParameter("presentation", String::class.asTypeName().copy(nullable = true))
+            .build()
 
-        builder.primaryConstructor(
-            FunSpec.constructorBuilder()
-                .addParameter("presentation", String::class.asTypeName().copy(nullable = true))
-                .build()
-        )
+        val enumBuilder = TypeSpec.enumBuilder(enum.name)
+            .primaryConstructor(constructorSpec)
+            .addProperty(
+                PropertySpec.builder("memberId", String::class)
+                    .initializer("memberId")
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("presentation", String::class.asTypeName().copy(nullable = true))
+                    .initializer("presentation")
+                    .build()
+            )
 
         val getLiteralFunBuilder = FunSpec.builder("getLiteralByMemberId")
             .addParameter("memberId", String::class)
         val getLiteralCodeBuilder = CodeBlock.builder().beginControlFlow("return when (memberId) {")
 
         for (member in enum.getAllMembers()) {
-            builder.addEnumConstant(
+            enumBuilder.addEnumConstant(
                 member.name,
                 TypeSpec.anonymousClassBuilder()
+                    .addSuperclassConstructorParameter("%S", member.memberId)
                     .addSuperclassConstructorParameter(
                         if (member.presentation == null) "null" else "%S",
                         member.presentation ?: "")
@@ -156,7 +167,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             )
             .build()
 
-        val generatedEnum = builder.addType(companion).build()
+        val generatedEnum = enumBuilder.addType(companion).build()
 
         FileSpec.builder(enum.language.name, enum.name)
             .addFileComment(headerComment)
@@ -345,7 +356,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         if (feature.type is EnumPropertyType) {
                             if (serializer == MandatoryEnumSerializer::class.asTypeName()) {
                                 propBuilder.initializer(
-                                    """newProperty(%S, %S, %T { if (it != null) %T.getLiteralByMemberId(it) else %T.defaultValue() }, ${feature.optional})""",
+                                    """newProperty(%S, %S, %T({ it.memberId }, 
+                                        |{ if (it != null) %T.getLiteralByMemberId(it) else %T.defaultValue() }), 
+                                        |${feature.optional})""".trimMargin(),
                                     feature.originalName,
                                     feature.uid,
                                     serializer,
@@ -354,7 +367,8 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 )
                             } else {
                                 propBuilder.initializer(
-                                    """newProperty(%S, %S, %T { %T.getLiteralByMemberId(it) }, ${feature.optional})""",
+                                    """newProperty(%S, %S, %T( { it.memberId }, { %T.getLiteralByMemberId(it) }), 
+                                        |${feature.optional})""".trimMargin(),
                                     feature.originalName,
                                     feature.uid,
                                     serializer,

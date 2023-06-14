@@ -218,9 +218,7 @@ interface INode {
 private fun <T1, T2> List<Pair<T1, T2?>>.filterSecondNotNull(): List<Pair<T1, T2>> = filter { it.second != null } as List<Pair<T1, T2>>
 
 @Deprecated("all members moved to INode", ReplaceWith("INode"))
-interface INodeEx : INode {
-
-}
+interface INodeEx : INode
 
 interface IDeprecatedNodeDefaults : INode {
     override val roleInParent: String? get() = getContainmentLink()?.getUID()
@@ -248,7 +246,6 @@ interface IDeprecatedNodeDefaults : INode {
     override fun getPropertyValue(property: IProperty): String?
     override fun setPropertyValue(property: IProperty, value: String?)
 }
-
 
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
 fun IRole.key(): String = RoleAccessContext.getKey(this)

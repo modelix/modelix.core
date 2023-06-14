@@ -37,7 +37,6 @@ data class ChildLinkFromName(override val name: String) : LinkFromName(), IChild
         get() = throw UnsupportedOperationException()
     override val childConcept: IConcept
         get() = throw UnsupportedOperationException()
-
 }
 
 object NullChildLink : IChildLink {

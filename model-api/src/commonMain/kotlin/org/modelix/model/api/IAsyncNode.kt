@@ -37,73 +37,89 @@ interface IAsyncNode : INode {
     interface IVisitor<E> {
         fun onNext(it: E)
         fun onComplete()
+        fun onException(ex: Exception)
     }
 }
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode, INode by node {
+    private fun <T> IAsyncNode.IVisitor<T>.process(body: () -> Unit) {
+        try {
+            body()
+        } catch (ex: Exception) {
+            onException(ex)
+        } finally {
+            onComplete()
+        }
+    }
+
     override fun visitContainmentLink(visitor: IAsyncNode.IVisitor<IChildLink?>) {
-        visitor.onNext(getContainmentLink())
-        visitor.onComplete()
+        visitor.process {
+            visitor.onNext(getContainmentLink())
+        }
     }
 
     override fun visitChildren(link: IChildLink, visitor: IAsyncNode.IVisitor<INode>) {
-        getChildren(link).forEach { visitor.onNext(it) }
-        visitor.onComplete()
+        visitor.process {
+            getChildren(link).forEach { visitor.onNext(it) }
+        }
     }
 
     override fun visitAllChildren(visitor: IAsyncNode.IVisitor<INode>) {
-        allChildren.forEach { visitor.onNext(it) }
-        visitor.onComplete()
+        visitor.process {
+            allChildren.forEach { visitor.onNext(it) }
+        }
     }
 
     override fun visitReferenceTarget(link: IReferenceLink, visitor: IAsyncNode.IVisitor<INode>) {
-        getReferenceTarget(link)?.let { visitor.onNext(it) }
-        visitor.onComplete()
+        visitor.process {
+            getReferenceTarget(link)?.let { visitor.onNext(it) }
+        }
     }
 
     override fun visitReferenceTargetRef(link: IReferenceLink, visitor: IAsyncNode.IVisitor<INodeReference>) {
-        getReferenceTargetRef(link)?.let { visitor.onNext(it) }
-        visitor.onComplete()
+        visitor.process {
+            getReferenceTargetRef(link)?.let { visitor.onNext(it) }
+        }
     }
 
     override fun visitAllReferenceTargets(visitor: IAsyncNode.IVisitor<Pair<IReferenceLink, INode>>) {
-        getAllReferenceTargets().forEach { visitor.onNext(it) }
-        visitor.onComplete()
+        visitor.process {
+            getAllReferenceTargets().forEach { visitor.onNext(it) }
+        }
     }
 
     override fun visitAllReferenceTargetRefs(visitor: IAsyncNode.IVisitor<Pair<IReferenceLink, INodeReference>>) {
-        getAllReferenceTargetRefs().forEach { visitor.onNext(it) }
-        visitor.onComplete()
+        visitor.process {
+            getAllReferenceTargetRefs().forEach { visitor.onNext(it) }
+        }
     }
 
     override fun visitPropertyValue(property: IProperty, visitor: IAsyncNode.IVisitor<String?>) {
-        visitor.onNext(getPropertyValue(property))
-        visitor.onComplete()
+        visitor.process {
+            visitor.onNext(getPropertyValue(property))
+        }
     }
 
     override fun visitAllPropertyValues(visitor: IAsyncNode.IVisitor<Pair<IProperty, String?>>) {
-        getPropertyLinks().forEach { link -> getPropertyValue(link)?.let { visitor.onNext(link to it) } }
-        visitor.onComplete()
+        visitor.process {
+            getPropertyLinks().forEach { link -> getPropertyValue(link)?.let { visitor.onNext(link to it) } }
+        }
     }
 
     override fun setPropertyValue(property: IProperty, value: String?, visitor: IAsyncNode.IVisitor<Unit>) {
         TODO()
-        visitor.onComplete()
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INodeReference?, visitor: IAsyncNode.IVisitor<Unit>) {
         TODO()
-        visitor.onComplete()
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?, visitor: IAsyncNode.IVisitor<Unit>) {
         TODO()
-        visitor.onComplete()
     }
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?, visitor: IAsyncNode.IVisitor<INode>) {
         TODO()
-        visitor.onComplete()
     }
 
     override fun addNewChild(
@@ -113,12 +129,10 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode, INode by node {
         visitor: IAsyncNode.IVisitor<INode>
     ) {
         TODO()
-        visitor.onComplete()
     }
 
     override fun moveChild(role: IChildLink, index: Int, child: INode, visitor: IAsyncNode.IVisitor<Unit>) {
         TODO()
-        visitor.onComplete()
     }
 }
 

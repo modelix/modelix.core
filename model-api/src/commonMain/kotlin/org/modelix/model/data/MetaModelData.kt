@@ -50,8 +50,7 @@ data class EnumData(
 
 @Serializable
 data class EnumMemberData(
-    val uid: String? = null,
-    val memberId: String,
+    val uid: String,
     val name: String,
     val presentation: String? = null
 )

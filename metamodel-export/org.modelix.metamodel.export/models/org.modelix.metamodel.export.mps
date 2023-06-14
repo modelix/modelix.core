@@ -1836,19 +1836,7 @@
                                     <node concept="3clFbF" id="4zSRxm70zVx" role="3cqZAp">
                                       <node concept="2ShNRf" id="4zSRxm70zVv" role="3clFbG">
                                         <node concept="1pGfFk" id="4zSRxm70Bwh" role="2ShVmc">
-                                          <ref role="37wK5l" to="sgfj:~EnumMemberData.&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,java.lang.String)" resolve="EnumMemberData" />
-                                          <node concept="2OqwBi" id="1lNY4J8WpV6" role="37wK5m">
-                                            <node concept="2YIFZM" id="1lNY4J8Wg5q" role="2Oq$k0">
-                                              <ref role="37wK5l" to="e8bb:~MetaIdByDeclaration.getEnumLiteralId(org.jetbrains.mps.openapi.model.SNode)" resolve="getEnumLiteralId" />
-                                              <ref role="1Pybhc" to="e8bb:~MetaIdByDeclaration" resolve="MetaIdByDeclaration" />
-                                              <node concept="37vLTw" id="1lNY4J8Wh67" role="37wK5m">
-                                                <ref role="3cqZAo" node="4zSRxm70ylt" resolve="it" />
-                                              </node>
-                                            </node>
-                                            <node concept="liA8E" id="1lNY4J8Wsd4" role="2OqNvi">
-                                              <ref role="37wK5l" to="e8bb:~SEnumerationLiteralId.toString()" resolve="toString" />
-                                            </node>
-                                          </node>
+                                          <ref role="37wK5l" to="sgfj:~EnumMemberData.&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String)" resolve="EnumMemberData" />
                                           <node concept="2OqwBi" id="7ryKvClc3z$" role="37wK5m">
                                             <node concept="2ShNRf" id="7ryKvClbWLm" role="2Oq$k0">
                                               <node concept="1pGfFk" id="7ryKvClc1fD" role="2ShVmc">

@@ -168,7 +168,7 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
         for (data in dataList) {
             val enum = ProcessedEnum(data.name, data.uid, maxOf(0, data.defaultIndex))
             for (memberData in data.members) {
-                val member = ProcessedEnumMember(memberData.name, memberData.uid, memberData.memberId, memberData.presentation)
+                val member = ProcessedEnumMember(memberData.name, memberData.uid, memberData.presentation)
                 enum.addMember(member)
             }
             addEnum(enum)
@@ -196,7 +196,7 @@ internal class ProcessedEnum(var name: String, var uid: String?, var defaultInde
     }
 }
 
-internal class ProcessedEnumMember(var name: String, var uid: String?, var memberId: String, var presentation: String?) {
+internal class ProcessedEnumMember(var name: String, var uid: String, var presentation: String?) {
     lateinit var enum: ProcessedEnum
 }
 

@@ -80,7 +80,7 @@ object OptionalIntPropertySerializer : IPropertyValueSerializer<Int?> {
 
 class MandatoryEnumSerializer<E : Enum<*>>(
     private val memberIdOf: (E) -> String,
-    private val fromString: (String?) -> E
+    private val fromMemberId: (String?) -> E
 ) : IPropertyValueSerializer<E> {
 
     override fun serialize(value: E): String {
@@ -89,13 +89,13 @@ class MandatoryEnumSerializer<E : Enum<*>>(
 
     override fun deserialize(serialized: String?): E {
         val id = serialized?.substringBefore('/')
-        return fromString(id)
+        return fromMemberId(id)
     }
 }
 
 class OptionalEnumSerializer<E : Enum<*>>(
     private val memberIdOf: (E) -> String,
-    private val fromString: (String) -> E
+    private val fromMemberId: (String) -> E
 ) : IPropertyValueSerializer<E?> {
 
     override fun serialize(value: E?): String? {
@@ -103,7 +103,8 @@ class OptionalEnumSerializer<E : Enum<*>>(
     }
 
     override fun deserialize(serialized: String?): E? {
-        return serialized?.let { fromString(it) }
+        val id = serialized?.substringBefore('/')
+        return id?.let { fromMemberId(it) }
     }
 }
 

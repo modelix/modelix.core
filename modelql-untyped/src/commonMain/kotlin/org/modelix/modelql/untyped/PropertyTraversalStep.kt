@@ -1,6 +1,4 @@
 /*
- * Copyright 2003-2023 JetBrains s.r.o.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,11 +19,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.asAsyncNode
+import org.modelix.model.api.resolvePropertyOrFallback
 import org.modelix.modelql.core.*
 
-class PropertyTraversalStep(val role: String): MonoTransformingStep<INode, String?>() {
-    override fun transform(element: INode): Sequence<String?> {
-        return sequenceOf(element.getPropertyValue(role))
+class PropertyTraversalStep(val role: String): AsyncTransformingStep<INode, String?>(), IMonoStep<String?> {
+    override fun transformAsync(inputElement: INode, outputConsumer: IConsumer<String?>) {
+        inputElement.asAsyncNode().visitPropertyValue(inputElement.resolvePropertyOrFallback(role), ConsumerAdapter(outputConsumer))
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String?> {

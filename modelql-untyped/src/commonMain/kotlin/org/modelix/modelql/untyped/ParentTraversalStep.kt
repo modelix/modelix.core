@@ -1,6 +1,4 @@
 /*
- * Copyright 2003-2023 JetBrains s.r.o.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,11 +19,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.asAsyncNode
 import org.modelix.modelql.core.*
 
-class ParentTraversalStep(): MonoTransformingStep<INode, INode>() {
-    override fun transform(element: INode): Sequence<INode> {
-        return sequenceOf(element.parent).filterNotNull()
+class ParentTraversalStep(): AsyncTransformingStep<INode, INode>(), IMonoStep<INode> {
+
+    override fun transformAsync(inputElement: INode, outputConsumer: IConsumer<INode>) {
+        inputElement.asAsyncNode().visitParent(ConsumerAdapter(outputConsumer))
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

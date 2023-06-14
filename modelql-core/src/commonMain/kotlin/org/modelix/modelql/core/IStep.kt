@@ -28,6 +28,12 @@ interface IConsumingStep<in E> : IStep {
     fun onComplete(producer: IProducingStep<E>)
 }
 
+interface IConsumer<E> {
+    fun onNext(element: E)
+    fun onComplete()
+    fun onException(ex: Exception)
+}
+
 interface ITerminalStep<out RemoteResult> : IMonoStep<RemoteResult> {
     fun getResult(): RemoteResult
 }
@@ -88,3 +94,5 @@ abstract class TransformingStep<RemoteIn, RemoteOut> : IConsumingStep<RemoteIn>,
 
 abstract class MonoTransformingStep<RemoteIn, RemoteOut> : TransformingStep<RemoteIn, RemoteOut>(), IMonoStep<RemoteOut>
 abstract class FluxTransformingStep<RemoteIn, RemoteOut> : TransformingStep<RemoteIn, RemoteOut>(), IFluxStep<RemoteOut>
+
+

@@ -28,12 +28,6 @@ interface IConsumingStep<in E> : IStep {
     fun onComplete(producer: IProducingStep<E>)
 }
 
-interface IConsumer<E> {
-    fun onNext(element: E)
-    fun onComplete()
-    fun onException(ex: Exception)
-}
-
 interface ITerminalStep<out RemoteResult> : IMonoStep<RemoteResult> {
     fun getResult(): RemoteResult
 }

@@ -115,20 +115,59 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     }
 
     private fun generateEnumFile(enum: ProcessedEnum) {
-        val builder = TypeSpec.enumBuilder(enum.name)
+        val constructorSpec = FunSpec.constructorBuilder()
+            .addParameter("uid", String::class)
+            .addParameter("presentation", String::class.asTypeName().copy(nullable = true))
+            .build()
+
+        val enumBuilder = TypeSpec.enumBuilder(enum.name)
+            .primaryConstructor(constructorSpec)
+            .addProperty(
+                PropertySpec.builder("uid", String::class)
+                    .initializer("uid")
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("presentation", String::class.asTypeName().copy(nullable = true))
+                    .initializer("presentation")
+                    .build()
+            )
+
+        val getLiteralFunBuilder = FunSpec.builder("getLiteralByMemberId")
+            .addParameter("uid", String::class)
+        val getLiteralCodeBuilder = CodeBlock.builder().beginControlFlow("return when (uid) {")
 
         for (member in enum.getAllMembers()) {
-            builder.addEnumConstant(member.name)
+            enumBuilder.addEnumConstant(
+                member.name,
+                TypeSpec.anonymousClassBuilder()
+                    .addSuperclassConstructorParameter("%S", member.uid)
+                    .addSuperclassConstructorParameter(
+                        if (member.presentation == null) "null" else "%S",
+                        member.presentation ?: "")
+                    .build()
+            )
+            getLiteralCodeBuilder.addStatement("%S -> %L", member.uid, member.name)
         }
+
+        getLiteralFunBuilder.addCode(
+            getLiteralCodeBuilder
+                .addStatement("else -> defaultValue()")
+                .endControlFlow()
+                .build()
+        )
 
         val companion = TypeSpec.companionObjectBuilder()
             .addFunction(
                 FunSpec.builder("defaultValue")
                     .addCode("return values()[%L]", enum.defaultIndex)
                     .build())
+            .addFunction(
+                getLiteralFunBuilder.build()
+            )
             .build()
 
-        val generatedEnum = builder.addType(companion).build()
+        val generatedEnum = enumBuilder.addType(companion).build()
 
         FileSpec.builder(enum.language.name, enum.name)
             .addFileComment(headerComment)
@@ -317,7 +356,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         if (feature.type is EnumPropertyType) {
                             if (serializer == MandatoryEnumSerializer::class.asTypeName()) {
                                 propBuilder.initializer(
-                                    """newProperty(%S, %S, %T { if (it != null) %T.valueOf(it) else %T.defaultValue() }, ${feature.optional})""",
+                                    """newProperty(%S, %S, %T({ it.uid }, 
+                                        |{ if (it != null) %T.getLiteralByMemberId(it) else %T.defaultValue() }), 
+                                        |${feature.optional})""".trimMargin(),
                                     feature.originalName,
                                     feature.uid,
                                     serializer,
@@ -326,7 +367,8 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 )
                             } else {
                                 propBuilder.initializer(
-                                    """newProperty(%S, %S, %T { %T.valueOf(it) }, ${feature.optional})""",
+                                    """newProperty(%S, %S, %T( { it.uid }, { %T.getLiteralByMemberId(it) }), 
+                                        |${feature.optional})""".trimMargin(),
                                     feature.originalName,
                                     feature.uid,
                                     serializer,

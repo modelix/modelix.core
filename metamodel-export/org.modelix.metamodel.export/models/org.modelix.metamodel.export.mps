@@ -1836,17 +1836,27 @@
                                     <node concept="3clFbF" id="4zSRxm70zVx" role="3cqZAp">
                                       <node concept="2ShNRf" id="4zSRxm70zVv" role="3clFbG">
                                         <node concept="1pGfFk" id="4zSRxm70Bwh" role="2ShVmc">
-                                          <ref role="37wK5l" to="sgfj:~EnumMemberData.&lt;init&gt;(java.lang.String,java.lang.String)" resolve="EnumMemberData" />
-                                          <node concept="2OqwBi" id="1lNY4J8WpV6" role="37wK5m">
-                                            <node concept="2YIFZM" id="1lNY4J8Wg5q" role="2Oq$k0">
-                                              <ref role="37wK5l" to="e8bb:~MetaIdByDeclaration.getEnumLiteralId(org.jetbrains.mps.openapi.model.SNode)" resolve="getEnumLiteralId" />
-                                              <ref role="1Pybhc" to="e8bb:~MetaIdByDeclaration" resolve="MetaIdByDeclaration" />
-                                              <node concept="37vLTw" id="1lNY4J8Wh67" role="37wK5m">
-                                                <ref role="3cqZAo" node="4zSRxm70ylt" resolve="it" />
+                                          <ref role="37wK5l" to="sgfj:~EnumMemberData.&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String)" resolve="EnumMemberData" />
+                                          <node concept="2OqwBi" id="7ryKvClc3z$" role="37wK5m">
+                                            <node concept="2ShNRf" id="7ryKvClbWLm" role="2Oq$k0">
+                                              <node concept="1pGfFk" id="7ryKvClc1fD" role="2ShVmc">
+                                                <ref role="37wK5l" to="w1kc:~JavaFriendlyBase64.&lt;init&gt;()" resolve="JavaFriendlyBase64" />
                                               </node>
                                             </node>
-                                            <node concept="liA8E" id="1lNY4J8Wsd4" role="2OqNvi">
-                                              <ref role="37wK5l" to="e8bb:~SEnumerationLiteralId.toString()" resolve="toString" />
+                                            <node concept="liA8E" id="7ryKvClc4X2" role="2OqNvi">
+                                              <ref role="37wK5l" to="w1kc:~JavaFriendlyBase64.toString(long)" resolve="toString" />
+                                              <node concept="2YIFZM" id="7ryKvClcjfc" role="37wK5m">
+                                                <ref role="37wK5l" to="wyt6:~Long.parseLong(java.lang.String)" resolve="parseLong" />
+                                                <ref role="1Pybhc" to="wyt6:~Long" resolve="Long" />
+                                                <node concept="2OqwBi" id="7ryKvClcmPJ" role="37wK5m">
+                                                  <node concept="37vLTw" id="7ryKvClclkY" role="2Oq$k0">
+                                                    <ref role="3cqZAo" node="4zSRxm70ylt" resolve="it" />
+                                                  </node>
+                                                  <node concept="3TrcHB" id="7ryKvClcomT" role="2OqNvi">
+                                                    <ref role="3TsBF5" to="tpce:1eSXJRel0SS" resolve="memberId" />
+                                                  </node>
+                                                </node>
+                                              </node>
                                             </node>
                                           </node>
                                           <node concept="2OqwBi" id="1lNY4J8Wmi4" role="37wK5m">
@@ -1855,6 +1865,14 @@
                                             </node>
                                             <node concept="3TrcHB" id="1lNY4J8WoMN" role="2OqNvi">
                                               <ref role="3TsBF5" to="tpck:h0TrG11" resolve="name" />
+                                            </node>
+                                          </node>
+                                          <node concept="2OqwBi" id="7ryKvClczo$" role="37wK5m">
+                                            <node concept="37vLTw" id="7ryKvClcxDd" role="2Oq$k0">
+                                              <ref role="3cqZAo" node="4zSRxm70ylt" resolve="it" />
+                                            </node>
+                                            <node concept="3TrcHB" id="7ryKvClc$FU" role="2OqNvi">
+                                              <ref role="3TsBF5" to="tpce:_jzzDSlxy8" resolve="presentation" />
                                             </node>
                                           </node>
                                         </node>

@@ -14,10 +14,10 @@
 package org.modelix.modelql.untyped
 
 import org.modelix.model.api.IAsyncNode
-import org.modelix.modelql.core.IConsumer
+import org.modelix.modelql.streams.IConsumer
 
 class ConsumerAdapter<E>(val consumer: IConsumer<E>): IAsyncNode.IVisitor<E> {
     override fun onNext(it: E) = consumer.onNext(it)
     override fun onComplete() = consumer.onComplete()
-    override fun onException(ex: Exception) = consumer.onException(ex)
+    override fun onError(ex: Throwable) = consumer.onError(ex)
 }

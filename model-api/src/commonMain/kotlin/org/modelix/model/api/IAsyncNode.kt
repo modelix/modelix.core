@@ -27,7 +27,7 @@ interface IAsyncNode : INode {
     fun visitAllReferenceTargetRefs(visitor: IVisitor<Pair<IReferenceLink, INodeReference>>)
 
     fun visitPropertyValue(property: IProperty, visitor: IVisitor<String?>)
-    fun visitAllPropertyValues(visitor: IVisitor<Pair<IProperty, String?>>)
+    fun visitAllPropertyValues(visitor: IVisitor<Pair<IProperty, String>>)
 
     fun setPropertyValue(property: IProperty, value: String?, visitor: IVisitor<Unit>)
     fun setReferenceTarget(link: IReferenceLink, target: INodeReference?, visitor: IVisitor<Unit>)
@@ -39,84 +39,65 @@ interface IAsyncNode : INode {
     interface IVisitor<E> {
         fun onNext(it: E)
         fun onComplete()
-        fun onException(ex: Exception)
+        fun onError(ex: Throwable)
+    }
+}
+
+fun <T> IAsyncNode.IVisitor<T>.visitAll(body: () -> Sequence<T>) {
+    try {
+        body().forEach { onNext(it) }
+    } catch (ex: Throwable) {
+        onError(ex)
+    } finally {
+        onComplete()
     }
 }
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode, INode by node {
-    private fun <T> IAsyncNode.IVisitor<T>.process(body: () -> Unit) {
-        try {
-            body()
-        } catch (ex: Exception) {
-            onException(ex)
-        } finally {
-            onComplete()
-        }
-    }
 
     override fun visitContainmentLink(visitor: IAsyncNode.IVisitor<IChildLink?>) {
-        visitor.process {
-            visitor.onNext(getContainmentLink())
-        }
+        visitor.visitAll { sequenceOf(getContainmentLink()) }
     }
 
     override fun visitParent(visitor: IAsyncNode.IVisitor<INode>) {
-        visitor.process {
-            parent?.let { visitor.onNext(it) }
-        }
+        visitor.visitAll { sequenceOf(parent).filterNotNull() }
     }
 
     override fun visitChildren(link: IChildLink, visitor: IAsyncNode.IVisitor<INode>) {
-        visitor.process {
-            getChildren(link).forEach { visitor.onNext(it) }
-        }
+        visitor.visitAll { getChildren(link).asSequence() }
     }
 
     override fun visitAllChildren(visitor: IAsyncNode.IVisitor<INode>) {
-        visitor.process {
-            allChildren.forEach { visitor.onNext(it) }
-        }
+        visitor.visitAll { allChildren.asSequence() }
     }
 
     override fun visitDescendants(visitor: IAsyncNode.IVisitor<INode>) {
-        visitor.process {
-            getDescendants(false).forEach { visitor.onNext(it) }
-        }
+        visitor.visitAll { getDescendants(false) }
     }
 
     override fun visitReferenceTarget(link: IReferenceLink, visitor: IAsyncNode.IVisitor<INode>) {
-        visitor.process {
-            getReferenceTarget(link)?.let { visitor.onNext(it) }
-        }
+        visitor.visitAll { sequenceOf(getReferenceTarget(link)).filterNotNull() }
     }
 
     override fun visitReferenceTargetRef(link: IReferenceLink, visitor: IAsyncNode.IVisitor<INodeReference>) {
-        visitor.process {
-            getReferenceTargetRef(link)?.let { visitor.onNext(it) }
-        }
+        visitor.visitAll { sequenceOf(getReferenceTargetRef(link)).filterNotNull() }
     }
 
     override fun visitAllReferenceTargets(visitor: IAsyncNode.IVisitor<Pair<IReferenceLink, INode>>) {
-        visitor.process {
-            getAllReferenceTargets().forEach { visitor.onNext(it) }
-        }
+        visitor.visitAll { getAllReferenceTargets().asSequence() }
     }
 
     override fun visitAllReferenceTargetRefs(visitor: IAsyncNode.IVisitor<Pair<IReferenceLink, INodeReference>>) {
-        visitor.process {
-            getAllReferenceTargetRefs().forEach { visitor.onNext(it) }
-        }
+        visitor.visitAll { getAllReferenceTargetRefs().asSequence() }
     }
 
     override fun visitPropertyValue(property: IProperty, visitor: IAsyncNode.IVisitor<String?>) {
-        visitor.process {
-            visitor.onNext(getPropertyValue(property))
-        }
+        visitor.visitAll { sequenceOf(getPropertyValue(property)) }
     }
 
-    override fun visitAllPropertyValues(visitor: IAsyncNode.IVisitor<Pair<IProperty, String?>>) {
-        visitor.process {
-            getPropertyLinks().forEach { link -> getPropertyValue(link)?.let { visitor.onNext(link to it) } }
+    override fun visitAllPropertyValues(visitor: IAsyncNode.IVisitor<Pair<IProperty, String>>) {
+        visitor.visitAll {
+            getPropertyLinks().map { link -> link to getPropertyValue(link) }.filterSecondNotNull().asSequence()
         }
     }
 

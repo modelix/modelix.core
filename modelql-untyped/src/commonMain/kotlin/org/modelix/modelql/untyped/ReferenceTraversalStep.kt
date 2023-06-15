@@ -22,6 +22,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.asAsyncNode
 import org.modelix.model.api.resolveReferenceLinkOrFallback
 import org.modelix.modelql.core.*
+import org.modelix.modelql.streams.IConsumer
 
 class ReferenceTraversalStep(val role: String): AsyncTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun transformAsync(inputElement: INode, outputConsumer: IConsumer<INode>) {

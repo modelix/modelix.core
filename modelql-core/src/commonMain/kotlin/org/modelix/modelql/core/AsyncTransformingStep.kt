@@ -13,6 +13,9 @@
  */
 package org.modelix.modelql.core
 
+import org.modelix.modelql.streams.IConsumer
+import org.modelix.modelql.streams.ISubscription
+
 abstract class AsyncTransformingStep<In, Out> : IConsumingStep<In>, ProducingStep<Out>() {
     private val pendingElements = ArrayList<PendingElement>()
     private var inputComplete = false
@@ -72,7 +75,11 @@ abstract class AsyncTransformingStep<In, Out> : IConsumingStep<In>, ProducingSte
             process()
         }
 
-        override fun onException(ex: Exception) {
+        override fun onError(ex: Throwable) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onSubscribe(subscription: ISubscription) {
             TODO("Not yet implemented")
         }
     }

@@ -21,6 +21,7 @@ import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.asAsyncNode
 import org.modelix.modelql.core.*
+import org.modelix.modelql.streams.IConsumer
 
 class DescendantsTraversalStep(val includeSelf: Boolean): AsyncTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun transformAsync(inputElement: INode, outputConsumer: IConsumer<INode>) {

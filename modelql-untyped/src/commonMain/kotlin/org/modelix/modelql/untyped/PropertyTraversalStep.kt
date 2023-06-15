@@ -22,6 +22,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.asAsyncNode
 import org.modelix.model.api.resolvePropertyOrFallback
 import org.modelix.modelql.core.*
+import org.modelix.modelql.streams.IConsumer
 
 class PropertyTraversalStep(val role: String): AsyncTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun transformAsync(inputElement: INode, outputConsumer: IConsumer<String?>) {

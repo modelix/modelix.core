@@ -3,11 +3,20 @@ package org.modelix.model.sync
 import org.modelix.model.api.*
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
+import java.io.File
 
 class ModelImporter(private val branch: IBranch) {
 
     private lateinit var originalIdToRef: MutableMap<String, INodeReference>
 
+    fun import(jsonFile: File) {
+        require(jsonFile.exists())
+        require(jsonFile.extension == "json")
+
+        val data = ModelData.fromJson(jsonFile.readText())
+        import(data)
+    }
+    
     fun import(data: ModelData) {
         originalIdToRef = mutableMapOf()
         branch.runWrite {

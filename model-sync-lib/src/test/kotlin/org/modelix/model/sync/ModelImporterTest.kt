@@ -27,7 +27,8 @@ class ModelImporterTest {
         @BeforeAll
         fun `load and import model`() {
             model = ModelData.fromJson(File("src/test/resources/model.json").readText())
-            newModel = ModelData.fromJson(File("src/test/resources/newmodel.json").readText())
+            val newModelFile = File("src/test/resources/newmodel.json")
+            newModel = ModelData.fromJson(newModelFile.readText())
 
             val tree = CLTree(ObjectStoreCache(MapBaseStore()))
             branch = PBranch(tree, IdGenerator.getInstance(1))
@@ -36,7 +37,7 @@ class ModelImporterTest {
                 model.load(branch)
 //                println("PRE-SPEC ${model.toJson()}")
 //                println("PRE-LOADED ${branch.getRootNode().toJson()}")
-                ModelImporter(branch).import(newModel)
+                ModelImporter(branch).import(newModelFile)
 //                println("POST-SPEC ${newModel.root.toJson()}")
 //                println("POST-LOADED ${branch.getRootNode().toJson()}")
             }

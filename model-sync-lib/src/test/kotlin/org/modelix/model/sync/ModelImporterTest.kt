@@ -9,6 +9,7 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
+import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
@@ -48,8 +49,8 @@ class ModelImporterTest {
             val expectedNode = newModel.root.children[0]
             val expectedProperties = expectedNode.properties
             val actualProperties = branch.getRootNode().allChildren.first().asData().properties
-            assertEquals(expectedProperties, actualProperties.filterKeys { it != ModelImporter.idRole })
-            assertEquals(expectedNode.id, actualProperties[ModelImporter.idRole])
+            assertEquals(expectedProperties, actualProperties.filterKeys { it != NodeData.idPropertyKey })
+            assertEquals(expectedNode.id, actualProperties[NodeData.idPropertyKey])
         }
     }
 
@@ -70,8 +71,8 @@ class ModelImporterTest {
         branch.runRead {
             val index = 2
             val node = branch.getRootNode().allChildren.toList()[index]
-            val specifiedOrder = newModel.root.children[index].children.map { it.properties[ModelImporter.idRole] ?: it.id }
-            val actualOrder = node.allChildren.map { it.getPropertyValue(ModelImporter.idRole) }
+            val specifiedOrder = newModel.root.children[index].children.map { it.properties[NodeData.idPropertyKey] ?: it.id }
+            val actualOrder = node.allChildren.map { it.getPropertyValue(NodeData.idPropertyKey) }
             assertEquals(specifiedOrder, actualOrder)
         }
     }

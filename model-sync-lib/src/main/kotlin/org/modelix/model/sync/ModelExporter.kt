@@ -10,9 +10,6 @@ import org.modelix.model.data.associateWithNotNull
 import java.io.File
 
 class ModelExporter(private val branch: IBranch) {
-    companion object {
-        const val idRole = "originalId"
-    }
 
     fun export(outputFile: File) {
         lateinit var modelData: ModelData
@@ -28,14 +25,15 @@ class ModelExporter(private val branch: IBranch) {
 }
 
 fun INode.asExported() : NodeData {
+    val idKey = NodeData.idPropertyKey
     return NodeData(
-        id = getPropertyValue(ModelExporter.idRole) ?: reference.serialize(),
+        id = getPropertyValue(idKey) ?: reference.serialize(),
         concept = concept?.getUID(),
         role = roleInParent,
-        properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) }.filterKeys { it != ModelExporter.idRole },
+        properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) }.filterKeys { it != idKey },
         references = getReferenceRoles().associateWithNotNull {
             getReferenceTarget(it)?.let { node ->
-                node.getPropertyValue(ModelExporter.idRole) ?: node.reference.serialize()
+                node.getPropertyValue(idKey) ?: node.reference.serialize()
             }
         },
         children = allChildren.map { it.asExported() }

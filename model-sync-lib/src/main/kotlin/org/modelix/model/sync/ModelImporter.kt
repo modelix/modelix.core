@@ -6,10 +6,6 @@ import org.modelix.model.data.NodeData
 
 class ModelImporter(private val branch: IBranch) {
 
-    companion object {
-        const val idRole = "originalId"
-    }
-
     private lateinit var originalIdToRef: MutableMap<String, INodeReference>
 
     fun import(data: ModelData) {
@@ -63,7 +59,7 @@ class ModelImporter(private val branch: IBranch) {
         toBeAdded.forEach {
             val index = nodeData.children.indexOf(it)
             val createdNode = node.addNewChild(it.role, index, it.concept?.let { s -> ConceptReference(s) })
-            createdNode.setPropertyValue(idRole, it.properties[idRole] ?: it.id)
+            createdNode.setPropertyValue(NodeData.idPropertyKey, it.originalId())
         }
         toBeRemoved.forEach { node.removeChild(it) }
             syncChildOrder(node, nodeData)
@@ -84,11 +80,11 @@ class ModelImporter(private val branch: IBranch) {
     }
 
     private fun INode.originalId(): String? {
-        return this.getPropertyValue(idRole)
+        return this.getPropertyValue(NodeData.idPropertyKey)
     }
 
     private fun NodeData.originalId(): String? {
-        return properties[idRole] ?: id
+        return properties[NodeData.idPropertyKey] ?: id
     }
 
 }

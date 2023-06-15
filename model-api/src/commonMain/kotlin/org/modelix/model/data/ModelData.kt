@@ -79,7 +79,11 @@ data class NodeData(
     val children: List<NodeData> = emptyList(),
     val properties: Map<String, String> = emptyMap(),
     val references: Map<String, String> = emptyMap()
-)
+) {
+    companion object {
+        const val idPropertyKey = "originalId"
+    }
+}
 
 fun NodeData.uid(model: ModelData): String {
     return (model.id ?: throw IllegalArgumentException("Model has no ID")) +

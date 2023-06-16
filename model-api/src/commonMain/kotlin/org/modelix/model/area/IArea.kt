@@ -22,7 +22,7 @@ import org.modelix.model.api.*
  * It's like a unix filesystem with mount points. The model inside an area can also be an MPS model that is not a
  * persistent data structure.
  */
-interface IArea {
+interface IArea : INodeResolutionScope {
     /**
      * The root of an area is not allowed to change
      */
@@ -37,7 +37,7 @@ interface IArea {
      *
      * This method requires resolveNode().getNode() == this
      */
-    fun resolveNode(ref: INodeReference): INode?
+    override fun resolveNode(ref: INodeReference): INode?
 
     /**
      * This method allows resolveOriginalNode().getArea() != this

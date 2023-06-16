@@ -38,7 +38,9 @@ interface INodeReference {
      * @param area area to be searched in
      * @return the node, or null if the node could not be found
      */
-    fun resolveNode(area: IArea?): INode?
+    @Deprecated("use INodeResolutionScope", ReplaceWith("resolveIn(area!!)"))
+    fun resolveNode(area: IArea?): INode? = resolveIn(area as INodeResolutionScope)
+    fun resolveIn(scope: INodeResolutionScope): INode? = resolveNode(scope as IArea?)
 }
 
 class NodeReferenceKSerializer : KSerializer<INodeReference> {

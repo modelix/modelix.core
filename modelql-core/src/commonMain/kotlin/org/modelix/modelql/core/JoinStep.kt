@@ -1,29 +1,20 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.concatMap
+import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class JoinStep<RemoteE>() : ProducingStep<RemoteE>(), IConsumingStep<RemoteE>, IFluxStep<RemoteE> {
-    private val inputPorts = ArrayList<JoinInputPort>()
-    private var stepCompleted = false
+class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
+    private val producers = ArrayList<IProducingStep<E>>()
 
-    override fun getProducers(): List<IProducingStep<*>> {
-        return inputPorts.map { it.producer }
-    }
-
-    override fun onNext(element: RemoteE, producer: IProducingStep<RemoteE>) {
-        inputPorts.first { it.producer == producer }.onNext(element)
-    }
-
-    override fun onComplete(producer: IProducingStep<RemoteE>) {
-        inputPorts.first { it.producer == producer }.onComplete()
-    }
-
-    override fun reset() {
-        stepCompleted = false
-        inputPorts.forEach { it.reset() }
+    override fun getProducers(): List<IProducingStep<E>> {
+        return producers
     }
 
     override fun createDescriptor() = Descriptor()
@@ -36,35 +27,18 @@ class JoinStep<RemoteE>() : ProducingStep<RemoteE>(), IConsumingStep<RemoteE>, I
         }
     }
 
-    inner class JoinInputPort(val producer: IProducingStep<RemoteE>) {
-        private var portCompleted = false
-
-        fun reset() {
-            portCompleted = false
-        }
-
-        fun onNext(element: RemoteE) {
-            forwardToConsumers(element)
-        }
-
-        fun onComplete() {
-            portCompleted = true
-            if (!stepCompleted) {
-                if (inputPorts.all { it.portCompleted }) {
-                    stepCompleted = true
-                    completeConsumers()
-                }
-            }
-        }
-    }
-
-    override fun addProducer(producer: IProducingStep<RemoteE>) {
+    override fun addProducer(producer: IProducingStep<E>) {
         if (getProducers().contains(producer)) return
-        inputPorts.add(JoinInputPort(producer))
+        producers.add(producer)
         producer.addConsumer(this)
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<RemoteE> {
+    @OptIn(FlowPreview::class)
+    override fun createFlow(context: IFlowInstantiationContext): Flow<E> {
+        return producers.map { context.getOrCreateFlow(it) }.asFlow().flattenConcat()
+    }
+
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<E> {
         TODO("Not yet implemented")
     }
 

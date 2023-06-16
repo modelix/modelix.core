@@ -1,17 +1,22 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-abstract class FilteringStep<RemoteE>(val condition: Query<RemoteE, Boolean?>) : TransformingStep<RemoteE, RemoteE>() {
-    override fun transform(element: RemoteE): Sequence<RemoteE> {
-        return if (condition.run(element) == true) sequenceOf(element) else emptySequence()
+abstract class FilteringStep<E>(val condition: Query<E, Boolean?>) : TransformingStep<E, E>() {
+
+    override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
+        return input.filter { coroutineScope { condition.apply(it, this).singleOrNull() } == true }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<RemoteE> {
-        return getProducers().single().getOutputSerializer(serializersModule) as KSerializer<RemoteE>
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<E> {
+        return getProducer().getOutputSerializer(serializersModule) as KSerializer<E>
     }
 
     override fun toString(): String {
@@ -19,8 +24,8 @@ abstract class FilteringStep<RemoteE>(val condition: Query<RemoteE, Boolean?>) :
     }
 }
 
-class MonoFilteringStep<RemoteE>(condition: Query<RemoteE, Boolean?>)
-    : FilteringStep<RemoteE>(condition), IMonoStep<RemoteE> {
+class MonoFilteringStep<E>(condition: Query<E, Boolean?>)
+    : FilteringStep<E>(condition), IMonoStep<E> {
 
     override fun createDescriptor() = Descriptor(condition.createDescriptor())
 
@@ -33,8 +38,8 @@ class MonoFilteringStep<RemoteE>(condition: Query<RemoteE, Boolean?>)
     }
 }
 
-class FluxFilteringStep<RemoteE>(condition: Query<RemoteE, Boolean?>)
-    : FilteringStep<RemoteE>(condition), IFluxStep<RemoteE> {
+class FluxFilteringStep<E>(condition: Query<E, Boolean?>)
+    : FilteringStep<E>(condition), IFluxStep<E> {
 
     override fun createDescriptor() = Descriptor(condition.createDescriptor())
 
@@ -47,9 +52,9 @@ class FluxFilteringStep<RemoteE>(condition: Query<RemoteE, Boolean?>)
     }
 }
 
-fun <RemoteT> IFluxStep<RemoteT>.filter(condition: (IMonoStep<RemoteT>) -> IMonoStep<Boolean>): IFluxStep<RemoteT> {
+fun <T> IFluxStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IFluxStep<T> {
     return FluxFilteringStep(Query.build { condition(it).firstOrNull() }).also { connect(it) }
 }
-fun <RemoteT> IMonoStep<RemoteT>.filter(condition: (IMonoStep<RemoteT>) -> IMonoStep<Boolean>): IMonoStep<RemoteT> {
+fun <T> IMonoStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IMonoStep<T> {
     return MonoFilteringStep(Query.build { condition(it).firstOrNull() }).also { connect(it) }
 }

@@ -1,5 +1,7 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -7,8 +9,8 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class IntSumStep(val operand: Int): TransformingStep<Int, Int>() {
-    override fun transform(element: Int): Sequence<Int> {
-        return sequenceOf(element + operand)
+    override fun createFlow(input: Flow<Int>, context: IFlowInstantiationContext): Flow<Int> {
+        return input.map { it + operand }
     }
 
     override fun createDescriptor() = IntSumDescriptor(operand)

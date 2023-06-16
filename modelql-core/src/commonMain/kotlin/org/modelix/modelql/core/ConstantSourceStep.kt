@@ -1,16 +1,16 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), ISourceStep<E>, IMonoStep<E> {
-    override fun run() {
-        forwardToConsumers(element)
-        completeConsumers()
+abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), IMonoStep<E> {
+    override fun createFlow(context: IFlowInstantiationContext): Flow<E> {
+        return flowOf(element)
     }
 
     override fun toString(): String {

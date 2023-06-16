@@ -1,5 +1,9 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.zip
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.SerialKind
@@ -7,43 +11,21 @@ import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.*
 import kotlinx.serialization.modules.SerializersModule
 
-open class ZipStep<RemoteCommon, RemoteOut : ZipOutput<RemoteCommon, *, *, *, *, *, *, *, *, *>>() : ProducingStep<RemoteOut>(), IConsumingStep<RemoteCommon>, IFluxStep<RemoteOut> {
-    private val inputPorts = ArrayList<ZipInputPort>()
-    private var stepCompleted: Boolean = false
-
-    fun getSize(): Int = inputPorts.size
+open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IFluxStep<Out> {
+    private val producers = ArrayList<IProducingStep<CommonIn>>()
 
     override fun toString(): String {
-        return "zip(${inputPorts.joinToString(", ") { it.producer.toString() }})"
+        return "zip(${getProducers().joinToString(", ") { it.toString() }})"
     }
 
-    override fun reset() {
-        stepCompleted = false
-        inputPorts.forEach { it.reset() }
-    }
-
-    override fun addProducer(producer: IProducingStep<RemoteCommon>) {
+    override fun addProducer(producer: IProducingStep<CommonIn>) {
         if (getProducers().contains(producer)) return
-        inputPorts.add(ZipInputPort(producer))
+        producers.add(producer)
         producer.addConsumer(this)
     }
 
-    override fun getProducers(): List<IProducingStep<*>> {
-        return inputPorts.map { it.producer }
-    }
-
-    override fun onNext(element: RemoteCommon, producer: IProducingStep<RemoteCommon>) {
-        inputPorts.first { it.producer == producer }.onNext(element)
-    }
-
-    override fun onComplete(producer: IProducingStep<RemoteCommon>) {
-        inputPorts.first { it.producer == producer }.onComplete()
-    }
-
-    private fun tryEmit() {
-        while (inputPorts.any { it.hasPending() } && inputPorts.all { it.canEmit() }) {
-            forwardToConsumers(ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>(inputPorts.map { it.emit() }) as RemoteOut)
-        }
+    override fun getProducers(): List<IProducingStep<CommonIn>> {
+        return producers
     }
 
     override fun createDescriptor() = Descriptor()
@@ -56,68 +38,17 @@ open class ZipStep<RemoteCommon, RemoteOut : ZipOutput<RemoteCommon, *, *, *, *,
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<*> {
-        val elementSerializers: Array<KSerializer<RemoteCommon>> = inputPorts.map {
-            it.producer.getOutputSerializer(serializersModule) as KSerializer<RemoteCommon>
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
+        val elementSerializers: Array<KSerializer<CommonIn>> = producers.map {
+            it.getOutputSerializer(serializersModule) as KSerializer<CommonIn>
         }.toTypedArray()
-        return ZipOutputSerializer<RemoteCommon>(elementSerializers)
+        return ZipOutputSerializer<CommonIn>(elementSerializers) as KSerializer<Out>
     }
 
-    private inner class ZipInputPort(val producer: IProducingStep<RemoteCommon>) {
-        private var portCompleted = false
-        private val pendingElements = ArrayList<RemoteCommon>()
-        private var lastElement: RemoteCommon? = null
-        private var size = 0
-
-        fun reset() {
-            portCompleted = false
-            pendingElements.clear()
-            lastElement = null
-            size = 0
+    override fun createFlow(context: IFlowInstantiationContext): Flow<Out> {
+        return combine<Any?, Out>(producers.map { context.getOrCreateFlow(it) }) { values ->
+            ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>(values.toList())  as Out
         }
-
-        fun onNext(element: RemoteCommon) {
-            pendingElements.add(element)
-            lastElement = element
-            size++
-            tryEmit()
-        }
-
-        fun onComplete() {
-            portCompleted = true
-            tryEmit()
-            if (!stepCompleted) {
-                if (inputPorts.all { it.portCompleted }) {
-                    stepCompleted = true
-                    completeConsumers()
-                }
-            }
-        }
-
-        fun canRepeat(): Boolean = portCompleted && size == 1
-
-        fun repeatLast(): RemoteCommon {
-            require(canRepeat())
-            return lastElement as RemoteCommon
-        }
-
-        fun canEmit() = hasPending() || canRepeat()
-
-        fun emit(): RemoteCommon {
-            return if (hasPending()) {
-                removeFirst()
-            } else if (canRepeat()) {
-                repeatLast()
-            } else {
-                throw IllegalStateException("No elements available")
-            }
-        }
-
-        fun removeFirst(): RemoteCommon = pendingElements.removeFirst()
-
-        fun hasPending() = pendingElements.isNotEmpty()
-
-        fun isComplete() = stepCompleted
     }
 }
 

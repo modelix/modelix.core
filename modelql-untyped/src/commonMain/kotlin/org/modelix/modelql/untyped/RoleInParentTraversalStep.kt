@@ -13,6 +13,9 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,11 +26,11 @@ import org.modelix.model.api.INode
 import org.modelix.modelql.core.*
 
 class RoleInParentTraversalStep(): MonoTransformingStep<INode, String?>() {
-    override fun transform(element: INode): Sequence<String?> {
-        return sequenceOf(element.roleInParent)
+    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<String?> {
+        return input.map { it.roleInParent }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<*> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out String?> {
         return serializersModule.serializer<String>().nullable
     }
 

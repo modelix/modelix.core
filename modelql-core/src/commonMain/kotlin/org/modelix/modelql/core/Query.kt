@@ -1,17 +1,23 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
+import kotlin.coroutines.coroutineContext
 
 interface IQuery<In, Out> {
-    fun run(input: In): Out
+    suspend fun run(input: In): Out
 }
 
-class Query<RemoteIn, RemoteOut>(val inputStep: QueryInput<RemoteIn>, val outputStep: ITerminalStep<RemoteOut>) : IQuery<RemoteIn, RemoteOut> {
+class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingStep<Out>) : IQuery<In, Out> {
 
     init {
         for (step in getAllSteps()) {
@@ -31,20 +37,16 @@ class Query<RemoteIn, RemoteOut>(val inputStep: QueryInput<RemoteIn>, val output
         }
     }
 
-    fun optimize(): Query<RemoteIn, RemoteOut> {
+    fun optimize(): Query<In, Out> {
         return this
     }
 
-    fun validateAndOptimize(): Query<RemoteIn, RemoteOut> {
+    fun validateAndOptimize(): Query<In, Out> {
         validate()
         return optimize()
     }
 
-    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<RemoteOut> = outputStep.getOutputSerializer(serializersModule) as KSerializer<RemoteOut>
-
-    fun reset() {
-        getAllSteps().forEach { it.reset() }
-    }
+    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> = outputStep.getOutputSerializer(serializersModule) as KSerializer<Out>
 
     fun getAllSteps(): Set<IStep> {
         val allSteps = HashSet<IStep>()
@@ -53,11 +55,32 @@ class Query<RemoteIn, RemoteOut>(val inputStep: QueryInput<RemoteIn>, val output
         return allSteps
     }
 
-    override fun run(input: RemoteIn): RemoteOut {
-        reset()
-        inputStep.run(input)
-        getAllSteps().filterIsInstance<ISourceStep<*>>().forEach { it.run() }
-        return outputStep.getResult()
+    override suspend fun run(input: In): Out {
+        return coroutineScope {
+            val flow = apply(input, this)
+            try {
+                flow.single()
+            } catch (ex: NoSuchElementException) {
+                throw RuntimeException("Empty query result: " + this@Query, ex)
+            }
+        }
+    }
+
+    suspend fun runList(input: In): List<Out> {
+        return coroutineScope { apply(input, this).toList() }
+    }
+
+    fun apply(inputElement: In, coroutineScope: CoroutineScope): Flow<Out> {
+        return apply(flowOf(inputElement), coroutineScope)
+    }
+
+    @OptIn(FlowPreview::class)
+    fun apply(input: Flow<In>, coroutineScope: CoroutineScope): Flow<Out> {
+        return input.flatMapMerge {
+            val context = FlowInstantiationContext(coroutineScope)
+            context.put(inputStep, flowOf(it))
+            context.getOrCreateFlow(outputStep)
+        }
     }
 
     fun createDescriptor(): QueryDescriptor {
@@ -103,11 +126,10 @@ class Query<RemoteIn, RemoteOut>(val inputStep: QueryInput<RemoteIn>, val output
                 subclass(org.modelix.modelql.core.ZipStep.Descriptor::class)
             }
         }
-        fun <RemoteIn, RemoteOut> build(body: (IMonoStep<RemoteIn>) -> IMonoStep<RemoteOut>): Query<RemoteIn, RemoteOut> {
+        fun <RemoteIn, RemoteOut> build(body: (IMonoStep<RemoteIn>) -> IProducingStep<RemoteOut>): Query<RemoteIn, RemoteOut> {
             val inputStep = QueryInput<RemoteIn>()
             val outputStep = body(inputStep)
-            val terminalStep = if (outputStep is ITerminalStep) outputStep else outputStep.toTerminal()
-            return Query(inputStep, terminalStep)
+            return Query(inputStep, outputStep)
         }
     }
 }
@@ -161,18 +183,17 @@ private fun IStep.getDirectlyConnectedSteps(): Set<IStep> {
             ).toSet()
 }
 
-class QueryInput<RemoteOut> : ProducingStep<RemoteOut>(), IMonoStep<RemoteOut> {
-    internal var indirectConsumer: IConsumingStep<RemoteOut>? = null
+class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
+    internal var indirectConsumer: IConsumingStep<E>? = null
     override fun toString(): String = "it"
 
-    fun run(inputElement: RemoteOut) {
-        forwardToConsumers(inputElement)
-        completeConsumers()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {
+        val c = indirectConsumer ?: throw UnsupportedOperationException()
+        return c.getProducers().single().getOutputSerializer(serializersModule) as KSerializer<out E>
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<*> {
-        val c = indirectConsumer ?: throw UnsupportedOperationException()
-        return c.getProducers().single().getOutputSerializer(serializersModule)
+    override fun createFlow(context: IFlowInstantiationContext): Flow<E> {
+        throw RuntimeException("The flow for the query input step is expected to be created by the query")
     }
 
     override fun createDescriptor() = Descriptor()

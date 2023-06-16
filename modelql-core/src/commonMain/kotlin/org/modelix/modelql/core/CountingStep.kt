@@ -28,8 +28,8 @@ class CountingStep() : FoldingStep<Any?, Int>(0) {
     }
 }
 
-fun IProducingStep<*>.size() = count()
-fun IProducingStep<*>.count() = CountingStep().also { connect(it) }
-fun IProducingStep<*>.isEmpty(): IMonoStep<Boolean> = count().map { it.equalTo(0) }
-fun IProducingStep<*>.isNotEmpty(): IMonoStep<Boolean> = !isEmpty()
+fun IProducingStep<Any?>.size() = count()
+fun IProducingStep<Any?>.count() = CountingStep().also { connect(it) }
+fun IProducingStep<Any?>.isEmpty(): IMonoStep<Boolean> = count().map { it.equalTo(0) }
+fun IProducingStep<Any?>.isNotEmpty(): IMonoStep<Boolean> = !isEmpty()
 

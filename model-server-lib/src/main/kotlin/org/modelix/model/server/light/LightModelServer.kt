@@ -27,16 +27,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
-import org.modelix.model.api.ConceptReference
-import org.modelix.model.api.IConceptReference
-import org.modelix.model.api.INode
-import org.modelix.model.api.INodeReference
-import org.modelix.model.api.INodeReferenceSerializer
-import org.modelix.model.api.IRole
-import org.modelix.model.api.key
-import org.modelix.model.api.remove
-import org.modelix.model.api.serialize
-import org.modelix.model.api.usesRoleIds
+import org.modelix.model.api.*
 import org.modelix.model.server.api.AddNewChildNodeOpData
 import org.modelix.model.server.api.ChangeSetId
 import org.modelix.model.server.api.DeleteNodeOpData
@@ -133,7 +124,14 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 val queryDescriptor = UntypedModelQL.json.decodeFromString<QueryDescriptor>(serializedQuery)
                 val query = queryDescriptor.createQuery() as Query<INode, Any?>
                 LOG.debug { "query: $query" }
-                val result: Any? = getArea().executeRead { query.run(rootNode) }
+                val nodeResolutionScope: INodeResolutionScope = getArea()
+                val result: Any? = getArea().executeRead {
+                    runBlocking {
+                        withContext(nodeResolutionScope) {
+                            query.run(rootNode)
+                        }
+                    }
+                }
                 val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule)
                 val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
                 call.respond(serializedResult)

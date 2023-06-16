@@ -13,6 +13,8 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -22,8 +24,8 @@ import org.modelix.model.api.ConceptReference
 import org.modelix.modelql.core.*
 
 class ConceptReferenceUIDTraversalStep(): MonoTransformingStep<ConceptReference, String>() {
-    override fun transform(element: ConceptReference): Sequence<String> {
-        return sequenceOf(element.getUID())
+    override fun createFlow(input: Flow<ConceptReference>, context: IFlowInstantiationContext): Flow<String> {
+        return input.map { it.getUID() }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String> {

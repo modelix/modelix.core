@@ -13,20 +13,20 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
-import org.modelix.model.api.asAsyncNode
 import org.modelix.model.api.resolveReferenceLinkOrFallback
 import org.modelix.modelql.core.*
-import org.modelix.modelql.streams.IConsumer
 
-class ReferenceTraversalStep(val role: String): AsyncTransformingStep<INode, INode>(), IMonoStep<INode> {
-    override fun transformAsync(inputElement: INode, outputConsumer: IConsumer<INode>) {
-        inputElement.asAsyncNode().visitReferenceTarget(inputElement.resolveReferenceLinkOrFallback(role), ConsumerAdapter(outputConsumer))
+class ReferenceTraversalStep(val role: String): MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
+    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
+        return input.flatMapConcat { it.asFlowNode().getReferenceTargetAsFlow(it.resolveReferenceLinkOrFallback(role)) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

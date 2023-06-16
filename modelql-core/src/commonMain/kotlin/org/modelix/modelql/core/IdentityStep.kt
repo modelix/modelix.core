@@ -1,17 +1,18 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class IdentityStep<RemoteE> : TransformingStep<RemoteE, RemoteE>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<*> {
-        return getProducers().first().getOutputSerializer(serializersModule)
+class IdentityStep<E> : TransformingStep<E, E>() {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {
+        return getProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun transform(element: RemoteE): Sequence<RemoteE> {
-        return sequenceOf(element)
+    override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
+        return input
     }
 
     override fun createDescriptor(): StepDescriptor {

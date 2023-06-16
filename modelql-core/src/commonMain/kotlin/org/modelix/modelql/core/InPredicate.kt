@@ -1,5 +1,7 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -7,8 +9,9 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class InPredicate(val values: Set<String>) : MonoTransformingStep<String?, Boolean>() {
-    override fun transform(element: String?): Sequence<Boolean> {
-        return sequenceOf(values.contains(element))
+
+    override fun createFlow(input: Flow<String?>, context: IFlowInstantiationContext): Flow<Boolean> {
+        return input.map { values.contains(it) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {

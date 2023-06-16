@@ -1,5 +1,6 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -7,48 +8,19 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.SetSerializer
 import kotlinx.serialization.modules.SerializersModule
 
-abstract class CollectorStep<RemoteE, RemoteCollectionT : Collection<RemoteE>>()
-    : IConsumingStep<RemoteE>,
-      ProducingStep<RemoteCollectionT>(),
-      ITerminalStep<RemoteCollectionT> {
-
-    private var producer: IProducingStep<RemoteE>? = null
-
-    override fun addProducer(producer: IProducingStep<RemoteE>) {
-        if (this.producer != null) throw IllegalStateException("Only one input supported")
-        this.producer = producer
+abstract class CollectorStep<E, CollectionT : Collection<E>>() : AggregationStep<E, CollectionT>() {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out CollectionT> {
+        val element = getProducers().first().getOutputSerializer(serializersModule)
+        return getOutputSerializer(element)
     }
 
-    override fun getProducers(): List<IProducingStep<*>> {
-        return listOfNotNull(producer)
-    }
-
-    protected var collection: MutableCollection<RemoteE> = createCollection()
-
-    override fun onNext(element: RemoteE, source: IProducingStep<RemoteE>) {
-        collection.add(element)
-    }
-
-    override fun onComplete(source: IProducingStep<RemoteE>) {
-        forwardToConsumers(collection as RemoteCollectionT)
-        completeConsumers()
-    }
-
-    override fun getResult(): RemoteCollectionT {
-        return collection as RemoteCollectionT
-    }
-
-    override fun reset() {
-        collection = createCollection()
-    }
-
-    protected abstract fun createCollection(): MutableCollection<RemoteE>
+    abstract protected fun getOutputSerializer(elementSerializer: KSerializer<out E>): KSerializer<out CollectionT>
 }
 
-class ListCollectorStep<RemoteE> : CollectorStep<RemoteE, List<RemoteE>>() {
-    override fun createCollection() = ArrayList<RemoteE>()
-
+class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     override fun createDescriptor() = Descriptor()
+
+    override suspend fun aggregate(input: Flow<E>): List<E> = input.toList()
 
     @Serializable
     @SerialName("toList")
@@ -58,9 +30,8 @@ class ListCollectorStep<RemoteE> : CollectorStep<RemoteE, List<RemoteE>>() {
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<List<RemoteE>> {
-        val element = getProducers().first().getOutputSerializer(serializersModule) as KSerializer<RemoteE>
-        return ListSerializer<RemoteE>(element)
+    override fun getOutputSerializer(elementSerializer: KSerializer<out E>): KSerializer<out List<E>> {
+        return ListSerializer(elementSerializer)
     }
 
     override fun toString(): String {
@@ -68,10 +39,11 @@ class ListCollectorStep<RemoteE> : CollectorStep<RemoteE, List<RemoteE>>() {
     }
 }
 
-class SetCollectorStep<RemoteE> : CollectorStep<RemoteE, Set<RemoteE>>() {
-    override fun createCollection() = LinkedHashSet<RemoteE>()
+class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
     override fun createDescriptor() = Descriptor()
+
+    override suspend fun aggregate(input: Flow<E>): Set<E> = input.toSet()
 
     @Serializable
     @SerialName("toSet")
@@ -81,9 +53,8 @@ class SetCollectorStep<RemoteE> : CollectorStep<RemoteE, Set<RemoteE>>() {
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Set<RemoteE>> {
-        val element = getProducers().single().getOutputSerializer(serializersModule) as KSerializer<RemoteE>
-        return SetSerializer<RemoteE>(element)
+    override fun getOutputSerializer(elementSerializer: KSerializer<out E>): KSerializer<out Set<E>> {
+        return SetSerializer(elementSerializer)
     }
 
     override fun toString(): String {
@@ -91,7 +62,5 @@ class SetCollectorStep<RemoteE> : CollectorStep<RemoteE, Set<RemoteE>>() {
     }
 }
 
-fun <RemoteOut> IFluxStep<RemoteOut>.toList(): ITerminalStep<List<RemoteOut>> = ListCollectorStep<RemoteOut>().also { connect(it) }
-fun <RemoteOut> IMonoStep<RemoteOut>.toSingletonList(): ITerminalStep<List<RemoteOut>> = ListCollectorStep<RemoteOut>().also { connect(it) }
-fun <RemoteOut> IFluxStep<RemoteOut>.toSet(): ITerminalStep<Set<RemoteOut>> = SetCollectorStep<RemoteOut>().also { connect(it) }
-fun <RemoteOut> IMonoStep<RemoteOut>.toSingletonSet(): ITerminalStep<Set<RemoteOut>> = SetCollectorStep<RemoteOut>().also { connect(it) }
+fun <T> IFluxStep<T>.toList(): IMonoStep<List<T>> = ListCollectorStep<T>().also { connect(it) }
+fun <T> IFluxStep<T>.toSet(): IMonoStep<Set<T>> = SetCollectorStep<T>().also { connect(it) }

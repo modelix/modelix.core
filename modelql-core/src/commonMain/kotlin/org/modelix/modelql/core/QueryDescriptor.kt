@@ -22,7 +22,7 @@ data class QueryDescriptor(
             toStep.connect(fromStep)
         }
         val inputStep = resolveStep(input) as QueryInput<Any?>
-        val outputStep = resolveStep(output) as ITerminalStep<Any?>
+        val outputStep = resolveStep(output) as IProducingStep<Any?>
         return Query<Any?, Any?>(inputStep, outputStep)
     }
 }

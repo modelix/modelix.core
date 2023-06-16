@@ -1,41 +1,27 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-abstract class MappingStep<RemoteIn, RemoteOut>(val query: Query<RemoteIn, RemoteOut>) : IConsumingStep<RemoteIn>, ProducingStep<RemoteOut>() {
+abstract class MappingStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out>() {
 
     init {
         query.inputStep.indirectConsumer = this
     }
 
-    private var producer: IProducingStep<RemoteIn>? = null
-
-    override fun addProducer(producer: IProducingStep<RemoteIn>) {
-        if (this.producer != null) throw IllegalStateException("Only one input supported")
-        this.producer = producer
+    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+        return query.apply(input, context.coroutineScope)
     }
 
-    override fun getProducers(): List<IProducingStep<*>> {
-        return listOfNotNull(producer)
-    }
-
-    override fun onNext(element: RemoteIn, producer: IProducingStep<RemoteIn>) {
-        forwardToConsumers(query.run(element))
-    }
-
-    override fun onComplete(producer: IProducingStep<RemoteIn>) {
-        completeConsumers()
-    }
-
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<RemoteOut> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
         return query.getOutputSerializer(serializersModule)
     }
 
     override fun toString(): String {
-        return "$producer.map { $query }"
+        return "${getProducer()}.map { $query }"
     }
 }
 

@@ -1,5 +1,7 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -11,8 +13,8 @@ class StringToIntStep : MonoTransformingStep<String?, Int>() {
         return serializersModule.serializer<Int>()
     }
 
-    override fun transform(element: String?): Sequence<Int> {
-        return sequenceOf(element?.toInt() ?: 0)
+    override fun createFlow(input: Flow<String?>, context: IFlowInstantiationContext): Flow<Int> {
+        return input.map { it?.toInt() ?: 0 }
     }
 
     override fun createDescriptor(): StepDescriptor {

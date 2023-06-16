@@ -13,6 +13,10 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -22,11 +26,10 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.asAsyncNode
 import org.modelix.model.api.resolvePropertyOrFallback
 import org.modelix.modelql.core.*
-import org.modelix.modelql.streams.IConsumer
 
-class PropertyTraversalStep(val role: String): AsyncTransformingStep<INode, String?>(), IMonoStep<String?> {
-    override fun transformAsync(inputElement: INode, outputConsumer: IConsumer<String?>) {
-        inputElement.asAsyncNode().visitPropertyValue(inputElement.resolvePropertyOrFallback(role), ConsumerAdapter(outputConsumer))
+class PropertyTraversalStep(val role: String): MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
+    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<String?> {
+        return input.flatMapConcat { it.asFlowNode().getPropertyValueAsFlow(it.resolvePropertyOrFallback(role)) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String?> {

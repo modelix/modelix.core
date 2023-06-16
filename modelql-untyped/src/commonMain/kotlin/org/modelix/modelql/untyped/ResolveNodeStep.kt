@@ -13,6 +13,9 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,13 +23,16 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.area.ContextArea
+import org.modelix.model.api.INodeResolutionScope
 import org.modelix.modelql.core.*
 
 class ResolveNodeStep(): MonoTransformingStep<INodeReference, INode>() {
-    override fun transform(element: INodeReference): Sequence<INode> {
-        val node = element.resolveNode(ContextArea.getArea()) ?: throw RuntimeException("Node not found: $element")
-        return sequenceOf(node)
+    override fun createFlow(input: Flow<INodeReference>, context: IFlowInstantiationContext): Flow<INode> {
+        return input.map {
+            val refScope = context.coroutineScope.coroutineContext[INodeResolutionScope]
+                ?: throw IllegalStateException("No INodeResolutionScope found in the coroutine context")
+            it.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $it")
+        }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

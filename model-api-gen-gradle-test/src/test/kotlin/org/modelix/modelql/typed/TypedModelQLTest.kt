@@ -141,7 +141,7 @@ class TypedModelQLTest {
 
     @Test
     fun testNodeSerialization() = runTest { httpClient ->
-        val client = ModelQLClient.builder().also { it.url("http://localhost/query") }.httpClient(httpClient).build()
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result: List<StaticMethodDeclaration> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -155,7 +155,7 @@ class TypedModelQLTest {
 
     @Test
     fun returnTypedNode() = runTest { httpClient ->
-        val client = ModelQLClient.builder().also { it.url("http://localhost/query") }.httpClient(httpClient).build()
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result: List<StaticMethodDeclaration> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member

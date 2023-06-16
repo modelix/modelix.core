@@ -13,6 +13,8 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,8 +27,8 @@ import org.modelix.model.api.serialize
 import org.modelix.modelql.core.*
 
 class NodeReferenceTraversalStep(): MonoTransformingStep<INode, SerializedNodeReference>() {
-    override fun transform(element: INode): Sequence<SerializedNodeReference> {
-        return sequenceOf(SerializedNodeReference((element.reference.serialize())))
+    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<SerializedNodeReference> {
+        return input.map { SerializedNodeReference((it.reference.serialize())) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<SerializedNodeReference> {

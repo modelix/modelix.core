@@ -1,35 +1,20 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class FlatMapStep<RemoteIn, RemoteOut>(val query: Query<RemoteIn, List<RemoteOut>>) : IConsumingStep<RemoteIn>, ProducingStep<RemoteOut>(),
-    IFluxStep<RemoteOut> {
+class FlatMapStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
 
-    private var producer: IProducingStep<RemoteIn>? = null
-
-    override fun addProducer(producer: IProducingStep<RemoteIn>) {
-        if (this.producer != null) throw IllegalStateException("Only one input supported")
-        this.producer = producer
+    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+        return input.flatMapConcat { query.apply(it, context.coroutineScope) }
     }
 
-    override fun getProducers(): List<IProducingStep<*>> {
-        return listOfNotNull(producer)
-    }
-
-    override fun onNext(element: RemoteIn, producer: IProducingStep<RemoteIn>) {
-        // TODO forward elements to output directly without building a list
-        query.run(element).forEach { forwardToConsumers(it) }
-    }
-
-    override fun onComplete(producer: IProducingStep<RemoteIn>) {
-        completeConsumers()
-    }
-
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<RemoteOut> {
-        return (query.outputStep as ListCollectorStep).getProducers().first().getOutputSerializer(serializersModule) as KSerializer<RemoteOut>
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
+        return (query.outputStep as IProducingStep<*>).getOutputSerializer(serializersModule) as KSerializer<Out>
     }
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())
@@ -38,7 +23,7 @@ class FlatMapStep<RemoteIn, RemoteOut>(val query: Query<RemoteIn, List<RemoteOut
     @SerialName("flatMap")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return FlatMapStep<Any?, Any?>(query.createQuery() as Query<Any?, List<Any?>>)
+            return FlatMapStep<Any?, Any?>(query.createQuery() as Query<Any?, Any?>)
         }
     }
 
@@ -48,6 +33,6 @@ class FlatMapStep<RemoteIn, RemoteOut>(val query: Query<RemoteIn, List<RemoteOut
 }
 
 
-fun <RemoteIn, RemoteOut> IProducingStep<RemoteIn>.flatMap(body: (IMonoStep<RemoteIn>) -> IFluxStep<RemoteOut>): IFluxStep<RemoteOut> {
-    return FlatMapStep(Query.build { body(it).toList() }).also { connect(it) }
+fun <In, Out> IProducingStep<In>.flatMap(body: (IMonoStep<In>) -> IFluxStep<Out>): IFluxStep<Out> {
+    return FlatMapStep(Query.build(body)).also { connect(it) }
 }

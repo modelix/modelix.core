@@ -1,5 +1,7 @@
 package org.modelix.modelql.typed
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -93,8 +95,8 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
         return TypedNodeSerializer(nodeClass, serializersModule.serializer<INode>())
     }
 
-    override fun transform(element: INode): Sequence<Typed> {
-        return sequenceOf(element.typed(nodeClass))
+    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<Typed> {
+        return input.map { it.typed(nodeClass) }
     }
 
     override fun createDescriptor(): StepDescriptor {
@@ -123,8 +125,8 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
         return serializersModule.serializer<INode>()
     }
 
-    override fun transform(element: ITypedNode): Sequence<INode> {
-        return sequenceOf(element.unwrap())
+    override fun createFlow(input: Flow<ITypedNode>, context: IFlowInstantiationContext): Flow<INode> {
+        return input.map { it.unwrap() }
     }
 
     override fun createDescriptor(): StepDescriptor {

@@ -1,13 +1,15 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class OrOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
-    override fun transform(element: IZipOutput<Boolean>): Sequence<Boolean> {
-        return sequenceOf(element.values.any { it })
+    override fun createFlow(input: Flow<IZipOutput<Boolean>>, context: IFlowInstantiationContext): Flow<Boolean> {
+        return input.map { it.values.any { it } }
     }
 
     override fun createDescriptor() = Descriptor()

@@ -1,92 +1,102 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 
 interface IStep {
+    @Deprecated("")
     var owningQuery: IQuery<*, *>?
     fun validate() {}
-    fun reset(): Unit = Unit
+    @Deprecated("")
     fun createDescriptor(): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
 }
 
-interface IProducingStep<out RemoteOut> : IStep {
-    fun addConsumer(consumer: IConsumingStep<RemoteOut>)
-    fun getConsumers(): List<IConsumingStep<*>>
-    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<*>
+interface IFlowInstantiationContext {
+    val coroutineScope: CoroutineScope
+    fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T>
 }
-fun <RemoteT> IProducingStep<RemoteT>.connect(consumer: IConsumingStep<RemoteT>) = addConsumer(consumer)
+class FlowInstantiationContext(override val coroutineScope: CoroutineScope) : IFlowInstantiationContext {
+    private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
+    fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
+        createdProducers[step] = producer
+    }
+    override fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T> {
+        return (createdProducers as MutableMap<IProducingStep<T>, Flow<T>>)
+            .getOrPut(step) { step.createFlow(this) }
+    }
+}
+
+interface IProducingStep<out E> : IStep {
+    fun addConsumer(consumer: IConsumingStep<E>)
+    fun getConsumers(): List<IConsumingStep<*>>
+    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E>
+    fun createFlow(context: IFlowInstantiationContext): Flow<E>
+}
+fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) = addConsumer(consumer)
 fun <T> IConsumingStep<T>.connect(producer: IProducingStep<T>) = producer.addConsumer(this)
 
-interface IMonoStep<out RemoteOut> : IProducingStep<RemoteOut>
-interface IFluxStep<out RemoteOut> : IProducingStep<RemoteOut>
+interface IMonoStep<out E> : IProducingStep<E>
+interface IFluxStep<out E> : IProducingStep<E>
 
 interface IConsumingStep<in E> : IStep {
     fun addProducer(producer: IProducingStep<E>)
     fun getProducers(): List<IProducingStep<*>>
-    fun onNext(element: E, producer: IProducingStep<E>)
-    fun onComplete(producer: IProducingStep<E>)
 }
 
-interface ITerminalStep<out RemoteResult> : IMonoStep<RemoteResult> {
-    fun getResult(): RemoteResult
-}
+interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out>
 
-interface IProducingAndTerminalStep<RemoteOut, out LocalOut> : ITerminalStep<RemoteOut>
-
-interface ISourceStep<out RemoteOut> : IProducingStep<RemoteOut> {
-    fun run()
-}
-
-abstract class ProducingStep<RemoteOut> : IProducingStep<RemoteOut> {
+abstract class ProducingStep<E> : IProducingStep<E> {
     override var owningQuery: IQuery<*, *>? = null
-    private val consumers = ArrayList<IConsumingStep<RemoteOut>>()
+    private val consumers = ArrayList<IConsumingStep<E>>()
 
-    override fun addConsumer(consumer: IConsumingStep<RemoteOut>) {
+    override fun addConsumer(consumer: IConsumingStep<E>) {
         if (consumers.contains(consumer)) return
         consumers += consumer
         consumer.addProducer(this)
     }
 
-    override fun getConsumers(): List<IConsumingStep<*>> {
+    override fun getConsumers(): List<IConsumingStep<E>> {
         return consumers
-    }
-
-    protected fun forwardToConsumers(element: RemoteOut) {
-        consumers.forEach { it.onNext(element, this) }
-    }
-    protected fun completeConsumers() {
-        consumers.forEach { it.onComplete(this) }
     }
 }
 
-abstract class TransformingStep<RemoteIn, RemoteOut> : IConsumingStep<RemoteIn>, ProducingStep<RemoteOut>() {
-    private val producers = ArrayList<IProducingStep<RemoteIn>>()
+abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingStep<Out>() {
 
-    override fun addProducer(producer: IProducingStep<RemoteIn>) {
-        if (producers.contains(producer)) return
-        producers += producer
-        producer.addConsumer(this)
+    private var producer: IProducingStep<In>? = null
+
+    override fun addProducer(producer: IProducingStep<In>) {
+        if (this.producer != null) throw IllegalStateException("Only one input supported")
+        this.producer = producer
     }
 
-    override fun getProducers(): List<IProducingStep<*>> {
-        return producers
-    }
+    override fun getProducers(): List<IProducingStep<In>> {
+        return listOfNotNull(producer)
+    }   
+    
+    fun getProducer(): IProducingStep<In> = producer!!
 
-    override fun onNext(element: RemoteIn, producer: IProducingStep<RemoteIn>) {
-        for (outputElement in transform(element)) {
-            forwardToConsumers(outputElement)
-        }
-    }
+    protected abstract fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out>
 
-    override fun onComplete(producer: IProducingStep<RemoteIn>) {
-        completeConsumers()
+    override fun createFlow(context: IFlowInstantiationContext): Flow<Out> {
+        return createFlow(context.getOrCreateFlow(getProducer()), context)
     }
-
-    protected abstract fun transform(element: RemoteIn): Sequence<RemoteOut>
 }
 
 abstract class MonoTransformingStep<RemoteIn, RemoteOut> : TransformingStep<RemoteIn, RemoteOut>(), IMonoStep<RemoteOut>
 abstract class FluxTransformingStep<RemoteIn, RemoteOut> : TransformingStep<RemoteIn, RemoteOut>(), IFluxStep<RemoteOut>
+
+abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
+    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+        return flow {
+            val value = aggregate(input)
+            println(value)
+            emit(value)
+        }//.shareIn(context.coroutineScope, SharingStarted.WhileSubscribed(), 1)
+    }
+
+    protected abstract suspend fun aggregate(input: Flow<In>): Out
+}
 
 

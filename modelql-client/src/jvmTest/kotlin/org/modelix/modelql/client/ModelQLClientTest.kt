@@ -2,7 +2,7 @@ package org.modelix.modelql.client
 
 import io.ktor.client.*
 import io.ktor.server.testing.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
@@ -18,24 +18,27 @@ import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
 
 class ModelQLClientTest {
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
-        application {
-            val tree = CLTree(ObjectStoreCache(MapBaseStore()))
-            val branch = PBranch(tree, IdGenerator.getInstance(1))
-            val rootNode = branch.getRootNode()
-            branch.runWrite {
-                val module1 = rootNode.addNewChild("modules", -1, null as IConceptReference?)
-                module1.setPropertyValue("name", "abc")
-                val model1a = module1.addNewChild("models", -1, null as IConceptReference?)
-                model1a.setPropertyValue("name", "model1a")
+        withTimeout(3.seconds) {
+            application {
+                val tree = CLTree(ObjectStoreCache(MapBaseStore()))
+                val branch = PBranch(tree, IdGenerator.getInstance(1))
+                val rootNode = branch.getRootNode()
+                branch.runWrite {
+                    val module1 = rootNode.addNewChild("modules", -1, null as IConceptReference?)
+                    module1.setPropertyValue("name", "abc")
+                    val model1a = module1.addNewChild("models", -1, null as IConceptReference?)
+                    model1a.setPropertyValue("name", "model1a")
+                }
+                LightModelServer(80, rootNode).apply { installHandlers() }
             }
-            LightModelServer(80, rootNode).apply { installHandlers() }
+            val httpClient = createClient {
+            }
+            block(httpClient)
         }
-        val httpClient = createClient {
-        }
-        block(httpClient)
     }
 
     @Test

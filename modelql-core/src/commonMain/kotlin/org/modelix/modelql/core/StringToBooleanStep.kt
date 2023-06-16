@@ -1,5 +1,7 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -11,8 +13,8 @@ class StringToBooleanStep : MonoTransformingStep<String?, Boolean>() {
         return serializersModule.serializer<Boolean>()
     }
 
-    override fun transform(element: String?): Sequence<Boolean> {
-        return sequenceOf(element?.toBoolean() ?: false)
+    override fun createFlow(input: Flow<String?>, context: IFlowInstantiationContext): Flow<Boolean> {
+        return input.map { it?.toBoolean() ?: false }
     }
 
     override fun createDescriptor(): StepDescriptor {

@@ -1,5 +1,13 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -9,10 +17,19 @@ import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.time.Duration.Companion.seconds
 
 class ModelQLTest {
+    fun runTestWithTimeout(body: suspend TestScope.() -> Unit): TestResult {
+        return runTest {
+            withTimeout(3.seconds) {
+                body()
+            }
+        }
+    }
+
     @Test
-    fun test_local() {
+    fun test_local() = runTestWithTimeout {
         val result: List<MyNonSerializableClass> = remoteProductDatabaseQuery { db ->
             db.products.map {
                 val id = it.id
@@ -28,7 +45,7 @@ class ModelQLTest {
     }
 
     @Test
-    fun test_illegal_cross_map_reference() {
+    fun test_illegal_cross_map_reference() = runTestWithTimeout {
         assertFails {
             val result = remoteProductDatabaseQuery { db ->
                 db.products.map { product ->
@@ -43,7 +60,7 @@ class ModelQLTest {
     }
 
     @Test
-    fun testFilter() {
+    fun testFilter() = runTestWithTimeout {
         val result: List<Int> = remoteProductDatabaseQuery { db ->
             db.products.filter { it.title.contains("9") }.map { it.id }.toList()
         }
@@ -52,7 +69,7 @@ class ModelQLTest {
     }
 
     @Test
-    fun test2() {
+    fun test2() = runTestWithTimeout {
         val result: List<String> = remoteProductDatabaseQuery { db ->
             val products = db.products
             val products3 = products.filter { it.title.contains("3") }
@@ -65,7 +82,7 @@ class ModelQLTest {
     }
 
     @Test
-    fun remoteQuery() {
+    fun remoteQuery() = runTestWithTimeout {
         val result: List<String> = remoteProductDatabaseQuery { db ->
             val products = db.products
             val products3 = products.filter { it.title.contains("3") }
@@ -78,7 +95,7 @@ class ModelQLTest {
     }
 
     @Test
-    fun countProducts() {
+    fun countProducts() = runTestWithTimeout {
         val result: Int = remoteProductDatabaseQuery { db ->
             db.products.count()
         }
@@ -86,7 +103,7 @@ class ModelQLTest {
     }
 
     @Test
-    fun count_products_containing_9() {
+    fun count_products_containing_9() = runTestWithTimeout {
         val result: Int = remoteProductDatabaseQuery { db ->
             db.products.filter { it.title.contains("9") }.count()
         }
@@ -94,7 +111,7 @@ class ModelQLTest {
     }
 
     @Test
-    fun repeatingZip() {
+    fun repeatingZip() = runTestWithTimeout {
         val ids = remoteProductDatabaseQuery { db ->
             db.products.map { it.id }.toList()
         }
@@ -109,10 +126,10 @@ class ModelQLTest {
     data class MyNonSerializableClass(val id: Int, val title: String, val images: List<String>)
 }
 
-fun <ResultT> remoteProductDatabaseQuery(body: (IMonoStep<ProductDatabase>) -> IMonoStep<ResultT>): ResultT {
+suspend fun <ResultT> remoteProductDatabaseQuery(body: (IMonoStep<ProductDatabase>) -> IMonoStep<ResultT>): ResultT {
     return doRemoteProductDatabaseQuery(body)
 }
-fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatabase>) -> IMonoStep<ResultT>): ResultT {
+suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatabase>) -> IMonoStep<ResultT>): ResultT {
     val query: Query<ProductDatabase, ResultT> = Query.build(body)
     val json = Json {
         prettyPrint = true
@@ -150,8 +167,8 @@ fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatabase>) ->
 }
 
 class ProductsTraversal(): FluxTransformingStep<ProductDatabase, Product>() {
-    override fun transform(element: ProductDatabase): Sequence<Product> {
-        return element.products.asSequence()
+    override fun createFlow(input: Flow<ProductDatabase>, context: IFlowInstantiationContext): Flow<Product> {
+        return input.flatMapConcat { it.products.asFlow() }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Product> = throw UnsupportedOperationException()
@@ -167,8 +184,8 @@ class ProductsTraversal(): FluxTransformingStep<ProductDatabase, Product>() {
 }
 
 class ProductTitleTraversal: MonoTransformingStep<Product, String>() {
-    override fun transform(element: Product): Sequence<String> {
-        return sequenceOf(element.title)
+    override fun createFlow(input: Flow<Product>, context: IFlowInstantiationContext): Flow<String> {
+        return input.map { it.title }
     }
 
     override fun toString(): String {
@@ -187,8 +204,8 @@ class ProductTitleTraversal: MonoTransformingStep<Product, String>() {
     }
 }
 class ProductIdTraversal: MonoTransformingStep<Product, Int>() {
-    override fun transform(element: Product): Sequence<Int> {
-        return sequenceOf(element.id)
+    override fun createFlow(input: Flow<Product>, context: IFlowInstantiationContext): Flow<Int> {
+        return input.map { it.id }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Int> = serializersModule.serializer<Int>()
@@ -203,8 +220,8 @@ class ProductIdTraversal: MonoTransformingStep<Product, Int>() {
     }
 }
 class ProductImagesTraversal: FluxTransformingStep<Product, String>() {
-    override fun transform(element: Product): Sequence<String> {
-        return element.images.asSequence()
+    override fun createFlow(input: Flow<Product>, context: IFlowInstantiationContext): Flow<String> {
+        return input.flatMapConcat { it.images.asFlow() }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String> = serializersModule.serializer<String>()

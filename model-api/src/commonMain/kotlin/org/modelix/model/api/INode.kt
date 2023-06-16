@@ -216,7 +216,7 @@ interface INode {
     fun getAllReferenceTargetRefs(): List<Pair<IReferenceLink, INodeReference>> = getReferenceLinks().map { it to getReferenceTargetRef(it) }.filterSecondNotNull()
 }
 
-private fun <T1, T2> List<Pair<T1, T2?>>.filterSecondNotNull(): List<Pair<T1, T2>> = filter { it.second != null } as List<Pair<T1, T2>>
+fun <T1, T2> List<Pair<T1, T2?>>.filterSecondNotNull(): List<Pair<T1, T2>> = filter { it.second != null } as List<Pair<T1, T2>>
 
 @Deprecated("all members moved to INode", ReplaceWith("INode"))
 interface INodeEx : INode

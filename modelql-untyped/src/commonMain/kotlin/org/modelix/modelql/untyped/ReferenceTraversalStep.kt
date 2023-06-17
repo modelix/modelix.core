@@ -26,7 +26,7 @@ import org.modelix.modelql.core.*
 
 class ReferenceTraversalStep(val role: String): MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.flatMapConcat { it.getReferenceTargetAsFlow(it.resolveReferenceLinkOrFallback(role)) }
+        return input.flatMapConcatConcurrent { it.getReferenceTargetAsFlow(it.resolveReferenceLinkOrFallback(role)) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

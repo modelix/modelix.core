@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class ModelQLClientTest {
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
-        withTimeout(3000.seconds) {
+        withTimeout(3.seconds) {
             application {
                 val tree = CLTree(ObjectStoreCache(MapBaseStore()))
                 val branch = PBranch(tree, IdGenerator.getInstance(1))

@@ -82,6 +82,7 @@ private class BulkQuery2(val store: IDeserializingKeyValueStore, val maxBatchSiz
                 }
 
                 val batchSize = queue.size.coerceAtMost(maxBatchSize)
+                println("batch size: " + batchSize)
                 val currentBatch: List<Request<*>> = queue.take(batchSize)
                 queue = queue.drop(batchSize)
                 try {
@@ -118,37 +119,6 @@ private class BulkQuery2(val store: IDeserializingKeyValueStore, val maxBatchSiz
     }
 
     private class Request<E : IKVValue>(val requestEntry: KVEntryReference<E>, val result: CompletableDeferred<E>)
-}
-
-/**
- * The result is the same as .flattenConcat(), but each Flow is collected in a separate coroutine.
- * This allows the bulk query to collect all low level request into bigger batches.
- */
-fun <T> Flow<Flow<T>>.flattenConcatConcurrent(): Flow<T> {
-    val nested = this
-    return channelFlow {
-        val results = Channel<Deferred<List<T>>>()
-        coroutineScope {
-            launch {
-                nested.collect { inner ->
-                    results.send(async { inner.toList() })
-                }
-                results.close()
-            }
-            launch {
-                for (result in results) {
-                    val list = result.await()
-                    for (item in list) {
-                        send(item)
-                    }
-                }
-            }
-        }
-    }
-}
-
-fun <T, R> Flow<T>.flatMapConcatConcurrent(transform: suspend (T) -> Flow<R>): Flow<R> {
-    return map(transform).flattenConcatConcurrent()
 }
 
 private fun <T> Channel<T>.receiveBufferedItems(): List<T> {

@@ -27,6 +27,7 @@ import org.modelix.model.persistent.CPNode.Companion.create
 import org.modelix.model.persistent.CPNodeRef.Companion.foreign
 import org.modelix.model.persistent.CPNodeRef.Companion.global
 import org.modelix.model.persistent.CPNodeRef.Companion.local
+import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class CLTree : ITree, IBulkTree {
     val store: IDeserializingKeyValueStore

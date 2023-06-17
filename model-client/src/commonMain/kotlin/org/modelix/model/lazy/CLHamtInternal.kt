@@ -21,6 +21,7 @@ import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPHamtSingle
 import org.modelix.model.persistent.CPNode
+import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyValueStore) : CLHamtNode(store) {
 

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import org.modelix.model.bitCount
 import org.modelix.model.persistent.CPHamtSingle
 import org.modelix.model.persistent.CPNode
+import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValueStore) : CLHamtNode(store) {
     private val mask: Long = maskForLevels(data.numLevels)

@@ -73,7 +73,6 @@ private class BulkQuery2(val store: IDeserializingKeyValueStore, val maxBatchSiz
                 queue = newItems.receiveBufferedItems() + queue
 
                 if (queue.isEmpty()) {
-                    println("waiting for more requests")
                     try {
                         // suspending call to receive() to wait for at least one item
                         queue = listOf(newItems.receive()) + newItems.receiveBufferedItems()
@@ -85,13 +84,10 @@ private class BulkQuery2(val store: IDeserializingKeyValueStore, val maxBatchSiz
                 val batchSize = queue.size.coerceAtMost(maxBatchSize)
                 val currentBatch: List<Request<*>> = queue.take(batchSize)
                 queue = queue.drop(batchSize)
-                println("batch of size: $batchSize")
-                println("requests: " + currentBatch.map { it.requestEntry.getHash() })
                 try {
                     val entries: Map<String, IKVValue?> = executeBulkQuery(
                         currentBatch.map { obj -> obj.requestEntry }.distinct()
                     )
-                    println("${entries.size} entries received")
                     for (request in currentBatch) {
                         logExceptions {
                             val value: IKVValue? = entries[request.requestEntry.getHash()]
@@ -112,7 +108,6 @@ private class BulkQuery2(val store: IDeserializingKeyValueStore, val maxBatchSiz
                     }
                 }
             }
-            println("bulk request done")
         }
     }
 
@@ -132,28 +127,21 @@ private class BulkQuery2(val store: IDeserializingKeyValueStore, val maxBatchSiz
 fun <T> Flow<Flow<T>>.flattenConcatConcurrent(): Flow<T> {
     val nested = this
     return channelFlow {
-        println("flattenConcatConcurrent started")
         val results = Channel<Deferred<List<T>>>()
         coroutineScope {
             launch {
-                println("starting to launch nested flows")
                 nested.collect { inner ->
                     results.send(async { inner.toList() })
-                    println("one flow launched")
                 }
                 results.close()
-                println("launched all flows")
             }
             launch {
-                println("starting to wait for flow results")
                 for (result in results) {
                     val list = result.await()
-                    println("one result received: " + list)
                     for (item in list) {
                         send(item)
                     }
                 }
-                println("received all results")
             }
         }
     }

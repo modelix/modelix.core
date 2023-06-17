@@ -90,9 +90,7 @@ abstract class FluxTransformingStep<RemoteIn, RemoteOut> : TransformingStep<Remo
 abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         return flow {
-            val value = aggregate(input)
-            println(value)
-            emit(value)
+            emit(aggregate(input))
         }//.shareIn(context.coroutineScope, SharingStarted.WhileSubscribed(), 1)
     }
 

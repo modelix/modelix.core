@@ -73,13 +73,15 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
 
     @OptIn(FlowPreview::class)
     fun applyQuery(input: Flow<In>,): Flow<Out> {
-        return flow {
+        return channelFlow {
             coroutineScope {
-                emitAll(input.flatMapMerge {
+                input.flatMapMerge {
                     val context = FlowInstantiationContext(this)
                     context.put(inputStep, flowOf(it))
                     context.getOrCreateFlow(outputStep)
-                })
+                }.collect {
+                    send(it)
+                }
             }
         }
     }

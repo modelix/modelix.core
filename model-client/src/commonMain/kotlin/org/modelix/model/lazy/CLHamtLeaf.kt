@@ -15,6 +15,8 @@
 
 package org.modelix.model.lazy
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.modelix.model.persistent.CPHamtLeaf
 import org.modelix.model.persistent.CPNode
 
@@ -70,6 +72,11 @@ class CLHamtLeaf : CLHamtNode {
     override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> {
         require(shift <= MAX_SHIFT + BITS_PER_LEVEL) { "$shift > ${MAX_SHIFT + BITS_PER_LEVEL}" }
         return bulkQuery.constant(if (data.key == key) data.value else null)
+    }
+
+    override fun getLater(key: Long, shift: Int): Flow<KVEntryReference<CPNode>?> {
+        require(shift <= MAX_SHIFT + BITS_PER_LEVEL) { "$shift > ${MAX_SHIFT + BITS_PER_LEVEL}" }
+        return flowOf((if (data.key == key) data.value else null))
     }
 
     override fun visitEntries(visitor: (Long, KVEntryReference<CPNode>?) -> Boolean): Boolean {

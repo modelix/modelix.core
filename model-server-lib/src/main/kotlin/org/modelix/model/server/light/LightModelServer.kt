@@ -45,7 +45,9 @@ import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
 import org.modelix.modelql.core.Query
 import org.modelix.modelql.core.QueryDescriptor
+import org.modelix.modelql.core.map
 import org.modelix.modelql.untyped.UntypedModelQL
+import org.modelix.modelql.untyped.query
 import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
@@ -128,7 +130,7 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 val result: Any? = getArea().executeRead {
                     runBlocking {
                         withContext(nodeResolutionScope) {
-                            query.run(rootNode)
+                            rootNode.query { it.map(query) }
                         }
                     }
                 }

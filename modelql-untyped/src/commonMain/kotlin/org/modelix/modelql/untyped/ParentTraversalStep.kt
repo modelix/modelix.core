@@ -28,7 +28,7 @@ class ParentTraversalStep(): MonoTransformingStep<INode, INode>(), IMonoStep<INo
 
     @OptIn(FlowPreview::class)
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.flatMapConcat { it.asFlowNode().getParentAsFlow() }
+        return input.flatMapConcat { it.getParentAsFlow() }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

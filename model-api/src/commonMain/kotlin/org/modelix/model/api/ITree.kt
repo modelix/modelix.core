@@ -15,6 +15,8 @@
 
 package org.modelix.model.api
 
+import kotlinx.coroutines.flow.*
+
 /**
  * Consists of [INode]s.
  */
@@ -242,6 +244,12 @@ interface ITree {
      * @param nodeIds array of node ids to be deleted
      */
     fun deleteNodes(nodeIds: LongArray): ITree
+
+    fun getAllChildrenAsFlow(parentId: Long): Flow<Long> = getAllChildren(parentId).asFlow()
+    fun getChildrenAsFlow(parentId: Long, role: String): Flow<Long> = getChildren(parentId, role).asFlow()
+    fun getReferenceTargetAsFlow(nodeId: Long, role: String): Flow<INodeReference> = flowOf(getReferenceTarget(nodeId, role)).filterNotNull()
+    fun getParentAsFlow(nodeId: Long): Flow<Long> = flowOf(getParent(nodeId)).filter { it != 0L }
+    fun getPropertyValueAsFlow(nodeId: Long, role: String): Flow<String?> = flowOf(getProperty(nodeId, role))
 
     companion object {
         const val ROOT_ID = 1L

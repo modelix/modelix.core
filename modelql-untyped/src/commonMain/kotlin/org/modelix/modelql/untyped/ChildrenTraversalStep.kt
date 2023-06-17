@@ -26,7 +26,7 @@ import org.modelix.modelql.core.*
 
 class ChildrenTraversalStep(val role: String?): FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.flatMapConcat { it.asFlowNode().getChildrenAsFlow(it.resolveChildLinkOrFallback(role)) }
+        return input.flatMapConcat { it.getChildrenAsFlow(it.resolveChildLinkOrFallback(role)) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

@@ -10,7 +10,7 @@ import kotlinx.serialization.modules.SerializersModule
 class FlatMapStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
 
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
-        return input.flatMapConcat { query.apply(it, context.coroutineScope) }
+        return input.flatMapConcat { query.applyQuery(it) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {

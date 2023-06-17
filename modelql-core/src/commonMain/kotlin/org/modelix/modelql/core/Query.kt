@@ -56,30 +56,31 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
     }
 
     override suspend fun run(input: In): Out {
-        return coroutineScope {
-            val flow = apply(input, this)
-            try {
-                flow.single()
-            } catch (ex: NoSuchElementException) {
-                throw RuntimeException("Empty query result: " + this@Query, ex)
-            }
+        try {
+            return applyQuery(input).single()
+        } catch (ex: NoSuchElementException) {
+            throw RuntimeException("Empty query result: " + this@Query, ex)
         }
     }
 
     suspend fun runList(input: In): List<Out> {
-        return coroutineScope { apply(input, this).toList() }
+        return applyQuery(input).toList()
     }
 
-    fun apply(inputElement: In, coroutineScope: CoroutineScope): Flow<Out> {
-        return apply(flowOf(inputElement), coroutineScope)
+    fun applyQuery(inputElement: In): Flow<Out> {
+        return applyQuery(flowOf(inputElement))
     }
 
     @OptIn(FlowPreview::class)
-    fun apply(input: Flow<In>, coroutineScope: CoroutineScope): Flow<Out> {
-        return input.flatMapMerge {
-            val context = FlowInstantiationContext(coroutineScope)
-            context.put(inputStep, flowOf(it))
-            context.getOrCreateFlow(outputStep)
+    fun applyQuery(input: Flow<In>,): Flow<Out> {
+        return flow {
+            coroutineScope {
+                emitAll(input.flatMapMerge {
+                    val context = FlowInstantiationContext(this)
+                    context.put(inputStep, flowOf(it))
+                    context.getOrCreateFlow(outputStep)
+                })
+            }
         }
     }
 

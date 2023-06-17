@@ -12,7 +12,7 @@ import kotlinx.serialization.modules.SerializersModule
 abstract class FilteringStep<E>(val condition: Query<E, Boolean?>) : TransformingStep<E, E>() {
 
     override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
-        return input.filter { coroutineScope { condition.apply(it, this).singleOrNull() } == true }
+        return input.filter { condition.applyQuery(it).singleOrNull() == true }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<E> {

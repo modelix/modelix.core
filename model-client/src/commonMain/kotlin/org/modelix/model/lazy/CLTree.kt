@@ -15,6 +15,7 @@
 
 package org.modelix.model.lazy
 
+import kotlinx.coroutines.flow.*
 import org.modelix.model.api.*
 import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.lazy.COWArrays.add
@@ -145,6 +146,30 @@ class CLTree : ITree, IBulkTree {
 
     override fun deleteNodes(nodeIds: LongArray): ITree {
         throw UnsupportedOperationException("Not implemented yet")
+    }
+
+    override fun getAllChildrenAsFlow(parentId: Long): Flow<Long> {
+        return resolveNodeLater(parentId).flatMapConcat { it.getData().getChildrenIds().asFlow() }
+    }
+
+    override fun getChildrenAsFlow(parentId: Long, role: String): Flow<Long> {
+        // TODO is not very efficient. Maybe we should store the children in different lists per role.
+        return getAllChildrenAsFlow(parentId)
+            .flatMapConcatConcurrent { resolveNodeLater(it) }
+            .filter { it.roleInParent == role }
+            .map { it.id }
+    }
+
+    override fun getReferenceTargetAsFlow(nodeId: Long, role: String): Flow<INodeReference> {
+        return resolveNodeLater(nodeId).map { it.getReferenceTarget(role) }.filterNotNull()
+    }
+
+    override fun getParentAsFlow(nodeId: Long): Flow<Long> {
+        return resolveNodeLater(nodeId).map { it.parentId }.filter { it != 0L }
+    }
+
+    override fun getPropertyValueAsFlow(nodeId: Long, role: String): Flow<String?> {
+        return resolveNodeLater(nodeId).map { it.getData().getPropertyValue(role) }
     }
 
     /**
@@ -360,14 +385,7 @@ class CLTree : ITree, IBulkTree {
 
     override fun getReferenceTarget(sourceId: Long, role: String): INodeReference? {
         checkReferenceRoleId(sourceId, role)
-        val node = resolveElement(sourceId)!!
-        val targetRef = node.getData().getReferenceTarget(role)
-        return when {
-            targetRef == null -> null
-            targetRef.isLocal -> PNodeReference(targetRef.elementId, this.getId())
-            targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
-            else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
-        }
+        return resolveElement(sourceId)!!.getReferenceTarget(role)
     }
 
     override fun getRole(nodeId: Long): String? {
@@ -529,6 +547,15 @@ class CLTree : ITree, IBulkTree {
         }
         val hash = nodesMap!![id] ?: throw NodeNotFoundException(id)
         return createElement(hash, NonBulkQuery(store)).execute()
+    }
+
+    fun resolveNodeLater(id: Long): Flow<CLNode> {
+        require(id != 0L) { "Illegal node ID: 0" }
+        return nodesMap!!.getLater(id).flatMapConcat {
+            IBulkQuery2.requestLater(it ?: throw NodeNotFoundException(id)).map {
+                CLNode(this, it)
+            }
+        }
     }
 
     fun resolveElements(ids_: Iterable<Long>, bulkQuery: IBulkQuery): IBulkQuery.Value<List<CLNode>> {

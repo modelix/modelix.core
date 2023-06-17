@@ -44,6 +44,7 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.serialization.json)
+                implementation(libs.kotlin.coroutines.core)
             }
         }
         val commonTest by getting {

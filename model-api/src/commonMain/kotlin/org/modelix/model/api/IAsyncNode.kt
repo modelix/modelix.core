@@ -13,6 +13,7 @@
  */
 package org.modelix.model.api
 
+@Deprecated("use flow based methods in INode")
 interface IAsyncNode : INode {
     fun visitContainmentLink(visitor: IVisitor<IChildLink?>)
 
@@ -131,4 +132,5 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode, INode by node {
     }
 }
 
+@Deprecated("IAsyncNode is deprecated")
 fun INode.asAsyncNode(): IAsyncNode = if (this is IAsyncNode) this else NodeAsAsyncNode(this)

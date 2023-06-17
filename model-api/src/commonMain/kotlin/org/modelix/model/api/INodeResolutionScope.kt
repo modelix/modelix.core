@@ -10,3 +10,9 @@ interface INodeResolutionScope : CoroutineContext.Element {
 
     companion object Key : CoroutineContext.Key<INodeResolutionScope>
 }
+
+class CompositeNodeResolutionScope(val scopes: List<INodeResolutionScope>) : INodeResolutionScope {
+    override fun resolveNode(ref: INodeReference): INode? {
+        return scopes.asSequence().mapNotNull { it.resolveNode(ref) }.firstOrNull()
+    }
+}

@@ -13,7 +13,7 @@ abstract class MappingStep<In, Out>(val query: Query<In, Out>) : TransformingSte
     }
 
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
-        return query.apply(input, context.coroutineScope)
+        return query.applyQuery(input)
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
@@ -58,4 +58,7 @@ fun <RemoteIn, RemoteOut> IFluxStep<RemoteIn>.map(body: (IMonoStep<RemoteIn>) ->
 }
 fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(body: (IMonoStep<RemoteIn>) -> IMonoStep<RemoteOut>): IMonoStep<RemoteOut> {
     return MonoMappingStep(Query.build(body)).also { connect(it) }
+}
+fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(query: Query<RemoteIn, RemoteOut>): IMonoStep<RemoteOut> {
+    return MonoMappingStep(query).also { connect(it) }
 }

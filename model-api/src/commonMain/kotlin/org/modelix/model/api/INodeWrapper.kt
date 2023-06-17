@@ -24,3 +24,5 @@ interface INodeWrapper : INode {
      */
     fun getWrappedNode(): INode
 }
+
+fun INode.deepUnwrap(): INode = if (this is INodeWrapper) this.getWrappedNode().deepUnwrap() else this

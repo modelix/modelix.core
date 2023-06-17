@@ -8,6 +8,7 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
+import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
@@ -26,7 +27,7 @@ class ModelQLClientTest {
             application {
                 val tree = CLTree(ObjectStoreCache(MapBaseStore()))
                 val branch = PBranch(tree, IdGenerator.getInstance(1))
-                val rootNode = branch.getRootNode()
+                val rootNode = NodeWithModelQLSupport(branch.getRootNode())
                 branch.runWrite {
                     val module1 = rootNode.addNewChild("modules", -1, null as IConceptReference?)
                     module1.setPropertyValue("name", "abc")

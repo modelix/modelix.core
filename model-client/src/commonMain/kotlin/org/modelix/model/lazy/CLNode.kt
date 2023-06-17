@@ -15,7 +15,9 @@
 
 package org.modelix.model.lazy
 
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import kotlin.jvm.JvmStatic
@@ -100,6 +102,16 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
             } else {
                 parentNode.getAncestors(bulkQuery, true)
             }
+        }
+    }
+
+    fun getReferenceTarget(role: String): INodeReference? {
+        val targetRef = getData().getReferenceTarget(role)
+        return when {
+            targetRef == null -> null
+            targetRef.isLocal -> PNodeReference(targetRef.elementId, tree.getId())
+            targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
+            else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
         }
     }
 

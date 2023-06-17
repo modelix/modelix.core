@@ -10,7 +10,7 @@ class IfEmptyStep<In : Out, Out>(val alternative: Query<Unit, Out>) : Transformi
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         val downCastedInput: Flow<Out> = input
         return downCastedInput.onEmpty {
-            emitAll(alternative.apply(emptyFlow<Unit>(), context.coroutineScope))
+            emitAll(alternative.applyQuery(emptyFlow<Unit>()))
         }
     }
 

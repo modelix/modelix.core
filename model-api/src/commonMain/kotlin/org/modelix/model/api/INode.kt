@@ -15,6 +15,8 @@
 
 package org.modelix.model.api
 
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
 import org.modelix.model.area.IArea
 
 /**
@@ -193,6 +195,7 @@ interface INode {
     @Deprecated("use getReferenceLinks()")
     fun getReferenceRoles(): List<String>
 
+    // <editor-fold desc="non-string based API">
     fun usesRoleIds(): Boolean = false
     fun getContainmentLink(): IChildLink? = roleInParent?.let { role ->
         parent?.concept?.getAllChildLinks()?.find { (if (usesRoleIds()) it.getUID() else it.getSimpleName()) == role }
@@ -214,6 +217,25 @@ interface INode {
     fun getAllProperties(): List<Pair<IProperty, String>> = getPropertyLinks().map { it to getPropertyValue(it) }.filterSecondNotNull()
     fun getAllReferenceTargets(): List<Pair<IReferenceLink, INode>> = getReferenceLinks().map { it to getReferenceTarget(it) }.filterSecondNotNull()
     fun getAllReferenceTargetRefs(): List<Pair<IReferenceLink, INodeReference>> = getReferenceLinks().map { it to getReferenceTargetRef(it) }.filterSecondNotNull()
+    // </editor-fold>
+
+    // <editor-fold desc="flow API">
+    fun getParentAsFlow(): Flow<INode> = flowOf(parent).filterNotNull()
+    fun getPropertyValueAsFlow(role: IProperty): Flow<String?> = flowOf(getPropertyValue(role))
+    fun getAllChildrenAsFlow(): Flow<INode> = allChildren.asFlow()
+    fun getChildrenAsFlow(role: IChildLink): Flow<INode> = getChildren(role).asFlow()
+    fun getReferenceTargetAsFlow(role: IReferenceLink): Flow<INode> = flowOf(getReferenceTarget(role)).filterNotNull()
+    fun getReferenceTargetRefAsFlow(role: IReferenceLink): Flow<INodeReference> = flowOf(getReferenceTargetRef(role)).filterNotNull()
+
+    @OptIn(FlowPreview::class)
+    fun getDescendantsAsFlow(includeSelf: Boolean = false): Flow<INode> {
+        return if (includeSelf) {
+            flowOf(flowOf(this), getDescendantsAsFlow(false)).flattenConcat()
+        } else {
+            getAllChildrenAsFlow().flatMapConcat { it.getDescendantsAsFlow(true) }
+        }
+    }
+    // </editor-fold>
 }
 
 fun <T1, T2> List<Pair<T1, T2?>>.filterSecondNotNull(): List<Pair<T1, T2>> = filter { it.second != null } as List<Pair<T1, T2>>

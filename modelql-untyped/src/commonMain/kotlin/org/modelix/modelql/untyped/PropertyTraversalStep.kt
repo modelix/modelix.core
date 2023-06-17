@@ -29,7 +29,7 @@ import org.modelix.modelql.core.*
 
 class PropertyTraversalStep(val role: String): MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<String?> {
-        return input.flatMapConcat { it.asFlowNode().getPropertyValueAsFlow(it.resolvePropertyOrFallback(role)) }
+        return input.flatMapConcat { it.getPropertyValueAsFlow(it.resolvePropertyOrFallback(role)) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String?> {

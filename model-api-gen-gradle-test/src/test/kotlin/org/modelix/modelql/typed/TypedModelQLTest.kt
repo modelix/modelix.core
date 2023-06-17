@@ -12,6 +12,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.api.resolve
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
+import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
@@ -28,7 +29,7 @@ class TypedModelQLTest {
 
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
         application {
-            LightModelServer(80, branch.getRootNode()).apply { installHandlers() }
+            LightModelServer(80, NodeWithModelQLSupport(branch.getRootNode())).apply { installHandlers() }
         }
         val httpClient = createClient {
         }

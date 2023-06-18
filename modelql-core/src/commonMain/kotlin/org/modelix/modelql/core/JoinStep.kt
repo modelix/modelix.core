@@ -37,8 +37,13 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         return producers.map { context.getOrCreateFlow(it) }.asFlow().flattenConcat()
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<E> {
-        TODO("Not yet implemented")
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {
+        val serializers = getProducers().map { it.getOutputSerializer(serializersModule) }.toSet() - RecursiveQueryStep.SERIALIZER
+        return when (serializers.size) {
+            0 -> throw RuntimeException("No producers found")
+            1 -> serializers.first()
+            else -> TODO("Different input types not supported yet: $serializers")
+        }
     }
 
     override fun toString(): String {

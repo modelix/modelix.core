@@ -45,6 +45,7 @@ import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
 import org.modelix.modelql.core.Query
 import org.modelix.modelql.core.QueryDescriptor
+import org.modelix.modelql.core.first
 import org.modelix.modelql.core.map
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.query
@@ -130,7 +131,7 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 val transactionBody: () -> Any? = {
                     runBlocking {
                         withContext(nodeResolutionScope) {
-                            rootNode.query { it.map(query) }
+                            rootNode.query { it.map(query).first() }
                         }
                     }
                 }

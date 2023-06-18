@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
@@ -12,12 +13,15 @@ import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
+import org.modelix.modelql.core.Query
+import org.modelix.modelql.core.buildRecursiveQuery
 import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.count
 import org.modelix.modelql.core.filter
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.firstOrNull
 import org.modelix.modelql.core.map
+import org.modelix.modelql.core.plus
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.toSet
 import org.modelix.modelql.core.zip
@@ -114,5 +118,20 @@ class ModelQLClientTest {
                 .toSet()
         }
         assertEquals(setOf("changed"), newPropertyNames)
+    }
+
+    @Test
+    fun recursiveQuery() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+
+        val descendantsNames: Query<INode, String?> = buildRecursiveQuery<INode, String?> {
+            it.property("name") + it.allChildren().mapRecursive()
+        }
+
+        val result: Set<String?> = client.query { root ->
+            root.map(descendantsNames).toSet()
+        }
+
+        assertEquals(setOf(null, "abc", "model1a"), result)
     }
 }

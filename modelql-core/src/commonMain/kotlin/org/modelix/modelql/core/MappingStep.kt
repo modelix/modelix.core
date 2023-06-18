@@ -63,6 +63,9 @@ fun <RemoteIn, RemoteOut> IFluxStep<RemoteIn>.map(body: (IMonoStep<RemoteIn>) ->
 fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(body: (IMonoStep<RemoteIn>) -> IMonoStep<RemoteOut>): IMonoStep<RemoteOut> {
     return MonoMappingStep(Query.build(body)).also { connect(it) }
 }
-fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(query: Query<RemoteIn, RemoteOut>): IMonoStep<RemoteOut> {
-    return MonoMappingStep(query).also { connect(it) }
+fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(query: Query<RemoteIn, RemoteOut>): IFluxStep<RemoteOut> {
+    return FluxMappingStep(query).also { connect(it) }
+}
+fun <RemoteIn, RemoteOut> IFluxStep<RemoteIn>.map(query: Query<RemoteIn, RemoteOut>): IFluxStep<RemoteOut> {
+    return FluxMappingStep(query).also { connect(it) }
 }

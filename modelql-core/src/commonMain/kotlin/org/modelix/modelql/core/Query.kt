@@ -17,6 +17,7 @@ import kotlinx.serialization.modules.subclass
 
 interface IQuery<In, Out> {
     suspend fun run(input: In): Out
+    fun applyQuery(input: Flow<In>): Flow<Out>
     fun requiresWriteAccess(): Boolean
 }
 
@@ -79,7 +80,7 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
     }
 
     @OptIn(FlowPreview::class)
-    fun applyQuery(input: Flow<In>): Flow<Out> {
+    override fun applyQuery(input: Flow<In>): Flow<Out> {
         return channelFlow {
             coroutineScope {
                 input.flatMapMerge {
@@ -125,6 +126,7 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
                 subclass(org.modelix.modelql.core.NullIfEmpty.OrNullDescriptor::class)
                 subclass(org.modelix.modelql.core.OrOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.QueryInput.Descriptor::class)
+                subclass(org.modelix.modelql.core.RecursiveQueryStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.RegexPredicate.Descriptor::class)
                 subclass(org.modelix.modelql.core.SetCollectorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringContainsPredicate.StringContainsDescriptor::class)

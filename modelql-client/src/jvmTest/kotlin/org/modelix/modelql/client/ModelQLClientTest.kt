@@ -26,7 +26,6 @@ import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.setProperty
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds

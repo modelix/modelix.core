@@ -10,6 +10,10 @@ import kotlinx.serialization.modules.SerializersModule
 
 abstract class FilteringStep<E>(val condition: Query<E, Boolean?>) : TransformingStep<E, E>() {
 
+    override fun validate() {
+        require(!condition.requiresWriteAccess()) { "write access not allowed inside a filtering step: $this" }
+    }
+
     override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
         return input.filter { condition.applyQuery(it).singleOrNull() == true }
     }

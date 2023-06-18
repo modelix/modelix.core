@@ -82,7 +82,6 @@ private class BulkQuery2(val store: IDeserializingKeyValueStore, val maxBatchSiz
                 }
 
                 val batchSize = queue.size.coerceAtMost(maxBatchSize)
-                println("batch size: " + batchSize)
                 val currentBatch: List<Request<*>> = queue.take(batchSize)
                 queue = queue.drop(batchSize)
                 try {

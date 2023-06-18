@@ -127,12 +127,17 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 val query = queryDescriptor.createQuery() as Query<INode, Any?>
                 LOG.debug { "query: $query" }
                 val nodeResolutionScope: INodeResolutionScope = getArea()
-                val result: Any? = getArea().executeRead {
+                val transactionBody: () -> Any? = {
                     runBlocking {
                         withContext(nodeResolutionScope) {
                             rootNode.query { it.map(query) }
                         }
                     }
+                }
+                val result: Any? = if (query.requiresWriteAccess()) {
+                    getArea().executeWrite(transactionBody)
+                } else {
+                    getArea().executeRead(transactionBody)
                 }
                 val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule)
                 val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)

@@ -8,6 +8,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
 class FlatMapStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
+    override fun requiresWriteAccess(): Boolean {
+        return query.requiresWriteAccess()
+    }
 
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         return input.flatMapConcat { query.applyQuery(it) }

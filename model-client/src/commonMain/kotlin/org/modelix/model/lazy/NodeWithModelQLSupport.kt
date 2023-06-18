@@ -14,9 +14,10 @@ class NodeWithModelQLSupport(val node: INode) : INode by node, ISupportsModelQL 
 
 suspend fun <R> IBranch.query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
     val tree = (this.deepUnwrap() as PBranch).computeReadT { t -> (t.tree.unwrap() as CLTree) }
-    val branchWithoutTransactions = TreePointer(tree)
-    val rootNode = branchWithoutTransactions.getRootNode()
-    return IBulkQuery2.buildBulkFlow<R>(tree.store) {
-        Query.build(body).applyQuery(rootNode)
+    val rootNode = getRootNode()
+    val result = IBulkQuery2.buildBulkFlow<R>(tree.store) {
+        val query = Query.build(body)
+        query.applyQuery(rootNode)
     }.single()
+    return result
 }

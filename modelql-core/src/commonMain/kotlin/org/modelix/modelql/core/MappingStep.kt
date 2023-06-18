@@ -12,6 +12,10 @@ abstract class MappingStep<In, Out>(val query: Query<In, Out>) : TransformingSte
         query.inputStep.indirectConsumer = this
     }
 
+    override fun requiresWriteAccess(): Boolean {
+        return query.requiresWriteAccess()
+    }
+
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         return query.applyQuery(input)
     }

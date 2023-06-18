@@ -12,15 +12,21 @@ import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
+import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.count
+import org.modelix.modelql.core.filter
+import org.modelix.modelql.core.first
 import org.modelix.modelql.core.firstOrNull
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.toList
+import org.modelix.modelql.core.toSet
 import org.modelix.modelql.core.zip
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
+import org.modelix.modelql.untyped.setProperty
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
@@ -88,5 +94,26 @@ class ModelQLClientTest {
                 ).firstOrNull()
             }.toList()
         }
+    }
+
+    @Test
+    fun writeProperty() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val updatesNodes = client.query { root ->
+            root.children("modules")
+                .children("models").filter { it.property("name").contains("model1a") }
+                .first()
+                .setProperty("name", "changed")
+                .property("name")
+        }
+        assertEquals("changed", updatesNodes)
+
+        val newPropertyNames = client.query { root ->
+            root.children("modules")
+                .children("models")
+                .property("name")
+                .toSet()
+        }
+        assertEquals(setOf("changed"), newPropertyNames)
     }
 }

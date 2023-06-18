@@ -41,6 +41,7 @@ object UntypedModelQL {
             subclass(ReferenceTraversalStep.Descriptor::class)
             subclass(ResolveNodeStep.Descriptor::class)
             subclass(RoleInParentTraversalStep.Descriptor::class)
+            subclass(SetPropertyStep.Descriptor::class)
         }
         polymorphicDefaultSerializer(INode::class) { NodeKSerializer() }
     }

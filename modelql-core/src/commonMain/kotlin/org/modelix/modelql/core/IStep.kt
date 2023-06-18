@@ -13,6 +13,8 @@ interface IStep {
 
     @Deprecated("")
     fun createDescriptor(): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
+
+    fun requiresWriteAccess(): Boolean = false
 }
 
 interface IFlowInstantiationContext {

@@ -17,6 +17,7 @@ import kotlinx.serialization.modules.subclass
 
 interface IQuery<In, Out> {
     suspend fun run(input: In): Out
+    fun requiresWriteAccess(): Boolean
 }
 
 class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingStep<Out>) : IQuery<In, Out> {
@@ -27,6 +28,10 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
             step.owningQuery = this
         }
         validate()
+    }
+
+    override fun requiresWriteAccess(): Boolean {
+        return getAllSteps().any { it.requiresWriteAccess() }
     }
 
     override fun toString(): String {

@@ -1,9 +1,7 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -11,7 +9,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import kotlin.coroutines.coroutineContext
 
 interface IQuery<In, Out> {
     suspend fun run(input: In): Out
@@ -72,7 +69,7 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
     }
 
     @OptIn(FlowPreview::class)
-    fun applyQuery(input: Flow<In>,): Flow<Out> {
+    fun applyQuery(input: Flow<In>): Flow<Out> {
         return channelFlow {
             coroutineScope {
                 input.flatMapMerge {
@@ -181,9 +178,9 @@ private fun IStep.collectAllSteps(result: MutableSet<IStep> = LinkedHashSet<ISte
 
 private fun IStep.getDirectlyConnectedSteps(): Set<IStep> {
     return (
-              (if (this is IConsumingStep<*>) getProducers() else emptyList())
-            + (if (this is IProducingStep<*>) getConsumers() else emptyList())
-            ).toSet()
+        (if (this is IConsumingStep<*>) getProducers() else emptyList()) +
+            (if (this is IProducingStep<*>) getConsumers() else emptyList())
+        ).toSet()
 }
 
 class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {

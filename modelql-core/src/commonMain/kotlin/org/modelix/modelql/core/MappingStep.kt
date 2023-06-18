@@ -25,8 +25,8 @@ abstract class MappingStep<In, Out>(val query: Query<In, Out>) : TransformingSte
     }
 }
 
-class FluxMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>)
-    : MappingStep<RemoteIn, RemoteOut>(query), IFluxStep<RemoteOut> {
+class FluxMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>) :
+    MappingStep<RemoteIn, RemoteOut>(query), IFluxStep<RemoteOut> {
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())
 
@@ -39,8 +39,8 @@ class FluxMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>)
     }
 }
 
-class MonoMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>)
-    : MappingStep<RemoteIn, RemoteOut>(query), IMonoStep<RemoteOut> {
+class MonoMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>) :
+    MappingStep<RemoteIn, RemoteOut>(query), IMonoStep<RemoteOut> {
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())
 

@@ -3,7 +3,6 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.concatMap
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName

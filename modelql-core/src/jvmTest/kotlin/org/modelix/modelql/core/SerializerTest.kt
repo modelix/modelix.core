@@ -16,5 +16,4 @@ class SerializerTest {
         missingSerializers.forEach { subclass -> println("""subclass(${subclass.qualifiedName}::class)""") }
         assertTrue(missingSerializers.isEmpty(), "Descriptor subclasses not registered: $missingSerializers")
     }
-
 }

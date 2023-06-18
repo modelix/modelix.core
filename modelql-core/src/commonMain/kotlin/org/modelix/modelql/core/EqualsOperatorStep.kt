@@ -23,7 +23,7 @@ abstract class EqualsOperatorStep<E>(val operand: E) : MonoTransformingStep<E, B
     }
 }
 
-class IntEqualsOperatorStep(operand: Int): EqualsOperatorStep<Int>(operand) {
+class IntEqualsOperatorStep(operand: Int) : EqualsOperatorStep<Int>(operand) {
     override fun createDescriptor() = Descriptor(operand)
 
     @Serializable
@@ -35,7 +35,7 @@ class IntEqualsOperatorStep(operand: Int): EqualsOperatorStep<Int>(operand) {
     }
 }
 
-class StringEqualsOperatorStep(operand: String): EqualsOperatorStep<String>(operand) {
+class StringEqualsOperatorStep(operand: String) : EqualsOperatorStep<String>(operand) {
     override fun createDescriptor() = Descriptor(operand)
 
     @Serializable

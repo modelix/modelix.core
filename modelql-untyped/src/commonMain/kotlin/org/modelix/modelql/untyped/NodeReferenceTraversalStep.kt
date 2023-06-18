@@ -24,9 +24,16 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.serialize
-import org.modelix.modelql.core.*
+import org.modelix.modelql.core.IFlowInstantiationContext
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.map
 
-class NodeReferenceTraversalStep(): MonoTransformingStep<INode, SerializedNodeReference>() {
+class NodeReferenceTraversalStep() : MonoTransformingStep<INode, SerializedNodeReference>() {
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<SerializedNodeReference> {
         return input.map { SerializedNodeReference((it.reference.serialize())) }
     }

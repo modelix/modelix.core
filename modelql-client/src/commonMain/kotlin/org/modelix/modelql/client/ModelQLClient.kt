@@ -1,8 +1,9 @@
 package org.modelix.modelql.client
 
-import io.ktor.client.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import io.ktor.client.HttpClient
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -57,7 +58,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {  }
+        private val LOG = mu.KotlinLogging.logger { }
         fun builder(): ModelQLClientBuilder = PlatformSpecificModelQLClientBuilder()
     }
 }

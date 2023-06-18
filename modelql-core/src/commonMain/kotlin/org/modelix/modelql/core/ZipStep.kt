@@ -1,14 +1,19 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.zip
-import kotlinx.serialization.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.SerialKind
 import kotlinx.serialization.descriptors.StructureKind
-import kotlinx.serialization.encoding.*
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeCollection
 import kotlinx.serialization.modules.SerializersModule
 
 open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IFluxStep<Out> {
@@ -47,7 +52,7 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
 
     override fun createFlow(context: IFlowInstantiationContext): Flow<Out> {
         return combine<Any?, Out>(producers.map { context.getOrCreateFlow(it) }) { values ->
-            ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>(values.toList())  as Out
+            ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>(values.toList()) as Out
         }
     }
 }

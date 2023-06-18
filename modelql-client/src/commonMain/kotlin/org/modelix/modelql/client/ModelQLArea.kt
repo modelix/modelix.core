@@ -1,6 +1,10 @@
 package org.modelix.modelql.client
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference

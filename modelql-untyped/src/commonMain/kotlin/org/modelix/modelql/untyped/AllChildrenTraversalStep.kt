@@ -15,16 +15,22 @@ package org.modelix.modelql.untyped
 
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
-import org.modelix.modelql.core.*
+import org.modelix.modelql.core.FluxTransformingStep
+import org.modelix.modelql.core.IFlowInstantiationContext
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IProducingStep
+import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.flatMapConcatConcurrent
 
-class AllChildrenTraversalStep(): FluxTransformingStep<INode, INode>() {
+class AllChildrenTraversalStep() : FluxTransformingStep<INode, INode>() {
     @OptIn(FlowPreview::class)
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
         return input.flatMapConcatConcurrent { it.getAllChildrenAsFlow() }

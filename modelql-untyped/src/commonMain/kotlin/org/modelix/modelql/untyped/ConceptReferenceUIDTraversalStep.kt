@@ -21,9 +21,16 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.ConceptReference
-import org.modelix.modelql.core.*
+import org.modelix.modelql.core.IFlowInstantiationContext
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.map
 
-class ConceptReferenceUIDTraversalStep(): MonoTransformingStep<ConceptReference, String>() {
+class ConceptReferenceUIDTraversalStep() : MonoTransformingStep<ConceptReference, String>() {
     override fun createFlow(input: Flow<ConceptReference>, context: IFlowInstantiationContext): Flow<String> {
         return input.map { it.getUID() }
     }

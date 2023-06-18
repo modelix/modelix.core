@@ -23,9 +23,16 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
-import org.modelix.modelql.core.*
+import org.modelix.modelql.core.IFlowInstantiationContext
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.map
 
-class ConceptReferenceTraversalStep(): MonoTransformingStep<INode?, ConceptReference?>() {
+class ConceptReferenceTraversalStep() : MonoTransformingStep<INode?, ConceptReference?>() {
     override fun createFlow(input: Flow<INode?>, context: IFlowInstantiationContext): Flow<ConceptReference?> {
         return input.map { it?.getConceptReference() as ConceptReference? }
     }
@@ -48,7 +55,6 @@ class ConceptReferenceTraversalStep(): MonoTransformingStep<INode?, ConceptRefer
         }
     }
 }
-
 
 fun IMonoStep<INode?>.conceptReference(): IMonoStep<ConceptReference?> = ConceptReferenceTraversalStep().also { connect(it) }
 fun IFluxStep<INode?>.conceptReference(): IFluxStep<ConceptReference?> = map { it.conceptReference() }

@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.singleOrNull
@@ -24,8 +23,8 @@ abstract class FilteringStep<E>(val condition: Query<E, Boolean?>) : Transformin
     }
 }
 
-class MonoFilteringStep<E>(condition: Query<E, Boolean?>)
-    : FilteringStep<E>(condition), IMonoStep<E> {
+class MonoFilteringStep<E>(condition: Query<E, Boolean?>) :
+    FilteringStep<E>(condition), IMonoStep<E> {
 
     override fun createDescriptor() = Descriptor(condition.createDescriptor())
 
@@ -38,8 +37,8 @@ class MonoFilteringStep<E>(condition: Query<E, Boolean?>)
     }
 }
 
-class FluxFilteringStep<E>(condition: Query<E, Boolean?>)
-    : FilteringStep<E>(condition), IFluxStep<E> {
+class FluxFilteringStep<E>(condition: Query<E, Boolean?>) :
+    FilteringStep<E>(condition), IFluxStep<E> {
 
     override fun createDescriptor() = Descriptor(condition.createDescriptor())
 

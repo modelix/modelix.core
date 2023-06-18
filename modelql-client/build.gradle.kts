@@ -1,6 +1,7 @@
 plugins {
     kotlin("multiplatform")
     `maven-publish`
+    alias(libs.plugins.ktlint)
 }
 
 kotlin {

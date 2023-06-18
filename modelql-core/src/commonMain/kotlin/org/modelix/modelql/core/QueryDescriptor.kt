@@ -8,7 +8,7 @@ data class QueryDescriptor(
     val steps: List<StepDescriptor>,
     val connections: List<PortConnection>,
     val input: Int,
-    val output: Int,
+    val output: Int
 ) {
     fun createQuery(): Query<*, *> {
         val createdSteps = ArrayList<IStep>()

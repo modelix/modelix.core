@@ -32,4 +32,3 @@ fun IProducingStep<Any?>.size() = count()
 fun IProducingStep<Any?>.count() = CountingStep().also { connect(it) }
 fun IProducingStep<Any?>.isEmpty(): IMonoStep<Boolean> = count().map { it.equalTo(0) }
 fun IProducingStep<Any?>.isNotEmpty(): IMonoStep<Boolean> = !isEmpty()
-

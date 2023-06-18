@@ -1,6 +1,8 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.toSet
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -14,7 +16,7 @@ abstract class CollectorStep<E, CollectionT : Collection<E>>() : AggregationStep
         return getOutputSerializer(element)
     }
 
-    abstract protected fun getOutputSerializer(elementSerializer: KSerializer<out E>): KSerializer<out CollectionT>
+    protected abstract fun getOutputSerializer(elementSerializer: KSerializer<out E>): KSerializer<out CollectionT>
 }
 
 class ListCollectorStep<E> : CollectorStep<E, List<E>>() {

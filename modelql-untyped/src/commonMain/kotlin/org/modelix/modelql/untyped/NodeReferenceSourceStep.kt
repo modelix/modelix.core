@@ -21,7 +21,10 @@ import kotlinx.serialization.serializer
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.serialize
-import org.modelix.modelql.core.*
+import org.modelix.modelql.core.ConstantSourceStep
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.StepDescriptor
 
 class NodeReferenceSourceStep(element: SerializedNodeReference) : ConstantSourceStep<SerializedNodeReference>(element) {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<SerializedNodeReference> {

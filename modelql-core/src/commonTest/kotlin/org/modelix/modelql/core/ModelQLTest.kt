@@ -166,7 +166,7 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
     return json.decodeFromString(query.getOutputSerializer(json.serializersModule), serializedResult) as ResultT
 }
 
-class ProductsTraversal(): FluxTransformingStep<ProductDatabase, Product>() {
+class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
     override fun createFlow(input: Flow<ProductDatabase>, context: IFlowInstantiationContext): Flow<Product> {
         return input.flatMapConcat { it.products.asFlow() }
     }
@@ -183,7 +183,7 @@ class ProductsTraversal(): FluxTransformingStep<ProductDatabase, Product>() {
     }
 }
 
-class ProductTitleTraversal: MonoTransformingStep<Product, String>() {
+class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
     override fun createFlow(input: Flow<Product>, context: IFlowInstantiationContext): Flow<String> {
         return input.map { it.title }
     }
@@ -203,7 +203,7 @@ class ProductTitleTraversal: MonoTransformingStep<Product, String>() {
         }
     }
 }
-class ProductIdTraversal: MonoTransformingStep<Product, Int>() {
+class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
     override fun createFlow(input: Flow<Product>, context: IFlowInstantiationContext): Flow<Int> {
         return input.map { it.id }
     }
@@ -219,7 +219,7 @@ class ProductIdTraversal: MonoTransformingStep<Product, Int>() {
         }
     }
 }
-class ProductImagesTraversal: FluxTransformingStep<Product, String>() {
+class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
     override fun createFlow(input: Flow<Product>, context: IFlowInstantiationContext): Flow<String> {
         return input.flatMapConcat { it.images.asFlow() }
     }

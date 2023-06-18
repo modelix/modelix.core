@@ -33,4 +33,3 @@ class NotOperatorStep() : MonoTransformingStep<Boolean, Boolean>() {
 }
 
 operator fun IMonoStep<Boolean>.not(): IMonoStep<Boolean> = NotOperatorStep().also { connect(it) }
-

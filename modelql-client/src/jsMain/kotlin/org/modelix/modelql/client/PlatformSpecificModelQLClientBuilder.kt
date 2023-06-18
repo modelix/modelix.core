@@ -1,8 +1,7 @@
 package org.modelix.modelql.client
 
-import io.ktor.client.engine.*
-import io.ktor.client.engine.js.*
-import kotlinx.serialization.modules.SerializersModuleBuilder
+import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.engine.js.Js
 
 actual class PlatformSpecificModelQLClientBuilder actual constructor() :
     ModelQLClientBuilder() {

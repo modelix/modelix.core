@@ -1,10 +1,24 @@
 package org.modelix.modelql.untyped
 
-import kotlinx.serialization.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.nullable
-import kotlinx.serialization.descriptors.*
-import kotlinx.serialization.encoding.*
-import org.modelix.model.api.*
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.buildSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.serializer
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.serialize
 import org.modelix.model.area.ContextArea
 
 open class NodeKSerializer() : KSerializer<INode> {

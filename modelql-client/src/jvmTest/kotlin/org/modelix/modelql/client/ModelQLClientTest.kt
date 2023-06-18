@@ -1,7 +1,7 @@
 package org.modelix.modelql.client
 
-import io.ktor.client.*
-import io.ktor.server.testing.*
+import io.ktor.client.HttpClient
+import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.PBranch
@@ -12,7 +12,11 @@ import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
-import org.modelix.modelql.core.*
+import org.modelix.modelql.core.count
+import org.modelix.modelql.core.firstOrNull
+import org.modelix.modelql.core.map
+import org.modelix.modelql.core.toList
+import org.modelix.modelql.core.zip
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.nodeReference

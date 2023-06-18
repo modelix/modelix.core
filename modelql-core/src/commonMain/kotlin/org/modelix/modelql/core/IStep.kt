@@ -9,6 +9,7 @@ interface IStep {
     @Deprecated("")
     var owningQuery: IQuery<*, *>?
     fun validate() {}
+
     @Deprecated("")
     fun createDescriptor(): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
 }
@@ -73,8 +74,8 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
 
     override fun getProducers(): List<IProducingStep<In>> {
         return listOfNotNull(producer)
-    }   
-    
+    }
+
     fun getProducer(): IProducingStep<In> = producer!!
 
     protected abstract fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out>
@@ -91,10 +92,8 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         return flow {
             emit(aggregate(input))
-        }//.shareIn(context.coroutineScope, SharingStarted.WhileSubscribed(), 1)
+        } // .shareIn(context.coroutineScope, SharingStarted.WhileSubscribed(), 1)
     }
 
     protected abstract suspend fun aggregate(input: Flow<In>): Out
 }
-
-

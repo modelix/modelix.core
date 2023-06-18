@@ -53,4 +53,3 @@ val <T> IMonoStep<IZip8Output<*, *, *, *, *, *, *, *, T>>.eighth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(7).also { connect(it) }
 val <T> IMonoStep<IZip9Output<*, *, *, *, *, *, *, *, *, T>>.ninth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(8).also { connect(it) }
-

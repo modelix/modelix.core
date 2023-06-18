@@ -1,9 +1,33 @@
 package org.modelix.modelql.client
 
-import org.modelix.model.api.*
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.resolve
+import org.modelix.model.api.serialize
 import org.modelix.model.area.IArea
-import org.modelix.modelql.core.*
-import org.modelix.modelql.untyped.*
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IZip2Output
+import org.modelix.modelql.core.filterNotNull
+import org.modelix.modelql.core.map
+import org.modelix.modelql.core.orNull
+import org.modelix.modelql.core.toList
+import org.modelix.modelql.core.zip
+import org.modelix.modelql.untyped.ISupportsModelQL
+import org.modelix.modelql.untyped.allChildren
+import org.modelix.modelql.untyped.asMono
+import org.modelix.modelql.untyped.children
+import org.modelix.modelql.untyped.conceptReference
+import org.modelix.modelql.untyped.nodeReference
+import org.modelix.modelql.untyped.parent
+import org.modelix.modelql.untyped.property
+import org.modelix.modelql.untyped.reference
+import org.modelix.modelql.untyped.resolve
+import org.modelix.modelql.untyped.roleInParent
 
 abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL {
 
@@ -155,4 +179,3 @@ internal fun INodeReference.toSerializedRef() = when (this) {
     is SerializedNodeReference -> this
     else -> SerializedNodeReference(this.serialize())
 }
-

@@ -1,9 +1,9 @@
 package org.modelix.modelql.client
 
-import io.ktor.client.*
-import io.ktor.client.engine.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.HttpClientEngineFactory
 import kotlinx.serialization.modules.SerializersModule
-import org.modelix.model.api.INode
 import org.modelix.modelql.untyped.UntypedModelQL
 
 abstract class ModelQLClientBuilder() {
@@ -14,15 +14,16 @@ abstract class ModelQLClientBuilder() {
     private var serializersModule: SerializersModule = UntypedModelQL.serializersModule
 
     fun build(): ModelQLClient {
-        val c: HttpClient = (httpClient ?: (
+        val c: HttpClient = (
+            httpClient ?: (
                 httpEngine?.let { HttpClient(it) } ?: (httpEngineFactory ?: getDefaultEngineFactory()).let {
                     HttpClient(
                         it
                     )
                 }
                 )
-                ).config {
-            }
+            ).config {
+        }
         return ModelQLClient(
             url = url ?: "http://localhost:48302/query",
             client = c,

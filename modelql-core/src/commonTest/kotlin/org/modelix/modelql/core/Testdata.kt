@@ -26,7 +26,8 @@ data class Product(
     val images: List<String> = emptyList()
 )
 
-val testDatabase: ProductDatabase = Json.decodeFromString("""{
+val testDatabase: ProductDatabase = Json.decodeFromString(
+    """{
   "products": [
     {
       "id": 1,
@@ -584,4 +585,5 @@ val testDatabase: ProductDatabase = Json.decodeFromString("""{
   "total": 100,
   "skip": 0,
   "limit": 30
-}""")
+}"""
+)

@@ -32,7 +32,6 @@ class FlatMapStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out
     }
 }
 
-
 fun <In, Out> IProducingStep<In>.flatMap(body: (IMonoStep<In>) -> IFluxStep<Out>): IFluxStep<Out> {
     return FlatMapStep(Query.build(body)).also { connect(it) }
 }

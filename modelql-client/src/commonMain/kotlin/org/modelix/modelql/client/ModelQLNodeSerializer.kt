@@ -1,6 +1,8 @@
 package org.modelix.modelql.client
 
-import org.modelix.model.api.*
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.SerializedNodeReference
 import org.modelix.modelql.untyped.NodeKSerializer
 
 class ModelQLNodeSerializer(val client: ModelQLClient) : NodeKSerializer() {

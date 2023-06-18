@@ -8,10 +8,50 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
-import org.modelix.metamodel.*
-import org.modelix.model.api.*
-import org.modelix.modelql.core.*
-import org.modelix.modelql.untyped.*
+import org.modelix.metamodel.IConceptOfTypedNode
+import org.modelix.metamodel.ITypedChildLink
+import org.modelix.metamodel.ITypedChildListLink
+import org.modelix.metamodel.ITypedMandatorySingleChildLink
+import org.modelix.metamodel.ITypedNode
+import org.modelix.metamodel.ITypedProperty
+import org.modelix.metamodel.ITypedReferenceLink
+import org.modelix.metamodel.ITypedSingleChildLink
+import org.modelix.metamodel.typed
+import org.modelix.metamodel.untyped
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.getAllSubConcepts
+import org.modelix.model.api.key
+import org.modelix.modelql.core.IFlowInstantiationContext
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IProducingStep
+import org.modelix.modelql.core.IdentityStep
+import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.emptyStringIfNull
+import org.modelix.modelql.core.filter
+import org.modelix.modelql.core.filterNotNull
+import org.modelix.modelql.core.first
+import org.modelix.modelql.core.firstOrNull
+import org.modelix.modelql.core.flatMap
+import org.modelix.modelql.core.inSet
+import org.modelix.modelql.core.map
+import org.modelix.modelql.core.orNull
+import org.modelix.modelql.core.toBoolean
+import org.modelix.modelql.core.toInt
+import org.modelix.modelql.untyped.UntypedModelQL
+import org.modelix.modelql.untyped.children
+import org.modelix.modelql.untyped.conceptReference
+import org.modelix.modelql.untyped.descendants
+import org.modelix.modelql.untyped.getUID
+import org.modelix.modelql.untyped.nodeReference
+import org.modelix.modelql.untyped.nodeReferenceAsString
+import org.modelix.modelql.untyped.property
+import org.modelix.modelql.untyped.query
+import org.modelix.modelql.untyped.reference
 import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 
@@ -80,10 +120,13 @@ object TypedModelQL {
 
 /** Doesn't check the concept when executed remotely. Use .ofConcept() to convert a node in a type safe way. */
 inline fun <reified Typed : ITypedNode> IMonoStep<INode>.typedUnsafe(): IMonoStep<Typed> = typedUnsafe(Typed::class)
+
 /** Doesn't check the concept when executed remotely. Use .ofConcept() to convert a node in a type safe way. */
 inline fun <reified Typed : ITypedNode> IFluxStep<INode>.typedUnsafe(): IFluxStep<Typed> = typedUnsafe(Typed::class)
+
 /** Doesn't check the concept when executed remotely. Use .ofConcept() to convert a node in a type safe way. */
 fun <Typed : ITypedNode> IMonoStep<INode>.typedUnsafe(nodeClass: KClass<out Typed>): IMonoStep<Typed> = TypedNodeStep(nodeClass).also { connect(it) }
+
 /** Doesn't check the concept when executed remotely. Use .ofConcept() to convert a node in a type safe way. */
 fun <Typed : ITypedNode> IFluxStep<INode>.typedUnsafe(nodeClass: KClass<out Typed>): IFluxStep<Typed> = map { it.typedUnsafe(nodeClass) }
 
@@ -153,6 +196,7 @@ fun <In : ITypedNode, Out : In> IMonoStep<In?>.instanceOf(concept: IConceptOfTyp
 fun <Out : ITypedNode> IFluxStep<INode?>.ofConcept(concept: IConceptOfTypedNode<Out>): IFluxStep<Out> {
     return filterNotNull().filter { it.instanceOf(concept) }.typedUnsafe(concept.getInstanceInterface())
 }
+
 @JvmName("ofConcept")
 fun <In : ITypedNode, Out : In> IFluxStep<In?>.ofConcept(concept: IConceptOfTypedNode<Out>): IFluxStep<Out> {
     return filterNotNull().filter { it.instanceOf(concept) } as IFluxStep<Out>
@@ -162,6 +206,7 @@ fun <In : ITypedNode, Out : In> IFluxStep<In?>.ofConcept(concept: IConceptOfType
 fun <Out : ITypedNode> IMonoStep<INode?>.ofConcept(concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
     return filterNotNull().filter { it.instanceOf(concept) }.typedUnsafe(concept.getInstanceInterface())
 }
+
 @JvmName("ofConcept")
 fun <In : ITypedNode, Out : In> IMonoStep<In?>.ofConcept(concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
     return filterNotNull().untyped().ofConcept(concept)

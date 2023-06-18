@@ -23,9 +23,16 @@ import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.serialize
-import org.modelix.modelql.core.*
+import org.modelix.modelql.core.IFlowInstantiationContext
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.map
 
-class NodeReferenceAsStringTraversalStep(): MonoTransformingStep<INodeReference, String>() {
+class NodeReferenceAsStringTraversalStep() : MonoTransformingStep<INodeReference, String>() {
     override fun createFlow(input: Flow<INodeReference>, context: IFlowInstantiationContext): Flow<String> {
         return input.map { it.serialize() }
     }
@@ -48,7 +55,6 @@ class NodeReferenceAsStringTraversalStep(): MonoTransformingStep<INodeReference,
         return """${getProducers().single()}.asString()"""
     }
 }
-
 
 fun IMonoStep<INodeReference>.asString(): IMonoStep<String> = NodeReferenceAsStringTraversalStep().also { connect(it) }
 fun IFluxStep<INodeReference>.asString(): IFluxStep<String> = map { it.asString() }

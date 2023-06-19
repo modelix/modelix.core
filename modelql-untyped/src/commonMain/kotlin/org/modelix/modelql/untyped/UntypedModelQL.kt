@@ -39,11 +39,11 @@ object UntypedModelQL {
             subclass(NodeReferenceTraversalStep.Descriptor::class)
             subclass(ParentTraversalStep.Descriptor::class)
             subclass(PropertyTraversalStep.PropertyStepDescriptor::class)
-            subclass(PropertyTraversalStep.PropertyStepDescriptor::class)
             subclass(ReferenceTraversalStep.Descriptor::class)
             subclass(ResolveNodeStep.Descriptor::class)
             subclass(RoleInParentTraversalStep.Descriptor::class)
             subclass(SetPropertyStep.Descriptor::class)
+            subclass(SetReferenceStep.Descriptor::class)
         }
         polymorphicDefaultSerializer(INode::class) { NodeKSerializer() }
     }

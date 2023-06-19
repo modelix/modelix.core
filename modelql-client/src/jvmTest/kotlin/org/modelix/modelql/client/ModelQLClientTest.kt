@@ -29,7 +29,9 @@ import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
+import org.modelix.modelql.untyped.reference
 import org.modelix.modelql.untyped.setProperty
+import org.modelix.modelql.untyped.setReference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
@@ -118,6 +120,26 @@ class ModelQLClientTest {
                 .toSet()
         }
         assertEquals(setOf("changed"), newPropertyNames)
+    }
+
+    @Test
+    fun writeReference() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val updatesNodes = client.query { root ->
+            root.children("modules")
+                .children("models").filter { it.property("name").contains("model1a") }
+                .first()
+                .setReference("someModule", root.children("modules").first())
+        }
+
+        val referenceTargetNames = client.query { root ->
+            root.children("modules")
+                .children("models")
+                .reference("someModule")
+                .property("name")
+                .toSet()
+        }
+        assertEquals(setOf("abc"), referenceTargetNames)
     }
 
     @Test

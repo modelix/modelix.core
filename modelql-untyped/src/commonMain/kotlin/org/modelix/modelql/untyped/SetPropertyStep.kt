@@ -3,6 +3,7 @@ package org.modelix.modelql.untyped
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import org.modelix.model.api.INode
@@ -41,6 +42,7 @@ class SetPropertyStep(val role: String, val value: String?) : MonoTransformingSt
     }
 
     @Serializable
+    @SerialName("untyped.setProperty")
     class Descriptor(val role: String, val value: String?) : StepDescriptor() {
         override fun createStep(): IStep {
             return SetPropertyStep(role, value)

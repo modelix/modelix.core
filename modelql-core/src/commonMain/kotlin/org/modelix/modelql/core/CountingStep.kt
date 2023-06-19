@@ -1,13 +1,17 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.count
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-class CountingStep() : FoldingStep<Any?, Int>(0) {
-    override fun fold(s: Int, a: Any?): Int = s + 1
+class CountingStep() : AggregationStep<Any?, Int>() {
+    override suspend fun aggregate(input: Flow<Any?>): Int {
+        return input.count()
+    }
 
     override fun createDescriptor() = CountDescriptor()
 

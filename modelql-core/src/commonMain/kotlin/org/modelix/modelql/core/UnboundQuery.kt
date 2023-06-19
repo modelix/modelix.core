@@ -105,14 +105,12 @@ class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProd
     @OptIn(FlowPreview::class)
     override fun applyQuery(input: Flow<In>): Flow<Out> {
         return channelFlow {
-            coroutineScope {
-                input.flatMapMerge {
-                    val context = FlowInstantiationContext(this)
-                    context.put(inputStep, flowOf(it))
-                    context.getOrCreateFlow(outputStep)
-                }.collect {
-                    send(it)
-                }
+            input.flatMapMerge {
+                val context = FlowInstantiationContext(this)
+                context.put(inputStep, flowOf(it))
+                context.getOrCreateFlow(outputStep)
+            }.collect {
+                send(it)
             }
         }
     }

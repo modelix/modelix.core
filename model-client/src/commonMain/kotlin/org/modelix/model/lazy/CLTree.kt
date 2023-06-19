@@ -28,6 +28,7 @@ import org.modelix.model.persistent.CPNodeRef.Companion.foreign
 import org.modelix.model.persistent.CPNodeRef.Companion.global
 import org.modelix.model.persistent.CPNodeRef.Companion.local
 import org.modelix.modelql.core.flatMapConcatConcurrent
+import org.modelix.modelql.core.flattenConcatConcurrent
 
 class CLTree : ITree, IBulkTree {
     val store: IDeserializingKeyValueStore
@@ -151,6 +152,14 @@ class CLTree : ITree, IBulkTree {
 
     override fun getAllChildrenAsFlow(parentId: Long): Flow<Long> {
         return resolveNodeLater(parentId).flatMapConcat { it.getData().getChildrenIds().asFlow() }
+    }
+
+    override fun getDescendantsAsFlow(nodeId: Long, includeSelf: Boolean): Flow<Long> {
+        return if (includeSelf) {
+            flowOf(flowOf(nodeId), getDescendantsAsFlow(nodeId,false)).flattenConcatConcurrent()
+        } else {
+            getAllChildrenAsFlow(nodeId).flatMapConcatConcurrent { getDescendantsAsFlow(it, true) }
+        }
     }
 
     override fun getAllReferenceTargetsAsFlow(parentId: Long): Flow<Pair<String, INodeReference>> {

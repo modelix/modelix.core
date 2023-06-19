@@ -8,9 +8,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-abstract class EqualsOperatorStep<E>(val operand: E) : MonoTransformingStep<E, Boolean>() {
+abstract class EqualsOperatorStep<E>(val operand: E) : MonoTransformingStep<E?, Boolean>() {
 
-    override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<Boolean> {
+    override fun createFlow(input: Flow<E?>, context: IFlowInstantiationContext): Flow<Boolean> {
         return input.map { it == operand }
     }
 
@@ -51,5 +51,7 @@ class StringEqualsOperatorStep(operand: String) : EqualsOperatorStep<String>(ope
     }
 }
 
-fun IMonoStep<Int>.equalTo(operand: Int): IMonoStep<Boolean> = IntEqualsOperatorStep(operand).also { connect(it) }
-fun IMonoStep<String>.equalTo(operand: String): IMonoStep<Boolean> = StringEqualsOperatorStep(operand).also { connect(it) }
+fun IMonoStep<Int?>.equalTo(operand: Int): IMonoStep<Boolean> = IntEqualsOperatorStep(operand).also { connect(it) }
+fun IMonoStep<Int?>.notEqualTo(operand: Int): IMonoStep<Boolean> = !equalTo(operand)
+fun IMonoStep<String?>.equalTo(operand: String): IMonoStep<Boolean> = StringEqualsOperatorStep(operand).also { connect(it) }
+fun IMonoStep<String?>.notEqualTo(operand: String): IMonoStep<Boolean> = !equalTo(operand)

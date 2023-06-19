@@ -21,6 +21,7 @@ import org.modelix.modelql.core.filter
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.firstOrNull
 import org.modelix.modelql.core.map
+import org.modelix.modelql.core.notEqualTo
 import org.modelix.modelql.core.plus
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.toSet
@@ -155,5 +156,20 @@ class ModelQLClientTest {
         }
 
         assertEquals(setOf(null, "abc", "model1a"), result)
+    }
+
+    @Test
+    fun testCaching() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+
+        val result: List<Int> = client.query { root ->
+            val numberOfNodes = root.descendants()
+                .filter { it.property("visited").notEqualTo("xxx") }
+                .map { it.setProperty("visited", "xxx") }
+                .count()
+            numberOfNodes.map { it + 1000 }.plus(numberOfNodes.map { it + 2000 }).toList()
+        }
+        println(result)
+        assertEquals(listOf(1002, 2002), result)
     }
 }

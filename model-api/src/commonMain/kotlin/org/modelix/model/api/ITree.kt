@@ -246,6 +246,13 @@ interface ITree {
     fun deleteNodes(nodeIds: LongArray): ITree
 
     fun getAllChildrenAsFlow(parentId: Long): Flow<Long> = getAllChildren(parentId).asFlow()
+    fun getDescendantsAsFlow(nodeId: Long, includeSelf: Boolean = false): Flow<Long> {
+        return if (includeSelf) {
+            flowOf(flowOf(nodeId), getDescendantsAsFlow(nodeId,false)).flattenConcat()
+        } else {
+            getAllChildrenAsFlow(nodeId).flatMapConcat { getDescendantsAsFlow(it, true) }
+        }
+    }
     fun getAllReferenceTargetsAsFlow(nodeId: Long): Flow<Pair<String, INodeReference>> = getReferenceRoles(nodeId).map { it to getReferenceTarget(nodeId, it) }.filterSecondNotNull().asFlow()
     fun getChildrenAsFlow(parentId: Long, role: String): Flow<Long> = getChildren(parentId, role).asFlow()
     fun getReferenceTargetAsFlow(nodeId: Long, role: String): Flow<INodeReference> = flowOf(getReferenceTarget(nodeId, role)).filterNotNull()

@@ -2,7 +2,10 @@ package org.modelix.modelql.core
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 
@@ -37,6 +40,9 @@ interface IProducingStep<out E> : IStep {
     fun getConsumers(): List<IConsumingStep<*>>
     fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E>
     fun createFlow(context: IFlowInstantiationContext): Flow<E>
+    fun outputIsConsumedMultipleTimes(): Boolean {
+        return getConsumers().size > 1 || getConsumers().any { it.inputIsConsumedMultipleTimes() }
+    }
 }
 fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) = addConsumer(consumer)
 fun <T> IConsumingStep<T>.connect(producer: IProducingStep<T>) = producer.addConsumer(this)
@@ -47,9 +53,14 @@ interface IFluxStep<out E> : IProducingStep<E>
 interface IConsumingStep<in E> : IStep {
     fun addProducer(producer: IProducingStep<E>)
     fun getProducers(): List<IProducingStep<*>>
+    fun inputIsConsumedMultipleTimes(): Boolean = if (this is IProducingStep<*>) outputIsConsumedMultipleTimes() else false
 }
 
-interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out>
+interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out> {
+    override fun inputIsConsumedMultipleTimes(): Boolean {
+        return outputIsConsumedMultipleTimes()
+    }
+}
 
 abstract class ProducingStep<E> : IProducingStep<E> {
     override var owningQuery: IUnboundQuery<*, *>? = null
@@ -93,9 +104,19 @@ abstract class FluxTransformingStep<In, Out> : TransformingStep<In, Out>(), IFlu
 
 abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
-        return flow {
+        val flow = flow {
             emit(aggregate(input))
-        } // .shareIn(context.coroutineScope, SharingStarted.WhileSubscribed(), 1)
+        }
+        return if (outputIsConsumedMultipleTimes()) {
+            flow.shareIn(context.coroutineScope, SharingStarted.Lazily, 1)
+                .take(1) // The shared flow seems to ignore that there are no more elements and keeps the subscribers active.
+        } else {
+            flow
+        }
+    }
+
+    override fun inputIsConsumedMultipleTimes(): Boolean {
+        return false
     }
 
     protected abstract suspend fun aggregate(input: Flow<In>): Out

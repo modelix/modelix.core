@@ -184,6 +184,10 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
         return getTree().getAllChildrenAsFlow(nodeId).map { wrap(it)!! }
     }
 
+    override fun getDescendantsAsFlow(includeSelf: Boolean): Flow<INode> {
+        return getTree().getDescendantsAsFlow(nodeId, includeSelf).map { wrap(it)!! }
+    }
+
     override fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> {
         return getAllReferenceTargetRefsAsFlow().map { it.first to resolveNodeRefInCoroutine(it.second) }
     }

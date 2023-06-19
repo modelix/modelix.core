@@ -83,7 +83,9 @@ class CPNode private constructor(
 
     fun getPropertyValue(role: String): String? {
         val index = propertyRoles.asList().binarySearch(role)
-        return if (index < 0) null else propertyValues[index]
+        val value = if (index < 0) null else propertyValues[index]
+        println("getProperty $id, $role, $value")
+        return value
     }
 
     fun getReferenceTarget(role: String): CPNodeRef? {

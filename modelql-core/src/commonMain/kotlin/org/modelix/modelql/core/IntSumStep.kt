@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-class IntSumStep(val operand: Int) : TransformingStep<Int, Int>() {
+class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
     override fun createFlow(input: Flow<Int>, context: IFlowInstantiationContext): Flow<Int> {
         return input.map { it + operand }
     }
@@ -28,5 +28,7 @@ class IntSumStep(val operand: Int) : TransformingStep<Int, Int>() {
     }
 }
 
-operator fun IProducingStep<Int>.plus(other: Int): IProducingStep<Int> = IntSumStep(other).also { connect(it) }
-operator fun Int.plus(other: IProducingStep<Int>): IProducingStep<Int> = other.plus(this)
+operator fun IMonoStep<Int>.plus(other: Int): IMonoStep<Int> = IntSumStep(other).also { connect(it) }
+operator fun IFluxStep<Int>.plus(other: Int): IFluxStep<Int> = map { it + other }
+operator fun Int.plus(other: IMonoStep<Int>): IMonoStep<Int> = other.plus(this)
+operator fun Int.plus(other: IFluxStep<Int>): IFluxStep<Int> = other.plus(this)

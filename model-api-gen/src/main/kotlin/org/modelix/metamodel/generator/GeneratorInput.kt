@@ -243,6 +243,8 @@ internal sealed class ProcessedRole(
     lateinit var concept: ProcessedConcept
     var generatedName: String = originalName
 
+    fun setterName() = "set" + generatedName.take(1).uppercase() + generatedName.drop(1)
+
     abstract fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit)
 }
 

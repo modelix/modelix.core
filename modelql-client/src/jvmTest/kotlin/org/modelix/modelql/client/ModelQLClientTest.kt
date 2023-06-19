@@ -111,7 +111,11 @@ class ModelQLClientTest {
             root.children("modules")
                 .children("models").filter { it.property("name").contains("model1a") }
                 .first()
-                .setProperty("name", "changed")
+                .map {
+                    it.setProperty("name", "changed")
+                    // test if non-consumed steps with side effects are executed
+                    it
+                }
                 .property("name")
         }
         assertEquals("changed", updatesNodes)

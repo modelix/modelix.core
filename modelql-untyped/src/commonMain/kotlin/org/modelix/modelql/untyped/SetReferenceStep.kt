@@ -12,36 +12,30 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.key
 import org.modelix.model.api.resolveReferenceLinkOrFallback
-import org.modelix.modelql.core.IConsumingStep
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IMonoStep
-import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
-import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 
-class SetReferenceStep(val role: String) : MonoTransformingStep<INode?, INode>(), IConsumingStep<INode?> {
-    private var targetProducer: IProducingStep<INode?>? = null
-
-    override fun getProducers(): List<IProducingStep<INode?>> {
-        return super.getProducers() + listOfNotNull(targetProducer)
-    }
-
-    override fun addProducer(producer: IProducingStep<INode?>) {
-        if (getProducers().isEmpty()) super.addProducer(producer) else targetProducer = producer
-    }
+class SetReferenceStep(val role: String)
+    : TransformingStepWithParameter<INode, INode?, INode?, INode>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out INode> {
         return serializersModule.serializer<INode>()
     }
 
     override fun createFlow(input: Flow<INode?>, context: IFlowInstantiationContext): Flow<INode> {
-        val targetFlow: Flow<INode?> = context.getOrCreateFlow(targetProducer!!).onEmpty { emit(null) }
+        val targetFlow: Flow<INode?> = context.getOrCreateFlow(getParameterProducer()).onEmpty { emit(null) }
         return input.combine(targetFlow) { source, target ->
             source!!.setReferenceTarget(source!!.resolveReferenceLinkOrFallback(role), target)
             source
         }
+    }
+
+    override fun transformElement(input: INode, parameter: INode?): INode {
+        input.setReferenceTarget(input.resolveReferenceLinkOrFallback(role), parameter)
+        return input
     }
 
     override fun createDescriptor(): StepDescriptor {
@@ -53,7 +47,7 @@ class SetReferenceStep(val role: String) : MonoTransformingStep<INode?, INode>()
     }
 
     override fun toString(): String {
-        return "${getProducer()}.setReference($role, $targetProducer)"
+        return "${getProducer()}.setReference($role, ${getParameterProducer()})"
     }
 
     @Serializable

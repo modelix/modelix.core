@@ -3,6 +3,7 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
@@ -107,6 +108,13 @@ class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProd
             input.flatMapMerge {
                 val context = FlowInstantiationContext(this)
                 context.put(inputStep, flowOf(it))
+
+                // ensure all write operations are executed
+                getAllSteps()
+                    .filterIsInstance<IProcessingStep<*, *>>()
+                    .filter { it.getConsumers().isEmpty() && it.hasSideEffect() }
+                    .forEach { context.getOrCreateFlow(it).collect() }
+
                 context.getOrCreateFlow(outputStep)
             }.collect {
                 send(it)

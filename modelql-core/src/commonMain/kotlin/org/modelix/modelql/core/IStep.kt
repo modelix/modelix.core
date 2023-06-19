@@ -18,6 +18,7 @@ interface IStep {
     fun createDescriptor(): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
 
     fun requiresWriteAccess(): Boolean = false
+    fun hasSideEffect(): Boolean = requiresWriteAccess()
 }
 
 interface IFlowInstantiationContext {

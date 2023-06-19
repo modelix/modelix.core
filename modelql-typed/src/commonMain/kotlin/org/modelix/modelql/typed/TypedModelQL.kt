@@ -30,6 +30,7 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.asString
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.emptyStringIfNull
 import org.modelix.modelql.core.filter
@@ -52,6 +53,7 @@ import org.modelix.modelql.untyped.nodeReferenceAsString
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.query
 import org.modelix.modelql.untyped.reference
+import org.modelix.modelql.untyped.setProperty
 import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 
@@ -89,6 +91,17 @@ object TypedModelQL {
     }
     fun intProperty(input: IFluxStep<ITypedNode>, link: ITypedProperty<Int>): IFluxStep<Int> {
         return input.map { intProperty(it, link) }
+    }
+
+    @JvmName("setStringProperty")
+    fun <NodeT : ITypedNode, ValueT : String?> setProperty(input: IMonoStep<NodeT>, link: ITypedProperty<ValueT>, value: IMonoStep<ValueT>): IMonoStep<NodeT> {
+        input.untyped().setProperty(link.untyped(), value)
+        return input
+    }
+    @JvmName("setProperty")
+    fun <NodeT : ITypedNode, ValueT : Any?> setProperty(input: IMonoStep<NodeT>, link: ITypedProperty<ValueT>, value: IMonoStep<ValueT>): IMonoStep<NodeT> {
+        input.untyped().setProperty(link.untyped(), value.asString())
+        return input
     }
 
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IMonoStep<ParentT>, link: ITypedMandatorySingleChildLink<ChildT>): IMonoStep<ChildT> {

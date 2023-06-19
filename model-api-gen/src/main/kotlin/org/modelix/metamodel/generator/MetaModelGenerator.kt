@@ -7,12 +7,12 @@ import org.modelix.model.api.*
 import org.modelix.model.data.EnumPropertyType
 import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
-import java.nio.file.Path
-import kotlin.reflect.KClass
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.typed.TypedModelQL
+import java.nio.file.Path
+import kotlin.reflect.KClass
 
 private val reservedPropertyNames: Set<String> = setOf(
     "constructor", // already exists on JS objects
@@ -212,6 +212,22 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                         .build()
                                 )
                             }
+
+                            addFunction(
+                                FunSpec.builder(feature.setterName())
+                                    .receiver(
+                                        IMonoStep::class.asTypeName()
+                                            .parameterizedBy(concept.nodeWrapperInterfaceType())
+                                    )
+                                    .addParameter("value", IMonoStep::class.asTypeName().parameterizedBy(feature.asKotlinType()))
+                                    .addStatement(
+                                        "return %T.setProperty(this, %T.%N, value)",
+                                        TypedModelQL::class.asTypeName(),
+                                        concept.conceptWrapperInterfaceClass(),
+                                        feature.generatedName
+                                    )
+                                    .build()
+                            )
                         }
 
                         is ProcessedChildLink -> {

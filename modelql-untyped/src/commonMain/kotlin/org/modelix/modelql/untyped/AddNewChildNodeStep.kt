@@ -19,7 +19,8 @@ import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 
-class AddNewChildNodeStep(val role: String?, val index: Int, val concept: ConceptReference?) : MonoTransformingStep<INode, INode>() {
+class AddNewChildNodeStep(val role: String?, val index: Int, val concept: ConceptReference?)
+    : MonoTransformingStep<INode, INode>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out INode> {
         return serializersModule.serializer<INode>()

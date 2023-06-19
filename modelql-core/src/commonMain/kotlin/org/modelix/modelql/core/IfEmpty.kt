@@ -41,10 +41,6 @@ fun <In : Out, Out> IMonoStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IM
     return IfEmptyStep<In, Out>(UnboundQuery.build { alternative() }).first()
 }
 
-fun <In : Out, Out> IFluxStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IFluxStep<Out> {
-    return IfEmptyStep<In, Out>(UnboundQuery.build { alternative() })
-}
-
-fun <In : Out, Out> IProducingStep<In>.ifEmpty(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
+fun <In : Out, Out> IProducingStep<In>.ifEmpty(alternative: () -> IProducingStep<Out>): IFluxStep<Out> {
     return IfEmptyStep<In, Out>(UnboundQuery.build { alternative() })
 }

@@ -34,14 +34,16 @@ class ModelQLTest {
             db.products.map {
                 val id = it.id
                 val title = it.title
-                val images = it.images.toList()
-                id.zip(title, images)
+                val images = it.images.mapLocal { MyImage(it) }.toList()
+                id.zip(title, images).mapLocal {
+                    MyNonSerializableClass(it.first, it.second, it.third)
+                }
             }.toList()
-        }.map {
-            MyNonSerializableClass(it.first, it.second, it.third)
         }
-        println(result)
-        assertEquals(30, result.size)
+        val expected = testDatabase.products.map {
+            MyNonSerializableClass(it.id, it.title, it.images.map { MyImage(it) })
+        }
+        assertEquals(expected, result)
     }
 
     @Test
@@ -123,7 +125,8 @@ class ModelQLTest {
         assertEquals((1..30).map { listOf(it, "abc") }, result)
     }
 
-    data class MyNonSerializableClass(val id: Int, val title: String, val images: List<String>)
+    data class MyNonSerializableClass(val id: Int, val title: String, val images: List<MyImage>)
+    data class MyImage(val url: String)
 }
 
 suspend fun <ResultT> remoteProductDatabaseQuery(body: (IMonoStep<ProductDatabase>) -> IMonoStep<ResultT>): ResultT {

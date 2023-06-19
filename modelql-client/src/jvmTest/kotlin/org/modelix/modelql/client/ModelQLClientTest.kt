@@ -26,6 +26,7 @@ import org.modelix.modelql.core.plus
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.toSet
 import org.modelix.modelql.core.zip
+import org.modelix.modelql.untyped.addNewChild
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.allReferences
 import org.modelix.modelql.untyped.children
@@ -127,7 +128,7 @@ class ModelQLClientTest {
     @Test
     fun writeReference() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
-        val updatesNodes = client.query { root ->
+        val updatedNodes = client.query { root ->
             root.children("modules")
                 .children("models").filter { it.property("name").contains("model1a") }
                 .first()
@@ -141,6 +142,27 @@ class ModelQLClientTest {
                 .toSet()
         }
         assertEquals(setOf("abc"), referenceTargetNames)
+    }
+
+    @Test
+    fun addNewChild() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val createdNodes = client.query { root ->
+            root.children("modules")
+                .children("models")
+                .first()
+                .addNewChild("rootNodes")
+                .setProperty("name", "MyRootNode")
+        }
+
+        val rootNodeNames = client.query { root ->
+            root.children("modules")
+                .children("models")
+                .children("rootNodes")
+                .property("name")
+                .toSet()
+        }
+        assertEquals(setOf("MyRootNode"), rootNodeNames)
     }
 
     @Test

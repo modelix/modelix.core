@@ -28,6 +28,7 @@ object UntypedModelQL {
     val serializersModule: SerializersModule = SerializersModule {
         include(UnboundQuery.serializersModule)
         polymorphic(StepDescriptor::class) {
+            subclass(AddNewChildNodeStep.Descriptor::class)
             subclass(AllChildrenTraversalStep.AllChildrenStepDescriptor::class)
             subclass(AllReferencesTraversalStep.Descriptor::class)
             subclass(ChildrenTraversalStep.ChildrenStepDescriptor::class)

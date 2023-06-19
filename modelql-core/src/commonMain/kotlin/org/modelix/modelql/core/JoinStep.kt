@@ -51,7 +51,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 }
 
-operator fun <RemoteCommon> IProducingStep<RemoteCommon>.plus(other: IProducingStep<RemoteCommon>): IFluxStep<RemoteCommon> = JoinStep<RemoteCommon>().also {
+operator fun <Common> IProducingStep<Common>.plus(other: IProducingStep<Common>): IFluxStep<Common> = JoinStep<Common>().also {
     it.connect(this)
     it.connect(other)
 }

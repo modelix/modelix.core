@@ -31,6 +31,6 @@ class FirstElementStep<E>() : AggregationStep<E, E>() {
     }
 }
 
-fun <RemoteOut> IProducingStep<RemoteOut>.first(): IMonoStep<RemoteOut> {
-    return FirstElementStep<RemoteOut>().also { it.connect(this) }
+fun <Out> IProducingStep<Out>.first(): IMonoStep<Out> {
+    return FirstElementStep<Out>().also { it.connect(this) }
 }

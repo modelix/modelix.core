@@ -29,8 +29,8 @@ abstract class MappingStep<In, Out>(val query: UnboundQuery<In, Out>) : Transfor
     }
 }
 
-class FluxMappingStep<RemoteIn, RemoteOut>(query: UnboundQuery<RemoteIn, RemoteOut>) :
-    MappingStep<RemoteIn, RemoteOut>(query), IFluxStep<RemoteOut> {
+class FluxMappingStep<In, Out>(query: UnboundQuery<In, Out>) :
+    MappingStep<In, Out>(query), IFluxStep<Out> {
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())
 
@@ -43,8 +43,8 @@ class FluxMappingStep<RemoteIn, RemoteOut>(query: UnboundQuery<RemoteIn, RemoteO
     }
 }
 
-class MonoMappingStep<RemoteIn, RemoteOut>(query: UnboundQuery<RemoteIn, RemoteOut>) :
-    MappingStep<RemoteIn, RemoteOut>(query), IMonoStep<RemoteOut> {
+class MonoMappingStep<In, Out>(query: UnboundQuery<In, Out>) :
+    MappingStep<In, Out>(query), IMonoStep<Out> {
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())
 
@@ -57,15 +57,15 @@ class MonoMappingStep<RemoteIn, RemoteOut>(query: UnboundQuery<RemoteIn, RemoteO
     }
 }
 
-fun <RemoteIn, RemoteOut> IFluxStep<RemoteIn>.map(body: (IMonoStep<RemoteIn>) -> IMonoStep<RemoteOut>): IFluxStep<RemoteOut> {
+fun <In, Out> IFluxStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IFluxStep<Out> {
     return FluxMappingStep(UnboundQuery.build(body)).also { connect(it) }
 }
-fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(body: (IMonoStep<RemoteIn>) -> IMonoStep<RemoteOut>): IMonoStep<RemoteOut> {
+fun <In, Out> IMonoStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
     return MonoMappingStep(UnboundQuery.build(body)).also { connect(it) }
 }
-fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(query: IUnboundQuery<RemoteIn, RemoteOut>): IFluxStep<RemoteOut> {
-    return FluxMappingStep(query as UnboundQuery<RemoteIn, RemoteOut>).also { connect(it) }
+fun <In, Out> IMonoStep<In>.map(query: IUnboundQuery<In, Out>): IFluxStep<Out> {
+    return FluxMappingStep(query as UnboundQuery<In, Out>).also { connect(it) }
 }
-fun <RemoteIn, RemoteOut> IFluxStep<RemoteIn>.map(query: IUnboundQuery<RemoteIn, RemoteOut>): IFluxStep<RemoteOut> {
-    return FluxMappingStep(query as UnboundQuery<RemoteIn, RemoteOut>).also { connect(it) }
+fun <In, Out> IFluxStep<In>.map(query: IUnboundQuery<In, Out>): IFluxStep<Out> {
+    return FluxMappingStep(query as UnboundQuery<In, Out>).also { connect(it) }
 }

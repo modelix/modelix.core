@@ -88,8 +88,8 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
     }
 }
 
-abstract class MonoTransformingStep<RemoteIn, RemoteOut> : TransformingStep<RemoteIn, RemoteOut>(), IMonoStep<RemoteOut>
-abstract class FluxTransformingStep<RemoteIn, RemoteOut> : TransformingStep<RemoteIn, RemoteOut>(), IFluxStep<RemoteOut>
+abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMonoStep<Out>
+abstract class FluxTransformingStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out>
 
 abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {

@@ -36,15 +36,15 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, Out>) : Tra
     }
 }
 
-fun <RemoteIn : RemoteOut, RemoteOut> IMonoStep<RemoteIn>.ifEmpty(alternative: () -> IMonoStep<RemoteOut>): IMonoStep<RemoteOut> {
+fun <In : Out, Out> IMonoStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IMonoStep<Out> {
     // TODO .first() is not correct. 0 elements should be allowed.
-    return IfEmptyStep<RemoteIn, RemoteOut>(UnboundQuery.build { alternative() }).first()
+    return IfEmptyStep<In, Out>(UnboundQuery.build { alternative() }).first()
 }
 
-fun <RemoteIn : RemoteOut, RemoteOut> IFluxStep<RemoteIn>.ifEmpty(alternative: () -> IMonoStep<RemoteOut>): IFluxStep<RemoteOut> {
-    return IfEmptyStep<RemoteIn, RemoteOut>(UnboundQuery.build { alternative() })
+fun <In : Out, Out> IFluxStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IFluxStep<Out> {
+    return IfEmptyStep<In, Out>(UnboundQuery.build { alternative() })
 }
 
-fun <RemoteIn : RemoteOut, RemoteOut> IProducingStep<RemoteIn>.ifEmpty(alternative: () -> IFluxStep<RemoteOut>): IFluxStep<RemoteOut> {
-    return IfEmptyStep<RemoteIn, RemoteOut>(UnboundQuery.build { alternative() })
+fun <In : Out, Out> IProducingStep<In>.ifEmpty(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
+    return IfEmptyStep<In, Out>(UnboundQuery.build { alternative() })
 }

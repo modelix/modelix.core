@@ -8,15 +8,15 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.modules.SerializersModule
 
-class NullIfEmpty<RemoteE>() : MonoTransformingStep<RemoteE, RemoteE?>() {
+class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<RemoteE?> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<E?> {
         val outputSerializer = getProducer().getOutputSerializer(serializersModule) as KSerializer<Any>
-        return outputSerializer.nullable as KSerializer<RemoteE?>
+        return outputSerializer.nullable as KSerializer<E?>
     }
 
-    override fun createFlow(input: Flow<RemoteE>, context: IFlowInstantiationContext): Flow<RemoteE?> {
-        val downcast: Flow<RemoteE?> = input
+    override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E?> {
+        val downcast: Flow<E?> = input
         return downcast.onEmpty { emit(null) }
     }
 
@@ -35,4 +35,4 @@ class NullIfEmpty<RemoteE>() : MonoTransformingStep<RemoteE, RemoteE?>() {
     }
 }
 
-fun <RemoteOut> IMonoStep<RemoteOut>.orNull(): IMonoStep<RemoteOut?> = NullIfEmpty<RemoteOut>().also { connect(it) }
+fun <Out> IMonoStep<Out>.orNull(): IMonoStep<Out?> = NullIfEmpty<Out>().also { connect(it) }

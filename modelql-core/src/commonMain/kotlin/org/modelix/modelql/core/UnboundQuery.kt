@@ -161,8 +161,8 @@ class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProd
                 subclass(org.modelix.modelql.core.ZipStep.Descriptor::class)
             }
         }
-        fun <RemoteIn, RemoteOut> build(body: (IMonoStep<RemoteIn>) -> IProducingStep<RemoteOut>): UnboundQuery<RemoteIn, RemoteOut> {
-            val inputStep = QueryInput<RemoteIn>()
+        fun <In, Out> build(body: (IMonoStep<In>) -> IProducingStep<Out>): UnboundQuery<In, Out> {
+            val inputStep = QueryInput<In>()
             val outputStep = body(inputStep)
             return UnboundQuery(inputStep, outputStep)
         }

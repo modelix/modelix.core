@@ -121,6 +121,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             .build()
 
         val enumBuilder = TypeSpec.enumBuilder(enum.name)
+            .addDeprecationIfNecessary(enum)
             .primaryConstructor(constructorSpec)
             .addProperty(
                 PropertySpec.builder("uid", String::class)
@@ -421,6 +422,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
 
     private fun generateConceptWrapperInterface(concept: ProcessedConcept): TypeSpec {
         return TypeSpec.interfaceBuilder(concept.conceptWrapperInterfaceClass()).apply {
+            addDeprecationIfNecessary(concept)
             val nodeT = TypeVariableName("NodeT", concept.nodeWrapperInterfaceType(), variance = KModifier.OUT)
             addTypeVariable(nodeT)
             addSuperinterface(IConceptOfTypedNode::class.asTypeName().parameterizedBy(nodeT))
@@ -435,18 +437,21 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType())
                         )
                             .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
+                            .addDeprecationIfNecessary(feature)
                             .build()
                     )
 
                     is ProcessedChildLink -> addProperty(
                         PropertySpec.builder(feature.generatedName, feature.generatedChildLinkType())
                             .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
+                            .addDeprecationIfNecessary(feature)
                             .build()
                     )
 
                     is ProcessedReferenceLink -> addProperty(
                         PropertySpec.builder(feature.generatedName, feature.generatedReferenceLinkType())
                             .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
+                            .addDeprecationIfNecessary(feature)
                             .build()
                     )
                 }
@@ -671,6 +676,20 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                 }
             }
         }.build()
+    }
+
+    private fun generateDeprecationAnnotation(message: String): AnnotationSpec {
+        val annotationBuilder = AnnotationSpec.builder(Deprecated::class)
+        if (message.isNotEmpty()) { annotationBuilder.addMember("message = %S", message) }
+        return annotationBuilder.build()
+    }
+
+    private fun TypeSpec.Builder.addDeprecationIfNecessary(deprecatable: IProcessedDeprecatable) : TypeSpec.Builder {
+        return deprecatable.deprecationMessage?.let { addAnnotation(generateDeprecationAnnotation(it)) } ?: this
+    }
+
+    private fun PropertySpec.Builder.addDeprecationIfNecessary(deprecatable: IProcessedDeprecatable) : PropertySpec.Builder {
+        return deprecatable.deprecationMessage?.let { addAnnotation(generateDeprecationAnnotation(it)) } ?: this
     }
 
     private fun ProcessedConcept.conceptWrapperInterfaceType() =

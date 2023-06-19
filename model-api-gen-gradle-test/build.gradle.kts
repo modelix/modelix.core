@@ -45,6 +45,7 @@ dependencies {
     testImplementation(files("$buildDir/metamodel/kotlin_gen") {
         builtBy("generateMetaModelSources")
     })
+    testImplementation(kotlin("reflect"))
 }
 
 tasks.test {

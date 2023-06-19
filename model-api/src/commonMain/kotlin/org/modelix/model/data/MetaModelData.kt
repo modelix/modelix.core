@@ -29,6 +29,10 @@ data class LanguageData(
     }
 }
 
+sealed interface IDeprecatable {
+    val deprecationMessage: String?
+}
+
 @Serializable
 data class ConceptData(
     val uid: String? = null,
@@ -37,16 +41,18 @@ data class ConceptData(
     val properties: List<PropertyData> = emptyList(),
     val children: List<ChildLinkData> = emptyList(),
     val references: List<ReferenceLinkData> = emptyList(),
-    val extends: List<String> = emptyList()
-)
+    val extends: List<String> = emptyList(),
+    override val deprecationMessage: String? = null
+) : IDeprecatable
 
 @Serializable
 data class EnumData(
     val uid: String? = null,
     val name: String,
     val members: List<EnumMemberData> = emptyList(),
-    val defaultIndex: Int
-)
+    val defaultIndex: Int,
+    override val deprecationMessage: String? = null
+) : IDeprecatable
 
 @Serializable
 data class EnumMemberData(
@@ -65,8 +71,9 @@ data class PropertyData(
     override val uid: String? = null,
     override val name: String,
     val type: PropertyType = PrimitivePropertyType(Primitive.STRING),
-    val optional: Boolean = true
-) : IConceptFeatureData
+    val optional: Boolean = true,
+    override val deprecationMessage: String? = null
+) : IConceptFeatureData, IDeprecatable
 
 class PropertyTypeSerializer : KSerializer<PropertyType> {
     override fun deserialize(decoder: Decoder): PropertyType {
@@ -109,13 +116,15 @@ data class ChildLinkData(
     override val name: String,
     val type: String,
     val multiple: Boolean = false,
-    val optional: Boolean = true
-) : IConceptFeatureData
+    val optional: Boolean = true,
+    override val deprecationMessage: String? = null
+) : IConceptFeatureData, IDeprecatable
 
 @Serializable
 data class ReferenceLinkData(
     override val uid: String? = null,
     override val name: String,
     val type: String,
-    val optional: Boolean = true
-) : IConceptFeatureData
+    val optional: Boolean = true,
+    override val deprecationMessage: String? = null
+) : IConceptFeatureData, IDeprecatable

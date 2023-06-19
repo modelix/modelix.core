@@ -11,6 +11,7 @@ import org.modelix.model.api.serialize
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IQuery
 import org.modelix.modelql.core.IZip2Output
 import org.modelix.modelql.core.filterNotNull
 import org.modelix.modelql.core.map
@@ -31,9 +32,8 @@ import org.modelix.modelql.untyped.roleInParent
 
 abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL {
 
-    override suspend fun <R> query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
-        val client = client
-        return client.query { root ->
+    override fun <R> buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IQuery<R> {
+        return client.buildQuery { root ->
             body(replaceQueryRoot(root))
         }
     }

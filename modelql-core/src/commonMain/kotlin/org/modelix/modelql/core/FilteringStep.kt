@@ -8,7 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-abstract class FilteringStep<E>(val condition: Query<E, Boolean?>) : TransformingStep<E, E>() {
+abstract class FilteringStep<E>(val condition: UnboundQuery<E, Boolean?>) : TransformingStep<E, E>() {
 
     override fun validate() {
         require(!condition.requiresWriteAccess()) { "write access not allowed inside a filtering step: $this" }
@@ -27,7 +27,7 @@ abstract class FilteringStep<E>(val condition: Query<E, Boolean?>) : Transformin
     }
 }
 
-class MonoFilteringStep<E>(condition: Query<E, Boolean?>) :
+class MonoFilteringStep<E>(condition: UnboundQuery<E, Boolean?>) :
     FilteringStep<E>(condition), IMonoStep<E> {
 
     override fun createDescriptor() = Descriptor(condition.createDescriptor())
@@ -36,12 +36,12 @@ class MonoFilteringStep<E>(condition: Query<E, Boolean?>) :
     @SerialName("filterSingle")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return MonoFilteringStep<Any?>(query.createQuery() as Query<Any?, Boolean?>)
+            return MonoFilteringStep<Any?>(query.createQuery() as UnboundQuery<Any?, Boolean?>)
         }
     }
 }
 
-class FluxFilteringStep<E>(condition: Query<E, Boolean?>) :
+class FluxFilteringStep<E>(condition: UnboundQuery<E, Boolean?>) :
     FilteringStep<E>(condition), IFluxStep<E> {
 
     override fun createDescriptor() = Descriptor(condition.createDescriptor())
@@ -50,14 +50,14 @@ class FluxFilteringStep<E>(condition: Query<E, Boolean?>) :
     @SerialName("filterMany")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return MonoFilteringStep<Any?>(query.createQuery() as Query<Any?, Boolean?>)
+            return MonoFilteringStep<Any?>(query.createQuery() as UnboundQuery<Any?, Boolean?>)
         }
     }
 }
 
 fun <T> IFluxStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IFluxStep<T> {
-    return FluxFilteringStep(Query.build { condition(it).firstOrNull() }).also { connect(it) }
+    return FluxFilteringStep(UnboundQuery.build { condition(it).firstOrNull() }).also { connect(it) }
 }
 fun <T> IMonoStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IMonoStep<T> {
-    return MonoFilteringStep(Query.build { condition(it).firstOrNull() }).also { connect(it) }
+    return MonoFilteringStep(UnboundQuery.build { condition(it).firstOrNull() }).also { connect(it) }
 }

@@ -8,7 +8,7 @@ import kotlinx.serialization.modules.SerializersModule
 
 interface IStep {
     @Deprecated("")
-    var owningQuery: IQuery<*, *>?
+    var owningQuery: IUnboundQuery<*, *>?
     fun validate() {}
 
     @Deprecated("")
@@ -52,7 +52,7 @@ interface IConsumingStep<in E> : IStep {
 interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out>
 
 abstract class ProducingStep<E> : IProducingStep<E> {
-    override var owningQuery: IQuery<*, *>? = null
+    override var owningQuery: IUnboundQuery<*, *>? = null
     private val consumers = ArrayList<IConsumingStep<E>>()
 
     override fun addConsumer(consumer: IConsumingStep<E>) {

@@ -13,8 +13,8 @@ import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
-import org.modelix.modelql.core.Query
-import org.modelix.modelql.core.buildRecursiveQuery
+import org.modelix.modelql.core.UnboundQuery
+import org.modelix.modelql.core.buildQuery
 import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.count
 import org.modelix.modelql.core.filter
@@ -124,7 +124,7 @@ class ModelQLClientTest {
     fun recursiveQuery() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
 
-        val descendantsNames: Query<INode, String?> = buildRecursiveQuery<INode, String?> {
+        val descendantsNames: UnboundQuery<INode, String?> = buildQuery<INode, String?> {
             it.property("name") + it.allChildren().mapRecursive()
         }
 

@@ -7,7 +7,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class FlatMapStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
+class FlatMapStep<In, Out>(val query: UnboundQuery<In, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
     override fun requiresWriteAccess(): Boolean {
         return query.requiresWriteAccess()
     }
@@ -26,7 +26,7 @@ class FlatMapStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out
     @SerialName("flatMap")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return FlatMapStep<Any?, Any?>(query.createQuery() as Query<Any?, Any?>)
+            return FlatMapStep<Any?, Any?>(query.createQuery() as UnboundQuery<Any?, Any?>)
         }
     }
 
@@ -36,5 +36,5 @@ class FlatMapStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out
 }
 
 fun <In, Out> IProducingStep<In>.flatMap(body: (IMonoStep<In>) -> IFluxStep<Out>): IFluxStep<Out> {
-    return FlatMapStep(Query.build(body)).also { connect(it) }
+    return FlatMapStep(UnboundQuery.build(body)).also { connect(it) }
 }

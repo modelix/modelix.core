@@ -15,13 +15,36 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 
-interface IQuery<In, Out> {
-    suspend fun run(input: In): Out
-    fun applyQuery(input: Flow<In>): Flow<Out>
-    fun requiresWriteAccess(): Boolean
+interface IQuery<out Out> {
+    suspend fun execute(): Out
+    fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IQuery<T>
 }
 
-class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingStep<Out>) : IQuery<In, Out> {
+class BoundQuery<In, out Out>(val input: In, val query: IUnboundQuery<In, Out>) : IQuery<Out> {
+    override suspend fun execute(): Out {
+        return query.execute(input)
+    }
+
+    override fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IQuery<T> {
+        return UnboundQuery.build<In, T> { it.map(query).map(body) }.bind(input)
+    }
+
+    companion object {
+        fun <In, Out> build(input: In, body: (IMonoStep<In>) -> IMonoStep<Out>): IQuery<Out> {
+            return UnboundQuery.build<In, Out>(body).bind(input)
+        }
+    }
+}
+
+interface IUnboundQuery<in In, out Out> {
+    suspend fun execute(input: In): Out
+    fun applyQuery(input: Flow<In>): Flow<Out>
+    fun requiresWriteAccess(): Boolean
+    fun bind(input: In): IQuery<Out> = BoundQuery(input, this)
+    fun applyQuery(inputElement: In): Flow<Out>
+}
+
+class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingStep<Out>) : IUnboundQuery<In, Out> {
 
     init {
         for (step in getAllSteps()) {
@@ -45,11 +68,11 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
         }
     }
 
-    fun optimize(): Query<In, Out> {
+    fun optimize(): UnboundQuery<In, Out> {
         return this
     }
 
-    fun validateAndOptimize(): Query<In, Out> {
+    fun validateAndOptimize(): UnboundQuery<In, Out> {
         validate()
         return optimize()
     }
@@ -63,11 +86,11 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
         return allSteps
     }
 
-    override suspend fun run(input: In): Out {
+    override suspend fun execute(input: In): Out {
         try {
             return applyQuery(input).single()
         } catch (ex: NoSuchElementException) {
-            throw RuntimeException("Empty query result: " + this@Query, ex)
+            throw RuntimeException("Empty query result: " + this@UnboundQuery, ex)
         }
     }
 
@@ -75,7 +98,7 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
         return applyQuery(input).toList()
     }
 
-    fun applyQuery(inputElement: In): Flow<Out> {
+    override fun applyQuery(inputElement: In): Flow<Out> {
         return applyQuery(flowOf(inputElement))
     }
 
@@ -138,10 +161,10 @@ class Query<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProducingSt
                 subclass(org.modelix.modelql.core.ZipStep.Descriptor::class)
             }
         }
-        fun <RemoteIn, RemoteOut> build(body: (IMonoStep<RemoteIn>) -> IProducingStep<RemoteOut>): Query<RemoteIn, RemoteOut> {
+        fun <RemoteIn, RemoteOut> build(body: (IMonoStep<RemoteIn>) -> IProducingStep<RemoteOut>): UnboundQuery<RemoteIn, RemoteOut> {
             val inputStep = QueryInput<RemoteIn>()
             val outputStep = body(inputStep)
-            return Query(inputStep, outputStep)
+            return UnboundQuery(inputStep, outputStep)
         }
     }
 }

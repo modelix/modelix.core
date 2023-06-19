@@ -9,7 +9,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class IfEmptyStep<In : Out, Out>(val alternative: Query<Unit, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
+class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         val downCastedInput: Flow<Out> = input
         return downCastedInput.onEmpty {
@@ -38,13 +38,13 @@ class IfEmptyStep<In : Out, Out>(val alternative: Query<Unit, Out>) : Transformi
 
 fun <RemoteIn : RemoteOut, RemoteOut> IMonoStep<RemoteIn>.ifEmpty(alternative: () -> IMonoStep<RemoteOut>): IMonoStep<RemoteOut> {
     // TODO .first() is not correct. 0 elements should be allowed.
-    return IfEmptyStep<RemoteIn, RemoteOut>(Query.build { alternative() }).first()
+    return IfEmptyStep<RemoteIn, RemoteOut>(UnboundQuery.build { alternative() }).first()
 }
 
 fun <RemoteIn : RemoteOut, RemoteOut> IFluxStep<RemoteIn>.ifEmpty(alternative: () -> IMonoStep<RemoteOut>): IFluxStep<RemoteOut> {
-    return IfEmptyStep<RemoteIn, RemoteOut>(Query.build { alternative() })
+    return IfEmptyStep<RemoteIn, RemoteOut>(UnboundQuery.build { alternative() })
 }
 
 fun <RemoteIn : RemoteOut, RemoteOut> IProducingStep<RemoteIn>.ifEmpty(alternative: () -> IFluxStep<RemoteOut>): IFluxStep<RemoteOut> {
-    return IfEmptyStep<RemoteIn, RemoteOut>(Query.build { alternative() })
+    return IfEmptyStep<RemoteIn, RemoteOut>(UnboundQuery.build { alternative() })
 }

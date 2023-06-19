@@ -11,7 +11,7 @@ class SerializerTest {
     @Test
     fun allStepsRegistered() {
         val missingSerializers = CoreStepDescriptor::class.sealedSubclasses.filter { subclass ->
-            Query.serializersModule.getPolymorphic(StepDescriptor::class, subclass.serializer().descriptor.serialName) == null
+            UnboundQuery.serializersModule.getPolymorphic(StepDescriptor::class, subclass.serializer().descriptor.serialName) == null
         }
         missingSerializers.forEach { subclass -> println("""subclass(${subclass.qualifiedName}::class)""") }
         assertTrue(missingSerializers.isEmpty(), "Descriptor subclasses not registered: $missingSerializers")

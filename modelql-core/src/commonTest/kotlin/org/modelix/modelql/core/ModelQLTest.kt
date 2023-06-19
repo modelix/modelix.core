@@ -130,11 +130,11 @@ suspend fun <ResultT> remoteProductDatabaseQuery(body: (IMonoStep<ProductDatabas
     return doRemoteProductDatabaseQuery(body)
 }
 suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatabase>) -> IMonoStep<ResultT>): ResultT {
-    val query: Query<ProductDatabase, ResultT> = Query.build(body)
+    val query: UnboundQuery<ProductDatabase, ResultT> = UnboundQuery.build(body)
     val json = Json {
         prettyPrint = true
         serializersModule = SerializersModule {
-            include(Query.serializersModule)
+            include(UnboundQuery.serializersModule)
             polymorphic(
                 StepDescriptor::class,
                 ProductsTraversal.Descriptor::class,
@@ -159,8 +159,8 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
     }
     val serializedQuery = json.encodeToString(query.createDescriptor())
     println(serializedQuery)
-    val deserializedQuery = json.decodeFromString<QueryDescriptor>(serializedQuery).createQuery() as Query<ProductDatabase, ResultT>
-    val remoteResult = deserializedQuery.run(testDatabase)
+    val deserializedQuery = json.decodeFromString<QueryDescriptor>(serializedQuery).createQuery() as UnboundQuery<ProductDatabase, ResultT>
+    val remoteResult = deserializedQuery.execute(testDatabase)
     val serializedResult = json.encodeToString(deserializedQuery.getOutputSerializer(json.serializersModule), remoteResult)
     println(serializedResult)
     return json.decodeFromString(query.getOutputSerializer(json.serializersModule), serializedResult) as ResultT

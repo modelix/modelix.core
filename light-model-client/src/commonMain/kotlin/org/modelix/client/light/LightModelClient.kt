@@ -9,6 +9,7 @@ import org.modelix.model.area.*
 import org.modelix.model.server.api.*
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IQuery
 import org.modelix.modelql.untyped.ISupportsModelQL
 import org.modelix.modelql.untyped.asMono
 import org.modelix.modelql.untyped.resolve
@@ -575,9 +576,9 @@ class LightModelClient internal constructor(
             return nodeId
         }
 
-        override suspend fun <R> query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+        override fun <R> buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IQuery<R> {
             val client = modelQLClient ?: throw IllegalStateException("Connection doesn't support ModelQL: $connection")
-            return client.query { _ ->
+            return client.buildQuery { _ ->
                 body(SerializedNodeReference(nodeId).asMono().resolve())
             }
         }

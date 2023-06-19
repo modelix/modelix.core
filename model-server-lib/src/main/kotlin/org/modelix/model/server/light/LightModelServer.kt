@@ -43,7 +43,7 @@ import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
-import org.modelix.modelql.core.Query
+import org.modelix.modelql.core.UnboundQuery
 import org.modelix.modelql.core.QueryDescriptor
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.map
@@ -125,7 +125,7 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
             post("query") {
                 val serializedQuery = call.receiveText()
                 val queryDescriptor = UntypedModelQL.json.decodeFromString<QueryDescriptor>(serializedQuery)
-                val query = queryDescriptor.createQuery() as Query<INode, Any?>
+                val query = queryDescriptor.createQuery() as UnboundQuery<INode, Any?>
                 LOG.debug { "query: $query" }
                 val nodeResolutionScope: INodeResolutionScope = getArea()
                 val transactionBody: () -> Any? = {

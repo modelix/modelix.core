@@ -10,7 +10,7 @@ data class QueryDescriptor(
     val input: Int,
     val output: Int
 ) {
-    fun createQuery(): Query<*, *> {
+    fun createQuery(): UnboundQuery<*, *> {
         val createdSteps = ArrayList<IStep>()
         fun resolveStep(id: Int): IStep {
             return createdSteps[id]
@@ -23,7 +23,7 @@ data class QueryDescriptor(
         }
         val inputStep = resolveStep(input) as QueryInput<Any?>
         val outputStep = resolveStep(output) as IProducingStep<Any?>
-        return Query<Any?, Any?>(inputStep, outputStep)
+        return UnboundQuery<Any?, Any?>(inputStep, outputStep)
     }
 }
 

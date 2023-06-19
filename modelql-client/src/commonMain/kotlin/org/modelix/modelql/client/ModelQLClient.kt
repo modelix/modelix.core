@@ -11,7 +11,9 @@ import org.modelix.model.api.INode
 import org.modelix.model.area.ContextArea
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoStep
-import org.modelix.modelql.core.Query
+import org.modelix.modelql.core.IQuery
+import org.modelix.modelql.core.UnboundQuery
+import org.modelix.modelql.core.map
 import org.modelix.modelql.untyped.UntypedModelQL
 
 class ModelQLClient(val url: String, val client: HttpClient, includedSerializersModule: SerializersModule = UntypedModelQL.serializersModule) {
@@ -30,11 +32,11 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
 
     fun getArea(): IArea = ModelQLArea(this)
 
-    suspend fun <T> runQuery(query: Query<INode, T>): T {
+    suspend fun <T> runQuery(query: UnboundQuery<INode, T>): T {
         return deserialize(queryAsJson(query), query)
     }
 
-    protected fun <T> deserialize(serializedJson: String, query: Query<*, T>): T {
+    protected fun <T> deserialize(serializedJson: String, query: UnboundQuery<*, T>): T {
         return ContextArea.withAdditionalContext(ModelQLArea(this)) {
             json.decodeFromString(
                 query.getOutputSerializer(json.serializersModule),
@@ -44,10 +46,14 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
     }
 
     suspend fun <ResultT> query(body: (IMonoStep<INode>) -> IMonoStep<ResultT>): ResultT {
-        return runQuery(Query.build(body))
+        return buildQuery(body).execute()
     }
 
-    protected suspend fun queryAsJson(query: Query<INode, *>): String {
+    fun <ResultT> buildQuery(body: (IMonoStep<INode>) -> IMonoStep<ResultT>): IQuery<ResultT> {
+        return ModelQLCLientQuery(UnboundQuery.build(body))
+    }
+
+    protected suspend fun queryAsJson(query: UnboundQuery<INode, *>): String {
         val response = client.post(url) {
             LOG.debug { "query: " + query }
             val queryDescriptor = query.createDescriptor()
@@ -60,6 +66,16 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
     companion object {
         private val LOG = mu.KotlinLogging.logger { }
         fun builder(): ModelQLClientBuilder = PlatformSpecificModelQLClientBuilder()
+    }
+
+    private inner class ModelQLCLientQuery<E>(val unboundQuery: UnboundQuery<INode, E>) : IQuery<E> {
+        override suspend fun execute(): E {
+            return runQuery(unboundQuery)
+        }
+
+        override fun <T> map(body: (IMonoStep<E>) -> IMonoStep<T>): IQuery<T> {
+            return ModelQLCLientQuery(UnboundQuery.build { it.map(unboundQuery).map(body) })
+        }
     }
 }
 

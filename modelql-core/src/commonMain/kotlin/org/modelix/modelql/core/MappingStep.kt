@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-abstract class MappingStep<In, Out>(val query: Query<In, Out>) : TransformingStep<In, Out>() {
+abstract class MappingStep<In, Out>(val query: UnboundQuery<In, Out>) : TransformingStep<In, Out>() {
 
     init {
         query.inputStep.indirectConsumer = this
@@ -29,7 +29,7 @@ abstract class MappingStep<In, Out>(val query: Query<In, Out>) : TransformingSte
     }
 }
 
-class FluxMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>) :
+class FluxMappingStep<RemoteIn, RemoteOut>(query: UnboundQuery<RemoteIn, RemoteOut>) :
     MappingStep<RemoteIn, RemoteOut>(query), IFluxStep<RemoteOut> {
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())
@@ -38,12 +38,12 @@ class FluxMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>) :
     @SerialName("mapMany")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return FluxMappingStep<Any?, Any?>(query.createQuery() as Query<Any?, Any?>)
+            return FluxMappingStep<Any?, Any?>(query.createQuery() as UnboundQuery<Any?, Any?>)
         }
     }
 }
 
-class MonoMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>) :
+class MonoMappingStep<RemoteIn, RemoteOut>(query: UnboundQuery<RemoteIn, RemoteOut>) :
     MappingStep<RemoteIn, RemoteOut>(query), IMonoStep<RemoteOut> {
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())
@@ -52,20 +52,20 @@ class MonoMappingStep<RemoteIn, RemoteOut>(query: Query<RemoteIn, RemoteOut>) :
     @SerialName("mapSingle")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return MonoMappingStep<Any?, Any?>(query.createQuery() as Query<Any?, Any?>)
+            return MonoMappingStep<Any?, Any?>(query.createQuery() as UnboundQuery<Any?, Any?>)
         }
     }
 }
 
 fun <RemoteIn, RemoteOut> IFluxStep<RemoteIn>.map(body: (IMonoStep<RemoteIn>) -> IMonoStep<RemoteOut>): IFluxStep<RemoteOut> {
-    return FluxMappingStep(Query.build(body)).also { connect(it) }
+    return FluxMappingStep(UnboundQuery.build(body)).also { connect(it) }
 }
 fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(body: (IMonoStep<RemoteIn>) -> IMonoStep<RemoteOut>): IMonoStep<RemoteOut> {
-    return MonoMappingStep(Query.build(body)).also { connect(it) }
+    return MonoMappingStep(UnboundQuery.build(body)).also { connect(it) }
 }
-fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(query: Query<RemoteIn, RemoteOut>): IFluxStep<RemoteOut> {
-    return FluxMappingStep(query).also { connect(it) }
+fun <RemoteIn, RemoteOut> IMonoStep<RemoteIn>.map(query: IUnboundQuery<RemoteIn, RemoteOut>): IFluxStep<RemoteOut> {
+    return FluxMappingStep(query as UnboundQuery<RemoteIn, RemoteOut>).also { connect(it) }
 }
-fun <RemoteIn, RemoteOut> IFluxStep<RemoteIn>.map(query: Query<RemoteIn, RemoteOut>): IFluxStep<RemoteOut> {
-    return FluxMappingStep(query).also { connect(it) }
+fun <RemoteIn, RemoteOut> IFluxStep<RemoteIn>.map(query: IUnboundQuery<RemoteIn, RemoteOut>): IFluxStep<RemoteOut> {
+    return FluxMappingStep(query as UnboundQuery<RemoteIn, RemoteOut>).also { connect(it) }
 }

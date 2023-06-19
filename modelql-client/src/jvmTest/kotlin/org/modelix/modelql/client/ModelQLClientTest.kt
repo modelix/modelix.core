@@ -26,10 +26,11 @@ import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.toSet
 import org.modelix.modelql.core.zip
 import org.modelix.modelql.untyped.allChildren
+import org.modelix.modelql.untyped.allReferences
 import org.modelix.modelql.untyped.children
+import org.modelix.modelql.untyped.descendants
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
-import org.modelix.modelql.untyped.reference
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
 import kotlin.test.Test
@@ -133,9 +134,8 @@ class ModelQLClientTest {
         }
 
         val referenceTargetNames = client.query { root ->
-            root.children("modules")
-                .children("models")
-                .reference("someModule")
+            root.descendants(true)
+                .allReferences()
                 .property("name")
                 .toSet()
         }

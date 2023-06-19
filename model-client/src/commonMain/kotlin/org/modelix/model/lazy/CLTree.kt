@@ -153,6 +153,10 @@ class CLTree : ITree, IBulkTree {
         return resolveNodeLater(parentId).flatMapConcat { it.getData().getChildrenIds().asFlow() }
     }
 
+    override fun getAllReferenceTargetsAsFlow(parentId: Long): Flow<Pair<String, INodeReference>> {
+        return resolveNodeLater(parentId).flatMapConcat { it.getAllReferenceTargets().asFlow() }
+    }
+
     override fun getChildrenAsFlow(parentId: Long, role: String): Flow<Long> {
         // TODO is not very efficient. Maybe we should store the children in different lists per role.
         return getAllChildrenAsFlow(parentId)

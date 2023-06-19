@@ -107,11 +107,18 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
 
     fun getReferenceTarget(role: String): INodeReference? {
         val targetRef = getData().getReferenceTarget(role)
+        return targetRef?.let { convertNodeRef(it) }
+    }
+
+    fun getAllReferenceTargets(): List<Pair<String, INodeReference>> {
+        return getData().referenceRoles.zip(getData().referenceTargets).map { it.first to convertNodeRef(it.second) }
+    }
+
+    fun convertNodeRef(ref: CPNodeRef): INodeReference {
         return when {
-            targetRef == null -> null
-            targetRef.isLocal -> PNodeReference(targetRef.elementId, tree.getId())
-            targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
-            else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
+            ref.isLocal -> PNodeReference(ref.elementId, tree.getId())
+            ref is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(ref.serializedRef)
+            else -> throw UnsupportedOperationException("Unsupported reference: $ref")
         }
     }
 

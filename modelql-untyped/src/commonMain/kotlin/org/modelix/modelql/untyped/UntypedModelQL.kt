@@ -29,6 +29,7 @@ object UntypedModelQL {
         include(UnboundQuery.serializersModule)
         polymorphic(StepDescriptor::class) {
             subclass(AllChildrenTraversalStep.AllChildrenStepDescriptor::class)
+            subclass(AllReferencesTraversalStep.Descriptor::class)
             subclass(ChildrenTraversalStep.ChildrenStepDescriptor::class)
             subclass(ConceptReferenceTraversalStep.Descriptor::class)
             subclass(ConceptReferenceUIDTraversalStep.Descriptor::class)

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.map
 import org.modelix.model.area.ContextArea
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
+import kotlin.coroutines.coroutineContext
 
 open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx {
 
@@ -128,6 +129,16 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
         } ?: throw RuntimeException("Failed to resolve node: $targetRef")
     }
 
+    private suspend fun resolveNodeRefInCoroutine(targetRef: INodeReference): INode {
+        return if (targetRef is PNodeReference) {
+            targetRef.resolveNode(PArea(branch))
+        } else {
+            val scope = coroutineContext[INodeResolutionScope]
+                ?: throw IllegalStateException("INodeResolutionScope not set")
+            targetRef.resolveIn(scope)
+        } ?: throw RuntimeException("Failed to resolve node: $targetRef")
+    }
+
     override fun getReferenceTargetRef(role: String): INodeReference? {
         notifyAccess()
         return branch.transaction.getReferenceTarget(nodeId, role)
@@ -171,6 +182,14 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
 
     override fun getAllChildrenAsFlow(): Flow<INode> {
         return getTree().getAllChildrenAsFlow(nodeId).map { wrap(it)!! }
+    }
+
+    override fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> {
+        return getAllReferenceTargetRefsAsFlow().map { it.first to resolveNodeRefInCoroutine(it.second) }
+    }
+
+    override fun getAllReferenceTargetRefsAsFlow(): Flow<Pair<IReferenceLink, INodeReference>> {
+        return getTree().getAllReferenceTargetsAsFlow(nodeId).map { this.resolveReferenceLinkOrFallback(it.first) to it.second }
     }
 
     override fun getChildrenAsFlow(role: IChildLink): Flow<INode> {

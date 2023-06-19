@@ -223,6 +223,8 @@ interface INode {
     fun getParentAsFlow(): Flow<INode> = flowOf(parent).filterNotNull()
     fun getPropertyValueAsFlow(role: IProperty): Flow<String?> = flowOf(getPropertyValue(role))
     fun getAllChildrenAsFlow(): Flow<INode> = allChildren.asFlow()
+    fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> = getAllReferenceTargets().asFlow()
+    fun getAllReferenceTargetRefsAsFlow(): Flow<Pair<IReferenceLink, INodeReference>> = getAllReferenceTargetRefs().asFlow()
     fun getChildrenAsFlow(role: IChildLink): Flow<INode> = getChildren(role).asFlow()
     fun getReferenceTargetAsFlow(role: IReferenceLink): Flow<INode> = flowOf(getReferenceTarget(role)).filterNotNull()
     fun getReferenceTargetRefAsFlow(role: IReferenceLink): Flow<INodeReference> = flowOf(getReferenceTargetRef(role)).filterNotNull()

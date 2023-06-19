@@ -248,7 +248,7 @@ interface ITree {
     fun getAllChildrenAsFlow(parentId: Long): Flow<Long> = getAllChildren(parentId).asFlow()
     fun getDescendantsAsFlow(nodeId: Long, includeSelf: Boolean = false): Flow<Long> {
         return if (includeSelf) {
-            flowOf(flowOf(nodeId), getDescendantsAsFlow(nodeId,false)).flattenConcat()
+            flowOf(flowOf(nodeId), getDescendantsAsFlow(nodeId, false)).flattenConcat()
         } else {
             getAllChildrenAsFlow(nodeId).flatMapConcat { getDescendantsAsFlow(it, true) }
         }

@@ -156,7 +156,7 @@ class CLTree : ITree, IBulkTree {
 
     override fun getDescendantsAsFlow(nodeId: Long, includeSelf: Boolean): Flow<Long> {
         return if (includeSelf) {
-            flowOf(flowOf(nodeId), getDescendantsAsFlow(nodeId,false)).flattenConcatConcurrent()
+            flowOf(flowOf(nodeId), getDescendantsAsFlow(nodeId, false)).flattenConcatConcurrent()
         } else {
             getAllChildrenAsFlow(nodeId).flatMapConcatConcurrent { getDescendantsAsFlow(it, true) }
         }

@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import org.modelix.model.data.LanguageData
 import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.writeText
 
@@ -25,6 +26,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
     }
 
     internal fun generate(languages: ProcessedLanguageSet) {
+        Files.createDirectories(outputDir)
         for (language in languages.getLanguages()) {
             // TODO delete old files from previous generation
             outputDir

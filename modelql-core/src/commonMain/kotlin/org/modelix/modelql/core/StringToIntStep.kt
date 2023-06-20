@@ -34,4 +34,5 @@ class StringToIntStep : MonoTransformingStep<String?, Int>() {
     }
 }
 
-fun IMonoStep<String?>.toInt(): IMonoStep<Int> = StringToIntStep().also { connect(it) }
+fun IMonoStep<String?>.toInt() = StringToIntStep().connectAndDowncast(this)
+fun IFluxStep<String?>.toInt() = StringToIntStep().connectAndDowncast(this)

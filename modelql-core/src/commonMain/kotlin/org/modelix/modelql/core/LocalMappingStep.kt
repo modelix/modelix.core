@@ -35,10 +35,5 @@ class LocalMappingSerializer<In, Out>(val step: LocalMappingStep<In, Out>, val i
     }
 }
 
-fun <In, Out> IMonoStep<In>.mapLocal(body: (In) -> Out): IMonoStep<Out> {
-    return LocalMappingStep(body).also { connect(it) }
-}
-
-fun <In, Out> IFluxStep<In>.mapLocal(body: (In) -> Out): IFluxStep<Out> {
-    return map { it.mapLocal(body) }
-}
+fun <In, Out> IMonoStep<In>.mapLocal(body: (In) -> Out) = LocalMappingStep(body).connectAndDowncast(this)
+fun <In, Out> IFluxStep<In>.mapLocal(body: (In) -> Out) = LocalMappingStep(body).connectAndDowncast(this)

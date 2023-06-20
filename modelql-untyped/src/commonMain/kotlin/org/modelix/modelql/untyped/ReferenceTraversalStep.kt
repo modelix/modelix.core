@@ -27,7 +27,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.flatMapConcatConcurrent
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.orNull
@@ -56,7 +56,7 @@ class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INo
     }
 }
 
-fun IMonoStep<INode>.reference(role: String): IMonoStep<INode> = ReferenceTraversalStep(role).also { connect(it) }
-fun IFluxStep<INode>.reference(role: String): IFluxStep<INode> = map { it.reference(role) }
+fun IMonoStep<INode>.reference(role: String) = ReferenceTraversalStep(role).connectAndDowncast(this)
+fun IFluxStep<INode>.reference(role: String) = ReferenceTraversalStep(role).connectAndDowncast(this)
 fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = reference(role).orNull()
 fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = map { it.referenceOrNull(role) }

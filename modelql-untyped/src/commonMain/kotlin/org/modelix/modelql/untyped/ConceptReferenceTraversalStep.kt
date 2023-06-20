@@ -29,7 +29,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.map
 
 class ConceptReferenceTraversalStep() : MonoTransformingStep<INode?, ConceptReference?>() {
@@ -56,5 +56,5 @@ class ConceptReferenceTraversalStep() : MonoTransformingStep<INode?, ConceptRefe
     }
 }
 
-fun IMonoStep<INode?>.conceptReference(): IMonoStep<ConceptReference?> = ConceptReferenceTraversalStep().also { connect(it) }
-fun IFluxStep<INode?>.conceptReference(): IFluxStep<ConceptReference?> = map { it.conceptReference() }
+fun IMonoStep<INode?>.conceptReference(): IMonoStep<ConceptReference?> = ConceptReferenceTraversalStep().connectAndDowncast(this)
+fun IFluxStep<INode?>.conceptReference() = ConceptReferenceTraversalStep().connectAndDowncast(this)

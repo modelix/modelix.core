@@ -33,5 +33,5 @@ class InPredicate(val values: Set<String>) : MonoTransformingStep<String?, Boole
     }
 }
 
-fun IMonoStep<String?>.inSet(values: Set<String>): IMonoStep<Boolean> = InPredicate(values).also { connect(it) }
-fun IFluxStep<String?>.inSet(values: Set<String>): IFluxStep<Boolean> = map { it.inSet(values) }
+fun IMonoStep<String?>.inSet(values: Set<String>) = InPredicate(values).connectAndDowncast(this)
+fun IFluxStep<String?>.inSet(values: Set<String>) = InPredicate(values).connectAndDowncast(this)

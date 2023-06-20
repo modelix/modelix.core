@@ -34,4 +34,5 @@ class StringToBooleanStep : MonoTransformingStep<String?, Boolean>() {
     }
 }
 
-fun IMonoStep<String?>.toBoolean(): IMonoStep<Boolean> = StringToBooleanStep().also { connect(it) }
+fun IMonoStep<String?>.toBoolean() = StringToBooleanStep().connectAndDowncast(this)
+fun IFluxStep<String?>.toBoolean() = StringToBooleanStep().connectAndDowncast(this)

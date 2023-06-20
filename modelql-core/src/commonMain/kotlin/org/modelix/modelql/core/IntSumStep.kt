@@ -28,7 +28,7 @@ class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
     }
 }
 
-operator fun IMonoStep<Int>.plus(other: Int): IMonoStep<Int> = IntSumStep(other).also { connect(it) }
-operator fun IFluxStep<Int>.plus(other: Int): IFluxStep<Int> = map { it + other }
+operator fun IMonoStep<Int>.plus(other: Int) = IntSumStep(other).connectAndDowncast(this)
+operator fun IFluxStep<Int>.plus(other: Int) = IntSumStep(other).connectAndDowncast(this)
 operator fun Int.plus(other: IMonoStep<Int>): IMonoStep<Int> = other.plus(this)
 operator fun Int.plus(other: IFluxStep<Int>): IFluxStep<Int> = other.plus(this)

@@ -34,4 +34,5 @@ class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
     }
 }
 
-fun IMonoStep<String?>.emptyStringIfNull(): IMonoStep<String> = EmptyStringIfNullStep().also { connect(it) }
+fun IMonoStep<String?>.emptyStringIfNull() = EmptyStringIfNullStep().connectAndDowncast(this)
+fun IFluxStep<String?>.emptyStringIfNull() = EmptyStringIfNullStep().connectAndDowncast(this)

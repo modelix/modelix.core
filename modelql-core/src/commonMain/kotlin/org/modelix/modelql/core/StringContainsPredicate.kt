@@ -32,4 +32,4 @@ class StringContainsPredicate(val substring: String) : MonoTransformingStep<Stri
     }
 }
 
-fun IMonoStep<String?>.contains(substring: String): IMonoStep<Boolean> = StringContainsPredicate(substring).also { connect(it) }
+fun IMonoStep<String?>.contains(substring: String) = StringContainsPredicate(substring).connectAndDowncast(this)

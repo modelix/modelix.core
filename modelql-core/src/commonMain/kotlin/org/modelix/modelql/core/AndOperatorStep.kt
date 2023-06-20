@@ -31,7 +31,5 @@ class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
 
 infix fun IMonoStep<Boolean>.and(other: IMonoStep<Boolean>): IMonoStep<Boolean> {
     val zip = zip(other)
-    return AndOperatorStep().also {
-        zip.connect(it)
-    }
+    return AndOperatorStep().connectAndDowncast(zip)
 }

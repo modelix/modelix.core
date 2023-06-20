@@ -31,7 +31,5 @@ class OrOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
 
 infix fun IMonoStep<Boolean>.or(other: IMonoStep<Boolean>): IMonoStep<Boolean> {
     val zip = zip(other)
-    return OrOperatorStep().also {
-        zip.connect(it)
-    }
+    return OrOperatorStep().connectAndDowncast(zip)
 }

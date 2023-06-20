@@ -21,7 +21,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
-import org.modelix.model.api.INodeReference
 import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.serialize
 import org.modelix.modelql.core.IFlowInstantiationContext
@@ -30,7 +29,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.map
 
 class NodeReferenceTraversalStep() : MonoTransformingStep<INode, SerializedNodeReference>() {
@@ -57,5 +56,5 @@ class NodeReferenceTraversalStep() : MonoTransformingStep<INode, SerializedNodeR
     }
 }
 
-fun IMonoStep<INode>.nodeReference(): IMonoStep<INodeReference> = NodeReferenceTraversalStep().also { connect(it) }
-fun IFluxStep<INode>.nodeReference(): IFluxStep<INodeReference> = map { it.nodeReference() }
+fun IMonoStep<INode>.nodeReference() = NodeReferenceTraversalStep().connectAndDowncast(this)
+fun IFluxStep<INode>.nodeReference() = NodeReferenceTraversalStep().connectAndDowncast(this)

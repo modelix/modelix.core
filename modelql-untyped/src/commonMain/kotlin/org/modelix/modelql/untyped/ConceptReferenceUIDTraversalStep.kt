@@ -27,8 +27,6 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.connect
-import org.modelix.modelql.core.map
 
 class ConceptReferenceUIDTraversalStep() : MonoTransformingStep<ConceptReference, String>() {
     override fun createFlow(input: Flow<ConceptReference>, context: IFlowInstantiationContext): Flow<String> {
@@ -54,5 +52,5 @@ class ConceptReferenceUIDTraversalStep() : MonoTransformingStep<ConceptReference
     }
 }
 
-fun IMonoStep<ConceptReference>.getUID(): IMonoStep<String> = ConceptReferenceUIDTraversalStep().also { connect(it) }
-fun IFluxStep<ConceptReference>.getUID(): IFluxStep<String> = map { it.getUID() }
+fun IMonoStep<ConceptReference>.getUID() = ConceptReferenceUIDTraversalStep().connectAndDowncast(this)
+fun IFluxStep<ConceptReference>.getUID() = ConceptReferenceUIDTraversalStep().connectAndDowncast(this)

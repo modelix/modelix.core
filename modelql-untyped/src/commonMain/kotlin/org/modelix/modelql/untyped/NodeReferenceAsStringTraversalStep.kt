@@ -29,8 +29,6 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.connect
-import org.modelix.modelql.core.map
 
 class NodeReferenceAsStringTraversalStep() : MonoTransformingStep<INodeReference, String>() {
     override fun createFlow(input: Flow<INodeReference>, context: IFlowInstantiationContext): Flow<String> {
@@ -52,12 +50,12 @@ class NodeReferenceAsStringTraversalStep() : MonoTransformingStep<INodeReference
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.asString()"""
+        return """${getProducers().single()}.serialize()"""
     }
 }
 
-fun IMonoStep<INodeReference>.asString(): IMonoStep<String> = NodeReferenceAsStringTraversalStep().also { connect(it) }
-fun IFluxStep<INodeReference>.asString(): IFluxStep<String> = map { it.asString() }
+fun IMonoStep<INodeReference>.serialize() = NodeReferenceAsStringTraversalStep().connectAndDowncast(this)
+fun IFluxStep<INodeReference>.serialize() = NodeReferenceAsStringTraversalStep().connectAndDowncast(this)
 
-fun IMonoStep<INode>.nodeReferenceAsString(): IMonoStep<String> = nodeReference().asString()
-fun IFluxStep<INode>.nodeReferenceAsString(): IFluxStep<String> = nodeReference().asString()
+fun IMonoStep<INode>.nodeReferenceAsString(): IMonoStep<String> = nodeReference().serialize()
+fun IFluxStep<INode>.nodeReferenceAsString(): IFluxStep<String> = nodeReference().serialize()

@@ -27,9 +27,8 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.flatMapConcatConcurrent
-import org.modelix.modelql.core.map
 
 class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<String?> {
@@ -55,5 +54,5 @@ class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, Stri
     }
 }
 
-fun IMonoStep<INode>.property(role: String): IMonoStep<String?> = PropertyTraversalStep(role).also { connect(it) }
-fun IFluxStep<INode>.property(role: String): IFluxStep<String?> = map { it.property(role) }
+fun IMonoStep<INode>.property(role: String) = PropertyTraversalStep(role).connectAndDowncast(this)
+fun IFluxStep<INode>.property(role: String) = PropertyTraversalStep(role).connectAndDowncast(this)

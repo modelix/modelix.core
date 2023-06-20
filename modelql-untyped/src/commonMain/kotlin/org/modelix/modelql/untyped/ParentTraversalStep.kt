@@ -27,9 +27,8 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.flatMapConcatConcurrent
-import org.modelix.modelql.core.map
 
 class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
 
@@ -57,5 +56,5 @@ class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<IN
     }
 }
 
-fun IMonoStep<INode>.parent(): IMonoStep<INode> = ParentTraversalStep().also { connect(it) }
-fun IFluxStep<INode>.parent(): IFluxStep<INode> = map { it.parent() }
+fun IMonoStep<INode>.parent() = ParentTraversalStep().connectAndDowncast(this)
+fun IFluxStep<INode>.parent() = ParentTraversalStep().connectAndDowncast(this)

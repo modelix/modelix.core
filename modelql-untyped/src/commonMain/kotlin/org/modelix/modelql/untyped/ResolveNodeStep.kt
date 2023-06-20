@@ -29,7 +29,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.map
 
 class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
@@ -60,5 +60,5 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
     }
 }
 
-fun IMonoStep<INodeReference>.resolve(): IMonoStep<INode> = ResolveNodeStep().also { connect(it) }
-fun IFluxStep<INodeReference>.resolve(): IFluxStep<INode> = map { it.resolve() }
+fun IMonoStep<INodeReference>.resolve() = ResolveNodeStep().connectAndDowncast(this)
+fun IFluxStep<INodeReference>.resolve() = ResolveNodeStep().connectAndDowncast(this)

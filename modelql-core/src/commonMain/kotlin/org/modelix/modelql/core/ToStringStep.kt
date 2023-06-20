@@ -37,9 +37,9 @@ class ToStringStep : MonoTransformingStep<Any?, String?>() {
 }
 
 @JvmName("asStringNullable")
-fun IMonoStep<Any?>.asString(): IMonoStep<String?> = ToStringStep().also { connect(it) }
-fun IMonoStep<Any>.asString(): IMonoStep<String> = ToStringStep().also { connect(it) } as IMonoStep<String>
+fun IMonoStep<Any?>.asString(): IMonoStep<String?> = ToStringStep().connectAndDowncast(this)
+fun IMonoStep<Any>.asString(): IMonoStep<String> = ToStringStep().connectAndDowncast(this) as IMonoStep<String>
 
 @JvmName("asStringNullable")
-fun IFluxStep<Any?>.asString(): IFluxStep<String?> = map { it.asString() }
-fun IFluxStep<Any>.asString(): IFluxStep<String> = map { it.asString() }
+fun IFluxStep<Any?>.asString(): IFluxStep<String?> = ToStringStep().connectAndDowncast(this)
+fun IFluxStep<Any>.asString(): IFluxStep<String> = ToStringStep().connectAndDowncast(this) as IFluxStep<String>

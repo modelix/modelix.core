@@ -1,15 +1,15 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class FirstElementStep<E>() : AggregationStep<E, E>() {
-    override suspend fun aggregate(input: Flow<E>): E {
-        return input.first()
+class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
+    override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
+        return input.take(1)
     }
 
     override fun toString(): String {

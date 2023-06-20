@@ -23,6 +23,7 @@ interface IStep {
 interface IFlowInstantiationContext {
     val coroutineScope: CoroutineScope
     fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T>
+    fun <T> getFlow(step: IProducingStep<T>): Flow<T>?
 }
 class FlowInstantiationContext(override val coroutineScope: CoroutineScope) : IFlowInstantiationContext {
     private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
@@ -32,6 +33,10 @@ class FlowInstantiationContext(override val coroutineScope: CoroutineScope) : IF
     override fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T> {
         return (createdProducers as MutableMap<IProducingStep<T>, Flow<T>>)
             .getOrPut(step) { step.createFlow(this) }
+    }
+
+    override fun <T> getFlow(step: IProducingStep<T>): Flow<T>? {
+        return (createdProducers as MutableMap<IProducingStep<T>, Flow<T>>)[step]
     }
 }
 
@@ -99,10 +104,18 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
     }
 }
 
-abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMonoStep<Out>
-abstract class FluxTransformingStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out>
+abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMonoStep<Out>, IFluxStep<Out> {
+    fun connectAndDowncast(producer: IMonoStep<In>): IMonoStep<Out> = also { producer.connect(it) }
+    fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
+}
+
+abstract class FluxTransformingStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> {
+    fun connectAndDowncast(producer: IProducingStep<In>): IFluxStep<Out> = also { producer.connect(it) }
+}
 
 abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
+    fun connectAndDowncast(producer: IProducingStep<In>): IMonoStep<Out> = also { producer.connect(it) }
+
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         val flow = flow {
             emit(aggregate(input))

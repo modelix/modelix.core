@@ -109,13 +109,18 @@ class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProd
                 val context = FlowInstantiationContext(this)
                 context.put(inputStep, flowOf(it))
 
-                // ensure all write operations are executed
-                getAllSteps()
-                    .filterIsInstance<IProcessingStep<*, *>>()
-                    .filter { it.getConsumers().isEmpty() && it.hasSideEffect() }
-                    .forEach { context.getOrCreateFlow(it).collect() }
+                val outputFlow = context.getOrCreateFlow(outputStep)
 
-                context.getOrCreateFlow(outputStep)
+                // ensure all write operations are executed
+                (getAllSteps() - outputStep)
+                    .filterIsInstance<IProducingStep<*>>()
+                    .filter { it.hasSideEffect() }
+                    .mapNotNull {
+                        if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
+                    }
+                    .forEach { it.collect() }
+
+                outputFlow
             }.collect {
                 send(it)
             }
@@ -145,6 +150,7 @@ class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProd
                 subclass(org.modelix.modelql.core.InPredicate.Descriptor::class)
                 subclass(org.modelix.modelql.core.IntEqualsOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.IntSumStep.IntSumDescriptor::class)
+                subclass(org.modelix.modelql.core.IsEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.IsNullPredicateStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.JoinStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ListCollectorStep.Descriptor::class)
@@ -154,6 +160,7 @@ class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProd
                 subclass(org.modelix.modelql.core.NotOperatorStep.NotDescriptor::class)
                 subclass(org.modelix.modelql.core.NullIfEmpty.OrNullDescriptor::class)
                 subclass(org.modelix.modelql.core.OrOperatorStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.PrintStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.QueryInput.Descriptor::class)
                 subclass(org.modelix.modelql.core.RecursiveQueryStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.RegexPredicate.Descriptor::class)

@@ -33,6 +33,7 @@ import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.descendants
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
+import org.modelix.modelql.untyped.remove
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
 import kotlin.test.Test
@@ -167,6 +168,32 @@ class ModelQLClientTest {
                 .toSet()
         }
         assertEquals(setOf("MyRootNode"), rootNodeNames)
+    }
+
+    @Test
+    fun removeNode() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+
+        suspend fun countModels(): Int {
+            return client.query { root ->
+                root.children("modules")
+                    .children("models")
+                    .count()
+            }
+        }
+
+        val oldNumberOfModels = countModels()
+
+        val removedNumberOfNodes = client.query { root ->
+            root.children("modules")
+                .children("models")
+                .remove()
+        }
+        assertEquals(1, removedNumberOfNodes)
+
+        val newNumberOfModels = countModels()
+
+        assertEquals(1, oldNumberOfModels - newNumberOfModels)
     }
 
     @Test

@@ -84,7 +84,6 @@ class CPNode private constructor(
     fun getPropertyValue(role: String): String? {
         val index = propertyRoles.asList().binarySearch(role)
         val value = if (index < 0) null else propertyValues[index]
-        println("getProperty $id, $role, $value")
         return value
     }
 

@@ -26,6 +26,7 @@ import org.modelix.modelql.core.ConstantSourceStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.StepDescriptor
+import kotlin.jvm.JvmName
 
 class NodeReferenceSourceStep(element: SerializedNodeReference?) : ConstantSourceStep<SerializedNodeReference?>(element) {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<SerializedNodeReference?> {
@@ -47,6 +48,7 @@ class NodeReferenceSourceStep(element: SerializedNodeReference?) : ConstantSourc
     }
 }
 
+@JvmName("asMonoNullable")
 fun INodeReference?.asMono(): IMonoStep<INodeReference?> {
     return NodeReferenceSourceStep(this?.serialize()?.let { SerializedNodeReference(it) })
 }

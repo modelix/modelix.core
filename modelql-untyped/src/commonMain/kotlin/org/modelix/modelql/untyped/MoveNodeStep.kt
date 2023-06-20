@@ -46,13 +46,13 @@ class MoveNodeStep(val role: String?, val index: Int) :
     }
 }
 
-fun IMonoStep<INode>.moveChild(link: IChildLink, index: Int, child: IMonoStep<INode>): IMonoStep<INode> {
-    return MoveNodeStep(link.key(), index).also {
+fun IMonoStep<INode>.moveChild(link: String?, index: Int = -1, child: IMonoStep<INode>): IMonoStep<INode> {
+    return MoveNodeStep(link, index).also {
         connect(it)
         child.connect(it)
     }
 }
 
-fun IMonoStep<INode>.moveChild(link: IChildLink, child: IMonoStep<INode>): IMonoStep<INode> {
-    return moveChild(link, -1, child)
+fun IMonoStep<INode>.moveChild(link: IChildLink, index: Int = -1, child: IMonoStep<INode>): IMonoStep<INode> {
+    return moveChild(link.key(), index, child)
 }

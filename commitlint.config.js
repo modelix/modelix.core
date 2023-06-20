@@ -18,5 +18,6 @@ module.exports = {
         "ts-model-api",
       ],
     ],
+    "subject-case": [0, 'never']
   },
 };

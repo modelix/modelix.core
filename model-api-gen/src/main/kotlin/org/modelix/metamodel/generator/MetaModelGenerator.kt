@@ -619,6 +619,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
 
     private fun generateNodeWrapperInterface(concept: ProcessedConcept): TypeSpec {
         return TypeSpec.interfaceBuilder(concept.nodeWrapperInterfaceType()).apply {
+            addDeprecationIfNecessary(concept)
             if (concept.extends.isEmpty()) addSuperinterface(ITypedNode::class.asTypeName())
             for (extended in concept.extends) {
                 addSuperinterface(extended.resolved.nodeWrapperInterfaceType())
@@ -628,6 +629,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     is ProcessedProperty -> {
                         addProperty(
                             PropertySpec.builder(feature.generatedName, feature.asKotlinType())
+                                .addDeprecationIfNecessary(feature)
                                 .mutable(true)
                                 .build()
                         )
@@ -636,6 +638,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 "raw_" + feature.generatedName,
                                 String::class.asTypeName().copy(nullable = true)
                             )
+                                .addDeprecationIfNecessary(feature)
                                 .mutable(true)
                                 .build()
                         )
@@ -651,6 +654,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             )
                         addProperty(
                             PropertySpec.builder(feature.generatedName, type)
+                                .addDeprecationIfNecessary(feature)
                                 .build()
                         )
                     }
@@ -661,6 +665,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 feature.generatedName,
                                 feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
                             )
+                                .addDeprecationIfNecessary(feature)
                                 .mutable(true)
                                 .build()
                         )
@@ -669,6 +674,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 "raw_" + feature.generatedName,
                                 INode::class.asTypeName().copy(nullable = true)
                             )
+                                .addDeprecationIfNecessary(feature)
                                 .mutable(true)
                                 .build()
                         )

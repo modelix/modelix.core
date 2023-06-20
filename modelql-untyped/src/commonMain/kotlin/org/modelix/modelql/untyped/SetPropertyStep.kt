@@ -14,8 +14,8 @@ import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.asMono
 import org.modelix.modelql.core.connect
 
-class SetPropertyStep(val role: String)
-    : TransformingStepWithParameter<INode, String?, Any?, INode>() {
+class SetPropertyStep(val role: String) :
+    TransformingStepWithParameter<INode, String?, Any?, INode>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out INode> {
         return getInputProducer().getOutputSerializer(serializersModule)
     }

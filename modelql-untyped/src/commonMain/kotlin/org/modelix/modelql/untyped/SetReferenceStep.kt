@@ -18,8 +18,8 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 
-class SetReferenceStep(val role: String)
-    : TransformingStepWithParameter<INode, INode?, INode?, INode>() {
+class SetReferenceStep(val role: String) :
+    TransformingStepWithParameter<INode, INode?, INode?, INode>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out INode> {
         return serializersModule.serializer<INode>()

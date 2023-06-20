@@ -98,6 +98,7 @@ object TypedModelQL {
         input.untyped().setProperty(link.untyped(), value)
         return input
     }
+
     @JvmName("setProperty")
     fun <NodeT : ITypedNode, ValueT : Any?> setProperty(input: IMonoStep<NodeT>, link: ITypedProperty<ValueT>, value: IMonoStep<ValueT>): IMonoStep<NodeT> {
         input.untyped().setProperty(link.untyped(), value.asString())

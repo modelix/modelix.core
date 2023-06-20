@@ -138,9 +138,9 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                     val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
                     """
                     public set ${feature.generatedName}(value: $entityType | undefined) {
-                        this.node.setReferenceTargetNode("${feature.originalName}", value.unwrap());
+                        this.node.setReferenceTargetNode("${feature.originalName}", value?.unwrap());
                     }
-                    public get ${feature.generatedName}: $entityType | undefined {
+                    public get ${feature.generatedName}(): $entityType | undefined {
                         return LanguageRegistry.INSTANCE.wrapNode(this.node.getReferenceTargetNode("${feature.originalName}"));
                     }
                 """.trimIndent()
@@ -186,7 +186,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                     val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
                         """
                         set ${feature.generatedName}(value: $entityType | undefined);
-                        get ${feature.generatedName}: $entityType | undefined;
+                        get ${feature.generatedName}(): $entityType | undefined;
                     """.trimIndent()
                 }
                 is ProcessedChildLink -> {

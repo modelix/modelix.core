@@ -148,7 +148,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         member.presentation ?: "")
                     .build()
             )
-            getLiteralCodeBuilder.addStatement("%S -> %L", member.uid, member.name)
+            getLiteralCodeBuilder.addStatement("%S -> %N", member.uid, member.name)
         }
 
         getLiteralFunBuilder.addCode(

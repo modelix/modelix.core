@@ -43,7 +43,7 @@ class FluxMappingStep<In, Out>(query: UnboundQuery<In, Out>) :
     }
 }
 
-class MonoMappingStep<In, Out>(query: UnboundQuery<In, Out>) :
+open class MonoMappingStep<In, Out>(query: UnboundQuery<In, Out>) :
     MappingStep<In, Out>(query), IMonoStep<Out> {
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())

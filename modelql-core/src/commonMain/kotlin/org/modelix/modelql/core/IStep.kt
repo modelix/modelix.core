@@ -14,7 +14,6 @@ interface IStep {
     var owningQuery: IUnboundQuery<*, *>?
     fun validate() {}
 
-    @Deprecated("")
     fun createDescriptor(): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
 
     fun requiresWriteAccess(): Boolean = false

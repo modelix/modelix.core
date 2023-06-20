@@ -1,34 +1,49 @@
 package org.modelix.modelql.client
 
 import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IProperty
+import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.key
 import org.modelix.model.api.resolve
+import org.modelix.model.api.resolveChildLinkOrFallback
+import org.modelix.model.api.resolvePropertyOrFallback
+import org.modelix.model.api.resolveReferenceLinkOrFallback
 import org.modelix.model.api.serialize
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IQuery
 import org.modelix.modelql.core.IZip2Output
+import org.modelix.modelql.core.asMono
 import org.modelix.modelql.core.filterNotNull
+import org.modelix.modelql.core.first
 import org.modelix.modelql.core.map
+import org.modelix.modelql.core.mapIfNotNull
 import org.modelix.modelql.core.orNull
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.zip
 import org.modelix.modelql.untyped.ISupportsModelQL
+import org.modelix.modelql.untyped.addNewChild
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.asMono
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.conceptReference
+import org.modelix.modelql.untyped.moveChild
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.parent
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.reference
+import org.modelix.modelql.untyped.remove
 import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.roleInParent
+import org.modelix.modelql.untyped.setProperty
+import org.modelix.modelql.untyped.setReference
 
 abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL {
 
@@ -60,25 +75,45 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL 
         get() = blockingQuery { it.roleInParent() }
 
     override val parent: INode?
-        get() = blockingQuery { it.parent().nodeRefAndConcept().orNull() }?.toNode()
+        get() = blockingQuery { it.parent().orNull() }
+
+    override fun getChildren(role: IChildLink): Iterable<INode> {
+        return blockingQuery { it.children(role.key()).toList() }
+    }
 
     override fun getChildren(role: String?): Iterable<INode> {
-        return blockingQuery { it.children(role).nodeRefAndConcept().toList() }.map { it.toNode() }
+        return getChildren(resolveChildLinkOrFallback(role))
     }
 
     override val allChildren: Iterable<INode>
-        get() = blockingQuery { it.allChildren().nodeRefAndConcept().toList() }.map { it.toNode() }
+        get() = blockingQuery { it.allChildren().toList() }
+
+    override fun moveChild(role: IChildLink, index: Int, child: INode) {
+        blockingQuery { it.moveChild(role, index, child.reference.asMono().resolve()) }
+    }
 
     override fun moveChild(role: String?, index: Int, child: INode) {
-        throw UnsupportedOperationException("readonly")
+        moveChild(resolveChildLinkOrFallback(role), index, child)
+    }
+
+    override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode {
+        return blockingQuery { it.addNewChild(role, index, concept as ConceptReference?).first() }
+    }
+
+    override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode {
+        return addNewChild(role, index, concept?.getReference())
     }
 
     override fun addNewChild(role: String?, index: Int, concept: IConcept?): INode {
-        throw UnsupportedOperationException("readonly")
+        return addNewChild(resolveChildLinkOrFallback(role), index, concept)
+    }
+
+    override fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
+        return addNewChild(resolveChildLinkOrFallback(role), index, concept)
     }
 
     override fun removeChild(child: INode) {
-        throw UnsupportedOperationException("readonly")
+        blockingQuery { child.reference.asMono().resolve().remove() }
     }
 
     override fun getReferenceTarget(role: String): INode? {
@@ -89,16 +124,28 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL 
         return blockingQuery { it.reference(role).nodeReference().orNull() }
     }
 
+    override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
+        setReferenceTarget(link, target?.reference)
+    }
+
+    override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {
+        blockingQuery { it.setReference(role, target.asMono().mapIfNotNull { it.resolve() }) }
+    }
+
     override fun setReferenceTarget(role: String, target: INode?) {
-        throw UnsupportedOperationException("readonly")
+        setReferenceTarget(resolveReferenceLinkOrFallback(role), target)
     }
 
     override fun getPropertyValue(role: String): String? {
         return blockingQuery { it.property(role) }
     }
 
+    override fun setPropertyValue(property: IProperty, value: String?) {
+        blockingQuery { it.setProperty(property, value.asMono()) }
+    }
+
     override fun setPropertyValue(role: String, value: String?) {
-        throw UnsupportedOperationException("readonly")
+        setPropertyValue(resolvePropertyOrFallback(role), value)
     }
 
     override fun getPropertyRoles(): List<String> {
@@ -134,7 +181,7 @@ class ModelQLNodeWithKnownConcept(
         return reference.asMono().resolve()
     }
 
-    override fun getConceptReference(): IConceptReference? {
+    override fun getConceptReference(): ConceptReference? {
         return conceptReference
     }
 
@@ -148,7 +195,7 @@ abstract class ModelQLNodeWithConceptCache(client: ModelQLClient) : ModelQLNode(
     override val concept: IConcept?
         get() = conceptRef?.resolve()
 
-    override fun getConceptReference(): IConceptReference? {
+    override fun getConceptReference(): ConceptReference? {
         return conceptRef
     }
 }

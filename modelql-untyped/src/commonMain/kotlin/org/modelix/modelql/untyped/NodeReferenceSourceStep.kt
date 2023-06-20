@@ -16,6 +16,7 @@ package org.modelix.modelql.untyped
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INodeReference
@@ -26,24 +27,29 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.StepDescriptor
 
-class NodeReferenceSourceStep(element: SerializedNodeReference) : ConstantSourceStep<SerializedNodeReference>(element) {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<SerializedNodeReference> {
-        return serializersModule.serializer<SerializedNodeReference>()
+class NodeReferenceSourceStep(element: SerializedNodeReference?) : ConstantSourceStep<SerializedNodeReference?>(element) {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<SerializedNodeReference?> {
+        return serializersModule.serializer<SerializedNodeReference>().nullable
     }
 
     override fun createDescriptor() = Descriptor(element)
 
     @Serializable
     @SerialName("nodeReferenceMonoSource")
-    class Descriptor(val element: SerializedNodeReference) : StepDescriptor() {
+    class Descriptor(val element: SerializedNodeReference?) : StepDescriptor() {
         override fun createStep(): IStep {
             return NodeReferenceSourceStep(element)
         }
     }
 
     override fun toString(): String {
-        return "<${element.serialized}>"
+        return "<${element?.serialized}>"
     }
 }
 
-fun INodeReference.asMono(): IMonoStep<SerializedNodeReference> = NodeReferenceSourceStep(SerializedNodeReference(serialize()))
+fun INodeReference?.asMono(): IMonoStep<INodeReference?> {
+    return NodeReferenceSourceStep(this?.serialize()?.let { SerializedNodeReference(it) })
+}
+fun INodeReference.asMono(): IMonoStep<INodeReference> {
+    return NodeReferenceSourceStep(SerializedNodeReference(serialize())) as IMonoStep<INodeReference>
+}

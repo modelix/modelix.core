@@ -148,6 +148,7 @@ class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProd
                 subclass(org.modelix.modelql.core.IsNullPredicateStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.JoinStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ListCollectorStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.MapIfNotNullStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MonoFilteringStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MonoMappingStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.NotOperatorStep.NotDescriptor::class)

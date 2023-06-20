@@ -78,23 +78,36 @@ object OptionalIntPropertySerializer : IPropertyValueSerializer<Int?> {
     }
 }
 
-class MandatoryEnumSerializer<E : Enum<*>>(private val valueOf: (String?) -> E) : IPropertyValueSerializer<E> {
+abstract class EnumSerializer {
+    protected fun serializeEnumMember(id: String, name: String) = "$id/$name"
+    protected fun deserializeEnumMemberId(serialized: String?) = serialized?.substringBefore('/')
+}
+
+class MandatoryEnumSerializer<E : Enum<*>>(
+    private val memberIdOf: (E) -> String,
+    private val fromMemberId: (String?) -> E
+) : EnumSerializer(), IPropertyValueSerializer<E> {
+
     override fun serialize(value: E): String {
-        return value.name
+        return serializeEnumMember(memberIdOf(value), value.name)
     }
 
     override fun deserialize(serialized: String?): E {
-        return valueOf(serialized)
+        return fromMemberId(deserializeEnumMemberId(serialized))
     }
 }
 
-class OptionalEnumSerializer<E : Enum<*>>(private val valueOf: (String?) -> E?) : IPropertyValueSerializer<Enum<*>?> {
-    override fun serialize(value: Enum<*>?): String? {
-        return value?.name
+class OptionalEnumSerializer<E : Enum<*>>(
+    private val memberIdOf: (E) -> String,
+    private val fromMemberId: (String) -> E
+) : EnumSerializer(), IPropertyValueSerializer<E?> {
+
+    override fun serialize(value: E?): String? {
+        return value?.let { serializeEnumMember(memberIdOf(it), it.name) }
     }
 
-    override fun deserialize(serialized: String?): Enum<*>? {
-        return serialized?.let { valueOf(serialized) }
+    override fun deserialize(serialized: String?): E? {
+        return deserializeEnumMemberId(serialized)?.let { fromMemberId(it) }
     }
 }
 

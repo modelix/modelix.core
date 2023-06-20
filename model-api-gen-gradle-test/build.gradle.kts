@@ -36,6 +36,8 @@ val mpsDir = buildDir.resolve("mps")
 
 val modelixCoreVersion: String = projectDir.resolve("../version.txt").readText()
 
+val kotlinGenDir = buildDir.resolve("metamodel/kotlin_gen")
+
 dependencies {
     mps("com.jetbrains:mps:2021.1.4")
     implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
@@ -46,7 +48,9 @@ dependencies {
     testImplementation(kotlin("test-annotations-common"))
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
+    testImplementation(kotlin("reflect"))
 
+    testImplementation("org.modelix:model-api:$modelixCoreVersion")
     testImplementation("org.modelix:model-client:$modelixCoreVersion")
     testImplementation("org.modelix:model-server-lib:$modelixCoreVersion")
     testImplementation("org.modelix:modelql-client:$modelixCoreVersion")
@@ -61,6 +65,14 @@ dependencies {
     testImplementation(libs.ktor.server.forwarded.header)
     testImplementation(libs.ktor.server.websockets)
     testImplementation(libs.ktor.server.test.host)
+
+    testImplementation(files(kotlinGenDir) {
+        builtBy("generateMetaModelSources")
+    })
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 val resolveMps by tasks.registering(Sync::class) {
@@ -68,7 +80,6 @@ val resolveMps by tasks.registering(Sync::class) {
     into(mpsDir)
 }
 
-val kotlinGenDir = buildDir.resolve("metamodel/kotlin_gen")
 sourceSets["main"].kotlin {
     srcDir(kotlinGenDir)
 }
@@ -80,7 +91,7 @@ metamodel {
     kotlinDir = kotlinGenDir
     kotlinProject = project
     includeNamespace("jetbrains")
-    //exportModules("jetbrains.mps.baseLanguage")
+    exportModules("jetbrains.mps.baseLanguage")
 
     names {
         languageClass.prefix = "L_"

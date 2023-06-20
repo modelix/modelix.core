@@ -163,6 +163,7 @@ class UnboundQuery<In, Out>(val inputStep: QueryInput<In>, val outputStep: IProd
                 subclass(org.modelix.modelql.core.StringSourceStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringToBooleanStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringToIntStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.ToStringStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ZipElementAccessStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ZipStep.Descriptor::class)
             }

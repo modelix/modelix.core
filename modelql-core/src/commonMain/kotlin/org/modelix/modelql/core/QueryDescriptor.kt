@@ -8,9 +8,10 @@ data class QueryDescriptor(
     val steps: List<StepDescriptor>,
     val connections: List<PortConnection>,
     val input: Int,
-    val output: Int
+    val output: Int,
+    val isFluxOutput: Boolean
 ) {
-    fun createQuery(): UnboundQuery<*, *> {
+    fun createQuery(): UnboundQuery<*, *, *> {
         val createdSteps = ArrayList<IStep>()
         fun resolveStep(id: Int): IStep {
             return createdSteps[id]
@@ -23,7 +24,13 @@ data class QueryDescriptor(
         }
         val inputStep = resolveStep(input) as QueryInput<Any?>
         val outputStep = resolveStep(output) as IProducingStep<Any?>
-        return UnboundQuery<Any?, Any?>(inputStep, outputStep)
+
+        // Some steps implement IMonoStep and IFluxStep. An instanceOf check doesn't work.
+        return if (isFluxOutput) {
+            FluxUnboundQuery<Any?, Any?>(inputStep, outputStep as IFluxStep<Any?>)
+        } else {
+            MonoUnboundQuery<Any?, Any?>(inputStep, outputStep as IMonoStep<Any?>)
+        }
     }
 }
 

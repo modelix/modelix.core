@@ -2,18 +2,17 @@ package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
+class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         val downCastedInput: Flow<Out> = input
         return downCastedInput.onEmpty {
-            emitAll(alternative.applyQuery(emptyFlow<Unit>()))
+            emitAll(alternative.asFlow(Unit))
         }
     }
 
@@ -37,10 +36,11 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, Out>) : Tra
 }
 
 fun <In : Out, Out> IMonoStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IMonoStep<Out> {
-    // TODO .first() is not correct. 0 elements should be allowed.
-    return IfEmptyStep<In, Out>(UnboundQuery.build { alternative() }).first()
+    return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance())
 }
-
-fun <In : Out, Out> IProducingStep<In>.ifEmpty(alternative: () -> IProducingStep<Out>): IFluxStep<Out> {
-    return IfEmptyStep<In, Out>(UnboundQuery.build { alternative() })
+fun <In : Out, Out> IFluxStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IFluxStep<Out> {
+    return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance())
+}
+fun <In : Out, Out> IProducingStep<In>.ifEmpty(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
+    return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance())
 }

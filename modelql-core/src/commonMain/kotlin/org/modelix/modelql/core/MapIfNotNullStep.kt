@@ -8,7 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class MapIfNotNullStep<In, Out>(val query: UnboundQuery<In, Out>) : MonoTransformingStep<In?, Out?>() {
+class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransformingStep<In?, Out?>() {
 
     init {
         query.inputStep.indirectConsumer = this
@@ -19,10 +19,10 @@ class MapIfNotNullStep<In, Out>(val query: UnboundQuery<In, Out>) : MonoTransfor
     }
 
     override fun createFlow(input: Flow<In?>, context: IFlowInstantiationContext): Flow<Out?> {
-        return input.flatMapConcat { it?.let { query.applyQuery(it) } ?: flowOf(null) }
+        return input.flatMapConcat { it?.let { query.asFlow(it) } ?: flowOf(null) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out?> {
         return query.getOutputSerializer(serializersModule)
     }
 
@@ -36,11 +36,11 @@ class MapIfNotNullStep<In, Out>(val query: UnboundQuery<In, Out>) : MonoTransfor
     @SerialName("mapIfNotNull")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return MapIfNotNullStep<Any?, Any?>(query.createQuery() as UnboundQuery<Any?, Any?>)
+            return MapIfNotNullStep<Any, Any?>(query.createQuery() as MonoUnboundQuery<Any, Any?>)
         }
     }
 }
 
-fun <In, Out> IMonoStep<In?>.mapIfNotNull(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out?> {
-    return MapIfNotNullStep(UnboundQuery.build(body)).also { connect(it) }
+fun <In : Any, Out> IMonoStep<In?>.mapIfNotNull(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out?> {
+    return MapIfNotNullStep(IUnboundQuery.buildMono(body).castToInstance()).also { connect(it) }
 }

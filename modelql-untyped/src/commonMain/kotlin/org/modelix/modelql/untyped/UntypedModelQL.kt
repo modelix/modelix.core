@@ -18,9 +18,13 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.modelix.model.api.INode
-import org.modelix.modelql.core.BoundQuery
+import org.modelix.modelql.core.IFluxQuery
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoQuery
 import org.modelix.modelql.core.IMonoStep
-import org.modelix.modelql.core.IQuery
+import org.modelix.modelql.core.IQueryExecutor
+import org.modelix.modelql.core.IUnboundQuery
+import org.modelix.modelql.core.SimpleQueryExecutor
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.UnboundQuery
 
@@ -57,16 +61,28 @@ object UntypedModelQL {
 }
 
 interface ISupportsModelQL : INode {
-    fun <R> buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IQuery<R>
+    fun createQueryExecutor(): IQueryExecutor<INode>
+}
+
+fun INode.createQueryExecutor(): IQueryExecutor<INode> {
+    return when (this) {
+        is ISupportsModelQL -> this.createQueryExecutor()
+        else -> SimpleQueryExecutor(this)
+    }
 }
 
 suspend fun <R> INode.query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
     return buildQuery(body).execute()
 }
 
-fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IQuery<R> {
-    return when (this) {
-        is ISupportsModelQL -> this.buildQuery(body)
-        else -> BoundQuery.build(this, body)
-    }
+suspend fun <R> INode.queryFlux(body: (IMonoStep<INode>) -> IFluxStep<R>): List<R> {
+    return buildQuery(body).execute()
+}
+
+fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {
+    return IUnboundQuery.buildMono(body).bind(createQueryExecutor())
+}
+
+fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IFluxStep<R>): IFluxQuery<R> {
+    return IUnboundQuery.buildFlux(body).bind(createQueryExecutor())
 }

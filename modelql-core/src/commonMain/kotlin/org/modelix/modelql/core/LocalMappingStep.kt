@@ -8,7 +8,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
 
-class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTransformingStep<In, Out>() {
+open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTransformingStep<In, Out>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out> {
         return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializersModule))
     }
@@ -19,6 +19,10 @@ class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTransform
 
     override fun createDescriptor(): StepDescriptor {
         return IdentityStep.IdentityStepDescriptor()
+    }
+
+    override fun toString(): String {
+        return "${getProducer()}.mapLocal()"
     }
 }
 
@@ -35,5 +39,17 @@ class LocalMappingSerializer<In, Out>(val step: LocalMappingStep<In, Out>, val i
     }
 }
 
+class ExecuteLocalStep<In, Out>(transformation: (In) -> Out) : LocalMappingStep<In, Out>(transformation) {
+    override fun hasSideEffect(): Boolean {
+        return true
+    }
+
+    override fun toString(): String {
+        return "${getProducer()}.executeLocal()"
+    }
+}
+
 fun <In, Out> IMonoStep<In>.mapLocal(body: (In) -> Out) = LocalMappingStep(body).connectAndDowncast(this)
 fun <In, Out> IFluxStep<In>.mapLocal(body: (In) -> Out) = LocalMappingStep(body).connectAndDowncast(this)
+fun <In, Out> IMonoStep<In>.executeLocal(body: (In) -> Out) = ExecuteLocalStep(body).connectAndDowncast(this)
+fun <In, Out> IFluxStep<In>.executeLocal(body: (In) -> Out) = ExecuteLocalStep(body).connectAndDowncast(this)

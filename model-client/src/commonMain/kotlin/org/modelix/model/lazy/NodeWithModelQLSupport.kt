@@ -1,35 +1,37 @@
 package org.modelix.model.lazy
 
-import kotlinx.coroutines.flow.single
+import kotlinx.coroutines.flow.Flow
 import org.modelix.model.api.*
+import org.modelix.modelql.core.IFluxQuery
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IMonoQuery
 import org.modelix.modelql.core.IMonoStep
-import org.modelix.modelql.core.IQuery
+import org.modelix.modelql.core.IQueryExecutor
 import org.modelix.modelql.core.IUnboundQuery
-import org.modelix.modelql.core.UnboundQuery
-import org.modelix.modelql.core.map
 import org.modelix.modelql.untyped.ISupportsModelQL
 
 class NodeWithModelQLSupport(val node: INode) : INode by node, ISupportsModelQL {
-    override fun <R> buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IQuery<R> {
-        return (node.deepUnwrap() as PNodeAdapter).branch.buildQuery(body)
+    override fun createQueryExecutor(): IQueryExecutor<INode> {
+        return (node.deepUnwrap() as PNodeAdapter).branch.createQueryExecutor()
     }
 }
 
-fun <R> IBranch.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IQuery<R> {
-    return BranchQuery<R>(this, UnboundQuery.build(body))
+fun <R> IBranch.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {
+    return IUnboundQuery.buildMono(body).bind(BranchQueryExecutor(this))
 }
 
-private class BranchQuery<E>(val branch: IBranch, val query: IUnboundQuery<INode, E>) : IQuery<E> {
-    override suspend fun execute(): E {
+fun <R> IBranch.buildQuery(body: (IMonoStep<INode>) -> IFluxStep<R>): IFluxQuery<R> {
+    return IUnboundQuery.buildFlux(body).bind(BranchQueryExecutor(this))
+}
+
+class BranchQueryExecutor(val branch: IBranch) : IQueryExecutor<INode> {
+    override fun <Out> createFlow(query: IUnboundQuery<INode, *, Out>): Flow<Out> {
         val tree = (branch.deepUnwrap() as PBranch).computeReadT { t -> (t.tree.unwrap() as CLTree) }
         val rootNode = branch.getRootNode()
-        val result = IBulkQuery2.buildBulkFlow<E>(tree.store) {
-            query.applyQuery(rootNode)
-        }.single()
-        return result
-    }
-
-    override fun <T> map(body: (IMonoStep<E>) -> IMonoStep<T>): IQuery<T> {
-        return BranchQuery(branch, UnboundQuery.build { it.map(query).map(body) })
+        return IBulkQuery2.buildBulkFlow<Out>(tree.store) {
+            query.asFlow(rootNode)
+        }
     }
 }
+
+fun IBranch.createQueryExecutor() = BranchQueryExecutor(this)

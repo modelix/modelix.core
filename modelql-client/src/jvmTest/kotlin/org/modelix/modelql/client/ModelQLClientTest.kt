@@ -13,13 +13,14 @@ import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
-import org.modelix.modelql.core.UnboundQuery
-import org.modelix.modelql.core.buildQuery
+import org.modelix.modelql.core.IFluxUnboundQuery
+import org.modelix.modelql.core.buildFluxQuery
 import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.count
 import org.modelix.modelql.core.filter
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.firstOrNull
+import org.modelix.modelql.core.flatMap
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.notEqualTo
 import org.modelix.modelql.core.plus
@@ -200,12 +201,12 @@ class ModelQLClientTest {
     fun recursiveQuery() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
 
-        val descendantsNames: UnboundQuery<INode, String?> = buildQuery<INode, String?> {
+        val descendantsNames: IFluxUnboundQuery<INode, String?> = buildFluxQuery<INode, String?> {
             it.property("name") + it.allChildren().mapRecursive()
         }
 
         val result: Set<String?> = client.query { root ->
-            root.map(descendantsNames).toSet()
+            root.flatMap(descendantsNames).toSet()
         }
 
         assertEquals(setOf(null, "abc", "model1a"), result)

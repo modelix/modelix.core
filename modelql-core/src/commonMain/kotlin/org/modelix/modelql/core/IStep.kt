@@ -11,7 +11,7 @@ import kotlinx.serialization.modules.SerializersModule
 
 interface IStep {
     @Deprecated("")
-    var owningQuery: IUnboundQuery<*, *>?
+    var owningQuery: IUnboundQuery<*, *, *>?
     fun validate() {}
 
     fun createDescriptor(): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
@@ -48,12 +48,15 @@ interface IProducingStep<out E> : IStep {
     fun outputIsConsumedMultipleTimes(): Boolean {
         return getConsumers().size > 1 || getConsumers().any { it.inputIsConsumedMultipleTimes() }
     }
+    fun canBeEmpty(): Boolean = TODO()
+    fun canBeMultiple(): Boolean = TODO()
 }
 fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) = addConsumer(consumer)
 fun <T> IConsumingStep<T>.connect(producer: IProducingStep<T>) = producer.addConsumer(this)
 
 interface IMonoStep<out E> : IProducingStep<E>
 interface IFluxStep<out E> : IProducingStep<E>
+interface IFluxOrMonoStep<out E> : IMonoStep<E>, IFluxStep<E>
 
 interface IConsumingStep<in E> : IStep {
     fun addProducer(producer: IProducingStep<E>)
@@ -68,7 +71,7 @@ interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out> {
 }
 
 abstract class ProducingStep<E> : IProducingStep<E> {
-    override var owningQuery: IUnboundQuery<*, *>? = null
+    override var owningQuery: IUnboundQuery<*, *, *>? = null
     private val consumers = ArrayList<IConsumingStep<E>>()
 
     override fun addConsumer(consumer: IConsumingStep<E>) {

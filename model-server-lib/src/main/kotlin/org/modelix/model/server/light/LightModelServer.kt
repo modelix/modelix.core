@@ -25,9 +25,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import io.ktor.util.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
+import kotlinx.serialization.KSerializer
 import org.modelix.model.api.*
 import org.modelix.model.server.api.AddNewChildNodeOpData
 import org.modelix.model.server.api.ChangeSetId
@@ -44,12 +44,10 @@ import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
-import org.modelix.modelql.core.UnboundQuery
+import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.QueryDescriptor
-import org.modelix.modelql.core.first
-import org.modelix.modelql.core.map
 import org.modelix.modelql.untyped.UntypedModelQL
-import org.modelix.modelql.untyped.query
+import org.modelix.modelql.untyped.createQueryExecutor
 import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
@@ -176,13 +174,13 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
             post("query") {
                 val serializedQuery = call.receiveText()
                 val queryDescriptor = UntypedModelQL.json.decodeFromString<QueryDescriptor>(serializedQuery)
-                val query = queryDescriptor.createQuery() as UnboundQuery<INode, Any?>
+                val query = queryDescriptor.createQuery() as IMonoUnboundQuery<INode, Any?>
                 LOG.debug { "query: $query" }
                 val nodeResolutionScope: INodeResolutionScope = getArea()
                 val transactionBody: () -> Any? = {
                     runBlocking {
                         withContext(nodeResolutionScope) {
-                            rootNode.query { it.map(query).first() }
+                            query.bind(rootNode.createQueryExecutor()).execute()
                         }
                     }
                 }
@@ -191,7 +189,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
                 } else {
                     getArea().executeRead(transactionBody)
                 }
-                val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule)
+                val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule) as KSerializer<Any?>
                 val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
                 call.respond(serializedResult)
             }

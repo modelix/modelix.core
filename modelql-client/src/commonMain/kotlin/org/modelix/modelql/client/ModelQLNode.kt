@@ -1,5 +1,9 @@
 package org.modelix.modelql.client
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -17,12 +21,16 @@ import org.modelix.model.api.resolveReferenceLinkOrFallback
 import org.modelix.model.api.serialize
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IFluxUnboundQuery
 import org.modelix.modelql.core.IMonoStep
-import org.modelix.modelql.core.IQuery
+import org.modelix.modelql.core.IMonoUnboundQuery
+import org.modelix.modelql.core.IQueryExecutor
+import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.IZip2Output
 import org.modelix.modelql.core.asMono
 import org.modelix.modelql.core.filterNotNull
 import org.modelix.modelql.core.first
+import org.modelix.modelql.core.flatMap
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.mapIfNotNull
 import org.modelix.modelql.core.orNull
@@ -45,11 +53,26 @@ import org.modelix.modelql.untyped.roleInParent
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
 
-abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL {
+abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL, IQueryExecutor<INode> {
 
-    override fun <R> buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IQuery<R> {
-        return client.buildQuery { root ->
-            body(replaceQueryRoot(root))
+    override fun createQueryExecutor(): IQueryExecutor<INode> {
+        return this
+    }
+
+    override fun <Out> createFlow(query: IUnboundQuery<INode, *, Out>): Flow<Out> {
+        return flow {
+            when (query) {
+                is IMonoUnboundQuery<*, *> -> {
+                    val castedQuery = query as IMonoUnboundQuery<INode, Out>
+                    val queryOnNode = IUnboundQuery.buildMono { replaceQueryRoot(it).map(castedQuery) }
+                    emit(client.runQuery(queryOnNode))
+                }
+                is IFluxUnboundQuery<*, *> -> {
+                    val castedQuery = query as IFluxUnboundQuery<INode, Out>
+                    val queryOnNode = IUnboundQuery.buildFlux { replaceQueryRoot(it).flatMap(castedQuery) }
+                    emitAll(client.runQuery(queryOnNode).asFlow())
+                }
+            }
         }
     }
 

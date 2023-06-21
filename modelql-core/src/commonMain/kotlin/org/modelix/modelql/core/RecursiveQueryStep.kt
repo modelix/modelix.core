@@ -13,7 +13,7 @@ class RecursiveQueryStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> 
     }
 
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
-        return (owningQuery!! as UnboundQuery<In, Out>).applyQuery(input)
+        return (owningQuery!! as IUnboundQuery<In, *, Out>).asFlow(input)
     }
 
     override fun createDescriptor(): StepDescriptor {
@@ -33,9 +33,13 @@ class RecursiveQueryStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> 
     }
 }
 
-fun <In, Out> buildQuery(body: QueryBuilderContext<In, Out>.(IMonoStep<In>) -> IProducingStep<Out>): UnboundQuery<In, Out> {
+fun <In, Out> buildMonoQuery(body: QueryBuilderContext<In, Out>.(IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
     val context = QueryBuilderContext<In, Out>()
-    return UnboundQuery.build { body(context, it) }
+    return IUnboundQuery.buildMono { body(context, it) }
+}
+fun <In, Out> buildFluxQuery(body: QueryBuilderContext<In, Out>.(IMonoStep<In>) -> IFluxStep<Out>): IFluxUnboundQuery<In, Out> {
+    val context = QueryBuilderContext<In, Out>()
+    return IUnboundQuery.buildFlux { body(context, it) }
 }
 
 class QueryBuilderContext<in In, out Out> {

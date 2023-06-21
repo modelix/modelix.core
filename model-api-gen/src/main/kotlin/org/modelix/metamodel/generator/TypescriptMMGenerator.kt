@@ -108,10 +108,11 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                             Primitive.INT -> {
                                 """
                                 public set ${feature.generatedName}(value: number) {
-                                    this.${rawValueName} = value.toString();
+                                    let str = value.toString();
+                                    this.node.setPropertyValue("${feature.generatedName}", str);
                                 }
                                 public get ${feature.generatedName}(): number {
-                                    let str = this.${rawValueName};
+                                    let str = this.node.getPropertyValue("${feature.generatedName}");
                                     return str ? parseInt(str) : 0;
                                 }
                                 
@@ -120,10 +121,12 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                             Primitive.BOOLEAN -> {
                                 """
                                 public set ${feature.generatedName}(value: boolean) {
-                                    this.${rawValueName} = value ? "true" : "false";
+                                    let str = value ? "true" : "false";
+                                    this.node.setPropertyValue("${feature.generatedName}", str);
                                 }
                                 public get ${feature.generatedName}(): boolean {
-                                    return this.${rawValueName} === "true";
+                                    let str = this.node.getPropertyValue("${feature.generatedName}");
+                                    return str === "true";
                                 }
                                 
                             """.trimIndent()

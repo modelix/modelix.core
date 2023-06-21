@@ -144,7 +144,11 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         this.node.setReferenceTargetNode("${feature.originalName}", value?.unwrap());
                     }
                     public get ${feature.generatedName}(): $entityType | undefined {
-                        return LanguageRegistry.INSTANCE.wrapNode(this.node.getReferenceTargetNode("${feature.originalName}"));
+                        let node = this.node.getReferenceTargetNode("${feature.originalName}");
+                        if (node === undefined) {
+                           return node;
+                        }
+                        return LanguageRegistry.INSTANCE.wrapNode(node) as $entityType;
                     }
                 """.trimIndent()
                 }

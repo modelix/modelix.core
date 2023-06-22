@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-class IdentityStep<E> : TransformingStep<E, E>() {
+class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {
         return getProducer().getOutputSerializer(serializersModule)
     }

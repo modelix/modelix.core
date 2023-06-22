@@ -10,10 +10,6 @@ import org.modelix.model.data.PrimitivePropertyType
 import java.nio.file.Path
 import kotlin.reflect.KClass
 
-private val reservedPropertyNames: Set<String> = setOf(
-    "constructor", // already exists on JS objects
-) + IConcept::class.members.map { it.name }
-
 class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameConfig()) {
     var alwaysUseNonNullableProperties: Boolean = true
 

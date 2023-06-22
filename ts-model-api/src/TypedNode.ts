@@ -1,11 +1,11 @@
 import type {INodeJS} from "./INodeJS.js";
 
 export class TypedNode implements ITypedNode {
-  constructor(public node: INodeJS) {
+  constructor(public _node: INodeJS) {
   }
 
   unwrap(): INodeJS {
-    return this.node;
+    return this._node;
   }
 
 }

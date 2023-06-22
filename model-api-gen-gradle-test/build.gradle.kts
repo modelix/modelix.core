@@ -49,7 +49,6 @@ dependencies {
     testImplementation(kotlin("test-common"))
     testImplementation(kotlin("test-annotations-common"))
     testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit"))
     testImplementation(kotlin("reflect"))
 
     testImplementation("org.modelix:model-api:$modelixCoreVersion")

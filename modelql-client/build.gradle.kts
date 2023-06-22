@@ -48,7 +48,6 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(kotlin("test-junit"))
 
                 implementation(project(":model-client", configuration = "jvmRuntimeElements"))
                 implementation(project(":model-server-lib"))

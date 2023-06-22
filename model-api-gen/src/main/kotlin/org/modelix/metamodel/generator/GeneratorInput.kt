@@ -20,8 +20,9 @@ import org.modelix.model.data.LanguageData
 import org.modelix.model.data.PropertyType
 import kotlin.reflect.KClass
 
-private val reservedPropertyNames: Set<String> = setOf(
+val reservedPropertyNames: Set<String> = setOf(
     "constructor", // already exists on JS objects
+    "_node" // exists in TypedNode in ts-model-api
 ) + IConcept::class.members.map { it.name }
 
 interface IProcessedLanguageSet

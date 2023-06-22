@@ -32,7 +32,7 @@ object JSNodeConverter {
     fun toINode(node: Any): INode {
         if (node is INode) return node
         if (node is NodeAdapterJS) return node.node
-        if (node is TypedNode) return toINode(node.node)
+        if (node is TypedNode) return toINode(node._node)
 
         // Workaround, because ts-model-api is loaded twice by webpack making the instanceof check on TypedNode fail.
         val unwrapped = node.asDynamic().node

@@ -22,7 +22,6 @@ import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.AsyncBuilder
 import org.modelix.modelql.core.IAsyncBuilder
-import org.modelix.modelql.core.ResultHandler
 import org.modelix.modelql.core.mapLocal
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.property
@@ -43,6 +42,8 @@ class HtmlBuilderTest {
                     module1.setPropertyValue("name", "abc")
                     val model1a = module1.addNewChild("models", -1, null as IConceptReference?)
                     model1a.setPropertyValue("name", "model1a")
+                    val model1b = module1.addNewChild("models", -1, null as IConceptReference?)
+                    model1b.setPropertyValue("name", "model1b")
                 }
                 LightModelServer(80, rootNode).apply { installHandlers() }
             }
@@ -57,8 +58,8 @@ class HtmlBuilderTest {
         val client = ModelQLClient("http://localhost/query", httpClient)
 
         fun HtmlBuilder<INode>.renderModel() {
-            val name = node.property("name").getLater()
-            buildHtml {
+            val name = input.property("name").getLater()
+            onSuccess {
                 div {
                     h2 {
                         +"Model: ${name.get()}"
@@ -68,25 +69,25 @@ class HtmlBuilderTest {
         }
 
         fun HtmlBuilder<INode>.renderModule() {
-            val name = node.property("name").getLater()
-            val models = node.children("models").iterateLater {
+            val name = input.property("name").getLater()
+            val models = input.children("models").iterateLater {
                 renderModel()
             }
-            buildHtml {
+            onSuccess {
                 div {
                     h1 {
                         +"Module: ${name.get()}"
-                        iterate(models)
                     }
+                    iterate(models)
                 }
             }
         }
 
         fun HtmlBuilder<INode>.renderRepository() {
-            val modules = node.children("modules").iterateLater {
+            val modules = input.children("modules").iterateLater {
                 renderModule()
             }
-            buildHtml {
+            onSuccess {
                 iterate(modules)
             }
         }
@@ -94,14 +95,12 @@ class HtmlBuilderTest {
         val actual = client.getRootNode().queryAndBuildHtml {
             renderRepository()
         }
-        val expected = """<html><body><div><h1>Module: abc<div><h2>Model: model1a</h2></div></h1></div></body></html>"""
+        val expected = """<html><body><div><h1>Module: abc</h1><div><h2>Model: model1a</h2></div><div><h2>Model: model1b</h2></div></div></body></html>"""
         assertEquals(expected, actual)
     }
 }
 
 typealias HtmlBuilder<In> = IAsyncBuilder<In, FlowContent>
-fun <In> HtmlBuilder<In>.buildHtml(body: ResultHandler<FlowContent>) = onSuccess(body)
-val HtmlBuilder<INode>.node get() = input
 
 suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String {
     return query<String> { repository ->

@@ -12,7 +12,7 @@ interface IAsyncBuilder<In, ContextT> {
 }
 
 interface IValueRequest<E> {
-    abstract fun get(): E
+    fun get(): E
 }
 
 interface IIterationRequest
@@ -92,4 +92,3 @@ class AsyncBuilder<E, ContextT>(override val input: IMonoStep<E>) : IAsyncBuilde
         }
     }
 }
-

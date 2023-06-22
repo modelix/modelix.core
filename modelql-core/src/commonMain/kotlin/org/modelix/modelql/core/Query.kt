@@ -198,7 +198,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
     }
 
     override fun toString(): String {
-        return "$outputStep"
+        return (getUnconsumedSteps() + outputStep).joinToString("; ")
     }
 
     fun validate() {
@@ -224,11 +224,13 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                 val outputFlow = context.getOrCreateFlow(outputStep)
 
                 // ensure all write operations are executed
-                (getAllSteps() - outputStep)
-                    .filterIsInstance<IProducingStep<*>>()
-                    .filter { it.hasSideEffect() }
+                getUnconsumedSteps()
+                    // .filter { it.hasSideEffect() }
                     .mapNotNull {
-                        if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
+                        require(context.getFlow(it) == null) {
+                            "Step is not expected to be consumed, but the flow already exists: $it"
+                        }
+                        context.getOrCreateFlow(it)
                     }
                     .forEach { it.collect() }
 
@@ -237,6 +239,12 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                 send(it)
             }
         }
+    }
+
+    private fun getUnconsumedSteps(): List<IProducingStep<*>> {
+        return (getAllSteps() - outputStep)
+            .filterIsInstance<IProducingStep<*>>()
+            .filter { it.getConsumers().isEmpty() }
     }
 
     fun createDescriptor(): QueryDescriptor {

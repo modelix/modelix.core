@@ -19,6 +19,10 @@ class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
         return IdentityStepDescriptor()
     }
 
+    override fun toString(): String {
+        return "${getProducer()}.identity()"
+    }
+
     @Serializable
     @SerialName("identity")
     class IdentityStepDescriptor : CoreStepDescriptor() {
@@ -27,3 +31,5 @@ class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
         }
     }
 }
+
+fun <T> IMonoStep<T>.asFlux(): IFluxStep<T> = IdentityStep<T>().also { connect(it) }

@@ -211,9 +211,9 @@ fun <Common, T1 : Common, T2 : Common, T3 : Common, T4 : Common, T5 : Common> IM
     }.first()
 }
 
-fun <T> IProducingStep<T>.zip(vararg others: IProducingStep<T>): IFluxStep<IZipOutput<T>> = zipList(*others)
-fun <T> IMonoStep<T>.zip(vararg others: IMonoStep<T>): IMonoStep<IZipOutput<T>> = zipList(*others)
-fun <T> IProducingStep<T>.zipList(vararg others: IProducingStep<T>): IFluxStep<IZipOutput<T>> {
+fun <T> IProducingStep<T>.zip(vararg others: IProducingStep<T>): IFluxStep<IZipOutput<T>> = zipN(*others)
+fun <T> IMonoStep<T>.zip(vararg others: IMonoStep<T>): IMonoStep<IZipOutput<T>> = zipN(*others)
+fun <T> IProducingStep<T>.zipN(vararg others: IProducingStep<T>): IFluxStep<IZipOutput<T>> {
     return ZipStep<T, ZipOutput<T, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
         it.connect(this)
         for (other in others) {
@@ -221,10 +221,17 @@ fun <T> IProducingStep<T>.zipList(vararg others: IProducingStep<T>): IFluxStep<I
         }
     }
 }
-fun <T> IMonoStep<T>.zipList(vararg others: IMonoStep<T>): IMonoStep<IZipOutput<T>> {
+fun <T> IMonoStep<T>.zipN(vararg others: IMonoStep<T>): IMonoStep<IZipOutput<T>> {
     return ZipStep<T, ZipOutput<T, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
         it.connect(this)
         for (other in others) {
+            it.connect(other)
+        }
+    }.first()
+}
+fun <T> zipList(vararg steps: IMonoStep<T>): IMonoStep<IZipOutput<T>> {
+    return ZipStep<T, ZipOutput<T, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
+        for (other in steps) {
             it.connect(other)
         }
     }.first()

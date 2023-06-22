@@ -66,3 +66,9 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
 fun <T> IFluxStep<T>.toList(): IMonoStep<List<T>> = ListCollectorStep<T>().also { connect(it) }
 fun <T> IFluxStep<T>.toSet(): IMonoStep<Set<T>> = SetCollectorStep<T>().also { connect(it) }
+
+/**
+ * Sometimes you need an additional wrapper list, but to avoid this being done accidentally it has a different name.
+ */
+fun <T> IMonoStep<T>.toSingletonList(): IMonoStep<List<T>> = ListCollectorStep<T>().also { connect(it) }
+fun <T> IMonoStep<T>.toSingletonSet(): IMonoStep<Set<T>> = SetCollectorStep<T>().also { connect(it) }

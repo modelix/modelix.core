@@ -1,0 +1,15 @@
+{
+  "extends": "@reallyland/tsconfig",
+  "compilerOptions": {
+    "rootDir": "typescript_src",
+    "outDir": "dist",
+    "declarationDir": "dist",
+    "noUnusedLocals": false,
+    "importsNotUsedAsValues": "remove",
+    "module": "CommonJS",
+    "resolveJsonModule": false,
+    "target": "ES2020"
+  },
+  "include": ["typescript_src/**/*.ts"],
+  "exclude": ["dist"]
+}

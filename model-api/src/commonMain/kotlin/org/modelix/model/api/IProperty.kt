@@ -15,4 +15,7 @@
 
 package org.modelix.model.api
 
+/**
+ * Representation of a property within an [IConcept].
+ */
 interface IProperty : IRole

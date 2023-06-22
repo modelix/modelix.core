@@ -112,10 +112,6 @@ class ConceptRef(val languageName: String, val conceptName: String) {
     override fun toString(): String = languageName + "." + conceptName
 }
 
-private val reservedPropertyNames: Set<String> = setOf(
-    "constructor", // already exists on JS objects
-) + IConcept::class.members.map { it.name }
-
 data class FeatureInConcept(val concept: LanguageSet.ConceptInLanguage, val data: IConceptFeatureData) {
     val validName: String by lazy {
         if (reservedPropertyNames.contains(originalName) || hasNameConflict()) {

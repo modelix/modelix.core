@@ -15,7 +15,13 @@
 
 package org.modelix.model.api
 
+/**
+ * Representation of a parent-child relationship between [IConcept]s.
+ */
 interface IChildLink : ILink {
+    /**
+     * Specifies if the parent-child relation ship is 1:n.
+     */
     val isMultiple: Boolean
 
     @Deprecated("use .targetConcept")

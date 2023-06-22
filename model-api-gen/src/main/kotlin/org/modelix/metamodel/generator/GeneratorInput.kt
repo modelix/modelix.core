@@ -15,12 +15,14 @@ package org.modelix.metamodel.generator
 
 import org.modelix.model.api.IConcept
 import org.modelix.model.data.ConceptData
+import org.modelix.model.data.EnumData
 import org.modelix.model.data.LanguageData
 import org.modelix.model.data.PropertyType
 import kotlin.reflect.KClass
 
-private val reservedPropertyNames: Set<String> = setOf(
+val reservedPropertyNames: Set<String> = setOf(
     "constructor", // already exists on JS objects
+    "_node" // exists in TypedNode in ts-model-api
 ) + IConcept::class.members.map { it.name }
 
 interface IProcessedLanguageSet
@@ -48,6 +50,7 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
         for (data in dataList) {
             addLanguage(ProcessedLanguage(data.name, data.uid).also { lang ->
                 lang.load(data.concepts)
+                lang.loadEnums(data.enums)
             })
         }
         process()
@@ -137,6 +140,7 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
 internal class ProcessedLanguage(var name: String, var uid: String?) {
     lateinit var languageSet: ProcessedLanguageSet
     private val concepts: MutableList<ProcessedConcept> = ArrayList()
+    private val enums: MutableList<ProcessedEnum> = ArrayList()
     lateinit var simpleName2concept: Map<String, ProcessedConcept>
 
     fun addConcept(concept: ProcessedConcept) {
@@ -146,11 +150,29 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
 
     fun getConcepts(): List<ProcessedConcept> = concepts
 
+    fun addEnum(enum: ProcessedEnum) {
+        enums.add(enum)
+        enum.language = this
+    }
+
+    fun getEnums(): List<ProcessedEnum> = enums
+
     fun load(dataList: List<ConceptData>) {
         for (data in dataList) {
-            addConcept(ProcessedConcept(data.name, data.uid, data.abstract, data.extends.map { ProcessedConceptReference(it) }.toMutableList()).also { concept ->
+            addConcept(ProcessedConcept(data.name, data.uid, data.abstract, data.extends.map { ProcessedConceptReference(it) }.toMutableList(), data.deprecationMessage).also { concept ->
                 concept.loadRoles(data)
             })
+        }
+    }
+
+    fun loadEnums(dataList: List<EnumData>) {
+        for (data in dataList) {
+            val enum = ProcessedEnum(data.name, data.uid, maxOf(0, data.defaultIndex), data.deprecationMessage)
+            for (memberData in data.members) {
+                val member = ProcessedEnumMember(memberData.name, memberData.uid, memberData.presentation)
+                enum.addMember(member)
+            }
+            addEnum(enum)
         }
     }
 
@@ -163,7 +185,38 @@ internal class ProcessedConceptReference(var name: String) {
     lateinit var resolved: ProcessedConcept
 }
 
-internal class ProcessedConcept(var name: String, var uid: String?, var abstract: Boolean, val extends: MutableList<ProcessedConceptReference>) {
+internal sealed interface IProcessedDeprecatable {
+    var deprecationMessage: String?
+}
+
+internal class ProcessedEnum(
+    var name: String,
+    var uid: String?,
+    var defaultIndex: Int,
+    override var deprecationMessage: String?
+) : IProcessedDeprecatable {
+    lateinit var language: ProcessedLanguage
+    private val members: MutableList<ProcessedEnumMember> = ArrayList()
+
+    fun getAllMembers() = members
+
+    fun addMember(member: ProcessedEnumMember) {
+        members.add(member)
+        member.enum = this
+    }
+}
+
+internal class ProcessedEnumMember(var name: String, var uid: String, var presentation: String?) {
+    lateinit var enum: ProcessedEnum
+}
+
+internal class ProcessedConcept(
+    var name: String,
+    var uid: String?,
+    var abstract: Boolean,
+    val extends: MutableList<ProcessedConceptReference>,
+    override var deprecationMessage: String?
+) : IProcessedDeprecatable {
     lateinit var language: ProcessedLanguage
     private val roles: MutableList<ProcessedRole> = ArrayList()
 
@@ -179,9 +232,9 @@ internal class ProcessedConcept(var name: String, var uid: String?, var abstract
     fun getOwnAndDuplicateRoles(): List<ProcessedRole> = roles + getDuplicateSuperConcepts().flatMap { it.getOwnRoles() }
 
     fun loadRoles(data: ConceptData) {
-        data.properties.forEach { addRole(ProcessedProperty(it.name, it.uid, it.optional, it.type)) }
-        data.children.forEach { addRole(ProcessedChildLink(it.name, it.uid, it.optional, it.multiple, ProcessedConceptReference(it.type))) }
-        data.references.forEach { addRole(ProcessedReferenceLink(it.name, it.uid, it.optional, ProcessedConceptReference(it.type))) }
+        data.properties.forEach { addRole(ProcessedProperty(it.name, it.uid, it.optional, it.type, it.deprecationMessage)) }
+        data.children.forEach { addRole(ProcessedChildLink(it.name, it.uid, it.optional, it.multiple, ProcessedConceptReference(it.type), it.deprecationMessage)) }
+        data.references.forEach { addRole(ProcessedReferenceLink(it.name, it.uid, it.optional, ProcessedConceptReference(it.type), it.deprecationMessage)) }
     }
 
     fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit) {
@@ -201,28 +254,29 @@ internal class ProcessedConcept(var name: String, var uid: String?, var abstract
 internal sealed class ProcessedRole(
     var originalName: String,
     var uid: String?,
-    var optional: Boolean
-) {
+    var optional: Boolean,
+    override var deprecationMessage: String?
+) : IProcessedDeprecatable {
     lateinit var concept: ProcessedConcept
     var generatedName: String = originalName
 
     abstract fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit)
 }
 
-internal class ProcessedProperty(name: String, uid: String?, optional: Boolean, var type: PropertyType)
-    : ProcessedRole(name, uid, optional) {
+internal class ProcessedProperty(name: String, uid: String?, optional: Boolean, var type: PropertyType, deprecationMessage: String?)
+    : ProcessedRole(name, uid, optional, deprecationMessage) {
     override fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit) {}
 }
 
-internal sealed class ProcessedLink(name: String, uid: String?, optional: Boolean, var type: ProcessedConceptReference)
-    : ProcessedRole(name, uid, optional) {
+internal sealed class ProcessedLink(name: String, uid: String?, optional: Boolean, var type: ProcessedConceptReference, deprecationMessage: String?)
+    : ProcessedRole(name, uid, optional, deprecationMessage) {
     override fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit) {
         visitor(type)
     }
 }
 
-internal class ProcessedChildLink(name: String, uid: String?, optional: Boolean, var multiple: Boolean, type: ProcessedConceptReference)
-    : ProcessedLink(name, uid, optional, type)
+internal class ProcessedChildLink(name: String, uid: String?, optional: Boolean, var multiple: Boolean, type: ProcessedConceptReference, deprecationMessage: String?)
+    : ProcessedLink(name, uid, optional, type, deprecationMessage)
 
-internal class ProcessedReferenceLink(name: String, uid: String?, optional: Boolean, type: ProcessedConceptReference)
-    : ProcessedLink(name, uid, optional, type)
+internal class ProcessedReferenceLink(name: String, uid: String?, optional: Boolean, type: ProcessedConceptReference, deprecationMessage: String?)
+    : ProcessedLink(name, uid, optional, type, deprecationMessage)

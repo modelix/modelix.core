@@ -5,43 +5,44 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
+import org.modelix.metamodel.generator.*
 import org.modelix.model.data.LanguageData
-import org.modelix.metamodel.generator.LanguageSet
-import org.modelix.metamodel.generator.MetaModelGenerator
-import org.modelix.metamodel.generator.NameConfig
-import org.modelix.metamodel.generator.TypescriptMMGenerator
-import org.modelix.metamodel.generator.process
 import javax.inject.Inject
 
+@CacheableTask
 abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) : DefaultTask() {
     @get:InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     val exportedLanguagesDir: DirectoryProperty = of.directoryProperty()
+
     @get:OutputDirectory
     @Optional
     val kotlinOutputDir: DirectoryProperty = of.directoryProperty()
+
     @get:OutputDirectory
     @Optional
     val typescriptOutputDir: DirectoryProperty = of.directoryProperty()
+
     @get:Input
     val includedNamespaces: ListProperty<String> = of.listProperty(String::class.java)
+
     @get:Input
     val includedLanguages: ListProperty<String> = of.listProperty(String::class.java)
+
     @get:Input
     val includedConcepts: ListProperty<String> = of.listProperty(String::class.java)
+
     @get:Input
     @Optional
     val registrationHelperName: Property<String> = of.property(String::class.java)
+
     @get: Input
     val nameConfig: Property<NameConfig> = of.property(NameConfig::class.java)
 
     @TaskAction
     fun generate() {
-        var languages: LanguageSet = LanguageSet(exportedLanguagesDir.get().asFile.walk()
+        var languages = LanguageSet(exportedLanguagesDir.get().asFile.walk()
             .filter { it.extension.lowercase() == "json" }
             .map { LanguageData.fromJson(it.readText()) }
             .toList())

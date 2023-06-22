@@ -21,8 +21,10 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import io.ktor.util.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import org.modelix.model.api.ConceptReference
@@ -54,7 +56,8 @@ import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
-class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set<IRole> = emptySet()) {
+class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: INode, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
+
     companion object {
         private val LOG = mu.KotlinLogging.logger {  }
     }
@@ -62,6 +65,16 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
     private var server: NettyApplicationEngine? = null
     private val sessions: MutableSet<SessionData> = Collections.synchronizedSet(HashSet())
     private val ignoredRolesCache: MutableMap<IConceptReference, IgnoredRoles> = HashMap()
+    private val healthChecks: List<IHealthCheck> = listOf(object : IHealthCheck {
+        override val id: String = "readRootNode"
+        override val enabledByDefault: Boolean = true
+
+        override fun run(output: StringBuilder): Boolean {
+            val count = getArea().executeRead { rootNode.allChildren.count() }
+            output.appendLine("root node has $count children")
+            return true
+        }
+    }) + additionalHealthChecks
 
     fun start() {
         LOG.trace { "server starting on port $port ..." }
@@ -121,6 +134,45 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                     LOG.error(ex) { "Error in websocket handler" }
                 } finally {
                     sessions.remove(session)
+                }
+            }
+            get("/health") {
+                val output = StringBuilder()
+                try {
+                    val allChecks = healthChecks.associateBy { it.id }.toMap()
+                    val enabledChecks = allChecks.filter { it.value.enabledByDefault }.keys.toMutableSet()
+
+                    call.request.queryParameters.entries().forEach { entry ->
+                        entry.value.forEach { value ->
+                            if (!allChecks.containsKey(entry.key)) throw IllegalArgumentException("Unknown check: ${entry.key}")
+                            if (value.toBooleanStrict()) {
+                                enabledChecks.add(entry.key)
+                            } else {
+                                enabledChecks.remove(entry.key)
+                            }
+                        }
+                    }
+                    var isHealthy = true
+                    for (healthCheck in allChecks.values) {
+                        if (enabledChecks.contains(healthCheck.id)) {
+                            output.appendLine("--- running check '${healthCheck.id}' ---")
+                            val result = healthCheck.run(output)
+                            output.appendLine()
+                            output.appendLine("-> " + if (result) "successful" else "failed")
+                            isHealthy = isHealthy && result
+                        } else {
+                            output.appendLine("--- check '${healthCheck.id}' is disabled. Use '/health?${healthCheck.id}=true' to enable it.")
+                        }
+                    }
+                    if (isHealthy) {
+                        call.respond(HttpStatusCode.OK, "healthy\n\n$output")
+                    } else {
+                        call.respond(HttpStatusCode.InternalServerError, "unhealthy\n\n$output")
+                    }
+                } catch (ex: Exception) {
+                    output.appendLine()
+                    output.appendLine(ex.stackTraceToString())
+                    call.respond(HttpStatusCode.InternalServerError, "unhealthy\n\n$output")
                 }
             }
         }
@@ -313,6 +365,12 @@ class LightModelServer(val port: Int, val rootNode: INode, val ignoredRoles: Set
                 .associateWithNotNull { this.getReferenceTargetRef(it)?.serialize() },
             children = childrenMap,
         )
+    }
+
+    interface IHealthCheck {
+        val id: String
+        val enabledByDefault: Boolean
+        fun run(output: StringBuilder): Boolean
     }
 }
 

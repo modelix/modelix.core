@@ -1,0 +1,24 @@
+{
+  "extends": [
+    "@reallyland/tslint-config"
+  ],
+  "rules": {
+    "object-curly-spacing": false,
+    "quotemark": false,
+    "ordered-imports": false,
+    "function-name": false,
+    "prefer-array-literal": false,
+    "semicolon": false,
+    "max-classes-per-file": false,
+    "prefer-const": false,
+    "prefer-template": false,
+    "no-empty-interface": false,
+    "interface-name": false,
+    "ter-arrow-parens": false,
+    "no-increment-decrement": false,
+    "no-angle-bracket-type-assertion": false,
+    "object-literal-shorthand": false,
+    "trailing-comma": false,
+    "max-line-length": false
+  }
+}

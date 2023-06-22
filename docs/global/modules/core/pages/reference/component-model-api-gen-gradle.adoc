@@ -1,7 +1,6 @@
 = Gradle Plugin for the Model API Generator
 :navtitle: `model-api-gen-gradle`
 
-
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
@@ -174,6 +173,10 @@ Inside the `metamodel` block a `names` block can be declared to configure `prefi
 
 |`typedConceptImpl``
 |"\_C_TypedImpl_"
+|""
+
+|`conceptTypeAlias`
+|"CN_"
 |""
 
 |===

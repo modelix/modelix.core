@@ -13,24 +13,6 @@
  */
 package org.modelix.metamodel
 
-import org.modelix.model.data.PropertyType
-
-fun PropertyType.getSerializer(optional: Boolean): IPropertyValueSerializer<*> {
-    return if (optional) {
-        when (this) {
-            PropertyType.STRING -> OptionalStringPropertySerializer
-            PropertyType.BOOLEAN -> OptionalBooleanPropertySerializer
-            PropertyType.INT -> OptionalIntPropertySerializer
-        }
-    } else {
-        when (this) {
-            PropertyType.STRING -> MandatoryStringPropertySerializer
-            PropertyType.BOOLEAN -> MandatoryBooleanPropertySerializer
-            PropertyType.INT -> MandatoryIntPropertySerializer
-        }
-    }
-}
-
 interface IPropertyValueSerializer<ValueT> {
     fun serialize(value: ValueT): String?
     fun deserialize(serialized: String?): ValueT
@@ -95,3 +77,37 @@ object OptionalIntPropertySerializer : IPropertyValueSerializer<Int?> {
         return serialized?.toInt()
     }
 }
+
+abstract class EnumSerializer {
+    protected fun serializeEnumMember(id: String, name: String) = "$id/$name"
+    protected fun deserializeEnumMemberId(serialized: String?) = serialized?.substringBefore('/')
+}
+
+class MandatoryEnumSerializer<E : Enum<*>>(
+    private val memberIdOf: (E) -> String,
+    private val fromMemberId: (String?) -> E
+) : EnumSerializer(), IPropertyValueSerializer<E> {
+
+    override fun serialize(value: E): String {
+        return serializeEnumMember(memberIdOf(value), value.name)
+    }
+
+    override fun deserialize(serialized: String?): E {
+        return fromMemberId(deserializeEnumMemberId(serialized))
+    }
+}
+
+class OptionalEnumSerializer<E : Enum<*>>(
+    private val memberIdOf: (E) -> String,
+    private val fromMemberId: (String) -> E
+) : EnumSerializer(), IPropertyValueSerializer<E?> {
+
+    override fun serialize(value: E?): String? {
+        return value?.let { serializeEnumMember(memberIdOf(it), it.name) }
+    }
+
+    override fun deserialize(serialized: String?): E? {
+        return deserializeEnumMemberId(serialized)?.let { fromMemberId(it) }
+    }
+}
+

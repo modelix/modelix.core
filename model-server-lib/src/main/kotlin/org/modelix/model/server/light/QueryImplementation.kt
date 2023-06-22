@@ -13,10 +13,7 @@
  */
 package org.modelix.model.server.light
 
-import org.modelix.model.api.INode
-import org.modelix.model.api.INodeReferenceSerializer
-import org.modelix.model.api.getAncestors
-import org.modelix.model.api.getDescendants
+import org.modelix.model.api.*
 import org.modelix.model.server.api.AndFilter
 import org.modelix.model.server.api.ContainsOperator
 import org.modelix.model.server.api.EndsWithOperator
@@ -50,10 +47,25 @@ fun RootOrSubquery.queryNodes(node: INode): Sequence<INode> {
     return when (this) {
         is QueryAllChildren -> node.allChildren.asSequence()
         is QueryAncestors -> node.getAncestors(false)
-        is QueryChildren -> node.getChildren(this.role).asSequence()
+        is QueryChildren -> try {
+            node.getChildren(this.role).asSequence()
+        } catch (e: RuntimeException) {
+            emptySequence()
+        }
         is QueryDescendants -> node.getDescendants(false)
         is QueryParent -> listOfNotNull(node.parent).asSequence()
-        is QueryReference -> listOfNotNull(node.getReferenceTarget(this.role)).asSequence()
+        is QueryReference -> {
+            val link = try {
+                node.resolveReferenceLink(this.role)
+            } catch (ex: Exception) {
+                null
+            }
+            if (link == null) {
+                emptySequence()
+            } else {
+                listOfNotNull(node.getReferenceTarget(link)).asSequence()
+            }
+        }
         is QueryReferences -> node.getAllReferences()
         is QueryReferencesAndChildren -> node.getReferencesAndChildren(recursive)
         is QueryById -> {

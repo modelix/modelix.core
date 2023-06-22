@@ -38,6 +38,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
             task.antScriptFile.set(getAntScriptFile())
             task.exporterDir.set(exporterDir.absolutePath)
             task.moduleFolders.addAll(settings.moduleFolders.map { it.absolutePath })
+            task.inputs.property("coreVersion", modelixCoreVersion)
         }
 
         val antDependencies = project.configurations.create("metamodel-ant-dependencies")
@@ -46,6 +47,8 @@ class MetaModelGradlePlugin: Plugin<Project> {
         val exportedLanguagesDir = getBuildOutputDir().resolve("exported-languages")
         val exportMetaModelFromMps = project.tasks.register("exportMetaModelFromMps", JavaExec::class.java) { task ->
             task.enabled = settings.jsonDir == null
+            task.inputs.property("coreVersion", modelixCoreVersion)
+            task.outputs.cacheIf { task.enabled }
             task.workingDir = getBuildOutputDir()
             task.mainClass.set("org.apache.tools.ant.launch.Launcher")
             task.classpath(antDependencies)
@@ -78,6 +81,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
         }
         val generateMetaModelSources = project.tasks.register("generateMetaModelSources", GenerateMetaModelSources::class.java) {task ->
             task.dependsOn(exportMetaModelFromMps)
+            task.inputs.property("coreVersion", modelixCoreVersion)
         }
         project.afterEvaluate {
             generateMetaModelSources.configure { task ->

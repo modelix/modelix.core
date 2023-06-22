@@ -1,9 +1,10 @@
 package org.modelix.metamodel.generator
 
-import org.modelix.model.data.LanguageData
-import org.modelix.model.data.ConceptData
-import org.modelix.model.data.PropertyData
+import org.modelix.model.data.*
 import org.modelix.model.data.ChildLinkData
+import org.modelix.model.data.ConceptData
+import org.modelix.model.data.LanguageData
+import org.modelix.model.data.PropertyData
 import org.modelix.model.data.ReferenceLinkData
 
 fun newLanguage(name: String, body: LanguageBuilder.()->Unit): LanguageData {
@@ -12,10 +13,12 @@ fun newLanguage(name: String, body: LanguageBuilder.()->Unit): LanguageData {
 
 class LanguageBuilder(val name: String) {
     private val concepts = ArrayList<ConceptData>()
+    private val enums = ArrayList<EnumData>()
     fun build(): LanguageData {
         return LanguageData(
             name = name,
-            concepts = concepts
+            concepts = concepts,
+            enums = enums
         )
     }
 

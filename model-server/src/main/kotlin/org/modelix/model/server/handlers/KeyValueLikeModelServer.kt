@@ -17,18 +17,21 @@ package org.modelix.model.server.handlers
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import io.ktor.server.html.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
+import kotlinx.html.*
 import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.authorization.*
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
+import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.*
@@ -93,7 +96,19 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
             }
             get("/headers") {
                 val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
-                call.respondText(headers.joinToString("\n") { "${it.first}: ${it.second}" })
+                call.respondHtmlTemplate(PageWithMenuBar("headers",".")) {
+                    bodyContent {
+                        h1 { +"HTTP Headers" }
+                        div {
+                            headers.forEach {
+                                span {
+                                    +"${it.first}: ${it.second}"
+                                }
+                                br {  }
+                            }
+                        }
+                    }
+                }
             }
             requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.READ) {
                 get("/get/{key}") {

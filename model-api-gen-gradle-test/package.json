@@ -1,0 +1,52 @@
+{
+  "name": "@modelix/model-api-gen-gradle-test",
+  "version": "0.0.0",
+  "description": "",
+  "keywords": [
+    "ts-model-api",
+    "node",
+    "typescript"
+  ],
+  "homepage": "https://modelix.org/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/modelix/modelix.core.git"
+  },
+  "license": "Apache 2.0",
+  "files": [
+    "dist/*.*js.map",
+    "dist/*.*js",
+    "dist/*.d.ts.map",
+    "dist/*.d.ts"
+  ],
+  "type": "commonjs",
+  "main": "dist/index",
+  "typings": "dist/index.d.ts",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "shx rm -rf dist/ .*cache *.log",
+    "lint": "npm run lint:debug -- --config tslint.json",
+    "lint:debug": "tslint --project tsconfig.json --format stylish",
+    "prepublishOnly": "npm run lint && npm run build",
+    "test": "shx echo 'Write your own tests'",
+    "ts": "tsc",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelix/ts-model-api": "file:../ts-model-api"
+  },
+  "devDependencies": {
+    "@reallyland/tsconfig": "^2.0.0",
+    "@reallyland/tslint-config": "^1.1.1",
+    "@types/node": "^13.9.8",
+    "husky": "^4.2.3",
+    "shx": "^0.3.2",
+    "tslint": "^6.1.0",
+    "typescript": "^4.7.4"
+  },
+  "engines": {
+    "node": ">= 10.18.1",
+    "npm": ">= 6.13.4"
+  }
+}

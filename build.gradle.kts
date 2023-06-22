@@ -3,10 +3,12 @@ import kotlinx.html.stream.createHTML
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import org.semver.Version
 
 buildscript {
     dependencies {
         classpath("org.jetbrains.dokka:versioning-plugin:1.8.10")
+        classpath("org.semver:api:0.9.33")
     }
 }
 
@@ -204,7 +206,7 @@ fun createDocsIndexPage(): String {
                             div("table") {
                                 val versionDirs = docsDir.listFiles()
                                     ?.filter { it.isDirectory }
-                                    ?.sortedByDescending { it.name }
+                                    ?.sortedByDescending { Version.parse(it.name) }
                                 if (versionDirs != null) {
                                     for (versionDir in versionDirs) {
                                         val versionIndex = versionDir.resolve("index.html")

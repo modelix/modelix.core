@@ -7,8 +7,8 @@ import org.semver.Version
 
 buildscript {
     dependencies {
-        classpath("org.jetbrains.dokka:versioning-plugin:1.8.10")
-        classpath("org.semver:api:0.9.33")
+        classpath(libs.dokka.versioning)
+        classpath(libs.semver)
     }
 }
 
@@ -21,7 +21,7 @@ plugins {
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.tasktree)
-    id("org.jetbrains.dokka") version "1.8.20"
+    alias(libs.plugins.dokka)
 }
 
 repositories {
@@ -46,7 +46,7 @@ fun computeVersion(): Any {
 }
 
 dependencies {
-    dokkaPlugin("org.jetbrains.dokka:versioning-plugin:1.8.10")
+    dokkaPlugin(libs.dokka.versioning)
 }
 
 subprojects {

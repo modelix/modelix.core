@@ -30,6 +30,7 @@ import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.zipList
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.property
+import org.modelix.modelql.untyped.query
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -93,21 +94,26 @@ class HtmlBuilderTest {
             }
         }
 
-        val htmlResult: String = client.query<String> { repository ->
-            val htmlBuilder = HtmlBuilder(repository)
-            htmlBuilder.renderRepository()
-            htmlBuilder.compileOutputStep().mapLocal { result ->
-                createHTML().html {
-                    body {
-                        htmlBuilder.apply {
-                            processResult(result)
-                        }
+        val htmlResult = client.getRootNode().queryAndBuildHtml {
+            renderRepository()
+        }
+        println(htmlResult)
+    }
+}
+
+suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String {
+    return query<String> { repository ->
+        val htmlBuilder = HtmlBuilder(repository)
+        htmlBuilder.apply(body)
+        htmlBuilder.compileOutputStep().mapLocal { result ->
+            createHTML().html {
+                body {
+                    htmlBuilder.apply {
+                        processResult(result)
                     }
                 }
             }
         }
-
-        println(htmlResult)
     }
 }
 

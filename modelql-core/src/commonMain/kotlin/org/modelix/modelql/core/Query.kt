@@ -224,13 +224,11 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                 val outputFlow = context.getOrCreateFlow(outputStep)
 
                 // ensure all write operations are executed
-                getUnconsumedSteps()
-                    // .filter { it.hasSideEffect() }
+                (getAllSteps() - outputStep)
+                    .filterIsInstance<IProducingStep<*>>()
+                    .filter { it.hasSideEffect() }
                     .mapNotNull {
-                        require(context.getFlow(it) == null) {
-                            "Step is not expected to be consumed, but the flow already exists: $it"
-                        }
-                        context.getOrCreateFlow(it)
+                        if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
                     }
                     .forEach { it.collect() }
 

@@ -20,18 +20,15 @@ import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
-import org.modelix.modelql.core.IFluxStep
-import org.modelix.modelql.core.IMonoStep
-import org.modelix.modelql.core.IZipOutput
-import org.modelix.modelql.core.asFlux
-import org.modelix.modelql.core.map
+import org.modelix.modelql.core.AsyncBuilder
+import org.modelix.modelql.core.IAsyncBuilder
+import org.modelix.modelql.core.ResultHandler
 import org.modelix.modelql.core.mapLocal
-import org.modelix.modelql.core.toList
-import org.modelix.modelql.core.zipList
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.query
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
 class HtmlBuilderTest {
@@ -94,19 +91,24 @@ class HtmlBuilderTest {
             }
         }
 
-        val htmlResult = client.getRootNode().queryAndBuildHtml {
+        val actual = client.getRootNode().queryAndBuildHtml {
             renderRepository()
         }
-        println(htmlResult)
+        val expected = """<html><body><div><h1>Module: abc<div><h2>Model: model1a</h2></div></h1></div></body></html>"""
+        assertEquals(expected, actual)
     }
 }
 
+typealias HtmlBuilder<In> = IAsyncBuilder<In, FlowContent>
+fun <In> HtmlBuilder<In>.buildHtml(body: ResultHandler<FlowContent>) = onSuccess(body)
+val HtmlBuilder<INode>.node get() = input
+
 suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String {
     return query<String> { repository ->
-        val htmlBuilder = HtmlBuilder(repository)
+        val htmlBuilder = AsyncBuilder<INode, FlowContent>(repository)
         htmlBuilder.apply(body)
         htmlBuilder.compileOutputStep().mapLocal { result ->
-            createHTML().html {
+            createHTML(prettyPrint = false).html {
                 body {
                     htmlBuilder.apply {
                         processResult(result)
@@ -116,83 +118,3 @@ suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String
         }
     }
 }
-
-typealias ResultHandler = FlowContent.() -> Unit
-
-class HtmlBuilder<E>(val node: IMonoStep<E>) {
-    private val valueRequests = ArrayList<ValueRequest<Any?>>()
-    private val iterationRequests = ArrayList<IterationRequest<Any?>>()
-    private var resultHandler: ResultHandler? = null
-
-    fun compileOutputStep(): IMonoStep<IZipOutput<*>> {
-        val allRequestSteps: List<IMonoStep<Any?>> = valueRequests.map { it.step } + iterationRequests.map { it.outputStep }
-        return zipList(*allRequestSteps.toTypedArray())
-    }
-
-    /**
-     * Can be called multiple times for a list of results.
-     */
-    fun FlowContent.processResult(result: IZipOutput<*>) {
-        val allRequests: List<Request<Any?>> = valueRequests + (iterationRequests as List<Request<Any?>>)
-        allRequests.zip(result.values).forEach { (request, value) ->
-            request.set(value)
-        }
-
-        resultHandler?.invoke(this)
-
-        result.values
-    }
-
-    fun buildHtml(body: ResultHandler) {
-        resultHandler = body
-    }
-    fun <T> IMonoStep<T>.getLater(): ValueRequest<T> {
-        return ValueRequest(this).also { valueRequests.add(it as ValueRequest<Any?>) }
-    }
-
-    fun <T> IMonoStep<T>.iterateLater(body: HtmlBuilder<T>.() -> Unit): IIterationRequest {
-        return this.asFlux().iterateLater(body)
-    }
-    fun <T> IFluxStep<T>.iterateLater(body: HtmlBuilder<T>.() -> Unit): IIterationRequest {
-        lateinit var childBuilder: HtmlBuilder<T>
-        val outputStep: IMonoStep<List<IZipOutput<*>>> = this.map {
-            childBuilder = HtmlBuilder(it).apply(body)
-            childBuilder.compileOutputStep()
-        }.toList()
-        return IterationRequest(childBuilder, outputStep).also { iterationRequests.add(it as IterationRequest<Any?>) }
-    }
-
-    fun FlowContent.iterate(request: IIterationRequest) {
-        val casted = request as IterationRequest<*>
-        require(casted.getOwner() != this) { "Iteration request belongs to a different builder" }
-        casted.iterate(this)
-    }
-
-    abstract class Request<E> {
-        var initialized: Boolean = false
-        var result: E? = null
-        fun set(value: E) {
-            result = value
-            initialized = true
-        }
-        fun get(): E {
-            require(initialized) { "Value not received for $this" }
-            return result as E
-        }
-    }
-
-    class ValueRequest<E>(val step: IMonoStep<E>) : Request<E>()
-
-    inner class IterationRequest<In>(val htmlBuilder: HtmlBuilder<In>, val outputStep: IMonoStep<List<IZipOutput<*>>>) : Request<List<IZipOutput<*>>>(), IIterationRequest {
-        fun getOwner(): HtmlBuilder<*> = this@HtmlBuilder
-        fun iterate(context: FlowContent) {
-            context.apply {
-                get().forEach { elementResult ->
-                    htmlBuilder.apply { processResult(elementResult) }
-                }
-            }
-        }
-    }
-}
-
-interface IIterationRequest

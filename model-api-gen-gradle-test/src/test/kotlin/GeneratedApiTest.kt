@@ -1,6 +1,9 @@
 import jetbrains.mps.baseLanguage.C_ClassConcept
+import jetbrains.mps.baseLanguage.ClassConcept
 import jetbrains.mps.baseLanguage.jdk8.C_SuperInterfaceMethodCall_old
+import jetbrains.mps.baseLanguage.jdk8.SuperInterfaceMethodCall_old
 import jetbrains.mps.lang.behavior.C_ConceptMethodDeclaration
+import jetbrains.mps.lang.behavior.ConceptMethodDeclaration
 import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import jetbrains.mps.lang.editor.*
 import jetbrains.mps.lang.smodel.query.CustomScope_old
@@ -45,10 +48,21 @@ class GeneratedApiTest {
         val foundDeprecatedProperty = C_ConceptMethodDeclaration::class.members.any { it.hasDeprecationWithMessage() }
         val foundDeprecatedChildLink = C_ClassConcept::class.members.any { it.hasDeprecationWithMessage() }
         val foundDeprecatedReference = C_SuperInterfaceMethodCall_old::class.members.any { it.hasDeprecationWithMessage() }
+
+        val foundDeprecatedNodeWrapper = SuperInterfaceMethodCall_old::class.hasDeprecationWithMessage()
+        val foundDeprecatedNodeProperty = ConceptMethodDeclaration::class.members.any { it.hasDeprecationWithMessage() }
+        val foundDeprecatedNodeChildLink = ClassConcept::class.members.any { it.hasDeprecationWithMessage() }
+        val foundDeprecatedNodeReference = SuperInterfaceMethodCall_old::class.members.any { it.hasDeprecationWithMessage() }
+
         assert(foundDeprecatedConcept)
         assert(foundDeprecatedProperty)
         assert(foundDeprecatedChildLink)
         assert(foundDeprecatedReference)
+
+        assert(foundDeprecatedNodeWrapper)
+        assert(foundDeprecatedNodeProperty)
+        assert(foundDeprecatedNodeChildLink)
+        assert(foundDeprecatedNodeReference)
     }
 
     private fun KAnnotatedElement.hasDeprecationWithMessage() =

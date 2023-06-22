@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import org.modelix.model.data.LanguageData
 import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.writeText
 
@@ -25,6 +26,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
     }
 
     internal fun generate(languages: ProcessedLanguageSet) {
+        Files.createDirectories(outputDir)
         for (language in languages.getLanguages()) {
             // TODO delete old files from previous generation
             outputDir
@@ -62,7 +64,8 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                 INodeJS,
                 ITypedNode, 
                 SingleChildAccessor,
-                TypedNode
+                TypedNode,
+                LanguageRegistry
             } from "@modelix/ts-model-api";
             
             ${language.languageDependencies().joinToString("\n") {
@@ -92,15 +95,15 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
             when (feature) {
                 is ProcessedProperty -> {
                     val rawValueName = feature.rawValueName()
-                    val defaultPropertyText = """
+                    val rawPropertyText = """
                         public set $rawValueName(value: string | undefined) {
-                            this.node.setPropertyValue("${feature.originalName}", value)
+                            this._node.setPropertyValue("${feature.originalName}", value)
                         }
                         public get $rawValueName(): string | undefined {
-                            return this.node.getPropertyValue("${feature.originalName}")
+                            return this._node.getPropertyValue("${feature.originalName}")
                         }
                     """.trimIndent()
-                    if (feature.type is PrimitivePropertyType) {
+                    val typedPropertyText = if (feature.type is PrimitivePropertyType) {
                         when((feature.type as PrimitivePropertyType).primitive) {
                             Primitive.INT -> {
                                 """
@@ -125,19 +128,42 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                                 
                             """.trimIndent()
                             }
-                            else -> defaultPropertyText
+                            Primitive.STRING -> """
+                                public set ${feature.generatedName}(value: string) {
+                                    this.${rawValueName} = value;
+                                }
+                                public get ${feature.generatedName}(): string {
+                                    return this.${rawValueName} ?? "";
+                                }
+                                
+                            """.trimIndent()
                         }
-                    } else defaultPropertyText
+                    } else ""
+                    """
+                        $rawPropertyText
+                        $typedPropertyText
+                    """.trimIndent()
                 }
-                is ProcessedReferenceLink -> """
-                    
+                is ProcessedReferenceLink -> {
+                    val typeRef = feature.type.resolved
+                    val languagePrefix = typeRef.languagePrefix(concept.language)
+                    val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
+                    """
+                    public set ${feature.generatedName}(value: $entityType | undefined) {
+                        this._node.setReferenceTargetNode("${feature.originalName}", value?.unwrap());
+                    }
+                    public get ${feature.generatedName}(): $entityType | undefined {
+                        let target = this._node.getReferenceTargetNode("${feature.originalName}");
+                        return target ? LanguageRegistry.INSTANCE.wrapNode(target) as $entityType : undefined;
+                    }
                 """.trimIndent()
+                }
                 is ProcessedChildLink -> {
                     val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     val typeRef = feature.type.resolved
                     val languagePrefix = typeRef.languagePrefix(concept.language)
                     """
-                        public ${feature.generatedName}: $accessorClassName<$languagePrefix${typeRef.nodeWrapperInterfaceName()}> = new $accessorClassName(this.node, "${feature.originalName}")
+                        public ${feature.generatedName}: $accessorClassName<$languagePrefix${typeRef.nodeWrapperInterfaceName()}> = new $accessorClassName(this._node, "${feature.originalName}")
                     """.trimIndent()
                 }
                 else -> ""
@@ -146,30 +172,45 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         val features = concept.getOwnRoles().joinToString("\n") { feature ->
             when (feature) {
                 is ProcessedProperty -> {
-                    val defaultPropertyText = """
+                    val rawPropertyText = """
                         ${feature.rawValueName()}: string | undefined
                     """.trimIndent()
-                    if (feature.type is PrimitivePropertyType) {
+                    val typedPropertyText = if (feature.type is PrimitivePropertyType) {
                         when ((feature.type as PrimitivePropertyType).primitive) {
                             Primitive.BOOLEAN -> {
                                 """
                                 ${feature.generatedName}: boolean
                                 
-                            """.trimIndent()
+                                """.trimIndent()
                             }
                             Primitive.INT -> {
                                 """
                                 ${feature.generatedName}: number
                                 
-                            """.trimIndent()
+                                """.trimIndent()
                             }
-                            else -> defaultPropertyText
+                            Primitive.STRING -> {
+                                """
+                                ${feature.generatedName}: string
+                                
+                                """.trimIndent()
+                            }
                         }
-                    } else defaultPropertyText
+                    } else ""
+                    """
+                        $rawPropertyText
+                        $typedPropertyText
+                    """.trimIndent()
                 }
-                is ProcessedReferenceLink -> """
-                    
-                """.trimIndent()
+                is ProcessedReferenceLink -> {
+                    val typeRef = feature.type.resolved
+                    val languagePrefix = typeRef.languagePrefix(concept.language)
+                    val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
+                        """
+                        set ${feature.generatedName}(value: $entityType | undefined);
+                        get ${feature.generatedName}(): $entityType | undefined;
+                    """.trimIndent()
+                }
                 is ProcessedChildLink -> {
                     val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     """
@@ -256,8 +297,4 @@ internal fun ProcessedLanguage.languageDependencies(): List<ProcessedLanguage> {
     return languageSet.getLanguages().filter { languageNames.contains(it.name) }.minus(this)
 }
 
-private fun ProcessedProperty.rawValueName() =
-    if (type is PrimitivePropertyType
-        && ((type as PrimitivePropertyType).primitive == Primitive.STRING))
-            generatedName
-    else "raw_$generatedName"
+private fun ProcessedProperty.rawValueName() = "raw_$generatedName"

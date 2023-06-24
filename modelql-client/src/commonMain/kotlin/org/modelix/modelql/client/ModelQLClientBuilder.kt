@@ -17,17 +17,14 @@ abstract class ModelQLClientBuilder() {
 
     fun build(): ModelQLClient {
         val c: HttpClient = (
-            httpClient ?: (
-                httpEngine?.let { HttpClient(it) } ?: (httpEngineFactory ?: getDefaultEngineFactory()).let {
-                    HttpClient(
-                        it
-                    ) {
-                        install(HttpTimeout) {
-                            requestTimeoutMillis = 2.minutes.inWholeMilliseconds
-                        }
+            httpClient
+                ?: httpEngine?.let { HttpClient(it) } ?: (httpEngineFactory ?: getDefaultEngineFactory()).let {
+                HttpClient(it) {
+                    install(HttpTimeout) {
+                        requestTimeoutMillis = 2.minutes.inWholeMilliseconds
                     }
                 }
-                )
+            }
             ).config {
         }
         return ModelQLClient(

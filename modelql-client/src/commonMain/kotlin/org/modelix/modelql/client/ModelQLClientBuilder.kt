@@ -16,16 +16,13 @@ abstract class ModelQLClientBuilder() {
     private var serializersModule: SerializersModule = UntypedModelQL.serializersModule
 
     fun build(): ModelQLClient {
-        val c: HttpClient = (
-            httpClient
-                ?: httpEngine?.let { HttpClient(it) } ?: (httpEngineFactory ?: getDefaultEngineFactory()).let {
-                HttpClient(it) {
-                    install(HttpTimeout) {
-                        requestTimeoutMillis = 2.minutes.inWholeMilliseconds
-                    }
-                }
+        val c: HttpClient = httpClient
+            ?: httpEngine?.let { HttpClient(it) }
+            ?: HttpClient((httpEngineFactory ?: getDefaultEngineFactory()))
+        c.config {
+            install(HttpTimeout) {
+                requestTimeoutMillis = 2.minutes.inWholeMilliseconds
             }
-            ).config {
         }
         return ModelQLClient(
             url = url ?: "http://localhost:48302/query",

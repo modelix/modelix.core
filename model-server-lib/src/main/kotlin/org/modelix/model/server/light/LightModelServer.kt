@@ -72,12 +72,13 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
         }
     }) + additionalHealthChecks
 
-    fun start() {
+    @JvmOverloads
+    fun start(wait: Boolean = false) {
         LOG.trace { "server starting on port $port ..." }
         server = embeddedServer(Netty, port = port) {
             installHandlers()
         }
-        server!!.start()
+        server!!.start(wait)
         LOG.trace { "server started" }
     }
 

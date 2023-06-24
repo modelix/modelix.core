@@ -4,11 +4,11 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":model-api"))
+    api(project(":model-api"))
 
-    implementation("com.jetbrains:mps-openapi:2021.1.4")
-    implementation("com.jetbrains:mps-core:2021.1.4")
-    implementation("com.jetbrains:mps-environment:2021.1.4")
+    compileOnly("com.jetbrains:mps-openapi:2021.1.4")
+    compileOnly("com.jetbrains:mps-core:2021.1.4")
+    compileOnly("com.jetbrains:mps-environment:2021.1.4")
 
     implementation(kotlin("stdlib"))
     implementation(libs.kotlin.logging)

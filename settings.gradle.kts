@@ -28,5 +28,6 @@ include("modelql-client")
 include("modelql-untyped")
 include("modelql-typed")
 include("mps-model-adapters")
+include("mps-model-server")
 include("ts-model-api")
 

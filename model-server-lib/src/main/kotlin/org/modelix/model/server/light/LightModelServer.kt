@@ -52,10 +52,49 @@ import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
-class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: INode, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
+class LightModelServerBuilder {
+    private var port: Int = 48302
+    private var rootNodeProvider: () -> INode? = { null }
+    private var ignoredRoles: Set<IRole> = emptySet()
+    private var additionalHealthChecks: List<LightModelServer.IHealthCheck> = emptyList()
+
+    fun port(port: Int): LightModelServerBuilder {
+        this.port = port
+        return this
+    }
+
+    fun rootNode(provider: () -> INode?): LightModelServerBuilder {
+        this.rootNodeProvider = provider
+        return this
+    }
+
+    fun rootNode(node: INode): LightModelServerBuilder {
+        this.rootNodeProvider = { node }
+        return this
+    }
+
+    fun ignoreRole(role: IRole): LightModelServerBuilder {
+        this.ignoredRoles += role
+        return this
+    }
+
+    fun healthCheck(check: LightModelServer.IHealthCheck): LightModelServerBuilder {
+        this.additionalHealthChecks += check
+        return this
+    }
+
+    fun build(): LightModelServer {
+        return LightModelServer(port, rootNodeProvider, ignoredRoles, additionalHealthChecks)
+    }
+}
+
+class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodeProvider: () -> INode?, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
+    constructor (port: Int, rootNode: INode, ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) :
+            this(port, { rootNode}, ignoredRoles, additionalHealthChecks)
 
     companion object {
         private val LOG = mu.KotlinLogging.logger {  }
+        fun builder(): LightModelServerBuilder = LightModelServerBuilder()
     }
 
     private var server: NettyApplicationEngine? = null
@@ -66,11 +105,18 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
         override val enabledByDefault: Boolean = true
 
         override fun run(output: StringBuilder): Boolean {
+            val n = rootNodeProvider()
+            if (n == null) {
+                output.appendLine("root node not available yet")
+                return false
+            }
             val count = getArea().executeRead { rootNode.allChildren.count() }
             output.appendLine("root node has $count children")
             return true
         }
     }) + additionalHealthChecks
+
+    val rootNode: INode get() = rootNodeProvider() ?: throw IllegalStateException("Root node not available yet")
 
     @JvmOverloads
     fun start(wait: Boolean = false) {
@@ -166,7 +212,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
                     } else {
                         call.respond(HttpStatusCode.InternalServerError, "unhealthy\n\n$output")
                     }
-                } catch (ex: Exception) {
+                } catch (ex: Throwable) {
                     output.appendLine()
                     output.appendLine(ex.stackTraceToString())
                     call.respond(HttpStatusCode.InternalServerError, "unhealthy\n\n$output")

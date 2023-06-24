@@ -13,6 +13,7 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapter
 import jetbrains.mps.smodel.adapter.structure.property.SPropertyAdapter
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapter
@@ -33,7 +34,7 @@ import org.modelix.model.area.IArea
 
 data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     override fun getArea(): IArea {
-        TODO("Not yet implemented")
+        return MPSArea(node.model?.repository ?: MPSModuleRepository.getInstance())
     }
 
     override val isValid: Boolean

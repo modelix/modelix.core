@@ -28,7 +28,7 @@ import org.modelix.model.area.IArea
 
 data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDefaults {
     override fun getArea(): IArea {
-        TODO("Not yet implemented")
+        return MPSArea(repository)
     }
 
     override val isValid: Boolean
@@ -45,7 +45,7 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override val allChildren: Iterable<INode>
-        get() = TODO("Not yet implemented")
+        get() = repository.modules.map { MPSModuleAsNode(it) }
 
     override fun removeChild(child: INode) {
         TODO("Not yet implemented")

@@ -36,7 +36,7 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
     override val concept: IConcept?
-        get() = TODO("Not yet implemented")
+        get() = null // TODO
     override val parent: INode?
         get() = TODO("Not yet implemented")
 
@@ -45,7 +45,7 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override val allChildren: Iterable<INode>
-        get() = TODO("Not yet implemented")
+        get() = module.models.map { MPSModelAsNode(it) }
 
     override fun removeChild(child: INode) {
         TODO("Not yet implemented")
@@ -56,7 +56,9 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898")) {
+        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898")
+            || link.getUID().contains("models")
+            || link.getSimpleName() == "models") {
             module.models.map { MPSModelAsNode(it) }
         } else {
             emptyList()
@@ -92,7 +94,13 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        TODO("Not yet implemented")
+        return if (property.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898")
+            || property.getUID().contains("name")
+            || property.getSimpleName() == "name") {
+            module.moduleName
+        } else {
+            null
+        }
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {

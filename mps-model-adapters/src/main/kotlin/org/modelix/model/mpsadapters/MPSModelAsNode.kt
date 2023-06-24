@@ -36,7 +36,7 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
     override val concept: IConcept?
-        get() = TODO("Not yet implemented")
+        get() = null // TODO
     override val parent: INode?
         get() = TODO("Not yet implemented")
 
@@ -56,7 +56,9 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900")) {
+        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900")
+            || link.getUID().contains("rootNodes")
+            || link.getSimpleName() == "rootNodes") {
             model.rootNodes.map { MPSNode(it) }
         } else {
             emptyList()

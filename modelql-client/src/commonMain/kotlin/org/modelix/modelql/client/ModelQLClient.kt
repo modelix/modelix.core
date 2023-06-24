@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -58,7 +59,10 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
             val queryAsJson = json.encodeToString(queryDescriptor)
             setBody(queryAsJson)
         }
-        return response.bodyAsText()
+        when (response.status) {
+            HttpStatusCode.OK -> return response.bodyAsText()
+            else -> throw RuntimeException("Query failed: $query \n${response.status}\n${response.bodyAsText()}")
+        }
     }
 
     companion object {

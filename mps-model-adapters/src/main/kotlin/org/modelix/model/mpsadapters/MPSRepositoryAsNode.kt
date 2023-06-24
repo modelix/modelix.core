@@ -36,7 +36,7 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
     override val concept: IConcept?
-        get() = TODO("Not yet implemented")
+        get() = null // TODO
     override val parent: INode?
         get() = TODO("Not yet implemented")
 
@@ -56,7 +56,9 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903")) {
+        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903")
+            || link.getUID().contains("modules")
+            || link.getSimpleName() == "modules") {
             repository.modules.map { MPSModuleAsNode(it) }
         } else {
             emptyList()

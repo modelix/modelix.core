@@ -70,7 +70,12 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return node.children.map { MPSNode(it) }.filter { it.getContainmentLink()?.getUID() == link.getUID() }
+        return node.children.map { MPSNode(it) }.filter {
+            val actualLink = it.getContainmentLink() ?: return@filter false
+            actualLink.getUID() == link.getUID() ||
+                    actualLink.getSimpleName() == link.getSimpleName() ||
+                    link.getUID().contains(actualLink.getSimpleName())
+        }
     }
 
     override fun moveChild(role: IChildLink, index: Int, child: INode) {

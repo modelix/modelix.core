@@ -219,26 +219,30 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                 }
             }
             post("query") {
-                val serializedQuery = call.receiveText()
-                val queryDescriptor = UntypedModelQL.json.decodeFromString<QueryDescriptor>(serializedQuery)
-                val query = queryDescriptor.createQuery() as IMonoUnboundQuery<INode, Any?>
-                LOG.debug { "query: $query" }
-                val nodeResolutionScope: INodeResolutionScope = getArea()
-                val transactionBody: () -> Any? = {
-                    runBlocking {
-                        withContext(nodeResolutionScope) {
-                            query.bind(rootNode.createQueryExecutor()).execute()
+                try {
+                    val serializedQuery = call.receiveText()
+                    val queryDescriptor = UntypedModelQL.json.decodeFromString<QueryDescriptor>(serializedQuery)
+                    val query = queryDescriptor.createQuery() as IMonoUnboundQuery<INode, Any?>
+                    LOG.debug { "query: $query" }
+                    val nodeResolutionScope: INodeResolutionScope = getArea()
+                    val transactionBody: () -> Any? = {
+                        runBlocking {
+                            withContext(nodeResolutionScope) {
+                                query.bind(rootNode.createQueryExecutor()).execute()
+                            }
                         }
                     }
+                    val result: Any? = if (query.requiresWriteAccess()) {
+                        getArea().executeWrite(transactionBody)
+                    } else {
+                        getArea().executeRead(transactionBody)
+                    }
+                    val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule) as KSerializer<Any?>
+                    val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
+                    call.respond(serializedResult)
+                } catch (ex: Throwable) {
+                    call.respond(HttpStatusCode.InternalServerError, ex.stackTraceToString())
                 }
-                val result: Any? = if (query.requiresWriteAccess()) {
-                    getArea().executeWrite(transactionBody)
-                } else {
-                    getArea().executeRead(transactionBody)
-                }
-                val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule) as KSerializer<Any?>
-                val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
-                call.respond(serializedResult)
             }
         }
         install(CORS) {

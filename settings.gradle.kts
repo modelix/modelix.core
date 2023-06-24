@@ -27,5 +27,6 @@ include("modelql-core")
 include("modelql-client")
 include("modelql-untyped")
 include("modelql-typed")
+include("mps-model-adapters")
 include("ts-model-api")
 

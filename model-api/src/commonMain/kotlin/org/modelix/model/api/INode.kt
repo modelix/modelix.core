@@ -257,6 +257,8 @@ interface IDeprecatedNodeDefaults : INode {
     override fun setReferenceTarget(role: String, target: INodeReference?) = setReferenceTarget(resolveReferenceLinkOrFallback(role), target)
     override fun getPropertyValue(role: String): String? = getPropertyValue(resolvePropertyOrFallback(role))
     override fun setPropertyValue(role: String, value: String?) = setPropertyValue(resolvePropertyOrFallback(role), value)
+    override fun getPropertyRoles(): List<String> = getPropertyLinks().map { it.key(this) }
+    override fun getReferenceRoles(): List<String> = getReferenceLinks().map { it.key(this) }
 
     override fun usesRoleIds(): Boolean = true
     override fun getContainmentLink(): IChildLink?
@@ -270,6 +272,8 @@ interface IDeprecatedNodeDefaults : INode {
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference?
     override fun getPropertyValue(property: IProperty): String?
     override fun setPropertyValue(property: IProperty, value: String?)
+    override fun getPropertyLinks(): List<IProperty>
+    override fun getReferenceLinks(): List<IReferenceLink>
 }
 
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")

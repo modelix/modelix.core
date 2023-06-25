@@ -18,7 +18,6 @@ import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 
-
 data class MPSChildLink(val link: SContainmentLinkAdapter) : IChildLink {
     constructor(link: SContainmentLink) : this(link as SContainmentLinkAdapter)
     override val isMultiple: Boolean

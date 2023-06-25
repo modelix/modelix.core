@@ -40,17 +40,19 @@ data class MPSArea(val repository: SRepository) : IArea {
         val serialized = ref.serialize()
         val serializedMPSRef = if (serialized.startsWith("mps-node:")) {
             serialized.substringAfter("mps-node:")
-        } else if (serialized.startsWith("mps:")) {
-            serialized.substringAfter("mps:")
         } else {
-            null
-        } ?: return null
+            if (serialized.startsWith("mps:")) {
+                serialized.substringAfter("mps:")
+            } else {
+                null
+            } ?: return null
+        }
         val mpsRef = SNodePointer.deserialize(serializedMPSRef)
         return mpsRef.resolve(repository)?.let { MPSNode(it) }
     }
 
     override fun resolveOriginalNode(ref: INodeReference): INode? {
-        TODO("Not yet implemented")
+        return resolveNode(ref)
     }
 
     override fun resolveBranch(id: String): IBranch? {

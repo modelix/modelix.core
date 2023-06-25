@@ -16,7 +16,12 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.adapter.structure.concept.SAbstractConceptAdapter
+import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
+import jetbrains.mps.smodel.adapter.structure.concept.SInterfaceConceptAdapterById
 import org.jetbrains.mps.openapi.language.SAbstractConcept
+import org.jetbrains.mps.openapi.language.SConcept
+import org.jetbrains.mps.openapi.language.SInterfaceConcept
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -24,76 +29,87 @@ import org.modelix.model.api.ILanguage
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 
-data class MPSConcept(val concept: SAbstractConceptAdapter): IConcept {
+data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
     constructor(concept: SAbstractConcept) : this(concept as SAbstractConceptAdapter)
     override fun getReference(): IConceptReference {
-        TODO("Not yet implemented")
+        return ConceptReference(getUID())
     }
 
     override val language: ILanguage?
         get() = TODO("Not yet implemented")
 
     override fun getUID(): String {
-        TODO("Not yet implemented")
+        val id = when (concept) {
+            is SConceptAdapterById -> concept.id
+            is SInterfaceConceptAdapterById -> concept.id
+            else -> throw RuntimeException("Unknown concept type: $concept")
+        }
+        return "mps:" + id.serialize()
     }
 
     override fun getShortName(): String {
-        TODO("Not yet implemented")
+        return concept.name
     }
 
     override fun getLongName(): String {
-        TODO("Not yet implemented")
+        return concept.language.qualifiedName + "." + concept.name
     }
 
     override fun isAbstract(): Boolean {
-        TODO("Not yet implemented")
+        return concept.isAbstract
     }
 
     override fun isSubConceptOf(superConcept: IConcept?): Boolean {
-        TODO("Not yet implemented")
+        val mpsSuperConcept = superConcept as? MPSConcept ?: return false
+        return concept.isSubConceptOf(mpsSuperConcept.concept)
     }
 
     override fun getDirectSuperConcepts(): List<IConcept> {
-        TODO("Not yet implemented")
+        return when (concept) {
+            is SConcept -> listOfNotNull<SAbstractConcept>(concept.superConcept) + concept.superInterfaces
+            is SInterfaceConcept -> concept.superInterfaces
+            else -> emptyList()
+        }.map { MPSConcept(it) }
     }
 
-    override fun isExactly(concept: IConcept?): Boolean {
-        TODO("Not yet implemented")
+    override fun isExactly(other: IConcept?): Boolean {
+        val otherMpsConcept = other as? MPSConcept ?: return false
+        return this.concept == otherMpsConcept.concept
     }
 
     override fun getOwnProperties(): List<IProperty> {
-        TODO("Not yet implemented")
+        return concept.properties.filter { it.owner == concept }.map { MPSProperty(it) }
     }
 
     override fun getOwnChildLinks(): List<IChildLink> {
-        TODO("Not yet implemented")
+        return concept.containmentLinks.filter { it.owner == concept }.map { MPSChildLink(it) }
     }
 
     override fun getOwnReferenceLinks(): List<IReferenceLink> {
-        TODO("Not yet implemented")
+        return concept.referenceLinks.filter { it.owner == concept }.map { MPSReferenceLink(it) }
     }
 
     override fun getAllProperties(): List<IProperty> {
-        TODO("Not yet implemented")
+        return concept.properties.map { MPSProperty(it) }
     }
 
     override fun getAllChildLinks(): List<IChildLink> {
-        TODO("Not yet implemented")
+        return concept.containmentLinks.map { MPSChildLink(it) }
     }
 
     override fun getAllReferenceLinks(): List<IReferenceLink> {
-        TODO("Not yet implemented")
+        return concept.referenceLinks.map { MPSReferenceLink(it) }
     }
 
     override fun getProperty(name: String): IProperty {
-        TODO("Not yet implemented")
+        return MPSProperty(concept.properties.first { it.name == name })
     }
 
     override fun getChildLink(name: String): IChildLink {
-        TODO("Not yet implemented")
+        return MPSChildLink(concept.containmentLinks.first { it.name == name })
     }
 
     override fun getReferenceLink(name: String): IReferenceLink {
-        TODO("Not yet implemented")
+        return MPSReferenceLink(concept.referenceLinks.first { it.name == name })
     }
 }

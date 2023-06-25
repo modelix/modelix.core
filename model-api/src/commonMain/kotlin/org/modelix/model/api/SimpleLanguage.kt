@@ -13,7 +13,7 @@
  */
 package org.modelix.model.api
 
-class SimpleLanguage(private val name: String) : ILanguage {
+open class SimpleLanguage(private val name: String, private val uid: String? = null) : ILanguage {
     private var registered: Boolean = false
     fun register() {
         if (registered) return
@@ -27,7 +27,7 @@ class SimpleLanguage(private val name: String) : ILanguage {
         registered = false
     }
 
-    override fun getUID(): String = name
+    override fun getUID(): String = uid ?: name
 
     private val concepts: MutableList<SimpleConcept> = ArrayList()
 

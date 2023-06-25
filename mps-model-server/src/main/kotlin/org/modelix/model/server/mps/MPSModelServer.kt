@@ -16,11 +16,11 @@ package org.modelix.model.server.mps
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.ide.plugins.DynamicPluginListener
 import com.intellij.ide.plugins.IdeaPluginDescriptor
-import org.modelix.model.server.light.LightModelServer
 import jetbrains.mps.smodel.MPSModuleRepository
-import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
+import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.server.light.LightModelServer
 
 class MPSModelServer : DynamicPluginListener, AppLifecycleListener {
     private var server: LightModelServer? = null

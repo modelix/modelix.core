@@ -14,12 +14,6 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.MPSModuleRepository
-import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapter
-import jetbrains.mps.smodel.adapter.structure.property.SPropertyAdapter
-import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapter
-import org.jetbrains.mps.openapi.language.SContainmentLink
-import org.jetbrains.mps.openapi.language.SProperty
-import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
@@ -41,13 +35,13 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
         get() = true
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
-    override val concept: IConcept?
-        get() = TODO("Not yet implemented")
+    override val concept: IConcept
+        get() = MPSConcept(node.concept)
     override val parent: INode?
-        get() = TODO("Not yet implemented")
+        get() = node.parent?.let { MPSNode(it) } ?: node.model?.let { MPSModelAsNode(it) }
 
-    override fun getConceptReference(): ConceptReference? {
-        TODO("Not yet implemented")
+    override fun getConceptReference(): ConceptReference {
+        return concept.getReference() as ConceptReference
     }
 
     override val allChildren: Iterable<INode>
@@ -73,8 +67,8 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
         return node.children.map { MPSNode(it) }.filter {
             val actualLink = it.getContainmentLink() ?: return@filter false
             actualLink.getUID() == link.getUID() ||
-                    actualLink.getSimpleName() == link.getSimpleName() ||
-                    link.getUID().contains(actualLink.getSimpleName())
+                actualLink.getSimpleName() == link.getSimpleName() ||
+                link.getUID().contains(actualLink.getSimpleName())
         }
     }
 

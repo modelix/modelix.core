@@ -15,6 +15,8 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.project.ProjectBase
+import jetbrains.mps.project.ProjectManager
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -35,10 +37,10 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
-    override val concept: IConcept?
-        get() = null // TODO
+    override val concept: IConcept
+        get() = RepositoryLanguage.Module
     override val parent: INode?
-        get() = TODO("Not yet implemented")
+        get() = module.repository?.let { MPSRepositoryAsNode(it) }
 
     override fun getConceptReference(): IConceptReference? {
         TODO("Not yet implemented")
@@ -56,9 +58,10 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898")
-            || link.getUID().contains("models")
-            || link.getSimpleName() == "models") {
+        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898") ||
+            link.getUID().contains("models") ||
+            link.getSimpleName() == "models"
+        ) {
             module.models.map { MPSModelAsNode(it) }
         } else {
             emptyList()
@@ -94,10 +97,20 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898")
-            || property.getUID().contains("name")
-            || property.getSimpleName() == "name") {
+        return if (property.getUID().endsWith(RepositoryLanguage.NamePropertyUID) ||
+            property.getUID().contains("name") ||
+            property.getSimpleName() == "name"
+        ) {
             module.moduleName
+        } else if (property.getUID().endsWith(RepositoryLanguage.VirtualPackagePropertyUID) ||
+            property.getUID().contains("virtualPackage") ||
+            property.getSimpleName() == "virtualPackage"
+        ) {
+            ProjectManager.getInstance().openedProjects.asSequence()
+                .filterIsInstance<ProjectBase>()
+                .mapNotNull { it.getPath(module) }
+                .firstOrNull()
+                ?.virtualFolder
         } else {
             null
         }
@@ -108,10 +121,10 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyLinks(): List<IProperty> {
-        TODO("Not yet implemented")
+        return concept.getAllProperties()
     }
 
     override fun getReferenceLinks(): List<IReferenceLink> {
-        TODO("Not yet implemented")
+        return concept.getAllReferenceLinks()
     }
 }

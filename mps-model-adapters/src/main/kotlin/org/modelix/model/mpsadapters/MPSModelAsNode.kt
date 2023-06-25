@@ -35,17 +35,17 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
-    override val concept: IConcept?
-        get() = null // TODO
-    override val parent: INode?
-        get() = TODO("Not yet implemented")
+    override val concept: IConcept
+        get() = RepositoryLanguage.Model
+    override val parent: INode
+        get() = MPSModuleAsNode(model.module)
 
     override fun getConceptReference(): IConceptReference? {
-        TODO("Not yet implemented")
+        return RepositoryLanguage.Model.getReference()
     }
 
     override val allChildren: Iterable<INode>
-        get() = TODO("Not yet implemented")
+        get() = model.rootNodes.map { MPSNode(it) }
 
     override fun removeChild(child: INode) {
         TODO("Not yet implemented")
@@ -56,9 +56,10 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900")
-            || link.getUID().contains("rootNodes")
-            || link.getSimpleName() == "rootNodes") {
+        return if (link.getUID().endsWith(RepositoryLanguage.Model.rootNodes.getUID()) ||
+            link.getUID().contains("rootNodes") ||
+            link.getSimpleName() == "rootNodes"
+        ) {
             model.rootNodes.map { MPSNode(it) }
         } else {
             emptyList()
@@ -94,7 +95,14 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        TODO("Not yet implemented")
+        return if (property.getUID().endsWith(RepositoryLanguage.NamePropertyUID) ||
+            property.getUID().contains("name") ||
+            property.getSimpleName() == "name"
+        ) {
+            model.name.value
+        } else {
+            null
+        }
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
@@ -102,10 +110,10 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyLinks(): List<IProperty> {
-        TODO("Not yet implemented")
+        return concept.getAllProperties()
     }
 
     override fun getReferenceLinks(): List<IReferenceLink> {
-        TODO("Not yet implemented")
+        return concept.getAllReferenceLinks()
     }
 }

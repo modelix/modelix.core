@@ -1,6 +1,7 @@
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.intellij") version "1.13.3"
+    alias(libs.plugins.ktlint)
 }
 
 dependencies {
@@ -18,9 +19,9 @@ intellij {
     // IDEA platform version used in MPS 2021.1.4: https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties#L11
     version.set("211.7628.21")
 
-    //type.set("IC") // Target IDE Platform
+    // type.set("IC") // Target IDE Platform
 
-    //plugins.set(listOf("jetbrains.mps.core", "com.intellij.modules.mps"))
+    // plugins.set(listOf("jetbrains.mps.core", "com.intellij.modules.mps"))
 }
 
 tasks {

@@ -16,6 +16,8 @@ package org.modelix.model.server.mps
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.ide.plugins.DynamicPluginListener
 import com.intellij.ide.plugins.IdeaPluginDescriptor
+import jetbrains.mps.project.ProjectBase
+import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
@@ -28,7 +30,42 @@ class MPSModelServer : DynamicPluginListener, AppLifecycleListener {
     fun ensureStarted() {
         runSynchronized(this) {
             val rootNodeProvider: () -> INode? = { MPSModuleRepository.getInstance()?.let { MPSRepositoryAsNode(it) } }
-            server = LightModelServer.builder().port(48305).rootNode(rootNodeProvider).build()
+            server = LightModelServer.builder()
+                .port(48305)
+                .rootNode(rootNodeProvider)
+                .healthCheck(object : LightModelServer.IHealthCheck {
+                    override val id: String
+                        get() = "projects"
+                    override val enabledByDefault: Boolean
+                        get() = false
+
+                    override fun run(output: StringBuilder): Boolean {
+                        val projects = ProjectManager.getInstance().openedProjects
+                        output.append("${projects.size} projects found")
+                        projects.forEach { output.append("  ${it.name}") }
+                        return ProjectManager.getInstance().openedProjects.isNotEmpty()
+                    }
+                })
+                .healthCheck(object : LightModelServer.IHealthCheck {
+                    override val id: String
+                        get() = "virtualFolders"
+                    override val enabledByDefault: Boolean
+                        get() = false
+
+                    override fun run(output: StringBuilder): Boolean {
+                        val projects = ProjectManager.getInstance().openedProjects.filterIsInstance<ProjectBase>()
+                        for (project in projects) {
+                            val modules = project.projectModules
+                            val virtualFolders = modules
+                                .mapNotNull { project.getPath(it)?.virtualFolder }
+                                .filter { it.isNotEmpty() }
+                            output.append("project ${project.name} contains ${modules.size} modules with ${virtualFolders.size} virtual folders")
+                            if (virtualFolders.isNotEmpty()) return true
+                        }
+                        return false
+                    }
+                })
+                .build()
             server!!.start()
         }
     }

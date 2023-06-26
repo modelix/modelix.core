@@ -54,6 +54,7 @@ import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
 
 abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL, IQueryExecutor<INode> {
+    override fun usesRoleIds(): Boolean = true
 
     override fun createQueryExecutor(): IQueryExecutor<INode> {
         return this

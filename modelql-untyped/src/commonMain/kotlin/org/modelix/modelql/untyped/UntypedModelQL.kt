@@ -18,6 +18,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.modelix.model.api.INode
+import org.modelix.model.api.RoleAccessContext
 import org.modelix.modelql.core.IFluxQuery
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoQuery
@@ -80,9 +81,9 @@ suspend fun <R> INode.queryFlux(body: (IMonoStep<INode>) -> IFluxStep<R>): List<
 }
 
 fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {
-    return IUnboundQuery.buildMono(body).bind(createQueryExecutor())
+    return RoleAccessContext.runWith(usesRoleIds()) { IUnboundQuery.buildMono(body).bind(createQueryExecutor()) }
 }
 
 fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IFluxStep<R>): IFluxQuery<R> {
-    return IUnboundQuery.buildFlux(body).bind(createQueryExecutor())
+    return RoleAccessContext.runWith(usesRoleIds()) { IUnboundQuery.buildFlux(body).bind(createQueryExecutor()) }
 }

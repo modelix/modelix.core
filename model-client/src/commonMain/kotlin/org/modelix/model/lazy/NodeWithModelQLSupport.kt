@@ -16,12 +16,18 @@ class NodeWithModelQLSupport(val node: INode) : INode by node, ISupportsModelQL 
     }
 }
 
+fun IBranch.usesRoleIds() = computeReadT { it.tree.usesRoleIds() }
+
 fun <R> IBranch.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {
-    return IUnboundQuery.buildMono(body).bind(BranchQueryExecutor(this))
+    return RoleAccessContext.runWith(usesRoleIds()) {
+        IUnboundQuery.buildMono(body).bind(BranchQueryExecutor(this))
+    }
 }
 
 fun <R> IBranch.buildQuery(body: (IMonoStep<INode>) -> IFluxStep<R>): IFluxQuery<R> {
-    return IUnboundQuery.buildFlux(body).bind(BranchQueryExecutor(this))
+    return RoleAccessContext.runWith(usesRoleIds()) {
+        IUnboundQuery.buildFlux(body).bind(BranchQueryExecutor(this))
+    }
 }
 
 class BranchQueryExecutor(val branch: IBranch) : IQueryExecutor<INode> {

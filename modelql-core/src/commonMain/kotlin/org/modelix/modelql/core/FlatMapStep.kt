@@ -8,6 +8,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
 class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
+    init {
+        query.inputStep.indirectConsumer = this
+    }
+
     override fun requiresWriteAccess(): Boolean {
         return query.requiresWriteAccess()
     }

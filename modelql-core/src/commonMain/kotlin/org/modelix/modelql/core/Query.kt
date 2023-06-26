@@ -326,10 +326,10 @@ private class QueryDescriptorBuilder {
     fun createConnections() {
         // iterating over the consumers is sufficient, because there can't be a connection with only producers
         for (consumer in stepDescriptors.keys.filterIsInstance<IConsumingStep<*>>()) {
-            consumer.getProducers().forEach { producer ->
+            consumer.getProducers().forEachIndexed { producerIndex, producer ->
                 connections += PortConnection(
-                    PortReference(producer.id(), consumer.getProducers().indexOf(producer)),
-                    PortReference(consumer.id(), producer.getConsumers().indexOf(consumer))
+                    PortReference(producer.id(), producer.getConsumers().indexOf(consumer)),
+                    PortReference(consumer.id(), producerIndex)
                 )
             }
         }

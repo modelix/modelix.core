@@ -31,7 +31,7 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}[$index]"""
+        return """${getProducers().firstOrNull()}[$index]"""
     }
 }
 

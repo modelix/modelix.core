@@ -42,8 +42,8 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
 }
 
 fun <T> IFluxStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IFluxStep<T> {
-    return FilteringStep(IUnboundQuery.buildMono { condition(it).firstOrNull() }.castToInstance()).also { connect(it) }
+    return FilteringStep(IUnboundQuery.buildMono { condition(it) }.castToInstance()).also { connect(it) }
 }
 fun <T> IMonoStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IMonoStep<T> {
-    return FilteringStep(IUnboundQuery.buildMono { condition(it).firstOrNull() }.castToInstance()).also { connect(it) }
+    return FilteringStep(IUnboundQuery.buildMono { condition(it) }.castToInstance()).also { connect(it) }
 }

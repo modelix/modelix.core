@@ -61,7 +61,7 @@ data class ModelData(
         t: IWriteTransaction,
         nodeId: Long
     ) {
-        val key = "originalId"
+        val key = NodeData.idPropertyKey
         t.setProperty(nodeId, key, nodeData.properties[key] ?: nodeData.id)
     }
 
@@ -81,7 +81,7 @@ data class NodeData(
     val references: Map<String, String> = emptyMap()
 ) {
     companion object {
-        const val idPropertyKey = "originalId"
+        const val idPropertyKey = "#mpsNodeId#"
     }
 }
 

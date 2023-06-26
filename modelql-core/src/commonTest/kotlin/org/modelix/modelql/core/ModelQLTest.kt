@@ -238,6 +238,7 @@ class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
     override fun toString(): String {
         return "${getProducer()}.id"
     }
+
     @Serializable
     class Descriptor : StepDescriptor() {
         override fun createStep(): IStep {

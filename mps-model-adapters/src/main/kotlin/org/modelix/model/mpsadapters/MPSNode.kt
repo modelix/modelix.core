@@ -35,7 +35,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     override val isValid: Boolean
         get() = true
     override val reference: INodeReference
-        get() = SerializedNodeReference("mps-node:${node.reference}") //MPSNodeReference(node.reference)
+        get() = SerializedNodeReference("mps-node:${node.reference}") // MPSNodeReference(node.reference)
     override val concept: IConcept
         get() = MPSConcept(node.concept)
     override val parent: INode?

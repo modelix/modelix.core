@@ -288,6 +288,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                 subclass(org.modelix.modelql.core.RecursiveQueryStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.RegexPredicate.Descriptor::class)
                 subclass(org.modelix.modelql.core.SetCollectorStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.SingleStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringContainsPredicate.StringContainsDescriptor::class)
                 subclass(org.modelix.modelql.core.StringEqualsOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringSourceStep.Descriptor::class)

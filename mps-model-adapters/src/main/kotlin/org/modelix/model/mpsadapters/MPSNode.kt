@@ -34,7 +34,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     override val isValid: Boolean
         get() = true
     override val reference: INodeReference
-        get() = TODO("Not yet implemented")
+        get() = MPSNodeReference(node.reference)
     override val concept: IConcept
         get() = MPSConcept(node.concept)
     override val parent: INode?

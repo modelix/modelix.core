@@ -1,6 +1,7 @@
 package org.modelix.modelql.client
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -18,6 +19,7 @@ import org.modelix.modelql.core.UnboundQuery
 import org.modelix.modelql.core.castToInstance
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.query
+import kotlin.time.Duration.Companion.minutes
 
 class ModelQLClient(val url: String, val client: HttpClient, includedSerializersModule: SerializersModule = UntypedModelQL.serializersModule) {
     val serializersModule = SerializersModule {

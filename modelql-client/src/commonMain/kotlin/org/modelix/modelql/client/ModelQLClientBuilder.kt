@@ -1,6 +1,7 @@
 package org.modelix.modelql.client
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.plugins.HttpTimeout
@@ -16,14 +17,14 @@ abstract class ModelQLClientBuilder() {
     private var serializersModule: SerializersModule = UntypedModelQL.serializersModule
 
     fun build(): ModelQLClient {
-        val c: HttpClient = httpClient
-            ?: httpEngine?.let { HttpClient(it) }
-            ?: HttpClient((httpEngineFactory ?: getDefaultEngineFactory()))
-        c.config {
+        val config: HttpClientConfig<*>.() -> Unit = {
             install(HttpTimeout) {
                 requestTimeoutMillis = 2.minutes.inWholeMilliseconds
             }
         }
+        val c: HttpClient = httpClient
+            ?: httpEngine?.let { HttpClient(it, config) }
+            ?: HttpClient((httpEngineFactory ?: getDefaultEngineFactory()), config)
         return ModelQLClient(
             url = url ?: "http://localhost:48302/query",
             client = c,

@@ -2,8 +2,6 @@ plugins {
     kotlin("jvm")
 }
 
-group = "org.modelix"
-
 repositories {
     mavenCentral()
 }

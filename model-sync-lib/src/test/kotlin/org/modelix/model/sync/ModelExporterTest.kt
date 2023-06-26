@@ -38,7 +38,9 @@ class ModelExporterTest {
     fun `can export`() {
         val outputFile = File("build/test/model-export/model.json")
         assertDoesNotThrow {
-            ModelExporter(branch).export(outputFile)
+            branch.runRead {
+                ModelExporter(branch.getRootNode()).export(outputFile)
+            }
         }
 
         branch.runRead {

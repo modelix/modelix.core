@@ -1,13 +1,16 @@
 package org.modelix.model.sync
 
-import org.modelix.model.api.*
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import java.io.File
 
-class ModelImporter(private val branch: IBranch) {
+class ModelImporter(private val root: INode) {
 
     private lateinit var originalIdToRef: MutableMap<String, INodeReference>
+    private lateinit var originalIdToSpec: MutableMap<String, NodeData>
 
     fun import(jsonFile: File) {
         require(jsonFile.exists())
@@ -19,15 +22,11 @@ class ModelImporter(private val branch: IBranch) {
     
     fun import(data: ModelData) {
         originalIdToRef = mutableMapOf()
-        branch.runWrite {
-            val rootNode = branch.getRootNode()
-            if (rootNode.allChildren.none()) {
-                data.load(branch)
-                return@runWrite
-            }
-            buildRefIndex(rootNode)
-            syncNode(rootNode, data.root)
-        }
+        originalIdToSpec = mutableMapOf()
+        buildSpecIndex(data.root)
+        syncNode(root, data.root)
+        buildRefIndex(root)
+        syncAllReferences(root, data.root)
     }
 
     private fun buildRefIndex(node: INode) {
@@ -35,33 +34,40 @@ class ModelImporter(private val branch: IBranch) {
         node.allChildren.forEach { buildRefIndex(it) }
     }
 
+    private fun buildSpecIndex(nodeData: NodeData) {
+        nodeData.originalId()?.let { originalIdToSpec[it] = nodeData }
+        nodeData.children.forEach { buildSpecIndex(it) }
+    }
+
     private fun syncNode(node: INode, nodeData: NodeData) {
         syncProperties(node, nodeData)
-        syncReferences(node, nodeData)
         syncChildNodes(node, nodeData)
     }
 
     private fun syncProperties(node: INode, nodeData: NodeData) {
         nodeData.properties.forEach { node.setPropertyValue(it.key, it.value) }
+        val toBeRemoved = node.getPropertyRoles().toSet()
+            .subtract(nodeData.properties.keys)
+            .filter { it != NodeData.idPropertyKey }
+        toBeRemoved.forEach { node.setPropertyValue(it, null) }
+    }
+
+    private fun syncAllReferences(root: INode, rootData: NodeData) {
+        syncReferences(root, rootData)
+        for ((node, data) in root.allChildren.zip(rootData.children)) {
+            syncAllReferences(node, data)
+        }
     }
 
     private fun syncReferences(node: INode, nodeData: NodeData) {
         nodeData.references.forEach { node.setReferenceTarget(it.key, originalIdToRef[it.value]) }
+        val toBeRemoved = node.getReferenceRoles().toSet().subtract(nodeData.references.keys)
+        toBeRemoved.forEach { node.setPropertyValue(it, null) }
     }
 
     private fun syncChildNodes(node: INode, nodeData: NodeData) {
         val toBeRemoved = mutableSetOf<INode>()
-        val existingIds = mutableSetOf<String>()
-
-        for (child in node.allChildren) {
-            child.originalId()?.let { existingIds.add(it) }
-            val foundChildData: NodeData? = nodeData.children.find { it.id == child.originalId() }
-            if (foundChildData != null) {
-                syncNode(child, foundChildData)
-            } else {
-                toBeRemoved.add(child)
-            }
-        }
+        val existingIds = node.allChildren.map { it.originalId() }
 
         val toBeAdded = nodeData.children.filter { !existingIds.contains(it.id) }
 
@@ -70,8 +76,18 @@ class ModelImporter(private val branch: IBranch) {
             val createdNode = node.addNewChild(it.role, index, it.concept?.let { s -> ConceptReference(s) })
             createdNode.setPropertyValue(NodeData.idPropertyKey, it.originalId())
         }
+
+        for (child in node.allChildren) {
+            val foundChildData: NodeData? = originalIdToSpec[child.originalId()]
+            if (foundChildData != null) {
+                syncNode(child, foundChildData)
+            } else {
+                toBeRemoved.add(child)
+            }
+        }
+
         toBeRemoved.forEach { node.removeChild(it) }
-            syncChildOrder(node, nodeData)
+        syncChildOrder(node, nodeData)
     }
 
     private fun syncChildOrder(node: INode, nodeData: NodeData) {

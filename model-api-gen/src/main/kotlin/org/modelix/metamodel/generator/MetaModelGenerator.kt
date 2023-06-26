@@ -87,6 +87,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             }
             for (concept in language.getConcepts()) {
                 generateConceptFile(concept)
+                if (concept.getOwnRoles().isNotEmpty()) {
+                    generateModelQLFile(concept)
+                }
             }
             file.write()
         }
@@ -218,8 +221,80 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     )
                                     .build()
                             )
+                        }
 
-                            // typed ModelQL
+                        is ProcessedChildLink -> {
+                            val targetType = feature.type.resolved.nodeWrapperInterfaceType()
+                            addProperty(
+                                PropertySpec.builder(
+                                    feature.generatedName,
+                                    List::class.asTypeName().parameterizedBy(targetType)
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return flatMap { it.%N }", feature.generatedName).build()
+                                    )
+                                    .build()
+                            )
+                        }
+
+                        is ProcessedReferenceLink -> {
+                            val targetType =
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
+                            val rawTargetType = INode::class.asTypeName().copy(nullable = true)
+                            addProperty(
+                                PropertySpec.builder(
+                                    feature.generatedName,
+                                    List::class.asTypeName().parameterizedBy(targetType)
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return map { it.%N }", feature.generatedName).build()
+                                    )
+                                    .build()
+                            )
+                            addProperty(
+                                PropertySpec.builder(
+                                    feature.generatedName + "_orNull",
+                                    List::class.asTypeName().parameterizedBy(targetType.copy(nullable = true))
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return map { it.%N }", feature.generatedName + "_orNull").build()
+                                    )
+                                    .build()
+                            )
+                            addProperty(
+                                PropertySpec.builder(
+                                    "raw_" + feature.generatedName,
+                                    List::class.asTypeName().parameterizedBy(rawTargetType)
+                                )
+                                    .receiver(receiverType)
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement("return map { it.%N }", "raw_" + feature.generatedName)
+                                            .build()
+                                    )
+                                    .build()
+                            )
+                        }
+                    }
+                }
+            }
+            .build().write()
+    }
+
+    private fun generateModelQLFile(concept: ProcessedConcept) {
+        FileSpec.builder("org.modelix.modelql.gen." + concept.language.name, concept.name)
+            .addFileComment(headerComment)
+            .apply {
+                for (feature in concept.getOwnRoles()) {
+                    val receiverType = Iterable::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
+                    when (feature) {
+                        is ProcessedProperty -> {
                             for (stepType in listOf(IMonoStep::class.asTypeName(), IFluxStep::class.asTypeName())) {
                                 val inputType = stepType.parameterizedBy(concept.nodeWrapperInterfaceType())
                                 val outputElementType = when (feature.type) {
@@ -268,20 +343,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
 
                         is ProcessedChildLink -> {
                             val targetType = feature.type.resolved.nodeWrapperInterfaceType()
-                            addProperty(
-                                PropertySpec.builder(
-                                    feature.generatedName,
-                                    List::class.asTypeName().parameterizedBy(targetType)
-                                )
-                                    .receiver(receiverType)
-                                    .getter(
-                                        FunSpec.getterBuilder()
-                                            .addStatement("return flatMap { it.%N }", feature.generatedName).build()
-                                    )
-                                    .build()
-                            )
 
-                            // typed ModelQL
                             val inputStepType = (if (feature.multiple) IProducingStep::class else IMonoStep::class).asTypeName()
                             val outputStepType = (if (feature.multiple) IFluxStep::class else IMonoStep::class).asTypeName()
                             val inputType = inputStepType.parameterizedBy(concept.nodeWrapperInterfaceType())
@@ -305,46 +367,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         is ProcessedReferenceLink -> {
                             val targetType =
                                 feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
-                            val rawTargetType = INode::class.asTypeName().copy(nullable = true)
-                            addProperty(
-                                PropertySpec.builder(
-                                    feature.generatedName,
-                                    List::class.asTypeName().parameterizedBy(targetType)
-                                )
-                                    .receiver(receiverType)
-                                    .getter(
-                                        FunSpec.getterBuilder()
-                                            .addStatement("return map { it.%N }", feature.generatedName).build()
-                                    )
-                                    .build()
-                            )
-                            addProperty(
-                                PropertySpec.builder(
-                                    feature.generatedName + "_orNull",
-                                    List::class.asTypeName().parameterizedBy(targetType.copy(nullable = true))
-                                )
-                                    .receiver(receiverType)
-                                    .getter(
-                                        FunSpec.getterBuilder()
-                                            .addStatement("return map { it.%N }", feature.generatedName + "_orNull").build()
-                                    )
-                                    .build()
-                            )
-                            addProperty(
-                                PropertySpec.builder(
-                                    "raw_" + feature.generatedName,
-                                    List::class.asTypeName().parameterizedBy(rawTargetType)
-                                )
-                                    .receiver(receiverType)
-                                    .getter(
-                                        FunSpec.getterBuilder()
-                                            .addStatement("return map { it.%N }", "raw_" + feature.generatedName)
-                                            .build()
-                                    )
-                                    .build()
-                            )
 
-                            // typed ModelQL
                             for (stepType in listOf(IMonoStep::class.asTypeName(), IFluxStep::class.asTypeName())) {
                                 val inputType = stepType.parameterizedBy(concept.nodeWrapperInterfaceType())
                                 val outputType = stepType.parameterizedBy(targetType.copy(nullable = false))

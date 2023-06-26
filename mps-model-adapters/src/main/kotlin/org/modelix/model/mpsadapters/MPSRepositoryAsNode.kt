@@ -24,6 +24,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.area.IArea
 
 data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDefaults {
@@ -34,14 +35,14 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     override val isValid: Boolean
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
-        get() = TODO("Not yet implemented")
-    override val concept: IConcept?
-        get() = null // TODO
+        get() = SerializedNodeReference("mps-repository")
+    override val concept: IConcept
+        get() = RepositoryLanguage.Repository
     override val parent: INode?
-        get() = TODO("Not yet implemented")
+        get() = null
 
     override fun getConceptReference(): IConceptReference? {
-        TODO("Not yet implemented")
+        return concept.getReference()
     }
 
     override val allChildren: Iterable<INode>

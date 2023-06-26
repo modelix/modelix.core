@@ -36,7 +36,7 @@ object RepositoryLanguage : SimpleLanguage("org.modelix.model.repositoryconcepts
             isMultiple = true,
             isOptional = true,
             targetConcept = BaseConcept,
-            uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898"
+            uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900"
         )
     }
 

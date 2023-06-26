@@ -15,6 +15,7 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.structure.concept.SAbstractConceptAdapter
 import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
 import jetbrains.mps.smodel.adapter.structure.concept.SInterfaceConceptAdapterById
@@ -39,7 +40,7 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
         get() = TODO("Not yet implemented")
 
     override fun getUID(): String {
-        val id = when (concept) {
+        val id: SConceptId = when (concept) {
             is SConceptAdapterById -> concept.id
             is SInterfaceConceptAdapterById -> concept.id
             else -> throw RuntimeException("Unknown concept type: $concept")

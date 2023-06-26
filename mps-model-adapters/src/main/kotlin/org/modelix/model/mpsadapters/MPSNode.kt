@@ -24,6 +24,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.area.IArea
 
 data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
@@ -34,7 +35,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     override val isValid: Boolean
         get() = true
     override val reference: INodeReference
-        get() = MPSNodeReference(node.reference)
+        get() = SerializedNodeReference("mps-node:${node.reference}") //MPSNodeReference(node.reference)
     override val concept: IConcept
         get() = MPSConcept(node.concept)
     override val parent: INode?

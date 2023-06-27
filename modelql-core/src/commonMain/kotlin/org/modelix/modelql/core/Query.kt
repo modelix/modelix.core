@@ -195,6 +195,11 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
         validate()
     }
 
+    private val unconsumedSideEffectSteps = (getAllSteps() - outputStep)
+        .filterIsInstance<IProducingStep<*>>()
+        .filter { it.hasSideEffect() }
+        .filter { !isConsumed(it) }
+
     override fun requiresWriteAccess(): Boolean {
         return getAllSteps().any { it.requiresWriteAccess() }
     }
@@ -206,6 +211,14 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
     fun validate() {
         for (step in getAllSteps()) {
             step.validate()
+        }
+    }
+
+    private fun isConsumed(step: IStep): Boolean {
+        return when (step) {
+            outputStep -> true
+            is IProducingStep<*> -> step.getConsumers().any { isConsumed(it) }
+            else -> false
         }
     }
 
@@ -227,9 +240,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                     val outputFlow = context.getOrCreateFlow(outputStep)
 
                     // ensure all write operations are executed
-                    (getAllSteps() - outputStep)
-                        .filterIsInstance<IProducingStep<*>>()
-                        .filter { it.hasSideEffect() }
+                    unconsumedSideEffectSteps
                         .mapNotNull {
                             if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
                         }

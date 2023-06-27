@@ -163,8 +163,6 @@ class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IM
     }
 
     override fun evaluate(input: In): ElementOut {
-        require(!anyStepNeedsCoroutineScope)
-        require(unconsumedSideEffectSteps.isEmpty())
         return outputStep.evaluate(input)
     }
 }
@@ -205,12 +203,13 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
 
     open val outputStep: IProducingStep<ElementOut> get() = outputStep_
 
-    val unconsumedSideEffectSteps = (getAllSteps() - outputStep)
+    private val unconsumedSideEffectSteps = (getAllSteps() - outputStep)
         .filterIsInstance<IProducingStep<*>>()
         .filter { it.hasSideEffect() }
         .filter { !isConsumed(it) }
-    val anyStepNeedsCoroutineScope = getAllSteps().any { it.needsCoroutineScope() }
-    val anyStepDoesAggregations = getAllSteps().any { it.requiresSingularQueryInput() }
+    private val anyStepNeedsCoroutineScope = getAllSteps().any { it.needsCoroutineScope() }
+    private val anyStepDoesAggregations = getAllSteps().any { it.requiresSingularQueryInput() }
+    private val canOptimizeFlows = !anyStepDoesAggregations && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope
 
     override fun requiresWriteAccess(): Boolean {
         return getAllSteps().any { it.requiresWriteAccess() }
@@ -246,23 +245,30 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
     }
 
     override fun asFlow(input: Flow<In>): Flow<ElementOut> {
-        return flow<ElementOut> {
-            input.collect { inputElement ->
-                coroutineScope {
-                    val context = FlowInstantiationContext(this)
-                    context.put(inputStep, flowOf(inputElement))
+        if (canOptimizeFlows) {
+            val context = FlowInstantiationContext(null)
+            context.put(inputStep, input)
 
-                    val outputFlow = context.getOrCreateFlow(outputStep)
+            return context.getOrCreateFlow(outputStep)
+        } else {
+            return flow<ElementOut> {
+                input.collect { inputElement ->
+                    coroutineScope {
+                        val context = FlowInstantiationContext(this)
+                        context.put(inputStep, flowOf(inputElement))
 
-                    // ensure all write operations are executed
-                    unconsumedSideEffectSteps
-                        .mapNotNull {
-                            if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
+                        val outputFlow = context.getOrCreateFlow(outputStep)
+
+                        // ensure all write operations are executed
+                        unconsumedSideEffectSteps
+                            .mapNotNull {
+                                if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
+                            }
+                            .forEach { it.collect() }
+
+                        outputFlow.collect { outputElement ->
+                            emit(outputElement)
                         }
-                        .forEach { it.collect() }
-
-                    outputFlow.collect { outputElement ->
-                        emit(outputElement)
                     }
                 }
             }

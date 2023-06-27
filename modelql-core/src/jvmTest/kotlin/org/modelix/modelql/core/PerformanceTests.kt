@@ -17,7 +17,7 @@ class PerformanceTests {
         val query = buildMonoQuery<Int, Int> { it.filter { false.asMono() } }
         val intRange = 1..100000
 
-        val iterations = 20
+        val iterations = 1000
         val timeWithFlow = runBenchmark(iterations) {
             intRange.asFlow().filter { false }.count()
         }
@@ -30,7 +30,7 @@ class PerformanceTests {
 
         val factor = timeWithQuery / timeWithFlow
         val message = "A query is $factor times slower"
-        assertTrue(factor < 100, message)
+        assertTrue(factor < 3, message)
         println(message)
     }
 

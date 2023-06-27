@@ -12,7 +12,6 @@ import kotlin.time.measureTime
 
 class PerformanceTests {
 
-    @OptIn(ExperimentalTime::class)
     @Test
     fun flowBasedFilterPerformance() = runTest {
         val query = buildMonoQuery<Int, Int> { it.filter { false.asMono() } }

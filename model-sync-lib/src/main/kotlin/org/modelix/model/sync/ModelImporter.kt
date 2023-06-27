@@ -11,6 +11,8 @@ class ModelImporter(private val root: INode) {
 
     private lateinit var originalIdToRef: MutableMap<String, INodeReference>
     private lateinit var originalIdToSpec: MutableMap<String, NodeData>
+    private lateinit var originalIdToParentSpec: MutableMap<String, NodeData>
+    private lateinit var existingNodeIds: MutableSet<String>
 
     fun import(jsonFile: File) {
         require(jsonFile.exists())
@@ -21,12 +23,34 @@ class ModelImporter(private val root: INode) {
     }
     
     fun import(data: ModelData) {
-        originalIdToRef = mutableMapOf()
+        existingNodeIds = mutableSetOf()
+        collectExistingNodeIds(root)
+
         originalIdToSpec = mutableMapOf()
         buildSpecIndex(data.root)
+
+        originalIdToParentSpec = mutableMapOf()
+        buildParentSpecIndex(data.root)
+
         syncNode(root, data.root)
+
+        originalIdToRef = mutableMapOf()
         buildRefIndex(root)
+
         syncAllReferences(root, data.root)
+        syncAllChildOrders(root, data.root)
+    }
+
+    private fun collectExistingNodeIds(root: INode) {
+        root.originalId()?.let { existingNodeIds.add(it) }
+        root.allChildren.forEach { collectExistingNodeIds(it) }
+    }
+
+    private fun buildParentSpecIndex(nodeData: NodeData) {
+        for (child in nodeData.children) {
+            child.originalId()?.let {  originalIdToParentSpec[it] = nodeData }
+            buildParentSpecIndex(child)
+        }
     }
 
     private fun buildRefIndex(node: INode) {
@@ -66,10 +90,12 @@ class ModelImporter(private val root: INode) {
     }
 
     private fun syncChildNodes(node: INode, nodeData: NodeData) {
-        val toBeRemoved = mutableSetOf<INode>()
-        val existingIds = node.allChildren.map { it.originalId() }
+        val specifiedNodes = nodeData.children.toSet()
+        val existingIds = node.allChildren.map { it.originalId() }.toSet()
+        val missingNodes = specifiedNodes.filter { !existingIds.contains(it.originalId()) }
 
-        val toBeAdded = nodeData.children.filter { !existingIds.contains(it.id) }
+        val toBeMovedHere = missingNodes.filter { existingNodeIds.contains(it.originalId()) }.toSet()
+        val toBeAdded = missingNodes.subtract(toBeMovedHere)
 
         toBeAdded.forEach {
             val index = nodeData.children.indexOf(it)
@@ -77,17 +103,29 @@ class ModelImporter(private val root: INode) {
             createdNode.setPropertyValue(NodeData.idPropertyKey, it.originalId())
         }
 
-        for (child in node.allChildren) {
-            val foundChildData: NodeData? = originalIdToSpec[child.originalId()]
-            if (foundChildData != null) {
-                syncNode(child, foundChildData)
-            } else {
-                toBeRemoved.add(child)
+        toBeMovedHere.forEach {
+            val target = originalIdToRef[it.originalId()]?.resolveNode(node.getArea())
+            if (target != null) {
+                node.moveChild(it.role, -1, target)
             }
         }
 
+        val toBeRemoved = node.allChildren.filter { !originalIdToSpec.contains(it.originalId()) }
         toBeRemoved.forEach { node.removeChild(it) }
-        syncChildOrder(node, nodeData)
+
+        node.allChildren.forEach {
+            val childData = originalIdToSpec[it.originalId()]
+            if (childData != null) {
+                syncNode(it, childData)
+            }
+        }
+    }
+
+    private fun syncAllChildOrders(root: INode, rootData: NodeData) {
+        syncChildOrder(root, rootData)
+        for ((node, data) in root.allChildren.zip(rootData.children)) {
+            syncAllChildOrders(node, data)
+        }
     }
 
     private fun syncChildOrder(node: INode, nodeData: NodeData) {

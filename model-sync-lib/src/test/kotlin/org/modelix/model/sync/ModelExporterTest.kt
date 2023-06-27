@@ -43,12 +43,6 @@ class ModelExporterTest {
             }
         }
 
-        branch.runRead {
-            for (child in branch.getRootNode().allChildren) {
-                println(child.getReferenceRoles())
-            }
-        }
-
         assert(outputFile.exists())
         assertEquals(model, ModelData.fromJson(outputFile.readText()))
     }

@@ -18,6 +18,7 @@ interface IStep {
 
     fun requiresWriteAccess(): Boolean = false
     fun hasSideEffect(): Boolean = requiresWriteAccess()
+    fun needsCoroutineScope() = false
 }
 
 interface IFlowInstantiationContext {
@@ -25,7 +26,8 @@ interface IFlowInstantiationContext {
     fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T>
     fun <T> getFlow(step: IProducingStep<T>): Flow<T>?
 }
-class FlowInstantiationContext(override val coroutineScope: CoroutineScope) : IFlowInstantiationContext {
+class FlowInstantiationContext(private val coroutineScope_: CoroutineScope?) : IFlowInstantiationContext {
+    override val coroutineScope: CoroutineScope get() = coroutineScope_!!
     private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
     fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
         createdProducers[step] = producer
@@ -48,13 +50,16 @@ interface IProducingStep<out E> : IStep {
     fun outputIsConsumedMultipleTimes(): Boolean {
         return getConsumers().size > 1 || getConsumers().any { it.inputIsConsumedMultipleTimes() }
     }
-    fun canBeEmpty(): Boolean = TODO()
-    fun canBeMultiple(): Boolean = TODO()
+    fun canBeEmpty(): Boolean = true
+    fun canBeMultiple(): Boolean = true
 }
 fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) = addConsumer(consumer)
 fun <T> IConsumingStep<T>.connect(producer: IProducingStep<T>) = producer.addConsumer(this)
 
-interface IMonoStep<out E> : IProducingStep<E>
+interface IMonoStep<out E> : IProducingStep<E> {
+    fun evaluate(input: Any?): E = throw UnsupportedOperationException()
+}
+
 interface IFluxStep<out E> : IProducingStep<E>
 interface IFluxOrMonoStep<out E> : IMonoStep<E>, IFluxStep<E>
 
@@ -108,6 +113,8 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
 }
 
 abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMonoStep<Out>, IFluxStep<Out> {
+    override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
     fun connectAndDowncast(producer: IMonoStep<In>): IMonoStep<Out> = also { producer.connect(it) }
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
 }
@@ -118,6 +125,10 @@ abstract class FluxTransformingStep<In, Out> : TransformingStep<In, Out>(), IFlu
 
 abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     fun connectAndDowncast(producer: IProducingStep<In>): IMonoStep<Out> = also { producer.connect(it) }
+
+    override fun canBeEmpty(): Boolean = false
+
+    override fun canBeMultiple(): Boolean = false
 
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         val flow = flow {
@@ -130,6 +141,8 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
             flow
         }
     }
+
+    override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()
 
     override fun inputIsConsumedMultipleTimes(): Boolean {
         return false

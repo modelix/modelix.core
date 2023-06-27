@@ -11,6 +11,9 @@ abstract class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : Tran
     init {
         query.inputStep.indirectConsumer = this
     }
+    override fun canBeEmpty(): Boolean = getProducer().canBeEmpty() || query.outputStep.canBeEmpty()
+
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple() || query.outputStep.canBeMultiple()
 
     override fun requiresWriteAccess(): Boolean {
         return query.requiresWriteAccess()

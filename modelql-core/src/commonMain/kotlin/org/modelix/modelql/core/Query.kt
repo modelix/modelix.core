@@ -3,9 +3,7 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
@@ -120,6 +118,7 @@ interface IMonoUnboundQuery<in In, out Out> : IUnboundQuery<In, Out, Out> {
     fun <T> map(query: IFluxUnboundQuery<Out, T>): IFluxUnboundQuery<In, T>
     fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IMonoUnboundQuery<In, T> = map(IUnboundQuery.buildMono(body))
     fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxUnboundQuery<In, T> = map(IUnboundQuery.buildFlux(body))
+    fun evaluate(input: In): Out
 }
 
 fun <In, Out, AggregationT, T> IMonoUnboundQuery<In, Out>.map(query: IUnboundQuery<Out, AggregationT, T>): IUnboundQuery<In, AggregationT, T> {
@@ -137,6 +136,10 @@ interface IFluxUnboundQuery<in In, out Out> : IUnboundQuery<In, List<Out>, Out> 
 }
 
 class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IMonoStep<ElementOut>) : UnboundQuery<In, ElementOut, ElementOut>(inputStep, outputStep), IMonoUnboundQuery<In, ElementOut> {
+
+    override val outputStep: IMonoStep<ElementOut>
+        get() = super.outputStep as IMonoStep<ElementOut>
+
     override fun bind(executor: IQueryExecutor<In>): IMonoQuery<ElementOut> = MonoBoundQuery(executor, this)
 
     override suspend fun execute(input: In): ElementOut {
@@ -158,9 +161,18 @@ class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IM
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<ElementOut> {
         return outputStep.getOutputSerializer(serializersModule).upcast()
     }
+
+    override fun evaluate(input: In): ElementOut {
+        require(!anyStepNeedsCoroutineScope)
+        require(unconsumedSideEffectSteps.isEmpty())
+        return outputStep.evaluate(input)
+    }
 }
 
 class FluxUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IFluxStep<ElementOut>) : UnboundQuery<In, List<ElementOut>, ElementOut>(inputStep, outputStep), IFluxUnboundQuery<In, ElementOut> {
+
+    override val outputStep: IFluxStep<ElementOut>
+        get() = super.outputStep as IFluxStep<ElementOut>
 
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<ElementOut> = FluxBoundQuery(executor, this)
 
@@ -185,20 +197,19 @@ fun <In, Out> IMonoUnboundQuery<In, Out>.castToInstance(): MonoUnboundQuery<In, 
 fun <In, Out> IFluxUnboundQuery<In, Out>.castToInstance(): FluxUnboundQuery<In, Out> = this as FluxUnboundQuery<In, Out>
 fun <In, Out, ElementOut> IUnboundQuery<In, Out, ElementOut>.castToInstance(): UnboundQuery<In, Out, ElementOut> = this as UnboundQuery<In, Out, ElementOut>
 
-abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: QueryInput<In>, val outputStep: IProducingStep<ElementOut>) : IUnboundQuery<In, AggregationOut, ElementOut> {
+abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: QueryInput<In>, private val outputStep_: IProducingStep<ElementOut>) : IUnboundQuery<In, AggregationOut, ElementOut> {
 
     init {
-        for (step in getAllSteps()) {
-            if (step.owningQuery != null) throw IllegalStateException("$step is already part of ${step.owningQuery}")
-            step.owningQuery = this
-        }
         validate()
     }
 
-    private val unconsumedSideEffectSteps = (getAllSteps() - outputStep)
+    open val outputStep: IProducingStep<ElementOut> get() = outputStep_
+
+    val unconsumedSideEffectSteps = (getAllSteps() - outputStep)
         .filterIsInstance<IProducingStep<*>>()
         .filter { it.hasSideEffect() }
         .filter { !isConsumed(it) }
+    val anyStepNeedsCoroutineScope = getAllSteps().any { it.needsCoroutineScope() }
 
     override fun requiresWriteAccess(): Boolean {
         return getAllSteps().any { it.requiresWriteAccess() }
@@ -209,6 +220,10 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
     }
 
     fun validate() {
+        for (step in getAllSteps()) {
+            if (step.owningQuery != null) throw IllegalStateException("$step is already part of ${step.owningQuery}")
+            step.owningQuery = this
+        }
         for (step in getAllSteps()) {
             step.validate()
         }
@@ -229,7 +244,6 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
         return allSteps
     }
 
-    @OptIn(FlowPreview::class)
     override fun asFlow(input: Flow<In>): Flow<ElementOut> {
         return flow<ElementOut> {
             input.collect { inputElement ->
@@ -370,6 +384,10 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     @Transient
     internal var indirectConsumer: IConsumingStep<E>? = null
     override fun toString(): String = "it"
+
+    override fun evaluate(input: Any?): E {
+        return input as E
+    }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {
         val c = indirectConsumer ?: throw UnsupportedOperationException()

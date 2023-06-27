@@ -10,6 +10,14 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), IMonoStep<E> {
+    override fun canBeEmpty(): Boolean = false
+
+    override fun canBeMultiple(): Boolean = false
+
+    override fun evaluate(input: Any?): E {
+        return element
+    }
+
     override fun createFlow(context: IFlowInstantiationContext): Flow<E> {
         return flowOf(element)
     }

@@ -14,12 +14,19 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
         condition.inputStep.indirectConsumer = this
     }
 
+    override fun canBeEmpty(): Boolean = true
+
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
+
     override fun validate() {
         require(!condition.requiresWriteAccess()) { "write access not allowed inside a filtering step: $this" }
+        require (!condition.outputStep.canBeEmpty() && !condition.outputStep.canBeMultiple()) {
+            "filter condition should return exactly one element: $condition"
+        }
     }
 
     override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
-        return input.filter { condition.asFlow(it).firstOrNull() == true }
+        return input.filter { condition.evaluate(it) == true }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {

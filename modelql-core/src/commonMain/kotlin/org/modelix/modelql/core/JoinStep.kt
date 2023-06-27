@@ -10,6 +10,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
 class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
+    override fun canBeEmpty(): Boolean = getProducers().all { it.canBeEmpty() }
+    override fun canBeMultiple(): Boolean = true
+
     private val producers = ArrayList<IProducingStep<E>>()
 
     override fun getProducers(): List<IProducingStep<E>> {

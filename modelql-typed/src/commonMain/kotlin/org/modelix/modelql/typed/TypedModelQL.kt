@@ -31,9 +31,7 @@ import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.asString
-import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.emptyStringIfNull
-import org.modelix.modelql.core.filter
 import org.modelix.modelql.core.filterNotNull
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.firstOrNull

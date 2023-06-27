@@ -194,6 +194,10 @@ class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
         return input.flatMapConcat { it.products.asFlow() }
     }
 
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Product> {
+        return getProducer().createSequence(queryInput).flatMap { it.products }
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Product> = serializersModule.serializer<Product>()
 
     override fun createDescriptor() = Descriptor()
@@ -260,6 +264,11 @@ class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
     override fun createFlow(input: Flow<Product>, context: IFlowInstantiationContext): Flow<String> {
         return input.flatMapConcat { it.images.asFlow() }
     }
+
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<String> {
+        return getProducer().createSequence(queryInput).flatMap { it.images }
+    }
+
     override fun toString(): String {
         return "${getProducer()}.images"
     }

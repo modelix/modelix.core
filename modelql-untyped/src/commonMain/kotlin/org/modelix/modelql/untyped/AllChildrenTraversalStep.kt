@@ -13,7 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName

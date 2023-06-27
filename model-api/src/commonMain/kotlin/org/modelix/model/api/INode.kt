@@ -69,10 +69,11 @@ interface INode {
     val allChildren: Iterable<INode>
 
     /**
-     * Moves a child node to the given role and index.
+     * Moves a node to this node's children with the given role and index.
+     * The child node can originate from a different parent.
      *
      * @param role target role
-     * @param index target index
+     * @param index target index within the role
      * @param child child node to be moved
      */
     fun moveChild(role: String?, index: Int, child: INode)
@@ -97,7 +98,7 @@ interface INode {
      * Creates and adds a new child node to this node at the specified index.
      *
      * @param role role, where the node should be added
-     * @param index index, where the node should be added
+     * @param index index within the role, where the node should be added
      * @param concept reference to a concept, of which the new node is instance of
      * @return new child node
      */

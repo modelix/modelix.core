@@ -13,7 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -32,12 +31,13 @@ import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
 
-    @OptIn(FlowPreview::class)
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
         return input.flatMapConcatConcurrent { it.getParentAsFlow() }
     }
 
     override fun canBeEmpty(): Boolean = true
+
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
     override fun transform(input: INode): INode {
         return input.parent!!

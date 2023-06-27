@@ -16,6 +16,8 @@ class RecursiveQueryStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> 
         return (owningQuery!! as IUnboundQuery<In, *, Out>).asFlow(input)
     }
 
+    override fun requiresSingularQueryInput(): Boolean = true
+
     override fun createDescriptor(): StepDescriptor {
         return Descriptor()
     }

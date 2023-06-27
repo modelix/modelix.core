@@ -39,6 +39,10 @@ class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, Stri
         return input.getPropertyValue(input.resolvePropertyOrFallback(role))
     }
 
+    override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
+
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String?> {
         return serializersModule.serializer<String?>()
     }

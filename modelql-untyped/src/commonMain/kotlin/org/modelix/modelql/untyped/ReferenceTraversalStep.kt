@@ -42,6 +42,10 @@ class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INo
             ?: throw NullPointerException("There is not reference target $role in node $input")
     }
 
+    override fun canBeEmpty(): Boolean = true
+
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
         return serializersModule.serializer<INode>()
     }

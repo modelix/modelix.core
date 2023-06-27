@@ -15,6 +15,10 @@ class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
         return input
     }
 
+    override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
+
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
+
     override fun createDescriptor(): StepDescriptor {
         return IdentityStepDescriptor()
     }

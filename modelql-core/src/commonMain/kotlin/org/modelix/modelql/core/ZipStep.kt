@@ -19,6 +19,10 @@ import kotlinx.serialization.modules.SerializersModule
 open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IFluxStep<Out> {
     private val producers = ArrayList<IProducingStep<CommonIn>>()
 
+    override fun canBeEmpty(): Boolean = producers.any { it.canBeEmpty() }
+
+    override fun canBeMultiple(): Boolean = producers.any { it.canBeMultiple() }
+
     override fun toString(): String {
         return "zip(${getProducers().joinToString(", ") { it.toString() }})"
     }

@@ -12,7 +12,7 @@ class ModelImporter(private val root: INode) {
     private lateinit var originalIdToRef: MutableMap<String, INodeReference>
     private lateinit var originalIdToSpec: MutableMap<String, NodeData>
     private lateinit var originalIdToParentSpec: MutableMap<String, NodeData>
-    private lateinit var existingNodeIds: MutableSet<String>
+    private lateinit var originalIdToExisting: MutableMap<String, INode>
 
     fun import(jsonFile: File) {
         require(jsonFile.exists())
@@ -23,8 +23,8 @@ class ModelImporter(private val root: INode) {
     }
     
     fun import(data: ModelData) {
-        existingNodeIds = mutableSetOf()
-        collectExistingNodeIds(root)
+        originalIdToExisting = mutableMapOf()
+        buildExistingIndex(root)
 
         originalIdToSpec = mutableMapOf()
         buildSpecIndex(data.root)
@@ -41,9 +41,9 @@ class ModelImporter(private val root: INode) {
         syncAllChildOrders(root, data.root)
     }
 
-    private fun collectExistingNodeIds(root: INode) {
-        root.originalId()?.let { existingNodeIds.add(it) }
-        root.allChildren.forEach { collectExistingNodeIds(it) }
+    private fun buildExistingIndex(root: INode) {
+        root.originalId()?.let { originalIdToExisting[it] = root }
+        root.allChildren.forEach { buildExistingIndex(it) }
     }
 
     private fun buildParentSpecIndex(nodeData: NodeData) {
@@ -94,7 +94,7 @@ class ModelImporter(private val root: INode) {
         val existingIds = node.allChildren.map { it.originalId() }.toSet()
         val missingNodes = specifiedNodes.filter { !existingIds.contains(it.originalId()) }
 
-        val toBeMovedHere = missingNodes.filter { existingNodeIds.contains(it.originalId()) }.toSet()
+        val toBeMovedHere = missingNodes.filter { originalIdToExisting.containsKey(it.originalId()) }.toSet()
         val toBeAdded = missingNodes.subtract(toBeMovedHere)
 
         toBeAdded.forEach {
@@ -104,9 +104,10 @@ class ModelImporter(private val root: INode) {
         }
 
         toBeMovedHere.forEach {
-            val target = originalIdToRef[it.originalId()]?.resolveNode(node.getArea())
-            if (target != null) {
-                node.moveChild(it.role, -1, target)
+            val actualNode = originalIdToExisting[it.originalId()]
+            val targetIndex = it.getIndexWithinRole(nodeData)
+            if (actualNode != null) {
+                node.moveChild(it.role, targetIndex, actualNode)
             }
         }
 

@@ -23,6 +23,7 @@ import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.AsyncBuilder
 import org.modelix.modelql.core.IAsyncBuilder
 import org.modelix.modelql.core.mapLocal
+import org.modelix.modelql.untyped.buildQuery
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.query
@@ -103,7 +104,7 @@ class HtmlBuilderTest {
 typealias HtmlBuilder<In> = IAsyncBuilder<In, FlowContent>
 
 suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String {
-    return query<String> { repository ->
+    val query = buildQuery<String> { repository ->
         val htmlBuilder = AsyncBuilder<INode, FlowContent>(repository)
         htmlBuilder.apply(body)
         htmlBuilder.compileOutputStep().mapLocal { result ->
@@ -116,4 +117,6 @@ suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String
             }
         }
     }
+    println("query: $query")
+    return query.execute()
 }

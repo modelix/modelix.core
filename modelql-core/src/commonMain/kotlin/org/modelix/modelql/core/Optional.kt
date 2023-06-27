@@ -10,6 +10,7 @@ value class Optional<out E>(private val value: Any?) {
         return value as E
     }
     fun <R> map(body: (E) -> R): Optional<R> = if (isPresent()) of(body(get())) else empty()
+    fun <R> flatMap(body: (E) -> Optional<R>): Optional<R> = if (isPresent()) body(get()) else empty()
     companion object {
         private object EMPTY
         fun <T> empty() = Optional<T>(EMPTY)

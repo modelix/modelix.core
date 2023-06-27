@@ -2,6 +2,7 @@ package org.modelix.modelql.core
 
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -46,6 +47,10 @@ private abstract class BoundQuery<In, out AggregationOut, out ElementOut>(val ex
 
     override suspend fun asFlow(): Flow<ElementOut> {
         return executor.createFlow(query)
+    }
+
+    override fun toString(): String {
+        return "$executor -> $query"
     }
 }
 
@@ -314,7 +319,6 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                 subclass(org.modelix.modelql.core.FirstElementStep.FirstElementDescriptor::class)
                 subclass(org.modelix.modelql.core.FirstOrNullStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.FlatMapStep.Descriptor::class)
-                subclass(org.modelix.modelql.core.FluxMappingStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.IdentityStep.IdentityStepDescriptor::class)
                 subclass(org.modelix.modelql.core.IfEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.InPredicate.Descriptor::class)
@@ -325,7 +329,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                 subclass(org.modelix.modelql.core.JoinStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ListCollectorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MapIfNotNullStep.Descriptor::class)
-                subclass(org.modelix.modelql.core.MonoMappingStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.MappingStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.NotOperatorStep.NotDescriptor::class)
                 subclass(org.modelix.modelql.core.NullIfEmpty.OrNullDescriptor::class)
                 subclass(org.modelix.modelql.core.OrOperatorStep.Descriptor::class)
@@ -426,9 +430,6 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
 
     override fun canBeEmpty(): Boolean = false
     override fun canBeMultiple(): Boolean = false
-    override fun requiresSingularQueryInput(): Boolean {
-        return getConsumers().any { it.requiresSingularQueryInput() }
-    }
 
     override fun createDescriptor() = Descriptor()
 

@@ -20,7 +20,7 @@ interface IStep {
     fun requiresWriteAccess(): Boolean = false
     fun hasSideEffect(): Boolean = requiresWriteAccess()
     fun needsCoroutineScope() = false
-    fun requiresSingularQueryInput(): Boolean = false
+    fun requiresSingularQueryInput(): Boolean
 }
 
 interface IFlowInstantiationContext {
@@ -50,7 +50,7 @@ interface IProducingStep<out E> : IStep {
     fun createFlow(context: IFlowInstantiationContext): Flow<E>
 
     /**
-     * Provides better performance than flows for simple queries without caching
+     * Flows usually provide better performance, but if suspending is not possible you can iterate using a sequence.
      */
     fun createSequence(queryInput: Sequence<Any?>): Sequence<E>
 
@@ -70,7 +70,12 @@ interface IProducingStep<out E> : IStep {
 
     fun canBeEmpty(): Boolean = true
     fun canBeMultiple(): Boolean = true
+    override fun requiresSingularQueryInput(): Boolean {
+        return getConsumers().size > 1 || getConsumers().any { it.requiresSingularQueryInput() }
+    }
 }
+fun IProducingStep<*>.isSingle(): Boolean = !canBeEmpty() && !canBeMultiple()
+
 fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) = addConsumer(consumer)
 fun <T> IConsumingStep<T>.connect(producer: IProducingStep<T>) = producer.addConsumer(this)
 
@@ -89,8 +94,6 @@ interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out> {
     override fun inputIsConsumedMultipleTimes(): Boolean {
         return outputIsConsumedMultipleTimes()
     }
-
-    override fun requiresSingularQueryInput(): Boolean = getConsumers().any { it.requiresSingularQueryInput() }
 }
 
 abstract class ProducingStep<E> : IProducingStep<E> {
@@ -133,6 +136,7 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
 abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMonoStep<Out>, IFluxStep<Out> {
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
+
     fun connectAndDowncast(producer: IMonoStep<In>): IMonoStep<Out> = also { producer.connect(it) }
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
 

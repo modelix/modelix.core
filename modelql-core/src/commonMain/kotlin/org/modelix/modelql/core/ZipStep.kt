@@ -16,7 +16,7 @@ import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeCollection
 import kotlinx.serialization.modules.SerializersModule
 
-open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IFluxStep<Out> {
+open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IMonoStep<Out>, IFluxStep<Out> {
     private val producers = ArrayList<IProducingStep<CommonIn>>()
 
     override fun canBeEmpty(): Boolean = producers.any { it.canBeEmpty() }
@@ -24,8 +24,8 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
     override fun canBeMultiple(): Boolean = producers.any { it.canBeMultiple() }
 
     override fun requiresSingularQueryInput(): Boolean {
-        // zip repeats the last value of a producer
-        return !producers.all { !it.canBeEmpty() && !it.canBeMultiple() }
+        if (producers.any { !it.isSingle() }) return true
+        return super<ProducingStep>.requiresSingularQueryInput()
     }
 
     override fun toString(): String {
@@ -192,7 +192,7 @@ fun <Common, T1 : Common, T2 : Common> IMonoStep<T1>.zip(other2: IMonoStep<T2>):
     return ZipStep<Common, ZipOutput<Common, T1, T2, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
         it.connect(this)
         it.connect(other2)
-    }.first()
+    }
 }
 
 fun <Common, T1 : Common, T2 : Common, T3 : Common> IProducingStep<T1>.zip(other2: IProducingStep<T2>, other3: IProducingStep<T3>): IFluxStep<IZip3Output<Common, T1, T2, T3>> {
@@ -207,7 +207,7 @@ fun <Common, T1 : Common, T2 : Common, T3 : Common> IMonoStep<T1>.zip(other2: IM
         it.connect(this)
         it.connect(other2)
         it.connect(other3)
-    }.first()
+    }
 }
 
 fun <Common, T1 : Common, T2 : Common, T3 : Common, T4 : Common> IProducingStep<T1>.zip(other2: IProducingStep<T2>, other3: IProducingStep<T3>, other4: IProducingStep<T4>): IFluxStep<IZip4Output<Common, T1, T2, T3, T4>> {
@@ -224,7 +224,7 @@ fun <Common, T1 : Common, T2 : Common, T3 : Common, T4 : Common> IMonoStep<T1>.z
         it.connect(other2)
         it.connect(other3)
         it.connect(other4)
-    }.first()
+    }
 }
 
 fun <Common, T1 : Common, T2 : Common, T3 : Common, T4 : Common, T5 : Common> IProducingStep<T1>.zip(other2: IProducingStep<T2>, other3: IProducingStep<T3>, other4: IProducingStep<T4>, other5: IProducingStep<T5>): IFluxStep<IZip5Output<Common, T1, T2, T3, T4, T5>> {
@@ -243,7 +243,7 @@ fun <Common, T1 : Common, T2 : Common, T3 : Common, T4 : Common, T5 : Common> IM
         it.connect(other3)
         it.connect(other4)
         it.connect(other5)
-    }.first()
+    }
 }
 
 fun <T> IProducingStep<T>.zip(vararg others: IProducingStep<T>): IFluxStep<IZipOutput<T>> = zipN(*others)
@@ -262,12 +262,12 @@ fun <T> IMonoStep<T>.zipN(vararg others: IMonoStep<T>): IMonoStep<IZipOutput<T>>
         for (other in others) {
             it.connect(other)
         }
-    }.first()
+    }
 }
 fun <T> zipList(vararg steps: IMonoStep<T>): IMonoStep<IZipOutput<T>> {
     return ZipStep<T, ZipOutput<T, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit, Unit>>().also {
         for (other in steps) {
             it.connect(other)
         }
-    }.first()
+    }
 }

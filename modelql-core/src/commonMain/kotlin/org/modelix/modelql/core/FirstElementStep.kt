@@ -12,6 +12,8 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
         return input.take(1)
     }
 
+    override fun requiresSingularQueryInput(): Boolean = true
+
     override fun transform(input: E): E {
         return input
     }

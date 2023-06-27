@@ -11,8 +11,11 @@ import kotlinx.serialization.serializer
 
 abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), IMonoStep<E> {
     override fun canBeEmpty(): Boolean = false
-
     override fun canBeMultiple(): Boolean = false
+    override fun requiresSingularQueryInput(): Boolean = false
+    override fun hasSideEffect(): Boolean = false
+    override fun requiresWriteAccess(): Boolean = false
+    override fun needsCoroutineScope(): Boolean = false
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
         return sequenceOf(element)

@@ -20,7 +20,7 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     override fun validate() {
         require(!condition.requiresWriteAccess()) { "write access not allowed inside a filtering step: $this" }
         require(!condition.outputStep.canBeMultiple()) {
-            "filter condition should return exactly one element, but it can return multiple: $condition"
+            "filter condition should not return multiple elements: $condition"
         }
     }
 

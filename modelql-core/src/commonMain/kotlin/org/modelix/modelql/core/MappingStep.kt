@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
-abstract class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : TransformingStep<In, Out>() {
+class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransformingStep<In, Out>() {
 
     init {
         query.inputStep.indirectConsumer = this
@@ -27,6 +27,14 @@ abstract class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : Tran
         return query.asSequence(queryInput as Sequence<In>)
     }
 
+    override fun evaluate(queryInput: Any?): Optional<Out> {
+        return getProducer().evaluate(queryInput).flatMap { query.evaluate(it) }
+    }
+
+    override fun transform(input: In): Out {
+        return query.evaluate(input).get()
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out> {
         return query.getOutputSerializer(serializersModule)
     }
@@ -34,41 +42,24 @@ abstract class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : Tran
     override fun toString(): String {
         return "${getProducer()}.map { $query }"
     }
-}
-
-class FluxMappingStep<In, Out>(query: MonoUnboundQuery<In, Out>) : MappingStep<In, Out>(query), IFluxStep<Out> {
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())
 
     @Serializable
-    @SerialName("mapMany")
+    @SerialName("map")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return FluxMappingStep<Any?, Any?>(query.createQuery() as MonoUnboundQuery<Any?, Any?>)
-        }
-    }
-}
-
-open class MonoMappingStep<In, Out>(query: MonoUnboundQuery<In, Out>) :
-    MappingStep<In, Out>(query), IMonoStep<Out> {
-
-    override fun createDescriptor() = Descriptor(query.createDescriptor())
-
-    @Serializable
-    @SerialName("mapSingle")
-    class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
-            return MonoMappingStep<Any?, Any?>(query.createQuery() as MonoUnboundQuery<Any?, Any?>)
+            return MappingStep<Any?, Any?>(query.createQuery() as MonoUnboundQuery<Any?, Any?>)
         }
     }
 }
 
 fun <In, Out> IFluxStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IFluxStep<Out> {
-    return FluxMappingStep(IUnboundQuery.buildMono(body).castToInstance()).also { connect(it) }
+    return MappingStep(IUnboundQuery.buildMono(body).castToInstance()).connectAndDowncast(this)
 }
 fun <In, Out> IMonoStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
-    return MonoMappingStep(IUnboundQuery.buildMono(body).castToInstance()).also { connect(it) }
+    return MappingStep(IUnboundQuery.buildMono(body).castToInstance()).connectAndDowncast(this)
 }
 fun <In, Out> IMonoStep<In>.map(query: IMonoUnboundQuery<In, Out>): IMonoStep<Out> {
-    return MonoMappingStep(query.castToInstance()).also { connect(it) }
+    return MappingStep(query.castToInstance()).connectAndDowncast(this)
 }

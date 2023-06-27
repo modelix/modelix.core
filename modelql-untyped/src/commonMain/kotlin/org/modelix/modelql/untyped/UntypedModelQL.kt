@@ -78,13 +78,13 @@ suspend fun <R> INode.query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
 }
 
 suspend fun <R> INode.queryFlux(body: (IMonoStep<INode>) -> IFluxStep<R>): List<R> {
-    return buildQuery(body).execute()
+    return buildFluxQuery(body).execute()
 }
 
 fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {
     return RoleAccessContext.runWith(usesRoleIds()) { IUnboundQuery.buildMono(body).bind(createQueryExecutor()) }
 }
 
-fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IFluxStep<R>): IFluxQuery<R> {
+fun <R> INode.buildFluxQuery(body: (IMonoStep<INode>) -> IFluxStep<R>): IFluxQuery<R> {
     return RoleAccessContext.runWith(usesRoleIds()) { IUnboundQuery.buildFlux(body).bind(createQueryExecutor()) }
 }

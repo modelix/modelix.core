@@ -45,6 +45,7 @@ object UntypedModelQL {
             subclass(NodeReferenceAsStringTraversalStep.Descriptor::class)
             subclass(NodeReferenceSourceStep.Descriptor::class)
             subclass(NodeReferenceTraversalStep.Descriptor::class)
+            subclass(OfConceptStep.Descriptor::class)
             subclass(ParentTraversalStep.Descriptor::class)
             subclass(PropertyTraversalStep.PropertyStepDescriptor::class)
             subclass(ReferenceTraversalStep.Descriptor::class)

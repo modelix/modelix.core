@@ -47,6 +47,10 @@ class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?,
         return input
     }
 
+    override fun createTransformingSequence(input: Sequence<INode?>): Sequence<INode> {
+        return input.filterNotNull().filter { conceptUIDs.contains(it.concept?.getUID()) }
+    }
+
     override fun createDescriptor() = Descriptor(conceptUIDs)
 
     @Serializable

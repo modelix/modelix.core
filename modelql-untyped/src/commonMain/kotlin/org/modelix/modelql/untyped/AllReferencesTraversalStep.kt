@@ -36,6 +36,10 @@ class AllReferencesTraversalStep() : FluxTransformingStep<INode, INode>(), IMono
         return input.flatMapConcatConcurrent { it.getAllReferenceTargetsAsFlow().map { it.second } }
     }
 
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<INode> {
+        return getProducer().createSequence(queryInput).flatMap { it.getAllReferenceTargets().map { it.second } }
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
         return serializersModule.serializer<INode>()
     }

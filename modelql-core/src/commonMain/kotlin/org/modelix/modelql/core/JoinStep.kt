@@ -35,9 +35,12 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         producer.addConsumer(this)
     }
 
-    @OptIn(FlowPreview::class)
     override fun createFlow(context: IFlowInstantiationContext): Flow<E> {
         return producers.map { context.getOrCreateFlow(it) }.asFlow().flattenConcat()
+    }
+
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
+        return producers.asSequence().flatMap { it.createSequence(queryInput) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {

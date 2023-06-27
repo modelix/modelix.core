@@ -12,8 +12,15 @@ class RecursiveQueryStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> 
         return SERIALIZER
     }
 
+    fun getQuery(): IUnboundQuery<In, *, Out> = owningQuery!! as IUnboundQuery<In, *, Out>
+
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         return (owningQuery!! as IUnboundQuery<In, *, Out>).asFlow(input)
+    }
+
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
+        val query = getQuery()
+        return getProducer().createSequence(queryInput).flatMap { query.asSequence(sequenceOf(it)) }
     }
 
     override fun requiresSingularQueryInput(): Boolean = true

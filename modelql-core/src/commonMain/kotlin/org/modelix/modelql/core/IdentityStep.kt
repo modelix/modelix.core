@@ -15,6 +15,10 @@ class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
         return input
     }
 
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
+        return getProducer().createSequence(queryInput)
+    }
+
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()

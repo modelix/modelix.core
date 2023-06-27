@@ -118,7 +118,7 @@ interface IMonoUnboundQuery<in In, out Out> : IUnboundQuery<In, Out, Out> {
     fun <T> map(query: IFluxUnboundQuery<Out, T>): IFluxUnboundQuery<In, T>
     fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IMonoUnboundQuery<In, T> = map(IUnboundQuery.buildMono(body))
     fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxUnboundQuery<In, T> = map(IUnboundQuery.buildFlux(body))
-    fun evaluate(input: In): Out
+    fun evaluate(input: In): Optional<Out>
 }
 
 fun <In, Out, AggregationT, T> IMonoUnboundQuery<In, Out>.map(query: IUnboundQuery<Out, AggregationT, T>): IUnboundQuery<In, AggregationT, T> {
@@ -162,7 +162,7 @@ class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IM
         return outputStep.getOutputSerializer(serializersModule).upcast()
     }
 
-    override fun evaluate(input: In): ElementOut {
+    override fun evaluate(input: In): Optional<ElementOut> {
         return outputStep.evaluate(input)
     }
 }
@@ -208,8 +208,8 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
         .filter { it.hasSideEffect() }
         .filter { !isConsumed(it) }
     private val anyStepNeedsCoroutineScope = getAllSteps().any { it.needsCoroutineScope() }
-    private val anyStepDoesAggregations = getAllSteps().any { it.requiresSingularQueryInput() }
-    private val canOptimizeFlows = !anyStepDoesAggregations && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope
+    private val requiresSingularInput = inputStep.requiresSingularQueryInput()
+    private val canOptimizeFlows = !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope
 
     override fun requiresWriteAccess(): Boolean {
         return getAllSteps().any { it.requiresWriteAccess() }
@@ -278,7 +278,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
     override fun asSequence(input: Sequence<In>): Sequence<ElementOut> {
         require(unconsumedSideEffectSteps.isEmpty())
         require(!anyStepNeedsCoroutineScope)
-        return if (anyStepDoesAggregations) {
+        return if (requiresSingularInput) {
             input.flatMap { outputStep.createSequence(sequenceOf(it)) }
         } else {
             outputStep.createSequence(input)
@@ -406,8 +406,8 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
         return queryInput as Sequence<E>
     }
 
-    override fun evaluate(queryInput: Any?): E {
-        return queryInput as E
+    override fun evaluate(queryInput: Any?): Optional<E> {
+        return Optional.of(queryInput as E)
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {

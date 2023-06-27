@@ -56,9 +56,35 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
 
     override fun createFlow(context: IFlowInstantiationContext): Flow<Out> {
         return combine<Any?, Out>(producers.map { context.getOrCreateFlow(it) }) { values ->
-            ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>(values.toList()) as Out
+            ZipNOutput(values.toList()) as Out
         }
     }
+
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
+        return CombiningSequence(producers.map { it.createSequence(queryInput) }.toTypedArray()) as Sequence<Out>
+    }
+}
+
+typealias ZipNOutput = ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>
+
+private class CombiningSequence(private val sequences: Array<Sequence<Any?>>) : Sequence<ZipNOutput> {
+    override fun iterator(): Iterator<ZipNOutput> = object : Iterator<ZipNOutput> {
+        var initialized = false
+        val lastValues = Array<Any?>(sequences.size) { UNINITIALIZED }
+        val iterators = sequences.map { it.iterator() }.toTypedArray()
+        override fun next(): ZipNOutput {
+            for (i in sequences.indices) {
+                if (iterators[i].hasNext()) lastValues[i] = iterators[i].next()
+            }
+            initialized = true
+            return ZipNOutput(lastValues.toList())
+        }
+
+        override fun hasNext(): Boolean {
+            return if (initialized) iterators.any { it.hasNext() } else iterators.all { it.hasNext() }
+        }
+    }
+    object UNINITIALIZED
 }
 
 class ZipOutputSerializer<CommonT>(val elementSerializers: Array<KSerializer<CommonT>>) : KSerializer<ZipOutput<CommonT, *, *, *, *, *, *, *, *, *>> {

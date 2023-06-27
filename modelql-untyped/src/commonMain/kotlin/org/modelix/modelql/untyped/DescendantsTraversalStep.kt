@@ -20,6 +20,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.getDescendants
 import org.modelix.modelql.core.FluxTransformingStep
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
@@ -32,6 +33,10 @@ import org.modelix.modelql.core.flatMapConcatConcurrent
 class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
         return input.flatMapConcatConcurrent { it.getDescendantsAsFlow(includeSelf) }
+    }
+
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<INode> {
+        return getProducer().createSequence(queryInput).flatMap { it.getDescendants(includeSelf) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

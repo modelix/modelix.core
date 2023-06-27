@@ -19,17 +19,17 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
 
     override fun validate() {
         require(!condition.requiresWriteAccess()) { "write access not allowed inside a filtering step: $this" }
-        require(!condition.outputStep.canBeEmpty() && !condition.outputStep.canBeMultiple()) {
-            "filter condition should return exactly one element: $condition"
+        require(!condition.outputStep.canBeMultiple()) {
+            "filter condition should return exactly one element, but it can return multiple: $condition"
         }
     }
 
     override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
-        return input.filter { condition.evaluate(it) == true }
+        return input.filter { condition.evaluate(it).presentAndEqual(true) }
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
-        return getProducer().createSequence(queryInput).filter { condition.evaluate(it) == true }
+        return getProducer().createSequence(queryInput).filter { condition.evaluate(it).presentAndEqual(true) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {

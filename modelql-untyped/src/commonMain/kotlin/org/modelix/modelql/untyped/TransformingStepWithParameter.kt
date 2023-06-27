@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.onEmpty
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.Optional
+import org.modelix.modelql.core.getOrElse
 
 abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : MonoTransformingStep<CommonIn, Out>() {
     private var targetProducer: IProducingStep<ParameterT>? = null
@@ -20,17 +22,18 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
         }
     }
 
-    override fun evaluate(queryInput: Any?): Out {
+    override fun evaluate(queryInput: Any?): Optional<Out> {
         val input = getInputProducer().evaluate(queryInput)
+        if (!input.isPresent()) return Optional.empty()
         val parameter = getParameterProducer().evaluate(queryInput)
-        return transformElement(input, parameter)
+        return Optional.of(transformElement(input.get(), parameter.getOrElse(null) as ParameterT))
     }
 
     override fun transform(input: CommonIn): Out {
         throw UnsupportedOperationException()
     }
 
-    protected abstract fun transformElement(input: In, parameter: ParameterT): Out
+    protected abstract fun transformElement(input: In, parameter: ParameterT?): Out
 
     override fun getProducers(): List<IProducingStep<CommonIn>> {
         return super.getProducers() + listOfNotNull<IProducingStep<CommonIn>>(targetProducer)

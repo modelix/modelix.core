@@ -9,11 +9,11 @@ import kotlinx.serialization.serializer
 
 class OrOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
     override fun createFlow(input: Flow<IZipOutput<Boolean>>, context: IFlowInstantiationContext): Flow<Boolean> {
-        return input.map { it.values.any { it } }
+        return input.map { it.values.any { it == true } }
     }
 
     override fun transform(input: IZipOutput<Boolean>): Boolean {
-        return input.values.any { it }
+        return input.values.any { it == true }
     }
 
     override fun createDescriptor() = Descriptor()
@@ -29,7 +29,7 @@ class OrOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
     override fun getOutputSerializer(serializersModule: SerializersModule) = serializersModule.serializer<Boolean>()
 
     override fun toString(): String {
-        return getProducers().joinToString(" or ")
+        return "or(" + (getProducer() as ZipStep<*, *>).getProducers().joinToString(", ") + ")"
     }
 }
 

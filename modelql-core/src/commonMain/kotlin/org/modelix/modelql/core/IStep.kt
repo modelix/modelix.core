@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
-import kotlin.jvm.JvmInline
 
 interface IStep {
     @Deprecated("")
@@ -25,12 +24,11 @@ interface IStep {
 }
 
 interface IFlowInstantiationContext {
-    val coroutineScope: CoroutineScope
+    val coroutineScope: CoroutineScope?
     fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T>
     fun <T> getFlow(step: IProducingStep<T>): Flow<T>?
 }
-class FlowInstantiationContext(private val coroutineScope_: CoroutineScope?) : IFlowInstantiationContext {
-    override val coroutineScope: CoroutineScope get() = coroutineScope_!!
+class FlowInstantiationContext(override val coroutineScope: CoroutineScope?) : IFlowInstantiationContext {
     private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
     fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
         createdProducers[step] = producer
@@ -45,20 +43,6 @@ class FlowInstantiationContext(private val coroutineScope_: CoroutineScope?) : I
     }
 }
 
-@JvmInline
-value class Optional<E>(private val value: Any?) {
-    fun isPresent(): Boolean = value != EMPTY
-    fun get(): E {
-        require(isPresent()) { "Optional value is not present" }
-        return value as E
-    }
-    companion object {
-        private object EMPTY
-        fun <T> empty() = Optional<T>(EMPTY)
-        fun <T> of(value: T) = Optional<T>(value)
-    }
-}
-
 interface IProducingStep<out E> : IStep {
     fun addConsumer(consumer: IConsumingStep<E>)
     fun getConsumers(): List<IConsumingStep<*>>
@@ -68,12 +52,17 @@ interface IProducingStep<out E> : IStep {
     /**
      * Provides better performance than flows for simple queries without caching
      */
-    fun createSequence(queryInput: Sequence<Any?>): Sequence<E> = TODO()
+    fun createSequence(queryInput: Sequence<Any?>): Sequence<E>
 
     /**
      * Even higher performance than createSequence for producers that output exactly one element
      */
-    fun evaluate(queryInput: Any?): E = createSequence(sequenceOf(queryInput)).single()
+    fun evaluate(queryInput: Any?): Optional<E> {
+        return createSequence(sequenceOf(queryInput))
+            .map { Optional.of(it) }
+            .ifEmpty { sequenceOf(Optional.empty<E>()) }
+            .first()
+    }
 
     fun outputIsConsumedMultipleTimes(): Boolean {
         return getConsumers().size > 1 || getConsumers().any { it.inputIsConsumedMultipleTimes() }
@@ -159,8 +148,8 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
         return input.map { transform(it) }
     }
 
-    override fun evaluate(queryInput: Any?): Out {
-        return transform(getProducer().evaluate(queryInput))
+    override fun evaluate(queryInput: Any?): Optional<Out> {
+        return getProducer().evaluate(queryInput).map { transform(it) }
     }
     abstract fun transform(input: In): Out
 }
@@ -182,7 +171,8 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
             emit(aggregate(input))
         }
         return if (outputIsConsumedMultipleTimes()) {
-            flow.shareIn(context.coroutineScope, SharingStarted.Lazily, 1)
+            val scope = context.coroutineScope ?: throw RuntimeException("Coroutine scope require for caching of $this")
+            flow.shareIn(scope, SharingStarted.Lazily, 1)
                 .take(1) // The shared flow seems to ignore that there are no more elements and keeps the subscribers active.
         } else {
             flow

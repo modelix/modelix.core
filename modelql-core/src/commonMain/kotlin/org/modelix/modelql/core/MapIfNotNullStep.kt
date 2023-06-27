@@ -23,7 +23,7 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     }
 
     override fun transform(input: In?): Out? {
-        return input?.let { query.outputStep.evaluate(it) }
+        return input?.let { query.outputStep.evaluate(it).getOrElse(null) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out?> {

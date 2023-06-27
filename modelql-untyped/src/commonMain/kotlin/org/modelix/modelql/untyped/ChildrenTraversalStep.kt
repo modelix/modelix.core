@@ -35,6 +35,10 @@ class ChildrenTraversalStep(val role: String?) : FluxTransformingStep<INode, INo
         return input.flatMapConcatConcurrent { it.getChildrenAsFlow(it.resolveChildLinkOrFallback(role)) }
     }
 
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<INode> {
+        return getProducer().createSequence(queryInput).flatMap { it.getChildren(it.resolveChildLinkOrFallback(role)) }
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
         return serializersModule.serializer<INode>()
     }

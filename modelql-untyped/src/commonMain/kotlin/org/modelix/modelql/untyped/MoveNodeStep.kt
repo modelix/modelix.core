@@ -20,8 +20,13 @@ class MoveNodeStep(val role: String?, val index: Int) :
         return getInputProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun transformElement(input: INode, parameter: INode): INode {
-        input.moveChild(input.resolveChildLinkOrFallback(role), index, parameter)
+    override fun validate() {
+        super.validate()
+        require(!getParameterProducer().canBeEmpty()) { "The child parameter for moveChild is mandatory, but was: ${getParameterProducer()}" }
+    }
+
+    override fun transformElement(input: INode, parameter: INode?): INode {
+        input.moveChild(input.resolveChildLinkOrFallback(role), index, parameter!!)
         return input
     }
 

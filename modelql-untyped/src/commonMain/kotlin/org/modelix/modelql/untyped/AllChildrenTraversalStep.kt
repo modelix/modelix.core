@@ -31,9 +31,12 @@ import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class AllChildrenTraversalStep() : FluxTransformingStep<INode, INode>() {
-    @OptIn(FlowPreview::class)
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
         return input.flatMapConcatConcurrent { it.getAllChildrenAsFlow() }
+    }
+
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<INode> {
+        return getProducer().createSequence(queryInput).flatMap { it.allChildren }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

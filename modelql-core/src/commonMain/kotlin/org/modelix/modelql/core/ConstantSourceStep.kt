@@ -18,8 +18,8 @@ abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), IMono
         return sequenceOf(element)
     }
 
-    override fun evaluate(queryInput: Any?): E {
-        return element
+    override fun evaluate(queryInput: Any?): Optional<E> {
+        return Optional.of(element)
     }
 
     override fun createFlow(context: IFlowInstantiationContext): Flow<E> {

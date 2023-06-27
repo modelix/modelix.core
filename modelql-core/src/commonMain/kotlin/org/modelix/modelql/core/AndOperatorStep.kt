@@ -9,11 +9,11 @@ import kotlinx.serialization.serializer
 
 class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
     override fun createFlow(input: Flow<IZipOutput<Boolean>>, context: IFlowInstantiationContext): Flow<Boolean> {
-        return input.map { it.values.all { it } }
+        return input.map { it.values.all { it == true } }
     }
 
     override fun transform(input: IZipOutput<Boolean>): Boolean {
-        return input.values.all { it }
+        return input.values.all { it == true }
     }
 
     override fun createDescriptor() = Descriptor()
@@ -29,7 +29,7 @@ class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
     override fun getOutputSerializer(serializersModule: SerializersModule) = serializersModule.serializer<Boolean>()
 
     override fun toString(): String {
-        return getProducers().joinToString(" and ")
+        return "and(" + getProducers().joinToString(", ") + ")"
     }
 }
 

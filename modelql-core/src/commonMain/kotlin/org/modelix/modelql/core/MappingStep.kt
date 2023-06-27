@@ -23,6 +23,10 @@ abstract class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : Tran
         return query.asFlow(input)
     }
 
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
+        return query.asSequence(queryInput as Sequence<In>)
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out> {
         return query.getOutputSerializer(serializersModule)
     }

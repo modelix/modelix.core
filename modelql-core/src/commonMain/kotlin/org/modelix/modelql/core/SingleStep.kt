@@ -13,6 +13,10 @@ class SingleStep<E>() : AggregationStep<E, E>() {
         return input.single()
     }
 
+    override fun aggregate(input: Sequence<E>): E {
+        return input.single()
+    }
+
     override fun toString(): String {
         return "${getProducer()}.single()"
     }

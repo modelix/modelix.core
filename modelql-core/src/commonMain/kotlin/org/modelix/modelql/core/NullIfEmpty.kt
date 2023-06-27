@@ -20,6 +20,10 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
         return downcast.onEmpty { emit(null) }
     }
 
+    override fun transform(input: E): E? {
+        return input
+    }
+
     override fun createDescriptor() = OrNullDescriptor()
 
     @Serializable

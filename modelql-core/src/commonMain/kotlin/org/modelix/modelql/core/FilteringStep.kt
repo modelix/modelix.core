@@ -2,7 +2,6 @@ package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,13 +19,17 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
 
     override fun validate() {
         require(!condition.requiresWriteAccess()) { "write access not allowed inside a filtering step: $this" }
-        require (!condition.outputStep.canBeEmpty() && !condition.outputStep.canBeMultiple()) {
+        require(!condition.outputStep.canBeEmpty() && !condition.outputStep.canBeMultiple()) {
             "filter condition should return exactly one element: $condition"
         }
     }
 
     override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
         return input.filter { condition.evaluate(it) == true }
+    }
+
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
+        return getProducer().createSequence(queryInput).filter { condition.evaluate(it) == true }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {

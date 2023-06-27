@@ -9,6 +9,10 @@ abstract class FoldingStep<In, Out>(private val initial: Out) : AggregationStep<
         return input.fold(initial) { acc, value -> fold(acc, value) }
     }
 
+    override fun aggregate(input: Sequence<In>): Out {
+        return input.fold(initial) { acc, value -> fold(acc, value) }
+    }
+
     private var result: Out = initial
 
     protected abstract fun fold(acc: Out, value: In): Out

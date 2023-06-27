@@ -23,6 +23,7 @@ class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     override fun createDescriptor() = Descriptor()
 
     override suspend fun aggregate(input: Flow<E>): List<E> = input.toList()
+    override fun aggregate(input: Sequence<E>): List<E> = input.toList()
 
     @Serializable
     @SerialName("toList")
@@ -46,6 +47,7 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
     override fun createDescriptor() = Descriptor()
 
     override suspend fun aggregate(input: Flow<E>): Set<E> = input.toSet()
+    override fun aggregate(input: Sequence<E>): Set<E> = input.toSet()
 
     @Serializable
     @SerialName("toSet")

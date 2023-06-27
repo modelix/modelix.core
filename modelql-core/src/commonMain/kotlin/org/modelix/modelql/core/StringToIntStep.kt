@@ -17,6 +17,10 @@ class StringToIntStep : MonoTransformingStep<String?, Int>() {
         return input.map { it?.toInt() ?: 0 }
     }
 
+    override fun transform(input: String?): Int {
+        return input?.toInt() ?: 0
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return Descriptor()
     }

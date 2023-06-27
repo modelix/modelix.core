@@ -155,6 +155,10 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
         return input.map { it.typed(nodeClass) }
     }
 
+    override fun transform(input: INode): Typed {
+        return input.typed(nodeClass)
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return IdentityStep.IdentityStepDescriptor()
     }
@@ -183,6 +187,10 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
 
     override fun createFlow(input: Flow<ITypedNode>, context: IFlowInstantiationContext): Flow<INode> {
         return input.map { it.unwrap() }
+    }
+
+    override fun transform(input: ITypedNode): INode {
+        return input.unwrap()
     }
 
     override fun createDescriptor(): StepDescriptor {

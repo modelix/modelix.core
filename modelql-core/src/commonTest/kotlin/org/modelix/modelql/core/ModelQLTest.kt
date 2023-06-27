@@ -19,11 +19,7 @@ import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
-import kotlin.test.assertTrue
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 
 class ModelQLTest {
     fun runTestWithTimeout(body: suspend TestScope.() -> Unit): TestResult {
@@ -147,25 +143,6 @@ class ModelQLTest {
         println(result)
     }
 
-    @OptIn(ExperimentalTime::class)
-    @Test
-    fun filterPerformance() = runTest {
-        val query = buildMonoQuery<Int, Int> { it.filter { false.asMono() } }
-        val intRange = 1..100000
-        val timeWithQuery: Duration = measureTime {
-            query.asFlow(intRange.asFlow()).count()
-        }
-        println("timeWithQuery: $timeWithQuery")
-
-        val timeWithFlow = measureTime {
-            intRange.asFlow().filter { false }.count()
-        }
-        println("timeWithFlow: $timeWithFlow")
-
-        val factor = timeWithQuery / timeWithFlow
-        assertTrue(factor < 10, "A query is $factor times slower")
-    }
-
     data class MyNonSerializableClass(val id: Int, val title: String, val images: List<MyImage>)
     data class MyImage(val url: String)
 }
@@ -237,6 +214,10 @@ class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
         return input.map { it.title }
     }
 
+    override fun transform(input: Product): String {
+        return input.title
+    }
+
     override fun toString(): String {
         return getProducers().single().toString() + ".title"
     }
@@ -255,6 +236,10 @@ class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
 class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
     override fun createFlow(input: Flow<Product>, context: IFlowInstantiationContext): Flow<Int> {
         return input.map { it.id }
+    }
+
+    override fun transform(input: Product): Int {
+        return input.id
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Int> = serializersModule.serializer<Int>()

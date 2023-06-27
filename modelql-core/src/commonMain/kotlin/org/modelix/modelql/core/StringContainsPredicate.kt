@@ -13,6 +13,10 @@ class StringContainsPredicate(val substring: String) : MonoTransformingStep<Stri
         return input.map { it?.contains(substring) ?: false }
     }
 
+    override fun transform(input: String?): Boolean {
+        return input?.contains(substring) ?: false
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
         return serializersModule.serializer<Boolean>()
     }

@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -89,6 +88,7 @@ interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     suspend fun execute(input: In): AggregationOut
     fun asFlow(input: Flow<In>): Flow<ElementOut>
     fun asFlow(input: In): Flow<ElementOut> = asFlow(flowOf(input))
+    fun asSequence(input: Sequence<In>): Sequence<ElementOut>
 
     fun requiresWriteAccess(): Boolean
 
@@ -210,6 +210,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
         .filter { it.hasSideEffect() }
         .filter { !isConsumed(it) }
     val anyStepNeedsCoroutineScope = getAllSteps().any { it.needsCoroutineScope() }
+    val anyStepDoesAggregations = getAllSteps().any { it.requiresSingularQueryInput() }
 
     override fun requiresWriteAccess(): Boolean {
         return getAllSteps().any { it.requiresWriteAccess() }
@@ -265,6 +266,16 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                     }
                 }
             }
+        }
+    }
+
+    override fun asSequence(input: Sequence<In>): Sequence<ElementOut> {
+        require(unconsumedSideEffectSteps.isEmpty())
+        require(!anyStepNeedsCoroutineScope)
+        return if (anyStepDoesAggregations) {
+            input.flatMap { outputStep.createSequence(sequenceOf(it)) }
+        } else {
+            outputStep.createSequence(input)
         }
     }
 
@@ -385,8 +396,12 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     internal var indirectConsumer: IConsumingStep<E>? = null
     override fun toString(): String = "it"
 
-    override fun evaluate(input: Any?): E {
-        return input as E
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
+        return queryInput as Sequence<E>
+    }
+
+    override fun evaluate(queryInput: Any?): E {
+        return queryInput as E
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {

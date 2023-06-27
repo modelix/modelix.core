@@ -23,6 +23,7 @@ import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
+import org.modelix.model.area.ContextArea
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -39,6 +40,12 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
                 ?: throw IllegalStateException("No INodeResolutionScope found in the coroutine context")
             it.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $it")
         }
+    }
+
+    override fun transform(input: INodeReference): INode {
+        val refScope: INodeResolutionScope = ContextArea.getArea()
+            ?: throw IllegalStateException("No context IArea found")
+        return input.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $input")
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {

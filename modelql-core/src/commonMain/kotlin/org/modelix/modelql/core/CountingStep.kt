@@ -13,6 +13,8 @@ class CountingStep() : AggregationStep<Any?, Int>() {
         return input.count()
     }
 
+    override fun aggregate(input: Sequence<Any?>): Int = input.count()
+
     override fun createDescriptor() = CountDescriptor()
 
     @Serializable

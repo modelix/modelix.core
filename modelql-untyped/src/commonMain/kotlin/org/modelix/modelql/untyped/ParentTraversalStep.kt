@@ -37,6 +37,16 @@ class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<IN
         return input.flatMapConcatConcurrent { it.getParentAsFlow() }
     }
 
+    override fun canBeEmpty(): Boolean = true
+
+    override fun transform(input: INode): INode {
+        return input.parent!!
+    }
+
+    override fun createTransformingSequence(input: Sequence<INode>): Sequence<INode> {
+        return input.mapNotNull { it.parent }
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
         return serializersModule.serializer<INode>()
     }

@@ -19,6 +19,11 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
         }
     }
 
+    override fun transform(input: E): E {
+        println(prefix + input)
+        return input
+    }
+
     override fun createDescriptor(): StepDescriptor = Descriptor(prefix)
 
     @Serializable

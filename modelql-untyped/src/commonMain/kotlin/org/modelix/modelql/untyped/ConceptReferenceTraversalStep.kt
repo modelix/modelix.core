@@ -13,8 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,18 +21,16 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.contains
-import org.modelix.modelql.core.map
 
 class ConceptReferenceTraversalStep() : MonoTransformingStep<INode?, ConceptReference?>() {
-    override fun createFlow(input: Flow<INode?>, context: IFlowInstantiationContext): Flow<ConceptReference?> {
-        return input.map { it?.getConceptReference() as ConceptReference? }
+    override fun transform(input: INode?): ConceptReference? {
+        return input?.getConceptReference() as ConceptReference?
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<ConceptReference?> {

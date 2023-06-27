@@ -13,6 +13,10 @@ class NotOperatorStep() : MonoTransformingStep<Boolean, Boolean>() {
         return input.map { !it }
     }
 
+    override fun transform(input: Boolean): Boolean {
+        return !input
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
         return serializersModule.serializer<Boolean>()
     }

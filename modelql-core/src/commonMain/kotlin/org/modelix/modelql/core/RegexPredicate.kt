@@ -13,6 +13,10 @@ class RegexPredicate(val regex: Regex) : MonoTransformingStep<String?, Boolean>(
         return input.map { it?.matches(regex) ?: false }
     }
 
+    override fun transform(input: String?): Boolean {
+        return input?.matches(regex) ?: false
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
         return serializersModule.serializer<Boolean>()
     }

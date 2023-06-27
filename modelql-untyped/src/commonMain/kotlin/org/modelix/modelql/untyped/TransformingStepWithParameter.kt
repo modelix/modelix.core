@@ -20,6 +20,16 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
         }
     }
 
+    override fun evaluate(queryInput: Any?): Out {
+        val input = getInputProducer().evaluate(queryInput)
+        val parameter = getParameterProducer().evaluate(queryInput)
+        return transformElement(input, parameter)
+    }
+
+    override fun transform(input: CommonIn): Out {
+        throw UnsupportedOperationException()
+    }
+
     protected abstract fun transformElement(input: In, parameter: ParameterT): Out
 
     override fun getProducers(): List<IProducingStep<CommonIn>> {

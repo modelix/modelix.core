@@ -13,8 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -22,18 +20,16 @@ import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.contains
-import org.modelix.modelql.core.map
 
 class RoleInParentTraversalStep() : MonoTransformingStep<INode, String?>() {
-    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<String?> {
-        return input.map { it.roleInParent }
+    override fun transform(input: INode): String? {
+        return input.roleInParent
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out String?> {

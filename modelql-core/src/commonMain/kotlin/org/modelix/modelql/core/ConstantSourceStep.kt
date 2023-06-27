@@ -14,7 +14,11 @@ abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), IMono
 
     override fun canBeMultiple(): Boolean = false
 
-    override fun evaluate(input: Any?): E {
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
+        return sequenceOf(element)
+    }
+
+    override fun evaluate(queryInput: Any?): E {
         return element
     }
 

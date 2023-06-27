@@ -19,6 +19,10 @@ class ToStringStep : MonoTransformingStep<Any?, String?>() {
         return input.map { it?.toString() }
     }
 
+    override fun transform(input: Any?): String? {
+        return input?.toString()
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return Descriptor()
     }

@@ -13,6 +13,10 @@ class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
         return input.map { it + operand }
     }
 
+    override fun transform(input: Int): Int {
+        return input + operand
+    }
+
     override fun createDescriptor() = IntSumDescriptor(operand)
 
     @Serializable

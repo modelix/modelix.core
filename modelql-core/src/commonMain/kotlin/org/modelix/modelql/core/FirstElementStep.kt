@@ -12,6 +12,10 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
         return input.take(1)
     }
 
+    override fun transform(input: E): E {
+        return input
+    }
+
     override fun toString(): String {
         return getProducer().toString() + ".first()"
     }

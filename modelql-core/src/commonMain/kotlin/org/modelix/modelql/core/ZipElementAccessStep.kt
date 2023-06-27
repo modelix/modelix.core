@@ -18,6 +18,10 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
         return input.map { it.values[index] as Out }
     }
 
+    override fun transform(input: IZipOutput<Any?>): Out {
+        return input.values[index] as Out
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return Descriptor(index)
     }

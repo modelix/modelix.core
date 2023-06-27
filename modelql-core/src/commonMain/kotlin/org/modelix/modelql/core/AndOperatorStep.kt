@@ -12,6 +12,10 @@ class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
         return input.map { it.values.all { it } }
     }
 
+    override fun transform(input: IZipOutput<Boolean>): Boolean {
+        return input.values.all { it }
+    }
+
     override fun createDescriptor() = Descriptor()
 
     @Serializable

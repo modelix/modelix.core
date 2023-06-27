@@ -14,6 +14,10 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
         return input.firstOrNull()
     }
 
+    override fun aggregate(input: Sequence<E>): E? {
+        return input.firstOrNull()
+    }
+
     override fun toString(): String {
         return "${getProducer()}.firstOrNull()"
     }

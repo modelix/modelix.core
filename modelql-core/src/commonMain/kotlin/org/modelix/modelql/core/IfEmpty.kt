@@ -16,6 +16,16 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
         }
     }
 
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
+        return getProducer().createSequence(queryInput)
+            .ifEmpty { alternative.outputStep.createSequence(sequenceOf(Unit)) }
+    }
+
+    override fun canBeEmpty(): Boolean = alternative.outputStep.canBeEmpty()
+
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple() || alternative.outputStep.canBeMultiple()
+    override fun requiresSingularQueryInput(): Boolean = true
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
         TODO("Not yet implemented")
     }

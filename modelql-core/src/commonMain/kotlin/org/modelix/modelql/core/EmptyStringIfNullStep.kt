@@ -17,6 +17,10 @@ class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
         return input.map { it ?: "" }
     }
 
+    override fun transform(input: String?): String {
+        return input ?: ""
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return Descriptor()
     }

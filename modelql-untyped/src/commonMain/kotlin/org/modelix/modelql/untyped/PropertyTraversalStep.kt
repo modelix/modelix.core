@@ -35,6 +35,10 @@ class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, Stri
         return input.flatMapConcatConcurrent { it.getPropertyValueAsFlow(it.resolvePropertyOrFallback(role)) }
     }
 
+    override fun transform(input: INode): String? {
+        return input.getPropertyValue(input.resolvePropertyOrFallback(role))
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String?> {
         return serializersModule.serializer<String?>()
     }

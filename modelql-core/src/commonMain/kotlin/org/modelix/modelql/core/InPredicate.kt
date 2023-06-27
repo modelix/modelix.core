@@ -14,6 +14,10 @@ class InPredicate(val values: Set<String>) : MonoTransformingStep<String?, Boole
         return input.map { values.contains(it) }
     }
 
+    override fun transform(input: String?): Boolean {
+        return values.contains(input)
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
         return serializersModule.serializer<Boolean>()
     }

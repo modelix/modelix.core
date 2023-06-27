@@ -37,6 +37,11 @@ class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INo
         return input.flatMapConcatConcurrent { it.getReferenceTargetAsFlow(it.resolveReferenceLinkOrFallback(role)) }
     }
 
+    override fun transform(input: INode): INode {
+        return input.getReferenceTarget(input.resolveReferenceLinkOrFallback(role))
+            ?: throw NullPointerException("There is not reference target $role in node $input")
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
         return serializersModule.serializer<INode>()
     }

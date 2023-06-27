@@ -14,6 +14,10 @@ abstract class EqualsOperatorStep<E>(val operand: E) : MonoTransformingStep<E?, 
         return input.map { it == operand }
     }
 
+    override fun transform(input: E?): Boolean {
+        return input == operand
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
         return serializersModule.serializer<Boolean>()
     }

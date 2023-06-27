@@ -1,7 +1,5 @@
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,7 +10,6 @@ import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.key
 import org.modelix.model.api.resolveChildLinkOrFallback
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
@@ -26,8 +23,8 @@ class AddNewChildNodeStep(val role: String?, val index: Int, val concept: Concep
         return serializersModule.serializer<INode>()
     }
 
-    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.map { it.addNewChild(it.resolveChildLinkOrFallback(role), index, concept) }
+    override fun transform(input: INode): INode {
+        return input.addNewChild(input.resolveChildLinkOrFallback(role), index, concept)
     }
 
     override fun createDescriptor(): StepDescriptor {

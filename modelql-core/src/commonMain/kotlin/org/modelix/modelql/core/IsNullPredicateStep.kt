@@ -13,6 +13,10 @@ class IsNullPredicateStep<In>() : MonoTransformingStep<In, Boolean>() {
         return input.map { it == null }
     }
 
+    override fun transform(input: In): Boolean {
+        return input == null
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
         return serializersModule.serializer<Boolean>()
     }

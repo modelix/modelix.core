@@ -27,6 +27,10 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
         return input.map { it.remove() }.count()
     }
 
+    override fun aggregate(input: Sequence<INode>): Int {
+        return input.map { it.remove() }.count()
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return Descriptor()
     }

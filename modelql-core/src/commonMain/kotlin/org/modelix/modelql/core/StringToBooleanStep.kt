@@ -17,6 +17,10 @@ class StringToBooleanStep : MonoTransformingStep<String?, Boolean>() {
         return input.map { it?.toBoolean() ?: false }
     }
 
+    override fun transform(input: String?): Boolean {
+        return input?.toBoolean() ?: false
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return Descriptor()
     }

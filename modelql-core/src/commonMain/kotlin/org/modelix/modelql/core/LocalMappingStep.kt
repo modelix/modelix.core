@@ -18,6 +18,10 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
         return input.map(transformation)
     }
 
+    override fun transform(input: In): Out {
+        return transformation(input)
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return IdentityStep.IdentityStepDescriptor()
     }

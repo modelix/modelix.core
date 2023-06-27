@@ -16,6 +16,8 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
         return input.take(1).map { false }.onEmpty { emit(false) }.single()
     }
 
+    override fun aggregate(input: Sequence<Any?>): Boolean = input.none()
+
     override fun createDescriptor() = Descriptor()
 
     @Serializable

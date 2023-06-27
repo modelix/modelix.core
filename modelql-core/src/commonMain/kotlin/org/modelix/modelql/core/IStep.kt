@@ -4,10 +4,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
+import kotlin.jvm.JvmInline
 
 interface IStep {
     @Deprecated("")
@@ -19,6 +21,7 @@ interface IStep {
     fun requiresWriteAccess(): Boolean = false
     fun hasSideEffect(): Boolean = requiresWriteAccess()
     fun needsCoroutineScope() = false
+    fun requiresSingularQueryInput(): Boolean = false
 }
 
 interface IFlowInstantiationContext {
@@ -42,23 +45,47 @@ class FlowInstantiationContext(private val coroutineScope_: CoroutineScope?) : I
     }
 }
 
+@JvmInline
+value class Optional<E>(private val value: Any?) {
+    fun isPresent(): Boolean = value != EMPTY
+    fun get(): E {
+        require(isPresent()) { "Optional value is not present" }
+        return value as E
+    }
+    companion object {
+        private object EMPTY
+        fun <T> empty() = Optional<T>(EMPTY)
+        fun <T> of(value: T) = Optional<T>(value)
+    }
+}
+
 interface IProducingStep<out E> : IStep {
     fun addConsumer(consumer: IConsumingStep<E>)
     fun getConsumers(): List<IConsumingStep<*>>
     fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E>
     fun createFlow(context: IFlowInstantiationContext): Flow<E>
+
+    /**
+     * Provides better performance than flows for simple queries without caching
+     */
+    fun createSequence(queryInput: Sequence<Any?>): Sequence<E> = TODO()
+
+    /**
+     * Even higher performance than createSequence for producers that output exactly one element
+     */
+    fun evaluate(queryInput: Any?): E = createSequence(sequenceOf(queryInput)).single()
+
     fun outputIsConsumedMultipleTimes(): Boolean {
         return getConsumers().size > 1 || getConsumers().any { it.inputIsConsumedMultipleTimes() }
     }
+
     fun canBeEmpty(): Boolean = true
     fun canBeMultiple(): Boolean = true
 }
 fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) = addConsumer(consumer)
 fun <T> IConsumingStep<T>.connect(producer: IProducingStep<T>) = producer.addConsumer(this)
 
-interface IMonoStep<out E> : IProducingStep<E> {
-    fun evaluate(input: Any?): E = throw UnsupportedOperationException()
-}
+interface IMonoStep<out E> : IProducingStep<E>
 
 interface IFluxStep<out E> : IProducingStep<E>
 interface IFluxOrMonoStep<out E> : IMonoStep<E>, IFluxStep<E>
@@ -73,6 +100,8 @@ interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out> {
     override fun inputIsConsumedMultipleTimes(): Boolean {
         return outputIsConsumedMultipleTimes()
     }
+
+    override fun requiresSingularQueryInput(): Boolean = getConsumers().any { it.requiresSingularQueryInput() }
 }
 
 abstract class ProducingStep<E> : IProducingStep<E> {
@@ -117,6 +146,23 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
     fun connectAndDowncast(producer: IMonoStep<In>): IMonoStep<Out> = also { producer.connect(it) }
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
+
+    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+        return input.map { transform(it) }
+    }
+
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
+        return createTransformingSequence(getProducer().createSequence(queryInput))
+    }
+
+    open fun createTransformingSequence(input: Sequence<In>): Sequence<Out> {
+        return input.map { transform(it) }
+    }
+
+    override fun evaluate(queryInput: Any?): Out {
+        return transform(getProducer().evaluate(queryInput))
+    }
+    abstract fun transform(input: In): Out
 }
 
 abstract class FluxTransformingStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> {
@@ -129,6 +175,7 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun canBeEmpty(): Boolean = false
 
     override fun canBeMultiple(): Boolean = false
+    override fun requiresSingularQueryInput(): Boolean = true
 
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
         val flow = flow {
@@ -142,6 +189,10 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         }
     }
 
+    override fun transform(input: In): Out {
+        return aggregate(sequenceOf(input))
+    }
+
     override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()
 
     override fun inputIsConsumedMultipleTimes(): Boolean {
@@ -149,4 +200,5 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     }
 
     protected abstract suspend fun aggregate(input: Flow<In>): Out
+    protected abstract fun aggregate(input: Sequence<In>): Out
 }

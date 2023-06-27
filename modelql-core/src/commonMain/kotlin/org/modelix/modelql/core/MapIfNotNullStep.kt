@@ -22,6 +22,10 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
         return input.flatMapConcat { it?.let { query.asFlow(it) } ?: flowOf(null) }
     }
 
+    override fun transform(input: In?): Out? {
+        return input?.let { query.outputStep.evaluate(it) }
+    }
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out?> {
         return query.getOutputSerializer(serializersModule)
     }

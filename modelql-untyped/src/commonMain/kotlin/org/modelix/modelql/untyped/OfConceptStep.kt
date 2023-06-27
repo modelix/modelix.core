@@ -41,6 +41,12 @@ class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?,
         return serializersModule.serializer<INode>()
     }
 
+    override fun transform(input: INode?): INode {
+        require(input != null) { "node is null" }
+        require(conceptUIDs.contains(input.concept?.getUID())) { "$input is not an instance of $conceptUIDs" }
+        return input
+    }
+
     override fun createDescriptor() = Descriptor(conceptUIDs)
 
     @Serializable

@@ -426,6 +426,9 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
 
     override fun canBeEmpty(): Boolean = false
     override fun canBeMultiple(): Boolean = false
+    override fun requiresSingularQueryInput(): Boolean {
+        return getConsumers().any { it.requiresSingularQueryInput() }
+    }
 
     override fun createDescriptor() = Descriptor()
 

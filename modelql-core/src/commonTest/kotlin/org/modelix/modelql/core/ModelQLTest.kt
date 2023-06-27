@@ -19,6 +19,7 @@ import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class ModelQLTest {
@@ -37,6 +38,8 @@ class ModelQLTest {
                 val id = it.id
                 val title = it.title
                 val images = it.images.mapLocal { MyImage(it) }.toList()
+                assertTrue(images.requiresSingularQueryInput())
+                assertTrue(it.requiresSingularQueryInput())
                 id.zip(title, images).mapLocal {
                     MyNonSerializableClass(it.first, it.second, it.third)
                 }

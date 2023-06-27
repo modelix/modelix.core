@@ -23,6 +23,11 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
 
     override fun canBeMultiple(): Boolean = producers.any { it.canBeMultiple() }
 
+    override fun requiresSingularQueryInput(): Boolean {
+        // zip repeats the last value of a producer
+        return !producers.all { !it.canBeEmpty() && !it.canBeMultiple() }
+    }
+
     override fun toString(): String {
         return "zip(${getProducers().joinToString(", ") { it.toString() }})"
     }

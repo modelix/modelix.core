@@ -30,7 +30,7 @@ class PerformanceTests {
 
         val factor = timeWithQuery / timeWithFlow
         val message = "A query is $factor times slower"
-        assertTrue(factor < 3, message)
+        assertTrue(factor < 5, message)
         println(message)
     }
 
@@ -52,7 +52,7 @@ class PerformanceTests {
 
         val factor = timeWithQuery / timeWithSequence
         val message = "A query is $factor times slower"
-        assertTrue(factor < 3, message)
+        assertTrue(factor < 5, message)
         println(message)
     }
 

@@ -1,10 +1,12 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.toList
@@ -216,25 +218,27 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
 
     @OptIn(FlowPreview::class)
     override fun asFlow(input: Flow<In>): Flow<ElementOut> {
-        return channelFlow {
-            input.flatMapConcat {
-                val context = FlowInstantiationContext(this)
-                context.put(inputStep, flowOf(it))
+        return flow<ElementOut> {
+            input.collect { inputElement ->
+                coroutineScope {
+                    val context = FlowInstantiationContext(this)
+                    context.put(inputStep, flowOf(inputElement))
 
-                val outputFlow = context.getOrCreateFlow(outputStep)
+                    val outputFlow = context.getOrCreateFlow(outputStep)
 
-                // ensure all write operations are executed
-                (getAllSteps() - outputStep)
-                    .filterIsInstance<IProducingStep<*>>()
-                    .filter { it.hasSideEffect() }
-                    .mapNotNull {
-                        if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
+                    // ensure all write operations are executed
+                    (getAllSteps() - outputStep)
+                        .filterIsInstance<IProducingStep<*>>()
+                        .filter { it.hasSideEffect() }
+                        .mapNotNull {
+                            if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
+                        }
+                        .forEach { it.collect() }
+
+                    outputFlow.collect { outputElement ->
+                        emit(outputElement)
                     }
-                    .forEach { it.collect() }
-
-                outputFlow
-            }.collect {
-                send(it)
+                }
             }
         }
     }

@@ -2,6 +2,8 @@ package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.TestResult
@@ -17,7 +19,11 @@ import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 class ModelQLTest {
     fun runTestWithTimeout(body: suspend TestScope.() -> Unit): TestResult {
@@ -139,6 +145,25 @@ class ModelQLTest {
             }.toList()
         }
         println(result)
+    }
+
+    @OptIn(ExperimentalTime::class)
+    @Test
+    fun filterPerformance() = runTest {
+        val query = buildMonoQuery<Int, Int> { it.filter { false.asMono() } }
+        val intRange = 1..100000
+        val timeWithQuery: Duration = measureTime {
+            query.asFlow(intRange.asFlow()).count()
+        }
+        println("timeWithQuery: $timeWithQuery")
+
+        val timeWithFlow = measureTime {
+            intRange.asFlow().filter { false }.count()
+        }
+        println("timeWithFlow: $timeWithFlow")
+
+        val factor = timeWithQuery / timeWithFlow
+        assertTrue(factor < 10, "A query is $factor times slower")
     }
 
     data class MyNonSerializableClass(val id: Int, val title: String, val images: List<MyImage>)

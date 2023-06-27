@@ -123,7 +123,7 @@ class ModelImporter(private val root: INode) {
 
     private fun syncAllChildOrders(root: INode, rootData: NodeData) {
         syncChildOrder(root, rootData)
-        for ((node, data) in root.allChildren.zip(rootData.children)) {
+        for ((node, data) in root.allChildren zip rootData.children) {
             syncAllChildOrders(node, data)
         }
     }
@@ -133,13 +133,20 @@ class ModelImporter(private val root: INode) {
         val specifiedChildren = nodeData.children
         require(existingChildren.size == specifiedChildren.size)
 
-        for ((actualNode, specifiedNode) in existingChildren zip specifiedChildren) {
-            val actualId = actualNode.originalId()
-            if (actualId != specifiedNode.originalId() ) {
-                val targetIndex = specifiedChildren.indexOfFirst { actualId == it.originalId() }
-                node.moveChild(actualNode.roleInParent, targetIndex, actualNode)
-            }
+        val targetIndices = HashMap<String?, Int>(nodeData.children.size)
+        for (specifiedChild in specifiedChildren) {
+            val index = specifiedChild.getIndexWithinRole(nodeData)
+            targetIndices[specifiedChild.originalId()] = index
         }
+
+        for (child in existingChildren) {
+            val targetIndex = targetIndices[child.originalId()] ?: -1
+            node.moveChild(child.roleInParent, targetIndex, child)
+        }
+    }
+
+    private fun NodeData.getIndexWithinRole(parent: NodeData) : Int {
+        return parent.children.filter { it.role == this.role }.indexOf(this)
     }
 
     private fun INode.originalId(): String? {

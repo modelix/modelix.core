@@ -214,7 +214,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
         .filter { it.hasSideEffect() }
         .filter { !isConsumed(it) }
     private val anyStepNeedsCoroutineScope = getAllSteps().any { it.needsCoroutineScope() }
-    private val requiresSingularInput = inputStep.requiresSingularQueryInput()
+    private val requiresSingularInput = getAllSteps().any { it.requiresSingularQueryInput() } // inputStep.requiresSingularQueryInput()
     private val isSinglePath: Boolean = (getAllSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
         (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
     private val canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope

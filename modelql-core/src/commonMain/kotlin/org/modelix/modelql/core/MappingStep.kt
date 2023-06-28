@@ -15,6 +15,10 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple() || query.outputStep.canBeMultiple()
 
+    override fun requiresSingularQueryInput(): Boolean {
+        return super.requiresSingularQueryInput() || query.inputStep.requiresSingularQueryInput()
+    }
+
     override fun requiresWriteAccess(): Boolean {
         return query.requiresWriteAccess()
     }

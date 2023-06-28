@@ -41,3 +41,5 @@ class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
 }
 
 fun <T> IMonoStep<T>.asFlux(): IFluxStep<T> = IdentityStep<T>().also { connect(it) }
+fun <T> IFluxStep<T>.identity(): IFluxStep<T> = IdentityStep<T>().also { connect(it) }
+fun <T> IMonoStep<T>.identity(): IMonoStep<T> = IdentityStep<T>().also { connect(it) }

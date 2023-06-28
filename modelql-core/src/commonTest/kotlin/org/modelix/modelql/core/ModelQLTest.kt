@@ -185,6 +185,14 @@ class ModelQLTest {
     }
 
     @Test
+    fun testZipCount() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.flatMap { it.images }.map { it.zip() }.count()
+        }
+        assertEquals(testDatabase.products.flatMap { it.images }.count(), result)
+    }
+
+    @Test
     fun testZipFlowVsSequence() = runTestWithTimeout {
         val flowSize = (1..10).asFlow().flatMapConcat {
             combine(listOf(flowOf(it), (30..60).asFlow())) { it[0] to it[1] }

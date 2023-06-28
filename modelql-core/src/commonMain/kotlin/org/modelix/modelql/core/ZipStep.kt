@@ -24,8 +24,9 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
     override fun canBeMultiple(): Boolean = producers.any { it.canBeMultiple() }
 
     override fun requiresSingularQueryInput(): Boolean {
-        if (producers.any { !it.isSingle() }) return true
-        return super<ProducingStep>.requiresSingularQueryInput()
+        return true
+//        if (producers.any { !it.isSingle() }) return true
+//        return super<ProducingStep>.requiresSingularQueryInput()
     }
 
     override fun validate() {

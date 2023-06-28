@@ -1,5 +1,6 @@
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -215,7 +216,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
     private val anyStepNeedsCoroutineScope = getAllSteps().any { it.needsCoroutineScope() }
     private val requiresSingularInput = inputStep.requiresSingularQueryInput()
     private val isSinglePath: Boolean = (getAllSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
-            (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
+        (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
     private val canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope
 
     override fun requiresWriteAccess(): Boolean {
@@ -253,15 +254,30 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
 
     override fun asFlow(input: Flow<In>): Flow<ElementOut> {
         if (canOptimizeFlows) {
-            val context = FlowInstantiationContext(null)
-            context.put(inputStep, input)
-
-            return context.getOrCreateFlow(outputStep)
+            return outputStep.createFlow(SinglePathFlowInstantiationContext(inputStep, input))
         } else {
             return flow<ElementOut> {
                 input.collect { inputElement ->
-                    coroutineScope {
-                        val context = FlowInstantiationContext(this)
+                    if (anyStepNeedsCoroutineScope) {
+                        coroutineScope {
+                            val context = FlowInstantiationContext(this)
+                            context.put(inputStep, flowOf(inputElement))
+
+                            val outputFlow = context.getOrCreateFlow(outputStep)
+
+                            // ensure all write operations are executed
+                            unconsumedSideEffectSteps
+                                .mapNotNull {
+                                    if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
+                                }
+                                .forEach { it.collect() }
+
+                            outputFlow.collect { outputElement ->
+                                emit(outputElement)
+                            }
+                        }
+                    } else {
+                        val context = FlowInstantiationContext(null)
                         context.put(inputStep, flowOf(inputElement))
 
                         val outputFlow = context.getOrCreateFlow(outputStep)
@@ -351,6 +367,19 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                 subclass(org.modelix.modelql.core.ZipStep.Descriptor::class)
             }
         }
+    }
+}
+
+class SinglePathFlowInstantiationContext(val queryInput: QueryInput<*>, val inputFlow: Flow<*>) : IFlowInstantiationContext {
+    override val coroutineScope: CoroutineScope?
+        get() = null
+
+    override fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T> {
+        return if (step == queryInput) inputFlow as Flow<T> else step.createFlow(this)
+    }
+
+    override fun <T> getFlow(step: IProducingStep<T>): Flow<T>? {
+        return null
     }
 }
 

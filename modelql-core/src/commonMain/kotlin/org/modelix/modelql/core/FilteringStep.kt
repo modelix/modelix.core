@@ -3,8 +3,6 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -29,8 +27,9 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     }
 
     override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
+        // return condition.asFlow(input).zip(input) { c, it -> c to it }.filter { it.first == true }.map { it.second }
         return input.filter { condition.asFlow(it).optionalSingle().presentAndEqual(true) }
-        //return input.filter { condition.evaluate(it).presentAndEqual(true) }
+        // return input.filter { condition.evaluate(it).presentAndEqual(true) }
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {

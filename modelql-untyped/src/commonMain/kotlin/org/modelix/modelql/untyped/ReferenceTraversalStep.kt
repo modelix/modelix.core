@@ -29,7 +29,6 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.contains
-import org.modelix.modelql.core.flatMapConcatConcurrent
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.orNull
 

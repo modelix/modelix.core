@@ -1,5 +1,5 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
-<idea-plugin require-restart="false">
+<idea-plugin require-restart="true">
     <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
     <id>org.modelix.model.server.mps</id>
 
@@ -23,10 +23,10 @@
 
     <applicationListeners>
         <listener
-                class="org.modelix.model.server.mps.MPSModelServer"
+                class="org.modelix.model.server.mps.MPSModelServerDynamicPluginListener"
                 topic="com.intellij.ide.plugins.DynamicPluginListener"/>
         <listener
-                class="org.modelix.model.server.mps.MPSModelServer"
+                class="org.modelix.model.server.mps.MPSModelServerAppLifecycleListener"
                 topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 

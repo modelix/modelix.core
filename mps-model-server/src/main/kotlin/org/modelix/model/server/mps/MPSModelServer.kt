@@ -16,6 +16,10 @@ package org.modelix.model.server.mps
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.ide.plugins.DynamicPluginListener
 import com.intellij.ide.plugins.IdeaPluginDescriptor
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.MPSModuleRepository
@@ -24,11 +28,20 @@ import org.modelix.model.api.runSynchronized
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.server.light.LightModelServer
 
-class MPSModelServer : DynamicPluginListener, AppLifecycleListener {
+@Service(Service.Level.APP)
+class MPSModelServer : Disposable, DynamicPluginListener, AppLifecycleListener {
+    init {
+        println("modelix server created")
+    }
+
     private var server: LightModelServer? = null
 
     fun ensureStarted() {
         runSynchronized(this) {
+            if (server != null) return
+
+            println("starting modelix server")
+
             val rootNodeProvider: () -> INode? = { MPSModuleRepository.getInstance()?.let { MPSRepositoryAsNode(it) } }
             server = LightModelServer.builder()
                 .port(48305)
@@ -72,24 +85,33 @@ class MPSModelServer : DynamicPluginListener, AppLifecycleListener {
 
     fun ensureStopped() {
         runSynchronized(this) {
+            if (server == null) return
+            println("stopping modelix server")
             server?.stop()
             server = null
         }
     }
 
-    override fun pluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        ensureStarted()
-    }
-
-    override fun beforePluginUnload(pluginDescriptor: IdeaPluginDescriptor, isUpdate: Boolean) {
+    override fun dispose() {
         ensureStopped()
+    }
+}
+
+class MPSModelServerDynamicPluginListener : DynamicPluginListener {
+    override fun pluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
+        println("plugin loaded $this")
+        service<MPSModelServer>().ensureStarted()
+    }
+}
+
+class MPSModelServerAppLifecycleListener : AppLifecycleListener {
+    override fun appStarting(projectFromCommandLine: Project?) {
+        println("appStarting $this")
+        service<MPSModelServer>().ensureStarted()
     }
 
     override fun appStarted() {
-        ensureStarted()
-    }
-
-    override fun appClosing() {
-        ensureStopped()
+        println("appStarted $this")
+        service<MPSModelServer>().ensureStarted()
     }
 }

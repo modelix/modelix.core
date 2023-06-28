@@ -141,6 +141,34 @@ class ModelQLTest {
     }
 
     @Test
+    fun testMapLocal2_unusedInput() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.mapLocal2 {
+                val title = "xxx".asMono().getLater()
+                onSuccess {
+                    "Title: " + title.get()
+                }
+            }.toList()
+        }
+        println(result)
+        assertEquals((1..30).map { "Title: xxx" }, result)
+    }
+
+    @Test
+    fun testMapLocal2() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.mapLocal2 {
+                val title = it.title.getLater()
+                onSuccess {
+                    "Title: " + title.get()
+                }
+            }.toList()
+        }
+        println(result)
+        assertEquals(testDatabase.products.map { "Title: " + it.title }, result)
+    }
+
+    @Test
     fun testZipOrder() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
             db.products.flatMap { it.zip(it.images) }.mapLocal2 {

@@ -41,3 +41,6 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
 fun <Out> IMonoStep<Out>.orNull(): IMonoStep<Out?> = NullIfEmpty<Out>().connectAndDowncast(this)
 fun <Out> IFluxStep<Out>.orNull(): IFluxStep<Out?> = NullIfEmpty<Out>().connectAndDowncast(this)
+
+fun <Out> IMonoStep<Out>.nullIfEmpty(): IMonoStep<Out?> = NullIfEmpty<Out>().connectAndDowncast(this)
+fun <Out> IFluxStep<Out>.nullIfEmpty(): IFluxStep<Out?> = NullIfEmpty<Out>().connectAndDowncast(this)

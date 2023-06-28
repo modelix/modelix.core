@@ -14,6 +14,7 @@
 package org.modelix.modelql.untyped
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -32,7 +33,7 @@ import org.modelix.modelql.core.flatMapConcatConcurrent
 class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
 
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.flatMapConcatConcurrent { it.getParentAsFlow() }
+        return input.flatMapConcat { it.getParentAsFlow() }
     }
 
     override fun canBeEmpty(): Boolean = true

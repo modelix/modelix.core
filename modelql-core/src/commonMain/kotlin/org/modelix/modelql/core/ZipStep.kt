@@ -81,7 +81,7 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
 
 typealias ZipNOutput = ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>
 
-private class CombiningSequence(private val sequences: Array<Sequence<Any?>>) : Sequence<ZipNOutput> {
+class CombiningSequence(private val sequences: Array<Sequence<Any?>>) : Sequence<ZipNOutput> {
     override fun iterator(): Iterator<ZipNOutput> = object : Iterator<ZipNOutput> {
         var initialized = false
         val lastValues = Array<Any?>(sequences.size) { UNINITIALIZED }

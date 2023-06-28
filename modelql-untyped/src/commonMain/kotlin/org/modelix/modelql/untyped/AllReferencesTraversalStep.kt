@@ -14,6 +14,7 @@
 package org.modelix.modelql.untyped
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -33,7 +34,7 @@ import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class AllReferencesTraversalStep() : FluxTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.flatMapConcatConcurrent { it.getAllReferenceTargetsAsFlow().map { it.second } }
+        return input.flatMapConcat { it.getAllReferenceTargetsAsFlow().map { it.second } }
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<INode> {

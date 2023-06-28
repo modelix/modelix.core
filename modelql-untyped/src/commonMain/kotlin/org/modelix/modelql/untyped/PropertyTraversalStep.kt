@@ -14,6 +14,7 @@
 package org.modelix.modelql.untyped
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -32,7 +33,7 @@ import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<String?> {
-        return input.flatMapConcatConcurrent { it.getPropertyValueAsFlow(it.resolvePropertyOrFallback(role)) }
+        return input.flatMapConcat { it.getPropertyValueAsFlow(it.resolvePropertyOrFallback(role)) }
     }
 
     override fun transform(input: INode): String? {

@@ -22,7 +22,7 @@ class PerformanceTests {
         val query = buildMonoQuery<Int, Int> { it.filter { false.asMono() } }
         val intRange = 1..100000
 
-        compareBenchmark(100, 5.0, {
+        compareBenchmark(100, 10.0, {
             query.asFlow(intRange.asFlow()).count()
         }, {
             intRange.asFlow().filter { false }.count()

@@ -1,7 +1,11 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,8 +29,8 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     }
 
     override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
-        // return input.filter { condition.asFlow(it).firstOrNull() == true }
-        return input.filter { condition.evaluate(it).presentAndEqual(true) }
+        return input.filter { condition.asFlow(it).optionalSingle().presentAndEqual(true) }
+        //return input.filter { condition.evaluate(it).presentAndEqual(true) }
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
@@ -57,4 +61,13 @@ fun <T> IFluxStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IF
 }
 fun <T> IMonoStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IMonoStep<T> {
     return FilteringStep(IUnboundQuery.buildMono { condition(it) }.castToInstance()).also { connect(it) }
+}
+
+private suspend fun <T> Flow<T>.optionalSingle(): Optional<T> {
+    var result = Optional.empty<T>()
+    collect {
+        require(!result.isPresent()) { "Didn't expect multiple elements" }
+        result = Optional.of(it)
+    }
+    return result
 }

@@ -2,7 +2,11 @@ package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
@@ -150,6 +154,19 @@ class ModelQLTest {
             }.toList()
         }
         println(result)
+    }
+
+    @Test
+    fun testZipFlowVsSequence() = runTestWithTimeout {
+        val flowSize = (1..10).asFlow().flatMapConcat {
+            combine(listOf(flowOf(it), (30..60).asFlow())) { it[0] to it[1] }
+        }.fold(0) { acc, it -> acc + it.first * it.second }
+
+        val sequenceSize = (1..10).asSequence().flatMap {
+            CombiningSequence(arrayOf(sequenceOf(it), (30..60).asSequence()))
+        }.fold(0) { acc, it -> acc + (it[0] as Int) * (it[1] as Int) }
+
+        assertEquals(flowSize, sequenceSize)
     }
 
     data class MyNonSerializableClass(val id: Int, val title: String, val images: List<MyImage>)

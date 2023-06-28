@@ -55,13 +55,13 @@ interface IProducingStep<out E> : IStep {
     fun createSequence(queryInput: Sequence<Any?>): Sequence<E>
 
     /**
-     * Even higher performance than createSequence for producers that output exactly one element
+     * Even higher performance for producers that output exactly one element
      */
     fun evaluate(queryInput: Any?): Optional<E> {
         return createSequence(sequenceOf(queryInput))
             .map { Optional.of(it) }
             .ifEmpty { sequenceOf(Optional.empty<E>()) }
-            .first()
+            .single()
     }
 
     fun outputIsConsumedMultipleTimes(): Boolean {
@@ -185,6 +185,10 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
 
     override fun transform(input: In): Out {
         return aggregate(sequenceOf(input))
+    }
+
+    override fun evaluate(queryInput: Any?): Optional<Out> {
+        return Optional.of(aggregate(getProducer().createSequence(sequenceOf(queryInput))))
     }
 
     override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()

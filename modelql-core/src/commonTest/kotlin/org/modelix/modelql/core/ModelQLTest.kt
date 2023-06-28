@@ -116,6 +116,14 @@ class ModelQLTest {
     }
 
     @Test
+    fun list_in_filter_condition() = runTestWithTimeout {
+        val result: Int = remoteProductDatabaseQuery { db ->
+            db.products.filter { it.images.isNotEmpty() }.count()
+        }
+        assertEquals(30, result)
+    }
+
+    @Test
     fun repeatingZip() = runTestWithTimeout {
         val ids = remoteProductDatabaseQuery { db ->
             db.products.map { it.id }.toList()

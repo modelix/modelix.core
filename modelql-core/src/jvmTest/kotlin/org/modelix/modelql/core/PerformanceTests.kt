@@ -7,9 +7,11 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.fail
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -83,23 +85,25 @@ class PerformanceTests {
 
     private suspend fun compareBenchmark(iterations: Int, allowedFactor: Double, impl1: suspend () -> Unit, impl2: suspend () -> Unit) {
         println()
-        for (retry in 1..5) {
-            val time1 = runBenchmark(iterations) {
-                impl1()
-            }
-            println("($retry) implementation 1: $time1")
+        withTimeout(10.seconds) {
+            for (retry in 1..5) {
+                val time1 = runBenchmark(iterations) {
+                    impl1()
+                }
+                println("($retry) implementation 1: $time1")
 
-            val time2: Duration = runBenchmark(iterations) {
-                impl2()
-            }
-            println("($retry) implementation 2: $time2")
+                val time2: Duration = runBenchmark(iterations) {
+                    impl2()
+                }
+                println("($retry) implementation 2: $time2")
 
-            val factor = time1 / time2
-            val message = "($retry) Implementation 1 is $factor times slower than implementation 2"
-            println(message)
-            if (factor <= allowedFactor) return
-            if (retry != 5) continue
-            fail(message)
+                val factor = time1 / time2
+                val message = "($retry) Implementation 1 is $factor times slower than implementation 2"
+                println(message)
+                if (factor <= allowedFactor) return@withTimeout
+                if (retry != 5 && factor <= allowedFactor * 10) continue
+                fail(message)
+            }
         }
     }
 }

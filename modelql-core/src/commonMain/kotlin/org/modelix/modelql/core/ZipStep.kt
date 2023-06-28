@@ -28,6 +28,15 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
         return super<ProducingStep>.requiresSingularQueryInput()
     }
 
+    override fun validate() {
+        super<ProducingStep>.validate()
+        for (producer in producers) {
+            if (producer.canBeEmpty() && !producer.canBeMultiple()) {
+                throw RuntimeException("optional mono step can prevent any output: $producer of $this")
+            }
+        }
+    }
+
     override fun toString(): String {
         return "zip(${getProducers().joinToString(", ") { it.toString() }})"
     }

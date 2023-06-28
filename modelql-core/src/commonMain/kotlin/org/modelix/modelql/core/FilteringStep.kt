@@ -1,9 +1,7 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -60,13 +58,4 @@ fun <T> IFluxStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IF
 }
 fun <T> IMonoStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IMonoStep<T> {
     return FilteringStep(IUnboundQuery.buildMono { condition(it) }.castToInstance()).also { connect(it) }
-}
-
-private suspend fun <T> Flow<T>.optionalSingle(): Optional<T> {
-    var result = Optional.empty<T>()
-    collect {
-        require(!result.isPresent()) { "Didn't expect multiple elements" }
-        result = Optional.of(it)
-    }
-    return result
 }

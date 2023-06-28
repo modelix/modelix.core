@@ -135,7 +135,7 @@ class ModelQLTest {
         assertEquals((1..30).toList(), ids)
 
         val result: List<List<Comparable<*>>> = remoteProductDatabaseQuery { db ->
-            db.products.map { it.id }.zip("abc".asMono()).toList()
+            db.products.map { it.id }.allowEmpty().zip("abc".asMono()).toList()
         }.map { it.values }
         assertEquals((1..30).map { listOf(it, "abc") }, result)
     }
@@ -171,7 +171,7 @@ class ModelQLTest {
     @Test
     fun testZipOrder() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
-            db.products.flatMap { it.zip(it.images) }.mapLocal2 {
+            db.products.flatMap { it.zip(it.images.assertNotEmpty()) }.mapLocal2 {
                 val product = it.first.getLater()
                 val image = it.second.getLater()
                 onSuccess {

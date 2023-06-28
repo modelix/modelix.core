@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 
@@ -63,3 +64,21 @@ fun <T> Flow<Flow<T>>.flattenConcatConcurrent(): Flow<T> {
 fun <T, R> Flow<T>.flatMapConcatConcurrent(transform: suspend (T) -> Flow<R>): Flow<R> {
     return map(transform).flattenConcatConcurrent()
 }
+
+/**
+ * Like .single(), but also allows an empty input.
+ */
+suspend fun <T> Flow<T>.optionalSingle(): Optional<T> {
+    var result = Optional.empty<T>()
+    collect {
+        require(!result.isPresent()) { "Didn't expect multiple elements" }
+        result = Optional.of(it)
+    }
+    return result
+}
+
+fun <T> Flow<T>.assertNotEmpty(additionalMessage: () -> String = { "" }): Flow<T> {
+    return onEmpty { throw IllegalArgumentException("At least one element was expected. " + additionalMessage()) }
+}
+
+suspend fun <T> Flow<T>.asSequence(): Sequence<T> = toList().asSequence()

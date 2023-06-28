@@ -1,7 +1,11 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -32,8 +36,8 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
     override fun validate() {
         super<ProducingStep>.validate()
         for (producer in producers) {
-            if (producer.canBeEmpty() && !producer.canBeMultiple()) {
-                throw RuntimeException("optional mono step can prevent any output: $producer of $this")
+            if (producer.canBeEmpty() && producer !is AllowEmptyStep) {
+                throw RuntimeException("zip input is not allowed to be empty (use allowEmpty(), nullIfEmpty(), or assertNotEmpty()): $producer")
             }
         }
     }
@@ -70,15 +74,77 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
     }
 
     override fun createFlow(context: IFlowInstantiationContext): Flow<Out> {
-        return combine<Any?, Out>(producers.map { context.getOrCreateFlow(it) }) { values ->
-            ZipNOutput(values.toList()) as Out
+        val inputFlows = producers.map {
+            val possiblyEmptyFlow = context.getOrCreateFlow(it)
+            if (it is AllowEmptyStep) {
+                possiblyEmptyFlow
+            } else {
+                possiblyEmptyFlow.assertNotEmpty { producers.toString() }
+            }
         }
+
+        // TODO this might be slower, but combine seems to be buggy (elements get lost)
+        return flow {
+            emitAll((CombiningSequence(inputFlows.map { it.asSequence() }.toTypedArray()) as Sequence<Out>).asFlow())
+        }
+//        return combine<Any?, Out>(inputFlows) { values ->
+//            ZipNOutput(values.toList()) as Out
+//        }
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
         return CombiningSequence(producers.map { it.createSequence(queryInput) }.toTypedArray()) as Sequence<Out>
     }
 }
+
+class AllowEmptyStep<E>() : IdentityStep<E>() {
+    override fun toString(): String {
+        return "${getProducer()}.allowEmpty()"
+    }
+
+    override fun createDescriptor(): StepDescriptor {
+        return Descriptor()
+    }
+
+    @Serializable
+    @SerialName("allowEmpty")
+    class Descriptor : CoreStepDescriptor() {
+        override fun createStep(): IStep {
+            return AllowEmptyStep<Any?>()
+        }
+    }
+}
+fun <T> IFluxStep<T>.allowEmpty(): IFluxStep<T> = AllowEmptyStep<T>().also { connect(it) }
+fun <T> IMonoStep<T>.allowEmpty(): IMonoStep<T> = AllowEmptyStep<T>().also { connect(it) }
+
+class AssertNotEmptyStep<E>() : IdentityStep<E>() {
+    override fun canBeEmpty(): Boolean {
+        return false
+    }
+
+    override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
+        return input.assertNotEmpty()
+    }
+
+    override fun toString(): String {
+        return "${getProducer()}.assertNotEmpty()"
+    }
+
+    override fun createDescriptor(): StepDescriptor {
+        return Descriptor()
+    }
+
+    @Serializable
+    @SerialName("assertNotEmpty")
+    class Descriptor : CoreStepDescriptor() {
+        override fun createStep(): IStep {
+            return AssertNotEmptyStep<Any?>()
+        }
+    }
+}
+
+fun <T> IFluxStep<T>.assertNotEmpty(): IFluxStep<T> = AssertNotEmptyStep<T>().also { connect(it) }
+fun <T> IMonoStep<T>.assertNotEmpty(): IMonoStep<T> = AssertNotEmptyStep<T>().also { connect(it) }
 
 typealias ZipNOutput = ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>
 

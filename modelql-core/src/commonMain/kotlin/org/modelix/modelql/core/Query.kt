@@ -3,8 +3,8 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
@@ -254,30 +254,12 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
 
     override fun asFlow(input: Flow<In>): Flow<ElementOut> {
         if (canOptimizeFlows) {
-            return outputStep.createFlow(SinglePathFlowInstantiationContext(inputStep, input))
+            return SinglePathFlowInstantiationContext(inputStep, input).getOrCreateFlow(outputStep)
+            // return input.flatMapConcat { SinglePathFlowInstantiationContext(inputStep, flowOf(it)).getOrCreateFlow(outputStep) }
         } else {
             return flow<ElementOut> {
                 input.collect { inputElement ->
-                    if (anyStepNeedsCoroutineScope) {
-                        coroutineScope {
-                            val context = FlowInstantiationContext(this)
-                            context.put(inputStep, flowOf(inputElement))
-
-                            val outputFlow = context.getOrCreateFlow(outputStep)
-
-                            // ensure all write operations are executed
-                            unconsumedSideEffectSteps
-                                .mapNotNull {
-                                    if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
-                                }
-                                .forEach { it.collect() }
-
-                            outputFlow.collect { outputElement ->
-                                emit(outputElement)
-                            }
-                        }
-                    } else {
-                        val context = FlowInstantiationContext(null)
+                    suspend fun body(context: FlowInstantiationContext) {
                         context.put(inputStep, flowOf(inputElement))
 
                         val outputFlow = context.getOrCreateFlow(outputStep)
@@ -292,6 +274,13 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                         outputFlow.collect { outputElement ->
                             emit(outputElement)
                         }
+                    }
+                    if (anyStepNeedsCoroutineScope) {
+                        coroutineScope {
+                            body(FlowInstantiationContext(this))
+                        }
+                    } else {
+                        body(FlowInstantiationContext(null))
                     }
                 }
             }
@@ -329,7 +318,9 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
     companion object {
         val serializersModule = SerializersModule {
             polymorphic(StepDescriptor::class) {
+                subclass(org.modelix.modelql.core.AllowEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.AndOperatorStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.AssertNotEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.BooleanSourceStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.CountingStep.CountDescriptor::class)
                 subclass(org.modelix.modelql.core.EmptyStringIfNullStep.Descriptor::class)

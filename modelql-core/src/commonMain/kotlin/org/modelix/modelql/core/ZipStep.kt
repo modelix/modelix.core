@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -80,6 +81,32 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
                 possiblyEmptyFlow
             } else {
                 possiblyEmptyFlow.assertNotEmpty { producers.toString() }
+            }
+        }
+
+        // optimization if all inputs are mono steps
+        if (producers.all { it.isSingle() }) {
+            return flow {
+                emit(ZipNOutput(inputFlows.map { it.single() }) as Out)
+            }
+        }
+
+        // optimization for a pair of flux and mono inputs
+        if (producers.size == 2) {
+            if (producers[0].isSingle()) {
+                return flow {
+                    val value0 = inputFlows[0].single()
+                    inputFlows[1].collect { value1 ->
+                        emit(ZipNOutput(listOf(value0, value1)) as Out)
+                    }
+                }
+            } else if (producers[1].isSingle()) {
+                return flow {
+                    val value1 = inputFlows[1].single()
+                    inputFlows[0].collect { value0 ->
+                        emit(ZipNOutput(listOf(value0, value1)) as Out)
+                    }
+                }
             }
         }
 

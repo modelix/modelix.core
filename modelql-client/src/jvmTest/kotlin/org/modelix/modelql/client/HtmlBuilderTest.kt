@@ -22,6 +22,7 @@ import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.AsyncBuilder
 import org.modelix.modelql.core.IAsyncBuilder
+import org.modelix.modelql.core.buildModelQLTemplate
 import org.modelix.modelql.core.mapLocal
 import org.modelix.modelql.untyped.buildQuery
 import org.modelix.modelql.untyped.children
@@ -58,7 +59,7 @@ class HtmlBuilderTest {
     fun modular() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
 
-        fun HtmlBuilder<INode>.renderModel() {
+        val modelTemplate = buildModelQLTemplate<INode, FlowContent> {
             val name = input.property("name").getLater()
             onSuccess {
                 div {
@@ -71,15 +72,13 @@ class HtmlBuilderTest {
 
         fun HtmlBuilder<INode>.renderModule() {
             val name = input.property("name").getLater()
-            val models = input.children("models").iterateLater {
-                renderModel()
-            }
+            val models = input.children("models").prepare(modelTemplate)
             onSuccess {
                 div {
                     h1 {
                         +"Module: ${name.get()}"
                     }
-                    iterate(models)
+                    applyTemplate(models)
                 }
             }
         }

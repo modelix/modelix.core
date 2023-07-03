@@ -62,7 +62,11 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
 
     override fun <TIn, TContext> IFluxStep<TIn>.prepare(template: IModelQLTemplate<TIn, TContext>): IModelQLTemplateInstance<TContext> {
         @kotlin.Suppress("UnnecessaryVariable")
-        val iterationRequest: IIterationRequest<TContext> = iterateLater { template.applyTemplate(this) }
+        val iterationRequest: IIterationRequest<TContext> = iterateLater {
+            with(template) {
+                applyTemplate()
+            }
+        }
 
         return object : IModelQLTemplateInstance<TContext> {
             override fun applyTemplate(context: TContext) {
@@ -121,16 +125,14 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
 
 fun <In, Context> buildModelQLTemplate(body: IAsyncBuilder<In, Context>.() -> Unit): IModelQLTemplate<In, Context> {
     return object : IModelQLTemplate<In, Context> {
-        override fun applyTemplate(builder: IAsyncBuilder<In, Context>) {
-            with(builder) {
-                body()
-            }
+        override fun IAsyncBuilder<In, Context>.applyTemplate() {
+            body()
         }
     }
 }
 
 interface IModelQLTemplate<In, Context> {
-    fun applyTemplate(builder: IAsyncBuilder<In, Context>)
+    fun IAsyncBuilder<In, Context>.applyTemplate()
 }
 interface IModelQLTemplateInstance<Context> {
     fun applyTemplate(context: Context)

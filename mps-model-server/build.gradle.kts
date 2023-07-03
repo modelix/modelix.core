@@ -43,14 +43,4 @@ tasks {
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
     }
-
-    runIde {
-        autoReloadPlugins.set(true)
-    }
-
-    create<Sync>("installMpsPlugin") {
-        dependsOn(prepareSandbox)
-        from(buildDir.resolve("idea-sandbox/plugins/mps-model-server"))
-        into("/Users/slisson/Library/Application Support/JetBrains/Toolbox/apps/MPS/ch-2/211.7628.1509/MPS 2021.1.app.plugins/mps-model-server")
-    }
 }

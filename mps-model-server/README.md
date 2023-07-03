@@ -19,10 +19,3 @@ val result = runBlocking {
 }
 println(result)
 ```
-
-# Plugin auto reload
-
-- Add `-Didea.auto.reload.plugins=true` to your MPS vmoptions.
-- Specify the MPS plugin directory in the `build.gradle.kts` file
-- Run the `installMpsPlugin` task
-

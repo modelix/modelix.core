@@ -7,6 +7,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
+import kotlin.jvm.JvmName
 
 class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {
     override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
@@ -45,12 +46,19 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
     }
 }
 
+@JvmName("ifEmpty_mono_mono")
 fun <In : Out, Out> IMonoStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IMonoStep<Out> {
     return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance())
 }
+@JvmName("ifEmpty_flux_mono")
 fun <In : Out, Out> IFluxStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IFluxStep<Out> {
     return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance())
 }
-fun <In : Out, Out> IProducingStep<In>.ifEmpty(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
+@JvmName("ifEmpty_mono_flux")
+fun <In : Out, Out> IMonoStep<In>.ifEmptyFlux(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
+    return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance())
+}
+@JvmName("ifEmpty_flux_flux")
+fun <In : Out, Out> IFluxStep<In>.ifEmptyFlux(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
     return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance())
 }

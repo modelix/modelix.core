@@ -10,9 +10,9 @@ interface IAsyncBuilder<In, Context> {
     fun <T, TContext> IFluxStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IIterationRequest<TContext>
     fun <TContext> TContext.iterate(request: IIterationRequest<TContext>)
 
-    fun <TIn, TContext> IMonoStep<TIn>.prepare(template: IModelQLTemplate<TIn, TContext>): IModelQLTemplateInstance<TContext>
-    fun <TIn, TContext> IFluxStep<TIn>.prepare(template: IModelQLTemplate<TIn, TContext>): IModelQLTemplateInstance<TContext>
-    fun <TContext> TContext.applyTemplate(templateInstance: IModelQLTemplateInstance<TContext>)
+    fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IMonoStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate>
+    fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IFluxStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate>
+    fun <TContext> TContext.applyTemplate(templateInstance: IModelQLTemplateInstance<TContext, *>)
 }
 
 interface IValueRequest<E> {
@@ -56,20 +56,23 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
         return this.asFlux().iterateLater(body)
     }
 
-    override fun <TIn, TContext> IMonoStep<TIn>.prepare(template: IModelQLTemplate<TIn, TContext>): IModelQLTemplateInstance<TContext> {
+    override fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IMonoStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate> {
         return asFlux().prepare(template)
     }
 
-    override fun <TIn, TContext> IFluxStep<TIn>.prepare(template: IModelQLTemplate<TIn, TContext>): IModelQLTemplateInstance<TContext> {
+    override fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IFluxStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate> {
         @kotlin.Suppress("UnnecessaryVariable")
         val iterationRequest: IIterationRequest<TContext> = iterateLater {
             with(template) {
-                applyTemplate()
+                prepareInstance()
             }
         }
 
-        return object : IModelQLTemplateInstance<TContext> {
-            override fun applyTemplate(context: TContext) {
+        return object : IModelQLTemplateInstance<TContext, TTemplate> {
+            override fun getTemplate(): TTemplate {
+                return template
+            }
+            override fun applyInstance(context: TContext) {
                 with(context) {
                     iterate(iterationRequest)
                 }
@@ -92,8 +95,8 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
         casted.iterate(this)
     }
 
-    override fun <TContext> TContext.applyTemplate(templateInstance: IModelQLTemplateInstance<TContext>) {
-        templateInstance.applyTemplate(this)
+    override fun <TContext> TContext.applyTemplate(templateInstance: IModelQLTemplateInstance<TContext, *>) {
+        templateInstance.applyInstance(this)
     }
 
     abstract class Request<E> {
@@ -125,15 +128,16 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
 
 fun <In, Context> buildModelQLTemplate(body: IAsyncBuilder<In, Context>.() -> Unit): IModelQLTemplate<In, Context> {
     return object : IModelQLTemplate<In, Context> {
-        override fun IAsyncBuilder<In, Context>.applyTemplate() {
+        override fun IAsyncBuilder<In, Context>.prepareInstance() {
             body()
         }
     }
 }
 
 interface IModelQLTemplate<In, Context> {
-    fun IAsyncBuilder<In, Context>.applyTemplate()
+    fun IAsyncBuilder<In, Context>.prepareInstance()
 }
-interface IModelQLTemplateInstance<Context> {
-    fun applyTemplate(context: Context)
+interface IModelQLTemplateInstance<Context, Template : IModelQLTemplate<*, Context>> {
+    fun getTemplate(): Template
+    fun applyInstance(context: Context)
 }

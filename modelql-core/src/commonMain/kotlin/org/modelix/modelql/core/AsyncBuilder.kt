@@ -24,7 +24,7 @@ interface IIterationRequest<Context>
 class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder<E, Context> {
     private val valueRequests = ArrayList<ValueRequest<Any?>>()
     private val iterationRequests = ArrayList<IterationRequest<Any?, Any?>>()
-    private var resultHandler: ResultHandler<Context>? = null
+    private var resultHandlers = ArrayList<ResultHandler<Context>>()
 
     fun compileOutputStep(): IMonoStep<IZipOutput<*>> {
         val allRequestSteps: List<IMonoStep<Any?>> = valueRequests.map { it.step } + iterationRequests.map { it.outputStep }
@@ -40,13 +40,11 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
             request.set(value)
         }
 
-        resultHandler?.invoke(this)
-
-        result.values
+        resultHandlers.forEach { it.invoke(this) }
     }
 
     override fun onSuccess(body: ResultHandler<Context>) {
-        resultHandler = body
+        resultHandlers += body
     }
     override fun <T> IMonoStep<T>.getLater(): ValueRequest<T> {
         return ValueRequest(this).also { valueRequests.add(it as ValueRequest<Any?>) }

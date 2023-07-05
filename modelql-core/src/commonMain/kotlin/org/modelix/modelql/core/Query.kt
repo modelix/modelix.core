@@ -353,6 +353,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
                 subclass(org.modelix.modelql.core.StringToBooleanStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringToIntStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ToStringStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.WhenStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ZipElementAccessStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ZipStep.Descriptor::class)
             }

@@ -14,8 +14,8 @@
 package org.modelix.modelql.typed
 
 import org.modelix.metamodel.IConceptOfTypedNode
-import org.modelix.metamodel.ITypedConcept
 import org.modelix.metamodel.ITypedNode
+import org.modelix.model.api.IConcept
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IUnboundQuery
@@ -24,24 +24,42 @@ import kotlin.experimental.ExperimentalTypeInference
 
 @OptIn(ExperimentalTypeInference::class)
 class ConceptSwitchBuilder<In : ITypedNode, Out>() {
-    private val cases = ArrayList<Pair<IMonoUnboundQuery<In, Boolean>, IMonoUnboundQuery<In, Out>>>()
+    private val cases = HashMap<IConcept, IMonoUnboundQuery<In, Out>>()
 
     fun <TNode : In, TConcept : IConceptOfTypedNode<TNode>> `if`(concept: TConcept): CaseBuilder<TNode> {
         return CaseBuilder<TNode>(concept)
     }
 
     @BuilderInference
-    fun `else`(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
-        return WhenStep(cases, IUnboundQuery.buildMono(body))
+    fun `else`(elseBody: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
+        val visited = HashSet<IConcept>()
+        val sortedCases = LinkedHashMap<IConcept, IMonoUnboundQuery<In, Out>>()
+        fun collectCases(c: IConcept) {
+            if (visited.contains(c)) return
+            visited += c
+            for (directSuperConcept in c.getDirectSuperConcepts()) {
+                collectCases(directSuperConcept)
+            }
+            val caseThen = cases[c] ?: return
+            sortedCases[c] = caseThen
+        }
+        cases.forEach { collectCases(it.key) }
+        if (cases.size != sortedCases.size) throw RuntimeException("Sort algorithm deleted some concept switch cases")
+
+        return WhenStep(
+            sortedCases.toList().asReversed()
+                .map { case -> IUnboundQuery.buildMono { it.untyped().instanceOf(case.first) } to case.second },
+            IUnboundQuery.buildMono(elseBody)
+        )
     }
 
     inner class CaseBuilder<Node : In>(val concept: IConceptOfTypedNode<Node>) {
         @BuilderInference
         fun then(body: (IMonoStep<Node>) -> IMonoStep<Out>): ConceptSwitchBuilder<In, Out> {
-            cases += IUnboundQuery.buildMono<ITypedNode, Boolean> { it.instanceOf(concept) } to (IUnboundQuery.buildMono(body) as IMonoUnboundQuery<In, Out>)
+            cases += concept.untyped() to (IUnboundQuery.buildMono(body) as IMonoUnboundQuery<In, Out>)
             return this@ConceptSwitchBuilder
         }
     }
 }
 
-fun <In :ITypedNode, Out> IMonoStep<In>.conceptSwitch() = ConceptSwitchBuilder<In, Out>()
+fun <In : ITypedNode, Out> IMonoStep<In>.conceptSwitch() = ConceptSwitchBuilder<In, Out>()

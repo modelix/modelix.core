@@ -19,6 +19,7 @@ import org.modelix.metamodel.ITypedSingleChildLink
 import org.modelix.metamodel.typed
 import org.modelix.metamodel.untyped
 import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.getAllSubConcepts
@@ -202,10 +203,15 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
     }
 }
 
+@JvmName("instanceOf_untyped_untyped")
+fun IMonoStep<INode?>.instanceOf(concept: IConcept): IMonoStep<Boolean> {
+    val subconceptUIDs = concept.getAllSubConcepts(true).map { it.getReference().getUID() }.toSet()
+    return conceptReference().filterNotNull().getUID().inSet(subconceptUIDs)
+}
+
 @JvmName("instanceOf_untyped")
 fun <Out : ITypedNode> IMonoStep<INode?>.instanceOf(concept: IConceptOfTypedNode<Out>): IMonoStep<Boolean> {
-    val subconceptUIDs = concept.untyped().getAllSubConcepts(true).map { it.getReference().getUID() }.toSet()
-    return conceptReference().filterNotNull().getUID().inSet(subconceptUIDs)
+    return instanceOf(concept.untyped())
 }
 
 @JvmName("instanceOf")

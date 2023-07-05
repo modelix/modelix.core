@@ -38,6 +38,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
+                api(libs.ktor.server.html.builder)
             }
         }
         val jvmTest by getting {
@@ -54,5 +55,12 @@ kotlin {
                 implementation(kotlin("test-js"))
             }
         }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
+    kotlinOptions {
+        jvmTarget = "11"
+        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility", "-Xcontext-receivers")
     }
 }

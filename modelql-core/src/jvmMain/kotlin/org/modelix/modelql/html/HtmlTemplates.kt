@@ -17,7 +17,6 @@ import io.ktor.server.html.TemplatePlaceholder
 import org.modelix.modelql.core.IAsyncBuilder
 import org.modelix.modelql.core.IModelQLTemplate
 import org.modelix.modelql.core.IModelQLTemplateInstance
-import org.modelix.modelql.core.IMonoStep
 
 context(IAsyncBuilder<*, *>)
 public fun <TTemplate : IModelQLTemplate<*, TOuter>, TTemplateInstance : IModelQLTemplateInstance<TOuter, TTemplate>, TOuter> TOuter.insert(

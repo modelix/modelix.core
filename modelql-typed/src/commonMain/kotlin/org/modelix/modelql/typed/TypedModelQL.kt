@@ -11,6 +11,7 @@ import kotlinx.serialization.serializer
 import org.modelix.metamodel.IConceptOfTypedNode
 import org.modelix.metamodel.ITypedChildLink
 import org.modelix.metamodel.ITypedChildListLink
+import org.modelix.metamodel.ITypedConcept
 import org.modelix.metamodel.ITypedMandatorySingleChildLink
 import org.modelix.metamodel.ITypedNode
 import org.modelix.metamodel.ITypedProperty
@@ -33,6 +34,7 @@ import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.asString
 import org.modelix.modelql.core.emptyStringIfNull
+import org.modelix.modelql.core.equalTo
 import org.modelix.modelql.core.filterNotNull
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.firstOrNull
@@ -201,6 +203,27 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
     override fun toString(): String {
         return "${getProducers().single()}.untyped()"
     }
+}
+
+
+@JvmName("instanceOfExactly_untyped_untyped")
+fun IMonoStep<INode?>.instanceOfExactly(concept: IConcept): IMonoStep<Boolean> {
+    return conceptReference().filterNotNull().getUID().equalTo(concept.getUID())
+}
+
+@JvmName("instanceOfExactly_untyped_typed")
+fun IMonoStep<INode?>.instanceOfExactly(concept: ITypedConcept): IMonoStep<Boolean> {
+    return instanceOfExactly(concept.untyped())
+}
+
+@JvmName("instanceOfExactly_typed_untyped")
+fun IMonoStep<ITypedNode>.instanceOfExactly(concept: IConcept): IMonoStep<Boolean> {
+    return untyped().instanceOfExactly(concept)
+}
+
+@JvmName("instanceOfExactly_typed_typed")
+fun IMonoStep<ITypedNode>.instanceOfExactly(concept: ITypedConcept): IMonoStep<Boolean> {
+    return untyped().instanceOfExactly(concept)
 }
 
 @JvmName("instanceOf_untyped_untyped")

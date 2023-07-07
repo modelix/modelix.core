@@ -2,13 +2,23 @@ package org.modelix.modelql.core
 
 typealias ResultHandler<ContextT> = ContextT.() -> Unit
 
-interface IAsyncBuilder<In, Context> {
+interface IAsyncBuilder<out In, out Context> {
     val input: IMonoStep<In>
     fun onSuccess(body: ResultHandler<Context>)
     fun <T> IMonoStep<T>.getLater(): IValueRequest<T>
-    fun <T, TContext> IMonoStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IIterationRequest<TContext>
-    fun <T, TContext> IFluxStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IIterationRequest<TContext>
-    fun <TContext> TContext.iterate(request: IIterationRequest<TContext>)
+
+    @Deprecated("use prepareFragment", ReplaceWith("prepareFragment(body)"))
+    fun <T, TContext> IMonoStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext>
+
+    @Deprecated("use prepareFragment", ReplaceWith("prepareFragment(body)"))
+    fun <T, TContext> IFluxStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext>
+
+    @Deprecated("use applyFragment", ReplaceWith("applyFragment(request)"))
+    fun <TContext> TContext.iterate(request: IPreparedFragment<TContext>)
+
+    fun <T, TContext> IMonoStep<T>.prepareFragment(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> = iterateLater(body)
+    fun <T, TContext> IFluxStep<T>.prepareFragment(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> = iterateLater(body)
+    fun <TContext> TContext.applyFragment(request: IPreparedFragment<TContext>) = iterate(request)
 
     fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IMonoStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate>
     fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IFluxStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate>
@@ -19,11 +29,11 @@ interface IValueRequest<E> {
     fun get(): E
 }
 
-interface IIterationRequest<Context>
+interface IPreparedFragment<Context>
 
 class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder<E, Context> {
     private val valueRequests = ArrayList<ValueRequest<Any?>>()
-    private val iterationRequests = ArrayList<IterationRequest<Any?, Any?>>()
+    private val iterationRequests = ArrayList<PreparedFragment<Any?, Any?>>()
     private var resultHandlers = ArrayList<ResultHandler<Context>>()
 
     fun compileOutputStep(): IMonoStep<IZipOutput<*>> {
@@ -50,7 +60,7 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
         return ValueRequest(this).also { valueRequests.add(it as ValueRequest<Any?>) }
     }
 
-    override fun <T, TContext> IMonoStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IIterationRequest<TContext> {
+    override fun <T, TContext> IMonoStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> {
         return this.asFlux().iterateLater(body)
     }
 
@@ -60,7 +70,7 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
 
     override fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IFluxStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate> {
         @kotlin.Suppress("UnnecessaryVariable")
-        val iterationRequest: IIterationRequest<TContext> = iterateLater {
+        val iterationRequest: IPreparedFragment<TContext> = iterateLater {
             with(template) {
                 prepareInstance()
             }
@@ -78,17 +88,17 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
         }
     }
 
-    override fun <T, TContext> IFluxStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IIterationRequest<TContext> {
+    override fun <T, TContext> IFluxStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> {
         lateinit var childBuilder: AsyncBuilder<T, TContext>
         val outputStep: IMonoStep<List<IZipOutput<*>>> = this.map {
             childBuilder = AsyncBuilder<T, TContext>(it).apply(body)
             childBuilder.compileOutputStep()
         }.toList()
-        return IterationRequest<T, TContext>(childBuilder, outputStep).also { iterationRequests.add(it as IterationRequest<Any?, Any?>) }
+        return PreparedFragment<T, TContext>(childBuilder, outputStep).also { iterationRequests.add(it as PreparedFragment<Any?, Any?>) }
     }
 
-    override fun <TContext> TContext.iterate(request: IIterationRequest<TContext>) {
-        val casted = request as IterationRequest<*, TContext>
+    override fun <TContext> TContext.iterate(request: IPreparedFragment<TContext>) {
+        val casted = request as PreparedFragment<*, TContext>
         require(casted.getOwner() != this) { "Iteration request belongs to a different builder" }
         casted.iterate(this)
     }
@@ -112,7 +122,7 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
 
     class ValueRequest<E>(val step: IMonoStep<E>) : Request<E>(), IValueRequest<E>
 
-    inner class IterationRequest<In, RequestContext>(val htmlBuilder: AsyncBuilder<In, RequestContext>, val outputStep: IMonoStep<List<IZipOutput<*>>>) : Request<List<IZipOutput<*>>>(), IIterationRequest<RequestContext> {
+    inner class PreparedFragment<In, RequestContext>(val htmlBuilder: AsyncBuilder<In, RequestContext>, val outputStep: IMonoStep<List<IZipOutput<*>>>) : Request<List<IZipOutput<*>>>(), IPreparedFragment<RequestContext> {
         fun getOwner(): AsyncBuilder<*, *> = this@AsyncBuilder
         fun iterate(context: RequestContext) {
             context.apply {

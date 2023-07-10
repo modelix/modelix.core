@@ -117,7 +117,7 @@ class RestWebModelClient @JvmOverloads constructor(
     private val client = (providedClient ?: HttpClient(CIO)).config {
         this.followRedirects = false
         install(HttpTimeout) {
-            connectTimeoutMillis = 1.seconds.inWholeMilliseconds
+            connectTimeoutMillis = 30.seconds.inWholeMilliseconds
             requestTimeoutMillis = 30.seconds.inWholeMilliseconds
         }
         install(ContentNegotiation) {

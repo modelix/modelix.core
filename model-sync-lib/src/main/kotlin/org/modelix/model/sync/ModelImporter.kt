@@ -34,7 +34,6 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         buildRefIndex(root)
 
         syncAllReferences(root, data.root)
-        syncAllChildOrders(root, data.root)
     }
 
     private fun buildExistingIndex(root: INode) {
@@ -91,24 +90,27 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         val existingIds = node.allChildren.map { it.originalId() }.toSet()
         val missingNodes = specifiedNodes.filter { !existingIds.contains(it.originalId()) }
 
+        val toBeRemoved = node.allChildren.filter { !originalIdToSpec.contains(it.originalId()) }
+        toBeRemoved.forEach { node.removeChildWithStats(it) }
+
+        val toBeMovedAwayFromHere = existingIds.subtract(specifiedNodes.map { it.originalId() }.toSet())
+
+        syncExistingChildOrder(node, nodeData, existingIds, toBeMovedAwayFromHere)
+
         val toBeMovedHere = missingNodes.filter { originalIdToExisting.containsKey(it.originalId()) }.toSet()
-        val toBeAdded = missingNodes.subtract(toBeMovedHere)
-
-        toBeAdded.forEach {
-            val index = nodeData.children.indexOf(it)
-            node.addNewChildWithStats(it, index)
-        }
-
         toBeMovedHere.forEach {
             val actualNode = originalIdToExisting[it.originalId()]
-            val targetIndex = it.getIndexWithinRole(nodeData)
+            val targetIndex = it.getIndexWithinRole(nodeData,existingIds.size - 1)
             if (actualNode != null) {
                 node.moveChildWithStats(it.role, targetIndex, actualNode)
             }
         }
 
-        val toBeRemoved = node.allChildren.filter { !originalIdToSpec.contains(it.originalId()) }
-        toBeRemoved.forEach { node.removeChildWithStats(it) }
+        val toBeAdded = missingNodes.subtract(toBeMovedHere)
+        toBeAdded.forEach {
+            val index = it.getIndexWithinRole(nodeData, existingIds.size - 1)
+            node.addNewChildWithStats(it, index)
+        }
 
         node.allChildren.forEach {
             val childData = originalIdToSpec[it.originalId()]
@@ -118,34 +120,34 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         }
     }
 
-    private fun syncAllChildOrders(root: INode, rootData: NodeData) {
-        syncChildOrder(root, rootData)
-        for ((node, data) in root.allChildren zip rootData.children) {
-            syncAllChildOrders(node, data)
-        }
-    }
-
-    private fun syncChildOrder(node: INode, nodeData: NodeData) {
+    private fun syncExistingChildOrder(
+        node: INode,
+        nodeData: NodeData,
+        existingIds: Set<String?>,
+        toBeMovedAwayFromHere: Set<String?>
+    ) {
         val existingChildren = node.allChildren.toList()
         val specifiedChildren = nodeData.children
-        require(existingChildren.size == specifiedChildren.size)
+        require(existingChildren.size <= specifiedChildren.size)
+
+        val filteredSpecifiedChildren = specifiedChildren.filter { existingIds.contains(it.originalId()) }
 
         val targetIndices = HashMap<String?, Int>(nodeData.children.size)
-        for (specifiedChild in specifiedChildren) {
-            val index = specifiedChild.getIndexWithinRole(nodeData)
-            targetIndices[specifiedChild.originalId()] = index
+        for (specifiedChild in filteredSpecifiedChildren) {
+            val index = filteredSpecifiedChildren.filter { it.role == node.roleInParent }.indexOf(specifiedChild)
+            targetIndices[specifiedChild.originalId()] = minOf(index, existingChildren.size - 1)
         }
 
         for ((index, child) in existingChildren.withIndex()) {
             val targetIndex = targetIndices[child.originalId()] ?: -1
-            if (targetIndex != index) {
+            if (targetIndex != index && !toBeMovedAwayFromHere.contains(child.originalId())) {
                 node.moveChildWithStats(child.roleInParent, targetIndex, child)
             }
         }
     }
 
-    private fun NodeData.getIndexWithinRole(parent: NodeData) : Int {
-        return parent.children.filter { it.role == this.role }.indexOf(this)
+    private fun NodeData.getIndexWithinRole(parent: NodeData, maxIndex: Int) : Int {
+        return minOf(parent.children.filter { it.role == this.role }.indexOf(this), maxIndex)
     }
 
     private fun INode.originalId(): String? {

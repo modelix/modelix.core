@@ -5,8 +5,10 @@
       {
         "id": "node:002",
         "properties": {
+          "purpose" : "property sync test",
           "name": "newNameValue",
-          "description": "newDescriptionValue"
+          "description": "newDescriptionValue",
+          "newProperty": "newProperty"
         },
         "references": {
           "sibling": "node:003"
@@ -14,6 +16,9 @@
       },
       {
         "id": "node:003",
+        "properties": {
+          "purpose": "reference sync test"
+        },
         "references": {
           "root": "node:001",
           "sibling": "node:002"
@@ -21,7 +26,13 @@
       },
       {
         "id": "node:010",
+        "properties": {
+          "purpose": "child sync test"
+        },
         "children": [
+          {
+            "id": "node:011"
+          },
           {
             "id": "node:013"
           },
@@ -29,15 +40,24 @@
             "id": "node:015"
           },
           {
-            "id": "node:011"
-          },
-          {
             "id": "node:014"
           },
           {
             "id": "node:016"
+          },
+          {
+            "id": "node:005",
+            "properties": {
+              "purpose": "move across parents"
+            }
           }
         ]
+      },
+      {
+        "id": "node:004",
+        "properties": {
+          "purpose": "move across parents"
+        }
       }
     ]
   }

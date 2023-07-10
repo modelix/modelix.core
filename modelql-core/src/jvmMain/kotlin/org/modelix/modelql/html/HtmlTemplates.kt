@@ -13,10 +13,12 @@
  */
 package org.modelix.modelql.html
 
+import io.ktor.server.html.Template
 import io.ktor.server.html.TemplatePlaceholder
 import org.modelix.modelql.core.IAsyncBuilder
 import org.modelix.modelql.core.IModelQLTemplate
 import org.modelix.modelql.core.IModelQLTemplateInstance
+import org.modelix.modelql.core.IPreparedFragment
 
 context(IAsyncBuilder<*, *>)
 public fun <TTemplate : IModelQLTemplate<*, TOuter>, TTemplateInstance : IModelQLTemplateInstance<TOuter, TTemplate>, TOuter> TOuter.insert(
@@ -31,4 +33,24 @@ context(IAsyncBuilder<*, *>)
 public fun <TOuter, TTemplate : IModelQLTemplate<*, TOuter>, TTemplateInstance : IModelQLTemplateInstance<TOuter, TTemplate>> TOuter.insert(templateInstance: TTemplateInstance, build: TTemplate.() -> Unit) {
     templateInstance.getTemplate().build()
     applyTemplate(templateInstance)
+}
+
+context(IAsyncBuilder<*, *>)
+fun <TOuter> IPreparedFragment<TOuter>.toKotlinTemplate(): Template<TOuter> {
+    val preparedFragment = this
+    return object : Template<TOuter> {
+        override fun TOuter.apply() {
+            applyFragment(preparedFragment)
+        }
+    }
+}
+
+context(IAsyncBuilder<*, *>)
+fun <TOuter> IModelQLTemplateInstance<TOuter, *>.toKotlinTemplate(): Template<TOuter> {
+    val templateInstance = this
+    return object : Template<TOuter> {
+        override fun TOuter.apply() {
+            applyTemplate(templateInstance)
+        }
+    }
 }

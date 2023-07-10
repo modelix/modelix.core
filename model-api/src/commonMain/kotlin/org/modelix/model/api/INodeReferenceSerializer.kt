@@ -96,6 +96,11 @@ interface INodeReferenceSerializer {
         }
 
         fun deserialize(serialized: String): INodeReference {
+            return tryDeserialize(serialized)
+                ?: throw RuntimeException("No deserializer found for: $serialized")
+        }
+
+        fun tryDeserialize(serialized: String): INodeReference? {
             val parts = serialized.split(INodeReferenceSerializerEx.SEPARATOR, limit = 2)
             if (parts.size == 2) {
                 val deserializer = deserializerForPrefix[parts[0]]
@@ -105,7 +110,6 @@ interface INodeReferenceSerializer {
             }
 
             return legacySerializers.map { it.deserialize(serialized) }.firstOrNull { it != null }
-                ?: throw RuntimeException("No deserializer found for: $serialized")
         }
     }
 }

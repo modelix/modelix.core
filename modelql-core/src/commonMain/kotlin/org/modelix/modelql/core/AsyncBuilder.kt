@@ -57,6 +57,14 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
         resultHandlers += body
     }
     override fun <T> IMonoStep<T>.getLater(): ValueRequest<T> {
+        val actual = this.getRootInputStep()
+        val expected = input.getRootInputStep()
+        require(expected == actual) {
+            """step uses input from a different builder: $this
+                |  expected input: $expected
+                |  actual input: $actual
+            """.trimMargin()
+        }
         return ValueRequest(this).also { valueRequests.add(it as ValueRequest<Any?>) }
     }
 

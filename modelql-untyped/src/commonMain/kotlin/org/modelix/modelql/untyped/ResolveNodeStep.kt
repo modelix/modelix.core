@@ -32,11 +32,13 @@ import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.map
+import kotlin.coroutines.coroutineContext
 
 class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
     override fun createFlow(input: Flow<INodeReference>, context: IFlowInstantiationContext): Flow<INode> {
         return input.map {
             val refScope = context.coroutineScope?.let { it.coroutineContext[INodeResolutionScope] }
+                ?: coroutineContext[INodeResolutionScope]
                 ?: ContextArea.getArea()
                 ?: throw IllegalStateException("No INodeResolutionScope found in the coroutine context")
             it.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $it")

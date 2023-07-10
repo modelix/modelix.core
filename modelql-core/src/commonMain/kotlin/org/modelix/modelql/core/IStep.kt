@@ -21,6 +21,8 @@ interface IStep {
     fun hasSideEffect(): Boolean = requiresWriteAccess()
     fun needsCoroutineScope() = false
     fun requiresSingularQueryInput(): Boolean
+
+    fun getRootInputStep(): IStep = if (this is IConsumingStep<*>) getProducers().map { it.getRootInputStep() }.toSet().single() else this
 }
 
 interface IFlowInstantiationContext {
@@ -114,6 +116,11 @@ abstract class ProducingStep<E> : IProducingStep<E> {
 abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingStep<Out>() {
 
     private var producer: IProducingStep<In>? = null
+
+    override fun validate() {
+        super<ProducingStep>.validate()
+        require(producer != null) { "Step has no input" }
+    }
 
     override fun addProducer(producer: IProducingStep<In>) {
         if (this.producer != null) throw IllegalStateException("Only one input supported")

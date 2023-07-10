@@ -48,20 +48,20 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
 
 @JvmName("ifEmpty_mono_mono")
 fun <In : Out, Out> IMonoStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IMonoStep<Out> {
-    return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance())
+    return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
 }
 
 @JvmName("ifEmpty_flux_mono")
 fun <In : Out, Out> IFluxStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IFluxStep<Out> {
-    return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance())
+    return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
 }
 
 @JvmName("ifEmpty_mono_flux")
 fun <In : Out, Out> IMonoStep<In>.ifEmptyFlux(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
-    return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance())
+    return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
 }
 
 @JvmName("ifEmpty_flux_flux")
 fun <In : Out, Out> IFluxStep<In>.ifEmptyFlux(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
-    return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance())
+    return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
 }

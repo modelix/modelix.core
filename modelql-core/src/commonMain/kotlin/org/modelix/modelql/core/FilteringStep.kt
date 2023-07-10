@@ -18,6 +18,7 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
     override fun validate() {
+        super<TransformingStep>.validate()
         require(!condition.requiresWriteAccess()) { "write access not allowed inside a filtering step: $this" }
         require(!condition.outputStep.canBeMultiple()) {
             "filter condition should not return multiple elements: $condition"

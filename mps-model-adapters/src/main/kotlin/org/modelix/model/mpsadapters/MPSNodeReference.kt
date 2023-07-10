@@ -15,10 +15,12 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.smodel.SNodePointer
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
+import org.modelix.model.api.serialize
 import org.modelix.model.area.IArea
 
 data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
@@ -29,4 +31,22 @@ data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
     override fun resolveIn(scope: INodeResolutionScope): INode? {
         return super.resolveIn(scope)
     }
+
+    companion object {
+        fun tryConvert(ref: INodeReference): MPSNodeReference? {
+            if (ref is MPSNodeReference) return ref
+            val serialized = ref.serialize()
+            val serializedMPSRef = when {
+                serialized.startsWith("mps-node:") -> serialized.substringAfter("mps-node:")
+                serialized.startsWith("mps:") -> serialized.substringAfter("mps:")
+                else -> return null
+            }
+            return MPSNodeReference(SNodePointer.deserialize(serializedMPSRef))
+        }
+    }
+}
+
+fun INodeReference.toMPSNodeReference(): MPSNodeReference {
+    return MPSNodeReference.tryConvert(this)
+        ?: throw IllegalArgumentException("Not an MPS node reference: $this")
 }

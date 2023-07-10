@@ -15,14 +15,12 @@
  */
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.smodel.SNodePointer
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.serialize
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
@@ -37,18 +35,7 @@ data class MPSArea(val repository: SRepository) : IArea {
     }
 
     override fun resolveNode(ref: INodeReference): INode? {
-        val serialized = ref.serialize()
-        val serializedMPSRef = if (serialized.startsWith("mps-node:")) {
-            serialized.substringAfter("mps-node:")
-        } else {
-            if (serialized.startsWith("mps:")) {
-                serialized.substringAfter("mps:")
-            } else {
-                null
-            } ?: return null
-        }
-        val mpsRef = SNodePointer.deserialize(serializedMPSRef)
-        return mpsRef.resolve(repository)?.let { MPSNode(it) }
+        return MPSNodeReference.tryConvert(ref)?.ref?.resolve(repository)?.let { MPSNode(it) }
     }
 
     override fun resolveOriginalNode(ref: INodeReference): INode? {

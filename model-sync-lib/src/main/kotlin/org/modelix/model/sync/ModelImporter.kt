@@ -7,12 +7,11 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import java.io.File
 
-class ModelImporter(private val root: INode) {
+class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
 
-    private lateinit var originalIdToRef: MutableMap<String, INodeReference>
     private lateinit var originalIdToSpec: MutableMap<String, NodeData>
-    private lateinit var originalIdToParentSpec: MutableMap<String, NodeData>
     private lateinit var originalIdToExisting: MutableMap<String, INode>
+    private lateinit var originalIdToRef: MutableMap<String, INodeReference>
 
     fun import(jsonFile: File) {
         require(jsonFile.exists())
@@ -29,9 +28,6 @@ class ModelImporter(private val root: INode) {
         originalIdToSpec = mutableMapOf()
         buildSpecIndex(data.root)
 
-        originalIdToParentSpec = mutableMapOf()
-        buildParentSpecIndex(data.root)
-
         syncNode(root, data.root)
 
         originalIdToRef = mutableMapOf()
@@ -44,13 +40,6 @@ class ModelImporter(private val root: INode) {
     private fun buildExistingIndex(root: INode) {
         root.originalId()?.let { originalIdToExisting[it] = root }
         root.allChildren.forEach { buildExistingIndex(it) }
-    }
-
-    private fun buildParentSpecIndex(nodeData: NodeData) {
-        for (child in nodeData.children) {
-            child.originalId()?.let {  originalIdToParentSpec[it] = nodeData }
-            buildParentSpecIndex(child)
-        }
     }
 
     private fun buildRefIndex(node: INode) {
@@ -69,11 +58,15 @@ class ModelImporter(private val root: INode) {
     }
 
     private fun syncProperties(node: INode, nodeData: NodeData) {
-        nodeData.properties.forEach { node.setPropertyValue(it.key, it.value) }
+        nodeData.properties.forEach {
+            if (node.getPropertyValue(it.key) != it.value) {
+                node.setPropertyValueWithStats(it.key, it.value)
+            }
+        }
         val toBeRemoved = node.getPropertyRoles().toSet()
             .subtract(nodeData.properties.keys)
             .filter { it != NodeData.idPropertyKey }
-        toBeRemoved.forEach { node.setPropertyValue(it, null) }
+        toBeRemoved.forEach { node.setPropertyValueWithStats(it, null) }
     }
 
     private fun syncAllReferences(root: INode, rootData: NodeData) {
@@ -84,9 +77,13 @@ class ModelImporter(private val root: INode) {
     }
 
     private fun syncReferences(node: INode, nodeData: NodeData) {
-        nodeData.references.forEach { node.setReferenceTarget(it.key, originalIdToRef[it.value]) }
+        nodeData.references.forEach {
+            if (node.getReferenceTargetRef(it.key) != originalIdToRef[it.value]) {
+                node.setReferenceTargetWithStats(it.key, originalIdToRef[it.value])
+            }
+        }
         val toBeRemoved = node.getReferenceRoles().toSet().subtract(nodeData.references.keys)
-        toBeRemoved.forEach { node.setPropertyValue(it, null) }
+        toBeRemoved.forEach { node.setReferenceTargetWithStats(it, null) }
     }
 
     private fun syncChildNodes(node: INode, nodeData: NodeData) {
@@ -99,20 +96,19 @@ class ModelImporter(private val root: INode) {
 
         toBeAdded.forEach {
             val index = nodeData.children.indexOf(it)
-            val createdNode = node.addNewChild(it.role, index, it.concept?.let { s -> ConceptReference(s) })
-            createdNode.setPropertyValue(NodeData.idPropertyKey, it.originalId())
+            node.addNewChildWithStats(it, index)
         }
 
         toBeMovedHere.forEach {
             val actualNode = originalIdToExisting[it.originalId()]
             val targetIndex = it.getIndexWithinRole(nodeData)
             if (actualNode != null) {
-                node.moveChild(it.role, targetIndex, actualNode)
+                node.moveChildWithStats(it.role, targetIndex, actualNode)
             }
         }
 
         val toBeRemoved = node.allChildren.filter { !originalIdToSpec.contains(it.originalId()) }
-        toBeRemoved.forEach { node.removeChild(it) }
+        toBeRemoved.forEach { node.removeChildWithStats(it) }
 
         node.allChildren.forEach {
             val childData = originalIdToSpec[it.originalId()]
@@ -140,9 +136,11 @@ class ModelImporter(private val root: INode) {
             targetIndices[specifiedChild.originalId()] = index
         }
 
-        for (child in existingChildren) {
+        for ((index, child) in existingChildren.withIndex()) {
             val targetIndex = targetIndices[child.originalId()] ?: -1
-            node.moveChild(child.roleInParent, targetIndex, child)
+            if (targetIndex != index) {
+                node.moveChildWithStats(child.roleInParent, targetIndex, child)
+            }
         }
     }
 
@@ -156,6 +154,45 @@ class ModelImporter(private val root: INode) {
 
     private fun NodeData.originalId(): String? {
         return properties[NodeData.idPropertyKey] ?: id
+    }
+
+    private fun INode.addNewChildWithStats(spec: NodeData, index: Int) : INode {
+        val concept = spec.concept?.let { s -> ConceptReference(s) }
+
+        val createdNode = addNewChild(spec.role, index, concept)
+        createdNode.setPropertyValue(NodeData.idPropertyKey, spec.originalId())
+        if (this@ModelImporter.stats != null) {
+            createdNode.originalId()?.let { stats.addAddition(it) }
+        }
+        return createdNode
+    }
+
+    private fun INode.moveChildWithStats(role: String?, index: Int, child: INode) {
+        if (this@ModelImporter.stats != null) {
+            child.originalId()?.let { stats.addMove(it) }
+        }
+        return moveChild(role, index, child)
+    }
+
+    private fun INode.removeChildWithStats(child: INode) {
+        if (this@ModelImporter.stats != null) {
+            child.originalId()?.let { stats.addDeletion(it) }
+        }
+        return removeChild(child)
+    }
+
+    private fun INode.setPropertyValueWithStats(role: String, value: String?) {
+        if (this@ModelImporter.stats != null) {
+            this.originalId()?.let { stats.addPropertyChange(it, role) }
+        }
+        return setPropertyValue(role, value)
+    }
+
+    private fun INode.setReferenceTargetWithStats(role: String, target: INodeReference?) {
+        if (this@ModelImporter.stats != null) {
+            this.originalId()?.let { stats.addReferenceChange(it, role) }
+        }
+        return setReferenceTarget(role, target)
     }
 
 }

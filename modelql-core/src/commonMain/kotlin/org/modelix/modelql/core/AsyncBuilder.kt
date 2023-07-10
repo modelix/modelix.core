@@ -108,19 +108,19 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
     }
 
     abstract class Request<E> {
-        var initialized: Boolean = false
-        var result: E? = null
+        var result: Optional<E> = Optional.empty()
         fun set(value: E) {
-            result = value
-            initialized = true
+            result = Optional.of(value)
         }
         fun get(): E {
-            require(initialized) { "Value not received for $this" }
-            return result as E
+            require(result.isPresent()) { "Value not received for $this" }
+            return result.get()
         }
     }
 
-    class ValueRequest<E>(val step: IMonoStep<E>) : Request<E>(), IValueRequest<E>
+    class ValueRequest<E>(step: IMonoStep<E>) : Request<E>(), IValueRequest<E> {
+        val step: IMonoStep<E> = if (step.canBeEmpty()) step.assertNotEmpty() else step
+    }
 
     inner class PreparedFragment<In, RequestContext>(val htmlBuilder: AsyncBuilder<In, RequestContext>, val outputStep: IMonoStep<List<IZipOutput<*>>>) : Request<List<IZipOutput<*>>>(), IPreparedFragment<RequestContext> {
         fun getOwner(): AsyncBuilder<*, *> = this@AsyncBuilder

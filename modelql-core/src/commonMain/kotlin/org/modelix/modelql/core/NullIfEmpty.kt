@@ -37,6 +37,10 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
     override fun toString(): String {
         return """${getProducers().single()}.orNull()"""
     }
+
+    override fun canBeEmpty(): Boolean {
+        return false
+    }
 }
 
 fun <Out> IMonoStep<Out>.orNull(): IMonoStep<Out?> = NullIfEmpty<Out>().connectAndDowncast(this)

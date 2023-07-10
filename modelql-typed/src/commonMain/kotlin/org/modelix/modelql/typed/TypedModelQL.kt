@@ -205,7 +205,6 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
     }
 }
 
-
 @JvmName("instanceOfExactly_untyped_untyped")
 fun IMonoStep<INode?>.instanceOfExactly(concept: IConcept): IMonoStep<Boolean> {
     return conceptReference().filterNotNull().getUID().equalTo(concept.getUID())

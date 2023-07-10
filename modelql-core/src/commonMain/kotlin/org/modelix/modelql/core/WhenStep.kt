@@ -30,6 +30,20 @@ class WhenStep<In, Out>(
     val elseCase: IMonoUnboundQuery<In, Out>?
 ) : MonoTransformingStep<In, Out>() {
 
+    override fun toString(): String {
+        return "when()" + cases.joinToString("") { ".if(${it.first}).then(${it.second})" } + ".else($elseCase)"
+    }
+
+    override fun canBeEmpty(): Boolean {
+        if (elseCase == null) return true
+        if (getProducer().canBeEmpty()) return true
+        return cases.any { it.second.canBeEmpty() }
+    }
+
+    override fun canBeMultiple(): Boolean {
+        return false
+    }
+
     override fun createDescriptor(): StepDescriptor {
         return Descriptor(
             cases.map { it.first.castToInstance().createDescriptor() to it.second.castToInstance().createDescriptor() },

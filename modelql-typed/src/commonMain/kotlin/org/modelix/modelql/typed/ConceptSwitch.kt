@@ -20,10 +20,11 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.WhenStep
+import org.modelix.modelql.core.connect
 import kotlin.experimental.ExperimentalTypeInference
 
 @OptIn(ExperimentalTypeInference::class)
-class ConceptSwitchBuilder<In : ITypedNode, Out>() {
+class ConceptSwitchBuilder<In : ITypedNode, Out>(private val input: IMonoStep<In>) {
     private val cases = HashMap<IConcept, IMonoUnboundQuery<In, Out>>()
 
     fun <TNode : In, TConcept : IConceptOfTypedNode<TNode>> `if`(concept: TConcept): CaseBuilder<TNode> {
@@ -50,7 +51,7 @@ class ConceptSwitchBuilder<In : ITypedNode, Out>() {
             sortedCases.toList().asReversed()
                 .map { case -> IUnboundQuery.buildMono { it.untyped().instanceOf(case.first) } to case.second },
             IUnboundQuery.buildMono(elseBody)
-        )
+        ).also { input.connect(it) }
     }
 
     inner class CaseBuilder<Node : In>(val concept: IConceptOfTypedNode<Node>) {
@@ -62,4 +63,4 @@ class ConceptSwitchBuilder<In : ITypedNode, Out>() {
     }
 }
 
-fun <In : ITypedNode, Out> IMonoStep<In>.conceptSwitch() = ConceptSwitchBuilder<In, Out>()
+fun <In : ITypedNode, Out> IMonoStep<In>.conceptSwitch() = ConceptSwitchBuilder<In, Out>(this)

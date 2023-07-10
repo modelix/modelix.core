@@ -96,6 +96,7 @@ interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     fun asSequence(input: Sequence<In>): Sequence<ElementOut>
 
     fun requiresWriteAccess(): Boolean
+    fun canBeEmpty(): Boolean
 
     fun bind(executor: IQueryExecutor<In>): IQuery<AggregationOut, ElementOut>
     fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out AggregationOut>
@@ -220,6 +221,10 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
 
     override fun requiresWriteAccess(): Boolean {
         return getAllSteps().any { it.requiresWriteAccess() }
+    }
+
+    override fun canBeEmpty(): Boolean {
+        return outputStep.canBeEmpty()
     }
 
     override fun toString(): String {

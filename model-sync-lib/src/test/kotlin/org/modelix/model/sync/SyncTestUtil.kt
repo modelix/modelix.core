@@ -21,7 +21,7 @@ fun NodeData.toJson() : String {
     return SyncTestUtil.json.encodeToString(this)
 }
 
-internal fun assertAllNodeConformToSpec(expectedRoot: NodeData, actualRoot: INode) {
+internal fun assertAllNodesConformToSpec(expectedRoot: NodeData, actualRoot: INode) {
     assertNodeConformsToSpec(expectedRoot, actualRoot)
     for ((expectedChild, actualChild) in expectedRoot.children zip actualRoot.allChildren) {
         assertNodeConformsToSpec(expectedChild, actualChild)

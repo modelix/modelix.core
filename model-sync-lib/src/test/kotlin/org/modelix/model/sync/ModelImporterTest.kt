@@ -8,10 +8,13 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
+import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.test.RandomModelChangeGenerator
 import java.io.File
+import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
@@ -81,7 +84,7 @@ class ModelImporterTest {
     @Test
     fun `model conforms to spec`() {
         branch.runRead {
-            assertAllNodeConformToSpec(newModel.root, branch.getRootNode())
+            assertAllNodesConformToSpec(newModel.root, branch.getRootNode())
         }
     }
 
@@ -120,6 +123,45 @@ class ModelImporterTest {
             for ((expected, actual) in newModel.root.children zip children) {
                 assertEquals(expected.children.size, actual.allChildren.toList().size)
             }
+        }
+    }
+
+    @Test
+    fun `can handle random changes`() {
+        val tree0 = CLTree(ObjectStoreCache(MapBaseStore()))
+        val branch0 = PBranch(tree0, IdGenerator.getInstance(1))
+
+        val seed = Random.nextInt()
+        println("Seed for random change test: $seed")
+        lateinit var initialState: NodeData
+        lateinit var specification: NodeData
+        val numChanges = 50
+
+        branch0.runWrite {
+            val rootNode = branch0.getRootNode()
+            val grower = RandomModelChangeGenerator(rootNode, Random(seed)).growingOperationsOnly()
+            for (i in 1..50) {
+                grower.applyRandomChange()
+            }
+            initialState = rootNode.asExported()
+
+            val changer = RandomModelChangeGenerator(rootNode, Random(seed))
+            for (i in 1..numChanges) {
+                changer.applyRandomChange()
+            }
+            specification = rootNode.asExported()
+        }
+
+        val tree1 = CLTree(ObjectStoreCache(MapBaseStore()))
+        val branch1 = PBranch(tree1, IdGenerator.getInstance(1))
+
+        branch1.runWrite {
+            val importer = ModelImporter(branch1.getRootNode(), ImportStats())
+            importer.import(ModelData(root = initialState))
+            importer.import(ModelData(root = specification))
+
+            assertAllNodesConformToSpec(specification, branch1.getRootNode())
+            assert(importer.stats!!.getTotal() <= numChanges)
         }
     }
 }

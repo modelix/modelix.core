@@ -1,8 +1,5 @@
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -11,25 +8,17 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.key
 import org.modelix.model.api.resolveReferenceLinkOrFallback
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 
 class SetReferenceStep(val role: String) :
     TransformingStepWithParameter<INode, INode?, INode?, INode>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out INode> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
         return getInputProducer().getOutputSerializer(serializersModule)
-    }
-
-    override fun createFlow(input: Flow<INode?>, context: IFlowInstantiationContext): Flow<INode> {
-        val targetFlow: Flow<INode?> = context.getOrCreateFlow(getParameterProducer()).onEmpty { emit(null) }
-        return input.combine(targetFlow) { source, target ->
-            source!!.setReferenceTarget(source!!.resolveReferenceLinkOrFallback(role), target)
-            source
-        }
     }
 
     override fun transformElement(input: INode, parameter: INode?): INode {

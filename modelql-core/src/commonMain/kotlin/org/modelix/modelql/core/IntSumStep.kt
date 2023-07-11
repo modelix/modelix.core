@@ -1,7 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -9,9 +7,6 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
-    override fun createFlow(input: Flow<Int>, context: IFlowInstantiationContext): Flow<Int> {
-        return input.map { it + operand }
-    }
 
     override fun transform(input: Int): Int {
         return input + operand
@@ -27,8 +22,8 @@ class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Int> {
-        return serializersModule.serializer<Int>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
+        return serializersModule.serializer<Int>().stepOutputSerializer()
     }
 }
 

@@ -1,7 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -11,12 +9,8 @@ import kotlinx.serialization.serializer
 import kotlin.jvm.JvmName
 
 class ToStringStep : MonoTransformingStep<Any?, String?>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String?> {
-        return serializersModule.serializer<String>().nullable
-    }
-
-    override fun createFlow(input: Flow<Any?>, context: IFlowInstantiationContext): Flow<String?> {
-        return input.map { it?.toString() }
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String?>> {
+        return serializersModule.serializer<String>().nullable.stepOutputSerializer()
     }
 
     override fun transform(input: Any?): String? {

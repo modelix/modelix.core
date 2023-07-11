@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -25,8 +24,8 @@ abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), IMono
         return Optional.of(element)
     }
 
-    override fun createFlow(context: IFlowInstantiationContext): Flow<E> {
-        return flowOf(element)
+    override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
+        return flowOf(SimpleStepOutput(element))
     }
 
     override fun toString(): String {
@@ -35,8 +34,8 @@ abstract class ConstantSourceStep<E>(val element: E) : ProducingStep<E>(), IMono
 }
 
 class StringSourceStep(element: String?) : ConstantSourceStep<String?>(element) {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String?> {
-        return serializersModule.serializer<String>().nullable
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String?>> {
+        return serializersModule.serializer<String>().nullable.stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor(element)
@@ -55,8 +54,8 @@ class StringSourceStep(element: String?) : ConstantSourceStep<String?>(element) 
 }
 
 class BooleanSourceStep(element: Boolean) : ConstantSourceStep<Boolean>(element) {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
-        return serializersModule.serializer<Boolean>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
+        return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor(element)

@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.serialization.KSerializer
@@ -35,7 +34,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         producer.addConsumer(this)
     }
 
-    override fun createFlow(context: IFlowInstantiationContext): Flow<E> {
+    override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
         return producers.map { context.getOrCreateFlow(it) }.asFlow().flattenConcat()
     }
 
@@ -43,7 +42,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         return producers.asSequence().flatMap { it.createSequence(queryInput) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
         val serializers = getProducers().map { it.getOutputSerializer(serializersModule) }.toSet() - RecursiveQueryStep.SERIALIZER
         return when (serializers.size) {
             0 -> throw RuntimeException("No producers found")

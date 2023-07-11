@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -20,7 +19,7 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
         return query.requiresWriteAccess()
     }
 
-    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         return input.flatMapConcat { query.asFlow(it) }
     }
 
@@ -28,8 +27,8 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
         return query.asSequence(getProducer().createSequence(queryInput))
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
-        return (query.outputStep as IProducingStep<*>).getOutputSerializer(serializersModule) as KSerializer<Out>
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
+        return ((query.outputStep as IProducingStep<*>).getOutputSerializer(serializersModule) as KSerializer<Out>).stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())

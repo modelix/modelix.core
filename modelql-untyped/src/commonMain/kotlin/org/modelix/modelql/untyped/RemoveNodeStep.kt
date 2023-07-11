@@ -1,6 +1,5 @@
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
@@ -14,21 +13,25 @@ import org.modelix.modelql.core.AggregationStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.asStepOutput
 import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.stepOutputSerializer
 
 class RemoveNodeStep() : AggregationStep<INode, Int>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Int> {
-        return serializersModule.serializer<Int>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
+        return serializersModule.serializer<Int>().stepOutputSerializer()
     }
 
-    override suspend fun aggregate(input: Flow<INode>): Int {
-        return input.map { it.remove() }.count()
+    override suspend fun aggregate(input: StepFlow<INode>): IStepOutput<Int> {
+        return input.map { it.value.remove() }.count().asStepOutput()
     }
 
-    override fun aggregate(input: Sequence<INode>): Int {
-        return input.map { it.remove() }.count()
+    override fun aggregate(input: Sequence<IStepOutput<INode>>): IStepOutput<Int> {
+        return input.map { it.value.remove() }.count().asStepOutput()
     }
 
     override fun createDescriptor(): StepDescriptor {

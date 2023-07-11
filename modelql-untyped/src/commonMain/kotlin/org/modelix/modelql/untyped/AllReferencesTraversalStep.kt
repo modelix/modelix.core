@@ -13,7 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
@@ -28,20 +27,24 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.stepOutputSerializer
 
 class AllReferencesTraversalStep() : FluxTransformingStep<INode, INode>(), IMonoStep<INode> {
-    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.flatMapConcat { it.getAllReferenceTargetsAsFlow().map { it.second } }
+    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
+        return input.flatMapConcat { it.value.getAllReferenceTargetsAsFlow().map { it.second } }.asStepFlow()
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<INode> {
         return getProducer().createSequence(queryInput).flatMap { it.getAllReferenceTargets().map { it.second } }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
-        return serializersModule.serializer<INode>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
+        return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor()

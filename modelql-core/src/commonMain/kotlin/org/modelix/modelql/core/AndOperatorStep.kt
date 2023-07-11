@@ -1,16 +1,12 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
-    override fun createFlow(input: Flow<IZipOutput<Boolean>>, context: IFlowInstantiationContext): Flow<Boolean> {
-        return input.map { it.values.all { it == true } }
-    }
 
     override fun transform(input: IZipOutput<Boolean>): Boolean {
         return input.values.all { it == true }
@@ -26,7 +22,9 @@ class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule) = serializersModule.serializer<Boolean>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
+        return serializersModule.serializer<Boolean>().stepOutputSerializer()
+    }
 
     override fun toString(): String {
         return "and(" + getProducers().joinToString(", ") + ")"

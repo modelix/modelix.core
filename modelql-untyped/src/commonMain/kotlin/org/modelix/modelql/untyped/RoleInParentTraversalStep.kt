@@ -23,17 +23,18 @@ import org.modelix.model.api.INode
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.contains
+import org.modelix.modelql.core.stepOutputSerializer
 
 class RoleInParentTraversalStep() : MonoTransformingStep<INode, String?>() {
     override fun transform(input: INode): String? {
         return input.roleInParent
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out String?> {
-        return serializersModule.serializer<String>().nullable
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String?>> {
+        return serializersModule.serializer<String>().nullable.stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor()

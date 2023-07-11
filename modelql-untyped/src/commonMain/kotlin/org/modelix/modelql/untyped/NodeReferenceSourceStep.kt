@@ -25,12 +25,14 @@ import org.modelix.model.api.serialize
 import org.modelix.modelql.core.ConstantSourceStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.stepOutputSerializer
 import kotlin.jvm.JvmName
 
 class NodeReferenceSourceStep(element: SerializedNodeReference?) : ConstantSourceStep<SerializedNodeReference?>(element) {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<SerializedNodeReference?> {
-        return serializersModule.serializer<SerializedNodeReference>().nullable
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<SerializedNodeReference?>> {
+        return serializersModule.serializer<SerializedNodeReference>().nullable.stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor(element)

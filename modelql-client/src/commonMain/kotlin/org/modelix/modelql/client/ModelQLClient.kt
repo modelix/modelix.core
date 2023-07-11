@@ -48,7 +48,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
             json.decodeFromString(
                 query.getOutputSerializer(json.serializersModule),
                 serializedJson
-            )
+            ).value
         }
     }
 

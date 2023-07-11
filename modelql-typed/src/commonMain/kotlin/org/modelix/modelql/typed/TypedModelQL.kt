@@ -1,6 +1,5 @@
 package org.modelix.modelql.typed
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -29,9 +28,12 @@ import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.asStepOutput
 import org.modelix.modelql.core.asString
 import org.modelix.modelql.core.emptyStringIfNull
 import org.modelix.modelql.core.equalTo
@@ -42,6 +44,7 @@ import org.modelix.modelql.core.flatMap
 import org.modelix.modelql.core.inSet
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.orNull
+import org.modelix.modelql.core.stepOutputSerializer
 import org.modelix.modelql.core.toBoolean
 import org.modelix.modelql.core.toInt
 import org.modelix.modelql.untyped.UntypedModelQL
@@ -150,12 +153,12 @@ fun IMonoStep<ITypedNode>.untyped(): IMonoStep<INode> = UntypedNodeStep().connec
 fun IFluxStep<ITypedNode>.untyped(): IFluxStep<INode> = UntypedNodeStep().connectAndDowncast(this)
 
 class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : MonoTransformingStep<INode, Typed>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Typed> {
-        return TypedNodeSerializer(nodeClass, serializersModule.serializer<INode>())
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Typed>> {
+        return TypedNodeSerializer(nodeClass, serializersModule.serializer<INode>()).stepOutputSerializer()
     }
 
-    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<Typed> {
-        return input.map { it.typed(nodeClass) }
+    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<Typed> {
+        return input.map { it.value.typed(nodeClass).asStepOutput() }
     }
 
     override fun transform(input: INode): Typed {
@@ -184,12 +187,12 @@ class TypedNodeSerializer<Typed : ITypedNode>(val nodeClass: KClass<out Typed>, 
 }
 
 class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
-        return serializersModule.serializer<INode>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
+        return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
-    override fun createFlow(input: Flow<ITypedNode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.map { it.unwrap() }
+    override fun createFlow(input: StepFlow<ITypedNode>, context: IFlowInstantiationContext): StepFlow<INode> {
+        return input.map { it.value.unwrap().asStepOutput() }
     }
 
     override fun transform(input: ITypedNode): INode {

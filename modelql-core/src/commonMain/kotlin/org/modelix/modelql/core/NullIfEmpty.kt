@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -10,14 +9,14 @@ import kotlinx.serialization.modules.SerializersModule
 
 class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<E?> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E?>> {
         val outputSerializer = getProducer().getOutputSerializer(serializersModule) as KSerializer<Any>
-        return outputSerializer.nullable as KSerializer<E?>
+        return (outputSerializer.nullable as KSerializer<E?>).stepOutputSerializer()
     }
 
-    override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E?> {
-        val downcast: Flow<E?> = input
-        return downcast.onEmpty { emit(null) }
+    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E?> {
+        val downcast: StepFlow<E?> = input
+        return downcast.onEmpty { emit(SimpleStepOutput(null)) }
     }
 
     override fun transform(input: E): E? {

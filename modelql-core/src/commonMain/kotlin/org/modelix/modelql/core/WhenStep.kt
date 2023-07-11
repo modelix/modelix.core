@@ -15,7 +15,6 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
@@ -62,7 +61,7 @@ class WhenStep<In, Out>(
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
         TODO("Not yet implemented")
     }
 
@@ -70,14 +69,14 @@ class WhenStep<In, Out>(
         throw UnsupportedOperationException()
     }
 
-    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         return input.flatMapConcat {
-            for (case in cases) {
-                if (case.first.evaluate(it).presentAndEqual(true)) {
-                    return@flatMapConcat case.second.asFlow(it)
+            for ((index, case) in cases.withIndex()) {
+                if (case.first.evaluate(it.value).presentAndEqual(true)) {
+                    return@flatMapConcat case.second.asFlow(it).map { WhenStepOutput(index, it) }
                 }
             }
-            return@flatMapConcat elseCase?.asFlow(it) ?: emptyFlow<Out>()
+            return@flatMapConcat elseCase?.asFlow(it)?.map { WhenStepOutput(-1, it) } ?: emptyFlow<Out>().asStepFlow()
         }
     }
 
@@ -98,6 +97,12 @@ class WhenStep<In, Out>(
             .ifEmpty { sequenceOf(Optional.empty<Out>()) }
             .first()
     }
+}
+
+@Serializable
+class WhenStepOutput<E>(val caseIndex: Int, val caseOutput: IStepOutput<E>) : IStepOutput<E> {
+    override val value: E
+        get() = caseOutput.value
 }
 
 @OptIn(ExperimentalTypeInference::class)

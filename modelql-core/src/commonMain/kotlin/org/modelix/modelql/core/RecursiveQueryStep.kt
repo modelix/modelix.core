@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -8,13 +7,13 @@ import kotlinx.serialization.builtins.NothingSerializer
 import kotlinx.serialization.modules.SerializersModule
 
 class RecursiveQueryStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
         return SERIALIZER
     }
 
     fun getQuery(): IUnboundQuery<In, *, Out> = owningQuery!! as IUnboundQuery<In, *, Out>
 
-    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         return (owningQuery!! as IUnboundQuery<In, *, Out>).asFlow(input)
     }
 

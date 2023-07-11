@@ -13,7 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -26,15 +25,19 @@ import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.contains
+import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.orNull
+import org.modelix.modelql.core.stepOutputSerializer
 
 class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
-    override fun createFlow(input: Flow<INode>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.flatMapConcat { it.getReferenceTargetAsFlow(it.resolveReferenceLinkOrFallback(role)) }
+    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
+        return input.flatMapConcat { it.value.getReferenceTargetAsFlow(it.value.resolveReferenceLinkOrFallback(role)) }
+            .asStepFlow()
     }
 
     override fun transform(input: INode): INode {
@@ -46,8 +49,8 @@ class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INo
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
-        return serializersModule.serializer<INode>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
+        return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor(role)

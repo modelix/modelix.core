@@ -12,15 +12,17 @@ import org.modelix.model.api.key
 import org.modelix.model.api.resolveChildLinkOrFallback
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.stepOutputSerializer
 
 class AddNewChildNodeStep(val role: String?, val index: Int, val concept: ConceptReference?) :
     MonoTransformingStep<INode, INode>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out INode> {
-        return serializersModule.serializer<INode>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
+        return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
     override fun transform(input: INode): INode {

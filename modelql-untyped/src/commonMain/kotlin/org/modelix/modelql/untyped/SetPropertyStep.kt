@@ -10,13 +10,14 @@ import org.modelix.model.api.key
 import org.modelix.model.api.resolvePropertyOrFallback
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.asMono
 import org.modelix.modelql.core.connect
 
 class SetPropertyStep(val role: String) :
     TransformingStepWithParameter<INode, String?, Any?, INode>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out INode> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
         return getInputProducer().getOutputSerializer(serializersModule)
     }
 

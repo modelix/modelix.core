@@ -4,9 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -21,7 +19,7 @@ import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeCollection
 import kotlinx.serialization.modules.SerializersModule
 
-open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IMonoStep<Out>, IFluxStep<Out> {
+open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IMonoStep<Out>, IFluxStep<Out> {
     private val producers = ArrayList<IProducingStep<CommonIn>>()
 
     override fun canBeEmpty(): Boolean = producers.any { it.canBeEmpty() }
@@ -63,18 +61,20 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
     @SerialName("zip")
     class Descriptor : CoreStepDescriptor() {
         override fun createStep(): IStep {
-            return ZipStep<Any?, ZipOutput<Any?, *, *, *, *, *, *, *, *, *>>()
+            return ZipStep<Any?, ZipNOutput>()
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
-        val elementSerializers: Array<KSerializer<CommonIn>> = producers.map {
-            it.getOutputSerializer(serializersModule) as KSerializer<CommonIn>
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
+        val elementSerializers: Array<KSerializer<IStepOutput<CommonIn>>> = producers.map {
+            it.getOutputSerializer(serializersModule).upcast()
         }.toTypedArray()
-        return ZipOutputSerializer<CommonIn>(elementSerializers) as KSerializer<Out>
+        return ZipOutputSerializer(elementSerializers, this)
     }
 
-    override fun createFlow(context: IFlowInstantiationContext): Flow<Out> {
+    private fun ZipNOutputC<CommonIn>.upcast(): Out = this as Out
+
+    override fun createFlow(context: IFlowInstantiationContext): Flow<ZipStepOutput<Out, CommonIn>> {
         val inputFlows = producers.map {
             val possiblyEmptyFlow = context.getOrCreateFlow(it)
             if (it is AllowEmptyStep) {
@@ -87,7 +87,7 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
         // optimization if all inputs are mono steps
         if (producers.all { it.isSingle() }) {
             return flow {
-                emit(ZipNOutput(inputFlows.map { it.single() }) as Out)
+                emit((ZipStepOutput(inputFlows.map { it.single() })))
             }
         }
 
@@ -97,14 +97,14 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
                 return flow {
                     val value0 = inputFlows[0].single()
                     inputFlows[1].collect { value1 ->
-                        emit(ZipNOutput(listOf(value0, value1)) as Out)
+                        emit((ZipStepOutput(listOf(value0, value1))))
                     }
                 }
             } else if (producers[1].isSingle()) {
                 return flow {
                     val value1 = inputFlows[1].single()
                     inputFlows[0].collect { value0 ->
-                        emit(ZipNOutput(listOf(value0, value1)) as Out)
+                        emit((ZipStepOutput(listOf(value0, value1))))
                     }
                 }
             }
@@ -112,7 +112,7 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
 
         // TODO this might be slower, but combine seems to be buggy (elements get lost)
         return flow {
-            emitAll((CombiningSequence(inputFlows.map { it.asSequence() }.toTypedArray()) as Sequence<Out>).asFlow())
+            emitAll((CombiningSequence(inputFlows.map { it.asSequence() }.toTypedArray())).map { ZipStepOutput<Out, CommonIn>(it.values) }.asFlow())
         }
 //        return combine<Any?, Out>(inputFlows) { values ->
 //            ZipNOutput(values.toList()) as Out
@@ -120,7 +120,7 @@ open class ZipStep<CommonIn, Out : ZipOutput<CommonIn, *, *, *, *, *, *, *, *, *
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
-        return CombiningSequence(producers.map { it.createSequence(queryInput) }.toTypedArray()) as Sequence<Out>
+        return CombiningSequence(producers.map { it.createSequence(queryInput) }.toTypedArray()).map { it.upcast() }
     }
 }
 
@@ -149,7 +149,7 @@ class AssertNotEmptyStep<E>() : IdentityStep<E>() {
         return false
     }
 
-    override fun createFlow(input: Flow<E>, context: IFlowInstantiationContext): Flow<E> {
+    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
         return input.assertNotEmpty()
     }
 
@@ -174,18 +174,19 @@ fun <T> IFluxStep<T>.assertNotEmpty(): IFluxStep<T> = AssertNotEmptyStep<T>().al
 fun <T> IMonoStep<T>.assertNotEmpty(): IMonoStep<T> = AssertNotEmptyStep<T>().also { connect(it) }
 
 typealias ZipNOutput = ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>
+typealias ZipNOutputC<Common> = ZipOutput<Common, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>
 
-class CombiningSequence(private val sequences: Array<Sequence<Any?>>) : Sequence<ZipNOutput> {
-    override fun iterator(): Iterator<ZipNOutput> = object : Iterator<ZipNOutput> {
+class CombiningSequence<Common>(private val sequences: Array<Sequence<Common>>) : Sequence<ZipNOutputC<Common>> {
+    override fun iterator(): Iterator<ZipNOutputC<Common>> = object : Iterator<ZipNOutputC<Common>> {
         var initialized = false
         val lastValues = Array<Any?>(sequences.size) { UNINITIALIZED }
         val iterators = sequences.map { it.iterator() }.toTypedArray()
-        override fun next(): ZipNOutput {
+        override fun next(): ZipNOutputC<Common> {
             for (i in sequences.indices) {
                 if (iterators[i].hasNext()) lastValues[i] = iterators[i].next()
             }
             initialized = true
-            return ZipNOutput(lastValues.toList())
+            return ZipNOutputC<Common>(lastValues.map { it as Common })
         }
 
         override fun hasNext(): Boolean {
@@ -195,10 +196,10 @@ class CombiningSequence(private val sequences: Array<Sequence<Any?>>) : Sequence
     object UNINITIALIZED
 }
 
-class ZipOutputSerializer<CommonT>(val elementSerializers: Array<KSerializer<CommonT>>) : KSerializer<ZipOutput<CommonT, *, *, *, *, *, *, *, *, *>> {
+class ZipOutputSerializer<CommonT, Out : ZipNOutputC<CommonT>>(val elementSerializers: Array<KSerializer<IStepOutput<CommonT>>>, val owner: IProducingStep<Out>) : KSerializer<ZipStepOutput<Out, CommonT>> {
     @OptIn(ExperimentalSerializationApi::class)
-    override fun deserialize(decoder: Decoder): ZipOutput<CommonT, *, *, *, *, *, *, *, *, *> {
-        val values = Array<Any?>(elementSerializers.size) { null }
+    override fun deserialize(decoder: Decoder): ZipStepOutput<Out, CommonT> {
+        val values = Array<IStepOutput<CommonT>?>(elementSerializers.size) { null }
         decoder.decodeStructure(descriptor) {
             if (decodeSequentially()) {
                 for (i in elementSerializers.indices) {
@@ -212,12 +213,12 @@ class ZipOutputSerializer<CommonT>(val elementSerializers: Array<KSerializer<Com
                 }
             }
         }
-        return ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>(values.toList()) as ZipOutput<CommonT, *, *, *, *, *, *, *, *, *>
+        return ZipStepOutput(values.map { it as IStepOutput<CommonT> })
     }
 
     override val descriptor: SerialDescriptor = ZipNOutputDesc(elementSerializers.map { it.descriptor }.toTypedArray())
 
-    override fun serialize(encoder: Encoder, value: ZipOutput<CommonT, *, *, *, *, *, *, *, *, *>) {
+    override fun serialize(encoder: Encoder, value: ZipStepOutput<Out, CommonT>) {
         encoder.encodeCollection(descriptor, elementSerializers.size) {
             value.values.forEachIndexed { index, elementValue ->
                 encodeSerializableElement(elementSerializers[index].descriptor, index, elementSerializers[index], elementValue)
@@ -257,6 +258,11 @@ internal class ZipNOutputDesc(val elementDesc: Array<SerialDescriptor>) : Serial
 
     @ExperimentalSerializationApi
     override fun isElementOptional(index: Int): Boolean = false
+}
+
+class ZipStepOutput<E : ZipNOutputC<Common>, Common>(val values: List<IStepOutput<Common>>) : IStepOutput<E> {
+    override val value: E
+        get() = ZipNOutput(values.map { it.value }) as E
 }
 
 interface IZipOutput<out Common> { val values: List<Common> }

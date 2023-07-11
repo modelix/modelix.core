@@ -23,8 +23,10 @@ import org.modelix.model.api.resolvePropertyOrFallback
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.stepOutputSerializer
 
 class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun transform(input: INode): String? {
@@ -35,8 +37,8 @@ class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, Stri
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String?> {
-        return serializersModule.serializer<String?>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String?>> {
+        return serializersModule.serializer<String?>().stepOutputSerializer()
     }
 
     override fun createDescriptor() = PropertyStepDescriptor(role)

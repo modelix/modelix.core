@@ -27,7 +27,7 @@ interface IStep {
 
 interface IFlowInstantiationContext {
     val coroutineScope: CoroutineScope?
-    fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T>
+    fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T>
     fun <T> getFlow(step: IProducingStep<T>): Flow<T>?
 }
 class FlowInstantiationContext(override val coroutineScope: CoroutineScope?) : IFlowInstantiationContext {
@@ -35,8 +35,8 @@ class FlowInstantiationContext(override val coroutineScope: CoroutineScope?) : I
     fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
         createdProducers[step] = producer
     }
-    override fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T> {
-        return (createdProducers as MutableMap<IProducingStep<T>, Flow<T>>)
+    override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
+        return (createdProducers as MutableMap<IProducingStep<T>, StepFlow<T>>)
             .getOrPut(step) { step.createFlow(this) }
     }
 
@@ -48,8 +48,8 @@ class FlowInstantiationContext(override val coroutineScope: CoroutineScope?) : I
 interface IProducingStep<out E> : IStep {
     fun addConsumer(consumer: IConsumingStep<E>)
     fun getConsumers(): List<IConsumingStep<*>>
-    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E>
-    fun createFlow(context: IFlowInstantiationContext): Flow<E>
+    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>>
+    fun createFlow(context: IFlowInstantiationContext): StepFlow<E>
 
     /**
      * Flows usually provide better performance, but if suspending is not possible you can iterate using a sequence.
@@ -133,9 +133,9 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
 
     fun getProducer(): IProducingStep<In> = producer!!
 
-    protected abstract fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out>
+    protected abstract fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out>
 
-    override fun createFlow(context: IFlowInstantiationContext): Flow<Out> {
+    override fun createFlow(context: IFlowInstantiationContext): StepFlow<Out> {
         return createFlow(context.getOrCreateFlow(getProducer()), context)
     }
 }
@@ -147,8 +147,8 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
     fun connectAndDowncast(producer: IMonoStep<In>): IMonoStep<Out> = also { producer.connect(it) }
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
 
-    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
-        return input.map { transform(it) }
+    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+        return input.map { SimpleStepOutput(transform(it.value)) }
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
@@ -177,7 +177,7 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun canBeMultiple(): Boolean = false
     override fun requiresSingularQueryInput(): Boolean = true
 
-    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         val flow = flow {
             emit(aggregate(input))
         }
@@ -191,11 +191,11 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     }
 
     override fun transform(input: In): Out {
-        return aggregate(sequenceOf(input))
+        return aggregate(sequenceOf(input.asStepOutput())).value
     }
 
     override fun evaluate(queryInput: Any?): Optional<Out> {
-        return Optional.of(aggregate(getProducer().createSequence(sequenceOf(queryInput))))
+        return Optional.of(aggregate(getProducer().createSequence(sequenceOf(queryInput)).map { it.asStepOutput() }).value)
     }
 
     override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()
@@ -204,6 +204,6 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         return false
     }
 
-    protected abstract suspend fun aggregate(input: Flow<In>): Out
-    protected abstract fun aggregate(input: Sequence<In>): Out
+    protected abstract suspend fun aggregate(input: StepFlow<In>): IStepOutput<Out>
+    protected abstract fun aggregate(input: Sequence<IStepOutput<In>>): IStepOutput<Out>
 }

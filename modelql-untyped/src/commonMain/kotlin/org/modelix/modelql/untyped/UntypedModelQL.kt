@@ -78,7 +78,7 @@ suspend fun <R> INode.query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
 }
 
 suspend fun <R> INode.queryFlux(body: (IMonoStep<INode>) -> IFluxStep<R>): List<R> {
-    return buildFluxQuery(body).execute()
+    return buildFluxQuery(body).execute().map { it.value }
 }
 
 fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {

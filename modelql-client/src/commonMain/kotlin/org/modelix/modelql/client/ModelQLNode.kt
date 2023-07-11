@@ -1,6 +1,5 @@
 package org.modelix.modelql.client
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -27,7 +26,10 @@ import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IQueryExecutor
 import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.IZip2Output
+import org.modelix.modelql.core.SimpleStepOutput
+import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asMono
+import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.filterNotNull
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.flatMap
@@ -60,18 +62,18 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
         return this
     }
 
-    override fun <Out> createFlow(query: IUnboundQuery<INode, *, Out>): Flow<Out> {
+    override fun <Out> createFlow(query: IUnboundQuery<INode, *, Out>): StepFlow<Out> {
         return flow {
             when (query) {
                 is IMonoUnboundQuery<*, *> -> {
                     val castedQuery = query as IMonoUnboundQuery<INode, Out>
                     val queryOnNode = IUnboundQuery.buildMono { replaceQueryRoot(it).map(castedQuery) }
-                    emit(client.runQuery(queryOnNode))
+                    emit(SimpleStepOutput(client.runQuery(queryOnNode)))
                 }
                 is IFluxUnboundQuery<*, *> -> {
                     val castedQuery = query as IFluxUnboundQuery<INode, Out>
                     val queryOnNode = IUnboundQuery.buildFlux { replaceQueryRoot(it).flatMap(castedQuery) }
-                    emitAll(client.runQuery(queryOnNode).asFlow())
+                    emitAll(client.runQuery(queryOnNode).asFlow().asStepFlow())
                 }
             }
         }

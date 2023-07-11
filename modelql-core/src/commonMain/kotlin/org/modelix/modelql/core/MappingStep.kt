@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,7 +22,7 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
         return query.requiresWriteAccess()
     }
 
-    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
+    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         return query.asFlow(input)
     }
 
@@ -39,7 +38,7 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
         return query.evaluate(input).get()
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
         return query.getOutputSerializer(serializersModule)
     }
 

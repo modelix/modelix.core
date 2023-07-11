@@ -23,7 +23,7 @@ class PerformanceTests {
         val intRange = 1..100000
 
         compareBenchmark(100, 30.0, {
-            query.asFlow(intRange.asFlow()).count()
+            query.asFlow(intRange.asFlow().asStepFlow()).count()
         }, {
             intRange.asFlow().filter { it == 0 }.count()
         })

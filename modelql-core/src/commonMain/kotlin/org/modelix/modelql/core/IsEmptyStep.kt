@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.single
@@ -12,11 +11,11 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
-    override suspend fun aggregate(input: Flow<Any?>): Boolean {
-        return input.take(1).map { false }.onEmpty { emit(false) }.single()
+    override suspend fun aggregate(input: StepFlow<Any?>): IStepOutput<Boolean> {
+        return input.take(1).map { false }.onEmpty { emit(false) }.single().asStepOutput()
     }
 
-    override fun aggregate(input: Sequence<Any?>): Boolean = input.none()
+    override fun aggregate(input: Sequence<IStepOutput<Any?>>): IStepOutput<Boolean> = input.none().asStepOutput()
 
     override fun createDescriptor() = Descriptor()
 
@@ -28,8 +27,8 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
-        return serializersModule.serializer<Boolean>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
+        return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
     override fun toString(): String {

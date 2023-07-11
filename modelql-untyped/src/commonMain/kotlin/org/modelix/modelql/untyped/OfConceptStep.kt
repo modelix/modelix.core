@@ -13,10 +13,7 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -29,16 +26,22 @@ import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.stepOutputSerializer
 
 class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?, INode>() {
-    override fun createFlow(input: Flow<INode?>, context: IFlowInstantiationContext): Flow<INode> {
-        return input.filterNotNull().filter { conceptUIDs.contains(it.concept?.getUID()) }
+    override fun createFlow(input: StepFlow<INode?>, context: IFlowInstantiationContext): StepFlow<INode> {
+        return input.filter {
+            val value = it.value
+            value != null && conceptUIDs.contains(value.concept?.getUID())
+        } as StepFlow<INode>
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<INode> {
-        return serializersModule.serializer<INode>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
+        return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
     override fun transform(input: INode?): INode {

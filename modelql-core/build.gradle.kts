@@ -64,3 +64,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
         freeCompilerArgs += listOf("-Xjvm-default=all-compatibility", "-Xcontext-receivers")
     }
 }
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
+    kotlinOptions {
+        freeCompilerArgs += listOf("-Xcontext-receivers")
+    }
+}

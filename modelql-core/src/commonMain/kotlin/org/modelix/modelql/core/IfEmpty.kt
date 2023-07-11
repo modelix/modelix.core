@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
@@ -10,8 +9,8 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlin.jvm.JvmName
 
 class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {
-    override fun createFlow(input: Flow<In>, context: IFlowInstantiationContext): Flow<Out> {
-        val downCastedInput: Flow<Out> = input
+    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+        val downCastedInput: StepFlow<Out> = input
         return downCastedInput.onEmpty {
             emitAll(alternative.asFlow(Unit))
         }
@@ -27,7 +26,7 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple() || alternative.outputStep.canBeMultiple()
     override fun requiresSingularQueryInput(): Boolean = true
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Out> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
         TODO("Not yet implemented")
     }
 

@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.KSerializer
@@ -18,15 +17,15 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
         return query.requiresWriteAccess()
     }
 
-    override fun createFlow(input: Flow<In?>, context: IFlowInstantiationContext): Flow<Out?> {
-        return input.flatMapConcat { it?.let { query.asFlow(it) } ?: flowOf(null) }
+    override fun createFlow(input: StepFlow<In?>, context: IFlowInstantiationContext): StepFlow<Out?> {
+        return input.flatMapConcat { it.value?.let { query.asFlow(it) } ?: flowOf(null).asStepFlow() }
     }
 
     override fun transform(input: In?): Out? {
         return input?.let { query.outputStep.evaluate(it).getOrElse(null) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out Out?> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out?>> {
         return query.getOutputSerializer(serializersModule)
     }
 

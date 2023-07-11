@@ -24,17 +24,18 @@ import org.modelix.model.api.INode
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.contains
+import org.modelix.modelql.core.stepOutputSerializer
 
 class ConceptReferenceTraversalStep() : MonoTransformingStep<INode?, ConceptReference?>() {
     override fun transform(input: INode?): ConceptReference? {
         return input?.getConceptReference() as ConceptReference?
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<ConceptReference?> {
-        return serializersModule.serializer<ConceptReference>().nullable
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ConceptReference?>> {
+        return serializersModule.serializer<ConceptReference>().nullable.stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor()

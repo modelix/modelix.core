@@ -18,18 +18,18 @@ import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 
 interface IQueryExecutor<out In> {
-    fun <Out> createFlow(query: IUnboundQuery<In, *, Out>): Flow<Out>
+    fun <Out> createFlow(query: IUnboundQuery<In, *, Out>): StepFlow<Out>
 }
 
 class SimpleQueryExecutor<E>(val input: E) : IQueryExecutor<E> {
-    override fun <ElementOut> createFlow(query: IUnboundQuery<E, *, ElementOut>): Flow<ElementOut> {
+    override fun <ElementOut> createFlow(query: IUnboundQuery<E, *, ElementOut>): StepFlow<ElementOut> {
         return query.asFlow(input)
     }
 }
 
 interface IQuery<out AggregationOut, out ElementOut> {
     suspend fun execute(): AggregationOut
-    suspend fun asFlow(): Flow<ElementOut>
+    suspend fun asFlow(): StepFlow<ElementOut>
 }
 
 interface IMonoQuery<out Out> : IQuery<Out, Out> {
@@ -37,7 +37,7 @@ interface IMonoQuery<out Out> : IQuery<Out, Out> {
     fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxQuery<T>
 }
 
-interface IFluxQuery<out Out> : IQuery<List<Out>, Out> {
+interface IFluxQuery<out Out> : IQuery<List<IStepOutput<Out>>, Out> {
     fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxQuery<T>
     fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IFluxQuery<T>
 }
@@ -45,7 +45,7 @@ interface IFluxQuery<out Out> : IQuery<List<Out>, Out> {
 private abstract class BoundQuery<In, out AggregationOut, out ElementOut>(val executor: IQueryExecutor<In>) : IQuery<AggregationOut, ElementOut> {
     abstract val query: IUnboundQuery<In, AggregationOut, ElementOut>
 
-    override suspend fun asFlow(): Flow<ElementOut> {
+    override suspend fun asFlow(): StepFlow<ElementOut> {
         return executor.createFlow(query)
     }
 
@@ -58,7 +58,7 @@ private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 
     override suspend fun execute(): Out {
         try {
-            return executor.createFlow(query).single()
+            return executor.createFlow(query).single().value
         } catch (ex: NoSuchElementException) {
             throw RuntimeException("Empty query result: " + this, ex)
         }
@@ -74,9 +74,9 @@ private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 }
 
 private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val query: FluxUnboundQuery<In, Out>) :
-    BoundQuery<In, List<Out>, Out>(executor), IFluxQuery<Out> {
+    BoundQuery<In, List<IStepOutput<Out>>, Out>(executor), IFluxQuery<Out> {
 
-    override suspend fun execute(): List<Out> {
+    override suspend fun execute(): List<IStepOutput<Out>> {
         return executor.createFlow(query).toList()
     }
 
@@ -90,16 +90,17 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 }
 
 interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
-    suspend fun execute(input: In): AggregationOut
-    fun asFlow(input: Flow<In>): Flow<ElementOut>
-    fun asFlow(input: In): Flow<ElementOut> = asFlow(flowOf(input))
+    suspend fun execute(input: In): IStepOutput<AggregationOut>
+    fun asFlow(input: StepFlow<In>): StepFlow<ElementOut>
+    fun asFlow(input: In): StepFlow<ElementOut> = asFlow(flowOf(input).asStepFlow())
+    fun asFlow(input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(flowOf(input))
     fun asSequence(input: Sequence<In>): Sequence<ElementOut>
 
     fun requiresWriteAccess(): Boolean
     fun canBeEmpty(): Boolean
 
     fun bind(executor: IQueryExecutor<In>): IQuery<AggregationOut, ElementOut>
-    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out AggregationOut>
+    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<AggregationOut>>
 
     companion object {
         fun <In, Out> build(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
@@ -135,7 +136,7 @@ fun <In, Out, AggregationT, T> IMonoUnboundQuery<In, Out>.map(query: IUnboundQue
     } as IUnboundQuery<In, AggregationT, T>
 }
 
-interface IFluxUnboundQuery<in In, out Out> : IUnboundQuery<In, List<Out>, Out> {
+interface IFluxUnboundQuery<in In, out Out> : IUnboundQuery<In, List<IStepOutput<Out>>, Out> {
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<Out>
     fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IFluxUnboundQuery<In, T>
     fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxUnboundQuery<In, T>
@@ -148,7 +149,7 @@ class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IM
 
     override fun bind(executor: IQueryExecutor<In>): IMonoQuery<ElementOut> = MonoBoundQuery(executor, this)
 
-    override suspend fun execute(input: In): ElementOut {
+    override suspend fun execute(input: In): IStepOutput<ElementOut> {
         try {
             return asFlow(input).single()
         } catch (ex: NoSuchElementException) {
@@ -164,7 +165,7 @@ class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IM
         return IUnboundQuery.buildFlux { it.map(this).flatMap(query) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<ElementOut> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<IStepOutput<ElementOut>> {
         return outputStep.getOutputSerializer(serializersModule).upcast()
     }
 
@@ -173,15 +174,15 @@ class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IM
     }
 }
 
-class FluxUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IFluxStep<ElementOut>) : UnboundQuery<In, List<ElementOut>, ElementOut>(inputStep, outputStep), IFluxUnboundQuery<In, ElementOut> {
+class FluxUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IFluxStep<ElementOut>) : UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>(inputStep, outputStep), IFluxUnboundQuery<In, ElementOut> {
 
     override val outputStep: IFluxStep<ElementOut>
         get() = super.outputStep as IFluxStep<ElementOut>
 
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<ElementOut> = FluxBoundQuery(executor, this)
 
-    override suspend fun execute(input: In): List<ElementOut> {
-        return asFlow(input).toList()
+    override suspend fun execute(input: In): IStepOutput<List<IStepOutput<ElementOut>>> {
+        return asFlow(input).toList().asStepOutput()
     }
 
     override fun <T> map(body: (IMonoStep<ElementOut>) -> IMonoStep<T>): IFluxUnboundQuery<In, T> {
@@ -192,8 +193,8 @@ class FluxUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IF
         return IUnboundQuery.buildFlux { it.flatMap(this).flatMap(body) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<List<ElementOut>> {
-        return ListSerializer(outputStep.getOutputSerializer(serializersModule).upcast())
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<List<IStepOutput<ElementOut>>>> {
+        return ListSerializer(outputStep.getOutputSerializer(serializersModule).upcast()).stepOutputSerializer()
     }
 }
 
@@ -256,12 +257,12 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
         return allSteps
     }
 
-    override fun asFlow(input: Flow<In>): Flow<ElementOut> {
+    override fun asFlow(input: StepFlow<In>): StepFlow<ElementOut> {
         if (canOptimizeFlows) {
             return SinglePathFlowInstantiationContext(inputStep, input).getOrCreateFlow(outputStep)
             // return input.flatMapConcat { SinglePathFlowInstantiationContext(inputStep, flowOf(it)).getOrCreateFlow(outputStep) }
         } else {
-            return flow<ElementOut> {
+            return flow<IStepOutput<ElementOut>> {
                 input.collect { inputElement ->
                     suspend fun body(context: FlowInstantiationContext) {
                         context.put(inputStep, flowOf(inputElement))
@@ -366,12 +367,12 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
     }
 }
 
-class SinglePathFlowInstantiationContext(val queryInput: QueryInput<*>, val inputFlow: Flow<*>) : IFlowInstantiationContext {
+class SinglePathFlowInstantiationContext(val queryInput: QueryInput<*>, val inputFlow: StepFlow<*>) : IFlowInstantiationContext {
     override val coroutineScope: CoroutineScope?
         get() = null
 
-    override fun <T> getOrCreateFlow(step: IProducingStep<T>): Flow<T> {
-        return if (step == queryInput) inputFlow as Flow<T> else step.createFlow(this)
+    override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
+        return if (step == queryInput) inputFlow as StepFlow<T> else step.createFlow(this)
     }
 
     override fun <T> getFlow(step: IProducingStep<T>): Flow<T>? {
@@ -441,9 +442,9 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
         return Optional.of(queryInput as E)
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out E> {
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
         val c = indirectConsumer ?: throw UnsupportedOperationException()
-        return c.getProducers().single().getOutputSerializer(serializersModule) as KSerializer<out E>
+        return (c.getProducers().single() as IProducingStep<E>).getOutputSerializer(serializersModule)
     }
 
     fun getQueryInputProducer(): IProducingStep<E>? {
@@ -451,7 +452,7 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
         return c.getProducers().single() as IProducingStep<E>
     }
 
-    override fun createFlow(context: IFlowInstantiationContext): Flow<E> {
+    override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
         throw RuntimeException("The flow for the query input step is expected to be created by the query")
     }
 

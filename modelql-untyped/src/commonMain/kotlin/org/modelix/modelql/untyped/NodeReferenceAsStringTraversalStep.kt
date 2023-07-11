@@ -24,16 +24,18 @@ import org.modelix.model.api.serialize
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.stepOutputSerializer
 
 class NodeReferenceAsStringTraversalStep() : MonoTransformingStep<INodeReference, String>() {
     override fun transform(input: INodeReference): String {
         return input.serialize()
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<String> {
-        return serializersModule.serializer<String>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> {
+        return serializersModule.serializer<String>().stepOutputSerializer()
     }
 
     override fun createDescriptor() = Descriptor()

@@ -1,7 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -10,16 +8,12 @@ import kotlinx.serialization.serializer
 
 abstract class EqualsOperatorStep<E>(val operand: E) : MonoTransformingStep<E?, Boolean>() {
 
-    override fun createFlow(input: Flow<E?>, context: IFlowInstantiationContext): Flow<Boolean> {
-        return input.map { it == operand }
-    }
-
     override fun transform(input: E?): Boolean {
         return input == operand
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<Boolean> {
-        return serializersModule.serializer<Boolean>()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
+        return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
     override fun toString(): String {

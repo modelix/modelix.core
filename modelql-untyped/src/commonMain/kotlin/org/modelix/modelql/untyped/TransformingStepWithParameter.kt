@@ -1,12 +1,14 @@
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onEmpty
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.Optional
+import org.modelix.modelql.core.SimpleStepOutput
+import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.getOrElse
 
 abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : MonoTransformingStep<CommonIn, Out>() {
@@ -15,11 +17,11 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
     fun getInputProducer(): IProducingStep<In> = getProducer() as IProducingStep<In>
     fun getParameterProducer(): IProducingStep<ParameterT> = targetProducer!!
 
-    override fun createFlow(input: Flow<CommonIn>, context: IFlowInstantiationContext): Flow<Out> {
-        val parameterFlow = context.getOrCreateFlow<ParameterT?>(getParameterProducer()).onEmpty { emit(null) }
+    override fun createFlow(input: StepFlow<CommonIn>, context: IFlowInstantiationContext): StepFlow<Out> {
+        val parameterFlow = context.getOrCreateFlow<ParameterT?>(getParameterProducer()).onEmpty { emit(SimpleStepOutput(null)) }
         return input.combine(parameterFlow) { inputElement, parameter ->
-            transformElement(inputElement as In, parameter as ParameterT)
-        }
+            transformElement(inputElement.value as In, parameter.value as ParameterT)
+        }.asStepFlow()
     }
 
     override fun evaluate(queryInput: Any?): Optional<Out> {

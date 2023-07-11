@@ -28,7 +28,7 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return ((query.outputStep as IProducingStep<*>).getOutputSerializer(serializersModule) as KSerializer<Out>).stepOutputSerializer()
+        return query.outputStep.getOutputSerializer(serializersModule)
     }
 
     override fun createDescriptor() = Descriptor(query.createDescriptor())

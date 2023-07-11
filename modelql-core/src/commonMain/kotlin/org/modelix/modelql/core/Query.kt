@@ -28,7 +28,7 @@ class SimpleQueryExecutor<E>(val input: E) : IQueryExecutor<E> {
 }
 
 interface IQuery<out AggregationOut, out ElementOut> {
-    suspend fun execute(): AggregationOut
+    suspend fun execute(): IStepOutput<AggregationOut>
     suspend fun asFlow(): StepFlow<ElementOut>
 }
 
@@ -56,9 +56,9 @@ private abstract class BoundQuery<In, out AggregationOut, out ElementOut>(val ex
 
 private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val query: MonoUnboundQuery<In, Out>) : BoundQuery<In, Out, Out>(executor), IMonoQuery<Out> {
 
-    override suspend fun execute(): Out {
+    override suspend fun execute(): IStepOutput<Out> {
         try {
-            return executor.createFlow(query).single().value
+            return executor.createFlow(query).single()
         } catch (ex: NoSuchElementException) {
             throw RuntimeException("Empty query result: " + this, ex)
         }
@@ -76,8 +76,8 @@ private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val query: FluxUnboundQuery<In, Out>) :
     BoundQuery<In, List<IStepOutput<Out>>, Out>(executor), IFluxQuery<Out> {
 
-    override suspend fun execute(): List<IStepOutput<Out>> {
-        return executor.createFlow(query).toList()
+    override suspend fun execute(): IStepOutput<List<IStepOutput<Out>>> {
+        return executor.createFlow(query).toList().asStepOutput()
     }
 
     override fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxQuery<T> {

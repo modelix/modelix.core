@@ -12,8 +12,6 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
         return zipSerializer.elementSerializers[index]
     }
 
-    private fun unwrapSerializer(serializer: )
-
     override fun transform(input: IZipOutput<Any?>): Out {
         return input.values[index] as Out
     }

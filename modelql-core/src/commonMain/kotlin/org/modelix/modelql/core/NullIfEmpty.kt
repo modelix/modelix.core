@@ -10,8 +10,7 @@ import kotlinx.serialization.modules.SerializersModule
 class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E?>> {
-        val outputSerializer = getProducer().getOutputSerializer(serializersModule) as KSerializer<Any>
-        return (outputSerializer.nullable as KSerializer<E?>).stepOutputSerializer()
+        return getProducer().getOutputSerializer(serializersModule).upcast()
     }
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E?> {

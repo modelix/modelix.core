@@ -27,7 +27,6 @@ import org.modelix.modelql.core.mapLocal
 import org.modelix.modelql.untyped.buildQuery
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.property
-import org.modelix.modelql.untyped.query
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
@@ -117,5 +116,5 @@ suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String
         }
     }
     println("query: $query")
-    return query.execute()
+    return query.execute().value
 }

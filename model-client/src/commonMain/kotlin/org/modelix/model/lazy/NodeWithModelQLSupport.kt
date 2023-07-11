@@ -8,8 +8,6 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IQueryExecutor
 import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.StepFlow
-import org.modelix.modelql.core.asStepFlow
-import org.modelix.modelql.core.value
 import org.modelix.modelql.untyped.ISupportsModelQL
 
 class NodeWithModelQLSupport(val node: INode) : INode by node, ISupportsModelQL {
@@ -36,9 +34,9 @@ class BranchQueryExecutor(val branch: IBranch) : IQueryExecutor<INode> {
     override fun <Out> createFlow(query: IUnboundQuery<INode, *, Out>): StepFlow<Out> {
         val tree = (branch.deepUnwrap() as PBranch).computeReadT { t -> (t.tree.unwrap() as CLTree) }
         val rootNode = branch.getRootNode()
-        return IBulkQuery2.buildBulkFlow<Out>(tree.store) {
-            query.asFlow(rootNode).value
-        }.asStepFlow()
+        return IBulkQuery2.buildBulkFlow(tree.store) {
+            query.asFlow(rootNode)
+        }
     }
 }
 

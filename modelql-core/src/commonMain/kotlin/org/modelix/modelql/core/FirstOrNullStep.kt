@@ -1,6 +1,7 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -22,7 +23,7 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E?>> {
-        return ((getProducer().getOutputSerializer(serializersModule) as KSerializer<Any>).nullable as KSerializer<E?>).stepOutputSerializer()
+        return getProducer().getOutputSerializer(serializersModule).upcast()
     }
 
     override fun createDescriptor() = Descriptor()

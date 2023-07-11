@@ -29,7 +29,6 @@ import org.modelix.modelql.core.IZip2Output
 import org.modelix.modelql.core.SimpleStepOutput
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asMono
-import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.filterNotNull
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.flatMap
@@ -73,7 +72,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
                 is IFluxUnboundQuery<*, *> -> {
                     val castedQuery = query as IFluxUnboundQuery<INode, Out>
                     val queryOnNode = IUnboundQuery.buildFlux { replaceQueryRoot(it).flatMap(castedQuery) }
-                    emitAll(client.runQuery(queryOnNode).asFlow().asStepFlow())
+                    emitAll(client.runQuery(queryOnNode).asFlow())
                 }
             }
         }

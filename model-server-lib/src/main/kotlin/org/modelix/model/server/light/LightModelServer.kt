@@ -45,7 +45,9 @@ import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
 import org.modelix.modelql.core.IMonoUnboundQuery
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDescriptor
+import org.modelix.modelql.core.upcast
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.createQueryExecutor
 import java.time.Duration
@@ -225,19 +227,19 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                     val query = queryDescriptor.createQuery() as IMonoUnboundQuery<INode, Any?>
                     LOG.debug { "query: $query" }
                     val nodeResolutionScope: INodeResolutionScope = getArea()
-                    val transactionBody: () -> Any? = {
+                    val transactionBody: () -> IStepOutput<Any?> = {
                         runBlocking {
                             withContext(nodeResolutionScope) {
                                 query.bind(rootNode.createQueryExecutor()).execute()
                             }
                         }
                     }
-                    val result: Any? = if (query.requiresWriteAccess()) {
+                    val result: IStepOutput<Any?> = if (query.requiresWriteAccess()) {
                         getArea().executeWrite(transactionBody)
                     } else {
                         getArea().executeRead(transactionBody)
                     }
-                    val serializer = query.getOutputSerializer(UntypedModelQL.json.serializersModule) as KSerializer<Any?>
+                    val serializer: KSerializer<IStepOutput<Any?>> = query.getOutputSerializer(UntypedModelQL.json.serializersModule).upcast()
                     val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
                     call.respond(serializedResult)
                 } catch (ex: Throwable) {

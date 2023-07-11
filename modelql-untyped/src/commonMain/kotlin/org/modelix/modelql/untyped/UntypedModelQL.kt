@@ -74,11 +74,11 @@ fun INode.createQueryExecutor(): IQueryExecutor<INode> {
 }
 
 suspend fun <R> INode.query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
-    return buildQuery(body).execute()
+    return buildQuery(body).execute().value
 }
 
 suspend fun <R> INode.queryFlux(body: (IMonoStep<INode>) -> IFluxStep<R>): List<R> {
-    return buildFluxQuery(body).execute().map { it.value }
+    return buildFluxQuery(body).execute().value.map { it.value }
 }
 
 fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {

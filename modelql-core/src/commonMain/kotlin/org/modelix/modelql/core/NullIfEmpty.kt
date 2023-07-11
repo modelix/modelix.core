@@ -4,7 +4,6 @@ import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.modules.SerializersModule
 
 class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {

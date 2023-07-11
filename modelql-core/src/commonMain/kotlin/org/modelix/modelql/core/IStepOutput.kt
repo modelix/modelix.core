@@ -20,7 +20,7 @@ fun <T> Flow<T>.asStepFlow(): StepFlow<T> = map { SimpleStepOutput(it) }
 
 data class SimpleStepOutput<out E>(override val value: E) : IStepOutput<E>
 
-class SimpleStepOutputSerializer<E>(val valueSerializer: KSerializer<E>) : KSerializer<SimpleStepOutput<E>> {
+data class SimpleStepOutputSerializer<E>(val valueSerializer: KSerializer<E>) : KSerializer<SimpleStepOutput<E>> {
     init {
         require(valueSerializer !is SimpleStepOutputSerializer<*>)
         require(valueSerializer !is ZipOutputSerializer<*, *>)

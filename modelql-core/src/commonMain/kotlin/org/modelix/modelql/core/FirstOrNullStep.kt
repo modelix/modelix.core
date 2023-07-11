@@ -1,11 +1,9 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.modules.SerializersModule
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {

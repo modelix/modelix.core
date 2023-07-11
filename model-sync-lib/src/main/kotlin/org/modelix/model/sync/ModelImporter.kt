@@ -1,8 +1,6 @@
 package org.modelix.model.sync
 
-import org.modelix.model.api.ConceptReference
-import org.modelix.model.api.INode
-import org.modelix.model.api.INodeReference
+import org.modelix.model.api.*
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import java.io.File
@@ -164,37 +162,50 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         val createdNode = addNewChild(spec.role, index, concept)
         createdNode.setPropertyValue(NodeData.idPropertyKey, spec.originalId())
         if (this@ModelImporter.stats != null) {
-            createdNode.originalId()?.let { stats.addAddition(it) }
+            stats.addAddition(
+                createdNode.originalId(),
+                this.originalId(),
+                createdNode.roleInParent,
+                index
+            )
         }
         return createdNode
     }
 
     private fun INode.moveChildWithStats(role: String?, index: Int, child: INode) {
         if (this@ModelImporter.stats != null) {
-            child.originalId()?.let { stats.addMove(it) }
+            stats.addMove(
+                child.originalId(),
+                child.parent?.originalId(),
+                child.roleInParent,
+                child.index(),
+                this.originalId(),
+                role,
+                index
+            )
         }
-        return moveChild(role, index, child)
+        moveChild(role, index, child)
     }
 
     private fun INode.removeChildWithStats(child: INode) {
         if (this@ModelImporter.stats != null) {
-            child.originalId()?.let { stats.addDeletion(it) }
+            stats.addDeletion(child.originalId(), parent?.originalId(), child.roleInParent, child.getDescendants(false).mapNotNull { it.originalId() }.toList())
         }
-        return removeChild(child)
+        removeChild(child)
     }
 
     private fun INode.setPropertyValueWithStats(role: String, value: String?) {
         if (this@ModelImporter.stats != null) {
             this.originalId()?.let { stats.addPropertyChange(it, role) }
         }
-        return setPropertyValue(role, value)
+        setPropertyValue(role, value)
     }
 
     private fun INode.setReferenceTargetWithStats(role: String, target: INodeReference?) {
         if (this@ModelImporter.stats != null) {
             this.originalId()?.let { stats.addReferenceChange(it, role) }
         }
-        return setReferenceTarget(role, target)
+        setReferenceTarget(role, target)
     }
 
 }

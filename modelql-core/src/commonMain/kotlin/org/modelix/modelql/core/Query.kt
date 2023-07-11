@@ -100,7 +100,8 @@ interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     fun canBeEmpty(): Boolean
 
     fun bind(executor: IQueryExecutor<In>): IQuery<AggregationOut, ElementOut>
-    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<AggregationOut>>
+    fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>>
+    fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<AggregationOut>>
 
     companion object {
         fun <In, Out> build(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
@@ -165,7 +166,11 @@ class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IM
         return IUnboundQuery.buildFlux { it.map(this).flatMap(query) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<IStepOutput<ElementOut>> {
+    override fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<IStepOutput<ElementOut>> {
+        return outputStep.getOutputSerializer(serializersModule).upcast()
+    }
+
+    override fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>> {
         return outputStep.getOutputSerializer(serializersModule).upcast()
     }
 
@@ -193,8 +198,12 @@ class FluxUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IF
         return IUnboundQuery.buildFlux { it.flatMap(this).flatMap(body) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<List<IStepOutput<ElementOut>>>> {
+    override fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<List<IStepOutput<ElementOut>>>> {
         return ListSerializer(outputStep.getOutputSerializer(serializersModule).upcast()).stepOutputSerializer()
+    }
+
+    override fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>> {
+        return outputStep.getOutputSerializer(serializersModule).upcast()
     }
 }
 

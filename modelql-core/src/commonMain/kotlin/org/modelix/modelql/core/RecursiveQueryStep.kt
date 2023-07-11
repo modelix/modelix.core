@@ -3,12 +3,14 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.NothingSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
 
 class RecursiveQueryStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return SERIALIZER
+        return RecursiveQuerySerializer<Out>(getQuery())
     }
 
     fun getQuery(): IUnboundQuery<In, *, Out> = owningQuery!! as IUnboundQuery<In, *, Out>
@@ -28,6 +30,10 @@ class RecursiveQueryStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> 
         return Descriptor()
     }
 
+    override fun toString(): String {
+        return "${getProducer()}.mapRecursive()"
+    }
+
     @Serializable
     @SerialName("mapRecursive")
     class Descriptor : StepDescriptor() {
@@ -35,9 +41,20 @@ class RecursiveQueryStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> 
             return RecursiveQueryStep<Any?, Any?>()
         }
     }
+}
 
-    companion object {
-        val SERIALIZER = NothingSerializer()
+class RecursiveQuerySerializer<Out>(val query: IUnboundQuery<*, *, Out>) : KSerializer<IStepOutput<Out>> {
+    override fun deserialize(decoder: Decoder): IStepOutput<Out> {
+        val queryOutputSerializer = query.getElementOutputSerializer(decoder.serializersModule).upcast()
+        return queryOutputSerializer.deserialize(decoder)
+    }
+
+    override val descriptor: SerialDescriptor
+        get() = TODO("Not yet implemented")
+
+    override fun serialize(encoder: Encoder, value: IStepOutput<Out>) {
+        val queryOutputSerializer = query.getElementOutputSerializer(encoder.serializersModule).upcast()
+        queryOutputSerializer.serialize(encoder, value)
     }
 }
 

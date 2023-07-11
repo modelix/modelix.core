@@ -1,6 +1,7 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -11,8 +12,8 @@ import kotlin.jvm.JvmName
 class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         val downCastedInput: StepFlow<Out> = input
-        return downCastedInput.onEmpty {
-            emitAll(alternative.asFlow(Unit))
+        return downCastedInput.map { MultiplexedOutput(0, it) }.onEmpty {
+            emitAll(alternative.asFlow(Unit).map { MultiplexedOutput(1, it) })
         }
     }
 
@@ -27,7 +28,12 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
     override fun requiresSingularQueryInput(): Boolean = true
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        TODO("Not yet implemented")
+        return MultiplexedOutputSerializer(
+            listOf(
+                getProducer().getOutputSerializer(serializersModule).upcast(),
+                alternative.getElementOutputSerializer(serializersModule).upcast()
+            )
+        )
     }
 
     override fun createDescriptor() = Descriptor()

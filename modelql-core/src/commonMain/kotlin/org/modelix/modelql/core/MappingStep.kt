@@ -39,7 +39,7 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return query.getOutputSerializer(serializersModule)
+        return query.getAggregationOutputSerializer(serializersModule)
     }
 
     override fun toString(): String {

@@ -46,7 +46,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
     protected fun <T> deserialize(serializedJson: String, query: IUnboundQuery<*, T, *>): T {
         return ContextArea.withAdditionalContext(ModelQLArea(this)) {
             json.decodeFromString(
-                query.getOutputSerializer(json.serializersModule),
+                query.getAggregationOutputSerializer(json.serializersModule),
                 serializedJson
             ).value
         }

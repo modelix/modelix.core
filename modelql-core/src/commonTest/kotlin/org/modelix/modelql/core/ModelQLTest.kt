@@ -243,9 +243,9 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
     println("original query    : $query")
     println("deserialized query: $deserializedQuery")
     val remoteResult: IStepOutput<ResultT> = deserializedQuery.execute(testDatabase)
-    val serializedResult = json.encodeToString(deserializedQuery.getOutputSerializer(json.serializersModule), remoteResult)
+    val serializedResult = json.encodeToString(deserializedQuery.getAggregationOutputSerializer(json.serializersModule), remoteResult)
     println(serializedResult)
-    return json.decodeFromString(query.getOutputSerializer(json.serializersModule), serializedResult).value
+    return json.decodeFromString(query.getAggregationOutputSerializer(json.serializersModule), serializedResult).value
 }
 
 class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {

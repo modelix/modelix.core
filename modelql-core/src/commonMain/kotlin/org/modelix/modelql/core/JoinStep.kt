@@ -2,6 +2,7 @@ package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -35,7 +36,8 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return producers.map { context.getOrCreateFlow(it) }.asFlow().flattenConcat()
+        return producers.mapIndexed { prodIndex, it -> context.getOrCreateFlow(it).map { MultiplexedOutput(prodIndex, it) } }
+            .asFlow().flattenConcat()
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
@@ -43,12 +45,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        val serializers = getProducers().map { it.getOutputSerializer(serializersModule) }.toSet() - RecursiveQueryStep.SERIALIZER
-        return when (serializers.size) {
-            0 -> throw RuntimeException("No producers found")
-            1 -> serializers.first()
-            else -> TODO("Different input types not supported yet: $serializers")
-        }
+        return MultiplexedOutputSerializer(getProducers().map { it.getOutputSerializer(serializersModule).upcast() })
     }
 
     override fun toString(): String {

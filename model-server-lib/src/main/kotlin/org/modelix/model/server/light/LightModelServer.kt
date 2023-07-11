@@ -239,7 +239,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                     } else {
                         getArea().executeRead(transactionBody)
                     }
-                    val serializer: KSerializer<IStepOutput<Any?>> = query.getOutputSerializer(UntypedModelQL.json.serializersModule).upcast()
+                    val serializer: KSerializer<IStepOutput<Any?>> = query.getAggregationOutputSerializer(UntypedModelQL.json.serializersModule).upcast()
                     val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
                     call.respond(serializedResult)
                 } catch (ex: Throwable) {

@@ -26,7 +26,7 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out?>> {
-        return query.getOutputSerializer(serializersModule)
+        return query.getAggregationOutputSerializer(serializersModule)
     }
 
     override fun toString(): String {

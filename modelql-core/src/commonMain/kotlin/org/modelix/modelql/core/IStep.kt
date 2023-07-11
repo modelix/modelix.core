@@ -11,7 +11,6 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 
 interface IStep {
-    @Deprecated("")
     var owningQuery: IUnboundQuery<*, *, *>?
     fun validate() {}
 

@@ -18,10 +18,21 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeCollection
+import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.serializer
 import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(
@@ -62,7 +73,10 @@ class WhenStep<In, Out>(
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        TODO("Not yet implemented")
+        return WhenStepOutputSerializer<Out>(
+            cases.map { it.second.getOutputSerializer(serializersModule).upcast() },
+            elseCase?.getOutputSerializer(serializersModule)?.upcast()
+        )
     }
 
     override fun transform(input: In): Out {
@@ -103,6 +117,60 @@ class WhenStep<In, Out>(
 class WhenStepOutput<E>(val caseIndex: Int, val caseOutput: IStepOutput<E>) : IStepOutput<E> {
     override val value: E
         get() = caseOutput.value
+}
+
+class WhenStepOutputSerializer<E>(
+    val caseSerializers: List<KSerializer<IStepOutput<E>>>,
+    val elseSerializer: KSerializer<IStepOutput<E>>?
+) : KSerializer<WhenStepOutput<E>> {
+    override fun deserialize(decoder: Decoder): WhenStepOutput<E> {
+        var caseIndex: Int? = null
+        var caseOutput: IStepOutput<E>? = null
+
+        decoder.decodeStructure(descriptor) {
+            while (true) {
+                val i = decodeElementIndex(descriptor)
+                if (i == CompositeDecoder.DECODE_DONE) break
+                when (i) {
+                    0 -> caseIndex = decodeIntElement(descriptor, i)
+                    1 -> {
+                        val caseSerializer =
+                            getCaseSerializer(caseIndex ?: throw IllegalStateException("caseIndex expected first"))
+                        caseOutput = decodeSerializableElement(descriptor, i, caseSerializer)
+                    }
+                    else -> throw RuntimeException("Unexpected element $i")
+                }
+            }
+        }
+        return WhenStepOutput(
+            caseIndex ?: throw IllegalStateException("caseIndex missing"),
+            caseOutput ?: throw IllegalStateException("caseOutput missing")
+        )
+    }
+
+    private fun getCaseSerializer(caseIndex: Int) = caseIndex.let {
+        when (it) {
+            -1 -> elseSerializer!!
+            else -> caseSerializers[it]
+        }
+    }
+
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("whenStepOutput") {
+        element("caseIndex", indexSerializer.descriptor, isOptional = false)
+        element("caseOutput", dummySerializer.descriptor, isOptional = false)
+    }
+
+    override fun serialize(encoder: Encoder, value: WhenStepOutput<E>) {
+        encoder.encodeStructure(descriptor) {
+            encodeIntElement(descriptor, 0, value.caseIndex)
+            encodeSerializableElement(descriptor, 1, getCaseSerializer(value.caseIndex), value.caseOutput)
+        }
+    }
+
+    companion object {
+        private val indexSerializer = Int.serializer()
+        private val dummySerializer = Int.serializer()
+    }
 }
 
 @OptIn(ExperimentalTypeInference::class)

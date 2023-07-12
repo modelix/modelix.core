@@ -218,8 +218,8 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
 
         toBeMovedHere.forEach {nodeToBeMoved ->
             val spec = originalIdToSpec[nodeToBeMoved.originalId()]!!
-
-            val baseTargetIndex = spec.getIndexWithinRole(nodeData, existingChildren.lastIndex)
+            val childrenInRole = existingChildren.filter { it.roleInParent == spec.role }
+            val baseTargetIndex = spec.getIndexWithinRole(nodeData, childrenInRole.lastIndex)
             val offset = existingChildren.slice(0 until baseTargetIndex).count {
                 !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
             }

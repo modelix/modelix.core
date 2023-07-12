@@ -27,9 +27,9 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         val addedNodes = addAllMissingChildren(root, originalIdToExisting, originalIdToSpec)
         syncAllProperties(addedNodes, originalIdToSpec)
 
-        handleAllMovesAcrossParents(allExistingNodes, originalIdToExisting, originalIdToSpec)
 
         val allNodes = allExistingNodes + addedNodes
+        handleAllMovesAcrossParents(allNodes, originalIdToExisting, originalIdToSpec)
         val originalIdToRef: MutableMap<String, INodeReference> = buildRefIndex(allNodes)
         syncAllReferences(allNodes, originalIdToSpec, originalIdToRef)
         deleteAllExtraChildren(allNodes, originalIdToSpec)
@@ -217,8 +217,8 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         toBeMovedHere.forEach {nodeToBeMoved ->
             val spec = originalIdToSpec[nodeToBeMoved.originalId()]!!
 
-            val baseTargetIndex = spec.getIndexWithinRole(nodeData, existingChildren.size - 1)
-            val offset = existingChildren.slice(0..baseTargetIndex).count {
+            val baseTargetIndex = spec.getIndexWithinRole(nodeData, existingChildren.lastIndex)
+            val offset = existingChildren.slice(0 until baseTargetIndex).count {
                 !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
             }
             val targetIndex = baseTargetIndex + offset

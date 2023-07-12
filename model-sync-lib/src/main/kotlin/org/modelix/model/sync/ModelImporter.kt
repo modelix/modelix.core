@@ -131,7 +131,7 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         return toBeAdded.map { nodeToBeAdded ->
             val childrenInRole = node.allChildren.filter { it.roleInParent == nodeToBeAdded.role }
             val existingIds = childrenInRole.map { it.originalId() }
-            val baseIndex = nodeToBeAdded.getIndexWithinRole(nodeData, childrenInRole.size)
+            val baseIndex = nodeToBeAdded.getIndexWithinRole(nodeData)
             var offset = 0
             offset += childrenInRole.slice(0..minOf(baseIndex, childrenInRole.lastIndex)).count {
                 !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
@@ -139,7 +139,8 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
             offset -= specifiedChildren.filter { it.role == nodeToBeAdded.role }.slice(0 until baseIndex).count {
                 !existingIds.contains(it.originalId()) // node will be moved here
             }
-            node.addNewChildWithStats(nodeToBeAdded, baseIndex + offset)
+            val index = (baseIndex + offset).coerceIn(0..childrenInRole.size)
+            node.addNewChildWithStats(nodeToBeAdded, index)
         }
     }
 
@@ -168,7 +169,7 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         for (child in toBeSortedSpec) {
 
             val childrenInRole = existingChildren.filter { it.roleInParent == child.role }
-            val baseIndex = child.getIndexWithinRole(nodeData, childrenInRole.lastIndex)
+            val baseIndex = child.getIndexWithinRole(nodeData).coerceAtMost(childrenInRole.lastIndex)
             var offset = 0
             offset += childrenInRole.slice(0..baseIndex).count {
                 !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
@@ -176,9 +177,8 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
             offset -= childrenInRole.slice(0..baseIndex).count {
                 !existingIds.contains(it.originalId()) // node will be moved here
             }
-            val index = if (childrenInRole.isEmpty()) 0 else baseIndex + offset
-            val upperBound = if (existingChildren.isEmpty()) 0 else existingChildren.lastIndex
-            targetIndices[child.originalId()] = minOf(index, upperBound)
+            val index = (baseIndex + offset).coerceIn(0..childrenInRole.size)
+            targetIndices[child.originalId()] = index
         }
 
         existingChildren.forEach { child ->
@@ -219,11 +219,11 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         toBeMovedHere.forEach {nodeToBeMoved ->
             val spec = originalIdToSpec[nodeToBeMoved.originalId()]!!
             val childrenInRole = existingChildren.filter { it.roleInParent == spec.role }
-            val baseTargetIndex = spec.getIndexWithinRole(nodeData, childrenInRole.lastIndex)
-            val offset = existingChildren.slice(0 until baseTargetIndex).count {
+            val baseTargetIndex = spec.getIndexWithinRole(nodeData).coerceAtMost(childrenInRole.size)
+            val offset = existingChildren.slice(0 until  baseTargetIndex).count {
                 !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
             }
-            val targetIndex = baseTargetIndex + offset
+            val targetIndex = (baseTargetIndex + offset).coerceIn(0..childrenInRole.size)
 
             node.moveChildWithStats(spec.role, targetIndex, nodeToBeMoved)
         }
@@ -243,9 +243,9 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         }
     }
 
-    private fun NodeData.getIndexWithinRole(parent: NodeData, maxIndex: Int) : Int {
-        return minOf(parent.children.filter { it.role == this.role }.indexOf(this), maxIndex)
-    }
+    private fun NodeData.getIndexWithinRole(parent: NodeData) : Int =
+        parent.children.filter { it.role == this.role }.indexOf(this)
+
 
     private fun INode.addNewChildWithStats(spec: NodeData, index: Int) : INode {
         val concept = spec.concept?.let { s -> ConceptReference(s) }

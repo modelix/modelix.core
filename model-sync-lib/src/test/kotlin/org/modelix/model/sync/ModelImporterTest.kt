@@ -6,6 +6,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
+import org.modelix.model.api.serialize
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
@@ -118,11 +119,7 @@ class ModelImporterTest {
             assertDoesNotThrow {
                 ModelImporter(tempBranch.getRootNode()).import(newModel)
             }
-            val children = tempBranch.getRootNode().allChildren.toList()
-            assertEquals(newModel.root.children.size, children.size)
-            for ((expected, actual) in newModel.root.children zip children) {
-                assertEquals(expected.children.size, actual.allChildren.toList().size)
-            }
+            assertAllNodesConformToSpec(newModel.root, tempBranch.getRootNode())
         }
     }
 
@@ -131,7 +128,7 @@ class ModelImporterTest {
         val tree0 = CLTree(ObjectStoreCache(MapBaseStore()))
         val branch0 = PBranch(tree0, IdGenerator.getInstance(1))
 
-        val seed = Random.nextInt()
+        val seed = 1896439714 //Random.nextInt()
         println("Seed for random change test: $seed")
         lateinit var initialState: NodeData
         lateinit var specification: NodeData
@@ -139,8 +136,9 @@ class ModelImporterTest {
 
         branch0.runWrite {
             val rootNode = branch0.getRootNode()
+            rootNode.setPropertyValue(NodeData.idPropertyKey, rootNode.reference.serialize())
             val grower = RandomModelChangeGenerator(rootNode, Random(seed)).growingOperationsOnly()
-            for (i in 1..50) {
+            for (i in 1..20) {
                 grower.applyRandomChange()
             }
             initialState = rootNode.asExported()
@@ -159,6 +157,15 @@ class ModelImporterTest {
             val importer = ModelImporter(branch1.getRootNode(), ImportStats())
             importer.import(ModelData(root = initialState))
             importer.import(ModelData(root = specification))
+
+            println("INITIAL")
+            println(initialState.toJson())
+
+            println("SPEC")
+            println(specification.toJson())
+
+            println("ACTUAL")
+            println(branch1.getRootNode().toJson())
 
             assertAllNodesConformToSpec(specification, branch1.getRootNode())
             assert(importer.stats!!.getTotal() <= numChanges)

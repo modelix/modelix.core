@@ -3,18 +3,19 @@ package org.modelix.model.sync
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.model.api.INode
+import org.modelix.model.api.getDescendants
 import org.modelix.model.api.serialize
 import org.modelix.model.data.NodeData
-import org.modelix.model.data.asData
 import org.modelix.model.data.associateWithNotNull
 import kotlin.test.assertEquals
+import kotlin.test.fail
 
 object SyncTestUtil {
     val json = Json { prettyPrint = true }
 }
 
 fun INode.toJson() : String {
-    return this.asData().toJson()
+    return this.asExported().toJson()
 }
 
 fun NodeData.toJson() : String {
@@ -22,8 +23,10 @@ fun NodeData.toJson() : String {
 }
 
 internal fun assertAllNodesConformToSpec(expectedRoot: NodeData, actualRoot: INode) {
+    val originalIdToNode = actualRoot.getDescendants(false).associateBy { it.originalId() }
     assertNodeConformsToSpec(expectedRoot, actualRoot)
-    for ((expectedChild, actualChild) in expectedRoot.children zip actualRoot.allChildren) {
+    for (expectedChild in expectedRoot.children) {
+        val actualChild = originalIdToNode[expectedChild.originalId()] ?: fail("expected child has no id")
         assertNodeConformsToSpec(expectedChild, actualChild)
     }
 }
@@ -50,7 +53,7 @@ internal fun assertNodeReferencesConformToSpec(expected: NodeData, actual: INode
 }
 
 internal fun assertNodeChildOrderConformsToSpec(expected: NodeData, actual: INode) {
-    val specifiedOrder = expected.children.map { it.properties[NodeData.idPropertyKey] ?: it.id }
-    val actualOrder = actual.allChildren.map { it.getPropertyValue(NodeData.idPropertyKey) }
+    val specifiedOrder = expected.children.groupBy {it.role}.mapValues { (_, children) -> children.map { it.originalId() }}
+    val actualOrder = actual.allChildren.groupBy { it.roleInParent }.mapValues {  (_, children) -> children.map { it.originalId() }}
     assertEquals(specifiedOrder, actualOrder)
 }

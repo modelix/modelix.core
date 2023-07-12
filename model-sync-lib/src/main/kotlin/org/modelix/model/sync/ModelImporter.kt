@@ -7,10 +7,6 @@ import java.io.File
 
 class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
 
-    private lateinit var originalIdToSpec: MutableMap<String, NodeData>
-    private lateinit var originalIdToExisting: MutableMap<String, INode>
-    private lateinit var originalIdToRef: MutableMap<String, INodeReference>
-
     fun import(jsonFile: File) {
         require(jsonFile.exists())
         require(jsonFile.extension == "json")
@@ -20,60 +16,81 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
     }
     
     fun import(data: ModelData) {
-        originalIdToExisting = mutableMapOf()
-        buildExistingIndex(root)
+        syncProperties(root, data.root) // root original id is required for following operations
+        val allExistingNodes = root.getDescendants(true).toList()
+        val originalIdToSpec: MutableMap<String, NodeData> = buildSpecIndex(data.root)
 
-        originalIdToSpec = mutableMapOf()
-        buildSpecIndex(data.root)
+        syncAllProperties(allExistingNodes, originalIdToSpec)
+        val originalIdToExisting = buildExistingIndex(allExistingNodes)
 
-        syncNode(root, data.root)
+        sortAllExistingChildren(allExistingNodes, originalIdToExisting, originalIdToSpec)
+        val addedNodes = addAllMissingChildren(root, originalIdToExisting, originalIdToSpec)
+        syncAllProperties(addedNodes, originalIdToSpec)
 
-        originalIdToRef = mutableMapOf()
-        buildRefIndex(root)
+        handleAllMovesAcrossParents(allExistingNodes, originalIdToExisting, originalIdToSpec)
 
-        syncAllReferences(root, data.root)
+        val allNodes = allExistingNodes + addedNodes
+        val originalIdToRef: MutableMap<String, INodeReference> = buildRefIndex(allNodes)
+        syncAllReferences(allNodes, originalIdToSpec, originalIdToRef)
+        deleteAllExtraChildren(allNodes, originalIdToSpec)
+
     }
 
-    private fun buildExistingIndex(root: INode) {
-        root.originalId()?.let { originalIdToExisting[it] = root }
-        root.allChildren.forEach { buildExistingIndex(it) }
+    private fun buildExistingIndex(allNodes: List<INode>): MutableMap<String, INode> {
+        val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
+        allNodes.forEach {node ->
+            node.originalId()?.let { originalIdToExisting[it] = node }
+        }
+        return originalIdToExisting
     }
 
-    private fun buildRefIndex(node: INode) {
-        node.originalId()?.let { originalIdToRef[it] = node.reference }
-        node.allChildren.forEach { buildRefIndex(it) }
+    private fun buildRefIndex(allNodes: List<INode>): MutableMap<String, INodeReference> {
+        val originalIdToRef: MutableMap<String, INodeReference> = mutableMapOf()
+        allNodes.forEach {node ->
+            node.originalId()?.let { originalIdToRef[it] = node.reference }
+        }
+        return originalIdToRef
     }
 
-    private fun buildSpecIndex(nodeData: NodeData) {
+    private fun buildSpecIndex(
+        nodeData: NodeData,
+        originalIdToSpec: MutableMap<String, NodeData> = mutableMapOf()
+    ): MutableMap<String, NodeData> {
         nodeData.originalId()?.let { originalIdToSpec[it] = nodeData }
-        nodeData.children.forEach { buildSpecIndex(it) }
+        nodeData.children.forEach { buildSpecIndex(it, originalIdToSpec) }
+        return originalIdToSpec
     }
 
-    private fun syncNode(node: INode, nodeData: NodeData) {
-        syncProperties(node, nodeData)
-        syncChildNodes(node, nodeData)
+    private fun syncAllProperties(allNodes: List<INode>, originalIdToSpec: MutableMap<String, NodeData>) {
+        allNodes.forEach {node ->
+            originalIdToSpec[node.originalId()]?.let { spec -> syncProperties(node, spec) }
+        }
     }
 
     private fun syncProperties(node: INode, nodeData: NodeData) {
+        if (node.getPropertyValue(NodeData.idPropertyKey) == null) {
+            node.setPropertyValue(NodeData.idPropertyKey, nodeData.originalId())
+        }
+
         nodeData.properties.forEach {
             if (node.getPropertyValue(it.key) != it.value) {
                 node.setPropertyValueWithStats(it.key, it.value)
             }
         }
+
         val toBeRemoved = node.getPropertyRoles().toSet()
             .subtract(nodeData.properties.keys)
             .filter { it != NodeData.idPropertyKey }
         toBeRemoved.forEach { node.setPropertyValueWithStats(it, null) }
     }
 
-    private fun syncAllReferences(root: INode, rootData: NodeData) {
-        syncReferences(root, rootData)
-        for ((node, data) in root.allChildren.zip(rootData.children)) {
-            syncAllReferences(node, data)
+    private fun syncAllReferences(allNodes: List<INode>, originalIdToSpec: MutableMap<String, NodeData>, originalIdToRef: Map<String, INodeReference>) {
+        allNodes.forEach {node ->
+            originalIdToSpec[node.originalId()]?.let { spec -> syncReferences(node, spec, originalIdToRef) }
         }
     }
 
-    private fun syncReferences(node: INode, nodeData: NodeData) {
+    private fun syncReferences(node: INode, nodeData: NodeData, originalIdToRef: Map<String, INodeReference>) {
         nodeData.references.forEach {
             if (node.getReferenceTargetRef(it.key) != originalIdToRef[it.value]) {
                 node.setReferenceTargetWithStats(it.key, originalIdToRef[it.value])
@@ -83,77 +100,143 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         toBeRemoved.forEach { node.setReferenceTargetWithStats(it, null) }
     }
 
-    private fun syncChildNodes(node: INode, nodeData: NodeData) {
-        val specifiedNodes = nodeData.children.toSet()
-        val existingIds = node.allChildren.map { it.originalId() }.toSet()
-        val missingNodes = specifiedNodes.filter { !existingIds.contains(it.originalId()) }
-
-        val toBeRemoved = node.allChildren.filter { !originalIdToSpec.contains(it.originalId()) }
-        toBeRemoved.forEach { node.removeChildWithStats(it) }
-
-        val toBeMovedAwayFromHere = existingIds.subtract(specifiedNodes.map { it.originalId() }.toSet())
-
-        syncExistingChildOrder(node, nodeData, existingIds, toBeMovedAwayFromHere)
-
-        val toBeMovedHere = missingNodes.filter { originalIdToExisting.containsKey(it.originalId()) }.toSet()
-        toBeMovedHere.forEach {
-            val actualNode = originalIdToExisting[it.originalId()]
-            val targetIndex = it.getIndexWithinRole(nodeData,existingIds.size - 1)
-            if (actualNode != null) {
-                node.moveChildWithStats(it.role, targetIndex, actualNode)
-            }
+    private fun addAllMissingChildren(
+        node: INode,
+        originalIdToExisting: MutableMap<String, INode>,
+        originalIdToSpec: MutableMap<String, NodeData>
+    ): MutableList<INode> {
+        val addedNodes = mutableListOf<INode>()
+        originalIdToSpec[node.originalId()]?.let {
+            addedNodes.addAll(
+                addMissingChildren(node, it, originalIdToExisting, originalIdToSpec)
+            )
         }
-
-        val toBeAdded = missingNodes.subtract(toBeMovedHere)
-        toBeAdded.forEach {
-            val index = it.getIndexWithinRole(nodeData, existingIds.size - 1)
-            node.addNewChildWithStats(it, index)
-        }
-
         node.allChildren.forEach {
-            val childData = originalIdToSpec[it.originalId()]
-            if (childData != null) {
-                syncNode(it, childData)
+            addedNodes.addAll(addAllMissingChildren(it, originalIdToExisting, originalIdToSpec))
+        }
+        return addedNodes
+    }
+
+    private fun addMissingChildren(
+        node: INode,
+        nodeData: NodeData,
+        originalIdToExisting: MutableMap<String, INode>,
+        originalIdToSpec: MutableMap<String, NodeData>
+    ): List<INode> {
+        val specifiedChildren = nodeData.children.toList()
+        val toBeAdded = specifiedChildren.filter { !originalIdToExisting.contains(it.originalId()) }
+
+        return toBeAdded.map { nodeToBeAdded ->
+            val childrenInRole = node.allChildren.filter { it.roleInParent == nodeToBeAdded.role }
+            val existingIds = childrenInRole.map { it.originalId() }
+            val baseIndex = nodeToBeAdded.getIndexWithinRole(nodeData, childrenInRole.size)
+            var offset = 0
+            offset += childrenInRole.slice(0..minOf(baseIndex, childrenInRole.lastIndex)).count {
+                !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
             }
+            offset -= specifiedChildren.filter { it.role == nodeToBeAdded.role }.slice(0 until baseIndex).count {
+                !existingIds.contains(it.originalId()) // node will be moved here
+            }
+            node.addNewChildWithStats(nodeToBeAdded, baseIndex + offset)
         }
     }
 
-    private fun syncExistingChildOrder(
+    private fun sortAllExistingChildren(
+        allNodes: List<INode>,
+        originalIdToExisting: MutableMap<String, INode>,
+        originalIdToSpec: MutableMap<String, NodeData>
+    ) {
+        allNodes.forEach { node ->
+            originalIdToSpec[node.originalId()]?.let { sortExistingChildren(node, it, originalIdToExisting, originalIdToSpec) }
+        }
+    }
+
+    private fun sortExistingChildren(
         node: INode,
         nodeData: NodeData,
-        existingIds: Set<String?>,
-        toBeMovedAwayFromHere: Set<String?>
+        originalIdToExisting: MutableMap<String, INode>,
+        originalIdToSpec: MutableMap<String, NodeData>
     ) {
         val existingChildren = node.allChildren.toList()
+        val existingIds = existingChildren.map { it.originalId() }
         val specifiedChildren = nodeData.children
-        require(existingChildren.size <= specifiedChildren.size)
-
-        val filteredSpecifiedChildren = specifiedChildren.filter { existingIds.contains(it.originalId()) }
+        val toBeSortedSpec = specifiedChildren.filter { originalIdToExisting.containsKey(it.originalId()) }
 
         val targetIndices = HashMap<String?, Int>(nodeData.children.size)
-        for (specifiedChild in filteredSpecifiedChildren) {
-            val index = filteredSpecifiedChildren.filter { it.role == node.roleInParent }.indexOf(specifiedChild)
-            targetIndices[specifiedChild.originalId()] = minOf(index, existingChildren.size - 1)
+        for (child in toBeSortedSpec) {
+            val baseIndex = toBeSortedSpec.filter { it.role == node.roleInParent }.indexOf(child)
+            var offset = 0
+            offset += existingChildren.filter { it.roleInParent == child.role }.slice(0..baseIndex).count {
+                !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
+            }
+            offset -= specifiedChildren.filter { it.role == child.role }.slice(0..baseIndex).count {
+                !existingIds.contains(it.originalId()) // node will be moved here
+            }
+            val index = baseIndex + offset
+            targetIndices[child.originalId()] = minOf(index, existingChildren.size - 1)
         }
 
         for ((index, child) in existingChildren.withIndex()) {
-            val targetIndex = targetIndices[child.originalId()] ?: -1
-            if (targetIndex != index && !toBeMovedAwayFromHere.contains(child.originalId())) {
+            val targetIndex = targetIndices[child.originalId()]
+            if (targetIndex != null && targetIndex != index) {
                 node.moveChildWithStats(child.roleInParent, targetIndex, child)
             }
         }
     }
 
+    private fun handleAllMovesAcrossParents(
+        allNodes: List<INode>,
+        originalIdToExisting: MutableMap<String, INode>,
+        originalIdToSpec: MutableMap<String, NodeData>
+    ) {
+        allNodes.forEach {
+            originalIdToSpec[it.originalId()]?.let { spec -> handleMoveAcrossParents(it, spec, originalIdToExisting, originalIdToSpec) }
+        }
+    }
+
+    private fun handleMoveAcrossParents(
+        node: INode,
+        nodeData: NodeData,
+        originalIdToExisting: MutableMap<String, INode>,
+        originalIdToSpec: MutableMap<String, NodeData>
+    ) {
+
+        val existingChildren = node.allChildren.toList()
+        val missingIds = nodeData.children.map { it.originalId() }.toSet()
+            .subtract(node.allChildren.map { it.originalId() }.toSet())
+        val toBeMovedHere = missingIds
+            .filter { originalIdToSpec.containsKey(it) }
+            .mapNotNull { originalIdToExisting[it] }
+
+        toBeMovedHere.forEach {nodeToBeMoved ->
+            val spec = originalIdToSpec[nodeToBeMoved.originalId()]!!
+
+            val baseTargetIndex = spec.getIndexWithinRole(nodeData, existingChildren.size - 1)
+            val offset = existingChildren.slice(0..baseTargetIndex).count {
+                !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
+            }
+            val targetIndex = baseTargetIndex + offset
+
+            node.moveChildWithStats(spec.role, targetIndex, nodeToBeMoved)
+        }
+    }
+
+    private fun deleteAllExtraChildren(allNodes: List<INode>, originalIdToSpec: MutableMap<String, NodeData>) {
+        val toBeRemoved = mutableListOf<INode>()
+        allNodes.forEach { node ->
+            node.allChildren.forEach {
+                if (!originalIdToSpec.containsKey(it.originalId())) {
+                    toBeRemoved.add(it)
+                }
+            }
+        }
+        toBeRemoved.asReversed().forEach {// delete bottom-up
+            it.parent?.removeChildWithStats(it)
+        }
+    }
+
     private fun NodeData.getIndexWithinRole(parent: NodeData, maxIndex: Int) : Int {
         return minOf(parent.children.filter { it.role == this.role }.indexOf(this), maxIndex)
-    }
-
-    private fun INode.originalId(): String? {
-        return this.getPropertyValue(NodeData.idPropertyKey)
-    }
-
-    private fun NodeData.originalId(): String? {
-        return properties[NodeData.idPropertyKey] ?: id
     }
 
     private fun INode.addNewChildWithStats(spec: NodeData, index: Int) : INode {
@@ -208,4 +291,12 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         setReferenceTarget(role, target)
     }
 
+}
+
+internal fun INode.originalId(): String? {
+    return this.getPropertyValue(NodeData.idPropertyKey)
+}
+
+internal fun NodeData.originalId(): String? {
+    return properties[NodeData.idPropertyKey] ?: id
 }

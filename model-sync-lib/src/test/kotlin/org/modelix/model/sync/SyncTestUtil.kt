@@ -57,3 +57,14 @@ internal fun assertNodeChildOrderConformsToSpec(expected: NodeData, actual: INod
     val actualOrder = actual.allChildren.groupBy { it.roleInParent }.mapValues {  (_, children) -> children.map { it.originalId() }}
     assertEquals(specifiedOrder, actualOrder)
 }
+
+internal fun assertNoOverlappingOperations(stats: ImportStats?) {
+    stats ?: fail("No import stats found.")
+    val additionsSet = stats.additions.toSet()
+    val deletionsSet = stats.deletions.toSet()
+    val movesSet = stats.moves.toSet()
+
+    assert(additionsSet.intersect(deletionsSet).isEmpty())
+    assert(deletionsSet.intersect(movesSet).isEmpty())
+    assert(movesSet.intersect(additionsSet).isEmpty())
+}

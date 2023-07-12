@@ -101,14 +101,7 @@ class ModelImporterTest {
 
     @Test
     fun `operations do not overlap`() {
-        val stats = importer.stats ?: fail("No import stats found.")
-        val additionsSet = stats.additions.toSet()
-        val deletionsSet = stats.deletions.toSet()
-        val movesSet = stats.moves.toSet()
-
-        assert(additionsSet.intersect(deletionsSet).isEmpty())
-        assert(deletionsSet.intersect(movesSet).isEmpty())
-        assert(movesSet.intersect(additionsSet).isEmpty())
+        assertNoOverlappingOperations(importer.stats)
     }
 
     @Test
@@ -168,7 +161,10 @@ class ModelImporterTest {
 //            println(branch1.getRootNode().toJson())
 
             assertAllNodesConformToSpec(specification, branch1.getRootNode())
-            assert(importer.stats!!.getTotal() <= numChanges)
+            assertNoOverlappingOperations(importer.stats)
+            assert(importer.stats!!.getTotal() <= numChanges) {
+                "expected operations: <= $numChanges, actual: ${importer.stats!!.getTotal()}"
+            }
         }
     }
 }

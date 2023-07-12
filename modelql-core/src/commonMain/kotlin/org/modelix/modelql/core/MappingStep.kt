@@ -66,3 +66,6 @@ fun <In, Out> IMonoStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoS
 fun <In, Out> IMonoStep<In>.map(query: IMonoUnboundQuery<In, Out>): IMonoStep<Out> {
     return MappingStep(query.castToInstance()).connectAndDowncast(this)
 }
+fun <In, Out> IFluxStep<In>.map(query: IMonoUnboundQuery<In, Out>): IFluxStep<Out> {
+    return MappingStep(query.castToInstance()).connectAndDowncast(this)
+}

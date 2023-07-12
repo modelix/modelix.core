@@ -4,12 +4,15 @@ import io.ktor.client.HttpClient
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import kotlinx.html.FlowContent
+import kotlinx.html.UL
 import kotlinx.html.body
 import kotlinx.html.div
 import kotlinx.html.h1
 import kotlinx.html.h2
 import kotlinx.html.html
+import kotlinx.html.li
 import kotlinx.html.stream.createHTML
+import kotlinx.html.ul
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
@@ -23,7 +26,9 @@ import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.AsyncBuilder
 import org.modelix.modelql.core.IAsyncBuilder
 import org.modelix.modelql.core.buildModelQLTemplate
+import org.modelix.modelql.core.isNotEmpty
 import org.modelix.modelql.core.mapLocal
+import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.buildQuery
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.property
@@ -83,11 +88,11 @@ class HtmlBuilderTest {
         }
 
         fun HtmlBuilder<INode>.renderRepository() {
-            val modules = input.children("modules").iterateLater {
+            val modules = input.children("modules").prepareFragment {
                 renderModule()
             }
             onSuccess {
-                iterate(modules)
+                applyFragment(modules)
             }
         }
 
@@ -97,20 +102,74 @@ class HtmlBuilderTest {
         val expected = """<html><body><div><h1>Module: abc</h1><div><h2>Model: model1a</h2></div><div><h2>Model: model1b</h2></div></div></body></html>"""
         assertEquals(expected, actual)
     }
+
+    @Test
+    fun recursive() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+
+        val modelTemplate = buildModelQLTemplate<INode, FlowContent> {
+            val name = input.property("name").getLater()
+            onSuccess {
+                div {
+                    h2 {
+                        +"Model: ${name.get()}"
+                    }
+                }
+            }
+        }
+
+        fun HtmlBuilder<INode>.renderModule() {
+            val name = input.property("name").getLater()
+            val models = input.children("models").prepare(modelTemplate)
+            onSuccess {
+                div {
+                    h1 {
+                        +"Module: ${name.get()}"
+                    }
+                    applyTemplate(models)
+                }
+            }
+        }
+
+        fun IAsyncBuilder<INode, UL>.renderNode() {
+            val hashChildNodes = input.allChildren().isNotEmpty().getLater()
+            val childNodes = input.allChildren().prepareRecursive()
+            val name = input.property("name").getLater()
+            onSuccess {
+                li {
+                    +name.get().toString()
+                    if (hashChildNodes.get()) {
+                        ul {
+                            applyFragment(childNodes)
+                        }
+                    }
+                }
+            }
+        }
+
+        val actual = client.getRootNode().queryAndBuildHtml {
+            val renderedNode = input.prepareFragment<INode, UL> { renderNode() }
+            onSuccess {
+                ul {
+                    applyFragment(renderedNode)
+                }
+            }
+        }
+        val expected = """<html><body><ul><li>null<ul><li>abc<ul><li>model1a<ul></ul></li><li>model1b<ul></ul></li></ul></li></ul></li></ul></body></html>"""
+        assertEquals(expected, actual)
+    }
 }
 
 typealias HtmlBuilder<In> = IAsyncBuilder<In, FlowContent>
 
 suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String {
     val query = buildQuery<String> { repository ->
-        val htmlBuilder = AsyncBuilder<INode, FlowContent>(repository)
+        val htmlBuilder = AsyncBuilder<INode, FlowContent>()
         htmlBuilder.apply(body)
-        htmlBuilder.compileOutputStep().mapLocal { result ->
+        htmlBuilder.compileMappingStep(repository).mapLocal { result ->
             createHTML(prettyPrint = false).html {
                 body {
-                    htmlBuilder.apply {
-                        processResult(result)
-                    }
+                    htmlBuilder.processResult(result, this)
                 }
             }
         }

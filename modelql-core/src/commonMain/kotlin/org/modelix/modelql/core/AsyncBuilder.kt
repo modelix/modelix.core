@@ -1,62 +1,46 @@
 package org.modelix.modelql.core
 
-typealias ResultHandler<ContextT> = ContextT.() -> Unit
+typealias FragmentBody<ContextT> = ContextT.() -> Unit
 
-interface IAsyncBuilder<out In, out Context> {
+interface IAsyncBuilder<In, Context> {
     val input: IMonoStep<In>
-    fun onSuccess(body: ResultHandler<Context>)
+    fun onSuccess(body: FragmentBody<Context>)
     fun <T> IMonoStep<T>.getLater(): IValueRequest<T>
 
-    @Deprecated("use prepareFragment", ReplaceWith("prepareFragment(body)"))
-    fun <T, TContext> IMonoStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext>
+    fun IFluxStep<In>.prepareRecursive(): IPreparedFragment<Context>
 
-    @Deprecated("use prepareFragment", ReplaceWith("prepareFragment(body)"))
-    fun <T, TContext> IFluxStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext>
-
-    @Deprecated("use applyFragment", ReplaceWith("applyFragment(request)"))
-    fun <TContext> TContext.iterate(request: IPreparedFragment<TContext>)
-
-    fun <T, TContext> IMonoStep<T>.prepareFragment(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> = iterateLater(body)
-    fun <T, TContext> IFluxStep<T>.prepareFragment(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> = iterateLater(body)
-    fun <TContext> TContext.applyFragment(request: IPreparedFragment<TContext>) = iterate(request)
+    fun <T, TContext> IMonoStep<T>.prepareFragment(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext>
+    fun <T, TContext> IFluxStep<T>.prepareFragment(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext>
+    fun <TContext> TContext.applyFragment(request: IPreparedFragment<TContext>)
 
     fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IMonoStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate>
     fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IFluxStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate>
     fun <TContext> TContext.applyTemplate(templateInstance: IModelQLTemplateInstance<TContext, *>)
 }
 
-interface IValueRequest<E> {
-    fun get(): E
-}
+interface IPreparedFragment<in Context>
 
-interface IPreparedFragment<Context>
+class AsyncBuilder<E, Context> : IAsyncBuilder<E, Context> {
+    override val input: QueryInput<E> = QueryInput()
+    private val zipBuilder = ZipBuilder()
+    private var resultHandlers = ArrayList<FragmentBody<Context>>()
 
-class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder<E, Context> {
-    private val valueRequests = ArrayList<ValueRequest<Any?>>()
-    private val iterationRequests = ArrayList<PreparedFragment<Any?, Any?>>()
-    private var resultHandlers = ArrayList<ResultHandler<Context>>()
-
-    fun compileOutputStep(): IMonoStep<IZipOutput<*>> {
-        val allRequestSteps: List<IMonoStep<Any?>> = valueRequests.map { it.step } + iterationRequests.map { it.outputStep }
-        return zipList(*allRequestSteps.toTypedArray())
-    }
+    fun compileQuery(): IMonoUnboundQuery<E, IZipOutput<*>> = MonoUnboundQuery(input, zipBuilder.compileOutputStep())
+    fun compileMappingStep(it: IMonoStep<E>): IMonoStep<IZipOutput<*>> = it.map(compileQuery())
 
     /**
      * Can be called multiple times for a list of results.
      */
-    fun Context.processResult(result: IZipOutput<*>) {
-        val allRequests: List<Request<Any?>> = valueRequests + (iterationRequests as List<Request<Any?>>)
-        allRequests.zip(result.values).forEach { (request, value) ->
-            request.set(value)
+    fun processResult(result: IZipOutput<*>, context: Context) {
+        zipBuilder.withResult(result) {
+            resultHandlers.forEach { it.invoke(context) }
         }
-
-        resultHandlers.forEach { it.invoke(this) }
     }
 
-    override fun onSuccess(body: ResultHandler<Context>) {
+    override fun onSuccess(body: FragmentBody<Context>) {
         resultHandlers += body
     }
-    override fun <T> IMonoStep<T>.getLater(): ValueRequest<T> {
+    override fun <T> IMonoStep<T>.getLater(): IValueRequest<T> {
         val actual = this.getRootInputStep()
         val expected = input.getRootInputStep()
         require(expected == actual) {
@@ -65,11 +49,11 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
                 |  actual input: $actual
             """.trimMargin()
         }
-        return ValueRequest(this).also { valueRequests.add(it as ValueRequest<Any?>) }
+        return zipBuilder.request(this)
     }
 
-    override fun <T, TContext> IMonoStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> {
-        return this.asFlux().iterateLater(body)
+    override fun <T, TContext> IMonoStep<T>.prepareFragment(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> {
+        return this.asFlux().prepareFragment(body)
     }
 
     override fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IMonoStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate> {
@@ -77,8 +61,7 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
     }
 
     override fun <TIn, TContext, TTemplate : IModelQLTemplate<TIn, TContext>> IFluxStep<TIn>.prepare(template: TTemplate): IModelQLTemplateInstance<TContext, TTemplate> {
-        @kotlin.Suppress("UnnecessaryVariable")
-        val iterationRequest: IPreparedFragment<TContext> = iterateLater {
+        val fragment: IPreparedFragment<TContext> = prepareFragment {
             with(template) {
                 prepareInstance()
             }
@@ -90,22 +73,28 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
             }
             override fun applyInstance(context: TContext) {
                 with(context) {
-                    iterate(iterationRequest)
+                    applyFragment(fragment)
                 }
             }
         }
     }
 
-    override fun <T, TContext> IFluxStep<T>.iterateLater(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> {
-        lateinit var childBuilder: AsyncBuilder<T, TContext>
-        val outputStep: IMonoStep<List<IZipOutput<*>>> = this.map {
-            childBuilder = AsyncBuilder<T, TContext>(it).apply(body)
-            childBuilder.compileOutputStep()
-        }.toList()
-        return PreparedFragment<T, TContext>(childBuilder, outputStep).also { iterationRequests.add(it as PreparedFragment<Any?, Any?>) }
+    override fun <T, TContext> IFluxStep<T>.prepareFragment(body: IAsyncBuilder<T, TContext>.() -> Unit): IPreparedFragment<TContext> {
+        val childBuilder: AsyncBuilder<T, TContext> = AsyncBuilder<T, TContext>().apply(body)
+        val outputStep: IMonoStep<List<IZipOutput<*>>> = this.map(childBuilder.compileQuery()).toList()
+        val request = zipBuilder.request(outputStep)
+        return PreparedFragment<T, TContext>(childBuilder, request)
     }
 
-    override fun <TContext> TContext.iterate(request: IPreparedFragment<TContext>) {
+    override fun IFluxStep<E>.prepareRecursive(): IPreparedFragment<Context> {
+        val thisStep: IFluxStep<E> = this
+        val recursiveStep = RecursiveQueryStep<E, IZipOutput<*>>().also { thisStep.connect(it) }
+        val outputStep = recursiveStep.toList()
+        val request = zipBuilder.request(outputStep)
+        return PreparedFragment<E, Context>(this@AsyncBuilder, request)
+    }
+
+    override fun <TContext> TContext.applyFragment(request: IPreparedFragment<TContext>) {
         val casted = request as PreparedFragment<*, TContext>
         require(casted.getOwner() != this) { "Iteration request belongs to a different builder" }
         casted.iterate(this)
@@ -115,28 +104,11 @@ class AsyncBuilder<E, Context>(override val input: IMonoStep<E>) : IAsyncBuilder
         templateInstance.applyInstance(this)
     }
 
-    abstract class Request<E> {
-        var result: Optional<E> = Optional.empty()
-        fun set(value: E) {
-            result = Optional.of(value)
-        }
-        fun get(): E {
-            require(result.isPresent()) { "Value not received for $this" }
-            return result.get()
-        }
-    }
-
-    class ValueRequest<E>(step: IMonoStep<E>) : Request<E>(), IValueRequest<E> {
-        val step: IMonoStep<E> = if (step.canBeEmpty()) step.assertNotEmpty() else step
-    }
-
-    inner class PreparedFragment<In, RequestContext>(val htmlBuilder: AsyncBuilder<In, RequestContext>, val outputStep: IMonoStep<List<IZipOutput<*>>>) : Request<List<IZipOutput<*>>>(), IPreparedFragment<RequestContext> {
+    inner class PreparedFragment<In, RequestContext>(val htmlBuilder: AsyncBuilder<In, RequestContext>, val request: IValueRequest<List<IZipOutput<*>>>) : IPreparedFragment<RequestContext> {
         fun getOwner(): AsyncBuilder<*, *> = this@AsyncBuilder
         fun iterate(context: RequestContext) {
-            context.apply {
-                get().forEach { elementResult ->
-                    htmlBuilder.apply { processResult(elementResult) }
-                }
+            request.get().forEach { elementResult ->
+                htmlBuilder.processResult(elementResult, context)
             }
         }
     }

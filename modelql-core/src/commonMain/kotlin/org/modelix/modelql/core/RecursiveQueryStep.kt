@@ -4,6 +4,10 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
+import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
@@ -49,8 +53,7 @@ class RecursiveQuerySerializer<Out>(val query: IUnboundQuery<*, *, Out>) : KSeri
         return queryOutputSerializer.deserialize(decoder)
     }
 
-    override val descriptor: SerialDescriptor
-        get() = TODO("Not yet implemented")
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("recursiveQuery")
 
     override fun serialize(encoder: Encoder, value: IStepOutput<Out>) {
         val queryOutputSerializer = query.getElementOutputSerializer(encoder.serializersModule).upcast()

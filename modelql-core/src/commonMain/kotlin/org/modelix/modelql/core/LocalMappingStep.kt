@@ -26,29 +26,37 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
 }
 
 private class LocalMappingBuilder<In, Out> : ILocalMappingBuilder<In, Out> {
-    private val valueRequests = ArrayList<AsyncBuilder.ValueRequest<Any?>>()
-    private var resultHandler: (() -> Out)? = null
+    private val zipBuilder = ZipBuilder()
+    private var resultHandlers = ArrayList<() -> Out>(1)
 
     fun compileOutputStep(): IMonoStep<IZipOutput<*>> {
-        val allRequestSteps: List<IMonoStep<Any?>> = valueRequests.map { it.step }
-        return zipList(*allRequestSteps.toTypedArray())
+        return zipBuilder.compileOutputStep()
+    }
+
+    fun compileProcessingOutputStep(): IMonoStep<Out> {
+        return compileOutputStep().mapLocal { processResult(it) }
     }
 
     fun processResult(result: IZipOutput<*>): Out {
-        val allRequests: List<AsyncBuilder.Request<Any?>> = valueRequests
-        allRequests.zip(result.values).forEach { (request, value) ->
-            request.set(value)
+        return zipBuilder.withResult(result) {
+            // When there are multiple handlers they usually all return Unit.
+            // When the output is not Unit, then there is usually only one handler.
+            // Returning a list here would add unnecessary complexity.
+            resultHandlers.map { it.invoke() }.toSet().single()
         }
-
-        return resultHandler!!.invoke()
     }
 
     override fun onSuccess(body: () -> Out) {
-        resultHandler = body
+        resultHandlers += body
     }
-    override fun <T> IMonoStep<T>.getLater(): AsyncBuilder.ValueRequest<T> {
-        return AsyncBuilder.ValueRequest(this).also { valueRequests.add(it as AsyncBuilder.ValueRequest<Any?>) }
+
+    override fun <T> IMonoStep<T>.getLater(): IValueRequest<T> {
+        return zipBuilder.request(this)
     }
+}
+
+interface IValueRequest<E> {
+    fun get(): E
 }
 
 interface ILocalMappingBuilder<In, Out> {
@@ -90,7 +98,7 @@ fun <In, Out> IMonoStep<In>.mapLocal2(body: ILocalMappingBuilder<In, Out>.(IMono
     builder.apply {
         body(this@mapLocal2)
     }
-    return builder.compileOutputStep().mapLocal { builder.processResult(it) }
+    return builder.compileProcessingOutputStep()
 }
 
 fun <In, Out> IMonoStep<In>.mapLocal(body: (In) -> Out) = LocalMappingStep(body).connectAndDowncast(this)

@@ -22,8 +22,11 @@ class ClientIdProcessor : EntryProcessor<String?, String?, Long> {
     @Throws(EntryProcessorException::class)
     override fun process(mutableEntry: MutableEntry<String?, String?>, vararg objects: Any): Long {
         val idStr = mutableEntry.value
-        var id = idStr?.toLong() ?: 0
-        id++
+        val id = try {
+            idStr?.toLong() ?: 0L
+        } catch (e : NumberFormatException) {
+            0L
+        } + 1L
         mutableEntry.value = id.toString()
         return id
     }

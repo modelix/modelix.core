@@ -94,7 +94,7 @@ class ModelImporterTest {
         val stats = importer.stats ?: fail("No import stats found.")
         assertEquals(1, stats.additions.size)
         assertEquals(1, stats.deletions.size)
-        assertEquals(4, stats.moves.size)
+        assertEquals(5, stats.moves.size)
         assertEquals(4, stats.propertyChanges.size)
         assertEquals(3, stats.referenceChanges.size)
     }

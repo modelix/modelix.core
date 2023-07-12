@@ -58,6 +58,13 @@
         "properties": {
           "purpose": "move across parents"
         }
+      },
+      {
+        "id": "node:006",
+        "role": "roleAfter",
+        "properties": {
+          "purpose": "change role"
+        }
       }
     ]
   }

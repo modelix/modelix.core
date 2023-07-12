@@ -164,22 +164,28 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
 
         val targetIndices = HashMap<String?, Int>(nodeData.children.size)
         for (child in toBeSortedSpec) {
-            val baseIndex = toBeSortedSpec.filter { it.role == node.roleInParent }.indexOf(child)
+
+            val childrenInRole = existingChildren.filter { it.roleInParent == child.role }
+            val baseIndex = child.getIndexWithinRole(nodeData, childrenInRole.lastIndex)
             var offset = 0
-            offset += existingChildren.filter { it.roleInParent == child.role }.slice(0..baseIndex).count {
+            offset += childrenInRole.slice(0..baseIndex).count {
                 !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
             }
-            offset -= specifiedChildren.filter { it.role == child.role }.slice(0..baseIndex).count {
+            offset -= childrenInRole.slice(0..baseIndex).count {
                 !existingIds.contains(it.originalId()) // node will be moved here
             }
-            val index = baseIndex + offset
-            targetIndices[child.originalId()] = minOf(index, existingChildren.size - 1)
+            val index = if (childrenInRole.isEmpty()) 0 else baseIndex + offset
+            val upperBound = if (existingChildren.isEmpty()) 0 else existingChildren.lastIndex
+            targetIndices[child.originalId()] = minOf(index, upperBound)
         }
 
-        for ((index, child) in existingChildren.withIndex()) {
+        existingChildren.forEach { child ->
+
+            val currentIndex = child.index()
+            val targetRole = originalIdToSpec[child.originalId()]?.role
             val targetIndex = targetIndices[child.originalId()]
-            if (targetIndex != null && targetIndex != index) {
-                node.moveChildWithStats(child.roleInParent, targetIndex, child)
+            if (targetIndex != null && (targetIndex != currentIndex || child.roleInParent != targetRole)) {
+                node.moveChildWithStats(targetRole, targetIndex, child)
             }
         }
     }

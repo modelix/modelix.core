@@ -16,6 +16,8 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
     }
     
     fun import(data: ModelData) {
+        stats?.reset()
+
         syncProperties(root, data.root) // root original id is required for following operations
         val allExistingNodes = root.getDescendants(true).toList()
         val originalIdToSpec: MutableMap<String, NodeData> = buildSpecIndex(data.root)

@@ -38,6 +38,12 @@ class ImportStats {
 
     fun getTotal() : Int = additions.size + deletions.size + moves.size + propertyChanges.size + referenceChanges.size
 
+    fun reset() {
+        listOf(additions, deletions, moves, propertyChanges, referenceChanges).forEach {
+            (it as MutableList).clear()
+        }
+    }
+
 }
 
 interface NodeChange {

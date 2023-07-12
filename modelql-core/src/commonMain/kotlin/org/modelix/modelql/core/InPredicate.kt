@@ -21,7 +21,7 @@ class InPredicate(val values: Set<String>) : MonoTransformingStep<String?, Boole
     @Serializable
     @SerialName("in")
     class Descriptor(val values: Set<String>) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return InPredicate(values)
         }
     }

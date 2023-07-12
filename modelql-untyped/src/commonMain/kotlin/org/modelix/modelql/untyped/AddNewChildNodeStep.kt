@@ -14,6 +14,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.stepOutputSerializer
@@ -44,7 +45,7 @@ class AddNewChildNodeStep(val role: String?, val index: Int, val concept: Concep
     @Serializable
     @SerialName("untyped.addNewChild")
     class Descriptor(val role: String?, val index: Int, val concept: ConceptReference?) : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return AddNewChildNodeStep(role, index, concept)
         }
     }

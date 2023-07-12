@@ -47,8 +47,8 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     @Serializable
     @SerialName("filter")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
-            return FilteringStep<Any?>(query.createQuery() as MonoUnboundQuery<Any?, Boolean?>)
+        override fun createStep(context: QueryDeserializationContext): IStep {
+            return FilteringStep<Any?>(query.createQuery(context) as MonoUnboundQuery<Any?, Boolean?>)
         }
     }
 }

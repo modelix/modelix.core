@@ -266,7 +266,7 @@ class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
 
     @Serializable
     class Descriptor : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductsTraversal()
         }
     }
@@ -287,7 +287,7 @@ class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
 
     @Serializable
     class Descriptor : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductTitleTraversal()
         }
     }
@@ -306,7 +306,7 @@ class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
 
     @Serializable
     class Descriptor : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductIdTraversal()
         }
     }
@@ -329,7 +329,7 @@ class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
 
     @Serializable
     class Descriptor : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductImagesTraversal()
         }
     }

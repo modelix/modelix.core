@@ -69,7 +69,7 @@ class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     @Serializable
     @SerialName("toList")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return ListCollectorStep<Any?>()
         }
     }
@@ -93,7 +93,7 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
     @Serializable
     @SerialName("toSet")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return SetCollectorStep<Any?>()
         }
     }

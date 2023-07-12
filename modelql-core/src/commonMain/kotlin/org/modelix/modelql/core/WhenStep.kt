@@ -62,10 +62,10 @@ class WhenStep<In, Out>(
     @Serializable
     @SerialName("when")
     class Descriptor(val cases: List<Pair<QueryDescriptor, QueryDescriptor>>, val elseCase: QueryDescriptor? = null) : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return WhenStep<Any?, Any?>(
-                cases.map { it.first.createQuery() as MonoUnboundQuery<Any?, Boolean?> to it.second.createQuery() as MonoUnboundQuery<Any?, Any?> },
-                elseCase?.let { it.createQuery() as MonoUnboundQuery<Any?, Any?> }
+                cases.map { it.first.createQuery(context) as MonoUnboundQuery<Any?, Boolean?> to it.second.createQuery(context) as MonoUnboundQuery<Any?, Any?> },
+                elseCase?.let { it.createQuery(context) as MonoUnboundQuery<Any?, Any?> }
             )
         }
     }

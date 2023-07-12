@@ -51,8 +51,8 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
     @Serializable
     @SerialName("map")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
-            return MappingStep<Any?, Any?>(query.createQuery() as MonoUnboundQuery<Any?, Any?>)
+        override fun createStep(context: QueryDeserializationContext): IStep {
+            return MappingStep<Any?, Any?>(query.createQuery(context) as MonoUnboundQuery<Any?, Any?>)
         }
     }
 }

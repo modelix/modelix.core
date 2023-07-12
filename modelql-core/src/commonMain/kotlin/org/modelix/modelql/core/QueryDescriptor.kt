@@ -9,14 +9,22 @@ data class QueryDescriptor(
     val connections: List<PortConnection>,
     val input: Int,
     val output: Int,
-    val isFluxOutput: Boolean
+    val isFluxOutput: Boolean,
+    val queryId: Long
 ) {
     fun createQuery(): UnboundQuery<*, *, *> {
+        val context = QueryDeserializationContext()
+        val query = createQuery(context)
+        context.resolveQueryReferences()
+        return query
+    }
+
+    fun createQuery(context: QueryDeserializationContext): UnboundQuery<*, *, *> {
         val createdSteps = ArrayList<IStep>()
         fun resolveStep(id: Int): IStep {
             return createdSteps[id]
         }
-        steps.forEach { createdSteps += it.createStep() }
+        steps.forEach { createdSteps += it.createStep(context) }
         for (connection in connections.sortedBy { it.consumer.port }) {
             val producer = resolveStep(connection.producer.step) as IProducingStep<Any?>
             val consumer = resolveStep(connection.consumer.step) as IConsumingStep<Any?>
@@ -39,10 +47,10 @@ data class QueryDescriptor(
 
         // Some steps implement IMonoStep and IFluxStep. An instanceOf check doesn't work.
         return if (isFluxOutput) {
-            FluxUnboundQuery<Any?, Any?>(inputStep, outputStep as IFluxStep<Any?>)
+            FluxUnboundQuery<Any?, Any?>(inputStep, outputStep as IFluxStep<Any?>, queryId)
         } else {
-            MonoUnboundQuery<Any?, Any?>(inputStep, outputStep as IMonoStep<Any?>)
-        }
+            MonoUnboundQuery<Any?, Any?>(inputStep, outputStep as IMonoStep<Any?>, queryId)
+        }.also { context.register(it) }
     }
 }
 
@@ -50,7 +58,7 @@ data class QueryDescriptor(
 abstract class StepDescriptor {
     @Transient
     var id: Int? = null
-    abstract fun createStep(): IStep
+    abstract fun createStep(context: QueryDeserializationContext): IStep
 }
 
 sealed class CoreStepDescriptor : StepDescriptor()
@@ -60,3 +68,26 @@ data class PortConnection(val producer: PortReference, val consumer: PortReferen
 
 @Serializable
 data class PortReference(val step: Int, val port: Int = 0)
+
+class QueryReference<Q : IUnboundQuery<*, *, *>>(var query: Q?, var queryId: Long?)
+
+class QueryDeserializationContext {
+    private val queryReferences = ArrayList<QueryReference<IUnboundQuery<Any?, Any?, Any?>>>()
+    private val queries = ArrayList<UnboundQuery<Any?, Any?, Any?>>()
+
+    fun register(ref: QueryReference<*>) {
+        queryReferences += ref as QueryReference<IUnboundQuery<Any?, Any?, Any?>>
+    }
+
+    fun register(query: UnboundQuery<*, *, *>) {
+        queries += query as UnboundQuery<Any?, Any?, Any?>
+    }
+
+    fun resolveQueryReferences() {
+        val id2query = queries.associateBy { it.id }
+        queryReferences.forEach {
+            it.query = id2query[it.queryId]
+                ?: throw RuntimeException("query not found: ${it.queryId}")
+        }
+    }
+}

@@ -17,7 +17,7 @@ class OrOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
     @Serializable
     @SerialName("or")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return OrOperatorStep()
         }
     }

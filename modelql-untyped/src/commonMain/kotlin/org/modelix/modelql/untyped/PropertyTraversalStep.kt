@@ -25,6 +25,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 
@@ -46,7 +47,7 @@ class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, Stri
     @Serializable
     @SerialName("untyped.property")
     class PropertyStepDescriptor(val role: String) : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return PropertyTraversalStep(role)
         }
     }

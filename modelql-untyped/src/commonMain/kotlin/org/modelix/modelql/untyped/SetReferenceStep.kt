@@ -11,6 +11,7 @@ import org.modelix.model.api.resolveReferenceLinkOrFallback
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 
@@ -41,7 +42,7 @@ class SetReferenceStep(val role: String) :
     @Serializable
     @SerialName("untyped.setReference")
     class Descriptor(val role: String) : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return SetReferenceStep(role)
         }
     }

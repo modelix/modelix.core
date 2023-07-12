@@ -29,7 +29,7 @@ class SingleStep<E>() : AggregationStep<E, E>() {
     @Serializable
     @SerialName("single")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return SingleStep<Any?>()
         }
     }

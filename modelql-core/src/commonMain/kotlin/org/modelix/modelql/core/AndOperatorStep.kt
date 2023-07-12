@@ -17,7 +17,7 @@ class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
     @Serializable
     @SerialName("and")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return AndOperatorStep()
         }
     }

@@ -17,7 +17,7 @@ class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
     @Serializable
     @SerialName("intSum")
     class IntSumDescriptor(val operand: Int) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return IntSumStep(operand)
         }
     }

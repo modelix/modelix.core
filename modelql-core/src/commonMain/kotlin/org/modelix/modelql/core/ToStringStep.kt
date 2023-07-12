@@ -24,7 +24,7 @@ class ToStringStep : MonoTransformingStep<Any?, String?>() {
     @Serializable
     @SerialName("toString")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return ToStringStep()
         }
     }

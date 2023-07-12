@@ -60,7 +60,7 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
     @Serializable
     @SerialName("zip")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return ZipStep<Any?, ZipNOutput>()
         }
     }
@@ -136,7 +136,7 @@ class AllowEmptyStep<E>() : IdentityStep<E>() {
     @Serializable
     @SerialName("allowEmpty")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return AllowEmptyStep<Any?>()
         }
     }
@@ -164,7 +164,7 @@ class AssertNotEmptyStep<E>() : IdentityStep<E>() {
     @Serializable
     @SerialName("assertNotEmpty")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return AssertNotEmptyStep<Any?>()
         }
     }

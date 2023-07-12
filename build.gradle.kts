@@ -7,6 +7,7 @@ import org.jetbrains.dokka.gradle.DokkaTaskPartial
 buildscript {
     dependencies {
         classpath("org.jetbrains.dokka:versioning-plugin:1.8.10")
+        classpath("org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.21.0")
     }
 }
 

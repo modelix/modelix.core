@@ -22,7 +22,7 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
     @Serializable
     @SerialName("isEmpty")
     class Descriptor() : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return IsEmptyStep()
         }
     }

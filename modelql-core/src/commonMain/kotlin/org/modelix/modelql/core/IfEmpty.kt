@@ -41,7 +41,7 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
     @Serializable
     @SerialName("ifEmpty")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return NullIfEmpty<Any?>()
         }
     }

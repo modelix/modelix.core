@@ -22,7 +22,7 @@ class StringToIntStep : MonoTransformingStep<String?, Int>() {
     @Serializable
     @SerialName("toInt")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return StringToIntStep()
         }
     }

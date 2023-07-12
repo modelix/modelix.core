@@ -21,7 +21,7 @@ class StringContainsPredicate(val substring: String) : MonoTransformingStep<Stri
     @Serializable
     @SerialName("stringContains")
     class StringContainsDescriptor(val substring: String) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return StringContainsPredicate(substring)
         }
     }

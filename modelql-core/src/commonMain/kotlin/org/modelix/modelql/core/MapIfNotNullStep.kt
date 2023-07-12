@@ -38,8 +38,8 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     @Serializable
     @SerialName("mapIfNotNull")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
-            return MapIfNotNullStep<Any, Any?>(query.createQuery() as MonoUnboundQuery<Any, Any?>)
+        override fun createStep(context: QueryDeserializationContext): IStep {
+            return MapIfNotNullStep<Any, Any?>(query.createQuery(context) as MonoUnboundQuery<Any, Any?>)
         }
     }
 }

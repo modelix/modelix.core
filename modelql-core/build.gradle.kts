@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
+apply(plugin = "kotlinx-atomicfu")
+
 kotlin {
     jvm()
     js(IR) {

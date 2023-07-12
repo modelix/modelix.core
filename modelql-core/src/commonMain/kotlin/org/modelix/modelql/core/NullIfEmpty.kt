@@ -26,7 +26,7 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
     @Serializable
     @SerialName("orNull")
     class OrNullDescriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return NullIfEmpty<Any?>()
         }
     }

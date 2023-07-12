@@ -33,7 +33,7 @@ open class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
     @Serializable
     @SerialName("identity")
     class IdentityStepDescriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return IdentityStep<Any?>()
         }
     }

@@ -1,5 +1,7 @@
 package org.modelix.modelql.core
 
+import kotlinx.atomicfu.AtomicLong
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -90,6 +92,7 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 }
 
 interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
+    val id: Long
     suspend fun execute(input: In): IStepOutput<AggregationOut>
     fun asFlow(input: StepFlow<In>): StepFlow<ElementOut>
     fun asFlow(input: In): StepFlow<ElementOut> = asFlow(flowOf(input).asStepFlow())
@@ -110,12 +113,12 @@ interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
         fun <In, Out> buildMono(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
             val inputStep = QueryInput<In>()
             val outputStep = body(inputStep)
-            return MonoUnboundQuery(inputStep, outputStep)
+            return MonoUnboundQuery(inputStep, outputStep, id = null)
         }
         fun <In, Out> buildFlux(body: (IMonoStep<In>) -> IFluxStep<Out>): IFluxUnboundQuery<In, Out> {
             val inputStep = QueryInput<In>()
             val outputStep = body(inputStep)
-            return FluxUnboundQuery(inputStep, outputStep)
+            return FluxUnboundQuery(inputStep, outputStep, id = null)
         }
     }
 }
@@ -143,7 +146,11 @@ interface IFluxUnboundQuery<in In, out Out> : IUnboundQuery<In, List<IStepOutput
     fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxUnboundQuery<In, T>
 }
 
-class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IMonoStep<ElementOut>) : UnboundQuery<In, ElementOut, ElementOut>(inputStep, outputStep), IMonoUnboundQuery<In, ElementOut> {
+class MonoUnboundQuery<In, ElementOut>(
+    inputStep: QueryInput<In>,
+    outputStep: IMonoStep<ElementOut>,
+    id: Long?
+) : UnboundQuery<In, ElementOut, ElementOut>(inputStep, outputStep, id), IMonoUnboundQuery<In, ElementOut> {
 
     override val outputStep: IMonoStep<ElementOut>
         get() = super.outputStep as IMonoStep<ElementOut>
@@ -179,7 +186,11 @@ class MonoUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IM
     }
 }
 
-class FluxUnboundQuery<In, ElementOut>(inputStep: QueryInput<In>, outputStep: IFluxStep<ElementOut>) : UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>(inputStep, outputStep), IFluxUnboundQuery<In, ElementOut> {
+class FluxUnboundQuery<In, ElementOut>(
+    inputStep: QueryInput<In>,
+    outputStep: IFluxStep<ElementOut>,
+    id: Long?
+) : UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>(inputStep, outputStep, id), IFluxUnboundQuery<In, ElementOut> {
 
     override val outputStep: IFluxStep<ElementOut>
         get() = super.outputStep as IFluxStep<ElementOut>
@@ -211,7 +222,13 @@ fun <In, Out> IMonoUnboundQuery<In, Out>.castToInstance(): MonoUnboundQuery<In, 
 fun <In, Out> IFluxUnboundQuery<In, Out>.castToInstance(): FluxUnboundQuery<In, Out> = this as FluxUnboundQuery<In, Out>
 fun <In, Out, ElementOut> IUnboundQuery<In, Out, ElementOut>.castToInstance(): UnboundQuery<In, Out, ElementOut> = this as UnboundQuery<In, Out, ElementOut>
 
-abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: QueryInput<In>, private val outputStep_: IProducingStep<ElementOut>) : IUnboundQuery<In, AggregationOut, ElementOut> {
+abstract class UnboundQuery<In, AggregationOut, ElementOut>(
+    val inputStep: QueryInput<In>,
+    private val outputStep_: IProducingStep<ElementOut>,
+    id: Long?
+) : IUnboundQuery<In, AggregationOut, ElementOut> {
+
+    override val id: Long = id ?: generateId()
 
     init {
         validate()
@@ -325,11 +342,15 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(val inputStep: Query
             builder.connections.toList(),
             builder.stepId(inputStep),
             builder.stepId(outputStep),
-            this is FluxUnboundQuery
+            this is FluxUnboundQuery,
+            id
         )
     }
 
     companion object {
+        private val idSequence: AtomicLong = atomic(0L)
+        fun generateId(): Long = idSequence.incrementAndGet()
+
         val serializersModule = SerializersModule {
             polymorphic(StepDescriptor::class) {
                 subclass(org.modelix.modelql.core.AllowEmptyStep.Descriptor::class)
@@ -473,7 +494,7 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     @Serializable
     @SerialName("input")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return QueryInput<Any?>()
         }
     }

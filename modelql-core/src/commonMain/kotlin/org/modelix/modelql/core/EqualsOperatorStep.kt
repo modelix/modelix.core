@@ -27,7 +27,7 @@ class IntEqualsOperatorStep(operand: Int) : EqualsOperatorStep<Int>(operand) {
     @Serializable
     @SerialName("intEqualTo")
     class Descriptor(val operand: Int) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return IntEqualsOperatorStep(operand)
         }
     }
@@ -39,7 +39,7 @@ class StringEqualsOperatorStep(operand: String) : EqualsOperatorStep<String>(ope
     @Serializable
     @SerialName("stringEqualTo")
     class Descriptor(val operand: String) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return StringEqualsOperatorStep(operand)
         }
     }

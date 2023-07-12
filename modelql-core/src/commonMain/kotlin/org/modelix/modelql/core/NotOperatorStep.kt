@@ -21,7 +21,7 @@ class NotOperatorStep() : MonoTransformingStep<Boolean, Boolean>() {
     @Serializable
     @SerialName("not")
     class NotDescriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return NotOperatorStep()
         }
     }

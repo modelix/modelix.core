@@ -22,7 +22,7 @@ class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
     @Serializable
     @SerialName("emptyStringIfNull")
     class Descriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return EmptyStringIfNullStep()
         }
     }

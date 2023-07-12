@@ -26,6 +26,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 
@@ -47,7 +48,7 @@ class ConceptReferenceTraversalStep() : MonoTransformingStep<INode?, ConceptRefe
     @Serializable
     @SerialName("untyped.conceptReference")
     class Descriptor() : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return ConceptReferenceTraversalStep()
         }
     }

@@ -30,7 +30,7 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
     @Serializable
     @SerialName("first")
     class FirstElementDescriptor : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return FirstElementStep<Any?>()
         }
     }

@@ -133,7 +133,7 @@ class HtmlBuilderTest {
 
         fun IAsyncBuilder<INode, UL>.renderNode() {
             val hashChildNodes = input.allChildren().isNotEmpty().getLater()
-            val childNodes = input.allChildren().prepareRecursive()
+            val childNodes = input.allChildren().prepareRecursive(this)
             val name = input.property("name").getLater()
             onSuccess {
                 li {

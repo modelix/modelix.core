@@ -20,7 +20,7 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
     @Serializable
     @SerialName("print")
     class Descriptor(val prefix: String = "") : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return PrintStep<Any?>(prefix)
         }
     }

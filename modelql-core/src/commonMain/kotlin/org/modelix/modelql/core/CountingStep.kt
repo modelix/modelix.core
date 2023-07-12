@@ -19,7 +19,7 @@ class CountingStep() : AggregationStep<Any?, Int>() {
     @Serializable
     @SerialName("count")
     class CountDescriptor() : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return CountingStep()
         }
     }

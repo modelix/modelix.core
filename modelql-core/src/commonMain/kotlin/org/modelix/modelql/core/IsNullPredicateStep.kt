@@ -21,7 +21,7 @@ class IsNullPredicateStep<In>() : MonoTransformingStep<In, Boolean>() {
     @Serializable
     @SerialName("isNull")
     class Descriptor() : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return IsNullPredicateStep<Any?>()
         }
     }

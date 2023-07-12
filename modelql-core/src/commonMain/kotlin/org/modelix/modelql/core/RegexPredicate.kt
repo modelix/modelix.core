@@ -21,7 +21,7 @@ class RegexPredicate(val regex: Regex) : MonoTransformingStep<String?, Boolean>(
     @Serializable
     @SerialName("regex")
     class Descriptor(val pattern: String) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return RegexPredicate(Regex(pattern))
         }
     }

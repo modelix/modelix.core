@@ -36,8 +36,8 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
     @Serializable
     @SerialName("flatMap")
     class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
-            return FlatMapStep<Any?, Any?>(query.createQuery() as FluxUnboundQuery<Any?, Any?>)
+        override fun createStep(context: QueryDeserializationContext): IStep {
+            return FlatMapStep<Any?, Any?>(query.createQuery(context) as FluxUnboundQuery<Any?, Any?>)
         }
     }
 

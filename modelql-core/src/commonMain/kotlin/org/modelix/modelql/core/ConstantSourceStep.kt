@@ -43,7 +43,7 @@ class StringSourceStep(element: String?) : ConstantSourceStep<String?>(element) 
     @Serializable
     @SerialName("stringMonoSource")
     class Descriptor(val element: String?) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return StringSourceStep(element)
         }
     }
@@ -63,7 +63,7 @@ class BooleanSourceStep(element: Boolean) : ConstantSourceStep<Boolean>(element)
     @Serializable
     @SerialName("booleanMonoSource")
     class Descriptor(val element: Boolean) : CoreStepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return BooleanSourceStep(element)
         }
     }

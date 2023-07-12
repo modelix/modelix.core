@@ -27,6 +27,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
@@ -51,7 +52,7 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
     @Serializable
     @SerialName("untyped.descendantsAndSelf")
     class WithSelfDescriptor() : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return DescendantsTraversalStep(true)
         }
     }
@@ -59,7 +60,7 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
     @Serializable
     @SerialName("untyped.descendants")
     class WithoutSelfDescriptor() : StepDescriptor() {
-        override fun createStep(): IStep {
+        override fun createStep(context: QueryDeserializationContext): IStep {
             return DescendantsTraversalStep(false)
         }
     }

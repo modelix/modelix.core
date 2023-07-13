@@ -96,8 +96,7 @@ interface INodeReferenceSerializer {
         }
 
         fun deserialize(serialized: String): INodeReference {
-            return tryDeserialize(serialized)
-                ?: throw RuntimeException("No deserializer found for: $serialized")
+            return tryDeserialize(serialized) ?: SerializedNodeReference(serialized)
         }
 
         fun tryDeserialize(serialized: String): INodeReference? {

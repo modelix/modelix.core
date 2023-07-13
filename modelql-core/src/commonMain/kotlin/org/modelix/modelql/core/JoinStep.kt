@@ -45,7 +45,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        return MultiplexedOutputSerializer(getProducers().map { it.getOutputSerializer(serializersModule).upcast() })
+        return MultiplexedOutputSerializer(this, getProducers().map { it.getOutputSerializer(serializersModule).upcast() })
     }
 
     override fun toString(): String {

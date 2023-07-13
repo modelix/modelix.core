@@ -19,8 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
-import org.modelix.model.api.SerializedNodeReference
-import org.modelix.model.api.serialize
+import org.modelix.model.api.INodeReference
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
@@ -31,13 +30,13 @@ import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 
-class NodeReferenceTraversalStep() : MonoTransformingStep<INode, SerializedNodeReference>() {
-    override fun transform(input: INode): SerializedNodeReference {
-        return SerializedNodeReference((input.reference.serialize()))
+class NodeReferenceTraversalStep() : MonoTransformingStep<INode, INodeReference>() {
+    override fun transform(input: INode): INodeReference {
+        return input.reference
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<SerializedNodeReference>> {
-        return serializersModule.serializer<SerializedNodeReference>().stepOutputSerializer()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INodeReference>> {
+        return serializersModule.serializer<INodeReference>().stepOutputSerializer()
     }
 
     override fun createDescriptor(context: QuerySerializationContext) = Descriptor()

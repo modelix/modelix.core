@@ -26,14 +26,14 @@ data class SimpleStepOutputSerializer<E>(val valueSerializer: KSerializer<E>) : 
         require(valueSerializer !is ZipOutputSerializer<*, *>)
     }
     override fun deserialize(decoder: Decoder): SimpleStepOutput<E> {
-        return SimpleStepOutput(decoder.decodeSerializableValue(valueSerializer))
+        return SimpleStepOutput(valueSerializer.deserialize(decoder))
     }
 
     override val descriptor: SerialDescriptor
         get() = valueSerializer.descriptor
 
     override fun serialize(encoder: Encoder, value: SimpleStepOutput<E>) {
-        encoder.encodeSerializableValue(valueSerializer, value.value)
+        valueSerializer.serialize(encoder, value.value)
     }
 }
 

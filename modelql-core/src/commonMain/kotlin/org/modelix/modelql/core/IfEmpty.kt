@@ -29,6 +29,7 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
         return MultiplexedOutputSerializer(
+            this,
             listOf(
                 getProducer().getOutputSerializer(serializersModule).upcast(),
                 alternative.getElementOutputSerializer(serializersModule).upcast()
@@ -36,13 +37,13 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
         )
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(alternative.createDescriptor(context))
 
     @Serializable
     @SerialName("ifEmpty")
-    class Descriptor : CoreStepDescriptor() {
+    class Descriptor(val alternative: QueryDescriptor) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return NullIfEmpty<Any?>()
+            return IfEmptyStep<Any?, Any?>(alternative.createQuery(context) as UnboundQuery<Unit, *, Any?>)
         }
     }
 

@@ -1,9 +1,9 @@
 package org.modelix.model.api
 
-import kotlinx.serialization.Serializable
+@Deprecated("renamed to NodeReference", ReplaceWith("NodeReference"))
+typealias SerializedNodeReference = NodeReference
 
-@Serializable
-data class SerializedNodeReference(val serialized: String) : INodeReference {
+data class NodeReference(val serialized: String) : INodeReference {
     override fun resolveIn(scope: INodeResolutionScope): INode? {
         val deserialized = INodeReferenceSerializer.tryDeserialize(serialized)
         if (deserialized != null) return deserialized.resolveIn(scope)

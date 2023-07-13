@@ -60,7 +60,11 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
             setBody(queryAsJson)
         }
         when (response.status) {
-            HttpStatusCode.OK -> return response.bodyAsText()
+            HttpStatusCode.OK -> {
+                val text = response.bodyAsText()
+                LOG.debug { "result: $text" }
+                return text
+            }
             else -> throw RuntimeException("Query failed: $query \n${response.status}\n${response.bodyAsText()}")
         }
     }

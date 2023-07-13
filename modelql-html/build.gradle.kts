@@ -5,8 +5,6 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
-apply(plugin = "kotlinx-atomicfu")
-
 kotlin {
     jvm()
     js(IR) {
@@ -25,10 +23,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(libs.kotlin.reflect)
                 implementation(libs.kotlin.logging)
-                implementation(libs.kotlin.serialization.json)
-                api(libs.kotlin.coroutines.core)
+                api(project(":modelql-core"))
             }
         }
         val commonTest by getting {
@@ -40,6 +36,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
+                api(libs.ktor.server.html.builder)
             }
         }
         val jvmTest by getting {
@@ -62,10 +59,11 @@ kotlin {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
     kotlinOptions {
         jvmTarget = "11"
-        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility", "-Xcontext-receivers")
     }
 }
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
     kotlinOptions {
+        freeCompilerArgs += listOf("-Xcontext-receivers")
     }
 }

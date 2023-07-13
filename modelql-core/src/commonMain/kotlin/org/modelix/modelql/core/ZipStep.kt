@@ -69,7 +69,7 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
         val elementSerializers: Array<KSerializer<IStepOutput<CommonIn>>> = producers.map {
             it.getOutputSerializer(serializersModule).upcast()
         }.toTypedArray()
-        return ZipOutputSerializer(elementSerializers, this)
+        return ZipOutputSerializer(elementSerializers)
     }
 
     private fun ZipNOutputC<CommonIn>.upcast(): Out = this as Out
@@ -196,32 +196,46 @@ class CombiningSequence<Common>(private val sequences: Array<Sequence<Common>>) 
     object UNINITIALIZED
 }
 
-class ZipOutputSerializer<CommonT, Out : ZipNOutputC<CommonT>>(val elementSerializers: Array<KSerializer<IStepOutput<CommonT>>>, val owner: IProducingStep<Out>) : KSerializer<ZipStepOutput<Out, CommonT>> {
+class ZipOutputSerializer<CommonT, Out : ZipNOutputC<CommonT>>(
+    val elementSerializers: Array<KSerializer<IStepOutput<CommonT>>>
+) : KSerializer<ZipStepOutput<Out, CommonT>> {
     @OptIn(ExperimentalSerializationApi::class)
     override fun deserialize(decoder: Decoder): ZipStepOutput<Out, CommonT> {
-        val values = Array<IStepOutput<CommonT>?>(elementSerializers.size) { null }
-        decoder.decodeStructure(descriptor) {
-            if (decodeSequentially()) {
-                for (i in elementSerializers.indices) {
-                    values[i] = decodeSerializableElement(descriptor, i, elementSerializers[i])
-                }
-            } else {
-                while (true) {
-                    val i = decodeElementIndex(descriptor)
-                    if (i == CompositeDecoder.DECODE_DONE) break
-                    values[i] = decodeSerializableElement(descriptor, i, elementSerializers[i])
+        if (elementSerializers.size == 1) {
+            return ZipStepOutput(listOf(elementSerializers.single().deserialize(decoder)))
+        } else {
+            val values = Array<IStepOutput<CommonT>?>(elementSerializers.size) { null }
+            decoder.decodeStructure(descriptor) {
+                if (decodeSequentially()) {
+                    for (i in elementSerializers.indices) {
+                        values[i] = decodeSerializableElement(descriptor, i, elementSerializers[i])
+                    }
+                } else {
+                    while (true) {
+                        val i = decodeElementIndex(descriptor)
+                        if (i == CompositeDecoder.DECODE_DONE) break
+                        values[i] = decodeSerializableElement(descriptor, i, elementSerializers[i])
+                    }
                 }
             }
+            return ZipStepOutput(values.map { it as IStepOutput<CommonT> })
         }
-        return ZipStepOutput(values.map { it as IStepOutput<CommonT> })
     }
 
-    override val descriptor: SerialDescriptor = ZipNOutputDesc(elementSerializers.map { it.descriptor }.toTypedArray())
+    override val descriptor: SerialDescriptor = if (elementSerializers.size == 1) {
+        elementSerializers.single().descriptor
+    } else {
+        ZipNOutputDesc(elementSerializers.map { it.descriptor }.toTypedArray())
+    }
 
     override fun serialize(encoder: Encoder, value: ZipStepOutput<Out, CommonT>) {
-        encoder.encodeCollection(descriptor, elementSerializers.size) {
-            value.values.forEachIndexed { index, elementValue ->
-                encodeSerializableElement(elementSerializers[index].descriptor, index, elementSerializers[index], elementValue)
+        if (elementSerializers.size == 1) {
+            elementSerializers.single().serialize(encoder, value.values.single())
+        } else {
+            encoder.encodeCollection(descriptor, elementSerializers.size) {
+                value.values.forEachIndexed { index, elementValue ->
+                    encodeSerializableElement(elementSerializers[index].descriptor, index, elementSerializers[index], elementValue)
+                }
             }
         }
     }

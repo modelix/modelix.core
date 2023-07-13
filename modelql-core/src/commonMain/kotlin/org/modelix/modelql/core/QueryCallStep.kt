@@ -33,14 +33,14 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
 
     override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
         return Descriptor(
-            queryRef.queryId ?: queryRef.query!!.id,
+            queryRef.getId(),
             (queryRef.takeIf { !context.hasQuery(it.getId()) }?.query as UnboundQuery<*, *, *>?)
                 ?.createDescriptor(context)
         )
     }
 
     override fun toString(): String {
-        return "${getProducer()}.callQuery(${queryRef.queryId})"
+        return "${getProducer()}.callQuery(${queryRef.getId()})"
     }
 
     @Serializable
@@ -48,8 +48,9 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
     class Descriptor(val queryId: Long, val query: QueryDescriptor? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             val queryRef = QueryReference(
-                query = query?.createQuery(context) as IUnboundQuery<Any?, Any?, Any?>?,
-                queryId = queryId
+                providedQuery = query?.createQuery(context) as IUnboundQuery<Any?, Any?, Any?>?,
+                queryId = queryId,
+                queryInitializer = null
             )
             context.register(queryRef)
             return QueryCallStep<Any?, Any?>(queryRef)
@@ -74,20 +75,18 @@ class RecursiveQuerySerializer<Out>(val query: IUnboundQuery<*, *, Out>) : KSeri
 fun <In, Out> buildMonoQuery(body: QueryBuilderContext<In, Out>.(IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
     val context = QueryBuilderContext<In, Out>()
     val query = IUnboundQuery.buildMono { body(context, it) }
-    context.queryReference.query = query
-    context.queryReference.queryId = query.id
+    context.queryReference.providedQuery = query
     return query
 }
 fun <In, Out> buildFluxQuery(body: QueryBuilderContext<In, Out>.(IMonoStep<In>) -> IFluxStep<Out>): IFluxUnboundQuery<In, Out> {
     val context = QueryBuilderContext<In, Out>()
     val query = IUnboundQuery.buildFlux { body(context, it) }
-    context.queryReference.query = query
-    context.queryReference.queryId = query.id
+    context.queryReference.providedQuery = query
     return query
 }
 
 class QueryBuilderContext<In, Out> {
-    val queryReference = QueryReference<IUnboundQuery<In, *, Out>>(null, null)
+    val queryReference = QueryReference<IUnboundQuery<In, *, Out>>(null, null, null)
     fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference).also { connect(it) }
 }
 

@@ -69,8 +69,13 @@ data class PortConnection(val producer: PortReference, val consumer: PortReferen
 @Serializable
 data class PortReference(val step: Int, val port: Int = 0)
 
-class QueryReference<Q : IUnboundQuery<*, *, *>>(var query: Q?, var queryId: Long?) {
-    fun getId(): Long = query?.id ?: queryId!!
+class QueryReference<Q : IUnboundQuery<*, *, *>>(
+    var providedQuery: Q?,
+    private var queryId: Long?,
+    private val queryInitializer: (() -> Q)?
+) {
+    val query: Q by lazy { providedQuery ?: queryInitializer!!() }
+    fun getId(): Long = queryId ?: query.id
 }
 
 class QuerySerializationContext {
@@ -96,8 +101,8 @@ class QueryDeserializationContext {
     fun resolveQueryReferences() {
         val id2query = queries.associateBy { it.id }
         queryReferences.forEach {
-            it.query = id2query[it.queryId]
-                ?: throw RuntimeException("query not found: ${it.queryId}")
+            it.providedQuery = id2query[it.getId()]
+                ?: throw RuntimeException("query not found: ${it.getId()}")
         }
     }
 }

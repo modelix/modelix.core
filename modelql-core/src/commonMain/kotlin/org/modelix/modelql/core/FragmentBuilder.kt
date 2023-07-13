@@ -23,13 +23,13 @@ interface IRecursiveFragmentBuilder<In, Context> : IFragmentBuilder<In, Context>
 interface IBoundFragment<in Context>
 
 fun <T, Context> IFragmentBuilder<T, Context>.castToInstance(): FragmentBuilder<T, Context> = this as FragmentBuilder<T, Context>
-fun <T, Context> IUnboundFragment<T, Context>.castToInstance(): FragmentBuilder<T, Context> = this as FragmentBuilder<T, Context>
+internal fun <T, Context> IUnboundFragment<T, Context>.castToInternal(): IUnboundFragmentInternal<T, Context> = this as IUnboundFragmentInternal<T, Context>
 
-class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context> {
+class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnboundFragmentInternal<E, Context> {
     override val input: QueryInput<E> = QueryInput()
     private val zipBuilder = ZipBuilder()
     private var resultHandlers = ArrayList<FragmentBody<Context>>()
-    private val queryReference = QueryReference<IMonoUnboundQuery<E, IZipOutput<*>>>(null, null)
+    override val queryReference = QueryReference<IMonoUnboundQuery<E, IZipOutput<*>>>(null, null, { getQuery() })
     private var query: IMonoUnboundQuery<E, IZipOutput<*>>? = null
     private var sealed = false
 
@@ -48,10 +48,7 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context> {
 
     fun seal() {
         sealed = true
-        query = MonoUnboundQuery(input, zipBuilder.compileOutputStep(), id = null).also {
-            queryReference.query = it
-            queryReference.queryId = it.id
-        }
+        query = MonoUnboundQuery(input, zipBuilder.compileOutputStep(), id = null)
     }
 
     fun compileMappingStep(it: IMonoStep<E>): IMonoStep<IZipOutput<*>> = it.map(getQuery())
@@ -59,7 +56,7 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context> {
     /**
      * Can be called multiple times for a list of results.
      */
-    fun processResult(result: IZipOutput<*>, context: Context) {
+    override fun processResult(result: IZipOutput<*>, context: Context) {
         zipBuilder.withResult(result) {
             resultHandlers.forEach { it.invoke(context) }
         }
@@ -98,10 +95,10 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context> {
 
     override fun <TIn, TContext> IFluxStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IBoundFragment<TContext> {
         val inputStep: IFluxStep<TIn> = this
-        val recursiveStep = QueryCallStep<TIn, IZipOutput<*>>(fragment.castToInstance().queryReference).also { inputStep.connect(it) }
+        val recursiveStep = QueryCallStep<TIn, IZipOutput<*>>(fragment.castToInternal().queryReference).also { inputStep.connect(it) }
         val outputStep = recursiveStep.toList()
         val request = zipBuilder.request(outputStep)
-        return BoundFragment<TIn, TContext>(fragment.castToInstance(), request)
+        return BoundFragment<TIn, TContext>(fragment.castToInternal(), request)
     }
 
     override fun bind(input: IMonoStep<E>): IBoundFragment<Context> {
@@ -114,11 +111,11 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context> {
         casted.iterate(this)
     }
 
-    private inner class BoundFragment<In, RequestContext>(val htmlBuilder: FragmentBuilder<In, RequestContext>, val request: IValueRequest<List<IZipOutput<*>>>) : IBoundFragment<RequestContext> {
+    private inner class BoundFragment<In, RequestContext>(val unboundFragment: IUnboundFragmentInternal<In, RequestContext>, val request: IValueRequest<List<IZipOutput<*>>>) : IBoundFragment<RequestContext> {
         fun getOwner(): FragmentBuilder<*, *> = this@FragmentBuilder
         fun iterate(context: RequestContext) {
             request.get().forEach { elementResult ->
-                htmlBuilder.processResult(elementResult, context)
+                unboundFragment.processResult(elementResult, context)
             }
         }
     }
@@ -135,4 +132,9 @@ fun <In, Context> buildModelQLFragment(body: IRecursiveFragmentBuilder<In, Conte
 
 interface IUnboundFragment<In, Context> {
     fun bind(input: IMonoStep<In>): IBoundFragment<Context>
+}
+
+internal interface IUnboundFragmentInternal<In, Context> {
+    val queryReference: QueryReference<IMonoUnboundQuery<In, IZipOutput<*>>>
+    fun processResult(result: IZipOutput<*>, context: Context)
 }

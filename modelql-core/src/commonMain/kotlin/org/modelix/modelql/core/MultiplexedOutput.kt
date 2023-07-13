@@ -1,8 +1,6 @@
 package org.modelix.modelql.core
 
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.NothingSerializer
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.CompositeDecoder
@@ -52,10 +50,5 @@ data class MultiplexedOutputSerializer<E>(
         encoder.encodeStructure(descriptor) {
             encodeSerializableElement(descriptor, value.muxIndex, serializers[value.muxIndex], value.output)
         }
-    }
-
-    companion object {
-        private val indexSerializer = Int.serializer()
-        private val dummySerializer = NothingSerializer()
     }
 }

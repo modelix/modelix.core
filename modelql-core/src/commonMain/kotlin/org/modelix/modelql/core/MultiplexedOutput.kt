@@ -29,15 +29,8 @@ data class MultiplexedOutputSerializer<E>(
                 while (true) {
                     val i = decodeElementIndex(descriptor)
                     if (i == CompositeDecoder.DECODE_DONE) break
-                    when (i) {
-                        0 -> muxIndex = decodeIntElement(descriptor, i)
-                        1 -> {
-                            val caseSerializer =
-                                getCaseSerializer(muxIndex ?: throw IllegalStateException("muxIndex expected first"))
-                            caseOutput = decodeSerializableElement(descriptor, i, caseSerializer)
-                        }
-                        else -> throw RuntimeException("Unexpected element $i")
-                    }
+                    caseOutput = decodeSerializableElement(descriptor, i, serializers[i])
+                    muxIndex = i
                 }
             }
             return MultiplexedOutput(
@@ -49,17 +42,15 @@ data class MultiplexedOutputSerializer<E>(
         }
     }
 
-    private fun getCaseSerializer(caseIndex: Int) = serializers[caseIndex]
-
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("whenStepOutput") {
-        element("muxIndex", indexSerializer.descriptor, isOptional = false)
-        element("output", dummySerializer.descriptor, isOptional = false)
+        serializers.forEachIndexed { index, serializer ->
+            element(index.toString(), serializer.descriptor, isOptional = true)
+        }
     }
 
     override fun serialize(encoder: Encoder, value: MultiplexedOutput<E>) {
         encoder.encodeStructure(descriptor) {
-            encodeIntElement(descriptor, 0, value.muxIndex)
-            encodeSerializableElement(descriptor, 1, getCaseSerializer(value.muxIndex), value.output)
+            encodeSerializableElement(descriptor, value.muxIndex, serializers[value.muxIndex], value.output)
         }
     }
 

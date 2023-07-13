@@ -187,7 +187,7 @@ class ModelQLTest {
                 }
             }.toList()
         }
-        println(result)
+        assertEquals(30, result.size)
     }
 
     @Test

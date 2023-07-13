@@ -15,6 +15,7 @@ import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.UnboundQuery
+import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.castToInstance
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.query
@@ -45,10 +46,11 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
 
     protected fun <T> deserialize(serializedJson: String, query: IUnboundQuery<*, T, *>): T {
         return ContextArea.withAdditionalContext(ModelQLArea(this)) {
-            json.decodeFromString(
+            VersionAndData.deserialize(
+                serializedJson,
                 query.getAggregationOutputSerializer(json.serializersModule),
-                serializedJson
-            ).value
+                json
+            ).data.value
         }
     }
 
@@ -56,7 +58,8 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
         val response = client.post(url) {
             LOG.debug { "query: " + query }
             val queryDescriptor = query.createDescriptor()
-            val queryAsJson = json.encodeToString(queryDescriptor)
+            val versionAndQuery = VersionAndData(queryDescriptor)
+            val queryAsJson = json.encodeToString(versionAndQuery)
             setBody(queryAsJson)
         }
         when (response.status) {

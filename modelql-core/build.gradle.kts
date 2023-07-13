@@ -30,6 +30,7 @@ kotlin {
                 implementation(libs.kotlin.serialization.json)
                 api(libs.kotlin.coroutines.core)
             }
+            kotlin.srcDir(buildDir.resolve("version_gen"))
         }
         val commonTest by getting {
             dependencies {
@@ -68,4 +69,23 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
     kotlinOptions {
     }
+}
+
+val generateVersionVariable by tasks.creating {
+    doLast {
+        val outputDir = buildDir.resolve("version_gen/org/modelix/modelql/core")
+        outputDir.mkdirs()
+        outputDir.resolve("Version.kt").writeText(
+            """
+            package org.modelix.modelql.core
+            
+            const val modelqlVersion: String = "$version"
+            
+            """.trimIndent()
+        )
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
+    dependsOn(generateVersionVariable)
 }

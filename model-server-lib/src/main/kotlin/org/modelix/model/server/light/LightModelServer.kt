@@ -44,6 +44,7 @@ import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
+import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDescriptor
@@ -99,6 +100,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
         fun builder(): LightModelServerBuilder = LightModelServerBuilder()
     }
 
+    var version: String? = null
     private var server: NettyApplicationEngine? = null
     private val sessions: MutableSet<SessionData> = Collections.synchronizedSet(HashSet())
     private val ignoredRolesCache: MutableMap<IConceptReference, IgnoredRoles> = HashMap()
@@ -181,6 +183,9 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                     sessions.remove(session)
                 }
             }
+            get("/version") {
+                call.respondText(version ?: "unknown")
+            }
             get("/health") {
                 val output = StringBuilder()
                 try {
@@ -223,7 +228,8 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
             post("query") {
                 try {
                     val serializedQuery = call.receiveText()
-                    val queryDescriptor = UntypedModelQL.json.decodeFromString<QueryDescriptor>(serializedQuery)
+                    val json = UntypedModelQL.json
+                    val queryDescriptor = VersionAndData.deserialize(serializedQuery, QueryDescriptor.serializer(), json).data
                     val query = queryDescriptor.createQuery() as IMonoUnboundQuery<INode, Any?>
                     LOG.debug { "query: $query" }
                     val nodeResolutionScope: INodeResolutionScope = getArea()
@@ -239,11 +245,14 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                     } else {
                         getArea().executeRead(transactionBody)
                     }
-                    val serializer: KSerializer<IStepOutput<Any?>> = query.getAggregationOutputSerializer(UntypedModelQL.json.serializersModule).upcast()
-                    val serializedResult = UntypedModelQL.json.encodeToString(serializer, result)
-                    call.respond(serializedResult)
+                    val serializer: KSerializer<IStepOutput<Any?>> =
+                        query.getAggregationOutputSerializer(json.serializersModule).upcast()
+
+                    val versionAndResult = VersionAndData(result)
+                    val serializedResult = json.encodeToString(VersionAndData.serializer(serializer), versionAndResult)
+                    call.respondText(text = serializedResult, contentType = ContentType.Application.Json)
                 } catch (ex: Throwable) {
-                    call.respond(HttpStatusCode.InternalServerError, ex.stackTraceToString())
+                    call.respondText(text = ex.stackTraceToString(), status = HttpStatusCode.InternalServerError)
                 }
             }
         }

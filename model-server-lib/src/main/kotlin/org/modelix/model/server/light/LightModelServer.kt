@@ -48,6 +48,7 @@ import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDescriptor
+import org.modelix.modelql.core.modelqlVersion
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.createQueryExecutor
@@ -100,7 +101,6 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
         fun builder(): LightModelServerBuilder = LightModelServerBuilder()
     }
 
-    var version: String? = null
     private var server: NettyApplicationEngine? = null
     private val sessions: MutableSet<SessionData> = Collections.synchronizedSet(HashSet())
     private val ignoredRolesCache: MutableMap<IConceptReference, IgnoredRoles> = HashMap()
@@ -184,7 +184,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                 }
             }
             get("/version") {
-                call.respondText(version ?: "unknown")
+                call.respondText(modelqlVersion ?: "unknown")
             }
             get("/health") {
                 val output = StringBuilder()

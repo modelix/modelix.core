@@ -36,7 +36,7 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         val originalIdToRef: MutableMap<String, INodeReference> = buildRefIndex(allNodes)
         syncAllReferences(allNodes, originalIdToSpec, originalIdToRef)
 
-        deleteAllExtraChildren(allNodes, originalIdToSpec)
+        deleteAllExtraChildren(root, originalIdToSpec)
     }
 
     private fun buildExistingIndex(allNodes: List<INode>): MutableMap<String, INode> {
@@ -250,17 +250,18 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
 
     }
 
-    private fun deleteAllExtraChildren(allNodes: List<INode>, originalIdToSpec: MutableMap<String, NodeData>) {
+    private fun deleteAllExtraChildren(root: INode, originalIdToSpec: MutableMap<String, NodeData>) {
         val toBeRemoved = mutableListOf<INode>()
-        allNodes.forEach { node ->
-            node.allChildren.forEach {
-                if (!originalIdToSpec.containsKey(it.originalId())) {
-                    toBeRemoved.add(it)
-                }
+        root.allChildren.forEach {
+            if (!originalIdToSpec.containsKey(it.originalId())) {
+                toBeRemoved.add(it)
             }
         }
-        toBeRemoved.asReversed().forEach {// delete bottom-up
+        toBeRemoved.forEach {
             it.parent?.removeChildWithStats(it)
+        }
+        root.allChildren.forEach {
+            deleteAllExtraChildren(it, originalIdToSpec)
         }
     }
 

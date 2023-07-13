@@ -122,19 +122,38 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
 }
 
 fun <In, Context> buildModelQLFragment(body: IRecursiveFragmentBuilder<In, Context>.() -> Unit): IUnboundFragment<In, Context> {
-    val builder = FragmentBuilder<In, Context>()
-    with(builder) {
-        body()
+    return LazyFragment {
+        val builder = FragmentBuilder<In, Context>()
+        with(builder) {
+            body()
+        }
+        builder.seal()
+        builder
     }
-    builder.seal()
-    return builder
 }
 
 interface IUnboundFragment<In, Context> {
     fun bind(input: IMonoStep<In>): IBoundFragment<Context>
 }
 
-internal interface IUnboundFragmentInternal<In, Context> {
+internal interface IUnboundFragmentInternal<In, Context> : IUnboundFragment<In, Context> {
     val queryReference: QueryReference<IMonoUnboundQuery<In, IZipOutput<*>>>
     fun processResult(result: IZipOutput<*>, context: Context)
+}
+
+private class LazyFragment<In, Context>(fragmentBuilder: () -> FragmentBuilder<In, Context>) : IUnboundFragmentInternal<In, Context> {
+    private val actualFragment: FragmentBuilder<In, Context> by lazy { fragmentBuilder() }
+    override val queryReference: QueryReference<IMonoUnboundQuery<In, IZipOutput<*>>> = QueryReference(
+        null,
+        null,
+        { actualFragment.getQuery() }
+    )
+
+    override fun bind(input: IMonoStep<In>): IBoundFragment<Context> {
+        return actualFragment.bind(input)
+    }
+
+    override fun processResult(result: IZipOutput<*>, context: Context) {
+        return actualFragment.processResult(result, context)
+    }
 }

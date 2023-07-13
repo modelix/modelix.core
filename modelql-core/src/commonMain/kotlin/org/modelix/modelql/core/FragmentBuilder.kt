@@ -2,13 +2,13 @@ package org.modelix.modelql.core
 
 typealias FragmentBody<ContextT> = ContextT.() -> Unit
 
-interface IFragmentBuilder<In, Context> : IUnboundFragment<In, Context> {
+interface IFragmentBuilder<out In, out Context> {
     val input: IMonoStep<In>
     fun onSuccess(body: FragmentBody<Context>)
     fun <T> IMonoStep<T>.getLater(): IValueRequest<T>
 
-    fun <T, TContext> IMonoStep<T>.buildFragment(body: IFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext>
-    fun <T, TContext> IFluxStep<T>.buildFragment(body: IFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext>
+    fun <T, TContext> IMonoStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext>
+    fun <T, TContext> IFluxStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext>
 
     @Deprecated("renamed to insertFragment", ReplaceWith("insertFragment(fragment)"))
     fun <TContext> TContext.applyFragment(fragment: IBoundFragment<TContext>)
@@ -18,12 +18,14 @@ interface IFragmentBuilder<In, Context> : IUnboundFragment<In, Context> {
     fun <TIn, TContext> IFluxStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IBoundFragment<TContext>
 }
 
+interface IRecursiveFragmentBuilder<In, Context> : IFragmentBuilder<In, Context>, IUnboundFragment<In, Context>
+
 interface IBoundFragment<in Context>
 
 fun <T, Context> IFragmentBuilder<T, Context>.castToInstance(): FragmentBuilder<T, Context> = this as FragmentBuilder<T, Context>
 fun <T, Context> IUnboundFragment<T, Context>.castToInstance(): FragmentBuilder<T, Context> = this as FragmentBuilder<T, Context>
 
-class FragmentBuilder<E, Context> : IFragmentBuilder<E, Context>, IUnboundFragment<E, Context> {
+class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context> {
     override val input: QueryInput<E> = QueryInput()
     private val zipBuilder = ZipBuilder()
     private var resultHandlers = ArrayList<FragmentBody<Context>>()
@@ -78,11 +80,11 @@ class FragmentBuilder<E, Context> : IFragmentBuilder<E, Context>, IUnboundFragme
         return zipBuilder.request(this)
     }
 
-    override fun <T, TContext> IMonoStep<T>.buildFragment(body: IFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext> {
+    override fun <T, TContext> IMonoStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext> {
         return asFlux().buildFragment(body)
     }
 
-    override fun <T, TContext> IFluxStep<T>.buildFragment(body: IFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext> {
+    override fun <T, TContext> IFluxStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext> {
         val childBuilder: FragmentBuilder<T, TContext> = FragmentBuilder<T, TContext>().apply(body)
         childBuilder.seal()
         val outputStep: IMonoStep<List<IZipOutput<*>>> = this.map(childBuilder.getQuery()).toList()

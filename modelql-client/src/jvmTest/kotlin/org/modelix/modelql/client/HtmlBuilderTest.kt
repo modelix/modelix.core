@@ -25,6 +25,7 @@ import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.FragmentBuilder
 import org.modelix.modelql.core.IFragmentBuilder
+import org.modelix.modelql.core.IRecursiveFragmentBuilder
 import org.modelix.modelql.core.buildModelQLFragment
 import org.modelix.modelql.core.isNotEmpty
 import org.modelix.modelql.core.mapLocal
@@ -131,7 +132,7 @@ class HtmlBuilderTest {
             }
         }
 
-        fun IFragmentBuilder<INode, UL>.renderNode() {
+        fun IRecursiveFragmentBuilder<INode, UL>.renderNode() {
             val hashChildNodes = input.allChildren().isNotEmpty().getLater()
             val childNodes = input.allChildren().bindFragment(this)
             val name = input.property("name").getLater()

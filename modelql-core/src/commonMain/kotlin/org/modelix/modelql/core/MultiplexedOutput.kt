@@ -42,7 +42,7 @@ data class MultiplexedOutputSerializer<E>(
         }
     }
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("whenStepOutput") {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("multiplexed") {
         serializers.forEachIndexed { index, serializer ->
             element(index.toString(), serializer.descriptor, isOptional = true)
         }

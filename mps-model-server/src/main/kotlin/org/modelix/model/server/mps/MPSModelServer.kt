@@ -29,7 +29,7 @@ import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.server.light.LightModelServer
 
 @Service(Service.Level.APP)
-class MPSModelServer : Disposable, DynamicPluginListener, AppLifecycleListener {
+class MPSModelServer : Disposable {
     init {
         println("modelix server created")
     }
@@ -99,19 +99,16 @@ class MPSModelServer : Disposable, DynamicPluginListener, AppLifecycleListener {
 
 class MPSModelServerDynamicPluginListener : DynamicPluginListener {
     override fun pluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        println("plugin loaded $this")
         service<MPSModelServer>().ensureStarted()
     }
 }
 
 class MPSModelServerAppLifecycleListener : AppLifecycleListener {
     override fun appStarting(projectFromCommandLine: Project?) {
-        println("appStarting $this")
         service<MPSModelServer>().ensureStarted()
     }
 
     override fun appStarted() {
-        println("appStarted $this")
         service<MPSModelServer>().ensureStarted()
     }
 }

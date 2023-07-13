@@ -29,13 +29,14 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         val addedNodes = addAllMissingChildren(root, originalIdToExisting, originalIdToSpec)
         syncAllProperties(addedNodes, originalIdToSpec)
 
-
         val allNodes = allExistingNodes + addedNodes
+
         handleAllMovesAcrossParents(allNodes, originalIdToExisting, originalIdToSpec)
+
         val originalIdToRef: MutableMap<String, INodeReference> = buildRefIndex(allNodes)
         syncAllReferences(allNodes, originalIdToSpec, originalIdToRef)
-        deleteAllExtraChildren(allNodes, originalIdToSpec)
 
+        deleteAllExtraChildren(allNodes, originalIdToSpec)
     }
 
     private fun buildExistingIndex(allNodes: List<INode>): MutableMap<String, INode> {
@@ -167,22 +168,23 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
 
         val targetIndices = HashMap<String?, Int>(nodeData.children.size)
         for (child in toBeSortedSpec) {
-
             val childrenInRole = existingChildren.filter { it.roleInParent == child.role }
-            val baseIndex = child.getIndexWithinRole(nodeData).coerceAtMost(childrenInRole.lastIndex)
+            val baseIndex = child.getIndexWithinRole(nodeData)
             var offset = 0
-            offset += childrenInRole.slice(0..baseIndex).count {
+            offset += childrenInRole.slice(0..baseIndex.coerceAtMost(childrenInRole.lastIndex)).count {
                 !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
             }
-            offset -= childrenInRole.slice(0..baseIndex).count {
-                !existingIds.contains(it.originalId()) // node will be moved here
-            }
+            offset -= specifiedChildren
+                .filter { it.role == child.role }
+                .slice(0..baseIndex.coerceIn(0..specifiedChildren.lastIndex))
+                .count {
+                    !existingIds.contains(it.originalId()) // node will be moved here
+                }
             val index = (baseIndex + offset).coerceIn(0..childrenInRole.size)
             targetIndices[child.originalId()] = index
         }
 
         existingChildren.forEach { child ->
-
             val currentIndex = child.index()
             val targetRole = originalIdToSpec[child.originalId()]?.role
             val targetIndex = targetIndices[child.originalId()]
@@ -197,36 +199,55 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         originalIdToExisting: MutableMap<String, INode>,
         originalIdToSpec: MutableMap<String, NodeData>
     ) {
-        allNodes.forEach {
-            originalIdToSpec[it.originalId()]?.let { spec -> handleMoveAcrossParents(it, spec, originalIdToExisting, originalIdToSpec) }
+        val moves = collectMovesAcrossParents(allNodes, originalIdToExisting, originalIdToSpec)
+        while (moves.isNotEmpty()) {
+            val nextMove = moves.first { !it.nodeToBeMoved.getDescendants(false).contains(it.targetParent) }
+            performMoveAcrossParents(nextMove.targetParent, nextMove.nodeToBeMoved, originalIdToSpec)
+            moves.remove(nextMove)
         }
     }
 
-    private fun handleMoveAcrossParents(
-        node: INode,
-        nodeData: NodeData,
+    private fun collectMovesAcrossParents(
+        allNodes: List<INode>,
         originalIdToExisting: MutableMap<String, INode>,
         originalIdToSpec: MutableMap<String, NodeData>
-    ) {
+    ): MutableList<MoveAcrossParents> {
+        val movesAcrossParents = mutableListOf<MoveAcrossParents>()
+        allNodes.forEach {node ->
+            val nodeData = originalIdToSpec[node.originalId()] ?: return@forEach
 
-        val existingChildren = node.allChildren.toList()
-        val missingIds = nodeData.children.map { it.originalId() }.toSet()
-            .subtract(node.allChildren.map { it.originalId() }.toSet())
-        val toBeMovedHere = missingIds
-            .filter { originalIdToSpec.containsKey(it) }
-            .mapNotNull { originalIdToExisting[it] }
+            val missingIds = nodeData.children.map { it.originalId() }.toSet()
+                .subtract(node.allChildren.map { it.originalId() }.toSet())
+            val toBeMovedHere = missingIds
+                .filter { originalIdToSpec.containsKey(it) }
+                .mapNotNull { originalIdToExisting[it] }
 
-        toBeMovedHere.forEach {nodeToBeMoved ->
-            val spec = originalIdToSpec[nodeToBeMoved.originalId()]!!
-            val childrenInRole = existingChildren.filter { it.roleInParent == spec.role }
-            val baseTargetIndex = spec.getIndexWithinRole(nodeData).coerceAtMost(childrenInRole.size)
-            val offset = existingChildren.slice(0 until  baseTargetIndex).count {
-                !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
+            toBeMovedHere.forEach {
+                movesAcrossParents.add(MoveAcrossParents(node, it))
             }
-            val targetIndex = (baseTargetIndex + offset).coerceIn(0..childrenInRole.size)
-
-            node.moveChildWithStats(spec.role, targetIndex, nodeToBeMoved)
         }
+        return movesAcrossParents
+    }
+
+    private data class MoveAcrossParents(val targetParent: INode, val nodeToBeMoved: INode)
+
+    private fun performMoveAcrossParents(
+        node: INode,
+        toBeMovedHere: INode,
+        originalIdToSpec: MutableMap<String, NodeData>
+    ) {
+        val nodeData = originalIdToSpec[node.originalId()] ?: return
+        val existingChildren = node.allChildren.toList()
+        val spec = originalIdToSpec[toBeMovedHere.originalId()]!!
+        val childrenInRole = existingChildren.filter { it.roleInParent == spec.role }
+        val baseTargetIndex = spec.getIndexWithinRole(nodeData).coerceAtMost(childrenInRole.size)
+        val offset = childrenInRole.slice(0 until  baseTargetIndex).count {
+            !originalIdToSpec.containsKey(it.originalId()) // node will be deleted
+        }
+        val targetIndex = (baseTargetIndex + offset).coerceIn(0..childrenInRole.size)
+
+        node.moveChildWithStats(spec.role, targetIndex, toBeMovedHere)
+
     }
 
     private fun deleteAllExtraChildren(allNodes: List<INode>, originalIdToSpec: MutableMap<String, NodeData>) {

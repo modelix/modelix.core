@@ -177,13 +177,13 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
 
 class TypedNodeSerializer<Typed : ITypedNode>(val nodeClass: KClass<out Typed>, val untypedSerializer: KSerializer<INode>) : KSerializer<Typed> {
     override fun deserialize(decoder: Decoder): Typed {
-        return decoder.decodeSerializableValue(untypedSerializer).typed(nodeClass)
+        return untypedSerializer.deserialize(decoder).typed(nodeClass)
     }
 
     override val descriptor: SerialDescriptor = untypedSerializer.descriptor
 
     override fun serialize(encoder: Encoder, value: Typed) {
-        encoder.encodeSerializableValue(untypedSerializer, value.untyped())
+        untypedSerializer.serialize(encoder, value.untyped())
     }
 }
 

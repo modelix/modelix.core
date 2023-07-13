@@ -124,7 +124,7 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context> {
     }
 }
 
-fun <In, Context> buildModelQLFragment(body: IFragmentBuilder<In, Context>.() -> Unit): IUnboundFragment<In, Context> {
+fun <In, Context> buildModelQLFragment(body: IRecursiveFragmentBuilder<In, Context>.() -> Unit): IUnboundFragment<In, Context> {
     val builder = FragmentBuilder<In, Context>()
     with(builder) {
         body()

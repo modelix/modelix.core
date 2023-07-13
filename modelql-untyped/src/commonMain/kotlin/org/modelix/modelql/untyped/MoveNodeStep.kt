@@ -12,6 +12,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 
@@ -32,7 +33,7 @@ class MoveNodeStep(val role: String?, val index: Int) :
         return input
     }
 
-    override fun createDescriptor(): StepDescriptor {
+    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
         return Descriptor(role, index)
     }
 

@@ -69,7 +69,17 @@ data class PortConnection(val producer: PortReference, val consumer: PortReferen
 @Serializable
 data class PortReference(val step: Int, val port: Int = 0)
 
-class QueryReference<Q : IUnboundQuery<*, *, *>>(var query: Q?, var queryId: Long?)
+class QueryReference<Q : IUnboundQuery<*, *, *>>(var query: Q?, var queryId: Long?) {
+    fun getId(): Long = query?.id ?: queryId!!
+}
+
+class QuerySerializationContext {
+    private val queries = HashMap<Long, UnboundQuery<Any?, Any?, Any?>>()
+    fun hasQuery(id: Long): Boolean = queries.containsKey(id)
+    fun registerQuery(query: UnboundQuery<*, *, *>) {
+        queries[query.id] = query as UnboundQuery<Any?, Any?, Any?>
+    }
+}
 
 class QueryDeserializationContext {
     private val queryReferences = ArrayList<QueryReference<IUnboundQuery<Any?, Any?, Any?>>>()

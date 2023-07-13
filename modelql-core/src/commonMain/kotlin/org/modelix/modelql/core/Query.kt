@@ -334,8 +334,10 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
             .filter { it.getConsumers().isEmpty() }
     }
 
-    fun createDescriptor(): QueryDescriptor {
-        val builder = QueryDescriptorBuilder()
+    fun createDescriptor(): QueryDescriptor = createDescriptor(QuerySerializationContext())
+    fun createDescriptor(context: QuerySerializationContext): QueryDescriptor {
+        context.registerQuery(this)
+        val builder = QueryDescriptorBuilder(context)
         builder.load(getAllSteps().asSequence())
         return QueryDescriptor(
             builder.stepDescriptors.values.toList(),
@@ -379,7 +381,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                 subclass(org.modelix.modelql.core.OrOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.PrintStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.QueryInput.Descriptor::class)
-                subclass(org.modelix.modelql.core.RecursiveQueryStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.QueryCallStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.RegexPredicate.Descriptor::class)
                 subclass(org.modelix.modelql.core.SetCollectorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.SingleStep.Descriptor::class)
@@ -410,12 +412,12 @@ class SinglePathFlowInstantiationContext(val queryInput: QueryInput<*>, val inpu
     }
 }
 
-private class QueryDescriptorBuilder {
+private class QueryDescriptorBuilder(val context: QuerySerializationContext) {
     val stepDescriptors = LinkedHashMap<IStep, StepDescriptor>()
     val connections = LinkedHashSet<PortConnection>()
 
     fun createStep(step: IStep): StepDescriptor {
-        val newDescriptor = step.createDescriptor()
+        val newDescriptor = step.createDescriptor(context)
         newDescriptor.id = stepDescriptors.size
         stepDescriptors[step] = newDescriptor
         return newDescriptor
@@ -489,7 +491,7 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     override fun canBeEmpty(): Boolean = false
     override fun canBeMultiple(): Boolean = false
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("input")

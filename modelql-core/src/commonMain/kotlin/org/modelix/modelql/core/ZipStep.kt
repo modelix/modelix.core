@@ -55,7 +55,7 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
         return producers
     }
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("zip")
@@ -129,7 +129,7 @@ class AllowEmptyStep<E>() : IdentityStep<E>() {
         return "${getProducer()}.allowEmpty()"
     }
 
-    override fun createDescriptor(): StepDescriptor {
+    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
         return Descriptor()
     }
 
@@ -157,7 +157,7 @@ class AssertNotEmptyStep<E>() : IdentityStep<E>() {
         return "${getProducer()}.assertNotEmpty()"
     }
 
-    override fun createDescriptor(): StepDescriptor {
+    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
         return Descriptor()
     }
 

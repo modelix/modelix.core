@@ -16,7 +16,7 @@ class IsNullPredicateStep<In>() : MonoTransformingStep<In, Boolean>() {
         return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("isNull")

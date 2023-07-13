@@ -29,6 +29,7 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
@@ -48,7 +49,7 @@ class AllReferencesTraversalStep() : FluxTransformingStep<INode, INode>(), IMono
         return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("untyped.allReferenceTargets")

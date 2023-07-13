@@ -21,7 +21,7 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
         return input
     }
 
-    override fun createDescriptor() = OrNullDescriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = OrNullDescriptor()
 
     @Serializable
     @SerialName("orNull")

@@ -27,6 +27,7 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 
@@ -39,7 +40,7 @@ class ConceptReferenceTraversalStep() : MonoTransformingStep<INode?, ConceptRefe
         return serializersModule.serializer<ConceptReference>().nullable.stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     override fun toString(): String {
         return "${getProducers().single()}.conceptReference()"

@@ -23,9 +23,9 @@ import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
-import org.modelix.modelql.core.AsyncBuilder
-import org.modelix.modelql.core.IAsyncBuilder
-import org.modelix.modelql.core.buildModelQLTemplate
+import org.modelix.modelql.core.FragmentBuilder
+import org.modelix.modelql.core.IFragmentBuilder
+import org.modelix.modelql.core.buildModelQLFragment
 import org.modelix.modelql.core.isNotEmpty
 import org.modelix.modelql.core.mapLocal
 import org.modelix.modelql.untyped.allChildren
@@ -63,7 +63,7 @@ class HtmlBuilderTest {
     fun modular() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
 
-        val modelTemplate = buildModelQLTemplate<INode, FlowContent> {
+        val modelTemplate = buildModelQLFragment<INode, FlowContent> {
             val name = input.property("name").getLater()
             onSuccess {
                 div {
@@ -76,23 +76,23 @@ class HtmlBuilderTest {
 
         fun HtmlBuilder<INode>.renderModule() {
             val name = input.property("name").getLater()
-            val models = input.children("models").prepare(modelTemplate)
+            val models = input.children("models").bindFragment(modelTemplate)
             onSuccess {
                 div {
                     h1 {
                         +"Module: ${name.get()}"
                     }
-                    applyTemplate(models)
+                    insertFragment(models)
                 }
             }
         }
 
         fun HtmlBuilder<INode>.renderRepository() {
-            val modules = input.children("modules").prepareFragment {
+            val modules = input.children("modules").buildFragment {
                 renderModule()
             }
             onSuccess {
-                applyFragment(modules)
+                insertFragment(modules)
             }
         }
 
@@ -107,7 +107,7 @@ class HtmlBuilderTest {
     fun recursive() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
 
-        val modelTemplate = buildModelQLTemplate<INode, FlowContent> {
+        val modelTemplate = buildModelQLFragment<INode, FlowContent> {
             val name = input.property("name").getLater()
             onSuccess {
                 div {
@@ -120,27 +120,27 @@ class HtmlBuilderTest {
 
         fun HtmlBuilder<INode>.renderModule() {
             val name = input.property("name").getLater()
-            val models = input.children("models").prepare(modelTemplate)
+            val models = input.children("models").bindFragment(modelTemplate)
             onSuccess {
                 div {
                     h1 {
                         +"Module: ${name.get()}"
                     }
-                    applyTemplate(models)
+                    insertFragment(models)
                 }
             }
         }
 
-        fun IAsyncBuilder<INode, UL>.renderNode() {
+        fun IFragmentBuilder<INode, UL>.renderNode() {
             val hashChildNodes = input.allChildren().isNotEmpty().getLater()
-            val childNodes = input.allChildren().prepareRecursive(this)
+            val childNodes = input.allChildren().bindFragment(this)
             val name = input.property("name").getLater()
             onSuccess {
                 li {
                     +name.get().toString()
                     if (hashChildNodes.get()) {
                         ul {
-                            applyFragment(childNodes)
+                            insertFragment(childNodes)
                         }
                     }
                 }
@@ -148,10 +148,10 @@ class HtmlBuilderTest {
         }
 
         val actual = client.getRootNode().queryAndBuildHtml {
-            val renderedNode = input.prepareFragment<INode, UL> { renderNode() }
+            val renderedNode = input.buildFragment<INode, UL> { renderNode() }
             onSuccess {
                 ul {
-                    applyFragment(renderedNode)
+                    insertFragment(renderedNode)
                 }
             }
         }
@@ -160,12 +160,13 @@ class HtmlBuilderTest {
     }
 }
 
-typealias HtmlBuilder<In> = IAsyncBuilder<In, FlowContent>
+typealias HtmlBuilder<In> = IFragmentBuilder<In, FlowContent>
 
 suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String {
     val query = buildQuery<String> { repository ->
-        val htmlBuilder = AsyncBuilder<INode, FlowContent>()
+        val htmlBuilder = FragmentBuilder<INode, FlowContent>()
         htmlBuilder.apply(body)
+        htmlBuilder.seal()
         htmlBuilder.compileMappingStep(repository).mapLocal { result ->
             createHTML(prettyPrint = false).html {
                 body {

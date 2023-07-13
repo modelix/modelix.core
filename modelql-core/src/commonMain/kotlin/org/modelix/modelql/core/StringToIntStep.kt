@@ -15,7 +15,7 @@ class StringToIntStep : MonoTransformingStep<String?, Int>() {
         return input?.toInt() ?: 0
     }
 
-    override fun createDescriptor(): StepDescriptor {
+    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
         return Descriptor()
     }
 

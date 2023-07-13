@@ -36,7 +36,7 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
         )
     }
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("ifEmpty")

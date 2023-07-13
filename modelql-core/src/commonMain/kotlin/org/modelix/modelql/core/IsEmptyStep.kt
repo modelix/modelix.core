@@ -17,7 +17,7 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
 
     override fun aggregate(input: Sequence<IStepOutput<Any?>>): IStepOutput<Boolean> = input.none().asStepOutput()
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("isEmpty")

@@ -9,7 +9,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
 
-class RecursiveQueryStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, *, Out>>) : TransformingStep<In, Out>(), IFluxStep<Out>, IMonoStep<Out> {
+class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, *, Out>>) : TransformingStep<In, Out>(), IFluxStep<Out>, IMonoStep<Out> {
     override fun validate() {
         super<TransformingStep>.validate()
     }
@@ -31,24 +31,28 @@ class RecursiveQueryStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery
 
     override fun requiresSingularQueryInput(): Boolean = true
 
-    override fun createDescriptor(): StepDescriptor {
-        return Descriptor(queryRef.queryId!!)
+    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+        return Descriptor(
+            queryRef.queryId ?: queryRef.query!!.id,
+            (queryRef.takeIf { !context.hasQuery(it.getId()) }?.query as UnboundQuery<*, *, *>?)
+                ?.createDescriptor(context)
+        )
     }
 
     override fun toString(): String {
-        return "${getProducer()}.mapRecursive()"
+        return "${getProducer()}.callQuery(${queryRef.queryId})"
     }
 
     @Serializable
-    @SerialName("mapRecursive")
-    class Descriptor(val queryId: Long) : StepDescriptor() {
+    @SerialName("queryCall")
+    class Descriptor(val queryId: Long, val query: QueryDescriptor? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             val queryRef = QueryReference(
-                query = null as IUnboundQuery<Any?, Any?, Any?>?,
+                query = query?.createQuery(context) as IUnboundQuery<Any?, Any?, Any?>?,
                 queryId = queryId
             )
             context.register(queryRef)
-            return RecursiveQueryStep<Any?, Any?>(queryRef)
+            return QueryCallStep<Any?, Any?>(queryRef)
         }
     }
 }
@@ -84,13 +88,13 @@ fun <In, Out> buildFluxQuery(body: QueryBuilderContext<In, Out>.(IMonoStep<In>) 
 
 class QueryBuilderContext<In, Out> {
     val queryReference = QueryReference<IUnboundQuery<In, *, Out>>(null, null)
-    fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = RecursiveQueryStep<In, Out>(queryReference).also { connect(it) }
+    fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference).also { connect(it) }
 }
 
 fun <In, Out> IMonoStep<In>.callQuery(ref: QueryReference<IMonoUnboundQuery<In, Out>>): IMonoStep<Out> {
-    return RecursiveQueryStep<In, Out>(ref).also { connect(it) }
+    return QueryCallStep<In, Out>(ref).also { connect(it) }
 }
 
 fun <In, Out> IMonoStep<In>.callQuery(ref: QueryReference<IFluxUnboundQuery<In, Out>>): IFluxStep<Out> {
-    return RecursiveQueryStep<In, Out>(ref).also { connect(it) }
+    return QueryCallStep<In, Out>(ref).also { connect(it) }
 }

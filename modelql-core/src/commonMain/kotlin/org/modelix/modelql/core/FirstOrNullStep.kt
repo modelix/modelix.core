@@ -24,7 +24,7 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
         return getProducer().getOutputSerializer(serializersModule).upcast()
     }
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("firstOrNull")

@@ -31,6 +31,7 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepOutput
@@ -165,7 +166,7 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
         return input.typed(nodeClass)
     }
 
-    override fun createDescriptor(): StepDescriptor {
+    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
         return IdentityStep.IdentityStepDescriptor()
     }
 
@@ -199,7 +200,7 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
         return input.unwrap()
     }
 
-    override fun createDescriptor(): StepDescriptor {
+    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
         return IdentityStep.IdentityStepDescriptor()
     }
 

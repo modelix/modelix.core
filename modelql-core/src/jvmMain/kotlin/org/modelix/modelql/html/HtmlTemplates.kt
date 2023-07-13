@@ -15,42 +15,60 @@ package org.modelix.modelql.html
 
 import io.ktor.server.html.Template
 import io.ktor.server.html.TemplatePlaceholder
-import org.modelix.modelql.core.IAsyncBuilder
-import org.modelix.modelql.core.IModelQLTemplate
-import org.modelix.modelql.core.IModelQLTemplateInstance
-import org.modelix.modelql.core.IPreparedFragment
+import org.modelix.modelql.core.IBoundFragment
+import org.modelix.modelql.core.IFragmentBuilder
+import org.modelix.modelql.core.IMonoStep
 
-context(IAsyncBuilder<*, *>)
-public fun <TTemplate : IModelQLTemplate<*, TOuter>, TTemplateInstance : IModelQLTemplateInstance<TOuter, TTemplate>, TOuter> TOuter.insert(
-    templateInstance: TTemplateInstance,
+interface IModelQLTemplate<In, Context> {
+    fun IFragmentBuilder<In, Context>.buildFragment()
+}
+
+class ModelQLTemplateInstance<Context, Template : IModelQLTemplate<*, Context>>(
+    val template: Template,
+    val fragment: IBoundFragment<Context>
+)
+
+context(IFragmentBuilder<In, Context>)
+fun <In, Context, Template : IModelQLTemplate<In, Context>> IMonoStep<In>.buildTemplate(template: Template): ModelQLTemplateInstance<Context, Template> {
+    val fragment = buildFragment<In, Context> {
+        with(template) {
+            buildFragment()
+        }
+    }
+    return ModelQLTemplateInstance<Context, Template>(template, fragment)
+}
+
+context(IFragmentBuilder<*, *>)
+fun <TTemplate : IModelQLTemplate<*, TOuter>, TOuter> TOuter.insert(
+    templateInstance: ModelQLTemplateInstance<TOuter, TTemplate>,
     placeholder: TemplatePlaceholder<TTemplate>
 ) {
-    placeholder.apply(templateInstance.getTemplate())
-    applyTemplate(templateInstance)
+    placeholder.apply(templateInstance.template)
+    insertFragment(templateInstance.fragment)
 }
 
-context(IAsyncBuilder<*, *>)
-public fun <TOuter, TTemplate : IModelQLTemplate<*, TOuter>, TTemplateInstance : IModelQLTemplateInstance<TOuter, TTemplate>> TOuter.insert(templateInstance: TTemplateInstance, build: TTemplate.() -> Unit) {
-    templateInstance.getTemplate().build()
-    applyTemplate(templateInstance)
+context(IFragmentBuilder<*, *>)
+fun <TOuter, TTemplate : IModelQLTemplate<*, TOuter>> TOuter.insert(templateInstance: ModelQLTemplateInstance<TOuter, TTemplate>, build: TTemplate.() -> Unit) {
+    templateInstance.template.build()
+    insertFragment(templateInstance.fragment)
 }
 
-context(IAsyncBuilder<*, *>)
-fun <TOuter> IPreparedFragment<TOuter>.toKotlinTemplate(): Template<TOuter> {
+context(IFragmentBuilder<*, *>)
+fun <TOuter> IBoundFragment<TOuter>.toKotlinTemplate(): Template<TOuter> {
     val preparedFragment = this
     return object : Template<TOuter> {
         override fun TOuter.apply() {
-            applyFragment(preparedFragment)
+            insertFragment(preparedFragment)
         }
     }
 }
 
-context(IAsyncBuilder<*, *>)
-fun <TOuter> IModelQLTemplateInstance<TOuter, *>.toKotlinTemplate(): Template<TOuter> {
+context(IFragmentBuilder<*, *>)
+fun <TOuter> ModelQLTemplateInstance<TOuter, *>.toKotlinTemplate(): Template<TOuter> {
     val templateInstance = this
     return object : Template<TOuter> {
         override fun TOuter.apply() {
-            applyTemplate(templateInstance)
+            insertFragment(templateInstance.fragment)
         }
     }
 }

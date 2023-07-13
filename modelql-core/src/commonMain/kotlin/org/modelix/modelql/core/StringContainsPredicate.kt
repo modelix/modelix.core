@@ -16,7 +16,7 @@ class StringContainsPredicate(val substring: String) : MonoTransformingStep<Stri
         return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
-    override fun createDescriptor() = StringContainsDescriptor(substring)
+    override fun createDescriptor(context: QuerySerializationContext) = StringContainsDescriptor(substring)
 
     @Serializable
     @SerialName("stringContains")

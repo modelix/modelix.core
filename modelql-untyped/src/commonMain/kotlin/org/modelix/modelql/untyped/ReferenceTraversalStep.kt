@@ -28,6 +28,7 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
@@ -54,7 +55,7 @@ class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INo
         return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor(role)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(role)
 
     @Serializable
     @SerialName("untyped.referenceTarget")

@@ -27,6 +27,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 import kotlin.jvm.JvmName
@@ -36,7 +37,7 @@ class NodeReferenceSourceStep(element: SerializedNodeReference?) : ConstantSourc
         return serializersModule.serializer<SerializedNodeReference>().nullable.stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor(element)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(element)
 
     @Serializable
     @SerialName("nodeReferenceMonoSource")

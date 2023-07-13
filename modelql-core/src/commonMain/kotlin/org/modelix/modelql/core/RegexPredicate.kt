@@ -16,7 +16,7 @@ class RegexPredicate(val regex: Regex) : MonoTransformingStep<String?, Boolean>(
         return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor(regex.pattern)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(regex.pattern)
 
     @Serializable
     @SerialName("regex")

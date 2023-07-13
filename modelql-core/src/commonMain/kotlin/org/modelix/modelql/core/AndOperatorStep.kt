@@ -12,7 +12,7 @@ class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
         return input.values.all { it == true }
     }
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("and")

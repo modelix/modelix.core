@@ -16,7 +16,7 @@ class InPredicate(val values: Set<String>) : MonoTransformingStep<String?, Boole
         return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor(values)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(values)
 
     @Serializable
     @SerialName("in")

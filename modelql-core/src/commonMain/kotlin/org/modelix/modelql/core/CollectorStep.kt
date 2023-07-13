@@ -61,7 +61,7 @@ class SetCollectorStepOutputSerializer<E>(collectionSerializer: KSerializer<Set<
 }
 
 class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     override suspend fun aggregate(input: StepFlow<E>): IStepOutput<List<E>> = ListCollectorStepOutput(input.toList())
     override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<List<E>> = ListCollectorStepOutput(input.toList())
@@ -85,7 +85,7 @@ class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
 
 class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     override suspend fun aggregate(input: StepFlow<E>): IStepOutput<Set<E>> = SetCollectorStepOutput(input.toSet())
     override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<Set<E>> = SetCollectorStepOutput(input.toSet())

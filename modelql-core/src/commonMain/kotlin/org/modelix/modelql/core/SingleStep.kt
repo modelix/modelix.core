@@ -24,7 +24,7 @@ class SingleStep<E>() : AggregationStep<E, E>() {
         return getProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     @SerialName("single")

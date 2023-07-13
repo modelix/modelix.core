@@ -27,6 +27,7 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
@@ -46,7 +47,7 @@ class AllChildrenTraversalStep() : FluxTransformingStep<INode, INode>() {
         return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
-    override fun createDescriptor() = AllChildrenStepDescriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = AllChildrenStepDescriptor()
 
     @Serializable
     @SerialName("untyped.allChildren")

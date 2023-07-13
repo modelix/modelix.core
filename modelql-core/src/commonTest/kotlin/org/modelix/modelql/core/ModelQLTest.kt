@@ -259,7 +259,7 @@ class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Product>> = serializersModule.serializer<Product>().stepOutputSerializer()
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
     override fun toString(): String {
         return "${getProducer()}.products"
     }
@@ -283,7 +283,7 @@ class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     class Descriptor : StepDescriptor() {
@@ -299,7 +299,7 @@ class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> = serializersModule.serializer<Int>().stepOutputSerializer()
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
     override fun toString(): String {
         return "${getProducer()}.id"
     }
@@ -325,7 +325,7 @@ class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
     }
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
 
-    override fun createDescriptor() = Descriptor()
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
     class Descriptor : StepDescriptor() {

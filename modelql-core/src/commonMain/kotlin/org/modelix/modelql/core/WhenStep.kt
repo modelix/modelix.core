@@ -52,10 +52,10 @@ class WhenStep<In, Out>(
         return false
     }
 
-    override fun createDescriptor(): StepDescriptor {
+    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
         return Descriptor(
-            cases.map { it.first.castToInstance().createDescriptor() to it.second.castToInstance().createDescriptor() },
-            elseCase?.castToInstance()?.createDescriptor()
+            cases.map { it.first.castToInstance().createDescriptor(context) to it.second.castToInstance().createDescriptor(context) },
+            elseCase?.castToInstance()?.createDescriptor(context)
         )
     }
 

@@ -31,7 +31,7 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
         return query.outputStep.getOutputSerializer(serializersModule)
     }
 
-    override fun createDescriptor() = Descriptor(query.createDescriptor())
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(query.createDescriptor(context))
 
     @Serializable
     @SerialName("flatMap")

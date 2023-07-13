@@ -22,7 +22,7 @@ abstract class EqualsOperatorStep<E>(val operand: E) : MonoTransformingStep<E?, 
 }
 
 class IntEqualsOperatorStep(operand: Int) : EqualsOperatorStep<Int>(operand) {
-    override fun createDescriptor() = Descriptor(operand)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(operand)
 
     @Serializable
     @SerialName("intEqualTo")
@@ -34,7 +34,7 @@ class IntEqualsOperatorStep(operand: Int) : EqualsOperatorStep<Int>(operand) {
 }
 
 class StringEqualsOperatorStep(operand: String) : EqualsOperatorStep<String>(operand) {
-    override fun createDescriptor() = Descriptor(operand)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(operand)
 
     @Serializable
     @SerialName("stringEqualTo")

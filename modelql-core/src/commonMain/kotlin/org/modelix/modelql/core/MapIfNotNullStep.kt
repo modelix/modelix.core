@@ -33,7 +33,7 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
         return "${getProducer()}.mapIfNotNull { $query }"
     }
 
-    override fun createDescriptor() = Descriptor(query.createDescriptor())
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(query.createDescriptor(context))
 
     @Serializable
     @SerialName("mapIfNotNull")

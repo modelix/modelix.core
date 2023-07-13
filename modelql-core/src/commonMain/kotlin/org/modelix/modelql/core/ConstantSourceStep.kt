@@ -38,7 +38,7 @@ class StringSourceStep(element: String?) : ConstantSourceStep<String?>(element) 
         return serializersModule.serializer<String>().nullable.stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor(element)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(element)
 
     @Serializable
     @SerialName("stringMonoSource")
@@ -58,7 +58,7 @@ class BooleanSourceStep(element: Boolean) : ConstantSourceStep<Boolean>(element)
         return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
-    override fun createDescriptor() = Descriptor(element)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(element)
 
     @Serializable
     @SerialName("booleanMonoSource")

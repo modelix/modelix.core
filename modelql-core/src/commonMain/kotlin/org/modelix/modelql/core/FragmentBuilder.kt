@@ -57,15 +57,18 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
      * Can be called multiple times for a list of results.
      */
     override fun processResult(result: IZipOutput<*>, context: Context) {
+        checkSealed()
         zipBuilder.withResult(result) {
             resultHandlers.forEach { it.invoke(context) }
         }
     }
 
     override fun onSuccess(body: FragmentBody<Context>) {
+        checkNotSealed()
         resultHandlers += body
     }
     override fun <T> IMonoStep<T>.getLater(): IValueRequest<T> {
+        checkNotSealed()
         val actual = this.getRootInputStep()
         val expected = input.getRootInputStep()
         require(expected == actual) {
@@ -78,10 +81,12 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
     }
 
     override fun <T, TContext> IMonoStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext> {
+        checkNotSealed()
         return asFlux().buildFragment(body)
     }
 
     override fun <T, TContext> IFluxStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext> {
+        checkNotSealed()
         val childBuilder: FragmentBuilder<T, TContext> = FragmentBuilder<T, TContext>().apply(body)
         childBuilder.seal()
         val outputStep: IMonoStep<List<IZipOutput<*>>> = this.map(childBuilder.getQuery()).toList()
@@ -90,10 +95,12 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
     }
 
     override fun <TIn, TContext> IMonoStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IBoundFragment<TContext> {
+        checkNotSealed()
         return asFlux().bindFragment(fragment)
     }
 
     override fun <TIn, TContext> IFluxStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IBoundFragment<TContext> {
+        checkNotSealed()
         val inputStep: IFluxStep<TIn> = this
         val recursiveStep = QueryCallStep<TIn, IZipOutput<*>>(fragment.castToInternal().queryReference).also { inputStep.connect(it) }
         val outputStep = recursiveStep.toList()
@@ -102,10 +109,12 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
     }
 
     override fun bind(input: IMonoStep<E>): IBoundFragment<Context> {
+        checkNotSealed()
         return input.bindFragment(this)
     }
 
     override fun <TContext> TContext.applyFragment(fragment: IBoundFragment<TContext>) {
+        checkSealed()
         val casted = fragment as BoundFragment<*, TContext>
         require(casted.getOwner() != this) { "Iteration request belongs to a different builder" }
         casted.iterate(this)
@@ -114,6 +123,7 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
     private inner class BoundFragment<In, RequestContext>(val unboundFragment: IUnboundFragmentInternal<In, RequestContext>, val request: IValueRequest<List<IZipOutput<*>>>) : IBoundFragment<RequestContext> {
         fun getOwner(): FragmentBuilder<*, *> = this@FragmentBuilder
         fun iterate(context: RequestContext) {
+            checkSealed()
             request.get().forEach { elementResult ->
                 unboundFragment.processResult(elementResult, context)
             }

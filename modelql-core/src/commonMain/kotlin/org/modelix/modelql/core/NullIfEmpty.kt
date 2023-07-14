@@ -4,12 +4,16 @@ import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.modules.SerializersModule
 
 class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E?>> {
-        return getProducer().getOutputSerializer(serializersModule).upcast()
+        val serializer: KSerializer<IStepOutput<E>> = getProducer().getOutputSerializer(serializersModule).upcast()
+        val valueSerializer = (serializer as SimpleStepOutputSerializer<E>).valueSerializer
+        val nullableValueSerializer = (valueSerializer as KSerializer<Any>).nullable as KSerializer<E?>
+        return nullableValueSerializer.stepOutputSerializer()
     }
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E?> {

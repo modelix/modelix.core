@@ -358,6 +358,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                 subclass(org.modelix.modelql.core.AssertNotEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ConstantSourceStep.Descriptor::class, ConstantSourceStep.Descriptor.Serializer())
                 subclass(org.modelix.modelql.core.CountingStep.CountDescriptor::class)
+                subclass(org.modelix.modelql.core.CollectionSizeStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.EmptyStringIfNullStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.EqualsOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.FilteringStep.Descriptor::class)

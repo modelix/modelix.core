@@ -33,5 +33,4 @@ class CountingStep() : AggregationStep<Any?, Int>() {
     }
 }
 
-fun IProducingStep<Any?>.size() = count()
 fun IProducingStep<Any?>.count() = CountingStep().connectAndDowncast(this)

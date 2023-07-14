@@ -16,10 +16,13 @@ package org.modelix.modelql.typed
 import org.modelix.metamodel.IConceptOfTypedNode
 import org.modelix.metamodel.ITypedNode
 import org.modelix.model.api.IConcept
+import org.modelix.modelql.core.IBoundFragment
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IMonoUnboundQuery
+import org.modelix.modelql.core.IRecursiveFragmentBuilder
 import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.WhenStep
+import org.modelix.modelql.core.bindFragment
 import org.modelix.modelql.core.connect
 import kotlin.experimental.ExperimentalTypeInference
 
@@ -64,3 +67,19 @@ class ConceptSwitchBuilder<In : ITypedNode, Out>(private val input: IMonoStep<In
 }
 
 fun <In : ITypedNode, Out> IMonoStep<In>.conceptSwitch() = ConceptSwitchBuilder<In, Out>(this)
+
+fun <In : ITypedNode, Context> IMonoStep<In>.conceptSwitchFragment() = ConceptSwitchBuilder<In, IBoundFragment<Context>>(this)
+fun <In : ITypedNode, CaseIn : In, Context> ConceptSwitchBuilder<In, IBoundFragment<Context>>.CaseBuilder<CaseIn>.thenFragment(body: IRecursiveFragmentBuilder<CaseIn, Context>.() -> Unit): ConceptSwitchBuilder<In, IBoundFragment<Context>> {
+    return then {
+        it.bindFragment<CaseIn, Context> {
+            body()
+        }
+    }
+}
+fun <In : ITypedNode, Context> ConceptSwitchBuilder<In, IBoundFragment<Context>>.elseFragment(body: IRecursiveFragmentBuilder<In, Context>.() -> Unit): IMonoStep<IBoundFragment<Context>> {
+    return `else` {
+        it.bindFragment<In, Context> {
+            body()
+        }
+    }
+}

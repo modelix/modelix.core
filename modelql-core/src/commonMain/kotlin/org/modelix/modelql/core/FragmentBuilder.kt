@@ -129,6 +129,12 @@ fun <TIn, TContext> IFluxStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, 
 private class NonRequest<E>(private val value: E) : IValueRequest<E> {
     override fun get(): E = value
 }
+fun <TIn, TContext> IMonoStep<TIn>.bindFragment(body: IRecursiveFragmentBuilder<TIn, TContext>.() -> Unit): IMonoStep<IBoundFragment<TContext>> {
+    return bindFragment(buildModelQLFragment(body))
+}
+fun <TIn, TContext> IFluxStep<TIn>.bindFragment(body: IRecursiveFragmentBuilder<TIn, TContext>.() -> Unit): IMonoStep<IBoundFragment<TContext>> {
+    return bindFragment(buildModelQLFragment(body))
+}
 fun <TIn, TContext> IMonoStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IMonoStep<IBoundFragment<TContext>> {
     return asFlux().bindFragment(fragment)
 }

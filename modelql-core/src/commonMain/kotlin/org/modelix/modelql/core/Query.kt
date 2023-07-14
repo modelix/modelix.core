@@ -1,7 +1,5 @@
 package org.modelix.modelql.core
 
-import kotlinx.atomicfu.AtomicLong
-import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -350,7 +348,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 
     companion object {
-        private val idSequence: AtomicLong = atomic(0L)
+        private val idSequence: AtomicLong = AtomicLong(0)
         fun generateId(): Long = idSequence.incrementAndGet()
 
         val serializersModule = SerializersModule {
@@ -358,9 +356,10 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                 subclass(org.modelix.modelql.core.AllowEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.AndOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.AssertNotEmptyStep.Descriptor::class)
-                subclass(org.modelix.modelql.core.BooleanSourceStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.ConstantSourceStep.Descriptor::class, ConstantSourceStep.Descriptor.Serializer())
                 subclass(org.modelix.modelql.core.CountingStep.CountDescriptor::class)
                 subclass(org.modelix.modelql.core.EmptyStringIfNullStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.EqualsOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.FilteringStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.FirstElementStep.FirstElementDescriptor::class)
                 subclass(org.modelix.modelql.core.FirstOrNullStep.Descriptor::class)
@@ -368,7 +367,6 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                 subclass(org.modelix.modelql.core.IdentityStep.IdentityStepDescriptor::class)
                 subclass(org.modelix.modelql.core.IfEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.InPredicate.Descriptor::class)
-                subclass(org.modelix.modelql.core.IntEqualsOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.IntSumStep.IntSumDescriptor::class)
                 subclass(org.modelix.modelql.core.IsEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.IsNullPredicateStep.Descriptor::class)
@@ -380,14 +378,12 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                 subclass(org.modelix.modelql.core.NullIfEmpty.OrNullDescriptor::class)
                 subclass(org.modelix.modelql.core.OrOperatorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.PrintStep.Descriptor::class)
-                subclass(org.modelix.modelql.core.QueryInput.Descriptor::class)
                 subclass(org.modelix.modelql.core.QueryCallStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.QueryInput.Descriptor::class)
                 subclass(org.modelix.modelql.core.RegexPredicate.Descriptor::class)
                 subclass(org.modelix.modelql.core.SetCollectorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.SingleStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringContainsPredicate.StringContainsDescriptor::class)
-                subclass(org.modelix.modelql.core.StringEqualsOperatorStep.Descriptor::class)
-                subclass(org.modelix.modelql.core.StringSourceStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringToBooleanStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringToIntStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ToStringStep.Descriptor::class)

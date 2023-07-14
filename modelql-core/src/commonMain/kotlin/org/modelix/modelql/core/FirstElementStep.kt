@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 
 class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
+    override fun canBeMultiple(): Boolean = false
+
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
         return input.take(1)
     }

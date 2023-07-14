@@ -71,6 +71,8 @@ interface IProducingStep<out E> : IStep {
 
     fun canBeEmpty(): Boolean = true
     fun canBeMultiple(): Boolean = true
+    fun canEvaluateStatically(): Boolean = false
+    fun evaluateStatically(): E = throw UnsupportedOperationException()
     override fun requiresSingularQueryInput(): Boolean {
         return getConsumers().size > 1 || getConsumers().any { it.requiresSingularQueryInput() }
     }

@@ -6,10 +6,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-abstract class EqualsOperatorStep<E>(val operand: E) : MonoTransformingStep<E?, Boolean>() {
+class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>() {
 
-    override fun transform(input: E?): Boolean {
-        return input == operand
+    override fun transformElement(input: E, parameter: E?): Boolean {
+        return input == parameter
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
@@ -17,39 +17,49 @@ abstract class EqualsOperatorStep<E>(val operand: E) : MonoTransformingStep<E?, 
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.equalTo($operand)"
+        return "${getInputProducer()}.equalTo(${getParameterProducer()})"
     }
-}
 
-class IntEqualsOperatorStep(operand: Int) : EqualsOperatorStep<Int>(operand) {
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(operand)
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
 
     @Serializable
-    @SerialName("intEqualTo")
-    class Descriptor(val operand: Int) : CoreStepDescriptor() {
+    @SerialName("equalTo")
+    class Descriptor() : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return IntEqualsOperatorStep(operand)
+            return EqualsOperatorStep<Any?>()
         }
     }
 }
 
-class StringEqualsOperatorStep(operand: String) : EqualsOperatorStep<String>(operand) {
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(operand)
-
-    @Serializable
-    @SerialName("stringEqualTo")
-    class Descriptor(val operand: String) : CoreStepDescriptor() {
-        override fun createStep(context: QueryDeserializationContext): IStep {
-            return StringEqualsOperatorStep(operand)
-        }
-    }
-
-    override fun toString(): String {
-        return "${getProducers().single()}.equalTo(\"$operand\")"
-    }
+fun <T> IMonoStep<T>.notEqualTo(operand: IMonoStep<T>): IMonoStep<Boolean> = !equalTo(operand)
+fun <T> IMonoStep<T>.equalTo(operand: IMonoStep<T>): IMonoStep<Boolean> = EqualsOperatorStep<T>().also {
+    connect(it)
+    operand.connect(it)
 }
 
-fun IMonoStep<Int?>.equalTo(operand: Int): IMonoStep<Boolean> = IntEqualsOperatorStep(operand).also { connect(it) }
-fun IMonoStep<Int?>.notEqualTo(operand: Int): IMonoStep<Boolean> = !equalTo(operand)
-fun IMonoStep<String?>.equalTo(operand: String): IMonoStep<Boolean> = StringEqualsOperatorStep(operand).also { connect(it) }
-fun IMonoStep<String?>.notEqualTo(operand: String): IMonoStep<Boolean> = !equalTo(operand)
+fun IMonoStep<Boolean?>.equalTo(operand: Boolean?) = equalTo(operand.asMono())
+fun IMonoStep<Boolean?>.notEqualTo(operand: Boolean?) = !equalTo(operand)
+
+fun IMonoStep<Byte?>.equalTo(operand: Byte?) = equalTo(operand.asMono())
+fun IMonoStep<Byte?>.notEqualTo(operand: Byte?) = !equalTo(operand)
+
+fun IMonoStep<Char?>.equalTo(operand: Char?) = equalTo(operand.asMono())
+fun IMonoStep<Char?>.notEqualTo(operand: Char?) = !equalTo(operand)
+
+fun IMonoStep<Short?>.equalTo(operand: Short?) = equalTo(operand.asMono())
+fun IMonoStep<Short?>.notEqualTo(operand: Short?) = !equalTo(operand)
+
+fun IMonoStep<Int?>.equalTo(operand: Int?) = equalTo(operand.asMono())
+fun IMonoStep<Int?>.notEqualTo(operand: Int?) = !equalTo(operand)
+
+fun IMonoStep<Long?>.equalTo(operand: Long?) = equalTo(operand.asMono())
+fun IMonoStep<Long?>.notEqualTo(operand: Long?) = !equalTo(operand)
+
+fun IMonoStep<Float?>.equalTo(operand: Float?) = equalTo(operand.asMono())
+fun IMonoStep<Float?>.notEqualTo(operand: Float?) = !equalTo(operand)
+
+fun IMonoStep<Double?>.equalTo(operand: Double?) = equalTo(operand.asMono())
+fun IMonoStep<Double?>.notEqualTo(operand: Double?) = !equalTo(operand)
+
+fun IMonoStep<String?>.equalTo(operand: String) = equalTo(operand.asMono())
+fun IMonoStep<String?>.notEqualTo(operand: String) = !equalTo(operand)

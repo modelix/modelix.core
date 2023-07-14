@@ -211,6 +211,23 @@ class ModelQLTest {
         assertEquals(flowSize, sequenceSize)
     }
 
+//    @Test
+//    fun textIndexLookup() {
+//        val result = remoteProductDatabaseQuery { db ->
+//            db.products.filter { it.images.size() }.toSet()
+//            db.products.flatMap { it.zip(it.images.assertNotEmpty()) }.mapLocal2 {
+//                val product = it.first.getLater()
+//                val image = it.second.getLater()
+//                onSuccess {
+//                    val localProduct: Product = product.get()
+//                    val localImage: String = image.get()
+//                    localProduct to localImage
+//                }
+//            }.toList()
+//        }
+//        assertEquals(132, result.size)
+//    }
+
     data class MyNonSerializableClass(val id: Int, val title: String, val images: List<MyImage>)
     data class MyImage(val url: String)
 }

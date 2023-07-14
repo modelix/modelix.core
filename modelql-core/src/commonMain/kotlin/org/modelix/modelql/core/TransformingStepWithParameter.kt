@@ -1,34 +1,47 @@
-package org.modelix.modelql.untyped
+package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEmpty
-import org.modelix.modelql.core.IFlowInstantiationContext
-import org.modelix.modelql.core.IProducingStep
-import org.modelix.modelql.core.MonoTransformingStep
-import org.modelix.modelql.core.Optional
-import org.modelix.modelql.core.SimpleStepOutput
-import org.modelix.modelql.core.StepFlow
-import org.modelix.modelql.core.asStepFlow
-import org.modelix.modelql.core.getOrElse
+import kotlinx.coroutines.flow.single
 
 abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : MonoTransformingStep<CommonIn, Out>() {
+    private var hasStaticParameter: Boolean = false
+    private var staticParameterValue: ParameterT? = null
+
     private var targetProducer: IProducingStep<ParameterT>? = null
 
     fun getInputProducer(): IProducingStep<In> = getProducer() as IProducingStep<In>
     fun getParameterProducer(): IProducingStep<ParameterT> = targetProducer!!
 
+    override fun validate() {
+        super<MonoTransformingStep>.validate()
+        require(!getParameterProducer().canBeMultiple()) { "only mono parameters are supported: ${getParameterProducer()}" }
+        hasStaticParameter = getParameterProducer().canEvaluateStatically()
+        if (hasStaticParameter) {
+            staticParameterValue = getParameterProducer().evaluateStatically()
+        }
+    }
+
     override fun createFlow(input: StepFlow<CommonIn>, context: IFlowInstantiationContext): StepFlow<Out> {
-        val parameterFlow = context.getOrCreateFlow<ParameterT?>(getParameterProducer()).onEmpty { emit(SimpleStepOutput(null)) }
-        return input.combine(parameterFlow) { inputElement, parameter ->
-            transformElement(inputElement.value as In, parameter.value as ParameterT)
-        }.asStepFlow()
+        if (hasStaticParameter) {
+            return input.map { SimpleStepOutput(transformElement(it.value as In, staticParameterValue)) }
+        } else {
+            val parameterFlow = context.getOrCreateFlow<ParameterT?>(getParameterProducer())
+                .onEmpty { emit(SimpleStepOutput(null)) }
+            return flow {
+                val parameterValue = parameterFlow.single()
+                emitAll(input.map { SimpleStepOutput(transformElement(it.value as In, parameterValue.value)) })
+            }
+        }
     }
 
     override fun evaluate(queryInput: Any?): Optional<Out> {
         val input = getInputProducer().evaluate(queryInput)
         if (!input.isPresent()) return Optional.empty()
         val parameter = getParameterProducer().evaluate(queryInput)
-        return Optional.of(transformElement(input.get(), parameter.getOrElse(null) as ParameterT))
+        return Optional.of(transformElement(input.get(), parameter.getOrElse(null)))
     }
 
     override fun transform(input: CommonIn): Out {

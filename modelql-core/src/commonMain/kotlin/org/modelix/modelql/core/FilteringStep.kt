@@ -27,7 +27,7 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
         // return condition.asFlow(input).zip(input) { c, it -> c to it }.filter { it.first == true }.map { it.second }
         return input.filter { condition.asFlow(it).value.optionalSingle().presentAndEqual(true) }
-        // return input.filter { condition.evaluate(it).presentAndEqual(true) }
+        // return input.filter { condition.evaluate(it.value).presentAndEqual(true) }
     }
 
     override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {

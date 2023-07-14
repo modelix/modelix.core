@@ -31,8 +31,9 @@ import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 import kotlin.jvm.JvmName
+import kotlin.reflect.typeOf
 
-class NodeReferenceSourceStep(element: INodeReference?) : ConstantSourceStep<INodeReference?>(element) {
+class NodeReferenceSourceStep(element: INodeReference?) : ConstantSourceStep<INodeReference?>(element, typeOf<INodeReference?>()) {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INodeReference?>> {
         return serializersModule.serializer<INodeReference>().nullable.stepOutputSerializer()
     }

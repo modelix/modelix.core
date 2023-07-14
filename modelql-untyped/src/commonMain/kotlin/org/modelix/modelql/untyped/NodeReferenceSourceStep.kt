@@ -51,6 +51,14 @@ class NodeReferenceSourceStep(element: INodeReference?) : ConstantSourceStep<INo
     override fun toString(): String {
         return "<${element?.serialize()}>"
     }
+
+    override fun canEvaluateStatically(): Boolean {
+        return true
+    }
+
+    override fun evaluateStatically(): INodeReference? {
+        return element
+    }
 }
 
 @JvmName("asMonoNullable")

@@ -50,20 +50,24 @@ private class LocalMappingBuilder<In, Out> : ILocalMappingBuilder<In, Out> {
         resultHandlers += body
     }
 
-    override fun <T> IMonoStep<T>.getLater(): IValueRequest<T> {
+    override fun <T> IMonoStep<T>.request(): IValueRequest<T> {
         return zipBuilder.request(this)
     }
 }
 
-interface IValueRequest<E> {
+interface IValueRequest<out E> {
     fun get(): E
 }
 
-interface ILocalMappingBuilder<In, Out> {
+interface IZipBuilderContext {
+    fun <T> IMonoStep<T>.getLater(): IValueRequest<T> = request()
+    fun <T> IMonoStep<T>.request(): IValueRequest<T>
+}
+
+interface ILocalMappingBuilder<In, Out> : IZipBuilderContext {
     @OptIn(ExperimentalTypeInference::class)
     @BuilderInference
     fun onSuccess(body: () -> Out)
-    fun <T> IMonoStep<T>.getLater(): IValueRequest<T>
 }
 
 class LocalMappingSerializer<In, Out>(val step: LocalMappingStep<In, Out>, val inputSerializer: KSerializer<out IStepOutput<In>>) : KSerializer<Out> {

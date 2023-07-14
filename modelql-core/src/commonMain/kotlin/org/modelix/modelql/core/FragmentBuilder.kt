@@ -2,25 +2,41 @@ package org.modelix.modelql.core
 
 typealias FragmentBody<ContextT> = ContextT.() -> Unit
 
-interface IFragmentBuilder<out In, out Context> {
+interface IFragmentBuilder<out In, out Context> : IZipBuilderContext {
     val input: IMonoStep<In>
     fun onSuccess(body: FragmentBody<Context>)
-    fun <T> IMonoStep<T>.getLater(): IValueRequest<T>
 
-    fun <T, TContext> IMonoStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext>
-    fun <T, TContext> IFluxStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext>
+    fun <T, TContext> IMonoStep<T>.requestFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IRequestedFragment<TContext> {
+        return requestFragment(buildModelQLFragment(body))
+    }
+    fun <T, TContext> IFluxStep<T>.requestFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IRequestedFragment<TContext> {
+        return requestFragment(buildModelQLFragment(body))
+    }
 
-    @Deprecated("renamed to insertFragment", ReplaceWith("insertFragment(fragment)"))
-    fun <TContext> TContext.applyFragment(fragment: IBoundFragment<TContext>)
-    fun <TContext> TContext.insertFragment(fragment: IBoundFragment<TContext>) = this.applyFragment(fragment)
+    fun <TContext> TContext.insertFragment(fragment: IBoundFragment<TContext>) {
+        fragment.insertInto(this)
+    }
+    fun <TContext> TContext.insertFragment(fragment: IRequestedFragment<TContext>) {
+        fragment.get().insertInto(this)
+    }
 
-    fun <TIn, TContext> IMonoStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IBoundFragment<TContext>
-    fun <TIn, TContext> IFluxStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IBoundFragment<TContext>
+    fun <TIn, TContext> IMonoStep<TIn>.requestFragment(fragment: IUnboundFragment<TIn, TContext>): IRequestedFragment<TContext> {
+        return bindFragment(fragment).request()
+    }
+    fun <TIn, TContext> IFluxStep<TIn>.requestFragment(fragment: IUnboundFragment<TIn, TContext>): IRequestedFragment<TContext> {
+        return bindFragment(fragment).request()
+    }
 }
 
 interface IRecursiveFragmentBuilder<In, Context> : IFragmentBuilder<In, Context>, IUnboundFragment<In, Context>
 
-interface IBoundFragment<in Context>
+interface IBoundFragment<in Context> {
+    fun insertInto(context: Context)
+}
+
+fun <TContext> TContext.insertFragment(fragment: IBoundFragment<TContext>) {
+    fragment.insertInto(this)
+}
 
 fun <T, Context> IFragmentBuilder<T, Context>.castToInstance(): FragmentBuilder<T, Context> = this as FragmentBuilder<T, Context>
 internal fun <T, Context> IUnboundFragment<T, Context>.castToInternal(): IUnboundFragmentInternal<T, Context> = this as IUnboundFragmentInternal<T, Context>
@@ -67,67 +83,17 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
         checkNotSealed()
         resultHandlers += body
     }
-    override fun <T> IMonoStep<T>.getLater(): IValueRequest<T> {
+    override fun <T> IMonoStep<T>.request(): IValueRequest<T> {
         checkNotSealed()
         val actual = this.getRootInputStep()
-        val expected = input.getRootInputStep()
-        require(expected == actual) {
+        val expected = input
+        require(expected == actual || (actual as? IProducingStep<*>)?.canEvaluateStatically() == true) {
             """step uses input from a different builder: $this
                 |  expected input: $expected
                 |  actual input: $actual
             """.trimMargin()
         }
         return zipBuilder.request(this)
-    }
-
-    override fun <T, TContext> IMonoStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext> {
-        checkNotSealed()
-        return asFlux().buildFragment(body)
-    }
-
-    override fun <T, TContext> IFluxStep<T>.buildFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IBoundFragment<TContext> {
-        checkNotSealed()
-        val childBuilder: FragmentBuilder<T, TContext> = FragmentBuilder<T, TContext>().apply(body)
-        childBuilder.seal()
-        val outputStep: IMonoStep<List<IZipOutput<*>>> = this.map(childBuilder.getQuery()).toList()
-        val request = zipBuilder.request(outputStep)
-        return BoundFragment<T, TContext>(childBuilder, request)
-    }
-
-    override fun <TIn, TContext> IMonoStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IBoundFragment<TContext> {
-        checkNotSealed()
-        return asFlux().bindFragment(fragment)
-    }
-
-    override fun <TIn, TContext> IFluxStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IBoundFragment<TContext> {
-        checkNotSealed()
-        val inputStep: IFluxStep<TIn> = this
-        val recursiveStep = QueryCallStep<TIn, IZipOutput<*>>(fragment.castToInternal().queryReference).also { inputStep.connect(it) }
-        val outputStep = recursiveStep.toList()
-        val request = zipBuilder.request(outputStep)
-        return BoundFragment<TIn, TContext>(fragment.castToInternal(), request)
-    }
-
-    override fun bind(input: IMonoStep<E>): IBoundFragment<Context> {
-        checkNotSealed()
-        return input.bindFragment(this)
-    }
-
-    override fun <TContext> TContext.applyFragment(fragment: IBoundFragment<TContext>) {
-        checkSealed()
-        val casted = fragment as BoundFragment<*, TContext>
-        require(casted.getOwner() != this) { "Iteration request belongs to a different builder" }
-        casted.iterate(this)
-    }
-
-    private inner class BoundFragment<In, RequestContext>(val unboundFragment: IUnboundFragmentInternal<In, RequestContext>, val request: IValueRequest<List<IZipOutput<*>>>) : IBoundFragment<RequestContext> {
-        fun getOwner(): FragmentBuilder<*, *> = this@FragmentBuilder
-        fun iterate(context: RequestContext) {
-            checkSealed()
-            request.get().forEach { elementResult ->
-                unboundFragment.processResult(elementResult, context)
-            }
-        }
     }
 }
 
@@ -142,8 +108,29 @@ fun <In, Context> buildModelQLFragment(body: IRecursiveFragmentBuilder<In, Conte
     }
 }
 
-interface IUnboundFragment<In, Context> {
-    fun bind(input: IMonoStep<In>): IBoundFragment<Context>
+private class BoundFragment<In, RequestContext>(val unboundFragment: IUnboundFragmentInternal<In, RequestContext>, val request: IValueRequest<List<IZipOutput<*>>>) : IBoundFragment<RequestContext> {
+    override fun insertInto(context: RequestContext) {
+        request.get().forEach { elementResult ->
+            unboundFragment.processResult(elementResult, context)
+        }
+    }
+}
+
+interface IUnboundFragment<In, Context>
+
+typealias IRequestedFragment<Context> = IValueRequest<IBoundFragment<Context>>
+
+fun <TIn, TContext> IFluxStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IMonoStep<IBoundFragment<TContext>> {
+    val inputStep: IFluxStep<TIn> = this
+    val recursiveStep = QueryCallStep<TIn, IZipOutput<*>>(fragment.castToInternal().queryReference).also { inputStep.connect(it) }
+    val outputStep = recursiveStep.toList()
+    return outputStep.mapLocal { BoundFragment<TIn, TContext>(fragment.castToInternal(), NonRequest(it)) }
+}
+private class NonRequest<E>(private val value: E) : IValueRequest<E> {
+    override fun get(): E = value
+}
+fun <TIn, TContext> IMonoStep<TIn>.bindFragment(fragment: IUnboundFragment<TIn, TContext>): IMonoStep<IBoundFragment<TContext>> {
+    return asFlux().bindFragment(fragment)
 }
 
 internal interface IUnboundFragmentInternal<In, Context> : IUnboundFragment<In, Context> {
@@ -158,10 +145,6 @@ private class LazyFragment<In, Context>(fragmentBuilder: () -> FragmentBuilder<I
         null,
         { actualFragment.getQuery() }
     )
-
-    override fun bind(input: IMonoStep<In>): IBoundFragment<Context> {
-        return actualFragment.bind(input)
-    }
 
     override fun processResult(result: IZipOutput<*>, context: Context) {
         return actualFragment.processResult(result, context)

@@ -77,7 +77,7 @@ class HtmlBuilderTest {
 
         fun HtmlBuilder<INode>.renderModule() {
             val name = input.property("name").getLater()
-            val models = input.children("models").bindFragment(modelTemplate)
+            val models = input.children("models").requestFragment(modelTemplate)
             onSuccess {
                 div {
                     h1 {
@@ -89,7 +89,7 @@ class HtmlBuilderTest {
         }
 
         fun HtmlBuilder<INode>.renderRepository() {
-            val modules = input.children("modules").buildFragment {
+            val modules = input.children("modules").requestFragment {
                 renderModule()
             }
             onSuccess {
@@ -121,7 +121,7 @@ class HtmlBuilderTest {
 
         fun HtmlBuilder<INode>.renderModule() {
             val name = input.property("name").getLater()
-            val models = input.children("models").bindFragment(modelTemplate)
+            val models = input.children("models").requestFragment(modelTemplate)
             onSuccess {
                 div {
                     h1 {
@@ -134,7 +134,7 @@ class HtmlBuilderTest {
 
         fun IRecursiveFragmentBuilder<INode, UL>.renderNode() {
             val hashChildNodes = input.allChildren().isNotEmpty().getLater()
-            val childNodes = input.allChildren().bindFragment(this)
+            val childNodes = input.allChildren().requestFragment(this)
             val name = input.property("name").getLater()
             onSuccess {
                 li {
@@ -149,7 +149,7 @@ class HtmlBuilderTest {
         }
 
         val actual = client.getRootNode().queryAndBuildHtml {
-            val renderedNode = input.buildFragment<INode, UL> { renderNode() }
+            val renderedNode = input.requestFragment<INode, UL> { renderNode() }
             onSuccess {
                 ul {
                     insertFragment(renderedNode)

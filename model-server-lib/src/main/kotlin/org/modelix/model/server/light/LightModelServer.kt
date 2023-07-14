@@ -252,7 +252,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                     val serializedResult = json.encodeToString(VersionAndData.serializer(serializer), versionAndResult)
                     call.respondText(text = serializedResult, contentType = ContentType.Application.Json)
                 } catch (ex: Throwable) {
-                    call.respondText(text = ex.stackTraceToString(), status = HttpStatusCode.InternalServerError)
+                    call.respondText(text = "server version: $modelqlVersion\n" + ex.stackTraceToString(), status = HttpStatusCode.InternalServerError)
                 }
             }
         }

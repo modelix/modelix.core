@@ -27,7 +27,9 @@ import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.mapIfNotNull
 import org.modelix.modelql.core.stepOutputSerializer
+import kotlin.jvm.JvmName
 
 class ConceptReferenceUIDTraversalStep() : MonoTransformingStep<ConceptReference, String>() {
     override fun transform(input: ConceptReference): String {
@@ -53,5 +55,11 @@ class ConceptReferenceUIDTraversalStep() : MonoTransformingStep<ConceptReference
     }
 }
 
-fun IMonoStep<ConceptReference>.getUID() = ConceptReferenceUIDTraversalStep().connectAndDowncast(this)
-fun IFluxStep<ConceptReference>.getUID() = ConceptReferenceUIDTraversalStep().connectAndDowncast(this)
+fun IMonoStep<ConceptReference>.getUID(): IMonoStep<String> = ConceptReferenceUIDTraversalStep().connectAndDowncast(this)
+fun IFluxStep<ConceptReference>.getUID(): IFluxStep<String> = ConceptReferenceUIDTraversalStep().connectAndDowncast(this)
+
+@JvmName("getUID_nullable")
+fun IMonoStep<ConceptReference?>.getUID(): IMonoStep<String?> = mapIfNotNull { it.getUID() }
+
+@JvmName("getUID_nullable")
+fun IFluxStep<ConceptReference?>.getUID(): IFluxStep<String?> = mapIfNotNull { it.getUID() }

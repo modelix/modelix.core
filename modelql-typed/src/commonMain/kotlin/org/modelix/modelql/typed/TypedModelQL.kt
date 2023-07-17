@@ -44,6 +44,7 @@ import org.modelix.modelql.core.firstOrNull
 import org.modelix.modelql.core.flatMap
 import org.modelix.modelql.core.inSet
 import org.modelix.modelql.core.map
+import org.modelix.modelql.core.mapIfNotNull
 import org.modelix.modelql.core.orNull
 import org.modelix.modelql.core.stepOutputSerializer
 import org.modelix.modelql.core.toBoolean
@@ -153,6 +154,12 @@ fun <Typed : ITypedNode> IFluxStep<INode>.typedUnsafe(nodeClass: KClass<out Type
 fun IMonoStep<ITypedNode>.untyped(): IMonoStep<INode> = UntypedNodeStep().connectAndDowncast(this)
 fun IFluxStep<ITypedNode>.untyped(): IFluxStep<INode> = UntypedNodeStep().connectAndDowncast(this)
 
+@JvmName("untyped_nullable")
+fun IMonoStep<ITypedNode?>.untyped(): IMonoStep<INode?> = mapIfNotNull { it.untyped() }
+
+@JvmName("untyped_nullable")
+fun IFluxStep<ITypedNode?>.untyped(): IFluxStep<INode?> = mapIfNotNull { it.untyped() }
+
 class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : MonoTransformingStep<INode, Typed>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Typed>> {
         return TypedNodeSerializer(nodeClass, serializersModule.serializer<INode>()).stepOutputSerializer()
@@ -211,7 +218,7 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
 
 @JvmName("instanceOfExactly_untyped_untyped")
 fun IMonoStep<INode?>.instanceOfExactly(concept: IConcept): IMonoStep<Boolean> {
-    return conceptReference().filterNotNull().getUID().equalTo(concept.getUID())
+    return conceptReference().mapIfNotNull { it.getUID() }.equalTo(concept.getUID())
 }
 
 @JvmName("instanceOfExactly_untyped_typed")
@@ -232,7 +239,7 @@ fun IMonoStep<ITypedNode>.instanceOfExactly(concept: ITypedConcept): IMonoStep<B
 @JvmName("instanceOf_untyped_untyped")
 fun IMonoStep<INode?>.instanceOf(concept: IConcept): IMonoStep<Boolean> {
     val subconceptUIDs = concept.getAllSubConcepts(true).map { it.getReference().getUID() }.toSet()
-    return conceptReference().filterNotNull().getUID().inSet(subconceptUIDs)
+    return conceptReference().getUID().inSet(subconceptUIDs)
 }
 
 @JvmName("instanceOf_untyped")
@@ -242,22 +249,22 @@ fun <Out : ITypedNode> IMonoStep<INode?>.instanceOf(concept: IConceptOfTypedNode
 
 @JvmName("instanceOf")
 fun <In : ITypedNode, Out : In> IMonoStep<In?>.instanceOf(concept: IConceptOfTypedNode<Out>): IMonoStep<Boolean> {
-    return filterNotNull().untyped().instanceOf(concept)
+    return untyped().instanceOf(concept)
 }
 
 @JvmName("ofConcept_untyped")
 fun <Out : ITypedNode> IFluxStep<INode?>.ofConcept(concept: IConceptOfTypedNode<Out>): IFluxStep<Out> {
-    return filterNotNull().ofConcept(concept.untyped()).typedUnsafe(concept.getInstanceInterface())
+    return ofConcept(concept.untyped()).typedUnsafe(concept.getInstanceInterface())
 }
 
 @JvmName("ofConcept")
 fun <In : ITypedNode, Out : In> IFluxStep<In?>.ofConcept(concept: IConceptOfTypedNode<Out>): IFluxStep<Out> {
-    return filterNotNull().untyped().ofConcept(concept.untyped()).typedUnsafe(concept.getInstanceInterface())
+    return untyped().ofConcept(concept.untyped()).typedUnsafe(concept.getInstanceInterface())
 }
 
 @JvmName("ofConcept_untyped")
 fun <Out : ITypedNode> IMonoStep<INode?>.ofConcept(concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
-    return filterNotNull().ofConcept(concept.untyped()).typedUnsafe(concept.getInstanceInterface())
+    return ofConcept(concept.untyped()).typedUnsafe(concept.getInstanceInterface())
 }
 
 @JvmName("ofConcept")

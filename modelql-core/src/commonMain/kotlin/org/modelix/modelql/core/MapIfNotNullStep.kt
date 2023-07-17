@@ -47,3 +47,7 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
 fun <In : Any, Out> IMonoStep<In?>.mapIfNotNull(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out?> {
     return MapIfNotNullStep(IUnboundQuery.buildMono(body).castToInstance()).also { connect(it) }
 }
+
+fun <In : Any, Out> IFluxStep<In?>.mapIfNotNull(body: (IMonoStep<In>) -> IMonoStep<Out>): IFluxStep<Out?> {
+    return MapIfNotNullStep(IUnboundQuery.buildMono(body).castToInstance()).also { connect(it) }
+}

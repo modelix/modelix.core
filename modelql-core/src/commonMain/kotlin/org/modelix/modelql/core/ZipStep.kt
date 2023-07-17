@@ -196,7 +196,7 @@ class CombiningSequence<Common>(private val sequences: Array<Sequence<Common>>) 
     object UNINITIALIZED
 }
 
-class ZipOutputSerializer<CommonT, Out : ZipNOutputC<CommonT>>(
+class ZipOutputSerializer<CommonT, Out : IZipOutput<CommonT>>(
     val elementSerializers: Array<KSerializer<IStepOutput<CommonT>>>
 ) : KSerializer<ZipStepOutput<Out, CommonT>> {
     @OptIn(ExperimentalSerializationApi::class)
@@ -274,7 +274,7 @@ internal class ZipNOutputDesc(val elementDesc: Array<SerialDescriptor>) : Serial
     override fun isElementOptional(index: Int): Boolean = false
 }
 
-class ZipStepOutput<E : ZipNOutputC<Common>, Common>(val values: List<IStepOutput<Common>>) : IStepOutput<E> {
+class ZipStepOutput<E : IZipOutput<Common>, Common>(val values: List<IStepOutput<Common>>) : IStepOutput<E> {
     override val value: E
         get() = ZipNOutput(values.map { it.value }) as E
 }

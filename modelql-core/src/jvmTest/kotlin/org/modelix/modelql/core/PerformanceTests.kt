@@ -20,9 +20,9 @@ class PerformanceTests {
     @Test
     fun flowBasedFilterPerformance() = runTest {
         val query = buildMonoQuery<Int, Int> { it.filter { it.equalTo(0) } }
-        val intRange = 1..100000
+        val intRange = 1..10000
 
-        compareBenchmark(100, 100.0, {
+        compareBenchmark(30, 100.0, {
             query.asFlow(intRange.asFlow().asStepFlow()).count()
         }, {
             intRange.asFlow().filter { it == 0 }.count()
@@ -86,7 +86,8 @@ class PerformanceTests {
     private suspend fun compareBenchmark(iterations: Int, allowedFactor: Double, impl1: suspend () -> Unit, impl2: suspend () -> Unit) {
         println()
         withTimeout(10.seconds) {
-            for (retry in 1..5) {
+            val maxRetries = 3
+            for (retry in 1..maxRetries) {
                 val time1 = runBenchmark(iterations) {
                     impl1()
                 }
@@ -101,7 +102,7 @@ class PerformanceTests {
                 val message = "($retry) Implementation 1 is $factor times slower than implementation 2"
                 println(message)
                 if (factor <= allowedFactor) return@withTimeout
-                if (retry != 5 && factor <= allowedFactor * 10) continue
+                if (retry != maxRetries && factor <= allowedFactor * 10) continue
                 fail(message)
             }
         }

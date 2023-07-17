@@ -106,7 +106,7 @@ class WhenStep<In, Out>(
 }
 
 @OptIn(ExperimentalTypeInference::class)
-class WhenStepBuilder<In, Out>() {
+class WhenStepBuilder<In, Out>(private val input: IMonoStep<In>) {
     private val cases = ArrayList<Pair<IMonoUnboundQuery<In, Boolean?>, IMonoUnboundQuery<In, Out>>>()
 
     fun `if`(condition: (IMonoStep<In>) -> IMonoStep<Boolean?>): CaseBuilder {
@@ -115,7 +115,7 @@ class WhenStepBuilder<In, Out>() {
 
     @BuilderInference
     fun `else`(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
-        return WhenStep(cases, IUnboundQuery.buildMono(body))
+        return WhenStep(cases, IUnboundQuery.buildMono(body)).connectAndDowncast(input)
     }
 
     inner class CaseBuilder(val condition: IMonoUnboundQuery<In, Boolean?>) {
@@ -127,4 +127,4 @@ class WhenStepBuilder<In, Out>() {
     }
 }
 
-fun <In, Out> IMonoStep<In>.`when`() = WhenStepBuilder<In, Out>()
+fun <In, Out> IMonoStep<In>.`when`() = WhenStepBuilder<In, Out>(this)

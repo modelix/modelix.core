@@ -37,6 +37,11 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
         }
     }
 
+    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
+        val parameterValue = if (hasStaticParameter) staticParameterValue else getParameterProducer().evaluate(queryInput).getOrElse(null)
+        return getInputProducer().createSequence(queryInput).map { transformElement(it, parameterValue) }
+    }
+
     override fun evaluate(queryInput: Any?): Optional<Out> {
         val input = getInputProducer().evaluate(queryInput)
         if (!input.isPresent()) return Optional.empty()

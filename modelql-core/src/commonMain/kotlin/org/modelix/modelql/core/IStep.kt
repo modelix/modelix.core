@@ -120,7 +120,7 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
 
     override fun validate() {
         super<ProducingStep>.validate()
-        require(producer != null) { "Step has no input" }
+        require(producer != null) { "Step has no input: ${this::class}" }
     }
 
     override fun addProducer(producer: IProducingStep<In>) {

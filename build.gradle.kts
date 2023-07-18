@@ -116,6 +116,25 @@ subprojects {
             }
         }
     }
+
+    // Set maven metadata for all known publishing tasks. The exact tasks and names are only known after evaluatin.
+    afterEvaluate {
+        tasks.withType<AbstractPublishToMaven>() {
+            this.publication?.apply {
+                setMetadata()
+            }
+        }
+    }
+}
+
+fun MavenPublication.setMetadata() {
+    pom {
+        url.set("https://github.com/modelix/modelix.core")
+        scm {
+            connection.set("scm:git:https://github.com/modelix/modelix.core.git")
+            url.set("https://github.com/modelix/modelix.core")
+        }
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask> {
@@ -256,6 +275,8 @@ publishing {
             groupId = "org.modelix"
             artifactId = "core-version-catalog"
             from(components["versionCatalog"])
+
+            setMetadata()
         }
     }
 }

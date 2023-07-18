@@ -68,4 +68,8 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
     }
 }
 
-fun <T> IFluxStep<T>.withIndex(): IFluxStep<IZip2Output<Any?, T, Int>> = WithIndexStep<T>().connectAndDowncast(this)
+typealias IWithIndex<V> = IZip2Output<Any?, V, Int>
+
+fun <T> IFluxStep<T>.withIndex(): IFluxStep<IWithIndex<T>> = WithIndexStep<T>().connectAndDowncast(this)
+val IMonoStep<IWithIndex<*>>.index: IMonoStep<Int> get() = second
+val <T> IMonoStep<IWithIndex<T>>.value: IMonoStep<T> get() = first

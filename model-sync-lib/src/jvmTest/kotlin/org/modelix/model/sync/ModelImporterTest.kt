@@ -30,8 +30,8 @@ class ModelImporterTest {
         @JvmStatic
         @BeforeAll
         fun `load and import model`() {
-            model = ModelData.fromJson(File("src/test/resources/model.json").readText())
-            val newModelFile = File("src/test/resources/newmodel.json")
+            model = ModelData.fromJson(File("src/jvmTest/resources/model.json").readText())
+            val newModelFile = File("src/jvmTest/resources/newmodel.json")
             newModel = ModelData.fromJson(newModelFile.readText())
 
             val tree = CLTree(ObjectStoreCache(MapBaseStore()))

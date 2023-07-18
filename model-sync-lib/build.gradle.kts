@@ -1,24 +1,45 @@
 plugins {
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.multiplatform)
 }
 
 repositories {
     mavenCentral()
 }
 
-dependencies {
-    implementation(project(":model-api"))
-    testImplementation(project(":model-client", configuration = "jvmRuntimeElements"))
-    implementation(libs.kotlin.serialization.json)
-    testImplementation(kotlin("test"))
-}
-
 kotlin {
-    jvmToolchain(11)
-}
+    jvm {
+        jvmToolchain(11)
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
+    }
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(project(":model-api"))
+                implementation(libs.kotlin.serialization.json)
+            }
+        }
 
-tasks.test {
-    useJUnitPlatform()
+        val commonTest by getting {
+            dependencies {
+                implementation(project(":model-api"))
+                implementation(libs.kotlin.serialization.json)
+                implementation(project(":model-client"))
+                implementation(kotlin("test"))
+            }
+        }
+
+        val jvmMain by getting
+
+        val jvmTest by getting {
+            dependencies {
+                dependencies {
+                    implementation(project(":model-client", configuration = "jvmRuntimeElements"))
+                }
+            }
+        }
+    }
 }
 
 publishing {

@@ -20,11 +20,11 @@ import org.modelix.modelql.core.IFragmentBuilder
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IRequestedFragment
 
-interface IModelQLTemplate<In, Context> {
+interface IModelQLTemplate<in In, in Context> {
     fun IFragmentBuilder<In, Context>.buildFragment()
 }
 
-class ModelQLTemplateInstance<Context, Template : IModelQLTemplate<*, Context>>(
+class ModelQLTemplateInstance<in Context, out Template : IModelQLTemplate<*, Context>>(
     val template: Template,
     val fragment: IRequestedFragment<Context>
 )

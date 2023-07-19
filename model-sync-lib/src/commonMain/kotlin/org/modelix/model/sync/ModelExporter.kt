@@ -24,9 +24,7 @@ fun INode.asExported() : NodeData {
         role = roleInParent,
         properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) }.filterKeys { it != idKey },
         references = getReferenceRoles().associateWithNotNull {
-            getReferenceTarget(it)?.let { node ->
-                node.getPropertyValue(idKey) ?: node.reference.serialize()
-            }
+            getReferenceTarget(it)?.getPropertyValue(idKey) ?: getReferenceTargetRef(it)?.serialize()
         },
         children = allChildren.map { it.asExported() }
     )

@@ -373,6 +373,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                 subclass(org.modelix.modelql.core.IsNullPredicateStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.JoinStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ListCollectorStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.MapCollectorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MapIfNotNullStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MappingStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.NotOperatorStep.NotDescriptor::class)

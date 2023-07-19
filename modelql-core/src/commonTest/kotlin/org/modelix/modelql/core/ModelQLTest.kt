@@ -14,7 +14,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 import kotlinx.serialization.serializer
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -72,6 +75,16 @@ class ModelQLTest {
         }
         println(result)
         assertEquals(3, result.size)
+    }
+
+    @Test
+    @Ignore
+    fun testMapLocalToSet() = runTestWithTimeout {
+        val result: Int = remoteProductDatabaseQuery { db ->
+            db.products.map { it.title }.mapLocal { it.substring(0, 1) }.toSet().size()
+        }
+        println(result)
+        assertEquals(testDatabase.products.map { it.title.substring(0, 1) }.toSet().size, result)
     }
 
     @Test
@@ -241,26 +254,13 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
         prettyPrint = true
         serializersModule = SerializersModule {
             include(UnboundQuery.serializersModule)
-            polymorphic(
-                StepDescriptor::class,
-                ProductsTraversal.Descriptor::class,
-                ProductsTraversal.Descriptor.serializer()
-            )
-            polymorphic(
-                StepDescriptor::class,
-                ProductTitleTraversal.Descriptor::class,
-                ProductTitleTraversal.Descriptor.serializer()
-            )
-            polymorphic(
-                StepDescriptor::class,
-                ProductIdTraversal.Descriptor::class,
-                ProductIdTraversal.Descriptor.serializer()
-            )
-            polymorphic(
-                StepDescriptor::class,
-                ProductImagesTraversal.Descriptor::class,
-                ProductImagesTraversal.Descriptor.serializer()
-            )
+            polymorphic(StepDescriptor::class) {
+                subclass(ProductsTraversal.Descriptor::class)
+                subclass(ProductTitleTraversal.Descriptor::class)
+                subclass(ProductCategoryTraversal.Descriptor::class)
+                subclass(ProductIdTraversal.Descriptor::class)
+                subclass(ProductImagesTraversal.Descriptor::class)
+            }
         }
     }
     val serializedQuery = json.encodeToString(query.createDescriptor())
@@ -318,6 +318,26 @@ class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
         }
     }
 }
+class ProductCategoryTraversal : MonoTransformingStep<Product, String>() {
+    override fun transform(input: Product): String {
+        return input.category
+    }
+
+    override fun toString(): String {
+        return getProducers().single().toString() + ".category"
+    }
+
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
+
+    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+
+    @Serializable
+    class Descriptor : StepDescriptor() {
+        override fun createStep(context: QueryDeserializationContext): IStep {
+            return ProductCategoryTraversal()
+        }
+    }
+}
 class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
     override fun transform(input: Product): Int {
         return input.id
@@ -363,5 +383,6 @@ class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
 
 val IMonoStep<ProductDatabase>.products: IFluxStep<Product> get() = ProductsTraversal().also { connect(it) }
 val IMonoStep<Product>.title: IMonoStep<String> get() = ProductTitleTraversal().also { connect(it) }
+val IMonoStep<Product>.category: IMonoStep<String> get() = ProductCategoryTraversal().also { connect(it) }
 val IMonoStep<Product>.id: IMonoStep<Int> get() = ProductIdTraversal().also { connect(it) }
 val IMonoStep<Product>.images: IFluxStep<String> get() = ProductImagesTraversal().also { connect(it) }

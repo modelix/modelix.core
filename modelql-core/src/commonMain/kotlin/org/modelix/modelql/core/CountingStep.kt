@@ -33,4 +33,4 @@ class CountingStep() : AggregationStep<Any?, Int>() {
     }
 }
 
-fun IProducingStep<Any?>.count() = CountingStep().connectAndDowncast(this)
+fun IFluxStep<*>.count(): IMonoStep<Int> = CountingStep().also { connect(it) }

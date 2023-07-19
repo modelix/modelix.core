@@ -7,6 +7,10 @@ import org.modelix.model.api.getDescendants
 import org.modelix.model.api.serialize
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.associateWithNotNull
+import org.modelix.model.operations.AddNewChildOp
+import org.modelix.model.operations.DeleteNodeOp
+import org.modelix.model.operations.IAppliedOperation
+import org.modelix.model.operations.MoveNodeOp
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
@@ -58,13 +62,26 @@ internal fun assertNodeChildOrderConformsToSpec(expected: NodeData, actual: INod
     assertEquals(specifiedOrder, actualOrder)
 }
 
-internal fun assertNoOverlappingOperations(stats: ImportStats?) {
-    stats ?: fail("No import stats found.")
-    val additionsSet = stats.additions.toSet()
-    val deletionsSet = stats.deletions.toSet()
-    val movesSet = stats.moves.toSet()
+internal fun assertNoOverlappingOperations(operations: List<IAppliedOperation>) {
+
+    val opsByType = operations.groupBy { it.getOriginalOp()::class }
+
+    val additionsSet = opsByType[AddNewChildOp::class]?.map { (it.getOriginalOp() as AddNewChildOp).childId }?.toSet() ?: emptySet()
+    val deletionsSet = opsByType[DeleteNodeOp::class]?.map { (it.getOriginalOp() as DeleteNodeOp).childId }?.toSet() ?: emptySet()
+    val movesSet = opsByType[MoveNodeOp::class]?.map { (it.getOriginalOp() as MoveNodeOp).childId }?.toSet() ?: emptySet()
 
     assert(additionsSet.intersect(deletionsSet).isEmpty())
     assert(deletionsSet.intersect(movesSet).isEmpty())
     assert(movesSet.intersect(additionsSet).isEmpty())
 }
+
+internal fun NodeData.countNodes(): Int {
+    var count = 1
+    children.forEach {
+        count += it.countNodes()
+    }
+    return count
+}
+
+internal fun List<IAppliedOperation>.numOpsByType() =
+    groupBy { it.getOriginalOp()::class }.mapValues { (_, ops) -> ops.size }

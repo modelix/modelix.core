@@ -3,7 +3,6 @@ package org.modelix.model.sync
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.serialize
@@ -12,19 +11,19 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.operations.*
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.test.RandomModelChangeGenerator
 import java.io.File
 import kotlin.random.Random
 import kotlin.test.assertEquals
-import kotlin.test.fail
 
 class ModelImporterTest {
 
     companion object {
         private lateinit var model: ModelData
         private lateinit var newModel: ModelData
-        private lateinit var branch: IBranch
+        private lateinit var branch: OTBranch
         private lateinit var importer: ModelImporter
 
         @JvmStatic
@@ -34,14 +33,20 @@ class ModelImporterTest {
             val newModelFile = File("src/jvmTest/resources/newmodel.json")
             newModel = ModelData.fromJson(newModelFile.readText())
 
-            val tree = CLTree(ObjectStoreCache(MapBaseStore()))
-            branch = PBranch(tree, IdGenerator.getInstance(1))
+            val store = ObjectStoreCache(MapBaseStore())
+            val tree = CLTree(store)
+            val idGenerator = IdGenerator.getInstance(1)
+            val pBranch = PBranch(tree, idGenerator)
+
+            pBranch.runWrite {
+                model.load(pBranch)
+            }
+            branch = OTBranch(pBranch, idGenerator, store)
 
             branch.runWrite {
-                model.load(branch)
 //                println("PRE-SPEC ${model.toJson()}")
 //                println("PRE-LOADED ${branch.getRootNode().toJson()}")
-                importer = ModelImporter(branch.getRootNode(), ImportStats()).apply { import(newModelFile) }
+                importer = ModelImporter(branch.getRootNode()).apply { import(newModelFile) }
 //                println("POST-SPEC ${newModel.root.toJson()}")
 //                println("POST-LOADED ${branch.getRootNode().toJson()}")
             }
@@ -91,17 +96,22 @@ class ModelImporterTest {
 
     @Test
     fun `uses minimal amount of operations`() {
-        val stats = importer.stats ?: fail("No import stats found.")
-        assertEquals(1, stats.additions.size)
-        assertEquals(1, stats.deletions.size)
-        assertEquals(5, stats.moves.size)
-        assertEquals(4, stats.propertyChanges.size)
-        assertEquals(3, stats.referenceChanges.size)
+        val operations = branch.operationsAndTree.first
+
+        val numOps = operations.numOpsByType()
+        val numPropertyChangesIgnoringOriginalId =
+            numOps[AddNewChildOp::class]?.let { numOps[SetPropertyOp::class]?.minus(it) } ?: 0
+
+        assertEquals(1, numOps[AddNewChildOp::class])
+        assertEquals(1, numOps[DeleteNodeOp::class])
+        assertEquals(5, numOps[MoveNodeOp::class])
+        assertEquals(4, numPropertyChangesIgnoringOriginalId)
+        assertEquals(3, numOps[SetReferenceOp::class])
     }
 
     @Test
     fun `operations do not overlap`() {
-        assertNoOverlappingOperations(importer.stats)
+        assertNoOverlappingOperations(branch.operationsAndTree.first)
     }
 
     @Test
@@ -125,13 +135,13 @@ class ModelImporterTest {
         println("Seed for random change test: $seed")
         lateinit var initialState: NodeData
         lateinit var specification: NodeData
-        val numChanges = 50
+        val numChanges = 200
 
         branch0.runWrite {
             val rootNode = branch0.getRootNode()
             rootNode.setPropertyValue(NodeData.idPropertyKey, rootNode.reference.serialize())
             val grower = RandomModelChangeGenerator(rootNode, Random(seed)).growingOperationsOnly()
-            for (i in 1..20) {
+            for (i in 1..1000) {
                 grower.applyRandomChange()
             }
             initialState = rootNode.asExported()
@@ -143,28 +153,31 @@ class ModelImporterTest {
             specification = rootNode.asExported()
         }
 
-        val tree1 = CLTree(ObjectStoreCache(MapBaseStore()))
-        val branch1 = PBranch(tree1, IdGenerator.getInstance(1))
+        val store = ObjectStoreCache(MapBaseStore())
+        val tree1 = CLTree(store)
+        val idGenerator = IdGenerator.getInstance(1)
+        val branch1 = PBranch(tree1, idGenerator)
 
         branch1.runWrite {
-            val importer = ModelImporter(branch1.getRootNode(), ImportStats())
+            val importer = ModelImporter(branch1.getRootNode())
             importer.import(ModelData(root = initialState))
+        }
+        val otBranch = OTBranch(branch1, idGenerator, store)
+
+        otBranch.runWrite {
+            val importer = ModelImporter(otBranch.getRootNode())
             importer.import(ModelData(root = specification))
 
-//            println("INITIAL")
-//            println(initialState.toJson())
-//
-//            println("SPEC")
-//            println(specification.toJson())
-//
-//            println("ACTUAL")
-//            println(branch1.getRootNode().toJson())
+            assertAllNodesConformToSpec(specification, otBranch.getRootNode())
+        }
+        val operations = otBranch.operationsAndTree.first
+        assertNoOverlappingOperations(operations)
 
-            assertAllNodesConformToSpec(specification, branch1.getRootNode())
-            assertNoOverlappingOperations(importer.stats)
-            assert(importer.stats!!.getTotal() <= numChanges) {
-                "expected operations: <= $numChanges, actual: ${importer.stats!!.getTotal()}"
-            }
+        val numSetOriginalIdOps = specification.countNodes()
+        val expectedNumOps = numChanges + numSetOriginalIdOps
+
+        assert(operations.size <= expectedNumOps ) {
+            "expected operations: <= $expectedNumOps, actual: ${operations.size}"
         }
     }
 }

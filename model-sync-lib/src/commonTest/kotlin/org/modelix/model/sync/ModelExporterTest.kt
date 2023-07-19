@@ -23,7 +23,7 @@ class ModelExporterTest {
         @JvmStatic
         @BeforeAll
         fun `initialize model and branch`() {
-            model = ModelData.fromJson(File("src/jvmTest/resources/newmodel.json").readText())
+            model = ModelData.fromJson(File("src/commonTest/resources/newmodel.json").readText())
 
             val tree = CLTree(ObjectStoreCache(MapBaseStore()))
             branch = PBranch(tree, IdGenerator.getInstance(1))

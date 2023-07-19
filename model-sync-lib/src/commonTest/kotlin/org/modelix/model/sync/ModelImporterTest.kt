@@ -29,8 +29,8 @@ class ModelImporterTest {
         @JvmStatic
         @BeforeAll
         fun `load and import model`() {
-            model = ModelData.fromJson(File("src/jvmTest/resources/model.json").readText())
-            val newModelFile = File("src/jvmTest/resources/newmodel.json")
+            model = ModelData.fromJson(File("src/commonTest/resources/model.json").readText())
+            val newModelFile = File("src/commonTest/resources/newmodel.json")
             newModel = ModelData.fromJson(newModelFile.readText())
 
             val store = ObjectStoreCache(MapBaseStore())

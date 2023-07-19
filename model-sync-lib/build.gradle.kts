@@ -25,18 +25,8 @@ kotlin {
             dependencies {
                 implementation(project(":model-api"))
                 implementation(libs.kotlin.serialization.json)
-                implementation(project(":model-client"))
+                implementation(project(":model-client", configuration = "jvmRuntimeElements"))
                 implementation(kotlin("test"))
-            }
-        }
-
-        val jvmMain by getting
-
-        val jvmTest by getting {
-            dependencies {
-                dependencies {
-                    implementation(project(":model-client", configuration = "jvmRuntimeElements"))
-                }
             }
         }
     }

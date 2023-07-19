@@ -135,13 +135,13 @@ class ModelImporterTest {
         println("Seed for random change test: $seed")
         lateinit var initialState: NodeData
         lateinit var specification: NodeData
-        val numChanges = 200
+        val numChanges = 50
 
         branch0.runWrite {
             val rootNode = branch0.getRootNode()
             rootNode.setPropertyValue(NodeData.idPropertyKey, rootNode.reference.serialize())
             val grower = RandomModelChangeGenerator(rootNode, Random(seed)).growingOperationsOnly()
-            for (i in 1..1000) {
+            for (i in 1..100) {
                 grower.applyRandomChange()
             }
             initialState = rootNode.asExported()

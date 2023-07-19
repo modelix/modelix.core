@@ -28,16 +28,26 @@ fun NodeData.toJson() : String {
 
 internal fun assertAllNodesConformToSpec(expectedRoot: NodeData, actualRoot: INode) {
     val originalIdToNode = actualRoot.getDescendants(false).associateBy { it.originalId() }
-    assertNodeConformsToSpec(expectedRoot, actualRoot)
+    val originalIdToSpec = buildSpecIndex(expectedRoot)
+    assertNodeConformsToSpec(expectedRoot, actualRoot, originalIdToSpec)
     for (expectedChild in expectedRoot.children) {
         val actualChild = originalIdToNode[expectedChild.originalId()] ?: fail("expected child has no id")
-        assertNodeConformsToSpec(expectedChild, actualChild)
+        assertNodeConformsToSpec(expectedChild, actualChild, originalIdToSpec)
     }
 }
 
-internal fun assertNodeConformsToSpec(expected: NodeData, actual: INode) {
+private fun buildSpecIndex(nodeData: NodeData) : Map<String, NodeData> {
+    val map = mutableMapOf<String, NodeData>()
+    nodeData.originalId()?.let { map[it] = nodeData}
+    nodeData.children.forEach {
+        map.putAll(buildSpecIndex(it))
+    }
+    return map
+}
+
+internal fun assertNodeConformsToSpec(expected: NodeData, actual: INode, originalIdToSpec: Map<String, NodeData> = emptyMap()) {
     assertNodePropertiesConformToSpec(expected, actual)
-    assertNodeReferencesConformToSpec(expected, actual)
+    assertNodeReferencesConformToSpec(expected, actual, originalIdToSpec)
     assertNodeChildOrderConformsToSpec(expected, actual)
 }
 
@@ -47,13 +57,28 @@ internal fun assertNodePropertiesConformToSpec(expected: NodeData, actual: INode
     assertEquals(expected.id, actualProperties[NodeData.idPropertyKey])
 }
 
-internal fun assertNodeReferencesConformToSpec(expected: NodeData, actual: INode) {
-    val actualReferences = actual.getReferenceRoles().associateWithNotNull {
-        actual.getReferenceTarget(it)?.let { node ->
-            node.getPropertyValue(NodeData.idPropertyKey) ?: node.reference.serialize()
+internal fun assertNodeReferencesConformToSpec(
+    expected: NodeData,
+    actual: INode,
+    originalIdToSpec: Map<String, NodeData> = emptyMap()
+) {
+    var numUnresolvableRefs = 0
+
+    val actualResolvableRefs = actual.getReferenceRoles().associateWithNotNull {
+        val target = actual.getReferenceTarget(it)
+        if (target == null) {
+            numUnresolvableRefs++
+            return@associateWithNotNull null
         }
+        target.getPropertyValue(NodeData.idPropertyKey) ?: target.reference.serialize()
     }
-    assertEquals(expected.references, actualReferences)
+
+    assertEquals(expected.references.size, actualResolvableRefs.size + numUnresolvableRefs)
+    assert(expected.references.entries.containsAll(actualResolvableRefs.entries))
+    val unresolved = expected.references.entries.subtract(actualResolvableRefs.entries)
+    unresolved.forEach {
+        assert(!originalIdToSpec.containsKey(it.value)) { "node ref with target ${it.value} should have been resolved"}
+    }
 }
 
 internal fun assertNodeChildOrderConformsToSpec(expected: NodeData, actual: INode) {

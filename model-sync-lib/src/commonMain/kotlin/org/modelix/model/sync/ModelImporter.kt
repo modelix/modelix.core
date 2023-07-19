@@ -9,7 +9,6 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
 
     private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
     private val originalIdToSpec: MutableMap<String, NodeData> = mutableMapOf()
-    private val originalIdToRef: MutableMap<String, INodeReference> = mutableMapOf()
 
     fun import(jsonFile: File) {
         require(jsonFile.exists())
@@ -23,38 +22,31 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         stats?.reset()
         originalIdToExisting.clear()
         originalIdToSpec.clear()
-        originalIdToRef.clear()
 
         syncProperties(root, data.root) // root original id is required for following operations
-        val allExistingNodes = root.getDescendants(true).toList()
         buildSpecIndex(data.root)
 
-        syncAllProperties(allExistingNodes)
-        buildExistingIndex(allExistingNodes)
+        syncAllProperties(root.getDescendants(false))
+        buildExistingIndex(root)
 
-        sortAllExistingChildren(allExistingNodes)
+        sortAllExistingChildren(root)
         val addedNodes = addAllMissingChildren(root)
-        syncAllProperties(addedNodes)
+        syncAllProperties(addedNodes.asSequence())
 
-        val allNodes = allExistingNodes + addedNodes
+        handleAllMovesAcrossParents(root)
 
-        handleAllMovesAcrossParents(allNodes)
+        addedNodes.forEach {node ->
+            node.originalId()?.let { originalIdToExisting[it] = node }
+        }
 
-        buildRefIndex(allNodes)
-        syncAllReferences(allNodes)
+        syncAllReferences(root)
 
         deleteAllExtraChildren(root)
     }
 
-    private fun buildExistingIndex(allNodes: List<INode>) {
-        allNodes.forEach {node ->
+    private fun buildExistingIndex(root: INode) {
+        root.getDescendants(true).forEach {node ->
             node.originalId()?.let { originalIdToExisting[it] = node }
-        }
-    }
-
-    private fun buildRefIndex(allNodes: List<INode>) {
-        allNodes.forEach {node ->
-            node.originalId()?.let { originalIdToRef[it] = node.reference }
         }
     }
 
@@ -63,8 +55,8 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         nodeData.children.forEach { buildSpecIndex(it) }
     }
 
-    private fun syncAllProperties(allNodes: List<INode>) {
-        allNodes.forEach {node ->
+    private fun syncAllProperties(nodeSequence: Sequence<INode>) {
+        nodeSequence.forEach {node ->
             originalIdToSpec[node.originalId()]?.let { spec -> syncProperties(node, spec) }
         }
     }
@@ -86,23 +78,23 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         toBeRemoved.forEach { node.setPropertyValueWithStats(it, null) }
     }
 
-    private fun syncAllReferences(allNodes: List<INode>) {
-        allNodes.forEach {node ->
-            originalIdToSpec[node.originalId()]?.let { spec -> syncReferences(node, spec, originalIdToRef) }
+    private fun syncAllReferences(root: INode) {
+        root.getDescendants(true).forEach {node ->
+            originalIdToSpec[node.originalId()]?.let { spec -> syncReferences(node, spec) }
         }
     }
 
-    private fun syncReferences(node: INode, nodeData: NodeData, originalIdToRef: Map<String, INodeReference>) {
+    private fun syncReferences(node: INode, nodeData: NodeData) {
         nodeData.references.forEach {
-            if (node.getReferenceTargetRef(it.key) != originalIdToRef[it.value]) {
-                node.setReferenceTargetWithStats(it.key, originalIdToRef[it.value])
+            if (node.getReferenceTargetRef(it.key) != originalIdToExisting[it.value]?.reference) {
+                node.setReferenceTargetWithStats(it.key, originalIdToExisting[it.value]?.reference)
             }
         }
         val toBeRemoved = node.getReferenceRoles().toSet().subtract(nodeData.references.keys)
         toBeRemoved.forEach { node.setReferenceTargetWithStats(it, null) }
     }
 
-    private fun addAllMissingChildren(node: INode): MutableList<INode> {
+    private fun addAllMissingChildren(node: INode): List<INode> {
         val addedNodes = mutableListOf<INode>()
         originalIdToSpec[node.originalId()]?.let {
             addedNodes.addAll(
@@ -135,10 +127,8 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         }
     }
 
-    private fun sortAllExistingChildren(
-        allNodes: Iterable<INode>
-    ) {
-        allNodes.forEach { node ->
+    private fun sortAllExistingChildren(root: INode) {
+        root.getDescendants(true).forEach { node ->
             originalIdToSpec[node.originalId()]?.let { sortExistingChildren(node, it) }
         }
     }
@@ -177,8 +167,8 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         }
     }
 
-    private fun handleAllMovesAcrossParents(allNodes: List<INode>) {
-        val moves = collectMovesAcrossParents(allNodes)
+    private fun handleAllMovesAcrossParents(root: INode) {
+        val moves = collectMovesAcrossParents(root)
         while (moves.isNotEmpty()) {
             val nextMove = moves.first { !it.nodeToBeMoved.getDescendants(false).contains(it.targetParent) }
             performMoveAcrossParents(nextMove.targetParent, nextMove.nodeToBeMoved)
@@ -186,9 +176,9 @@ class ModelImporter(private val root: INode, val stats: ImportStats? = null) {
         }
     }
 
-    private fun collectMovesAcrossParents(allNodes: List<INode>): MutableList<MoveAcrossParents> {
+    private fun collectMovesAcrossParents(root: INode): MutableList<MoveAcrossParents> {
         val movesAcrossParents = mutableListOf<MoveAcrossParents>()
-        allNodes.forEach {node ->
+        root.getDescendants(true).forEach {node ->
             val nodeData = originalIdToSpec[node.originalId()] ?: return@forEach
 
             val missingIds = nodeData.children.map { it.originalId() }.toSet()

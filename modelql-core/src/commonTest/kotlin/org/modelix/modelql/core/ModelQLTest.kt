@@ -97,6 +97,14 @@ class ModelQLTest {
     }
 
     @Test
+    fun testFirstOrNull() = runTestWithTimeout {
+        val result: Product? = remoteProductDatabaseQuery { db ->
+            db.products.filter { it.id.equalTo((-1).asMono()) }.firstOrNull()
+        }
+        assertEquals(null, result)
+    }
+
+    @Test
     fun testIfEmpty() = runTestWithTimeout {
         val result: String = remoteProductDatabaseQuery { db ->
             db.products.filter { it.id.equalTo(-1) }.map { it.title }.ifEmpty { "alternative".asMono() }.first()

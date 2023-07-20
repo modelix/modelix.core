@@ -4,12 +4,15 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.modules.SerializersModule
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
 
     override suspend fun aggregate(input: StepFlow<E>): IStepOutput<E?> {
-        return input.firstOrNull() ?: null.asStepOutput()
+        return input.firstOrNull()?.let { MultiplexedOutput(0, it) }
+            ?: MultiplexedOutput(1, null.asStepOutput())
     }
 
     override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<E?> {
@@ -21,7 +24,13 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E?>> {
-        return getProducer().getOutputSerializer(serializersModule).upcast()
+        return MultiplexedOutputSerializer<E?>(
+            this,
+            listOf(
+                getProducer().getOutputSerializer(serializersModule).upcast(),
+                String.serializer().nullable.stepOutputSerializer() as KSerializer<IStepOutput<E?>>
+            )
+        )
     }
 
     override fun createDescriptor(context: QuerySerializationContext) = Descriptor()

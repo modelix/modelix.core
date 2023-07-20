@@ -93,7 +93,13 @@ class QueryBuilderContext<In, Out> {
 fun <In, Out> IMonoStep<In>.callQuery(ref: QueryReference<IMonoUnboundQuery<In, Out>>): IMonoStep<Out> {
     return QueryCallStep<In, Out>(ref).also { connect(it) }
 }
+fun <In, Out> IMonoStep<In>.callQuery(query: () -> IMonoUnboundQuery<In, Out>): IMonoStep<Out> {
+    return callQuery(QueryReference(null, null, query))
+}
+fun <In, Out> IMonoStep<In>.callFluxQuery(query: () -> IFluxUnboundQuery<In, Out>): IFluxStep<Out> {
+    return callFluxQuery(QueryReference(null, null, query))
+}
 
-fun <In, Out> IMonoStep<In>.callQuery(ref: QueryReference<IFluxUnboundQuery<In, Out>>): IFluxStep<Out> {
+fun <In, Out> IMonoStep<In>.callFluxQuery(ref: QueryReference<IFluxUnboundQuery<In, Out>>): IFluxStep<Out> {
     return QueryCallStep<In, Out>(ref).also { connect(it) }
 }

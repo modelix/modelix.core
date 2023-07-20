@@ -74,7 +74,10 @@ class QueryReference<Q : IUnboundQuery<*, *, *>>(
     private var queryId: Long?,
     private val queryInitializer: (() -> Q)?
 ) {
-    val query: Q by lazy { providedQuery ?: queryInitializer!!() }
+    private val creatingStacktrace = Exception()
+    val query: Q by lazy {
+        providedQuery ?: (queryInitializer ?: throw IllegalStateException("query for ID $queryId not found", creatingStacktrace)).invoke()
+    }
     fun getId(): Long = queryId ?: query.id
 }
 

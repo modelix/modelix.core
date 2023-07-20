@@ -21,7 +21,7 @@ interface IStep {
     fun needsCoroutineScope() = false
     fun requiresSingularQueryInput(): Boolean
 
-    fun getRootInputStep(): IStep = if (this is IConsumingStep<*>) getProducers().map { it.getRootInputStep() }.toSet().single() else this
+    fun getRootInputSteps(): Set<IStep> = if (this is IConsumingStep<*>) getProducers().flatMap { it.getRootInputSteps() }.toSet() else setOf(this)
 }
 
 interface IFlowInstantiationContext {

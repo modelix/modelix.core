@@ -253,7 +253,11 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 
     override fun toString(): String {
-        return (getUnconsumedSteps() + outputStep).joinToString("; ")
+        try {
+            return (getUnconsumedSteps() + outputStep).joinToString("; ")
+        } catch (ex: Throwable) {
+            return "Query#$id"
+        }
     }
 
     fun validate() {

@@ -25,7 +25,7 @@ class CollectorStepOutput<E, CollectionT>(
     override val value: CollectionT get() = output
 }
 
-abstract class CollectorStepOutputSerializer<E, CollectionT>(private val inputElementSerializer: KSerializer<IStepOutput<E>>) : KSerializer<CollectorStepOutput<E, CollectionT>> {
+abstract class CollectorStepOutputSerializer<E, CollectionT>(val inputElementSerializer: KSerializer<IStepOutput<E>>) : KSerializer<CollectorStepOutput<E, CollectionT>> {
     private val inputSerializer = kotlinx.serialization.builtins.ListSerializer(inputElementSerializer)
 
     protected abstract fun wrap(input: List<IStepOutput<E>>): CollectionT

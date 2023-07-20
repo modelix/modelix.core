@@ -88,6 +88,15 @@ class ModelQLTest {
     }
 
     @Test
+    fun testMapAccess() = runTestWithTimeout {
+        val result: String = remoteProductDatabaseQuery { db ->
+            db.products.associateBy { it.id }[5.asMono()].filterNotNull().title
+        }
+        println(result)
+        assertEquals("Huawei P30", result)
+    }
+
+    @Test
     fun testIfEmpty() = runTestWithTimeout {
         val result: String = remoteProductDatabaseQuery { db ->
             db.products.filter { it.id.equalTo(-1) }.map { it.title }.ifEmpty { "alternative".asMono() }.first()

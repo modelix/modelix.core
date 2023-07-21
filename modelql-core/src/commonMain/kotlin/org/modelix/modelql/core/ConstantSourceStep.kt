@@ -42,11 +42,11 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     override fun requiresWriteAccess(): Boolean = false
     override fun needsCoroutineScope(): Boolean = false
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<E> {
         return sequenceOf(element)
     }
 
-    override fun evaluate(queryInput: Any?): Optional<E> {
+    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<E> {
         return Optional.of(element)
     }
 

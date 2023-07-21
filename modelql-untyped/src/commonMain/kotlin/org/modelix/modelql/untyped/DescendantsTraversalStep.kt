@@ -28,6 +28,7 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
@@ -40,8 +41,8 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
         return input.flatMapConcat { it.value.getDescendantsAsFlow(includeSelf) }.asStepFlow()
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<INode> {
-        return getProducer().createSequence(queryInput).flatMap { it.getDescendants(includeSelf) }
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<INode> {
+        return getProducer().createSequence(evaluationContext, queryInput).flatMap { it.getDescendants(includeSelf) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {

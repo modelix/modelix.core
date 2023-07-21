@@ -8,7 +8,7 @@ import kotlinx.serialization.serializer
 
 class IsNullPredicateStep<In>() : MonoTransformingStep<In, Boolean>() {
 
-    override fun transform(input: In): Boolean {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: In): Boolean {
         return input == null
     }
 

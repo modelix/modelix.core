@@ -23,19 +23,19 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
     }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return query.asFlow(input)
+        return query.asFlow(context.evaluationContext, input)
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
-        return query.asSequence(queryInput as Sequence<In>)
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
+        return query.asSequence(evaluationContext, queryInput as Sequence<In>)
     }
 
-    override fun evaluate(queryInput: Any?): Optional<Out> {
-        return getProducer().evaluate(queryInput).flatMap { query.evaluate(it) }
+    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
+        return getProducer().evaluate(evaluationContext, queryInput).flatMap { query.evaluate(evaluationContext, it) }
     }
 
-    override fun transform(input: In): Out {
-        return query.evaluate(input).get()
+    override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {
+        return query.evaluate(evaluationContext, input).get()
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
@@ -58,10 +58,10 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
 }
 
 fun <In, Out> IFluxStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IFluxStep<Out> {
-    return MappingStep(IUnboundQuery.buildMono(body).castToInstance()).connectAndDowncast(this)
+    return MappingStep(buildMonoQuery { body(it) }.castToInstance()).connectAndDowncast(this)
 }
 fun <In, Out> IMonoStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
-    return MappingStep(IUnboundQuery.buildMono(body).castToInstance()).connectAndDowncast(this)
+    return MappingStep(buildMonoQuery { body(it) }.castToInstance()).connectAndDowncast(this)
 }
 fun <In, Out> IMonoStep<In>.map(query: IMonoUnboundQuery<In, Out>): IMonoStep<Out> {
     return MappingStep(query.castToInstance()).connectAndDowncast(this)

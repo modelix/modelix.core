@@ -10,7 +10,7 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
         return getProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun transform(input: E): E {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: E): E {
         println(prefix + input)
         return input
     }

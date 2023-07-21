@@ -27,6 +27,7 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
@@ -43,11 +44,11 @@ class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<IN
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
-    override fun transform(input: INode): INode {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: INode): INode {
         return input.parent!!
     }
 
-    override fun createTransformingSequence(input: Sequence<INode>): Sequence<INode> {
+    override fun createTransformingSequence(evaluationContext: QueryEvaluationContext, input: Sequence<INode>): Sequence<INode> {
         return input.mapNotNull { it.parent }
     }
 

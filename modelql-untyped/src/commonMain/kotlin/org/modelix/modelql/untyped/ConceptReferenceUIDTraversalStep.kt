@@ -25,6 +25,7 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.mapIfNotNull
@@ -32,7 +33,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 import kotlin.jvm.JvmName
 
 class ConceptReferenceUIDTraversalStep() : MonoTransformingStep<ConceptReference, String>() {
-    override fun transform(input: ConceptReference): String {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: ConceptReference): String {
         return input.getUID()
     }
 

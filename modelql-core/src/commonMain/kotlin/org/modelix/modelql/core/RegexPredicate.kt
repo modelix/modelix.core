@@ -8,7 +8,7 @@ import kotlinx.serialization.serializer
 
 class RegexPredicate(val regex: Regex) : MonoTransformingStep<String?, Boolean>() {
 
-    override fun transform(input: String?): Boolean {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: String?): Boolean {
         return input?.matches(regex) ?: false
     }
 

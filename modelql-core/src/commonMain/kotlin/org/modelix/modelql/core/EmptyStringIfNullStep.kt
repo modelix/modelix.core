@@ -11,7 +11,7 @@ class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
         return serializersModule.serializer<String>().stepOutputSerializer()
     }
 
-    override fun transform(input: String?): String {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: String?): String {
         return input ?: ""
     }
 

@@ -18,11 +18,11 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     }
 
     override fun createFlow(input: StepFlow<In?>, context: IFlowInstantiationContext): StepFlow<Out?> {
-        return input.flatMapConcat { it.value?.let { query.asFlow(it) } ?: flowOf(null).asStepFlow() }
+        return input.flatMapConcat { it.value?.let { query.asFlow(context.evaluationContext, it) } ?: flowOf(null).asStepFlow() }
     }
 
-    override fun transform(input: In?): Out? {
-        return input?.let { query.outputStep.evaluate(it).getOrElse(null) }
+    override fun transform(evaluationContext: QueryEvaluationContext, input: In?): Out? {
+        return input?.let { query.outputStep.evaluate(evaluationContext, it).getOrElse(null) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out?>> {
@@ -44,10 +44,10 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     }
 }
 
-fun <In : Any, Out> IMonoStep<In?>.mapIfNotNull(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out?> {
-    return MapIfNotNullStep(IUnboundQuery.buildMono(body).castToInstance()).also { connect(it) }
+fun <In : Any, Out> IMonoStep<In?>.mapIfNotNull(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out?> {
+    return MapIfNotNullStep(buildMonoQuery(body).castToInstance()).also { connect(it) }
 }
 
-fun <In : Any, Out> IFluxStep<In?>.mapIfNotNull(body: (IMonoStep<In>) -> IMonoStep<Out>): IFluxStep<Out?> {
-    return MapIfNotNullStep(IUnboundQuery.buildMono(body).castToInstance()).also { connect(it) }
+fun <In : Any, Out> IFluxStep<In?>.mapIfNotNull(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>) -> IMonoStep<Out>): IFluxStep<Out?> {
+    return MapIfNotNullStep(buildMonoQuery(body).castToInstance()).also { connect(it) }
 }

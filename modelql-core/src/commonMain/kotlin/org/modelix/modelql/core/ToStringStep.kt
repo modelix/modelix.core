@@ -13,7 +13,7 @@ class ToStringStep : MonoTransformingStep<Any?, String?>() {
         return serializersModule.serializer<String>().nullable.stepOutputSerializer()
     }
 
-    override fun transform(input: Any?): String? {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: Any?): String? {
         return input?.toString()
     }
 

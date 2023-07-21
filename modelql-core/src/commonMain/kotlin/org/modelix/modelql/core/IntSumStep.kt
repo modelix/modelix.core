@@ -8,7 +8,7 @@ import kotlinx.serialization.serializer
 
 class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
 
-    override fun transform(input: Int): Int {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: Int): Int {
         return input + operand
     }
 

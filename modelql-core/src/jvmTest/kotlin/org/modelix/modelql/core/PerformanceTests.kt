@@ -23,7 +23,7 @@ class PerformanceTests {
         val intRange = 1..10000
 
         compareBenchmark(30, 100.0, {
-            query.asFlow(intRange.asFlow().asStepFlow()).count()
+            query.asFlow(QueryEvaluationContext.EMPTY, intRange.asFlow().asStepFlow()).count()
         }, {
             intRange.asFlow().filter { it == 0 }.count()
         })
@@ -35,7 +35,7 @@ class PerformanceTests {
         val intRange = 1..100000
 
         compareBenchmark(100, 5.0, {
-            query.asSequence(intRange.asSequence()).count()
+            query.asSequence(QueryEvaluationContext.EMPTY, intRange.asSequence()).count()
         }, {
             intRange.asSequence().filter { it == 0 }.count()
         })

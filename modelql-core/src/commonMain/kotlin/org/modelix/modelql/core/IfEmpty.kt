@@ -13,13 +13,13 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         val downCastedInput: StepFlow<Out> = input
         return downCastedInput.map { MultiplexedOutput(0, it) }.onEmpty {
-            emitAll(alternative.asFlow(Unit).map { MultiplexedOutput(1, it) })
+            emitAll(alternative.asFlow(context.evaluationContext, Unit).map { MultiplexedOutput(1, it) })
         }
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
-        return getProducer().createSequence(queryInput)
-            .ifEmpty { alternative.outputStep.createSequence(sequenceOf(Unit)) }
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
+        return getProducer().createSequence(evaluationContext, queryInput)
+            .ifEmpty { alternative.outputStep.createSequence(evaluationContext, sequenceOf(Unit)) }
     }
 
     override fun canBeEmpty(): Boolean = alternative.outputStep.canBeEmpty()
@@ -54,20 +54,20 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
 
 @JvmName("ifEmpty_mono_mono")
 fun <In : Out, Out> IMonoStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IMonoStep<Out> {
-    return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
+    return IfEmptyStep<In, Out>(buildMonoQuery<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
 }
 
 @JvmName("ifEmpty_flux_mono")
 fun <In : Out, Out> IFluxStep<In>.ifEmpty(alternative: () -> IMonoStep<Out>): IFluxStep<Out> {
-    return IfEmptyStep<In, Out>(IUnboundQuery.buildMono<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
+    return IfEmptyStep<In, Out>(buildMonoQuery<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
 }
 
 @JvmName("ifEmpty_mono_flux")
 fun <In : Out, Out> IMonoStep<In>.ifEmptyFlux(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
-    return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
+    return IfEmptyStep<In, Out>(buildFluxQuery<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
 }
 
 @JvmName("ifEmpty_flux_flux")
 fun <In : Out, Out> IFluxStep<In>.ifEmptyFlux(alternative: () -> IFluxStep<Out>): IFluxStep<Out> {
-    return IfEmptyStep<In, Out>(IUnboundQuery.buildFlux<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
+    return IfEmptyStep<In, Out>(buildFluxQuery<Unit, Out> { alternative() }.castToInstance()).also { connect(it) }
 }

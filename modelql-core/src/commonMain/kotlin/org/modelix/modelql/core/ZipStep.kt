@@ -119,8 +119,8 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
 //        }
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
-        return CombiningSequence(producers.map { it.createSequence(queryInput) }.toTypedArray()).map { it.upcast() }
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
+        return CombiningSequence(producers.map { it.createSequence(evaluationContext, queryInput) }.toTypedArray()).map { it.upcast() }
     }
 }
 

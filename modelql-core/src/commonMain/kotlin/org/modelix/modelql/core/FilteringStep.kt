@@ -26,12 +26,17 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
         // return condition.asFlow(input).zip(input) { c, it -> c to it }.filter { it.first == true }.map { it.second }
-        return input.filter { condition.asFlow(it).value.optionalSingle().presentAndEqual(true) }
+        return input.filter { condition.asFlow(context.evaluationContext, it).value.optionalSingle().presentAndEqual(true) }
         // return input.filter { condition.evaluate(it.value).presentAndEqual(true) }
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
-        return getProducer().createSequence(queryInput).filter { condition.evaluate(it).presentAndEqual(true) }
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<E> {
+        return getProducer().createSequence(evaluationContext, queryInput).filter {
+            condition.evaluate(
+                evaluationContext,
+                it
+            ).presentAndEqual(true)
+        }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
@@ -53,9 +58,9 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     }
 }
 
-fun <T> IFluxStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IFluxStep<T> {
-    return FilteringStep(IUnboundQuery.buildMono { condition(it) }.castToInstance()).also { connect(it) }
+fun <T> IFluxStep<T>.filter(condition: IQueryBuilderContext<T, Boolean>.(IMonoStep<T>) -> IMonoStep<Boolean>): IFluxStep<T> {
+    return FilteringStep(buildMonoQuery(condition).castToInstance()).also { connect(it) }
 }
-fun <T> IMonoStep<T>.filter(condition: (IMonoStep<T>) -> IMonoStep<Boolean>): IMonoStep<T> {
-    return FilteringStep(IUnboundQuery.buildMono { condition(it) }.castToInstance()).also { connect(it) }
+fun <T> IMonoStep<T>.filter(condition: IQueryBuilderContext<T, Boolean>.(IMonoStep<T>) -> IMonoStep<Boolean>): IMonoStep<T> {
+    return FilteringStep(buildMonoQuery(condition).castToInstance()).also { connect(it) }
 }

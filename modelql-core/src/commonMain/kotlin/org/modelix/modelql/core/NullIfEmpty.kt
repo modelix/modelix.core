@@ -21,7 +21,7 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
         return downcast.onEmpty { emit(SimpleStepOutput(null)) }
     }
 
-    override fun transform(input: E): E? {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: E): E? {
         return input
     }
 

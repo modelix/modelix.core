@@ -23,7 +23,7 @@ interface IQueryExecutor<out In> {
 
 class SimpleQueryExecutor<E>(val input: E) : IQueryExecutor<E> {
     override fun <ElementOut> createFlow(query: IUnboundQuery<E, *, ElementOut>): StepFlow<ElementOut> {
-        return query.asFlow(input)
+        return query.asFlow(QueryEvaluationContext.EMPTY, input)
     }
 }
 
@@ -90,12 +90,12 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 }
 
 interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
-    val id: Long
-    suspend fun execute(input: In): IStepOutput<AggregationOut>
-    fun asFlow(input: StepFlow<In>): StepFlow<ElementOut>
-    fun asFlow(input: In): StepFlow<ElementOut> = asFlow(flowOf(input).asStepFlow())
-    fun asFlow(input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(flowOf(input))
-    fun asSequence(input: Sequence<In>): Sequence<ElementOut>
+    val reference: IQueryReference<IUnboundQuery<In, AggregationOut, ElementOut>>
+    suspend fun execute(evaluationContext: QueryEvaluationContext, input: In): IStepOutput<AggregationOut>
+    fun asFlow(evaluationContext: QueryEvaluationContext, input: StepFlow<In>): StepFlow<ElementOut>
+    fun asFlow(evaluationContext: QueryEvaluationContext, input: In): StepFlow<ElementOut> = asFlow(evaluationContext, flowOf(input).asStepFlow())
+    fun asFlow(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(evaluationContext, flowOf(input))
+    fun asSequence(evaluationContext: QueryEvaluationContext, input: Sequence<In>): Sequence<ElementOut>
 
     fun requiresWriteAccess(): Boolean
     fun canBeEmpty(): Boolean
@@ -103,31 +103,15 @@ interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     fun bind(executor: IQueryExecutor<In>): IQuery<AggregationOut, ElementOut>
     fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>>
     fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<AggregationOut>>
-
-    companion object {
-        fun <In, Out> build(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
-            return buildMono(body)
-        }
-        fun <In, Out> buildMono(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
-            val inputStep = QueryInput<In>()
-            val outputStep = body(inputStep)
-            return MonoUnboundQuery(inputStep, outputStep, id = null)
-        }
-        fun <In, Out> buildFlux(body: (IMonoStep<In>) -> IFluxStep<Out>): IFluxUnboundQuery<In, Out> {
-            val inputStep = QueryInput<In>()
-            val outputStep = body(inputStep)
-            return FluxUnboundQuery(inputStep, outputStep, id = null)
-        }
-    }
 }
 
 interface IMonoUnboundQuery<in In, out Out> : IUnboundQuery<In, Out, Out> {
     override fun bind(executor: IQueryExecutor<In>): IMonoQuery<Out>
     fun <T> map(query: IMonoUnboundQuery<Out, T>): IMonoUnboundQuery<In, T>
     fun <T> map(query: IFluxUnboundQuery<Out, T>): IFluxUnboundQuery<In, T>
-    fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IMonoUnboundQuery<In, T> = map(IUnboundQuery.buildMono(body))
-    fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxUnboundQuery<In, T> = map(IUnboundQuery.buildFlux(body))
-    fun evaluate(input: In): Optional<Out>
+    fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IMonoUnboundQuery<In, T> = map(buildMonoQuery { body(it) })
+    fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxUnboundQuery<In, T> = map(buildFluxQuery { body(it) })
+    fun evaluate(evaluationContext: QueryEvaluationContext, input: In): Optional<Out>
 }
 
 fun <In, Out, AggregationT, T> IMonoUnboundQuery<In, Out>.map(query: IUnboundQuery<Out, AggregationT, T>): IUnboundQuery<In, AggregationT, T> {
@@ -147,28 +131,28 @@ interface IFluxUnboundQuery<in In, out Out> : IUnboundQuery<In, List<IStepOutput
 class MonoUnboundQuery<In, ElementOut>(
     inputStep: QueryInput<In>,
     outputStep: IMonoStep<ElementOut>,
-    id: Long?
-) : UnboundQuery<In, ElementOut, ElementOut>(inputStep, outputStep, id), IMonoUnboundQuery<In, ElementOut> {
+    reference: QueryReference<*>
+) : UnboundQuery<In, ElementOut, ElementOut>(inputStep, outputStep, reference as QueryReference<UnboundQuery<In, ElementOut, ElementOut>>), IMonoUnboundQuery<In, ElementOut> {
 
     override val outputStep: IMonoStep<ElementOut>
         get() = super.outputStep as IMonoStep<ElementOut>
 
     override fun bind(executor: IQueryExecutor<In>): IMonoQuery<ElementOut> = MonoBoundQuery(executor, this)
 
-    override suspend fun execute(input: In): IStepOutput<ElementOut> {
+    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: In): IStepOutput<ElementOut> {
         try {
-            return asFlow(input).single()
+            return asFlow(evaluationContext, input).single()
         } catch (ex: NoSuchElementException) {
             throw RuntimeException("Empty query result: " + this, ex)
         }
     }
 
     override fun <T> map(query: IMonoUnboundQuery<ElementOut, T>): IMonoUnboundQuery<In, T> {
-        return IUnboundQuery.buildMono { it.map(this).map(query) }
+        return buildMonoQuery<In, T> { it.map(this@MonoUnboundQuery).map(query) }
     }
 
     override fun <T> map(query: IFluxUnboundQuery<ElementOut, T>): IFluxUnboundQuery<In, T> {
-        return IUnboundQuery.buildFlux { it.map(this).flatMap(query) }
+        return buildFluxQuery { it.map(this@MonoUnboundQuery).flatMap(query) }
     }
 
     override fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<IStepOutput<ElementOut>> {
@@ -179,32 +163,32 @@ class MonoUnboundQuery<In, ElementOut>(
         return outputStep.getOutputSerializer(serializersModule).upcast()
     }
 
-    override fun evaluate(input: In): Optional<ElementOut> {
-        return outputStep.evaluate(input)
+    override fun evaluate(evaluationContext: QueryEvaluationContext, input: In): Optional<ElementOut> {
+        return outputStep.evaluate(evaluationContext, input)
     }
 }
 
 class FluxUnboundQuery<In, ElementOut>(
     inputStep: QueryInput<In>,
     outputStep: IFluxStep<ElementOut>,
-    id: Long?
-) : UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>(inputStep, outputStep, id), IFluxUnboundQuery<In, ElementOut> {
+    reference: QueryReference<*>
+) : UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>(inputStep, outputStep, reference as QueryReference<UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>>), IFluxUnboundQuery<In, ElementOut> {
 
     override val outputStep: IFluxStep<ElementOut>
         get() = super.outputStep as IFluxStep<ElementOut>
 
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<ElementOut> = FluxBoundQuery(executor, this)
 
-    override suspend fun execute(input: In): IStepOutput<List<IStepOutput<ElementOut>>> {
-        return asFlow(input).toList().asStepOutput()
+    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: In): IStepOutput<List<IStepOutput<ElementOut>>> {
+        return asFlow(evaluationContext, input).toList().asStepOutput()
     }
 
     override fun <T> map(body: (IMonoStep<ElementOut>) -> IMonoStep<T>): IFluxUnboundQuery<In, T> {
-        return IUnboundQuery.buildFlux { it.flatMap(this).map(body) }
+        return buildFluxQuery { it.flatMap(this@FluxUnboundQuery).map(body) }
     }
 
     override fun <T> flatMap(body: (IMonoStep<ElementOut>) -> IFluxStep<T>): IFluxUnboundQuery<In, T> {
-        return IUnboundQuery.buildFlux { it.flatMap(this).flatMap(body) }
+        return buildFluxQuery { it.flatMap(this@FluxUnboundQuery).flatMap(body) }
     }
 
     override fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<List<IStepOutput<ElementOut>>>> {
@@ -223,16 +207,24 @@ fun <In, Out, ElementOut> IUnboundQuery<In, Out, ElementOut>.castToInstance(): U
 abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     val inputStep: QueryInput<In>,
     private val outputStep_: IProducingStep<ElementOut>,
-    id: Long?
+    override val reference: QueryReference<UnboundQuery<In, AggregationOut, ElementOut>>,
 ) : IUnboundQuery<In, AggregationOut, ElementOut> {
 
-    override val id: Long = id ?: generateId()
-
     init {
-        validate()
+        if (reference.queryId == null) reference.queryId = generateId()
+        reference.providedQuery = this
     }
 
     open val outputStep: IProducingStep<ElementOut> get() = outputStep_
+
+    private val crossQueryOutputSteps = getAllSteps()
+        .filterIsInstance<IConsumingStep<*>>()
+        .filter {
+            val foreignQueryInputs = it.getRootInputSteps().filterIsInstance<QueryInput<*>>().toSet() - inputStep
+            foreignQueryInputs.isNotEmpty()
+        }
+        .flatMap { it.getProducers() }
+        .filter { it.getRootInputSteps().contains(inputStep) }
 
     private val unconsumedSideEffectSteps = (getAllSteps() - outputStep)
         .filterIsInstance<IProducingStep<*>>()
@@ -242,10 +234,21 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     private val requiresSingularInput = getAllSteps().any { it.requiresSingularQueryInput() } // inputStep.requiresSingularQueryInput()
     private val isSinglePath: Boolean = (getAllSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
         (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
-    private val canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope
+
+    private val canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope && crossQueryOutputSteps.isEmpty()
+
+    init {
+        for (step in getAllSteps()) {
+            step.validate()
+        }
+        for (it in crossQueryOutputSteps) {
+            require(!it.canBeMultiple()) { "Flux not allowed for cross query steps: $it" }
+            require(!it.canBeEmpty()) { "Empty steps not allowed for cross query steps: $it" }
+        }
+    }
 
     override fun requiresWriteAccess(): Boolean {
-        return getAllSteps().any { it.requiresWriteAccess() }
+        return getAllSteps().filter { it.owningQuery == this }.any { it.requiresWriteAccess() }
     }
 
     override fun canBeEmpty(): Boolean {
@@ -256,17 +259,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
         try {
             return (getUnconsumedSteps() + outputStep).joinToString("; ")
         } catch (ex: Throwable) {
-            return "Query#$id"
-        }
-    }
-
-    fun validate() {
-        for (step in getAllSteps()) {
-            if (step.owningQuery != null) throw CrossQueryReferenceException("$step is already part of ${step.owningQuery}")
-            step.owningQuery = this
-        }
-        for (step in getAllSteps()) {
-            step.validate()
+            return "Query#${reference.queryId}"
         }
     }
 
@@ -285,15 +278,21 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
         return allSteps
     }
 
-    override fun asFlow(input: StepFlow<In>): StepFlow<ElementOut> {
+    override fun asFlow(evaluationContext: QueryEvaluationContext, input: StepFlow<In>): StepFlow<ElementOut> {
         if (canOptimizeFlows) {
-            return SinglePathFlowInstantiationContext(inputStep, input).getOrCreateFlow(outputStep)
+            return SinglePathFlowInstantiationContext(evaluationContext, inputStep, input).getOrCreateFlow(outputStep)
             // return input.flatMapConcat { SinglePathFlowInstantiationContext(inputStep, flowOf(it)).getOrCreateFlow(outputStep) }
         } else {
             return flow<IStepOutput<ElementOut>> {
                 input.collect { inputElement ->
                     suspend fun body(context: FlowInstantiationContext) {
                         context.put(inputStep, flowOf(inputElement))
+
+                        for (crossQueryStep in crossQueryOutputSteps) {
+                            val value = context.getOrCreateFlow(crossQueryStep).single()
+                            context.put(crossQueryStep, flowOf(value))
+                            context.evaluationContext = context.evaluationContext + (crossQueryStep to value)
+                        }
 
                         val outputFlow = context.getOrCreateFlow(outputStep)
 
@@ -310,23 +309,23 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                     }
                     if (anyStepNeedsCoroutineScope) {
                         coroutineScope {
-                            body(FlowInstantiationContext(this))
+                            body(FlowInstantiationContext(evaluationContext, this))
                         }
                     } else {
-                        body(FlowInstantiationContext(null))
+                        body(FlowInstantiationContext(evaluationContext, null))
                     }
                 }
             }
         }
     }
 
-    override fun asSequence(input: Sequence<In>): Sequence<ElementOut> {
+    override fun asSequence(evaluationContext: QueryEvaluationContext, input: Sequence<In>): Sequence<ElementOut> {
         require(unconsumedSideEffectSteps.isEmpty())
         require(!anyStepNeedsCoroutineScope)
         return if (requiresSingularInput) {
-            input.flatMap { outputStep.createSequence(sequenceOf(it)) }
+            input.flatMap { outputStep.createSequence(evaluationContext, sequenceOf(it)) }
         } else {
-            outputStep.createSequence(input)
+            outputStep.createSequence(evaluationContext, input)
         }
     }
 
@@ -340,14 +339,14 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     fun createDescriptor(context: QuerySerializationContext): QueryDescriptor {
         context.registerQuery(this)
         val builder = QueryDescriptorBuilder(context)
-        builder.load(getAllSteps().asSequence())
+        builder.load(getAllSteps().filter { it.owningQuery == this }.asSequence())
         return QueryDescriptor(
             builder.stepDescriptors.values.toList(),
             builder.connections.toList(),
             builder.stepId(inputStep),
             builder.stepId(outputStep),
             this is FluxUnboundQuery,
-            id
+            reference.getId()
         )
     }
 
@@ -403,7 +402,11 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 }
 
-class SinglePathFlowInstantiationContext(val queryInput: QueryInput<*>, val inputFlow: StepFlow<*>) : IFlowInstantiationContext {
+class SinglePathFlowInstantiationContext(
+    override val evaluationContext: QueryEvaluationContext,
+    val queryInput: QueryInput<*>,
+    val inputFlow: StepFlow<*>
+) : IFlowInstantiationContext {
     override val coroutineScope: CoroutineScope?
         get() = null
 
@@ -470,11 +473,11 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     internal var indirectConsumer: IConsumingStep<E>? = null
     override fun toString(): String = "it"
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<E> {
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<E> {
         return queryInput as Sequence<E>
     }
 
-    override fun evaluate(queryInput: Any?): Optional<E> {
+    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<E> {
         return Optional.of(queryInput as E)
     }
 

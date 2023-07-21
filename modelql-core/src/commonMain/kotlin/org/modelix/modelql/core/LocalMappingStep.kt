@@ -12,7 +12,7 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
         return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializersModule)).stepOutputSerializer()
     }
 
-    override fun transform(input: In): Out {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {
         return transformation(input)
     }
 

@@ -21,12 +21,12 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
     fun getQuery(): IUnboundQuery<In, *, Out> = queryRef.query!!
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return getQuery().asFlow(input)
+        return getQuery().asFlow(context.evaluationContext, input)
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
         val query = getQuery()
-        return getProducer().createSequence(queryInput).flatMap { query.asSequence(sequenceOf(it)) }
+        return getProducer().createSequence(evaluationContext, queryInput).flatMap { query.asSequence(evaluationContext, sequenceOf(it)) }
     }
 
     override fun requiresSingularQueryInput(): Boolean = true
@@ -70,24 +70,6 @@ class RecursiveQuerySerializer<Out>(val query: IUnboundQuery<*, *, Out>) : KSeri
         val queryOutputSerializer = query.getElementOutputSerializer(encoder.serializersModule).upcast()
         queryOutputSerializer.serialize(encoder, value)
     }
-}
-
-fun <In, Out> buildMonoQuery(body: QueryBuilderContext<In, Out>.(IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
-    val context = QueryBuilderContext<In, Out>()
-    val query = IUnboundQuery.buildMono { body(context, it) }
-    context.queryReference.providedQuery = query
-    return query
-}
-fun <In, Out> buildFluxQuery(body: QueryBuilderContext<In, Out>.(IMonoStep<In>) -> IFluxStep<Out>): IFluxUnboundQuery<In, Out> {
-    val context = QueryBuilderContext<In, Out>()
-    val query = IUnboundQuery.buildFlux { body(context, it) }
-    context.queryReference.providedQuery = query
-    return query
-}
-
-class QueryBuilderContext<In, Out> {
-    val queryReference = QueryReference<IUnboundQuery<In, *, Out>>(null, null, null)
-    fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference).also { connect(it) }
 }
 
 fun <In, Out> IMonoStep<In>.callQuery(ref: QueryReference<IMonoUnboundQuery<In, Out>>): IMonoStep<Out> {

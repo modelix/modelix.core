@@ -8,7 +8,7 @@ import kotlinx.serialization.serializer
 
 class StringContainsPredicate(val substring: String) : MonoTransformingStep<String?, Boolean>() {
 
-    override fun transform(input: String?): Boolean {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: String?): Boolean {
         return input?.contains(substring) ?: false
     }
 

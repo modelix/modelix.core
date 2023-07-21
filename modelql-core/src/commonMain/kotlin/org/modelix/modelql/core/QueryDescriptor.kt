@@ -4,6 +4,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
+class QueryGraphDescriptor {
+    val queries: MutableMap<Long, QueryDescriptor> = HashMap()
+}
+
+@Serializable
 data class QueryDescriptor(
     val steps: List<StepDescriptor>,
     val connections: List<PortConnection>,
@@ -20,11 +25,14 @@ data class QueryDescriptor(
     }
 
     fun createQuery(context: QueryDeserializationContext): UnboundQuery<*, *, *> {
+        val reference: QueryReference<*> = QueryReference(null, queryId, null)
         val createdSteps = ArrayList<IStep>()
         fun resolveStep(id: Int): IStep {
             return createdSteps[id]
         }
-        steps.forEach { createdSteps += it.createStep(context) }
+        reference.computeWith {
+            steps.forEach { createdSteps += it.createStep(context) }
+        }
         for (connection in connections.sortedBy { it.consumer.port }) {
             val producer = resolveStep(connection.producer.step) as IProducingStep<Any?>
             val consumer = resolveStep(connection.consumer.step) as IConsumingStep<Any?>
@@ -47,9 +55,9 @@ data class QueryDescriptor(
 
         // Some steps implement IMonoStep and IFluxStep. An instanceOf check doesn't work.
         return if (isFluxOutput) {
-            FluxUnboundQuery<Any?, Any?>(inputStep, outputStep as IFluxStep<Any?>, queryId)
+            FluxUnboundQuery<Any?, Any?>(inputStep, outputStep as IFluxStep<Any?>, reference as QueryReference<IFluxUnboundQuery<Any?, Any?>>)
         } else {
-            MonoUnboundQuery<Any?, Any?>(inputStep, outputStep as IMonoStep<Any?>, queryId)
+            MonoUnboundQuery<Any?, Any?>(inputStep, outputStep as IMonoStep<Any?>, reference as QueryReference<UnboundQuery<Any?, Any?, Any?>>)
         }.also { context.register(it) }
     }
 }
@@ -69,23 +77,37 @@ data class PortConnection(val producer: PortReference, val consumer: PortReferen
 @Serializable
 data class PortReference(val step: Int, val port: Int = 0)
 
+interface IQueryReference<out Q : IUnboundQuery<*, *, *>> {
+    val query: Q
+    fun getId(): Long
+}
 class QueryReference<Q : IUnboundQuery<*, *, *>>(
     var providedQuery: Q?,
-    private var queryId: Long?,
+    var queryId: Long?,
     private val queryInitializer: (() -> Q)?
-) {
+) : IQueryReference<Q> {
     private val creatingStacktrace = Exception()
-    val query: Q by lazy {
+    override val query: Q by lazy {
         providedQuery ?: (queryInitializer ?: throw IllegalStateException("query for ID $queryId not found", creatingStacktrace)).invoke()
     }
-    fun getId(): Long = queryId ?: query.id
+    override fun getId(): Long = queryId ?: query.reference.takeIf { it != this }?.getId() ?: throw RuntimeException("ID not set")
+
+    fun <T> computeWith(body: () -> T): T {
+        return contextReference.computeWith(this) {
+            body()
+        }
+    }
+
+    companion object {
+        val contextReference = ContextValue<QueryReference<*>>()
+    }
 }
 
 class QuerySerializationContext {
     private val queries = HashMap<Long, UnboundQuery<Any?, Any?, Any?>>()
     fun hasQuery(id: Long): Boolean = queries.containsKey(id)
     fun registerQuery(query: UnboundQuery<*, *, *>) {
-        queries[query.id] = query as UnboundQuery<Any?, Any?, Any?>
+        queries[query.reference.getId()] = query as UnboundQuery<Any?, Any?, Any?>
     }
 }
 
@@ -102,7 +124,7 @@ class QueryDeserializationContext {
     }
 
     fun resolveQueryReferences() {
-        val id2query = queries.associateBy { it.id }
+        val id2query = queries.associateBy { it.reference.queryId }
         queryReferences.forEach {
             it.providedQuery = id2query[it.getId()]
                 ?: throw RuntimeException("query not found: ${it.getId()}")

@@ -11,7 +11,7 @@ class StringToBooleanStep : MonoTransformingStep<String?, Boolean>() {
         return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
-    override fun transform(input: String?): Boolean {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: String?): Boolean {
         return input?.toBoolean() ?: false
     }
 

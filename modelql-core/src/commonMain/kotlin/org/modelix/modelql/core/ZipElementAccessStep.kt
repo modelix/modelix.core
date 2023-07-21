@@ -12,7 +12,7 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
         return zipSerializer.elementSerializers[index]
     }
 
-    override fun transform(input: IZipOutput<Any?>): Out {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: IZipOutput<Any?>): Out {
         return input.values[index] as Out
     }
 

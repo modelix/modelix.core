@@ -30,6 +30,7 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
@@ -48,7 +49,7 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
         }.asStepFlow()
     }
 
-    override fun transform(input: INodeReference): INode {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: INodeReference): INode {
         val refScope: INodeResolutionScope = ContextArea.getArea()
             ?: throw IllegalStateException("No context IArea found")
         return input.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $input")

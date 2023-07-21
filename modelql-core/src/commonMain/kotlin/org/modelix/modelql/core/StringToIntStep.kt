@@ -11,7 +11,7 @@ class StringToIntStep : MonoTransformingStep<String?, Int>() {
         return serializersModule.serializer<Int>().stepOutputSerializer()
     }
 
-    override fun transform(input: String?): Int {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: String?): Int {
         return input?.toInt() ?: 0
     }
 

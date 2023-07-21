@@ -11,7 +11,7 @@ class CollectionSizeStep : MonoTransformingStep<Collection<*>, Int>() {
         return serializersModule.serializer<Int>().stepOutputSerializer()
     }
 
-    override fun transform(input: Collection<*>): Int {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: Collection<*>): Int {
         return input.size
     }
 

@@ -37,19 +37,26 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
         }
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
-        val parameterValue = if (hasStaticParameter) staticParameterValue else getParameterProducer().evaluate(queryInput).getOrElse(null)
-        return getInputProducer().createSequence(queryInput).map { transformElement(it, parameterValue) }
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
+        val parameterValue = if (hasStaticParameter) {
+            staticParameterValue
+        } else {
+            getParameterProducer().evaluate(
+                evaluationContext,
+                queryInput
+            ).getOrElse(null)
+        }
+        return getInputProducer().createSequence(evaluationContext, queryInput).map { transformElement(it, parameterValue) }
     }
 
-    override fun evaluate(queryInput: Any?): Optional<Out> {
-        val input = getInputProducer().evaluate(queryInput)
+    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
+        val input = getInputProducer().evaluate(evaluationContext, queryInput)
         if (!input.isPresent()) return Optional.empty()
-        val parameter = getParameterProducer().evaluate(queryInput)
+        val parameter = getParameterProducer().evaluate(evaluationContext, queryInput)
         return Optional.of(transformElement(input.get(), parameter.getOrElse(null)))
     }
 
-    override fun transform(input: CommonIn): Out {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: CommonIn): Out {
         throw UnsupportedOperationException()
     }
 

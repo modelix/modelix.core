@@ -31,6 +31,7 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
+import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
@@ -169,7 +170,7 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
         return input.map { it.value.typed(nodeClass).asStepOutput() }
     }
 
-    override fun transform(input: INode): Typed {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: INode): Typed {
         return input.typed(nodeClass)
     }
 
@@ -203,7 +204,7 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
         return input.map { it.value.unwrap().asStepOutput() }
     }
 
-    override fun transform(input: ITypedNode): INode {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: ITypedNode): INode {
         return input.unwrap()
     }
 

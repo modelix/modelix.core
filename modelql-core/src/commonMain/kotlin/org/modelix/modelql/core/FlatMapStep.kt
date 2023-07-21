@@ -20,11 +20,11 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
     }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.flatMapConcat { query.asFlow(it) }
+        return input.flatMapConcat { query.asFlow(context.evaluationContext, it) }
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
-        return query.asSequence(getProducer().createSequence(queryInput))
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
+        return query.asSequence(evaluationContext, getProducer().createSequence(evaluationContext, queryInput))
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
@@ -47,7 +47,7 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
 }
 
 fun <In, Out> IProducingStep<In>.flatMap(body: (IMonoStep<In>) -> IFluxStep<Out>): IFluxStep<Out> {
-    return flatMap(IUnboundQuery.buildFlux(body))
+    return flatMap(buildFluxQuery { body(it) })
 }
 fun <In, Out> IProducingStep<In>.flatMap(query: IFluxUnboundQuery<In, Out>): IFluxStep<Out> {
     return FlatMapStep(query.castToInstance()).also { connect(it) }

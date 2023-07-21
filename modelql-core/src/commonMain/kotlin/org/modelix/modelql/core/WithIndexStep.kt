@@ -35,7 +35,7 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         )
     }
 
-    override fun transform(input: E): IZip2Output<Any?, E, Int> {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: E): IZip2Output<Any?, E, Int> {
         throw UnsupportedOperationException()
     }
 
@@ -43,12 +43,12 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         return input.withIndex().map { ZipStepOutput(listOf(it.value, it.index.asStepOutput())) }
     }
 
-    override fun createTransformingSequence(input: Sequence<E>): Sequence<IZip2Output<Any?, E, Int>> {
+    override fun createTransformingSequence(evaluationContext: QueryEvaluationContext, input: Sequence<E>): Sequence<IZip2Output<Any?, E, Int>> {
         return input.mapIndexed { index, value -> ZipNOutput(listOf(value, index)) as IZip2Output<Any?, E, Int> }
     }
 
-    override fun evaluate(queryInput: Any?): Optional<IZip2Output<Any?, E, Int>> {
-        return getProducer().evaluate(queryInput).map { transform(it) }
+    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<IZip2Output<Any?, E, Int>> {
+        return getProducer().evaluate(evaluationContext, queryInput).map { transform(evaluationContext, it) }
     }
 
     override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {

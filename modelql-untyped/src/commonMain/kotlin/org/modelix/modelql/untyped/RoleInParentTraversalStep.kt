@@ -26,12 +26,13 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 
 class RoleInParentTraversalStep() : MonoTransformingStep<INode, String?>() {
-    override fun transform(input: INode): String? {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: INode): String? {
         return input.roleInParent
     }
 

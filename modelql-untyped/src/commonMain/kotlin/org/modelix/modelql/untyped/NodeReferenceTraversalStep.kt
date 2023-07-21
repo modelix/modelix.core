@@ -26,12 +26,13 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
+import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QuerySerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 
 class NodeReferenceTraversalStep() : MonoTransformingStep<INode, INodeReference>() {
-    override fun transform(input: INode): INodeReference {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: INode): INodeReference {
         return input.reference
     }
 

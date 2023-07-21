@@ -67,36 +67,36 @@ class WhenStep<In, Out>(
         )
     }
 
-    override fun transform(input: In): Out {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {
         throw UnsupportedOperationException()
     }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         return input.flatMapConcat {
             for ((index, case) in cases.withIndex()) {
-                if (case.first.evaluate(it.value).presentAndEqual(true)) {
-                    return@flatMapConcat case.second.asFlow(it).map { MultiplexedOutput(index, it) }
+                if (case.first.evaluate(context.evaluationContext, it.value).presentAndEqual(true)) {
+                    return@flatMapConcat case.second.asFlow(context.evaluationContext, it).map { MultiplexedOutput(index, it) }
                 }
             }
             val elseCaseIndex = cases.size
-            return@flatMapConcat elseCase?.asFlow(it)?.map { MultiplexedOutput(elseCaseIndex, it) }
+            return@flatMapConcat elseCase?.asFlow(context.evaluationContext, it)?.map { MultiplexedOutput(elseCaseIndex, it) }
                 ?: emptyFlow<Out>().asStepFlow()
         }
     }
 
-    override fun createTransformingSequence(input: Sequence<In>): Sequence<Out> {
+    override fun createTransformingSequence(evaluationContext: QueryEvaluationContext, input: Sequence<In>): Sequence<Out> {
         return input.flatMap {
             for (case in cases) {
-                if (case.first.evaluate(it).presentAndEqual(true)) {
-                    return@flatMap case.second.asSequence(sequenceOf(it))
+                if (case.first.evaluate(evaluationContext, it).presentAndEqual(true)) {
+                    return@flatMap case.second.asSequence(evaluationContext, sequenceOf(it))
                 }
             }
-            return@flatMap elseCase?.asSequence(sequenceOf(it)) ?: emptySequence()
+            return@flatMap elseCase?.asSequence(evaluationContext, sequenceOf(it)) ?: emptySequence()
         }
     }
 
-    override fun evaluate(queryInput: Any?): Optional<Out> {
-        return createSequence(sequenceOf(queryInput))
+    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
+        return createSequence(evaluationContext, sequenceOf(queryInput))
             .map { Optional.of(it) }
             .ifEmpty { sequenceOf(Optional.empty<Out>()) }
             .first()
@@ -108,18 +108,18 @@ class WhenStepBuilder<In, Out>(private val input: IMonoStep<In>) {
     private val cases = ArrayList<Pair<IMonoUnboundQuery<In, Boolean?>, IMonoUnboundQuery<In, Out>>>()
 
     fun `if`(condition: (IMonoStep<In>) -> IMonoStep<Boolean?>): CaseBuilder {
-        return CaseBuilder(IUnboundQuery.buildMono(condition))
+        return CaseBuilder(buildMonoQuery { condition(it) })
     }
 
     @BuilderInference
     fun `else`(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
-        return WhenStep(cases, IUnboundQuery.buildMono(body)).connectAndDowncast(input)
+        return WhenStep(cases, buildMonoQuery { body(it) }).connectAndDowncast(input)
     }
 
     inner class CaseBuilder(val condition: IMonoUnboundQuery<In, Boolean?>) {
         @BuilderInference
         fun then(body: (IMonoStep<In>) -> IMonoStep<Out>): WhenStepBuilder<In, Out> {
-            cases += condition to IUnboundQuery.buildMono(body)
+            cases += condition to buildMonoQuery { body(it) }
             return this@WhenStepBuilder
         }
     }

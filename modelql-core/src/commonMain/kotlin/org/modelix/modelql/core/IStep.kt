@@ -11,7 +11,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 
 interface IStep {
-    var owningQuery: IUnboundQuery<*, *, *>?
+    val owningQuery: IUnboundQuery<*, *, *>
     fun validate() {}
 
     fun createDescriptor(context: QuerySerializationContext): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
@@ -25,11 +25,15 @@ interface IStep {
 }
 
 interface IFlowInstantiationContext {
+    val evaluationContext: QueryEvaluationContext
     val coroutineScope: CoroutineScope?
     fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T>
     fun <T> getFlow(step: IProducingStep<T>): Flow<T>?
 }
-class FlowInstantiationContext(override val coroutineScope: CoroutineScope?) : IFlowInstantiationContext {
+class FlowInstantiationContext(
+    override var evaluationContext: QueryEvaluationContext,
+    override val coroutineScope: CoroutineScope?
+) : IFlowInstantiationContext {
     private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
     fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
         createdProducers[step] = producer
@@ -53,13 +57,13 @@ interface IProducingStep<out E> : IStep {
     /**
      * Flows usually provide better performance, but if suspending is not possible you can iterate using a sequence.
      */
-    fun createSequence(queryInput: Sequence<Any?>): Sequence<E>
+    fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<E>
 
     /**
      * Even higher performance for producers that output exactly one element
      */
-    fun evaluate(queryInput: Any?): Optional<E> {
-        return createSequence(sequenceOf(queryInput))
+    fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<E> {
+        return createSequence(evaluationContext, sequenceOf(queryInput))
             .map { Optional.of(it) }
             .ifEmpty { sequenceOf(Optional.empty<E>()) }
             .single()
@@ -100,7 +104,9 @@ interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out> {
 }
 
 abstract class ProducingStep<E> : IProducingStep<E> {
-    override var owningQuery: IUnboundQuery<*, *, *>? = null
+    private val ownerReference = QueryReference.contextReference.getValue()
+    override val owningQuery: IUnboundQuery<*, *, *> get() = ownerReference.query
+
     private val consumers = ArrayList<IConsumingStep<E>>()
 
     override fun addConsumer(consumer: IConsumingStep<E>) {
@@ -149,21 +155,24 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.map { SimpleStepOutput(transform(it.value)) }
+        return input.map { SimpleStepOutput(transform(context.evaluationContext, it.value)) }
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Out> {
-        return createTransformingSequence(getProducer().createSequence(queryInput))
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
+        return createTransformingSequence(
+            evaluationContext,
+            getProducer().createSequence(evaluationContext, queryInput)
+        )
     }
 
-    open fun createTransformingSequence(input: Sequence<In>): Sequence<Out> {
-        return input.map { transform(it) }
+    open fun createTransformingSequence(evaluationContext: QueryEvaluationContext, input: Sequence<In>): Sequence<Out> {
+        return input.map { transform(evaluationContext, it) }
     }
 
-    override fun evaluate(queryInput: Any?): Optional<Out> {
-        return getProducer().evaluate(queryInput).map { transform(it) }
+    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
+        return getProducer().evaluate(evaluationContext, queryInput).map { transform(evaluationContext, it) }
     }
-    abstract fun transform(input: In): Out
+    abstract fun transform(evaluationContext: QueryEvaluationContext, input: In): Out
 }
 
 abstract class FluxTransformingStep<In, Out> : TransformingStep<In, Out>(), IFluxStep<Out> {
@@ -191,12 +200,12 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         }
     }
 
-    override fun transform(input: In): Out {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {
         return aggregate(sequenceOf(input.asStepOutput())).value
     }
 
-    override fun evaluate(queryInput: Any?): Optional<Out> {
-        return Optional.of(aggregate(getProducer().createSequence(sequenceOf(queryInput)).map { it.asStepOutput() }).value)
+    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
+        return Optional.of(aggregate(getProducer().createSequence(evaluationContext, sequenceOf(queryInput)).map { it.asStepOutput() }).value)
     }
 
     override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()

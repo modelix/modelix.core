@@ -8,7 +8,7 @@ import kotlinx.serialization.serializer
 
 class AndOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
 
-    override fun transform(input: IZipOutput<Boolean>): Boolean {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: IZipOutput<Boolean>): Boolean {
         return input.values.all { it == true }
     }
 

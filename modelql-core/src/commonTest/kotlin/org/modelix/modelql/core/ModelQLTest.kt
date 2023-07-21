@@ -54,20 +54,20 @@ class ModelQLTest {
     }
 
     @Test
-    fun test_illegal_cross_map_reference() = runTestWithTimeout {
-        assertTrue(
-            assertFails {
-                val result = remoteProductDatabaseQuery { db ->
-                    db.products.map { product ->
-                        product.id.map {
-                            // referencing the surrounding map input (product) is not allowed
-                            product.title.zip(it)
-                        }
-                    }.toList()
-                }
-                println(result)
-            } is CrossQueryReferenceException
-        )
+    fun testCrossQueryStep() = runTestWithTimeout {
+        val thrownException = assertFails {
+            val result = remoteProductDatabaseQuery { db ->
+                db.products.map { product ->
+                    product.id.map {
+                        // referencing the surrounding map input (product) is not allowed
+                        product.title.zip(it)
+                    }
+                }.toList()
+            }
+            println(result)
+        }
+        println(thrownException.stackTraceToString())
+        assertTrue(thrownException is CrossQueryReferenceException)
     }
 
     @Test
@@ -268,7 +268,7 @@ suspend fun <ResultT> remoteProductDatabaseQuery(body: (IMonoStep<ProductDatabas
     return doRemoteProductDatabaseQuery(body)
 }
 suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatabase>) -> IMonoStep<ResultT>): ResultT {
-    val query: MonoUnboundQuery<ProductDatabase, ResultT> = IUnboundQuery.build(body).castToInstance()
+    val query: MonoUnboundQuery<ProductDatabase, ResultT> = buildMonoQuery { body(it) }.castToInstance()
     val json = Json {
         prettyPrint = true
         serializersModule = SerializersModule {
@@ -287,7 +287,7 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
     val deserializedQuery = json.decodeFromString<QueryDescriptor>(serializedQuery).createQuery() as MonoUnboundQuery<ProductDatabase, ResultT>
     println("original query    : $query")
     println("deserialized query: $deserializedQuery")
-    val remoteResult: IStepOutput<ResultT> = deserializedQuery.execute(testDatabase)
+    val remoteResult: IStepOutput<ResultT> = deserializedQuery.execute(QueryEvaluationContext.EMPTY, testDatabase)
     val serializedResult = json.encodeToString(deserializedQuery.getAggregationOutputSerializer(json.serializersModule), remoteResult)
 //    println(serializedResult)
     return json.decodeFromString(query.getAggregationOutputSerializer(json.serializersModule), serializedResult).value
@@ -298,8 +298,8 @@ class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
         return input.flatMapConcat { it.value.products.asFlow() }.asStepFlow()
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<Product> {
-        return getProducer().createSequence(queryInput).flatMap { it.products }
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Product> {
+        return getProducer().createSequence(evaluationContext, queryInput).flatMap { it.products }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Product>> = serializersModule.serializer<Product>().stepOutputSerializer()
@@ -318,7 +318,7 @@ class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
 }
 
 class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
-    override fun transform(input: Product): String {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: Product): String {
         return input.title
     }
 
@@ -338,7 +338,7 @@ class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
     }
 }
 class ProductCategoryTraversal : MonoTransformingStep<Product, String>() {
-    override fun transform(input: Product): String {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: Product): String {
         return input.category
     }
 
@@ -358,7 +358,7 @@ class ProductCategoryTraversal : MonoTransformingStep<Product, String>() {
     }
 }
 class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
-    override fun transform(input: Product): Int {
+    override fun transform(evaluationContext: QueryEvaluationContext, input: Product): Int {
         return input.id
     }
 
@@ -381,8 +381,8 @@ class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
         return input.flatMapConcat { it.value.images.asFlow() }.asStepFlow()
     }
 
-    override fun createSequence(queryInput: Sequence<Any?>): Sequence<String> {
-        return getProducer().createSequence(queryInput).flatMap { it.images }
+    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<String> {
+        return getProducer().createSequence(evaluationContext, queryInput).flatMap { it.images }
     }
 
     override fun toString(): String {

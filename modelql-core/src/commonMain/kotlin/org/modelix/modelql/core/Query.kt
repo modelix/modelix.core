@@ -262,7 +262,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
 
     fun validate() {
         for (step in getAllSteps()) {
-            if (step.owningQuery != null) throw IllegalStateException("$step is already part of ${step.owningQuery}")
+            if (step.owningQuery != null) throw CrossQueryReferenceException("$step is already part of ${step.owningQuery}")
             step.owningQuery = this
         }
         for (step in getAllSteps()) {
@@ -507,3 +507,5 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
 }
 
 fun <T> KSerializer<out T>.upcast(): KSerializer<T> = this as KSerializer<T>
+
+class CrossQueryReferenceException(message: String) : Exception(message)

@@ -55,17 +55,19 @@ class ModelQLTest {
 
     @Test
     fun test_illegal_cross_map_reference() = runTestWithTimeout {
-        assertFails {
-            val result = remoteProductDatabaseQuery { db ->
-                db.products.map { product ->
-                    product.id.map {
-                        // referencing the surrounding map input (product) is not allowed
-                        product.title.zip(it)
-                    }
-                }.toList()
-            }
-            println(result)
-        }
+        assertTrue(
+            assertFails {
+                val result = remoteProductDatabaseQuery { db ->
+                    db.products.map { product ->
+                        product.id.map {
+                            // referencing the surrounding map input (product) is not allowed
+                            product.title.zip(it)
+                        }
+                    }.toList()
+                }
+                println(result)
+            } is CrossQueryReferenceException
+        )
     }
 
     @Test

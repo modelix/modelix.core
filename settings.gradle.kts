@@ -23,5 +23,5 @@ include("model-api")
 include("model-client")
 include("model-server")
 include("model-server-api")
+include("model-sync-lib")
 include("ts-model-api")
-

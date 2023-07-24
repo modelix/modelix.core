@@ -1,7 +1,6 @@
 package org.modelix.model.data
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.model.api.*
@@ -19,6 +18,10 @@ data class ModelData(
             val createdNodes = HashMap<String, Long>()
             val pendingReferences = ArrayList<() -> Unit>()
             val parentId = ITree.ROOT_ID
+            if (root.id != null) {
+                createdNodes[root.id] = parentId
+            }
+            setOriginalId(root, t, parentId)
             for (nodeData in root.children) {
                 loadNode(nodeData, t, parentId, createdNodes, pendingReferences)
             }
@@ -37,6 +40,7 @@ data class ModelData(
         val createdId = t.addNewChild(parentId, nodeData.role, -1, conceptRef)
         if (nodeData.id != null) {
             createdNodes[nodeData.id] = createdId
+            setOriginalId(nodeData, t, createdId)
         }
         for (propertyData in nodeData.properties) {
             t.setProperty(createdId, propertyData.key, propertyData.value)
@@ -50,6 +54,15 @@ data class ModelData(
         for (childData in nodeData.children) {
             loadNode(childData, t, createdId, createdNodes, pendingReferences)
         }
+    }
+
+    private fun setOriginalId(
+        nodeData: NodeData,
+        t: IWriteTransaction,
+        nodeId: Long
+    ) {
+        val key = NodeData.idPropertyKey
+        t.setProperty(nodeId, key, nodeData.properties[key] ?: nodeData.id)
     }
 
     companion object {
@@ -66,7 +79,11 @@ data class NodeData(
     val children: List<NodeData> = emptyList(),
     val properties: Map<String, String> = emptyMap(),
     val references: Map<String, String> = emptyMap()
-)
+) {
+    companion object {
+        const val idPropertyKey = "#mpsNodeId#"
+    }
+}
 
 fun NodeData.uid(model: ModelData): String {
     return (model.id ?: throw IllegalArgumentException("Model has no ID")) +
@@ -84,6 +101,6 @@ fun INode.asData(): NodeData = NodeData(
     children = allChildren.map { it.asData() }
 )
 
-public inline fun <K, V : Any> Iterable<K>.associateWithNotNull(valueSelector: (K) -> V?): Map<K, V> {
+inline fun <K, V : Any> Iterable<K>.associateWithNotNull(valueSelector: (K) -> V?): Map<K, V> {
     return associateWith { valueSelector(it) }.filterValues { it != null } as Map<K, V>
 }

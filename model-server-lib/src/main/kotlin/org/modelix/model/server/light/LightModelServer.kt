@@ -47,7 +47,7 @@ import org.modelix.model.server.api.buildModelQuery
 import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IStepOutput
-import org.modelix.modelql.core.QueryDescriptor
+import org.modelix.modelql.core.QueryGraphDescriptor
 import org.modelix.modelql.core.modelqlVersion
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.untyped.UntypedModelQL
@@ -229,8 +229,8 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                 try {
                     val serializedQuery = call.receiveText()
                     val json = UntypedModelQL.json
-                    val queryDescriptor = VersionAndData.deserialize(serializedQuery, QueryDescriptor.serializer(), json).data
-                    val query = queryDescriptor.createQuery() as IMonoUnboundQuery<INode, Any?>
+                    val queryDescriptor = VersionAndData.deserialize(serializedQuery, QueryGraphDescriptor.serializer(), json).data
+                    val query = queryDescriptor.createRootQuery() as IMonoUnboundQuery<INode, Any?>
                     LOG.debug { "query: $query" }
                     val nodeResolutionScope: INodeResolutionScope = getArea()
                     val transactionBody: () -> IStepOutput<Any?> = {

@@ -283,7 +283,7 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
         }
     }
     val serializedQuery = json.encodeToString(query.createDescriptor())
-    println(serializedQuery)
+//    println(serializedQuery)
     val deserializedQuery = json.decodeFromString<QueryGraphDescriptor>(serializedQuery).createRootQuery() as MonoUnboundQuery<ProductDatabase, ResultT>
     println("original query    : $query")
     println("deserialized query: $deserializedQuery")

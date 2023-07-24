@@ -253,7 +253,9 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 
     override fun requiresWriteAccess(): Boolean {
-        return getAllSteps().any { it.requiresWriteAccess() }
+        return getAllSteps()
+            .filter { it.getRootInputSteps().filterIsInstance<QueryInput<*>>().firstOrNull() == inputStep } // break cyclic dependency
+            .any { it.requiresWriteAccess() }
     }
 
     override fun canBeEmpty(): Boolean {

@@ -97,6 +97,7 @@ class ModelImporterTest {
     @Test
     fun `uses minimal amount of operations`() {
         val operations = branch.operationsAndTree.first
+        println(operations.joinToString("\n"))
 
         val numOps = operations.numOpsByType()
         val numPropertyChangesIgnoringOriginalId =
@@ -104,7 +105,10 @@ class ModelImporterTest {
 
         assertEquals(1, numOps[AddNewChildOp::class])
         assertEquals(1, numOps[DeleteNodeOp::class])
-        assertEquals(5, numOps[MoveNodeOp::class])
+
+        // could be done in 5, but finding that optimization makes the sync algorithm slower
+        assertEquals(6, numOps[MoveNodeOp::class])
+
         assertEquals(4, numPropertyChangesIgnoringOriginalId)
         assertEquals(3, numOps[SetReferenceOp::class])
     }
@@ -128,11 +132,17 @@ class ModelImporterTest {
 
     @Test
     fun `can handle random changes`() {
+        for (seed in (1..100)) {
+            runRandomTest(seed + 6787456)
+        }
+    }
+
+    private fun runRandomTest(seed: Int) {
         val tree0 = CLTree(ObjectStoreCache(MapBaseStore()))
         val branch0 = PBranch(tree0, IdGenerator.getInstance(1))
 
-        val seed = Random.nextInt()
         println("Seed for random change test: $seed")
+        val rand = Random(seed)
         lateinit var initialState: NodeData
         lateinit var specification: NodeData
         val numChanges = 50
@@ -140,13 +150,13 @@ class ModelImporterTest {
         branch0.runWrite {
             val rootNode = branch0.getRootNode()
             rootNode.setPropertyValue(NodeData.idPropertyKey, rootNode.reference.serialize())
-            val grower = RandomModelChangeGenerator(rootNode, Random(seed)).growingOperationsOnly()
+            val grower = RandomModelChangeGenerator(rootNode, rand).growingOperationsOnly()
             for (i in 1..100) {
                 grower.applyRandomChange()
             }
             initialState = rootNode.asExported()
 
-            val changer = RandomModelChangeGenerator(rootNode, Random(seed))
+            val changer = RandomModelChangeGenerator(rootNode, rand)
             for (i in 1..numChanges) {
                 changer.applyRandomChange()
             }

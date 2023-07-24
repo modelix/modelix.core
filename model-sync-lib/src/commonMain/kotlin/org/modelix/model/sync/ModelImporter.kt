@@ -51,7 +51,7 @@ class ModelImporter(private val root: INode) {
 
             expectedNodes.forEachIndexed { index, expected ->
                 val nodeAtIndex = node.getChildren(role).toList().getOrNull(index)
-                val expectedId = expected.originalId() ?: TODO()
+                val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
                 val expectedConcept = expected.concept?.let { s -> ConceptReference(s) }
                 val childNode = if (nodeAtIndex?.originalId() != expectedId) {
                     val existingNode = originalIdToExisting[expectedId]
@@ -68,7 +68,7 @@ class ModelImporter(private val root: INode) {
                 } else {
                     nodeAtIndex
                 }
-                if (childNode.getConceptReference() != expectedConcept) TODO()
+                check(childNode.getConceptReference() == expectedConcept) { "Unexpected concept change" }
 
                 syncNode(childNode, expected)
             }
@@ -108,13 +108,13 @@ class ModelImporter(private val root: INode) {
                 val expectedTarget = originalIdToExisting[expectedTargetId]
                 if (expectedTarget == null) {
                     postponedReferences += {
-                        val expectedTarget = originalIdToExisting[expectedTargetId]
-                        if (expectedTarget == null) {
+                        val expectedRefTarget = originalIdToExisting[expectedTargetId]
+                        if (expectedRefTarget == null) {
                             // The target node is not part of the model. Assuming it exists in some other model we can
                             // store the reference and try to resolve it dynamically on access.
                             node.setReferenceTarget(it.key, SerializedNodeReference(expectedTargetId))
                         } else {
-                            node.setReferenceTarget(it.key, expectedTarget)
+                            node.setReferenceTarget(it.key, expectedRefTarget)
                         }
                     }
                 } else {

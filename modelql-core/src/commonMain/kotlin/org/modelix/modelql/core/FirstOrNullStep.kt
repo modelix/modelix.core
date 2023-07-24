@@ -33,7 +33,7 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
         )
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     @SerialName("firstOrNull")

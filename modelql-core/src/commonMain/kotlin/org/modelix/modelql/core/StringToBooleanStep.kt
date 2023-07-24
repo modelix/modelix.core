@@ -15,7 +15,7 @@ class StringToBooleanStep : MonoTransformingStep<String?, Boolean>() {
         return input?.toBoolean() ?: false
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor()
     }
 

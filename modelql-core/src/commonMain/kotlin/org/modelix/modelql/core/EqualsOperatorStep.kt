@@ -20,7 +20,7 @@ class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>(
         return "${getInputProducer()}.equalTo(${getParameterProducer()})"
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     @SerialName("equalTo")

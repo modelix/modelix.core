@@ -16,7 +16,7 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
         return transformation(input)
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return IdentityStep.IdentityStepDescriptor()
     }
 

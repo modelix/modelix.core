@@ -16,7 +16,7 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
         return input.values[index] as Out
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor(index)
     }
 

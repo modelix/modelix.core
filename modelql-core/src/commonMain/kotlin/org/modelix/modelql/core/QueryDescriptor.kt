@@ -3,64 +3,97 @@ package org.modelix.modelql.core
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
+typealias QueryId = Long
+
+class QueryGraphDescriptorBuilder {
+    private val queries: MutableMap<UnboundQuery<*, *, *>, QueryDescriptorBuilder> = LinkedHashMap()
+    val stepDescriptors = LinkedHashMap<IStep, StepDescriptor>()
+    val connections = LinkedHashSet<PortConnection>()
+
+    fun build(): QueryGraphDescriptor {
+        createConnections()
+        return QueryGraphDescriptor(
+            queries.values.map { it.buildQueryDescriptor() },
+            stepDescriptors.values.toList(),
+            connections.toList()
+        )
+    }
+
+    fun createConnections() {
+        // iterating over the consumers is sufficient, because there can't be a connection with only producers
+        for (consumer in stepDescriptors.keys.filterIsInstance<IConsumingStep<*>>()) {
+            consumer.getProducers().forEachIndexed { producerIndex, producer ->
+                connections += PortConnection(
+                    PortReference(producer.id(), producer.getConsumers().indexOf(consumer)),
+                    PortReference(consumer.id(), producerIndex)
+                )
+            }
+        }
+    }
+
+    fun <Q : IUnboundQuery<*, *, *>> load(query: Q): QueryId {
+        require(query is UnboundQuery<*, *, *>)
+        if (!queries.containsKey(query)) {
+            val queryBuilder = QueryDescriptorBuilder(query)
+            queries[query] = queryBuilder
+            load(query.getAllSteps().asSequence())
+        }
+        return query.reference.getId()
+    }
+
+    fun load(steps: Sequence<IStep>) {
+        for (step in steps) {
+            if (!stepDescriptors.containsKey(step)) {
+                createStep(step)
+            }
+        }
+    }
+
+    fun createStep(step: IStep): StepDescriptor {
+        val newDescriptor = step.createDescriptor(this)
+        newDescriptor.id = stepDescriptors.size
+        stepDescriptors[step] = newDescriptor
+        return newDescriptor
+    }
+
+    fun IStep.id(): Int = stepId(this)
+    fun stepId(step: IStep): Int = stepDescriptors[step]!!.id!!
+
+    inner class QueryDescriptorBuilder(val query: UnboundQuery<*, *, *>) {
+        fun getGraphBuilder(): QueryGraphDescriptorBuilder = this@QueryGraphDescriptorBuilder
+        fun buildQueryDescriptor(): QueryDescriptor {
+            return QueryDescriptor(
+                stepId(query.inputStep),
+                stepId(query.outputStep),
+                query is FluxUnboundQuery,
+                query.reference.getId()
+            )
+        }
+    }
+}
+
 @Serializable
-class QueryGraphDescriptor {
-    val queries: MutableMap<Long, QueryDescriptor> = HashMap()
-    val connections: MutableList<PortConnection> = ArrayList()
+data class QueryGraphDescriptor(
+    val queries: List<QueryDescriptor>,
+    val steps: List<StepDescriptor>,
+    val connections: List<PortConnection>
+) {
+    fun initStepIds() {
+        steps.forEachIndexed { index, stepDescriptor -> stepDescriptor.id = index }
+    }
+
+    fun createRootQuery(): UnboundQuery<*, *, *> {
+        return QueryDeserializationContext(this).createQueries().first()
+    }
 }
 
 @Serializable
 data class QueryDescriptor(
-    val steps: List<StepDescriptor>,
     val input: Int,
     val output: Int,
     val isFluxOutput: Boolean,
     val queryId: Long
-) {
-    fun createQuery(): UnboundQuery<*, *, *> {
-        val context = QueryDeserializationContext()
-        val query = createQuery(context)
-        context.resolveQueryReferences()
-        return query
-    }
-
-    fun createQuery(context: QueryDeserializationContext): UnboundQuery<*, *, *> {
-        val reference: QueryReference<*> = QueryReference(null, queryId, null)
-        val createdSteps = ArrayList<IStep>()
-        fun resolveStep(id: Int): IStep {
-            return createdSteps[id]
-        }
-        reference.computeWith {
-            steps.forEach { createdSteps += it.createStep(context) }
-        }
-        for (connection in connections.sortedBy { it.consumer.port }) {
-            val producer = resolveStep(connection.producer.step) as IProducingStep<Any?>
-            val consumer = resolveStep(connection.consumer.step) as IConsumingStep<Any?>
-            consumer.connect(producer)
-        }
-
-        // validate connection order
-        for (connection in connections) {
-            val producer = resolveStep(connection.producer.step) as IProducingStep<Any?>
-            val consumer = resolveStep(connection.consumer.step) as IConsumingStep<Any?>
-            val expectedPortAtConsumer = connection.consumer.port
-            val actualPortAtConsumer = consumer.getProducers().indexOf(producer)
-            if (expectedPortAtConsumer != actualPortAtConsumer) {
-                throw RuntimeException("wrong connection order: $consumer")
-            }
-        }
-
-        val inputStep = resolveStep(input) as QueryInput<Any?>
-        val outputStep = resolveStep(output) as IProducingStep<Any?>
-
-        // Some steps implement IMonoStep and IFluxStep. An instanceOf check doesn't work.
-        return if (isFluxOutput) {
-            FluxUnboundQuery<Any?, Any?>(inputStep, outputStep as IFluxStep<Any?>, reference as QueryReference<IFluxUnboundQuery<Any?, Any?>>)
-        } else {
-            MonoUnboundQuery<Any?, Any?>(inputStep, outputStep as IMonoStep<Any?>, reference as QueryReference<UnboundQuery<Any?, Any?, Any?>>)
-        }.also { context.register(it) }
-    }
-}
+)
 
 @Serializable
 abstract class StepDescriptor {
@@ -77,7 +110,7 @@ data class PortConnection(val producer: PortReference, val consumer: PortReferen
 @Serializable
 data class PortReference(val step: Int, val port: Int = 0)
 
-interface IQueryReference<out Q : IUnboundQuery<*, *, *>> {
+sealed interface IQueryReference<out Q : IUnboundQuery<*, *, *>> {
     val query: Q
     fun getId(): Long
 }
@@ -91,35 +124,70 @@ class QueryReference<Q : IUnboundQuery<*, *, *>>(
         providedQuery ?: (queryInitializer ?: throw IllegalStateException("query for ID $queryId not found", creatingStacktrace)).invoke()
     }
     override fun getId(): Long = queryId ?: query.reference.takeIf { it != this }?.getId() ?: throw RuntimeException("ID not set")
+}
 
-    fun <T> computeWith(body: () -> T): T {
-        return contextReference.computeWith(this) {
-            body()
+class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
+    init {
+        graphDescriptor.initStepIds()
+    }
+    private val id2stepDesc = graphDescriptor.steps.associateBy { requireNotNull(it.id) { "Step has no ID: $it" } }
+    private val id2queryDesc = graphDescriptor.queries.associateBy { it.queryId }
+    private val createdSteps = HashMap<Int, IStep>()
+    private val createdQueryReferences = HashMap<QueryId, QueryReference<*>>()
+    private val createdQueries = HashMap<QueryId, UnboundQuery<*, *, *>>()
+
+    fun createQueries(): List<UnboundQuery<*, *, *>> {
+        createConnections()
+        return graphDescriptor.queries.map { getOrCreateQuery(it.queryId) }
+    }
+
+    fun createConnections() {
+        for (connection in graphDescriptor.connections.sortedBy { it.consumer.port }) {
+            val producer = getOrCreateStep(connection.producer.step) as IProducingStep<Any?>
+            val consumer = getOrCreateStep(connection.consumer.step) as IConsumingStep<Any?>
+            consumer.connect(producer)
+        }
+
+        // validate connection order
+        for (connection in graphDescriptor.connections) {
+            val producer = getOrCreateStep(connection.producer.step) as IProducingStep<Any?>
+            val consumer = getOrCreateStep(connection.consumer.step) as IConsumingStep<Any?>
+            val expectedPortAtConsumer = connection.consumer.port
+            val actualPortAtConsumer = consumer.getProducers().indexOf(producer)
+            if (expectedPortAtConsumer != actualPortAtConsumer) {
+                throw RuntimeException("wrong connection order: $consumer")
+            }
         }
     }
 
-    companion object {
-        val contextReference = ContextValue<QueryReference<*>>()
-    }
-}
-
-class QueryDeserializationContext {
-    private val queryReferences = ArrayList<QueryReference<IUnboundQuery<Any?, Any?, Any?>>>()
-    private val queries = ArrayList<UnboundQuery<Any?, Any?, Any?>>()
-
-    fun register(ref: QueryReference<*>) {
-        queryReferences += ref as QueryReference<IUnboundQuery<Any?, Any?, Any?>>
+    fun getOrCreateStep(id: Int): IStep {
+        return createdSteps.getOrPut(id) {
+            val desc = id2stepDesc[id]
+            requireNotNull(desc) { "Step $id not found" }
+            desc.createStep(this)
+        }
     }
 
-    fun register(query: UnboundQuery<*, *, *>) {
-        queries += query as UnboundQuery<Any?, Any?, Any?>
+    fun getOrCreateQueryReference(id: QueryId): QueryReference<*> {
+        return createdQueryReferences.getOrPut(id) {
+            QueryReference(null, id, null)
+        }
     }
 
-    fun resolveQueryReferences() {
-        val id2query = queries.associateBy { it.reference.queryId }
-        queryReferences.forEach {
-            it.providedQuery = id2query[it.getId()]
-                ?: throw RuntimeException("query not found: ${it.getId()}")
+    fun getOrCreateQuery(id: QueryId): UnboundQuery<*, *, *> {
+        return createdQueries.getOrPut(id) {
+            val desc = id2queryDesc[id]
+            requireNotNull(desc) { "Query $id not found" }
+            val inputStep = getOrCreateStep(desc.input) as QueryInput<Any?>
+            val outputStep = getOrCreateStep(desc.output) as IProducingStep<Any?>
+            val reference = getOrCreateQueryReference(id)
+
+            // Some steps implement IMonoStep and IFluxStep. An instanceOf check doesn't work.
+            return if (desc.isFluxOutput) {
+                FluxUnboundQuery<Any?, Any?>(inputStep, outputStep as IFluxStep<Any?>, reference as QueryReference<IFluxUnboundQuery<Any?, Any?>>)
+            } else {
+                MonoUnboundQuery<Any?, Any?>(inputStep, outputStep as IMonoStep<Any?>, reference as QueryReference<UnboundQuery<Any?, Any?, Any?>>)
+            }
         }
     }
 }

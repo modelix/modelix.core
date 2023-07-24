@@ -15,7 +15,7 @@ class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
         return input ?: ""
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor()
     }
 

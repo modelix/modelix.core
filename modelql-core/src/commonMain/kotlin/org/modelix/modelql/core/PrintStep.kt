@@ -15,7 +15,7 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
         return input
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor = Descriptor(prefix)
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor = Descriptor(prefix)
 
     @Serializable
     @SerialName("print")

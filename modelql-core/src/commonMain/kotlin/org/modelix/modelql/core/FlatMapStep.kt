@@ -31,13 +31,13 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
         return query.outputStep.getOutputSerializer(serializersModule)
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(query.createDescriptor(context))
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(context.load(query))
 
     @Serializable
     @SerialName("flatMap")
-    class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
+    class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return FlatMapStep<Any?, Any?>(query.createQuery(context) as FluxUnboundQuery<Any?, Any?>)
+            return FlatMapStep<Any?, Any?>(context.getOrCreateQuery(queryId) as FluxUnboundQuery<Any?, Any?>)
         }
     }
 

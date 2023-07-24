@@ -15,7 +15,7 @@ class CollectionSizeStep : MonoTransformingStep<Collection<*>, Int>() {
         return input.size
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor()
     }
 

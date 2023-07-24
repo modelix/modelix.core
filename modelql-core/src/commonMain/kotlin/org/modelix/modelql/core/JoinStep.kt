@@ -19,7 +19,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         return producers
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     @SerialName("join")

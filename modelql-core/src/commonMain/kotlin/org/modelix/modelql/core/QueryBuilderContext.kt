@@ -1,10 +1,5 @@
 package org.modelix.modelql.core
 
-expect class ContextValue<E : Any>() {
-    fun getValue(): E
-    fun <T> computeWith(newValue: E, r: () -> T): T
-}
-
 interface IQueryBuilderContext<in In, out Out> {
     fun IProducingStep<In>.mapRecursive(): IFluxStep<Out>
 }
@@ -15,9 +10,7 @@ class QueryBuilderContext<In, Out, Q : IUnboundQuery<*, *, *>> : IQueryBuilderCo
     override fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference).also { connect(it) }
     fun <T> computeWith(body: QueryBuilderContext<In, Out, Q>.() -> T): T {
         return CONTEXT_VALUE.computeWith(this) {
-            queryReference.computeWith {
-                body()
-            }
+            body()
         }
     }
 

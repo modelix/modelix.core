@@ -103,6 +103,11 @@ interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     fun bind(executor: IQueryExecutor<In>): IQuery<AggregationOut, ElementOut>
     fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>>
     fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<AggregationOut>>
+
+    companion object {
+        fun <In, Out> buildMono(body: (IMonoStep<In>) -> IMonoStep<Out>) = buildMonoQuery { body(it) }
+        fun <In, Out> buildFlux(body: (IMonoStep<In>) -> IFluxStep<Out>) = buildFluxQuery { body(it) }
+    }
 }
 
 interface IMonoUnboundQuery<in In, out Out> : IUnboundQuery<In, Out, Out> {
@@ -207,7 +212,7 @@ fun <In, Out, ElementOut> IUnboundQuery<In, Out, ElementOut>.castToInstance(): U
 abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     val inputStep: QueryInput<In>,
     private val outputStep_: IProducingStep<ElementOut>,
-    override val reference: QueryReference<UnboundQuery<In, AggregationOut, ElementOut>>,
+    override val reference: QueryReference<UnboundQuery<In, AggregationOut, ElementOut>>
 ) : IUnboundQuery<In, AggregationOut, ElementOut> {
 
     init {
@@ -248,7 +253,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 
     override fun requiresWriteAccess(): Boolean {
-        return getAllSteps().filter { it.owningQuery == this }.any { it.requiresWriteAccess() }
+        return getAllSteps().any { it.requiresWriteAccess() }
     }
 
     override fun canBeEmpty(): Boolean {
@@ -335,22 +340,10 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
             .filter { it.getConsumers().isEmpty() }
     }
 
-    fun createDescriptor(): QueryDescriptor {
-        val context = QuerySerializationContext()
-        return createDescriptor(context)
-    }
-    fun createDescriptor(context: QuerySerializationContext): QueryDescriptor {
-        context.registerQuery(this)
-        val builder = QueryDescriptorBuilder(context)
-        builder.load(getAllSteps().filter { it.owningQuery == this }.asSequence())
-        return QueryDescriptor(
-            builder.stepDescriptors.values.toList(),
-            builder.connections.toList(),
-            builder.stepId(inputStep),
-            builder.stepId(outputStep),
-            this is FluxUnboundQuery,
-            reference.getId()
-        )
+    fun createDescriptor(): QueryGraphDescriptor {
+        val builder = QueryGraphDescriptorBuilder()
+        builder.load(this)
+        return builder.build()
     }
 
     companion object {
@@ -422,53 +415,6 @@ class SinglePathFlowInstantiationContext(
     }
 }
 
-interface QuerySerializationContext {
-    private val queries = HashMap<Long, UnboundQuery<Any?, Any?, Any?>>()
-    fun hasQuery(id: Long): Boolean = queries.containsKey(id)
-    fun registerQuery(query: UnboundQuery<*, *, *>) {
-        queries[query.reference.getId()] = query as UnboundQuery<Any?, Any?, Any?>
-    }
-}
-
-class QueryGraphDescriptorBuilder {
-
-}
-
-private class QueryDescriptorBuilder(val context: QuerySerializationContext) {
-    val queryDescriptors = LinkedHashMap<IUnboundQuery<*, *, *>, QueryDescriptor>()
-    val stepDescriptors = LinkedHashMap<IStep, StepDescriptor>()
-    val connections = LinkedHashSet<PortConnection>()
-
-    fun createStep(step: IStep): StepDescriptor {
-        val newDescriptor = step.createDescriptor(context)
-        newDescriptor.id = stepDescriptors.size
-        stepDescriptors[step] = newDescriptor
-        return newDescriptor
-    }
-
-    fun load(steps: Sequence<IStep>) {
-        for (step in steps) {
-            createStep(step)
-        }
-        createConnections()
-    }
-
-    fun IStep.id(): Int = stepId(this)
-    fun stepId(step: IStep): Int = stepDescriptors[step]!!.id!!
-
-    fun createConnections() {
-        // iterating over the consumers is sufficient, because there can't be a connection with only producers
-        for (consumer in stepDescriptors.keys.filterIsInstance<IConsumingStep<*>>()) {
-            consumer.getProducers().forEachIndexed { producerIndex, producer ->
-                connections += PortConnection(
-                    PortReference(producer.id(), producer.getConsumers().indexOf(consumer)),
-                    PortReference(consumer.id(), producerIndex)
-                )
-            }
-        }
-    }
-}
-
 private fun IStep.collectAllSteps(result: MutableSet<IStep> = LinkedHashSet<IStep>()): Set<IStep> {
     if (!result.contains(this)) {
         result.add(this)
@@ -514,7 +460,7 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     override fun canBeEmpty(): Boolean = false
     override fun canBeMultiple(): Boolean = false
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     @SerialName("input")

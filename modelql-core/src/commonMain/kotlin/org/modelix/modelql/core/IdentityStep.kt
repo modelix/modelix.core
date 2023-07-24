@@ -22,7 +22,7 @@ open class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return IdentityStepDescriptor()
     }
 

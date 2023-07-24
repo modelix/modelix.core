@@ -283,8 +283,8 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
         }
     }
     val serializedQuery = json.encodeToString(query.createDescriptor())
-//    println(serializedQuery)
-    val deserializedQuery = json.decodeFromString<QueryDescriptor>(serializedQuery).createQuery() as MonoUnboundQuery<ProductDatabase, ResultT>
+    println(serializedQuery)
+    val deserializedQuery = json.decodeFromString<QueryGraphDescriptor>(serializedQuery).createRootQuery() as MonoUnboundQuery<ProductDatabase, ResultT>
     println("original query    : $query")
     println("deserialized query: $deserializedQuery")
     val remoteResult: IStepOutput<ResultT> = deserializedQuery.execute(QueryEvaluationContext.EMPTY, testDatabase)
@@ -304,7 +304,7 @@ class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Product>> = serializersModule.serializer<Product>().stepOutputSerializer()
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
     override fun toString(): String {
         return "${getProducer()}.products"
     }
@@ -328,7 +328,7 @@ class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     class Descriptor : StepDescriptor() {
@@ -348,7 +348,7 @@ class ProductCategoryTraversal : MonoTransformingStep<Product, String>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     class Descriptor : StepDescriptor() {
@@ -364,7 +364,7 @@ class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> = serializersModule.serializer<Int>().stepOutputSerializer()
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
     override fun toString(): String {
         return "${getProducer()}.id"
     }
@@ -390,7 +390,7 @@ class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
     }
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     class Descriptor : StepDescriptor() {

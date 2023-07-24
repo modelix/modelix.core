@@ -12,7 +12,7 @@ class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
         return input + operand
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = IntSumDescriptor(operand)
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = IntSumDescriptor(operand)
 
     @Serializable
     @SerialName("intSum")

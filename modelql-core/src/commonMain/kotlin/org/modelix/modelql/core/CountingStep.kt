@@ -14,7 +14,7 @@ class CountingStep() : AggregationStep<Any?, Int>() {
 
     override fun aggregate(input: Sequence<IStepOutput<Any?>>): IStepOutput<Int> = input.count().asStepOutput()
 
-    override fun createDescriptor(context: QuerySerializationContext) = CountDescriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = CountDescriptor()
 
     @Serializable
     @SerialName("count")

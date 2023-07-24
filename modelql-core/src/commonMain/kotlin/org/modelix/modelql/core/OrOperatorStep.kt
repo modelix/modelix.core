@@ -12,7 +12,7 @@ class OrOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
         return input.values.any { it == true }
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     @SerialName("or")

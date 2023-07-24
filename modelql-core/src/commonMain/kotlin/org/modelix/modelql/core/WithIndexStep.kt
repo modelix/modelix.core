@@ -51,7 +51,7 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         return getProducer().evaluate(evaluationContext, queryInput).map { transform(evaluationContext, it) }
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor()
     }
 

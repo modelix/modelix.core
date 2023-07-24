@@ -12,7 +12,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
-import org.modelix.modelql.core.QuerySerializationContext
+import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.TransformingStepWithParameter
 import org.modelix.modelql.core.asMono
@@ -29,7 +29,7 @@ class SetPropertyStep(val role: String) :
         return input
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor(role)
     }
 

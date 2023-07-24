@@ -66,7 +66,7 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
         return (serializersModule.serializer(type) as KSerializer<E>).stepOutputSerializer()
     }
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor = Descriptor(element, type.toString())
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor = Descriptor(element, type.toString())
 
     @Serializable(with = Descriptor.Serializer::class)
     @SerialName("monoSource")

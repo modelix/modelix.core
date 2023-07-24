@@ -24,10 +24,10 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoQuery
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IQueryExecutor
-import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.SimpleQueryExecutor
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.UnboundQuery
+import org.modelix.modelql.core.buildMonoQuery
 
 object UntypedModelQL {
     val serializersModule: SerializersModule = SerializersModule {
@@ -82,9 +82,9 @@ suspend fun <R> INode.queryFlux(body: (IMonoStep<INode>) -> IFluxStep<R>): List<
 }
 
 fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {
-    return RoleAccessContext.runWith(usesRoleIds()) { IUnboundQuery.buildMono(body).bind(createQueryExecutor()) }
+    return RoleAccessContext.runWith(usesRoleIds()) { org.modelix.modelql.core.buildMonoQuery { body(it) }.bind(createQueryExecutor()) }
 }
 
 fun <R> INode.buildFluxQuery(body: (IMonoStep<INode>) -> IFluxStep<R>): IFluxQuery<R> {
-    return RoleAccessContext.runWith(usesRoleIds()) { IUnboundQuery.buildFlux(body).bind(createQueryExecutor()) }
+    return RoleAccessContext.runWith(usesRoleIds()) { org.modelix.modelql.core.buildFluxQuery { body(it) }.bind(createQueryExecutor()) }
 }

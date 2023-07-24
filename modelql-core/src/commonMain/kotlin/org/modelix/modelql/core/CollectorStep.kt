@@ -61,7 +61,7 @@ class MapCollectorStepOutputSerializer<K, V>(inputElementSerializer: KSerializer
 }
 
 class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     override suspend fun aggregate(input: StepFlow<E>): IStepOutput<List<E>> {
         val inputList = input.toList()
@@ -93,7 +93,7 @@ class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
 
 class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     override suspend fun aggregate(input: StepFlow<E>): IStepOutput<Set<E>> {
         val inputList = ArrayList<IStepOutput<E>>()
@@ -127,7 +127,7 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
 class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>() {
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     override suspend fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>): IStepOutput<Map<K, V>> {
         val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()

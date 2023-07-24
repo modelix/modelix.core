@@ -31,12 +31,8 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
 
     override fun requiresSingularQueryInput(): Boolean = true
 
-    override fun createDescriptor(context: QuerySerializationContext): StepDescriptor {
-        return Descriptor(
-            queryRef.getId(),
-            (queryRef.takeIf { !context.hasQuery(it.getId()) }?.query as UnboundQuery<*, *, *>?)
-                ?.createDescriptor(context)
-        )
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
+        return Descriptor(context.load(queryRef.query))
     }
 
     override fun toString(): String {
@@ -45,15 +41,9 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
 
     @Serializable
     @SerialName("queryCall")
-    class Descriptor(val queryId: Long, val query: QueryDescriptor? = null) : StepDescriptor() {
+    class Descriptor(val queryId: QueryId) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            val queryRef = QueryReference(
-                providedQuery = query?.createQuery(context) as IUnboundQuery<Any?, Any?, Any?>?,
-                queryId = queryId,
-                queryInitializer = null
-            )
-            context.register(queryRef)
-            return QueryCallStep<Any?, Any?>(queryRef)
+            return QueryCallStep<Any?, Any?>(context.getOrCreateQueryReference(queryId) as QueryReference<IUnboundQuery<Any?, *, Any?>>)
         }
     }
 }

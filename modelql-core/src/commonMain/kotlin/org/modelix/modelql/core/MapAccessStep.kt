@@ -22,7 +22,7 @@ class MapAccessStep<K, V>() : TransformingStepWithParameter<Map<K, V>, K, Any?, 
         return "${getInputProducer()}.get(${getParameterProducer()})"
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     @SerialName("map.get")

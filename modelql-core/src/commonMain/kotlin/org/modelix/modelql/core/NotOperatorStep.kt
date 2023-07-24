@@ -16,7 +16,7 @@ class NotOperatorStep() : MonoTransformingStep<Boolean, Boolean>() {
         return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = NotDescriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = NotDescriptor()
 
     @Serializable
     @SerialName("not")

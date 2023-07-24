@@ -31,7 +31,7 @@ import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryEvaluationContext
-import org.modelix.modelql.core.QuerySerializationContext
+import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
@@ -59,7 +59,7 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
         return serializersModule.serializer<INode>().stepOutputSerializer()
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     @SerialName("untyped.resolveNode")

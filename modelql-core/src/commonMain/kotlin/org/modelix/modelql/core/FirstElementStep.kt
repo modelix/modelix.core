@@ -27,7 +27,7 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
         return getProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = FirstElementDescriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = FirstElementDescriptor()
 
     @Serializable
     @SerialName("first")

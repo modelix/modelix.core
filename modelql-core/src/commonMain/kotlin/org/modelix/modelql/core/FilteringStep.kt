@@ -47,13 +47,13 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
         return """${getProducers().single()}.filter { $condition }"""
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(condition.createDescriptor(context))
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(context.load(condition))
 
     @Serializable
     @SerialName("filter")
-    class Descriptor(val query: QueryDescriptor) : CoreStepDescriptor() {
+    class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return FilteringStep<Any?>(query.createQuery(context) as MonoUnboundQuery<Any?, Boolean?>)
+            return FilteringStep<Any?>(context.getOrCreateQuery(queryId) as MonoUnboundQuery<Any?, Boolean?>)
         }
     }
 }

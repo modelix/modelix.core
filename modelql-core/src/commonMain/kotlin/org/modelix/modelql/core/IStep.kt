@@ -11,10 +11,9 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 
 interface IStep {
-    val owningQuery: IUnboundQuery<*, *, *>
     fun validate() {}
 
-    fun createDescriptor(context: QuerySerializationContext): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
+    fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
 
     fun requiresWriteAccess(): Boolean = false
     fun hasSideEffect(): Boolean = requiresWriteAccess()
@@ -104,9 +103,6 @@ interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out> {
 }
 
 abstract class ProducingStep<E> : IProducingStep<E> {
-    private val ownerReference = QueryReference.contextReference.getValue()
-    override val owningQuery: IUnboundQuery<*, *, *> get() = ownerReference.query
-
     private val consumers = ArrayList<IConsumingStep<E>>()
 
     override fun addConsumer(consumer: IConsumingStep<E>) {

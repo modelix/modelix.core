@@ -37,13 +37,13 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
         )
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor(alternative.createDescriptor(context))
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(context.load(alternative))
 
     @Serializable
     @SerialName("ifEmpty")
-    class Descriptor(val alternative: QueryDescriptor) : CoreStepDescriptor() {
+    class Descriptor(val alternative: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return IfEmptyStep<Any?, Any?>(alternative.createQuery(context) as UnboundQuery<Unit, *, Any?>)
+            return IfEmptyStep<Any?, Any?>(context.getOrCreateQuery(alternative) as UnboundQuery<Unit, *, Any?>)
         }
     }
 

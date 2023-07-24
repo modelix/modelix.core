@@ -16,7 +16,7 @@ class InPredicate<E>() : TransformingStepWithParameter<E, Set<E>, Any?, Boolean>
         return serializersModule.serializer<Boolean>().stepOutputSerializer()
     }
 
-    override fun createDescriptor(context: QuerySerializationContext) = Descriptor()
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
     @SerialName("inSet")

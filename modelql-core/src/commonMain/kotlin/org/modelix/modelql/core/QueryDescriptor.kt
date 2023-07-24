@@ -6,12 +6,12 @@ import kotlinx.serialization.Transient
 @Serializable
 class QueryGraphDescriptor {
     val queries: MutableMap<Long, QueryDescriptor> = HashMap()
+    val connections: MutableList<PortConnection> = ArrayList()
 }
 
 @Serializable
 data class QueryDescriptor(
     val steps: List<StepDescriptor>,
-    val connections: List<PortConnection>,
     val input: Int,
     val output: Int,
     val isFluxOutput: Boolean,
@@ -100,14 +100,6 @@ class QueryReference<Q : IUnboundQuery<*, *, *>>(
 
     companion object {
         val contextReference = ContextValue<QueryReference<*>>()
-    }
-}
-
-class QuerySerializationContext {
-    private val queries = HashMap<Long, UnboundQuery<Any?, Any?, Any?>>()
-    fun hasQuery(id: Long): Boolean = queries.containsKey(id)
-    fun registerQuery(query: UnboundQuery<*, *, *>) {
-        queries[query.reference.getId()] = query as UnboundQuery<Any?, Any?, Any?>
     }
 }
 

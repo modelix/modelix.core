@@ -335,7 +335,10 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
             .filter { it.getConsumers().isEmpty() }
     }
 
-    fun createDescriptor(): QueryDescriptor = createDescriptor(QuerySerializationContext())
+    fun createDescriptor(): QueryDescriptor {
+        val context = QuerySerializationContext()
+        return createDescriptor(context)
+    }
     fun createDescriptor(context: QuerySerializationContext): QueryDescriptor {
         context.registerQuery(this)
         val builder = QueryDescriptorBuilder(context)
@@ -419,7 +422,20 @@ class SinglePathFlowInstantiationContext(
     }
 }
 
+interface QuerySerializationContext {
+    private val queries = HashMap<Long, UnboundQuery<Any?, Any?, Any?>>()
+    fun hasQuery(id: Long): Boolean = queries.containsKey(id)
+    fun registerQuery(query: UnboundQuery<*, *, *>) {
+        queries[query.reference.getId()] = query as UnboundQuery<Any?, Any?, Any?>
+    }
+}
+
+class QueryGraphDescriptorBuilder {
+
+}
+
 private class QueryDescriptorBuilder(val context: QuerySerializationContext) {
+    val queryDescriptors = LinkedHashMap<IUnboundQuery<*, *, *>, QueryDescriptor>()
     val stepDescriptors = LinkedHashMap<IStep, StepDescriptor>()
     val connections = LinkedHashSet<PortConnection>()
 

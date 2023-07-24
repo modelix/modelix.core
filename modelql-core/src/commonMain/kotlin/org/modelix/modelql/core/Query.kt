@@ -241,8 +241,9 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
         (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
 
     private val canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope && crossQueryOutputSteps.isEmpty()
-
-    init {
+    private var validated = false
+    fun validate() {
+        validated = true
         for (step in getAllSteps()) {
             step.validate()
         }
@@ -286,6 +287,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 
     override fun asFlow(evaluationContext: QueryEvaluationContext, input: StepFlow<In>): StepFlow<ElementOut> {
+        check(validated) { "call validate() first" }
         if (canOptimizeFlows) {
             return SinglePathFlowInstantiationContext(evaluationContext, inputStep, input).getOrCreateFlow(outputStep)
             // return input.flatMapConcat { SinglePathFlowInstantiationContext(inputStep, flowOf(it)).getOrCreateFlow(outputStep) }
@@ -327,6 +329,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 
     override fun asSequence(evaluationContext: QueryEvaluationContext, input: Sequence<In>): Sequence<ElementOut> {
+        check(validated) { "call validate() first" }
         require(unconsumedSideEffectSteps.isEmpty())
         require(!anyStepNeedsCoroutineScope)
         return if (requiresSingularInput) {

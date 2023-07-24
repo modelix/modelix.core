@@ -142,7 +142,9 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
 
     fun createQueries(): List<UnboundQuery<*, *, *>> {
         val result = graphDescriptor.queries.map { getOrCreateQuery(it.queryId) }
+        createConnections()
         checkConnectionOrder()
+        result.forEach { it.validate() }
         return result
     }
 
@@ -158,28 +160,30 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
         }
     }
 
-    fun createConnections(stepId: Int) {
-        val incomingConnections = consumerId2connections[stepId] ?: emptyList()
-        val outgoingConnections = producerId2connections[stepId] ?: emptyList()
+    private fun collectConnectedSteps(stepId: Int, acc: MutableSet<Int>) {
+        if (acc.contains(stepId)) return
+        acc.add(stepId)
+        consumerId2connections[stepId]?.forEach { collectConnectedSteps(it.producer.step, acc) }
+        producerId2connections[stepId]?.forEach { collectConnectedSteps(it.consumer.step, acc) }
+    }
 
-        processedConnections += incomingConnections
-        for (connection in incomingConnections.sortedBy { it.consumer.port }) {
-//            if (processedConnections.contains(connection)) continue
-//            processedConnections += connection
+    fun createConnections() {
+        val unprocessedConnections = graphDescriptor.connections.toSet() - processedConnections
+
+        for (connection in unprocessedConnections.sortedBy { it.consumer.port }) {
             val producer = getOrCreateStep(connection.producer.step) as IProducingStep<Any?>
             val consumer = getOrCreateStep(connection.consumer.step) as IConsumingStep<Any?>
             consumer.connect(producer)
+            processedConnections += connection
         }
-
-        outgoingConnections.forEach { getOrCreateStep(it.consumer.step) }
     }
 
     fun getOrCreateStep(id: Int): IStep {
-        return createdSteps.getOrCompute(id, {
+        return createdSteps.getOrCompute(id) {
             val desc = id2stepDesc[id]
             requireNotNull(desc) { "Step $id not found" }
             desc.createStep(this)
-        }, { createConnections(id) })
+        }
     }
 
     fun getOrCreateQueryReference(id: QueryId): QueryReference<*> {
@@ -192,15 +196,29 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
         return createdQueries.getOrCompute(id) {
             val desc = id2queryDesc[id]
             requireNotNull(desc) { "Query $id not found" }
-            val outputStep = getOrCreateStep(desc.output) as IProducingStep<Any?>
             val inputStep = getOrCreateStep(desc.input) as QueryInput<Any?>
+            val outputStep = getOrCreateStep(desc.output) as IProducingStep<Any?>
+
+//            val stepsInQuery = HashSet<Int>()
+//            collectConnectedSteps(desc.output, stepsInQuery)
+//            collectConnectedSteps(desc.input, stepsInQuery)
+//            stepsInQuery.filter { !createdSteps.isComputing(it) }.forEach { getOrCreateStep(it) }
+
             val reference = getOrCreateQueryReference(id)
 
             // Some steps implement IMonoStep and IFluxStep. An instanceOf check doesn't work.
             if (desc.isFluxOutput) {
-                FluxUnboundQuery<Any?, Any?>(inputStep, outputStep as IFluxStep<Any?>, reference as QueryReference<IFluxUnboundQuery<Any?, Any?>>)
+                FluxUnboundQuery<Any?, Any?>(
+                    inputStep,
+                    outputStep as IFluxStep<Any?>,
+                    reference as QueryReference<IFluxUnboundQuery<Any?, Any?>>
+                )
             } else {
-                MonoUnboundQuery<Any?, Any?>(inputStep, outputStep as IMonoStep<Any?>, reference as QueryReference<UnboundQuery<Any?, Any?, Any?>>)
+                MonoUnboundQuery<Any?, Any?>(
+                    inputStep,
+                    outputStep as IMonoStep<Any?>,
+                    reference as QueryReference<UnboundQuery<Any?, Any?, Any?>>
+                )
             }
         }
     }
@@ -220,3 +238,5 @@ private fun <K, V> MutableMap<K, V>.getOrCompute(key: K, body: () -> V, afterPut
     afterPut(value)
     return value
 }
+private fun <K, V> MutableMap<K, V>.getIfNotComputing(key: K): V? = get(key).takeIf { it != COMPUTING_VALUE }
+private fun <K, V> MutableMap<K, V>.isComputing(key: K): Boolean = get(key) == COMPUTING_VALUE

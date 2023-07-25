@@ -52,7 +52,10 @@ class QueryGraphDescriptorBuilder {
 
     fun createStep(step: IStep): StepDescriptor {
         return stepDescriptors.getOrCompute(step) {
-            step.createDescriptor(this).also { it.id = nextStepId++ }
+            step.createDescriptor(this).also {
+                it.id = nextStepId++
+                it.owner = step.owner.queryId!!
+            }
         }
     }
 
@@ -103,6 +106,7 @@ data class QueryDescriptor(
 abstract class StepDescriptor {
     @Transient
     var id: Int? = null
+    var owner: QueryId? = null
     abstract fun createStep(context: QueryDeserializationContext): IStep
 }
 
@@ -139,6 +143,10 @@ class QueryReference<Q : IUnboundQuery<*, *, *>>(
         providedQuery ?: (queryInitializer ?: throw IllegalStateException("query for ID $queryId not found", creatingStacktrace)).invoke()
     }
     override fun getId(): Long = queryId ?: query.reference.takeIf { it != this }?.getId() ?: throw RuntimeException("ID not set")
+
+    companion object {
+        val CONTEXT_VALUE = ContextValue<QueryReference<*>>()
+    }
 }
 
 class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
@@ -198,7 +206,9 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
         return createdSteps.getOrCompute(id) {
             val desc = id2stepDesc[id]
             requireNotNull(desc) { "Step $id not found" }
-            desc.createStep(this)
+            QueryReference.CONTEXT_VALUE.computeWith(getOrCreateQueryReference(requireNotNull(desc.owner) { "$desc has no queryId" })) {
+                desc.createStep(this)
+            }
         }
     }
 

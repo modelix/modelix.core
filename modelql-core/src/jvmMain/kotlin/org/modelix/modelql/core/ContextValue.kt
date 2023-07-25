@@ -3,7 +3,7 @@ package org.modelix.modelql.core
 actual class ContextValue<E : Any> {
     private val value = ThreadLocal<MutableList<E>>()
 
-    private val stack: MutableList<E>
+    private val internalStack: MutableList<E>
         get() {
             var stack = value.get()
             if (stack == null) {
@@ -15,19 +15,20 @@ actual class ContextValue<E : Any> {
 
     actual fun <T> computeWith(newValue: E, r: () -> T): T {
         return try {
-            stack.add(newValue)
+            internalStack.add(newValue)
             r()
         } finally {
-            val stack: MutableList<E> = stack
+            val stack: MutableList<E> = internalStack
             stack.removeAt(stack.size - 1)
         }
     }
 
     actual fun getValue(): E {
-        val stack: List<E> = stack
+        val stack: List<E> = internalStack
         return if (stack.isEmpty()) throw IllegalStateException("no value available") else stack[stack.size - 1]
     }
 
-    val allValues: Iterable<E>
-        get() = stack
+    actual fun getStack(): List<E> {
+        return internalStack.toList()
+    }
 }

@@ -12,6 +12,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 
 interface IStep {
+    val owner: QueryReference<*>
     fun validate() {}
 
     fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor = throw UnsupportedOperationException("${this::class} not serializable")
@@ -85,8 +86,19 @@ interface IProducingStep<out E> : IStep {
 }
 fun IProducingStep<*>.isSingle(): Boolean = !canBeEmpty() && !canBeMultiple()
 
-fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) = addConsumer(consumer)
-fun <T> IConsumingStep<T>.connect(producer: IProducingStep<T>) = producer.addConsumer(this)
+fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) {
+    val producer: IProducingStep<T> = this
+    if (consumer.owner != this.owner && producer !is SharedStep<*>) {
+        val producerContext = QueryBuilderContext.CONTEXT_VALUE.getStack().find { it.queryReference == producer.owner }
+        checkNotNull(producerContext) { "Step belongs to a different query that is already finalized: $producer" }
+        producerContext.computeWith {
+            with(producerContext) { producer.shared() }
+        }.connect(consumer)
+        return
+    }
+    addConsumer(consumer)
+}
+fun <T> IConsumingStep<T>.connect(producer: IProducingStep<T>) = producer.connect(this)
 
 interface IMonoStep<out E> : IProducingStep<E>
 
@@ -106,10 +118,14 @@ interface IProcessingStep<In, Out> : IConsumingStep<In>, IProducingStep<Out> {
 }
 
 abstract class ProducingStep<E> : IProducingStep<E> {
+    override val owner: QueryReference<*> = QueryReference.CONTEXT_VALUE.getValue()
     private val consumers = ArrayList<IConsumingStep<E>>()
 
     override fun addConsumer(consumer: IConsumingStep<E>) {
         if (consumers.contains(consumer)) return
+        if (consumer.owner != this.owner && this !is SharedStep<*>) {
+            throw CrossQueryReferenceException("Cannot consume step from a different query (${consumer.owner.queryId} != ${this.owner.queryId}): $this")
+        }
         consumers += consumer
         consumer.addProducer(this)
     }

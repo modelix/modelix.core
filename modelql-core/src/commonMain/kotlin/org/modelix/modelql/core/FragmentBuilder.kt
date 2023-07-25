@@ -42,7 +42,7 @@ fun <T, Context> IFragmentBuilder<T, Context>.castToInstance(): FragmentBuilder<
 internal fun <T, Context> IUnboundFragment<T, Context>.castToInternal(): IUnboundFragmentInternal<T, Context> = this as IUnboundFragmentInternal<T, Context>
 
 class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnboundFragmentInternal<E, Context> {
-    private val queryBuilder = QueryBuilderContext<E, IZipOutput<*>, IMonoUnboundQuery<E, IZipOutput<*>>>()
+    val queryBuilder = QueryBuilderContext<E, IZipOutput<*>, IMonoUnboundQuery<E, IZipOutput<*>>>()
     override val input: QueryInput<E> get() = queryBuilder.inputStep
     private val zipBuilder = ZipBuilder()
     private var resultHandlers = ArrayList<FragmentBody<Context>>()
@@ -51,6 +51,7 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
     private var sealed = false
 
     override fun <T> IMonoStep<T>.shared(): IMonoStep<T> = with(queryBuilder) { shared() }
+    override fun <T> IFluxStep<T>.shared(): IFluxStep<T> = with(queryBuilder) { shared() }
 
     fun getQuery(): IMonoUnboundQuery<E, IZipOutput<*>> {
         checkSealed()
@@ -109,9 +110,11 @@ fun <In, Context> buildModelQLFragment(body: IRecursiveFragmentBuilder<In, Conte
     return LazyFragment {
         val builder = FragmentBuilder<In, Context>()
         with(builder) {
-            body()
+            builder.queryBuilder.computeWith {
+                body()
+                builder.seal()
+            }
         }
-        builder.seal()
         builder
     }
 }

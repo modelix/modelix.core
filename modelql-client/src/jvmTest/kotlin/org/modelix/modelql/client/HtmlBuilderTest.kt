@@ -23,9 +23,9 @@ import org.modelix.model.lazy.NodeWithModelQLSupport
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
-import org.modelix.modelql.core.FragmentBuilder
 import org.modelix.modelql.core.IFragmentBuilder
 import org.modelix.modelql.core.IRecursiveFragmentBuilder
+import org.modelix.modelql.core.bindFragment
 import org.modelix.modelql.core.buildModelQLFragment
 import org.modelix.modelql.core.isNotEmpty
 import org.modelix.modelql.core.mapLocal
@@ -165,13 +165,10 @@ typealias HtmlBuilder<In> = IFragmentBuilder<In, FlowContent>
 
 suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String {
     val query = buildQuery<String> { repository ->
-        val htmlBuilder = FragmentBuilder<INode, FlowContent>()
-        htmlBuilder.apply(body)
-        htmlBuilder.seal()
-        htmlBuilder.compileMappingStep(repository).mapLocal { result ->
+        repository.bindFragment { body() }.mapLocal { result ->
             createHTML(prettyPrint = false).html {
                 body {
-                    htmlBuilder.processResult(result, this)
+                    result.insertInto(this)
                 }
             }
         }

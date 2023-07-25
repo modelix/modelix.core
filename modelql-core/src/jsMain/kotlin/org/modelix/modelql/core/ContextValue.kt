@@ -1,19 +1,22 @@
 package org.modelix.modelql.core
 
 actual class ContextValue<E : Any> {
-    private var value: E? = null
+    private var stack = ArrayList<E>()
 
     actual fun getValue(): E {
-        return value ?: throw IllegalStateException("no value available")
+        return stack.lastOrNull() ?: throw IllegalStateException("no value available")
     }
 
     actual fun <T> computeWith(newValue: E, r: () -> T): T {
-        val oldValue = value
-        value = newValue
+        stack.add(newValue)
         try {
             return r()
         } finally {
-            value = oldValue
+            stack.removeLast()
         }
+    }
+
+    actual fun getStack(): List<E> {
+        return stack.toList()
     }
 }

@@ -2,6 +2,7 @@ package org.modelix.modelql.core
 
 interface IStepSharingContext {
     fun <T> IMonoStep<T>.shared(): IMonoStep<T>
+    fun <T> IFluxStep<T>.shared(): IFluxStep<T>
 }
 
 interface IQueryBuilderContext<in In, out Out> : IStepSharingContext {
@@ -17,12 +18,28 @@ class QueryBuilderContext<In, Out, Q : IUnboundQuery<*, *, *>> : IQueryBuilderCo
     override fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference as QueryReference<IUnboundQuery<In, *, Out>>).also { connect(it) }
     fun <T> computeWith(body: QueryBuilderContext<In, Out, Q>.() -> T): T {
         return CONTEXT_VALUE.computeWith(this) {
-            body()
+            QueryReference.CONTEXT_VALUE.computeWith(queryReference) {
+                body()
+            }
         }
     }
 
     override fun <T> IMonoStep<T>.shared(): IMonoStep<T> {
-        val shared: SharedStep<T> = SharedStep<T>().also { connect(it) }
+        val downcasted: IProducingStep<T> = this
+        return downcasted.shared()
+    }
+
+    override fun <T> IFluxStep<T>.shared(): IFluxStep<T> {
+        val downcasted: IProducingStep<T> = this
+        return downcasted.shared()
+    }
+
+    fun <T> IProducingStep<T>.shared(): SharedStep<T> {
+        val producer: IProducingStep<T> = this
+        check(queryReference.providedQuery == null) { "Query is already created. Cannot share step anymore: $producer" }
+        val existing = sharedSteps.find { it.getProducer() == producer }
+        if (existing != null) return existing as SharedStep<T>
+        val shared: SharedStep<T> = SharedStep<T>().also { producer.connect(it) }
         sharedSteps += shared
         return shared
     }

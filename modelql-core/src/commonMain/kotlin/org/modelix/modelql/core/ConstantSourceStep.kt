@@ -5,6 +5,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.NothingSerializer
+import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
@@ -82,28 +83,34 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
             override fun deserialize(decoder: Decoder): Descriptor {
                 var type: String? = null
                 var value: Any? = null
+                var owner: Long? = null
                 decoder.decodeStructure(descriptor) {
                     while (true) {
                         when (decodeElementIndex(descriptor)) {
                             CompositeDecoder.DECODE_DONE -> break
                             0 -> type = decodeStringElement(descriptor, 0)
                             1 -> value = decodeSerializableElement(descriptor, 1, decoder.serializersModule.serializer(string2type[type!!]!!))
+                            2 -> owner = decodeLongElement(descriptor, 2)
                             else -> throw IllegalArgumentException()
                         }
                     }
                 }
-                return Descriptor(value, type!!)
+                return Descriptor(value, type!!).also { it.owner = owner }
             }
 
             override val descriptor: SerialDescriptor = buildClassSerialDescriptor("monoSource") {
                 element("elementType", String.serializer().descriptor)
                 element("value", NothingSerializer().descriptor)
+                element("owner", Long.serializer().nullable.descriptor, isOptional = true)
             }
 
             override fun serialize(encoder: Encoder, value: Descriptor) {
                 encoder.encodeStructure(descriptor) {
                     encodeStringElement(descriptor, 0, value.elementType)
                     encodeSerializableElement(descriptor, 1, encoder.serializersModule.serializer(string2type[value.elementType]!!), value.element)
+                    if (value.owner != null) {
+                        encodeLongElement(descriptor, 2, value.owner!!)
+                    }
                 }
             }
         }

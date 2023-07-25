@@ -14,6 +14,7 @@
 package org.modelix.modelql.core
 
 expect class ContextValue<E : Any>() {
+    fun getStack(): List<E>
     fun getValue(): E
     fun <T> computeWith(newValue: E, r: () -> T): T
 }

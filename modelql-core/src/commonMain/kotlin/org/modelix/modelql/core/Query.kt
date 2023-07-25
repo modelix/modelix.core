@@ -3,11 +3,9 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.KSerializer
@@ -145,7 +143,8 @@ class MonoUnboundQuery<In, ElementOut>(
     outputStep,
     reference as QueryReference<UnboundQuery<In, ElementOut, ElementOut>>,
     sharedSteps
-), IMonoUnboundQuery<In, ElementOut> {
+),
+    IMonoUnboundQuery<In, ElementOut> {
 
     override val outputStep: IMonoStep<ElementOut>
         get() = super.outputStep as IMonoStep<ElementOut>
@@ -191,7 +190,8 @@ class FluxUnboundQuery<In, ElementOut>(
     outputStep,
     reference as QueryReference<UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>>,
     sharedSteps
-), IFluxUnboundQuery<In, ElementOut> {
+),
+    IFluxUnboundQuery<In, ElementOut> {
 
     override val outputStep: IFluxStep<ElementOut>
         get() = super.outputStep as IFluxStep<ElementOut>
@@ -252,7 +252,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
         validated = true
         for (step in getAllSteps()) {
             step.validate()
-            if (step.getRootInputSteps().filterIsInstance<QueryInput<*>>().toSet() != setOf(inputStep)) {
+            if (step.getRootInputSteps().filterIsInstance<QueryInput<*>>().toSet().minus(inputStep).isNotEmpty()) {
                 throw CrossQueryReferenceException("Step uses inputs from multiple queries. Use .shared() instead: $step")
             }
         }
@@ -275,7 +275,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     override fun toString(): String {
         try {
             return outputStep.toString()
-            //return (getUnconsumedSteps() + outputStep).joinToString("; ")
+            // return (getUnconsumedSteps() + outputStep).joinToString("; ")
         } catch (ex: Throwable) {
             return "Query#${reference.queryId}"
         }
@@ -441,8 +441,8 @@ private fun IStep.collectAllSteps(result: MutableSet<IStep> = LinkedHashSet<ISte
 
 private fun IStep.getDirectlyConnectedSteps(): Set<IStep> {
     return (
-        (if (this is IConsumingStep<*>) getProducers() else emptyList()) +
-            (if (this is IProducingStep<*>) getConsumers() else emptyList())
+        (if (this is IConsumingStep<*> && this !is SharedStep<*>) getProducers() else emptyList()) +
+            (if (this is IProducingStep<*>) getConsumers().filter { it !is SharedStep<*> } else emptyList())
         ).toSet()
 }
 

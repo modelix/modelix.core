@@ -31,6 +31,10 @@ class SharedStep<E>() : MonoTransformingStep<E, E>() {
         throw RuntimeException("The flow for shared steps is expected to be created by the query")
     }
 
+    override fun getRootInputSteps(): Set<IStep> {
+        return setOf(this)
+    }
+
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor()
     }

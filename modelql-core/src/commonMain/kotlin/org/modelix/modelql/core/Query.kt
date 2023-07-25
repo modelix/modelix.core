@@ -252,6 +252,9 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
         validated = true
         for (step in getAllSteps()) {
             step.validate()
+            if (step.getRootInputSteps().filterIsInstance<QueryInput<*>>().toSet() != setOf(inputStep)) {
+                throw CrossQueryReferenceException("Step uses inputs from multiple queries. Use .shared() instead: $step")
+            }
         }
         for (it in sharedSteps) {
             require(!it.canBeMultiple()) { "Flux not allowed for shared steps: $it" }

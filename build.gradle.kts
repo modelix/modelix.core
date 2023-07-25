@@ -224,7 +224,7 @@ fun createDocsIndexPage(): String {
                             h2 { +"Available versions:" }
                             div("table") {
                                 val versionDirs = docsDir.listFiles()
-                                    ?.filter { it.isDirectory }
+                                    ?.filter { it.isDirectory && !it.name.startsWith('.') }
                                     ?.sortedByDescending { Version.parse(it.name) }
                                 if (versionDirs != null) {
                                     for (versionDir in versionDirs) {
@@ -234,7 +234,7 @@ fun createDocsIndexPage(): String {
                                                 div("main-subrow") {
                                                     div("w-100") {
                                                         span("inline-flex") {
-                                                            a( href = versionIndex.relativeTo(docsDir).path) {
+                                                            a(href = versionIndex.relativeTo(docsDir).path) {
                                                                 +"modelix.core ${versionDir.name}"
                                                             }
                                                         }

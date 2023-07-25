@@ -19,7 +19,7 @@ dokka = {id = "org.jetbrains.dokka", version = "1.8.20"}
 
 [versions]
 kotlin = "1.8.22"
-kotlinCoroutines="1.7.1"
+kotlinCoroutines="1.7.2"
 ktor="2.3.2"
 kotlinHtml="0.8.0"
 kotlinSerialization="1.5.1"

@@ -22,6 +22,19 @@ import java.io.FileWriter
 import java.io.IOException
 import java.util.*
 
+fun generateId(idStr: String?): Long {
+    return try {
+        val candidate = idStr?.toLong()
+        if (candidate == null || candidate == Long.MAX_VALUE || candidate < 0L) {
+            0L
+        } else {
+            candidate
+        }
+    } catch (e : NumberFormatException) {
+        0L
+    } + 1L
+}
+
 class InMemoryStoreClient : IStoreClient {
     companion object {
         private val LOG = LoggerFactory.getLogger(InMemoryStoreClient::class.java)
@@ -79,11 +92,7 @@ class InMemoryStoreClient : IStoreClient {
 
     @Synchronized
     override fun generateId(key: String): Long {
-        val id = try {
-            get(key)?.toLong() ?: 0L
-        } catch (e : NumberFormatException) {
-            0L
-        } + 1L
+        val id = generateId(get(key))
         put(key, id.toString(), false)
         return id
     }

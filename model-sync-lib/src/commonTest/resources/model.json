@@ -1,0 +1,68 @@
+{
+  "root": {
+    "id": "node:001",
+    "children": [
+      {
+        "id": "node:002",
+        "properties": {
+          "purpose" : "property sync test",
+          "name": "nameValue",
+          "description": "descriptionValue",
+          "optional" : "toBeDeleted"
+        }
+      },
+      {
+        "id": "node:003",
+        "properties": {
+          "purpose": "reference sync test"
+        },
+        "references": {
+          "root": "node:001",
+          "self": "node:003"
+        }
+      },
+      {
+        "id": "node:010",
+        "properties": {
+          "purpose": "child sync test"
+        },
+        "children": [
+          {
+            "id": "node:011"
+          },
+          {
+            "id": "node:012"
+          },
+          {
+            "id": "node:013"
+          },
+          {
+            "id": "node:014"
+          },
+          {
+            "id": "node:015"
+          },
+          {
+            "id": "node:004",
+            "properties": {
+              "purpose": "move across parents"
+            }
+          }
+        ]
+      },
+      {
+        "id": "node:005",
+        "properties": {
+          "purpose": "move across parents"
+        }
+      },
+      {
+        "id": "node:006",
+        "role": "roleBefore",
+        "properties": {
+          "purpose": "change role"
+        }
+      }
+    ]
+  }
+}

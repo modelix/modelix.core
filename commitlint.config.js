@@ -14,6 +14,7 @@ module.exports = {
         "model-api",
         "model-client",
         "model-server",
+        "model-sync-lib",
         "modelql",
         "mps-model-adapters",
         "ts-model-api",

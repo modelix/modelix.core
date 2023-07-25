@@ -126,6 +126,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
         val enumBuilder = TypeSpec.enumBuilder(enum.name)
             .addDeprecationIfNecessary(enum)
             .primaryConstructor(constructorSpec)
+            .addSuperinterface(IPropertyValueEnum::class)
             .addProperty(
                 PropertySpec.builder("uid", String::class)
                     .initializer("uid")
@@ -134,6 +135,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             .addProperty(
                 PropertySpec.builder("presentation", String::class.asTypeName().copy(nullable = true))
                     .initializer("presentation")
+                    .addModifiers(KModifier.OVERRIDE)
                     .build()
             )
 

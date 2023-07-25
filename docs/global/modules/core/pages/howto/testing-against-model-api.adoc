@@ -1,0 +1,19 @@
+= How-To test `model-api` client code without a model-server
+:navtitle: Test `model-api` client code without a model-server
+
+If you want to test code that processes `model-api` instances, you can do this in-process without a running (light-) model-server.
+Use the following pattern to set up your test fixture containing `model-api` instances:
+
+[source,kotlin]
+--
+val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
+branch.runWrite {
+    val root = branch.getRootNode()
+    val someRootNode = root.addNewChild(null, C_SomeConcept.untyped()).typed<N_SomeConcept>()
+    someRootNode.member.addNew(-1, C_OtherConcept).apply {
+        name = "some test property value"
+    }
+}
+--
+
+All classes of the pattern `C_*` and `N_*` are generated using the `model-api-gen`.

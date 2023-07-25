@@ -48,6 +48,10 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
         override fun invert(): List<IOperation> {
             return listOf(MoveNodeOp(childId, sourcePosition))
         }
+
+        override fun toString(): String {
+            return "applied:MoveNodeOp ${childId.toString(16)}: $sourcePosition->$targetPosition"
+        }
     }
 
     override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend {

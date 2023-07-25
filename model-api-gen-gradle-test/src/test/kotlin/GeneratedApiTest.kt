@@ -7,9 +7,7 @@ import jetbrains.mps.lang.behavior.ConceptMethodDeclaration
 import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import jetbrains.mps.lang.editor.*
 import jetbrains.mps.lang.smodel.query.CustomScope_old
-import org.modelix.metamodel.TypedLanguagesRegistry
-import org.modelix.metamodel.typed
-import org.modelix.metamodel.untyped
+import org.modelix.metamodel.*
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
@@ -17,8 +15,10 @@ import org.modelix.model.data.ModelData
 import java.io.File
 import kotlin.reflect.KAnnotatedElement
 import kotlin.reflect.KClass
+import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
+import kotlin.reflect.full.isSubclassOf
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -34,6 +34,7 @@ class GeneratedApiTest {
         branch.runWrite {
             data.load(branch)
             val node = findNodeWithStyleAttribute(branch.getRootNode())!!.typed(C_FontStyleStyleClassItem.getInstanceInterface())
+            assert(_FontStyle_Enum::class.isSubclassOf(IPropertyValueEnum::class))
             assertContains(_FontStyle_Enum.values(), node.style)
             val enumValue = _FontStyle_Enum.BOLD_ITALIC
             node.style = enumValue

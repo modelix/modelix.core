@@ -3,10 +3,12 @@ import kotlinx.html.stream.createHTML
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import org.semver.Version
 
 buildscript {
     dependencies {
-        classpath("org.jetbrains.dokka:versioning-plugin:1.8.10")
+        classpath(libs.dokka.versioning)
+        classpath(libs.semver)
     }
 }
 
@@ -19,7 +21,7 @@ plugins {
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.tasktree)
-    id("org.jetbrains.dokka") version "1.8.20"
+    alias(libs.plugins.dokka)
 }
 
 repositories {
@@ -44,7 +46,7 @@ fun computeVersion(): Any {
 }
 
 dependencies {
-    dokkaPlugin("org.jetbrains.dokka:versioning-plugin:1.8.10")
+    dokkaPlugin(libs.dokka.versioning)
 }
 
 subprojects {
@@ -112,6 +114,25 @@ subprojects {
                     }
                 }
             }
+        }
+    }
+
+    // Set maven metadata for all known publishing tasks. The exact tasks and names are only known after evaluatin.
+    afterEvaluate {
+        tasks.withType<AbstractPublishToMaven>() {
+            this.publication?.apply {
+                setMetadata()
+            }
+        }
+    }
+}
+
+fun MavenPublication.setMetadata() {
+    pom {
+        url.set("https://github.com/modelix/modelix.core")
+        scm {
+            connection.set("scm:git:https://github.com/modelix/modelix.core.git")
+            url.set("https://github.com/modelix/modelix.core")
         }
     }
 }
@@ -203,8 +224,8 @@ fun createDocsIndexPage(): String {
                             h2 { +"Available versions:" }
                             div("table") {
                                 val versionDirs = docsDir.listFiles()
-                                    ?.filter { it.isDirectory }
-                                    ?.sortedByDescending { it.name }
+                                    ?.filter { it.isDirectory && !it.name.startsWith('.') }
+                                    ?.sortedByDescending { Version.parse(it.name) }
                                 if (versionDirs != null) {
                                     for (versionDir in versionDirs) {
                                         val versionIndex = versionDir.resolve("index.html")
@@ -213,7 +234,7 @@ fun createDocsIndexPage(): String {
                                                 div("main-subrow") {
                                                     div("w-100") {
                                                         span("inline-flex") {
-                                                            a( href = versionIndex.relativeTo(docsDir).path) {
+                                                            a(href = versionIndex.relativeTo(docsDir).path) {
                                                                 +"modelix.core ${versionDir.name}"
                                                             }
                                                         }
@@ -254,6 +275,8 @@ publishing {
             groupId = "org.modelix"
             artifactId = "core-version-catalog"
             from(components["versionCatalog"])
+
+            setMetadata()
         }
     }
 }

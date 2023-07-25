@@ -93,14 +93,14 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
     }
     override fun <T> IMonoStep<T>.request(): IValueRequest<T> {
         checkNotSealed()
-        val actual = this.getRootInputSteps().filter { (it as? IProducingStep<*>)?.canEvaluateStatically() != true }.toSet()
-        val expected = setOf(input)
-        require(actual.isEmpty() || expected == actual) {
-            """step uses input from a different builder: $this
-                |  expected input: $expected
-                |  actual input: $actual
-            """.trimMargin()
-        }
+//        val actual = this.getRootInputSteps().filter { (it as? IProducingStep<*>)?.canEvaluateStatically() != true }.toSet()
+//        val expected = setOf(input)
+//        require(actual.isEmpty() || expected == actual) {
+//            """step uses input from a different builder: $this
+//                |  expected input: $expected
+//                |  actual input: $actual
+//            """.trimMargin()
+//        }
         return zipBuilder.request(this)
     }
 }

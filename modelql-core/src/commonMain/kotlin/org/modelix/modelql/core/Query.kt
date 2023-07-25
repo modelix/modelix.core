@@ -248,7 +248,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
         for (step in getAllSteps()) {
             step.validate()
             if (step.getRootInputSteps().filterIsInstance<QueryInput<*>>().toSet().minus(inputStep).isNotEmpty()) {
-                throw CrossQueryReferenceException("Step uses inputs from multiple queries. Use .shared() instead: $step")
+                throw CrossQueryReferenceException("Step uses inputs from multiple queries. Use .shared(): $step")
             }
         }
         for (it in sharedSteps) {

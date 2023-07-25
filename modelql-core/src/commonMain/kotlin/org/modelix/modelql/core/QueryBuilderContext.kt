@@ -41,7 +41,7 @@ fun <In, Out> buildMonoQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>)
             outputStep,
             reference = context.queryReference as QueryReference<UnboundQuery<In, Out, Out>>,
             context.sharedSteps
-        )
+        ).also { it.validate() }
     }
 }
 fun <In, Out> buildFluxQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>) -> IFluxStep<Out>): IFluxUnboundQuery<In, Out> {
@@ -53,6 +53,6 @@ fun <In, Out> buildFluxQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>)
             outputStep,
             reference = context.queryReference as QueryReference<IFluxUnboundQuery<In, Out>>,
             context.sharedSteps
-        )
+        ).also { it.validate() }
     }
 }

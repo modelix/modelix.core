@@ -237,16 +237,11 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
 
     open val outputStep: IProducingStep<ElementOut> get() = outputStep_
 
-    private val unconsumedSideEffectSteps = (getAllSteps() - outputStep)
-        .filterIsInstance<IProducingStep<*>>()
-        .filter { it.hasSideEffect() }
-        .filter { !isConsumed(it) }
-    private val anyStepNeedsCoroutineScope = sharedSteps.isNotEmpty() || getAllSteps().any { it.needsCoroutineScope() }
-    private val requiresSingularInput = getAllSteps().any { it.requiresSingularQueryInput() } // inputStep.requiresSingularQueryInput()
-    private val isSinglePath: Boolean = (getAllSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
-        (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
-
-    private val canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope && sharedSteps.isEmpty()
+    private lateinit var unconsumedSideEffectSteps: List<IProducingStep<*>>
+    private var anyStepNeedsCoroutineScope = true
+    private var requiresSingularInput = true
+    private var isSinglePath = false
+    private var canOptimizeFlows = false
     private var validated = false
     fun validate() {
         validated = true
@@ -260,6 +255,18 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
             require(!it.canBeMultiple()) { "Flux not allowed for shared steps: $it" }
             require(!it.canBeEmpty()) { "Empty steps not allowed for shared steps: $it" }
         }
+        require(outputStep !is SharedStep<*>) { "Not allowed as output step: $outputStep" }
+
+        unconsumedSideEffectSteps = (getAllSteps() - outputStep)
+            .filterIsInstance<IProducingStep<*>>()
+            .filter { it.hasSideEffect() }
+            .filter { !isConsumed(it) }
+        anyStepNeedsCoroutineScope = sharedSteps.isNotEmpty() || getAllSteps().any { it.needsCoroutineScope() }
+        requiresSingularInput = getAllSteps().any { it.requiresSingularQueryInput() } // inputStep.requiresSingularQueryInput()
+        isSinglePath = (getAllSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
+            (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
+
+        canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope && sharedSteps.isEmpty()
     }
 
     override fun requiresWriteAccess(): Boolean {
@@ -327,10 +334,10 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                     }
                     if (anyStepNeedsCoroutineScope) {
                         coroutineScope {
-                            body(FlowInstantiationContext(evaluationContext, this))
+                            body(FlowInstantiationContext(evaluationContext, this, this@UnboundQuery))
                         }
                     } else {
-                        body(FlowInstantiationContext(evaluationContext, null))
+                        body(FlowInstantiationContext(evaluationContext, null, this@UnboundQuery))
                     }
                 }
             }

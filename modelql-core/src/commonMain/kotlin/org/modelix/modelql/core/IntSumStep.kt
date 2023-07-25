@@ -25,6 +25,10 @@ class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
         return serializersModule.serializer<Int>().stepOutputSerializer()
     }
+
+    override fun toString(): String {
+        return "${getProducer()} + $operand"
+    }
 }
 
 operator fun IMonoStep<Int>.plus(other: Int) = IntSumStep(other).connectAndDowncast(this)

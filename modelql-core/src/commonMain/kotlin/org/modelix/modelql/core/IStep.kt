@@ -32,7 +32,8 @@ interface IFlowInstantiationContext {
 }
 class FlowInstantiationContext(
     override var evaluationContext: QueryEvaluationContext,
-    override val coroutineScope: CoroutineScope?
+    override val coroutineScope: CoroutineScope?,
+    val query: UnboundQuery<*, *, *>
 ) : IFlowInstantiationContext {
     private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
     fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
@@ -190,7 +191,7 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
             emit(aggregate(input))
         }
         return if (outputIsConsumedMultipleTimes()) {
-            val scope = context.coroutineScope ?: throw RuntimeException("Coroutine scope require for caching of $this")
+            val scope = context.coroutineScope ?: throw RuntimeException("Coroutine scope required for caching of $this")
             flow.shareIn(scope, SharingStarted.Lazily, 1)
                 .take(1) // The shared flow seems to ignore that there are no more elements and keeps the subscribers active.
         } else {

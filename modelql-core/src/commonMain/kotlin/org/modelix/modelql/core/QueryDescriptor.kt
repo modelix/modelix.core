@@ -120,11 +120,11 @@ sealed interface IQueryReference<out Q : IUnboundQuery<*, *, *>> {
     fun getId(): Long
 }
 class QueryReference<Q : IUnboundQuery<*, *, *>>(
-    providedQuery: Q?,
+    initiallyProvidedQuery: Q?,
     queryId: Long?,
     private val queryInitializer: (() -> Q)?
 ) : IQueryReference<Q> {
-    var providedQuery: Q? = providedQuery
+    var providedQuery: Q? = initiallyProvidedQuery
         set(value) {
             check(field == null) { "Cannot change providedQuery to $value, it is already set to $field" }
             field = value

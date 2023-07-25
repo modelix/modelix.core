@@ -274,8 +274,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
 
     override fun toString(): String {
         try {
-            return outputStep.toString()
-            // return (getUnconsumedSteps() + outputStep).joinToString("; ")
+            return "${reference.queryId}#" + (getUnconsumedSteps() + outputStep).joinToString("; ")
         } catch (ex: Throwable) {
             return "Query#${reference.queryId}"
         }

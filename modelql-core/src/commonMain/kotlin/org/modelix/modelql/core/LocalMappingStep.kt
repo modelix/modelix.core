@@ -60,6 +60,7 @@ interface IValueRequest<out E> {
 }
 
 interface IZipBuilderContext {
+    @Deprecated("use request()", ReplaceWith("request()"))
     fun <T> IMonoStep<T>.getLater(): IValueRequest<T> = request()
     fun <T> IMonoStep<T>.request(): IValueRequest<T>
 }

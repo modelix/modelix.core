@@ -2,11 +2,13 @@ package org.modelix.modelql.core
 
 data class QueryEvaluationContext private constructor(private val values: Map<IProducingStep<*>, Any?>) {
 
-    fun <T> getValue(producer: IProducingStep<T>): T {
-        return values.getValue(producer) as T
+    fun <T> getValue(producer: IProducingStep<T>): IStepOutput<T> {
+        return values.getValue(producer) as IStepOutput<T>
     }
 
-    operator fun <T> plus(entry: Pair<IProducingStep<T>, T>): QueryEvaluationContext {
+    fun hasValue(producer: IProducingStep<*>): Boolean = values.containsKey(producer)
+
+    operator fun <T> plus(entry: Pair<IProducingStep<T>, IStepOutput<T>>): QueryEvaluationContext {
         return QueryEvaluationContext(values + entry)
     }
 
@@ -20,13 +22,13 @@ data class QueryEvaluationContext private constructor(private val values: Map<IP
         return QueryEvaluationContext(combinedValues)
     }
 
-    fun <T> plus(producer: IProducingStep<T>, value: T): QueryEvaluationContext {
+    fun <T> plus(producer: IProducingStep<T>, value: IStepOutput<T>): QueryEvaluationContext {
         return plus(producer to value)
     }
 
     companion object {
         val EMPTY = QueryEvaluationContext(emptyMap())
-        fun <T> of(entry: Pair<IProducingStep<T>, T>) = QueryEvaluationContext(mapOf(entry))
-        fun <T> of(producer: IProducingStep<T>, value: T) = of(producer to value)
+        fun <T> of(entry: Pair<IProducingStep<T>, IStepOutput<T>>) = QueryEvaluationContext(mapOf(entry))
+        fun <T> of(producer: IProducingStep<T>, value: IStepOutput<T>) = of(producer to value)
     }
 }

@@ -244,7 +244,7 @@ class ModelQLTest {
     }
 
 //    @Test
-//    fun textIndexLookup() {
+//    fun testIndexLookup() {
 //        val result = remoteProductDatabaseQuery { db ->
 //            db.products.filter { it.images.size() }.toSet()
 //            db.products.flatMap { it.zip(it.images.assertNotEmpty()) }.mapLocal2 {
@@ -283,7 +283,7 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
         }
     }
     val serializedQuery = json.encodeToString(query.createDescriptor())
-//    println(serializedQuery)
+    println(serializedQuery)
     val deserializedQuery = json.decodeFromString<QueryGraphDescriptor>(serializedQuery).createRootQuery() as MonoUnboundQuery<ProductDatabase, ResultT>
     println("original query    : $query")
     println("deserialized query: $deserializedQuery")

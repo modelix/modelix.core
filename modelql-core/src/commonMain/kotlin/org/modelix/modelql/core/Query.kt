@@ -3,9 +3,11 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.KSerializer
@@ -299,9 +301,9 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                         context.put(inputStep, flowOf(inputElement))
 
                         for (crossQueryStep in crossQueryOutputSteps) {
-                            val value = context.getOrCreateFlow(crossQueryStep).single()
-                            context.put(crossQueryStep, flowOf(value))
-                            context.evaluationContext = context.evaluationContext + (crossQueryStep to value)
+                            val sharedFlow = context.getOrCreateFlow(crossQueryStep).shareIn(context.coroutineScope!!, SharingStarted.Lazily, 1)
+                            context.put(crossQueryStep, sharedFlow)
+                            context.evaluationContext = context.evaluationContext + (crossQueryStep to sharedFlow)
                         }
 
                         val outputFlow = context.getOrCreateFlow(outputStep)

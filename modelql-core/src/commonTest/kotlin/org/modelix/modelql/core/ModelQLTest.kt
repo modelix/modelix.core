@@ -58,9 +58,10 @@ class ModelQLTest {
         val thrownException = assertFails {
             val result = remoteProductDatabaseQuery { db ->
                 db.products.map { product ->
+                    val sharedProduct: IMonoStep<Product> = product.shared()
                     product.id.map {
                         // referencing the surrounding map input (product) is not allowed
-                        product.title.zip(it)
+                        sharedProduct.title.zip(it)
                     }
                 }.toList()
             }

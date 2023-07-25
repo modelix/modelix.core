@@ -67,6 +67,7 @@ class QueryGraphDescriptorBuilder {
             return QueryDescriptor(
                 inputStepId,
                 outputStepId,
+                query.sharedSteps.map { stepId(it) },
                 query is FluxUnboundQuery,
                 query.reference.getId()
             )
@@ -93,7 +94,8 @@ data class QueryGraphDescriptor(
 data class QueryDescriptor(
     val input: Int,
     val output: Int,
-    val isFluxOutput: Boolean,
+    val sharedSteps: List<Int> = emptyList(),
+    val isFluxOutput: Boolean = false,
     val queryId: Long
 )
 
@@ -212,6 +214,7 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
             requireNotNull(desc) { "Query $id not found" }
             val inputStep = getOrCreateStep(desc.input) as QueryInput<Any?>
             val outputStep = getOrCreateStep(desc.output) as IProducingStep<Any?>
+            val sharedSteps = desc.sharedSteps.map { getOrCreateStep(it) as SharedStep<Any?> }
 
 //            val stepsInQuery = HashSet<Int>()
 //            collectConnectedSteps(desc.output, stepsInQuery)
@@ -225,13 +228,15 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
                 FluxUnboundQuery<Any?, Any?>(
                     inputStep,
                     outputStep as IFluxStep<Any?>,
-                    reference as QueryReference<IFluxUnboundQuery<Any?, Any?>>
+                    reference as QueryReference<IFluxUnboundQuery<Any?, Any?>>,
+                    sharedSteps
                 )
             } else {
                 MonoUnboundQuery<Any?, Any?>(
                     inputStep,
                     outputStep as IMonoStep<Any?>,
-                    reference as QueryReference<UnboundQuery<Any?, Any?, Any?>>
+                    reference as QueryReference<UnboundQuery<Any?, Any?, Any?>>,
+                    sharedSteps
                 )
             }
         }

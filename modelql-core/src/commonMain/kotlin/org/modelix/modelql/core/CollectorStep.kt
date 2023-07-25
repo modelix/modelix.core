@@ -174,13 +174,13 @@ fun <T> IFluxStep<T>.toSet(): IMonoStep<Set<T>> = SetCollectorStep<T>().also { c
 
 fun <K, V> IFluxStep<IZip2Output<*, K, V>>.toMap(): IMonoStep<Map<K, V>> = MapCollectorStep<K, V>().also { connect(it) }
 fun <K, V> IFluxStep<V>.associateBy(keySelector: (IMonoStep<V>) -> IMonoStep<K>): IMonoStep<Map<K, V>> {
-    return map { it.map(keySelector).allowEmpty().zip(it) }.toMap()
+    return map<V, IZip2Output<*, K, V>> { it.map { keySelector(it) }.allowEmpty().zip(it) }.toMap()
 }
 fun <K, V> IFluxStep<K>.associateWith(valueSelector: (IMonoStep<K>) -> IMonoStep<V>): IMonoStep<Map<K, V>> {
-    return map { it.zip(it.map(valueSelector).allowEmpty()) }.toMap()
+    return map { it.zip(it.map { valueSelector(it) }.allowEmpty()) }.toMap()
 }
 fun <In, K, V> IFluxStep<In>.associate(keySelector: (IMonoStep<In>) -> IMonoStep<K>, valueSelector: (IMonoStep<In>) -> IMonoStep<V>): IMonoStep<Map<K, V>> {
-    return map { it.map(keySelector).allowEmpty().zip(it.map(valueSelector).allowEmpty()) }.toMap()
+    return map { it.map { keySelector(it) }.allowEmpty().zip(it.map { valueSelector(it) }.allowEmpty()) }.toMap()
 }
 
 /**

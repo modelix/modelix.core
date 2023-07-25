@@ -138,8 +138,14 @@ interface IFluxUnboundQuery<in In, out Out> : IUnboundQuery<In, List<IStepOutput
 class MonoUnboundQuery<In, ElementOut>(
     inputStep: QueryInput<In>,
     outputStep: IMonoStep<ElementOut>,
-    reference: QueryReference<*>
-) : UnboundQuery<In, ElementOut, ElementOut>(inputStep, outputStep, reference as QueryReference<UnboundQuery<In, ElementOut, ElementOut>>), IMonoUnboundQuery<In, ElementOut> {
+    reference: QueryReference<*>,
+    sharedSteps: List<SharedStep<*>>
+) : UnboundQuery<In, ElementOut, ElementOut>(
+    inputStep,
+    outputStep,
+    reference as QueryReference<UnboundQuery<In, ElementOut, ElementOut>>,
+    sharedSteps
+), IMonoUnboundQuery<In, ElementOut> {
 
     override val outputStep: IMonoStep<ElementOut>
         get() = super.outputStep as IMonoStep<ElementOut>
@@ -178,8 +184,14 @@ class MonoUnboundQuery<In, ElementOut>(
 class FluxUnboundQuery<In, ElementOut>(
     inputStep: QueryInput<In>,
     outputStep: IFluxStep<ElementOut>,
-    reference: QueryReference<*>
-) : UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>(inputStep, outputStep, reference as QueryReference<UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>>), IFluxUnboundQuery<In, ElementOut> {
+    reference: QueryReference<*>,
+    sharedSteps: List<SharedStep<*>>
+) : UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>(
+    inputStep,
+    outputStep,
+    reference as QueryReference<UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>>,
+    sharedSteps
+), IFluxUnboundQuery<In, ElementOut> {
 
     override val outputStep: IFluxStep<ElementOut>
         get() = super.outputStep as IFluxStep<ElementOut>
@@ -191,7 +203,7 @@ class FluxUnboundQuery<In, ElementOut>(
     }
 
     override fun <T> map(body: (IMonoStep<ElementOut>) -> IMonoStep<T>): IFluxUnboundQuery<In, T> {
-        return buildFluxQuery { it.flatMap(this@FluxUnboundQuery).map(body) }
+        return buildFluxQuery { it.flatMap(this@FluxUnboundQuery).map { body(it) } }
     }
 
     override fun <T> flatMap(body: (IMonoStep<ElementOut>) -> IFluxStep<T>): IFluxUnboundQuery<In, T> {
@@ -214,7 +226,8 @@ fun <In, Out, ElementOut> IUnboundQuery<In, Out, ElementOut>.castToInstance(): U
 abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     val inputStep: QueryInput<In>,
     private val outputStep_: IProducingStep<ElementOut>,
-    override val reference: QueryReference<UnboundQuery<In, AggregationOut, ElementOut>>
+    override val reference: QueryReference<UnboundQuery<In, AggregationOut, ElementOut>>,
+    val sharedSteps: List<SharedStep<*>>
 ) : IUnboundQuery<In, AggregationOut, ElementOut> {
 
     init {
@@ -224,34 +237,25 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
 
     open val outputStep: IProducingStep<ElementOut> get() = outputStep_
 
-    private val crossQueryOutputSteps = getAllSteps()
-        .filterIsInstance<IConsumingStep<*>>()
-        .filter {
-            val foreignQueryInputs = it.getRootInputSteps().filterIsInstance<QueryInput<*>>().toSet() - inputStep
-            foreignQueryInputs.isNotEmpty()
-        }
-        .flatMap { it.getProducers() }
-        .filter { it.getRootInputSteps().contains(inputStep) }
-
     private val unconsumedSideEffectSteps = (getAllSteps() - outputStep)
         .filterIsInstance<IProducingStep<*>>()
         .filter { it.hasSideEffect() }
         .filter { !isConsumed(it) }
-    private val anyStepNeedsCoroutineScope = getAllSteps().any { it.needsCoroutineScope() }
+    private val anyStepNeedsCoroutineScope = sharedSteps.isNotEmpty() || getAllSteps().any { it.needsCoroutineScope() }
     private val requiresSingularInput = getAllSteps().any { it.requiresSingularQueryInput() } // inputStep.requiresSingularQueryInput()
     private val isSinglePath: Boolean = (getAllSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
         (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
 
-    private val canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope && crossQueryOutputSteps.isEmpty()
+    private val canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope && sharedSteps.isEmpty()
     private var validated = false
     fun validate() {
         validated = true
         for (step in getAllSteps()) {
             step.validate()
         }
-        for (it in crossQueryOutputSteps) {
-            require(!it.canBeMultiple()) { "Flux not allowed for cross query steps: $it" }
-            require(!it.canBeEmpty()) { "Empty steps not allowed for cross query steps: $it" }
+        for (it in sharedSteps) {
+            require(!it.canBeMultiple()) { "Flux not allowed for shared steps: $it" }
+            require(!it.canBeEmpty()) { "Empty steps not allowed for shared steps: $it" }
         }
     }
 
@@ -300,10 +304,10 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                     suspend fun body(context: FlowInstantiationContext) {
                         context.put(inputStep, flowOf(inputElement))
 
-                        for (crossQueryStep in crossQueryOutputSteps) {
-                            val sharedFlow = context.getOrCreateFlow(crossQueryStep).shareIn(context.coroutineScope!!, SharingStarted.Lazily, 1)
-                            context.put(crossQueryStep, sharedFlow)
-                            context.evaluationContext = context.evaluationContext + (crossQueryStep to sharedFlow)
+                        for (sharedStep in sharedSteps) {
+                            val value: IStepOutput<Any?> = context.getOrCreateFlow(sharedStep).single()
+                            context.put(sharedStep, flowOf(value))
+                            context.evaluationContext = context.evaluationContext + (sharedStep to value)
                         }
 
                         val outputFlow = context.getOrCreateFlow(outputStep)
@@ -392,6 +396,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                 subclass(org.modelix.modelql.core.QueryInput.Descriptor::class)
                 subclass(org.modelix.modelql.core.RegexPredicate.Descriptor::class)
                 subclass(org.modelix.modelql.core.SetCollectorStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.SharedStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.SingleStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.StringContainsPredicate.StringContainsDescriptor::class)
                 subclass(org.modelix.modelql.core.StringToBooleanStep.Descriptor::class)

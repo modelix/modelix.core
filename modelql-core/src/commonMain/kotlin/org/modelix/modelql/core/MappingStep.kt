@@ -58,10 +58,10 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
     }
 }
 
-fun <In, Out> IFluxStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IFluxStep<Out> {
+fun <In, Out> IFluxStep<In>.map(body: IMappingContext.(IMonoStep<In>) -> IMonoStep<Out>): IFluxStep<Out> {
     return MappingStep(buildMonoQuery { body(it) }.castToInstance()).connectAndDowncast(this)
 }
-fun <In, Out> IMonoStep<In>.map(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
+fun <In, Out> IMonoStep<In>.map(body: IMappingContext.(IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
     return MappingStep(buildMonoQuery { body(it) }.castToInstance()).connectAndDowncast(this)
 }
 fun <In, Out> IMonoStep<In>.map(query: IMonoUnboundQuery<In, Out>): IMonoStep<Out> {

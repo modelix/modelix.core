@@ -305,7 +305,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                         context.put(inputStep, flowOf(inputElement))
 
                         for (sharedStep in sharedSteps) {
-                            val value: IStepOutput<Any?> = context.getOrCreateFlow(sharedStep).single()
+                            val value: IStepOutput<Any?> = context.getOrCreateFlow(sharedStep.getProducer()).single()
                             context.put(sharedStep, flowOf(value))
                             context.evaluationContext = context.evaluationContext + (sharedStep to value)
                         }

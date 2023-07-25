@@ -54,14 +54,13 @@ class ModelQLTest {
     }
 
     @Test
-    fun testCrossQueryStep() = runTestWithTimeout {
+    fun testIllegalCrossQueryStep() = runTestWithTimeout {
         val thrownException = assertFails {
             val result = remoteProductDatabaseQuery { db ->
                 db.products.map { product ->
-                    val sharedProduct: IMonoStep<Product> = product.shared()
                     product.id.map {
                         // referencing the surrounding map input (product) is not allowed
-                        sharedProduct.title.zip(it)
+                        product.title.zip(it)
                     }
                 }.toList()
             }
@@ -69,6 +68,23 @@ class ModelQLTest {
         }
         println(thrownException.stackTraceToString())
         assertTrue(thrownException is CrossQueryReferenceException)
+    }
+
+    @Test
+    fun testLegalCrossQueryStep() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.map { product ->
+                val sharedProduct: IMonoStep<Product> = product.shared()
+                product.id.map {
+                    sharedProduct.title.zip(it)
+                }
+            }.toList()
+        }
+        println(result)
+        assertEquals(
+            testDatabase.products.map { it.title to it.id },
+            result.map { it.first to it.second }
+        )
     }
 
     @Test

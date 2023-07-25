@@ -42,4 +42,8 @@ class SharedStep<E>() : MonoTransformingStep<E, E>() {
             return SharedStep<Any?>()
         }
     }
+
+    override fun toString(): String {
+        return "${getProducer()}.shared()"
+    }
 }

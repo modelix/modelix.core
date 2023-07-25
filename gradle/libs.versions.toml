@@ -78,7 +78,7 @@ ignite-indexing = { group = "org.apache.ignite", name = "ignite-indexing", versi
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.4.8" }
 postgresql = { group = "org.postgresql", name = "postgresql", version = "42.6.0" }
 jcommander = { group = "com.beust", name = "jcommander", version = "1.82" }
-cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.12.1" }
+cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.13.0" }
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 
 apache-cxf-sse = { group = "org.apache.cxf", name = "cxf-rt-rs-sse", version.ref = "apacheCxf" }

@@ -1,20 +1,20 @@
 package org.modelix.modelql.core
 
-interface IMappingContext {
+interface IStepSharingContext {
     fun <T> IMonoStep<T>.shared(): IMonoStep<T>
 }
 
-interface IQueryBuilderContext<in In, out Out> : IMappingContext {
+interface IQueryBuilderContext<in In, out Out> : IStepSharingContext {
     fun IProducingStep<In>.mapRecursive(): IFluxStep<Out>
 }
 
 class QueryBuilderContext<In, Out, Q : IUnboundQuery<*, *, *>> : IQueryBuilderContext<In, Out> {
-    val queryReference = QueryReference<IUnboundQuery<In, *, Out>>(null, null, null)
+    val queryReference = QueryReference<Q>(null, null, null)
     val inputStep = computeWith { QueryInput<In>() }
 
     val sharedSteps = ArrayList<SharedStep<*>>()
 
-    override fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference).also { connect(it) }
+    override fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference as QueryReference<IUnboundQuery<In, *, Out>>).also { connect(it) }
     fun <T> computeWith(body: QueryBuilderContext<In, Out, Q>.() -> T): T {
         return CONTEXT_VALUE.computeWith(this) {
             body()

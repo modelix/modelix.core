@@ -2,7 +2,7 @@ package org.modelix.modelql.core
 
 typealias FragmentBody<ContextT> = ContextT.() -> Unit
 
-interface IFragmentBuilder<out In, out Context> : IZipBuilderContext {
+interface IFragmentBuilder<out In, out Context> : IZipBuilderContext, IStepSharingContext {
     val input: IMonoStep<In>
     fun onSuccess(body: FragmentBody<Context>)
 
@@ -42,12 +42,15 @@ fun <T, Context> IFragmentBuilder<T, Context>.castToInstance(): FragmentBuilder<
 internal fun <T, Context> IUnboundFragment<T, Context>.castToInternal(): IUnboundFragmentInternal<T, Context> = this as IUnboundFragmentInternal<T, Context>
 
 class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnboundFragmentInternal<E, Context> {
-    override val input: QueryInput<E> = QueryInput()
+    private val queryBuilder = QueryBuilderContext<E, IZipOutput<*>, IMonoUnboundQuery<E, IZipOutput<*>>>()
+    override val input: QueryInput<E> get() = queryBuilder.inputStep
     private val zipBuilder = ZipBuilder()
     private var resultHandlers = ArrayList<FragmentBody<Context>>()
-    override val queryReference = QueryReference<IMonoUnboundQuery<E, IZipOutput<*>>>(null, null, { getQuery() })
+    override val queryReference: QueryReference<IMonoUnboundQuery<E, IZipOutput<*>>> get() = queryBuilder.queryReference
     private var query: IMonoUnboundQuery<E, IZipOutput<*>>? = null
     private var sealed = false
+
+    override fun <T> IMonoStep<T>.shared(): IMonoStep<T> = with(queryBuilder) { shared() }
 
     fun getQuery(): IMonoUnboundQuery<E, IZipOutput<*>> {
         checkSealed()
@@ -65,10 +68,10 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
     fun seal() {
         sealed = true
         query = MonoUnboundQuery(
-            input,
+            queryBuilder.inputStep,
             zipBuilder.compileOutputStep(),
-            reference = QueryReference(null, null, null),
-            sharedSteps = emptyList()
+            reference = queryBuilder.queryReference,
+            sharedSteps = queryBuilder.sharedSteps
         )
     }
 

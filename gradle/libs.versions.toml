@@ -61,7 +61,7 @@ ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref =
 
 ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
-keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "18.0.1" }
+keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "22.0.1" }
 guava = { group = "com.google.guava", name = "guava", version = "32.1.1-jre" }
 modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.1.4" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "1.13.1" }

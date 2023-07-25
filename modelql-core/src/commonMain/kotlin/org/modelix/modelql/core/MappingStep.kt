@@ -9,6 +9,7 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
 
     init {
         query.inputStep.indirectConsumer = this
+        check(query.outputStep != this)
     }
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty() || query.outputStep.canBeEmpty()
 

@@ -265,7 +265,8 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
 
     override fun toString(): String {
         try {
-            return (getUnconsumedSteps() + outputStep).joinToString("; ")
+            return outputStep.toString()
+            //return (getUnconsumedSteps() + outputStep).joinToString("; ")
         } catch (ex: Throwable) {
             return "Query#${reference.queryId}"
         }
@@ -352,7 +353,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 
     companion object {
-        private val idSequence: AtomicLong = AtomicLong(0)
+        private val idSequence: AtomicLong = AtomicLong(1000)
         fun generateId(): Long = idSequence.incrementAndGet()
 
         val serializersModule = SerializersModule {

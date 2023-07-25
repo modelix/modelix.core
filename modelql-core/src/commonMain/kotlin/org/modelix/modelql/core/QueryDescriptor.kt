@@ -7,14 +7,15 @@ typealias QueryId = Long
 
 class QueryGraphDescriptorBuilder {
     private val queries: MutableMap<UnboundQuery<*, *, *>, QueryDescriptorBuilder> = LinkedHashMap()
-    val stepDescriptors = LinkedHashMap<IStep, StepDescriptor>()
-    val connections = LinkedHashSet<PortConnection>()
+    private val stepDescriptors = LinkedHashMap<IStep, StepDescriptor>()
+    private val connections = LinkedHashSet<PortConnection>()
+    private var nextStepId: Int = 0
 
     fun build(): QueryGraphDescriptor {
         createConnections()
         return QueryGraphDescriptor(
             queries.values.map { it.buildQueryDescriptor() },
-            stepDescriptors.values.toList(),
+            stepDescriptors.values.associate { it.id!! to it },
             connections.toList()
         )
     }
@@ -43,17 +44,16 @@ class QueryGraphDescriptorBuilder {
 
     fun load(steps: Sequence<IStep>) {
         for (step in steps) {
-            if (!stepDescriptors.containsKey(step)) {
+            if (!stepDescriptors.isComputing(step)) {
                 createStep(step)
             }
         }
     }
 
     fun createStep(step: IStep): StepDescriptor {
-        val newDescriptor = step.createDescriptor(this)
-        newDescriptor.id = stepDescriptors.size
-        stepDescriptors[step] = newDescriptor
-        return newDescriptor
+        return stepDescriptors.getOrCompute(step) {
+            step.createDescriptor(this).also { it.id = nextStepId++ }
+        }
     }
 
     fun IStep.id(): Int = stepId(this)
@@ -62,9 +62,11 @@ class QueryGraphDescriptorBuilder {
     inner class QueryDescriptorBuilder(val query: UnboundQuery<*, *, *>) {
         fun getGraphBuilder(): QueryGraphDescriptorBuilder = this@QueryGraphDescriptorBuilder
         fun buildQueryDescriptor(): QueryDescriptor {
+            val outputStepId = stepId(query.outputStep)
+            val inputStepId = stepId(query.inputStep)
             return QueryDescriptor(
-                stepId(query.inputStep),
-                stepId(query.outputStep),
+                inputStepId,
+                outputStepId,
                 query is FluxUnboundQuery,
                 query.reference.getId()
             )
@@ -75,11 +77,11 @@ class QueryGraphDescriptorBuilder {
 @Serializable
 data class QueryGraphDescriptor(
     val queries: List<QueryDescriptor>,
-    val steps: List<StepDescriptor>,
+    val steps: Map<Int, StepDescriptor>,
     val connections: List<PortConnection>
 ) {
     fun initStepIds() {
-        steps.forEachIndexed { index, stepDescriptor -> stepDescriptor.id = index }
+        steps.forEach { it.value.id = it.key }
     }
 
     fun createRootQuery(): UnboundQuery<*, *, *> {
@@ -102,6 +104,7 @@ abstract class StepDescriptor {
     abstract fun createStep(context: QueryDeserializationContext): IStep
 }
 
+@Serializable
 sealed class CoreStepDescriptor : StepDescriptor()
 
 @Serializable
@@ -115,10 +118,20 @@ sealed interface IQueryReference<out Q : IUnboundQuery<*, *, *>> {
     fun getId(): Long
 }
 class QueryReference<Q : IUnboundQuery<*, *, *>>(
-    var providedQuery: Q?,
-    var queryId: Long?,
+    providedQuery: Q?,
+    queryId: Long?,
     private val queryInitializer: (() -> Q)?
 ) : IQueryReference<Q> {
+    var providedQuery: Q? = providedQuery
+        set(value) {
+            check(field == null) { "Cannot change providedQuery to $value, it is already set to $field" }
+            field = value
+        }
+    var queryId: Long? = queryId
+        set(value) {
+            check(field == null) { "Cannot set ID to $value, it is already set to $field" }
+            field = value
+        }
     private val creatingStacktrace = Exception()
     override val query: Q by lazy {
         providedQuery ?: (queryInitializer ?: throw IllegalStateException("query for ID $queryId not found", creatingStacktrace)).invoke()
@@ -130,7 +143,7 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
     init {
         graphDescriptor.initStepIds()
     }
-    private val id2stepDesc = graphDescriptor.steps.associateBy { requireNotNull(it.id) { "Step has no ID: $it" } }
+    private val id2stepDesc = graphDescriptor.steps
     private val id2queryDesc = graphDescriptor.queries.associateBy { it.queryId }
     private val createdSteps = HashMap<Int, IStep>()
     private val createdQueryReferences = HashMap<QueryId, QueryReference<*>>()
@@ -141,9 +154,10 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
     private val producerId2connections = graphDescriptor.connections.groupBy { it.producer.step }
 
     fun createQueries(): List<UnboundQuery<*, *, *>> {
-        val result = graphDescriptor.queries.map { getOrCreateQuery(it.queryId) }
+        graphDescriptor.steps.keys.forEach { getOrCreateStep(it) }
         createConnections()
         checkConnectionOrder()
+        val result = graphDescriptor.queries.map { getOrCreateQuery(it.queryId) }
         result.forEach { it.validate() }
         return result
     }
@@ -232,11 +246,15 @@ private fun <K, V> MutableMap<K, V>.getOrCompute(key: K, body: () -> V, afterPut
         check(value != COMPUTING_VALUE) { "Already computing value for $key" }
         return value as V
     }
-    put(key, COMPUTING_VALUE as V)
-    val value = body()
-    put(key, value)
-    afterPut(value)
-    return value
+    try {
+        put(key, COMPUTING_VALUE as V)
+        val value = body()
+        put(key, value)
+        afterPut(value)
+        return value
+    } finally {
+        if (get(key) == org.modelix.modelql.core.COMPUTING_VALUE) remove(key)
+    }
 }
 private fun <K, V> MutableMap<K, V>.getIfNotComputing(key: K): V? = get(key).takeIf { it != COMPUTING_VALUE }
 private fun <K, V> MutableMap<K, V>.isComputing(key: K): Boolean = get(key) == COMPUTING_VALUE

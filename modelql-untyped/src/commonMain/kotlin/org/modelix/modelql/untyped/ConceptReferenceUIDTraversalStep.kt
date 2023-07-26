@@ -38,7 +38,7 @@ class ConceptReferenceUIDTraversalStep() : MonoTransformingStep<ConceptReference
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> {
-        return serializersModule.serializer<String>().stepOutputSerializer()
+        return serializersModule.serializer<String>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

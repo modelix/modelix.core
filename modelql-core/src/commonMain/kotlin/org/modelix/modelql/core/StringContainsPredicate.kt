@@ -13,7 +13,7 @@ class StringContainsPredicate(val substring: String) : MonoTransformingStep<Stri
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
-        return serializersModule.serializer<Boolean>().stepOutputSerializer()
+        return serializersModule.serializer<Boolean>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = StringContainsDescriptor(substring)

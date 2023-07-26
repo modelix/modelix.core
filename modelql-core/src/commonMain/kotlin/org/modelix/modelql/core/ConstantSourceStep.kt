@@ -56,7 +56,7 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return flowOf(SimpleStepOutput(element))
+        return flowOf(element.asStepOutput(this))
     }
 
     override fun toString(): String {
@@ -64,7 +64,7 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        return (serializersModule.serializer(type) as KSerializer<E>).stepOutputSerializer()
+        return (serializersModule.serializer(type) as KSerializer<E>).stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor = Descriptor(element, type.toString())

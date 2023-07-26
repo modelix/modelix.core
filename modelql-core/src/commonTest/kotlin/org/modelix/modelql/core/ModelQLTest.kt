@@ -309,14 +309,14 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
 
 class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
     override fun createFlow(input: StepFlow<ProductDatabase>, context: IFlowInstantiationContext): StepFlow<Product> {
-        return input.flatMapConcat { it.value.products.asFlow() }.asStepFlow()
+        return input.flatMapConcat { it.value.products.asFlow() }.asStepFlow(this)
     }
 
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Product> {
         return getProducer().createSequence(evaluationContext, queryInput).flatMap { it.products }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Product>> = serializersModule.serializer<Product>().stepOutputSerializer()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Product>> = serializersModule.serializer<Product>().stepOutputSerializer(this)
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
     override fun toString(): String {
@@ -340,7 +340,7 @@ class ProductTitleTraversal : MonoTransformingStep<Product, String>() {
         return getProducers().single().toString() + ".title"
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer(this)
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
@@ -360,7 +360,7 @@ class ProductCategoryTraversal : MonoTransformingStep<Product, String>() {
         return getProducers().single().toString() + ".category"
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer(this)
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
@@ -376,7 +376,7 @@ class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
         return input.id
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> = serializersModule.serializer<Int>().stepOutputSerializer()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> = serializersModule.serializer<Int>().stepOutputSerializer(this)
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
     override fun toString(): String {
@@ -392,7 +392,7 @@ class ProductIdTraversal : MonoTransformingStep<Product, Int>() {
 }
 class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
     override fun createFlow(input: StepFlow<Product>, context: IFlowInstantiationContext): StepFlow<String> {
-        return input.flatMapConcat { it.value.images.asFlow() }.asStepFlow()
+        return input.flatMapConcat { it.value.images.asFlow() }.asStepFlow(this)
     }
 
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<String> {
@@ -402,7 +402,7 @@ class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
     override fun toString(): String {
         return "${getProducer()}.images"
     }
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer()
+    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> = serializersModule.serializer<String>().stepOutputSerializer(this)
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 

@@ -37,7 +37,7 @@ class NodeReferenceTraversalStep() : MonoTransformingStep<INode, INodeReference>
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INodeReference>> {
-        return serializersModule.serializer<INodeReference>().stepOutputSerializer()
+        return serializersModule.serializer<INodeReference>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

@@ -16,17 +16,17 @@ interface IStepOutput<out E> {
 
 typealias StepFlow<E> = Flow<IStepOutput<E>>
 val <T> Flow<IStepOutput<T>>.value: Flow<T> get() = map { it.value }
-fun <T> Flow<T>.asStepFlow(): StepFlow<T> = map { SimpleStepOutput(it) }
+fun <T> Flow<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { SimpleStepOutput(it, owner) }
 
-data class SimpleStepOutput<out E>(override val value: E) : IStepOutput<E>
+class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E>?) : IStepOutput<E>
 
-data class SimpleStepOutputSerializer<E>(val valueSerializer: KSerializer<E>) : KSerializer<SimpleStepOutput<E>> {
+class SimpleStepOutputSerializer<E>(val valueSerializer: KSerializer<E>, val owner: IProducingStep<E>?) : KSerializer<SimpleStepOutput<E>> {
     init {
         require(valueSerializer !is SimpleStepOutputSerializer<*>)
         require(valueSerializer !is ZipOutputSerializer<*, *>)
     }
     override fun deserialize(decoder: Decoder): SimpleStepOutput<E> {
-        return SimpleStepOutput(valueSerializer.deserialize(decoder))
+        return SimpleStepOutput(valueSerializer.deserialize(decoder), owner)
     }
 
     override val descriptor: SerialDescriptor
@@ -37,6 +37,6 @@ data class SimpleStepOutputSerializer<E>(val valueSerializer: KSerializer<E>) : 
     }
 }
 
-fun <T> KSerializer<T>.stepOutputSerializer(): SimpleStepOutputSerializer<T> = SimpleStepOutputSerializer(this)
+fun <T> KSerializer<T>.stepOutputSerializer(owner: IProducingStep<T>?): SimpleStepOutputSerializer<T> = SimpleStepOutputSerializer(this, owner)
 
-fun <T> T.asStepOutput(): IStepOutput<T> = SimpleStepOutput(this)
+fun <T> T.asStepOutput(owner: IProducingStep<T>?): IStepOutput<T> = SimpleStepOutput(this, owner)

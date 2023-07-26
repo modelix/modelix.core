@@ -46,7 +46,7 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
                 ?: ContextArea.getArea()
                 ?: throw IllegalStateException("No INodeResolutionScope found in the coroutine context")
             it.value.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $it")
-        }.asStepFlow()
+        }.asStepFlow(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: INodeReference): INode {
@@ -56,7 +56,7 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer()
+        return serializersModule.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

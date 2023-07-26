@@ -78,7 +78,7 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
     BoundQuery<In, List<IStepOutput<Out>>, Out>(executor), IFluxQuery<Out> {
 
     override suspend fun execute(): IStepOutput<List<IStepOutput<Out>>> {
-        return executor.createFlow(query).toList().asStepOutput()
+        return executor.createFlow(query).toList().asStepOutput(null)
     }
 
     override fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxQuery<T> {
@@ -94,7 +94,7 @@ interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     val reference: IQueryReference<IUnboundQuery<In, AggregationOut, ElementOut>>
     suspend fun execute(evaluationContext: QueryEvaluationContext, input: In): IStepOutput<AggregationOut>
     fun asFlow(evaluationContext: QueryEvaluationContext, input: StepFlow<In>): StepFlow<ElementOut>
-    fun asFlow(evaluationContext: QueryEvaluationContext, input: In): StepFlow<ElementOut> = asFlow(evaluationContext, flowOf(input).asStepFlow())
+    fun asFlow(evaluationContext: QueryEvaluationContext, input: In): StepFlow<ElementOut> = asFlow(evaluationContext, flowOf(input).asStepFlow(null))
     fun asFlow(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(evaluationContext, flowOf(input))
     fun asSequence(evaluationContext: QueryEvaluationContext, input: Sequence<In>): Sequence<ElementOut>
 
@@ -200,7 +200,7 @@ class FluxUnboundQuery<In, ElementOut>(
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<ElementOut> = FluxBoundQuery(executor, this)
 
     override suspend fun execute(evaluationContext: QueryEvaluationContext, input: In): IStepOutput<List<IStepOutput<ElementOut>>> {
-        return asFlow(evaluationContext, input).toList().asStepOutput()
+        return asFlow(evaluationContext, input).toList().asStepOutput(null)
     }
 
     override fun <T> map(body: (IMonoStep<ElementOut>) -> IMonoStep<T>): IFluxUnboundQuery<In, T> {
@@ -212,7 +212,7 @@ class FluxUnboundQuery<In, ElementOut>(
     }
 
     override fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<List<IStepOutput<ElementOut>>>> {
-        return ListSerializer(outputStep.getOutputSerializer(serializersModule).upcast()).stepOutputSerializer()
+        return ListSerializer(outputStep.getOutputSerializer(serializersModule).upcast()).stepOutputSerializer(null)
     }
 
     override fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>> {

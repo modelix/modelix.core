@@ -15,7 +15,7 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return RecursiveQuerySerializer<Out>(getQuery())
+        return RecursiveQuerySerializer<Out>(getQuery(), this)
     }
 
     fun getQuery(): IUnboundQuery<In, *, Out> = queryRef.query!!
@@ -48,7 +48,7 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
     }
 }
 
-class RecursiveQuerySerializer<Out>(val query: IUnboundQuery<*, *, Out>) : KSerializer<IStepOutput<Out>> {
+class RecursiveQuerySerializer<Out>(val query: IUnboundQuery<*, *, Out>, val owner: IProducingStep<Out>) : KSerializer<IStepOutput<Out>> {
     override fun deserialize(decoder: Decoder): IStepOutput<Out> {
         val queryOutputSerializer = getQueryOutputSerializer(decoder.serializersModule)
         return queryOutputSerializer.deserialize(decoder)

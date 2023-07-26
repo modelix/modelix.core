@@ -38,7 +38,7 @@ class ConceptReferenceTraversalStep() : MonoTransformingStep<INode?, ConceptRefe
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ConceptReference?>> {
-        return serializersModule.serializer<ConceptReference>().nullable.stepOutputSerializer()
+        return serializersModule.serializer<ConceptReference>().nullable.stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

@@ -37,7 +37,7 @@ class RoleInParentTraversalStep() : MonoTransformingStep<INode, String?>() {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String?>> {
-        return serializersModule.serializer<String>().nullable.stepOutputSerializer()
+        return serializersModule.serializer<String>().nullable.stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

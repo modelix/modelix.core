@@ -40,7 +40,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat { it.value.getReferenceTargetAsFlow(it.value.resolveReferenceLinkOrFallback(role)) }
-            .asStepFlow()
+            .asStepFlow(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: INode): INode {
@@ -53,7 +53,7 @@ class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INo
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer()
+        return serializersModule.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(role)

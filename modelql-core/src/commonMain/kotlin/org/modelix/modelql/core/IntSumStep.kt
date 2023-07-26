@@ -23,7 +23,7 @@ class IntSumStep(val operand: Int) : MonoTransformingStep<Int, Int>() {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
-        return serializersModule.serializer<Int>().stepOutputSerializer()
+        return serializersModule.serializer<Int>().stepOutputSerializer(this)
     }
 
     override fun toString(): String {

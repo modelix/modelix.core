@@ -26,13 +26,13 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
 
     override fun createFlow(input: StepFlow<CommonIn>, context: IFlowInstantiationContext): StepFlow<Out> {
         if (hasStaticParameter) {
-            return input.map { SimpleStepOutput(transformElement(it.value as In, staticParameterValue)) }
+            return input.map { transformElement(it.value as In, staticParameterValue).asStepOutput(this) }
         } else {
             val parameterFlow = context.getOrCreateFlow<ParameterT?>(getParameterProducer())
-                .onEmpty { emit(SimpleStepOutput(null)) }
+                .onEmpty { emit(SimpleStepOutput(null, null)) }
             return flow {
                 val parameterValue = parameterFlow.single()
-                emitAll(input.map { SimpleStepOutput(transformElement(it.value as In, parameterValue.value)) })
+                emitAll(input.map { transformElement(it.value as In, parameterValue.value).asStepOutput(this@TransformingStepWithParameter) })
             }
         }
     }

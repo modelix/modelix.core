@@ -37,7 +37,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getParentAsFlow() }.asStepFlow()
+        return input.flatMapConcat { it.value.getParentAsFlow() }.asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = true
@@ -53,7 +53,7 @@ class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<IN
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer()
+        return serializersModule.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

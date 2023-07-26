@@ -13,12 +13,12 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
         val serializer: KSerializer<IStepOutput<E>> = getProducer().getOutputSerializer(serializersModule).upcast()
         val valueSerializer = (serializer as SimpleStepOutputSerializer<E>).valueSerializer
         val nullableValueSerializer = (valueSerializer as KSerializer<Any>).nullable as KSerializer<E?>
-        return nullableValueSerializer.stepOutputSerializer()
+        return nullableValueSerializer.stepOutputSerializer(this)
     }
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E?> {
         val downcast: StepFlow<E?> = input
-        return downcast.onEmpty { emit(SimpleStepOutput(null)) }
+        return downcast.onEmpty { emit((null as E?).asStepOutput(this@NullIfEmpty)) }
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: E): E? {

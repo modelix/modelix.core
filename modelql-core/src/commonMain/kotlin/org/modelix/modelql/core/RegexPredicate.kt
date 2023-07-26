@@ -13,7 +13,7 @@ class RegexPredicate(val regex: Regex) : MonoTransformingStep<String?, Boolean>(
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
-        return serializersModule.serializer<Boolean>().stepOutputSerializer()
+        return serializersModule.serializer<Boolean>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(regex.pattern)

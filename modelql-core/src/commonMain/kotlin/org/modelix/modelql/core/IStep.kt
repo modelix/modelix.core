@@ -170,7 +170,7 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.map { SimpleStepOutput(transform(context.evaluationContext, it.value)) }
+        return input.map { transform(context.evaluationContext, it.value).asStepOutput(this) }
     }
 
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
@@ -216,11 +216,17 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {
-        return aggregate(sequenceOf(input.asStepOutput())).value
+        return aggregate(sequenceOf(input.asStepOutput(null))).value
     }
 
     override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
-        return Optional.of(aggregate(getProducer().createSequence(evaluationContext, sequenceOf(queryInput)).map { it.asStepOutput() }).value)
+        return Optional.of(
+            aggregate(
+                getProducer().createSequence(evaluationContext, sequenceOf(queryInput)).map {
+                    it.asStepOutput(null)
+                }
+            ).value
+        )
     }
 
     override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()

@@ -163,11 +163,11 @@ fun IFluxStep<ITypedNode?>.untyped(): IFluxStep<INode?> = mapIfNotNull { it.unty
 
 class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : MonoTransformingStep<INode, Typed>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Typed>> {
-        return TypedNodeSerializer(nodeClass, serializersModule.serializer<INode>()).stepOutputSerializer()
+        return TypedNodeSerializer(nodeClass, serializersModule.serializer<INode>()).stepOutputSerializer(this)
     }
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<Typed> {
-        return input.map { it.value.typed(nodeClass).asStepOutput() }
+        return input.map { it.value.typed(nodeClass).asStepOutput(this) }
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: INode): Typed {
@@ -197,11 +197,11 @@ class TypedNodeSerializer<Typed : ITypedNode>(val nodeClass: KClass<out Typed>, 
 
 class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer()
+        return serializersModule.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun createFlow(input: StepFlow<ITypedNode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.map { it.value.unwrap().asStepOutput() }
+        return input.map { it.value.unwrap().asStepOutput(this) }
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: ITypedNode): INode {

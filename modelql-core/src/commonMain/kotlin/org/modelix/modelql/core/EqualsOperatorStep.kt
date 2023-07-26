@@ -13,7 +13,7 @@ class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>(
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
-        return serializersModule.serializer<Boolean>().stepOutputSerializer()
+        return serializersModule.serializer<Boolean>().stepOutputSerializer(this)
     }
 
     override fun toString(): String {

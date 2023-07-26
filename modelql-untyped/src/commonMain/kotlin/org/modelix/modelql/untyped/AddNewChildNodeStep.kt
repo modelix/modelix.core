@@ -25,7 +25,7 @@ class AddNewChildNodeStep(val role: String?, val index: Int, val concept: Concep
     MonoTransformingStep<INode, INode>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer()
+        return serializersModule.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: INode): INode {

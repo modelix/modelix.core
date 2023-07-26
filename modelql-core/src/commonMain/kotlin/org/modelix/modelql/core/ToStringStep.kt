@@ -10,7 +10,7 @@ import kotlin.jvm.JvmName
 
 class ToStringStep : MonoTransformingStep<Any?, String?>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String?>> {
-        return serializersModule.serializer<String>().nullable.stepOutputSerializer()
+        return serializersModule.serializer<String>().nullable.stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: Any?): String? {

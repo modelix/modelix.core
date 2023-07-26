@@ -12,11 +12,11 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
 
     override suspend fun aggregate(input: StepFlow<E>): IStepOutput<E?> {
         return input.firstOrNull()?.let { MultiplexedOutput(0, it) }
-            ?: MultiplexedOutput(1, null.asStepOutput())
+            ?: MultiplexedOutput(1, null.asStepOutput(this))
     }
 
     override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<E?> {
-        return input.firstOrNull() ?: null.asStepOutput()
+        return input.firstOrNull() ?: null.asStepOutput(this)
     }
 
     override fun toString(): String {
@@ -28,7 +28,7 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
             this,
             listOf(
                 getProducer().getOutputSerializer(serializersModule).upcast(),
-                String.serializer().nullable.stepOutputSerializer() as KSerializer<IStepOutput<E?>>
+                (String.serializer().nullable as KSerializer<E?>).stepOutputSerializer(this) as KSerializer<IStepOutput<E?>>
             )
         )
     }

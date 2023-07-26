@@ -80,7 +80,7 @@ class WhenStep<In, Out>(
             }
             val elseCaseIndex = cases.size
             return@flatMapConcat elseCase?.asFlow(context.evaluationContext, it)?.map { MultiplexedOutput(elseCaseIndex, it) }
-                ?: emptyFlow<Out>().asStepFlow()
+                ?: emptyFlow<Out>().asStepFlow(this)
         }
     }
 

@@ -9,10 +9,10 @@ import kotlinx.serialization.serializer
 
 class CountingStep() : AggregationStep<Any?, Int>() {
     override suspend fun aggregate(input: StepFlow<Any?>): IStepOutput<Int> {
-        return input.count().asStepOutput()
+        return input.count().asStepOutput(this)
     }
 
-    override fun aggregate(input: Sequence<IStepOutput<Any?>>): IStepOutput<Int> = input.count().asStepOutput()
+    override fun aggregate(input: Sequence<IStepOutput<Any?>>): IStepOutput<Int> = input.count().asStepOutput(this)
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = CountDescriptor()
 
@@ -25,7 +25,7 @@ class CountingStep() : AggregationStep<Any?, Int>() {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
-        return serializersModule.serializer<Int>().stepOutputSerializer()
+        return serializersModule.serializer<Int>().stepOutputSerializer(this)
     }
 
     override fun toString(): String {

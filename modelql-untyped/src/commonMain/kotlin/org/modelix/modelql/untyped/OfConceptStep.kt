@@ -44,7 +44,7 @@ class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?,
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer()
+        return serializersModule.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: INode?): INode {

@@ -12,10 +12,10 @@ import kotlinx.serialization.serializer
 
 class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
     override suspend fun aggregate(input: StepFlow<Any?>): IStepOutput<Boolean> {
-        return input.take(1).map { false }.onEmpty { emit(false) }.single().asStepOutput()
+        return input.take(1).map { false }.onEmpty { emit(false) }.single().asStepOutput(this)
     }
 
-    override fun aggregate(input: Sequence<IStepOutput<Any?>>): IStepOutput<Boolean> = input.none().asStepOutput()
+    override fun aggregate(input: Sequence<IStepOutput<Any?>>): IStepOutput<Boolean> = input.none().asStepOutput(this)
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
@@ -28,7 +28,7 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
-        return serializersModule.serializer<Boolean>().stepOutputSerializer()
+        return serializersModule.serializer<Boolean>().stepOutputSerializer(this)
     }
 
     override fun toString(): String {

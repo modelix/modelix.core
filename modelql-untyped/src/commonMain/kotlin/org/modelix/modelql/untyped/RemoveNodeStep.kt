@@ -25,15 +25,15 @@ import org.modelix.modelql.core.stepOutputSerializer
 class RemoveNodeStep() : AggregationStep<INode, Int>() {
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
-        return serializersModule.serializer<Int>().stepOutputSerializer()
+        return serializersModule.serializer<Int>().stepOutputSerializer(this)
     }
 
     override suspend fun aggregate(input: StepFlow<INode>): IStepOutput<Int> {
-        return input.map { it.value.remove() }.count().asStepOutput()
+        return input.map { it.value.remove() }.count().asStepOutput(this)
     }
 
     override fun aggregate(input: Sequence<IStepOutput<INode>>): IStepOutput<Int> {
-        return input.map { it.value.remove() }.count().asStepOutput()
+        return input.map { it.value.remove() }.count().asStepOutput(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {

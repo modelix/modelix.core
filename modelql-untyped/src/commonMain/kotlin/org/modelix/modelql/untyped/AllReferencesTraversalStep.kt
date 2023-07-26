@@ -39,7 +39,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class AllReferencesTraversalStep() : FluxTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getAllReferenceTargetsAsFlow().map { it.second } }.asStepFlow()
+        return input.flatMapConcat { it.value.getAllReferenceTargetsAsFlow().map { it.second } }.asStepFlow(this)
     }
 
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<INode> {
@@ -47,7 +47,7 @@ class AllReferencesTraversalStep() : FluxTransformingStep<INode, INode>(), IMono
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer()
+        return serializersModule.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

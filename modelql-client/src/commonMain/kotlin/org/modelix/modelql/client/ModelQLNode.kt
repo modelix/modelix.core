@@ -67,7 +67,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
                 is IMonoUnboundQuery<*, *> -> {
                     val castedQuery = query as IMonoUnboundQuery<INode, Out>
                     val queryOnNode = IUnboundQuery.buildMono { replaceQueryRoot(it).map(castedQuery) }
-                    emit(SimpleStepOutput(client.runQuery(queryOnNode)))
+                    emit(SimpleStepOutput(client.runQuery(queryOnNode), null))
                 }
                 is IFluxUnboundQuery<*, *> -> {
                     val castedQuery = query as IFluxUnboundQuery<INode, Out>

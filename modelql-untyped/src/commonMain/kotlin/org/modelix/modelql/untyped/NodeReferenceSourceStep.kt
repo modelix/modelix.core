@@ -35,7 +35,7 @@ import kotlin.reflect.typeOf
 
 class NodeReferenceSourceStep(element: INodeReference?) : ConstantSourceStep<INodeReference?>(element, typeOf<INodeReference?>()) {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INodeReference?>> {
-        return serializersModule.serializer<INodeReference>().nullable.stepOutputSerializer()
+        return serializersModule.serializer<INodeReference>().nullable.stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(element)

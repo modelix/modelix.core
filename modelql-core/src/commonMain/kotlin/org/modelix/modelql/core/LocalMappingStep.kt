@@ -9,7 +9,7 @@ import kotlin.experimental.ExperimentalTypeInference
 
 open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTransformingStep<In, Out>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializersModule)).stepOutputSerializer()
+        return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializersModule)).stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {

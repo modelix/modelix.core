@@ -8,7 +8,7 @@ import kotlinx.serialization.serializer
 
 class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> {
-        return serializersModule.serializer<String>().stepOutputSerializer()
+        return serializersModule.serializer<String>().stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: String?): String {

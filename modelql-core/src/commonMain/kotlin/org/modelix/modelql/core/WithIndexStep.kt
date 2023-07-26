@@ -30,7 +30,7 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         return ZipOutputSerializer(
             arrayOf(
                 getProducer().getOutputSerializer(serializersModule).upcast(),
-                Int.serializer().stepOutputSerializer().upcast()
+                Int.serializer().stepOutputSerializer(null).upcast()
             )
         )
     }
@@ -40,7 +40,7 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
     }
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<IZip2Output<Any?, E, Int>> {
-        return input.withIndex().map { ZipStepOutput(listOf(it.value, it.index.asStepOutput())) }
+        return input.withIndex().map { ZipStepOutput(listOf(it.value, it.index.asStepOutput(this))) }
     }
 
     override fun createTransformingSequence(evaluationContext: QueryEvaluationContext, input: Sequence<E>): Sequence<IZip2Output<Any?, E, Int>> {

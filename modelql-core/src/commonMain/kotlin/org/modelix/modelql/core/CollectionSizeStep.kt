@@ -8,7 +8,7 @@ import kotlinx.serialization.serializer
 
 class CollectionSizeStep : MonoTransformingStep<Collection<*>, Int>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
-        return serializersModule.serializer<Int>().stepOutputSerializer()
+        return serializersModule.serializer<Int>().stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: Collection<*>): Int {

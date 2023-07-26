@@ -76,7 +76,6 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
                 sharedSteps = queryBuilder.sharedSteps
             )
         }
-        queryBuilder.validateAllIfRoot()
     }
 
     fun compileMappingStep(it: IMonoStep<E>): IMonoStep<IZipOutput<*>> = it.map(getQuery())
@@ -122,6 +121,7 @@ fun <In, Context> buildModelQLFragment(eager: Boolean, body: IRecursiveFragmentB
                 builder.seal()
             }
         }
+        builder.queryBuilder.validateAllIfRoot()
         builder
     }
     return if (eager) doBuild() else LazyFragment(doBuild)

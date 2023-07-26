@@ -150,7 +150,7 @@ class AssertNotEmptyStep<E>() : IdentityStep<E>() {
     }
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
-        return input.assertNotEmpty()
+        return input.assertNotEmpty { "$this" }
     }
 
     override fun toString(): String {

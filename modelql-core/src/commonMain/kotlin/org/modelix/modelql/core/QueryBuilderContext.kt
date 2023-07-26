@@ -23,7 +23,7 @@ class QueryBuilderContext<In, Out, Q : IUnboundQuery<*, *, *>> : IQueryBuilderCo
     }
 
     fun validateAll() {
-        queryReference.query.castToInstance().validate()
+        queryReference.providedQuery?.castToInstance()?.validate()
         childContexts.forEach { it.validateAll() }
     }
 

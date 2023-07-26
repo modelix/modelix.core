@@ -12,6 +12,12 @@ import kotlinx.serialization.modules.SerializersModule
 class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, *, Out>>) : TransformingStep<In, Out>(), IFluxStep<Out>, IMonoStep<Out> {
     override fun validate() {
         super<TransformingStep>.validate()
+
+        val queryInputStep = queryRef.query.castToInstance().inputStep
+        val existing = queryInputStep.indirectConsumer
+        if (existing == null || existing is QueryCallStep<*, *> && existing.owner.getId() == queryRef.getId()) {
+            queryInputStep.indirectConsumer = this
+        }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
@@ -69,10 +75,22 @@ fun <In, Out> IMonoStep<In>.callQuery(ref: QueryReference<IMonoUnboundQuery<In, 
     return QueryCallStep<In, Out>(ref).also { connect(it) }
 }
 fun <In, Out> IMonoStep<In>.callQuery(query: () -> IMonoUnboundQuery<In, Out>): IMonoStep<Out> {
-    return callQuery(QueryReference(null, null, query))
+    val creationStacktrace = Exception()
+    return callQuery(
+        QueryReference(null, null) {
+            val q: IMonoUnboundQuery<In, Out>? = query()
+            q ?: throw RuntimeException("No query was provided. Possible cyclic dependency.", creationStacktrace)
+        }
+    )
 }
 fun <In, Out> IMonoStep<In>.callFluxQuery(query: () -> IFluxUnboundQuery<In, Out>): IFluxStep<Out> {
-    return callFluxQuery(QueryReference(null, null, query))
+    val creationStacktrace = Exception()
+    return callFluxQuery(
+        QueryReference(null, null) {
+            val q: IFluxUnboundQuery<In, Out>? = query()
+            q ?: throw RuntimeException("No query was provided. Possible cyclic dependency.", creationStacktrace)
+        }
+    )
 }
 
 fun <In, Out> IMonoStep<In>.callFluxQuery(ref: QueryReference<IFluxUnboundQuery<In, Out>>): IFluxStep<Out> {

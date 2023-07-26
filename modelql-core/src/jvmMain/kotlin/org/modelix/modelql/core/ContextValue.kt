@@ -24,8 +24,12 @@ actual class ContextValue<E : Any> {
     }
 
     actual fun getValue(): E {
+        return tryGetValue() ?: throw IllegalStateException("no value available")
+    }
+
+    actual fun tryGetValue(): E? {
         val stack: List<E> = internalStack
-        return if (stack.isEmpty()) throw IllegalStateException("no value available") else stack[stack.size - 1]
+        return if (stack.isEmpty()) null else stack[stack.size - 1]
     }
 
     actual fun getStack(): List<E> {

@@ -4,7 +4,11 @@ actual class ContextValue<E : Any> {
     private var stack = ArrayList<E>()
 
     actual fun getValue(): E {
-        return stack.lastOrNull() ?: throw IllegalStateException("no value available")
+        return tryGetValue() ?: throw IllegalStateException("no value available")
+    }
+
+    actual fun tryGetValue(): E? {
+        return stack.lastOrNull()
     }
 
     actual fun <T> computeWith(newValue: E, r: () -> T): T {

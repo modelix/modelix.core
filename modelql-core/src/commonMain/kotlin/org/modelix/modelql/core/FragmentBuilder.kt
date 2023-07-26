@@ -68,12 +68,15 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
 
     fun seal() {
         sealed = true
-        query = MonoUnboundQuery(
-            queryBuilder.inputStep,
-            zipBuilder.compileOutputStep(),
-            reference = queryBuilder.queryReference,
-            sharedSteps = queryBuilder.sharedSteps
-        )
+        query = queryBuilder.computeWith {
+            MonoUnboundQuery(
+                queryBuilder.inputStep,
+                zipBuilder.compileOutputStep(),
+                reference = queryBuilder.queryReference,
+                sharedSteps = queryBuilder.sharedSteps
+            )
+        }
+        queryBuilder.validateAllIfRoot()
     }
 
     fun compileMappingStep(it: IMonoStep<E>): IMonoStep<IZipOutput<*>> = it.map(getQuery())

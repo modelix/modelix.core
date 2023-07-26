@@ -10,9 +10,22 @@ interface IQueryBuilderContext<in In, out Out> : IStepSharingContext {
 }
 
 class QueryBuilderContext<In, Out, Q : IUnboundQuery<*, *, *>> : IQueryBuilderContext<In, Out> {
+    private val childContexts = ArrayList<QueryBuilderContext<*, *, *>>()
+    private val parentContext: QueryBuilderContext<*, *, *>? = CONTEXT_VALUE.tryGetValue()?.also { it.childContexts.add(this) }
     val sharedSteps = ArrayList<SharedStep<*>>()
     val queryReference = QueryReference<Q>(null, null, null)
     val inputStep = computeWith { QueryInput<In>() }
+
+    fun validateAllIfRoot() {
+        if (parentContext == null) {
+            validateAll()
+        }
+    }
+
+    fun validateAll() {
+        queryReference.query.castToInstance().validate()
+        childContexts.forEach { it.validateAll() }
+    }
 
     override fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference as QueryReference<IUnboundQuery<In, *, Out>>).also { connect(it) }
     fun <T> computeWith(body: QueryBuilderContext<In, Out, Q>.() -> T): T {
@@ -57,8 +70,8 @@ fun <In, Out> buildMonoQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>)
             outputStep,
             reference = context.queryReference as QueryReference<UnboundQuery<In, Out, Out>>,
             context.sharedSteps
-        ).also { it.validate() }
-    }
+        )
+    }.also { context.validateAllIfRoot() }
 }
 fun <In, Out> buildFluxQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>) -> IFluxStep<Out>): IFluxUnboundQuery<In, Out> {
     val context = QueryBuilderContext<In, Out, IFluxUnboundQuery<In, Out>>()
@@ -69,6 +82,6 @@ fun <In, Out> buildFluxQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>)
             outputStep,
             reference = context.queryReference as QueryReference<IFluxUnboundQuery<In, Out>>,
             context.sharedSteps
-        ).also { it.validate() }
-    }
+        )
+    }.also { context.validateAllIfRoot() }
 }

@@ -27,6 +27,14 @@ class WhenStep<In, Out>(
     val elseCase: IMonoUnboundQuery<In, Out>?
 ) : MonoTransformingStep<In, Out>() {
 
+    init {
+        cases.forEach {
+            it.first.castToInstance().inputStep.indirectConsumer = this
+            it.second.castToInstance().inputStep.indirectConsumer = this
+        }
+        elseCase?.let { it.castToInstance().inputStep.indirectConsumer = this }
+    }
+
     override fun toString(): String {
         return "when()" + cases.joinToString("") { ".if(${it.first}).then(${it.second})" } + ".else($elseCase)"
     }

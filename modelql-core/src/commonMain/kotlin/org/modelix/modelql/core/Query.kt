@@ -486,13 +486,8 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        val c = indirectConsumer ?: throw UnsupportedOperationException()
+        val c = checkNotNull(indirectConsumer) { "Input of query unknown: $this" }
         return (c.getProducers().single() as IProducingStep<E>).getOutputSerializer(serializersModule)
-    }
-
-    fun getQueryInputProducer(): IProducingStep<E>? {
-        val c = indirectConsumer ?: return null
-        return c.getProducers().single() as IProducingStep<E>
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {

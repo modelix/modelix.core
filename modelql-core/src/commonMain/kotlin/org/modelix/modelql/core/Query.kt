@@ -233,6 +233,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     init {
         if (reference.queryId == null) reference.queryId = generateId()
         reference.providedQuery = this
+        require(inputStep.owner == reference) { "Input $inputStep isn't owned by query ${reference.queryId}" }
     }
 
     open val outputStep: IProducingStep<ElementOut> get() = outputStep_
@@ -245,34 +246,55 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     private var validated = false
     fun validate() {
         validated = true
-        for (step in getAllSteps()) {
+        for (step in getOwnSteps()) {
             step.validate()
-            if (step.getRootInputSteps().filterIsInstance<QueryInput<*>>().toSet().minus(inputStep).isNotEmpty()) {
-                throw CrossQueryReferenceException("Step uses inputs from multiple queries. Use .shared(): $step")
+        }
+
+        val mostSpecificSteps = getOwnSteps().toMutableSet()
+        mostSpecificSteps.toList().forEach {
+            val input = (it as? IConsumingStep<*>)?.getProducers()?.singleOrNull()
+            if (input?.getRootInputSteps() == it.getRootInputSteps()) {
+                mostSpecificSteps.remove(input)
             }
         }
+        val illegalCrossQueryReferences = mostSpecificSteps.map {
+            val foreignInputs = getForeignInputs(it)
+            if (foreignInputs.isNotEmpty()) {
+                "Query ${reference.queryId}: Step uses inputs ${it.getRootInputSteps()} from multiple queries. Use .shared(): $it"
+            } else {
+                null
+            }
+        }.filterNotNull().toList()
+        if (illegalCrossQueryReferences.isNotEmpty()) {
+            throw CrossQueryReferenceException(
+                illegalCrossQueryReferences
+                    .sortedByDescending { it.length }
+                    .joinToString("\n")
+            )
+        }
+
         for (it in sharedSteps) {
             require(!it.canBeMultiple()) { "Flux not allowed for shared steps: $it" }
             require(!it.canBeEmpty()) { "Empty steps not allowed for shared steps: $it" }
         }
         require(outputStep !is SharedStep<*>) { "Not allowed as output step: $outputStep" }
 
-        unconsumedSideEffectSteps = (getAllSteps() - outputStep)
+        unconsumedSideEffectSteps = (getOwnSteps() - outputStep)
             .filterIsInstance<IProducingStep<*>>()
             .filter { it.hasSideEffect() }
             .filter { !isConsumed(it) }
-        anyStepNeedsCoroutineScope = sharedSteps.isNotEmpty() || getAllSteps().any { it.needsCoroutineScope() }
-        requiresSingularInput = getAllSteps().any { it.requiresSingularQueryInput() } // inputStep.requiresSingularQueryInput()
-        isSinglePath = (getAllSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
-            (getAllSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
+        anyStepNeedsCoroutineScope = sharedSteps.isNotEmpty() || getOwnSteps().any { it.needsCoroutineScope() }
+        requiresSingularInput = getOwnSteps().any { it.requiresSingularQueryInput() } // inputStep.requiresSingularQueryInput()
+        isSinglePath = (getOwnSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
+            (getOwnSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
 
         canOptimizeFlows = isSinglePath && !requiresSingularInput && unconsumedSideEffectSteps.isEmpty() && !anyStepNeedsCoroutineScope && sharedSteps.isEmpty()
     }
 
+    private fun getForeignInputs(it: IStep) = it.getRootInputSteps().filterIsInstance<QueryInput<*>>().toSet().minus(inputStep)
+
     override fun requiresWriteAccess(): Boolean {
-        return getAllSteps()
-            .filter { it.getRootInputSteps().filterIsInstance<QueryInput<*>>().firstOrNull() == inputStep } // break cyclic dependency
-            .any { it.requiresWriteAccess() }
+        return getOwnSteps().any { it.requiresWriteAccess() }
     }
 
     override fun canBeEmpty(): Boolean {
@@ -294,6 +316,8 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
             else -> false
         }
     }
+
+    fun getOwnSteps() = getAllSteps().filter { it.owner == reference }
 
     fun getAllSteps(): Set<IStep> {
         val allSteps = HashSet<IStep>()
@@ -356,7 +380,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     }
 
     private fun getUnconsumedSteps(): List<IProducingStep<*>> {
-        return (getAllSteps() - outputStep)
+        return (getOwnSteps() - outputStep)
             .filterIsInstance<IProducingStep<*>>()
             .filter { it.getConsumers().isEmpty() }
     }
@@ -447,15 +471,15 @@ private fun IStep.collectAllSteps(result: MutableSet<IStep> = LinkedHashSet<ISte
 
 private fun IStep.getDirectlyConnectedSteps(): Set<IStep> {
     return (
-        (if (this is IConsumingStep<*> && this !is SharedStep<*>) getProducers() else emptyList()) +
-            (if (this is IProducingStep<*>) getConsumers().filter { it !is SharedStep<*> } else emptyList())
+        (if (this is IConsumingStep<*>) getProducers() else emptyList()) +
+            (if (this is IProducingStep<*>) getConsumers() else emptyList())
         ).toSet()
 }
 
 class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     @Transient
     internal var indirectConsumer: IConsumingStep<E>? = null
-    override fun toString(): String = "it"
+    override fun toString(): String = "it<${owner.queryId}>"
 
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<E> {
         return queryInput as Sequence<E>

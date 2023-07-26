@@ -10,10 +10,9 @@ interface IQueryBuilderContext<in In, out Out> : IStepSharingContext {
 }
 
 class QueryBuilderContext<In, Out, Q : IUnboundQuery<*, *, *>> : IQueryBuilderContext<In, Out> {
+    val sharedSteps = ArrayList<SharedStep<*>>()
     val queryReference = QueryReference<Q>(null, null, null)
     val inputStep = computeWith { QueryInput<In>() }
-
-    val sharedSteps = ArrayList<SharedStep<*>>()
 
     override fun IProducingStep<In>.mapRecursive(): IFluxStep<Out> = QueryCallStep<In, Out>(queryReference as QueryReference<IUnboundQuery<In, *, Out>>).also { connect(it) }
     fun <T> computeWith(body: QueryBuilderContext<In, Out, Q>.() -> T): T {

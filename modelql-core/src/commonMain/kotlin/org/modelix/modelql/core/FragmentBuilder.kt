@@ -6,11 +6,11 @@ interface IFragmentBuilder<out In, out Context> : IZipBuilderContext, IStepShari
     val input: IMonoStep<In>
     fun onSuccess(body: FragmentBody<Context>)
 
-    fun <T, TContext> IMonoStep<T>.requestFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IRequestedFragment<TContext> {
-        return requestFragment(buildModelQLFragment(body))
+    fun <T, TContext> IMonoStep<T>.requestFragment(eager: Boolean = true, body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IRequestedFragment<TContext> {
+        return requestFragment(buildModelQLFragment(eager = eager, body))
     }
-    fun <T, TContext> IFluxStep<T>.requestFragment(body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IRequestedFragment<TContext> {
-        return requestFragment(buildModelQLFragment(body))
+    fun <T, TContext> IFluxStep<T>.requestFragment(eager: Boolean = true, body: IRecursiveFragmentBuilder<T, TContext>.() -> Unit): IRequestedFragment<TContext> {
+        return requestFragment(buildModelQLFragment(eager = eager, body))
     }
 
     fun <TContext> TContext.insertFragment(fragment: IBoundFragment<TContext>) {
@@ -107,7 +107,11 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
 }
 
 fun <In, Context> buildModelQLFragment(body: IRecursiveFragmentBuilder<In, Context>.() -> Unit): IUnboundFragment<In, Context> {
-    return LazyFragment {
+    return buildModelQLFragment(true, body)
+}
+
+fun <In, Context> buildModelQLFragment(eager: Boolean, body: IRecursiveFragmentBuilder<In, Context>.() -> Unit): IUnboundFragment<In, Context> {
+    val doBuild: () -> FragmentBuilder<In, Context> = {
         val builder = FragmentBuilder<In, Context>()
         with(builder) {
             builder.queryBuilder.computeWith {
@@ -117,6 +121,7 @@ fun <In, Context> buildModelQLFragment(body: IRecursiveFragmentBuilder<In, Conte
         }
         builder
     }
+    return if (eager) doBuild() else LazyFragment(doBuild)
 }
 
 private class BoundFragment<In, RequestContext>(val unboundFragment: IUnboundFragmentInternal<In, RequestContext>, val request: IValueRequest<List<IZipOutput<*>>>) : IBoundFragment<RequestContext> {

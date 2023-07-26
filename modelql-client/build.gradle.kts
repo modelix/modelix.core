@@ -51,6 +51,7 @@ kotlin {
 
                 implementation(project(":model-client", configuration = "jvmRuntimeElements"))
                 implementation(project(":model-server-lib"))
+                implementation(project(":modelql-html"))
 
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.cors)

@@ -4,14 +4,13 @@ import io.ktor.client.HttpClient
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import kotlinx.html.FlowContent
+import kotlinx.html.HTML
 import kotlinx.html.UL
 import kotlinx.html.body
 import kotlinx.html.div
 import kotlinx.html.h1
 import kotlinx.html.h2
-import kotlinx.html.html
 import kotlinx.html.li
-import kotlinx.html.stream.createHTML
 import kotlinx.html.ul
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
@@ -25,13 +24,12 @@ import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.IFragmentBuilder
 import org.modelix.modelql.core.IRecursiveFragmentBuilder
-import org.modelix.modelql.core.bindFragment
 import org.modelix.modelql.core.buildModelQLFragment
 import org.modelix.modelql.core.isNotEmpty
-import org.modelix.modelql.core.mapLocal
+import org.modelix.modelql.html.buildHtmlQuery
 import org.modelix.modelql.untyped.allChildren
-import org.modelix.modelql.untyped.buildQuery
 import org.modelix.modelql.untyped.children
+import org.modelix.modelql.untyped.createQueryExecutor
 import org.modelix.modelql.untyped.property
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -75,7 +73,7 @@ class HtmlBuilderTest {
             }
         }
 
-        fun HtmlBuilder<INode>.renderModule() {
+        fun IFragmentBuilder<INode, FlowContent>.renderModule() {
             val name = input.property("name").getLater()
             val models = input.children("models").requestFragment(modelTemplate)
             onSuccess {
@@ -93,7 +91,9 @@ class HtmlBuilderTest {
                 renderModule()
             }
             onSuccess {
-                insertFragment(modules)
+                body {
+                    insertFragment(modules)
+                }
             }
         }
 
@@ -123,11 +123,13 @@ class HtmlBuilderTest {
             val name = input.property("name").getLater()
             val models = input.children("models").requestFragment(modelTemplate)
             onSuccess {
-                div {
-                    h1 {
-                        +"Module: ${name.get()}"
+                body {
+                    div {
+                        h1 {
+                            +"Module: ${name.get()}"
+                        }
+                        insertFragment(models)
                     }
-                    insertFragment(models)
                 }
             }
         }
@@ -151,8 +153,10 @@ class HtmlBuilderTest {
         val actual = client.getRootNode().queryAndBuildHtml {
             val renderedNode = input.requestFragment<INode, UL> { renderNode() }
             onSuccess {
-                ul {
-                    insertFragment(renderedNode)
+                body {
+                    ul {
+                        insertFragment(renderedNode)
+                    }
                 }
             }
         }
@@ -161,18 +165,8 @@ class HtmlBuilderTest {
     }
 }
 
-typealias HtmlBuilder<In> = IFragmentBuilder<In, FlowContent>
+typealias HtmlBuilder<In> = IFragmentBuilder<In, HTML>
 
-suspend fun INode.queryAndBuildHtml(body: HtmlBuilder<INode>.() -> Unit): String {
-    val query = buildQuery<String> { repository ->
-        repository.bindFragment { body() }.mapLocal { result ->
-            createHTML(prettyPrint = false).html {
-                body {
-                    result.insertInto(this)
-                }
-            }
-        }
-    }
-    println("query: $query")
-    return query.execute().value
+suspend fun INode.queryAndBuildHtml(body: IFragmentBuilder<INode, HTML>.() -> Unit): String {
+    return buildHtmlQuery { body() }.bind(createQueryExecutor()).execute().value
 }

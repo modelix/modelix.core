@@ -60,7 +60,7 @@ class QueryGraphDescriptorBuilder {
     }
 
     fun IStep.id(): Int = stepId(this)
-    fun stepId(step: IStep): Int = stepDescriptors[step]!!.id!!
+    fun stepId(step: IStep): Int = requireNotNull(requireNotNull(stepDescriptors[step]) { "No descriptor: $step" }.id) { "No ID: $step" }
 
     inner class QueryDescriptorBuilder(val query: UnboundQuery<*, *, *>) {
         fun getGraphBuilder(): QueryGraphDescriptorBuilder = this@QueryGraphDescriptorBuilder

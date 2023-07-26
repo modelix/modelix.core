@@ -3,6 +3,7 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -272,11 +273,6 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                     .joinToString("\n")
             )
         }
-
-        for (it in sharedSteps) {
-            require(!it.canBeMultiple()) { "Flux not allowed for shared steps: $it" }
-            require(!it.canBeEmpty()) { "Empty steps not allowed for shared steps: $it" }
-        }
         require(outputStep !is SharedStep<*>) { "Not allowed as output step: $outputStep" }
 
         unconsumedSideEffectSteps = (getOwnSteps() - outputStep)
@@ -338,9 +334,9 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                         context.put(inputStep, flowOf(inputElement))
 
                         for (sharedStep in sharedSteps) {
-                            val value: IStepOutput<Any?> = context.getOrCreateFlow(sharedStep.getProducer()).single()
-                            context.put(sharedStep, flowOf(value))
-                            context.evaluationContext = context.evaluationContext + (sharedStep to value)
+                            val values: List<IStepOutput<Any?>> = context.getOrCreateFlow(sharedStep.getProducer()).toList()
+                            context.put(sharedStep, values.asFlow())
+                            context.evaluationContext = context.evaluationContext + (sharedStep to values)
                         }
 
                         val outputFlow = context.getOrCreateFlow(outputStep)

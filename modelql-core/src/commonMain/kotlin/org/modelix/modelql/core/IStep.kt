@@ -3,8 +3,8 @@ package org.modelix.modelql.core
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.take
@@ -41,7 +41,7 @@ class FlowInstantiationContext(
         createdProducers[step] = producer
     }
     override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
-        if (evaluationContext.hasValue(step)) return flowOf(evaluationContext.getValue(step))
+        if (evaluationContext.hasValue(step)) return evaluationContext.getValue(step).asFlow()
         return (createdProducers as MutableMap<IProducingStep<T>, StepFlow<T>>)
             .getOrPut(step) { step.createFlow(this) }
     }

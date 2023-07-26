@@ -3,8 +3,8 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.NothingSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
@@ -50,16 +50,19 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
 
 class RecursiveQuerySerializer<Out>(val query: IUnboundQuery<*, *, Out>) : KSerializer<IStepOutput<Out>> {
     override fun deserialize(decoder: Decoder): IStepOutput<Out> {
-        val queryOutputSerializer = query.getElementOutputSerializer(decoder.serializersModule).upcast()
+        val queryOutputSerializer = getQueryOutputSerializer(decoder.serializersModule)
         return queryOutputSerializer.deserialize(decoder)
     }
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("recursiveQuery")
+    override val descriptor: SerialDescriptor = NothingSerializer().descriptor
 
     override fun serialize(encoder: Encoder, value: IStepOutput<Out>) {
-        val queryOutputSerializer = query.getElementOutputSerializer(encoder.serializersModule).upcast()
+        val queryOutputSerializer = getQueryOutputSerializer(encoder.serializersModule)
         queryOutputSerializer.serialize(encoder, value)
     }
+
+    private fun getQueryOutputSerializer(serializersModule: SerializersModule) =
+        query.getElementOutputSerializer(serializersModule).upcast()
 }
 
 fun <In, Out> IMonoStep<In>.callQuery(ref: QueryReference<IMonoUnboundQuery<In, Out>>): IMonoStep<Out> {

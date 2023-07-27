@@ -8,8 +8,8 @@ import kotlinx.serialization.serializer
 
 class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>() {
 
-    override fun transformElement(input: E, parameter: E?): Boolean {
-        return input == parameter
+    override fun transformElement(input: IStepOutput<E>, parameter: IStepOutput<E>?): IStepOutput<Boolean> {
+        return (input.value == parameter?.value).asStepOutput(this)
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {

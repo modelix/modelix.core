@@ -8,8 +8,8 @@ import kotlinx.serialization.serializer
 
 class InPredicate<E>() : TransformingStepWithParameter<E, Set<E>, Any?, Boolean>() {
 
-    override fun transformElement(input: E, parameter: Set<E>?): Boolean {
-        return parameter?.contains(input) ?: false
+    override fun transformElement(input: IStepOutput<E>, parameter: IStepOutput<Set<E>>?): IStepOutput<Boolean> {
+        return (parameter?.value?.contains(input.value) == true).asStepOutput(this)
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {

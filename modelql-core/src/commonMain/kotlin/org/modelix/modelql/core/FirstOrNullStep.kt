@@ -4,8 +4,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.nullable
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.modules.SerializersModule
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
@@ -28,7 +26,7 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
             this,
             listOf(
                 getProducer().getOutputSerializer(serializersModule).upcast(),
-                (String.serializer().nullable as KSerializer<E?>).stepOutputSerializer(this) as KSerializer<IStepOutput<E?>>
+                nullSerializer<E>().stepOutputSerializer(this) as KSerializer<IStepOutput<E?>>
             )
         )
     }

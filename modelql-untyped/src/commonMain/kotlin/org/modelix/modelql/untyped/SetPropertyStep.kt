@@ -24,8 +24,8 @@ class SetPropertyStep(val role: String) :
         return getInputProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun transformElement(input: INode, parameter: String?): INode {
-        input.setPropertyValue(input.resolvePropertyOrFallback(role), parameter)
+    override fun transformElement(input: IStepOutput<INode>, parameter: IStepOutput<String?>?): IStepOutput<INode> {
+        input.value.setPropertyValue(input.value.resolvePropertyOrFallback(role), parameter?.value)
         return input
     }
 

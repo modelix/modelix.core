@@ -113,6 +113,15 @@ class ModelQLTest {
     }
 
     @Test
+    fun testMapAccessDeserializer() = runTestWithTimeout {
+        val result: String? = remoteProductDatabaseQuery { db ->
+            db.products.associate({ it.id }, { it.mapLocal { it.title } })[5.asMono()]
+        }
+        println(result)
+        assertEquals("Huawei P30", result)
+    }
+
+    @Test
     fun testFirstOrNull() = runTestWithTimeout {
         val result: Product? = remoteProductDatabaseQuery { db ->
             db.products.filter { it.id.equalTo((-1).asMono()) }.firstOrNull()

@@ -24,8 +24,8 @@ class SetReferenceStep(val role: String) :
         return getInputProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun transformElement(input: INode, parameter: INode?): INode {
-        input.setReferenceTarget(input.resolveReferenceLinkOrFallback(role), parameter)
+    override fun transformElement(input: IStepOutput<INode>, parameter: IStepOutput<INode?>?): IStepOutput<INode> {
+        input.value.setReferenceTarget(input.value.resolveReferenceLinkOrFallback(role), parameter?.value)
         return input
     }
 

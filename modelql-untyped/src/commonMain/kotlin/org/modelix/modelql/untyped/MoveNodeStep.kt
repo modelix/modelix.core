@@ -29,8 +29,8 @@ class MoveNodeStep(val role: String?, val index: Int) :
         require(!getParameterProducer().canBeEmpty()) { "The child parameter for moveChild is mandatory, but was: ${getParameterProducer()}" }
     }
 
-    override fun transformElement(input: INode, parameter: INode?): INode {
-        input.moveChild(input.resolveChildLinkOrFallback(role), index, parameter!!)
+    override fun transformElement(input: IStepOutput<INode>, parameter: IStepOutput<INode>?): IStepOutput<INode> {
+        input.value.moveChild(input.value.resolveChildLinkOrFallback(role), index, parameter!!.value)
         return input
     }
 

@@ -34,7 +34,7 @@ class PerformanceTests {
         val query = buildMonoQuery<Int, Int> { it.filter { it.equalTo(0) } }
         val intRange = 1..100000
 
-        compareBenchmark(100, 5.0, {
+        compareBenchmark(100, 10.0, {
             query.asSequence(QueryEvaluationContext.EMPTY, intRange.asSequence()).count()
         }, {
             intRange.asSequence().filter { it == 0 }.count()

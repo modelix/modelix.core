@@ -18,45 +18,63 @@ abstract class CollectorStep<E, CollectionT>() : AggregationStep<E, CollectionT>
     protected abstract fun getOutputSerializer(elementSerializer: KSerializer<IStepOutput<E>>): KSerializer<out IStepOutput<CollectionT>>
 }
 
-class CollectorStepOutput<E, CollectionT>(
+class CollectorStepOutput<E, InternalCollectionT, CollectionT>(
     val input: List<IStepOutput<E>>,
+    val internalCollection: InternalCollectionT,
     val output: CollectionT
 ) : IStepOutput<CollectionT> {
     override val value: CollectionT get() = output
 }
 
-abstract class CollectorStepOutputSerializer<E, CollectionT>(val inputElementSerializer: KSerializer<IStepOutput<E>>) : KSerializer<CollectorStepOutput<E, CollectionT>> {
+abstract class CollectorStepOutputSerializer<E, InternalCollectionT, CollectionT>(val inputElementSerializer: KSerializer<IStepOutput<E>>) : KSerializer<CollectorStepOutput<E, InternalCollectionT, CollectionT>> {
     private val inputSerializer = kotlinx.serialization.builtins.ListSerializer(inputElementSerializer)
 
-    protected abstract fun wrap(input: List<IStepOutput<E>>): CollectionT
+    protected abstract fun inputToInternal(input: List<IStepOutput<E>>): InternalCollectionT
+    protected abstract fun internalToOutput(internalCollection: InternalCollectionT): CollectionT
 
     override val descriptor: SerialDescriptor = inputSerializer.descriptor
 
-    override fun deserialize(decoder: Decoder): CollectorStepOutput<E, CollectionT> {
-        val deserialized = decoder.decodeSerializableValue(inputSerializer)
-        return CollectorStepOutput(deserialized, wrap(deserialized))
+    override fun deserialize(decoder: Decoder): CollectorStepOutput<E, InternalCollectionT, CollectionT> {
+        val inputCollection = decoder.decodeSerializableValue(inputSerializer)
+        val internalCollection = inputToInternal(inputCollection)
+        val outputCollection = internalToOutput(internalCollection)
+        return CollectorStepOutput(inputCollection, internalCollection, outputCollection)
     }
 
-    override fun serialize(encoder: Encoder, value: CollectorStepOutput<E, CollectionT>) {
+    override fun serialize(encoder: Encoder, value: CollectorStepOutput<E, InternalCollectionT, CollectionT>) {
         encoder.encodeSerializableValue(inputSerializer, value.input)
     }
 }
 class ListCollectorStepOutputSerializer<E>(inputElementSerializer: KSerializer<IStepOutput<E>>) :
-    CollectorStepOutputSerializer<E, List<E>>(inputElementSerializer) {
-    override fun wrap(input: List<IStepOutput<E>>): List<E> {
-        return input.map { it.value }
+    CollectorStepOutputSerializer<E, List<IStepOutput<E>>, List<E>>(inputElementSerializer) {
+    override fun inputToInternal(input: List<IStepOutput<E>>): List<IStepOutput<E>> {
+        return input
+    }
+    override fun internalToOutput(internalCollection: List<IStepOutput<E>>): List<E> {
+        return internalCollection.map { it.value }
     }
 }
 class SetCollectorStepOutputSerializer<E>(inputElementSerializer: KSerializer<IStepOutput<E>>) :
-    CollectorStepOutputSerializer<E, Set<E>>(inputElementSerializer) {
-    override fun wrap(input: List<IStepOutput<E>>): Set<E> {
-        return input.map { it.value }.toSet()
+    CollectorStepOutputSerializer<E, List<IStepOutput<E>>, Set<E>>(inputElementSerializer) {
+    override fun inputToInternal(input: List<IStepOutput<E>>): List<IStepOutput<E>> {
+        return input
+    }
+
+    override fun internalToOutput(internalCollection: List<IStepOutput<E>>): Set<E> {
+        return internalCollection.map { it.value }.toSet()
     }
 }
 class MapCollectorStepOutputSerializer<K, V>(inputElementSerializer: KSerializer<IStepOutput<IZip2Output<Any?, K, V>>>) :
-    CollectorStepOutputSerializer<IZip2Output<Any?, K, V>, Map<K, V>>(inputElementSerializer) {
-    override fun wrap(input: List<IStepOutput<IZip2Output<Any?, K, V>>>): Map<K, V> {
-        return input.associate { it.value.first to it.value.second }
+    CollectorStepOutputSerializer<IZip2Output<Any?, K, V>, Map<K, IStepOutput<V>>, Map<K, V>>(inputElementSerializer) {
+    override fun inputToInternal(input: List<IStepOutput<IZip2Output<Any?, K, V>>>): Map<K, IStepOutput<V>> {
+        return input.associate {
+            val zipStepOutput = it as ZipStepOutput<IZip2Output<Any?, K, V>, Any?>
+            (zipStepOutput.values[0] as IStepOutput<K>).value to zipStepOutput.values[1] as IStepOutput<V>
+        }
+    }
+
+    override fun internalToOutput(internalCollection: Map<K, IStepOutput<V>>): Map<K, V> {
+        return internalCollection.mapValues { it.value.value }
     }
 }
 
@@ -66,12 +84,12 @@ class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     override suspend fun aggregate(input: StepFlow<E>): IStepOutput<List<E>> {
         val inputList = input.toList()
         val outputList = inputList.map { it.value }
-        return CollectorStepOutput(inputList, outputList)
+        return CollectorStepOutput(inputList, inputList, outputList)
     }
     override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<List<E>> {
         val inputList = input.toList()
         val outputList = inputList.map { it.value }
-        return CollectorStepOutput(inputList, outputList)
+        return CollectorStepOutput(inputList, inputList, outputList)
     }
 
     @Serializable
@@ -99,13 +117,13 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
         val inputList = ArrayList<IStepOutput<E>>()
         val outputSet = HashSet<E>()
         input.collect { if (outputSet.add(it.value)) inputList.add(it) }
-        return CollectorStepOutput(inputList, outputSet)
+        return CollectorStepOutput(inputList, inputList, outputSet)
     }
     override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<Set<E>> {
         val inputList = ArrayList<IStepOutput<E>>()
         val outputSet = HashSet<E>()
         input.forEach { if (outputSet.add(it.value)) inputList.add(it) }
-        return CollectorStepOutput(inputList, outputSet)
+        return CollectorStepOutput(inputList, inputList, outputSet)
     }
 
     @Serializable
@@ -131,25 +149,29 @@ class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>
 
     override suspend fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>): IStepOutput<Map<K, V>> {
         val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
-        val outputMap = HashMap<K, V>()
+        val internalMap = HashMap<K, IStepOutput<V>>()
         input.collect {
-            if (!outputMap.containsKey(it.value.first)) {
+            val zipStepOutput = it as ZipStepOutput<IZip2Output<Any?, K, V>, Any?>
+            if (!internalMap.containsKey(it.value.first)) {
                 inputList.add(it)
-                outputMap.put(it.value.first, it.value.second)
+                internalMap.put(zipStepOutput.values[0].value as K, zipStepOutput.values[1] as IStepOutput<V>)
             }
         }
-        return CollectorStepOutput(inputList, outputMap)
+        val outputMap: Map<K, V> = internalMap.mapValues { it.value.value }
+        return CollectorStepOutput(inputList, internalMap, outputMap)
     }
     override fun aggregate(input: Sequence<IStepOutput<IZip2Output<Any?, K, V>>>): IStepOutput<Map<K, V>> {
         val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
-        val outputMap = HashMap<K, V>()
+        val internalMap = HashMap<K, IStepOutput<V>>()
         input.forEach {
-            if (!outputMap.containsKey(it.value.first)) {
+            val zipStepOutput = it as ZipStepOutput<IZip2Output<Any?, K, V>, Any?>
+            if (!internalMap.containsKey(it.value.first)) {
                 inputList.add(it)
-                outputMap.put(it.value.first, it.value.second)
+                internalMap.put(zipStepOutput.values[0].value as K, zipStepOutput.values[1] as IStepOutput<V>)
             }
         }
-        return CollectorStepOutput(inputList, outputMap)
+        val outputMap: Map<K, V> = internalMap.mapValues { it.value.value }
+        return CollectorStepOutput(inputList, internalMap, outputMap)
     }
 
     @Serializable

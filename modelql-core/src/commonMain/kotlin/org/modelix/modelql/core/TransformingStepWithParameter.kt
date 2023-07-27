@@ -1,10 +1,9 @@
 package org.modelix.modelql.core
 
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEmpty
-import kotlinx.coroutines.flow.single
 
 abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : MonoTransformingStep<CommonIn, Out>() {
     private var hasStaticParameter: Boolean = false
@@ -26,41 +25,43 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
 
     override fun createFlow(input: StepFlow<CommonIn>, context: IFlowInstantiationContext): StepFlow<Out> {
         if (hasStaticParameter) {
-            return input.map { transformElement(it.value as In, staticParameterValue).asStepOutput(this) }
+            return input.map { transformElement(it as IStepOutput<In>, (staticParameterValue as ParameterT).asStepOutput(null)) }
         } else {
-            val parameterFlow = context.getOrCreateFlow<ParameterT?>(getParameterProducer())
-                .onEmpty { emit(SimpleStepOutput(null, null)) }
+            val parameterFlow = context.getOrCreateFlow<ParameterT>(getParameterProducer())
             return flow {
-                val parameterValue = parameterFlow.single()
-                emitAll(input.map { transformElement(it.value as In, parameterValue.value).asStepOutput(this@TransformingStepWithParameter) })
+                val parameterValue = parameterFlow.firstOrNull()
+                emitAll(input.map { transformElement(it as IStepOutput<In>, parameterValue) })
             }
         }
     }
 
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
-        val parameterValue = if (hasStaticParameter) {
-            staticParameterValue
+        val parameterValue: IStepOutput<ParameterT>? = if (hasStaticParameter) {
+            (staticParameterValue as ParameterT).asStepOutput(null)
         } else {
             getParameterProducer().evaluate(
                 evaluationContext,
                 queryInput
-            ).getOrElse(null)
+            ).map { it.asStepOutput(null) }.getOrElse(null)
         }
-        return getInputProducer().createSequence(evaluationContext, queryInput).map { transformElement(it, parameterValue) }
+        return getInputProducer().createSequence(evaluationContext, queryInput).map { transformElement(it.asStepOutput(null), parameterValue).value }
     }
 
     override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
         val input = getInputProducer().evaluate(evaluationContext, queryInput)
         if (!input.isPresent()) return Optional.empty()
-        val parameter = getParameterProducer().evaluate(evaluationContext, queryInput)
-        return Optional.of(transformElement(input.get(), parameter.getOrElse(null)))
+        val parameter: IStepOutput<ParameterT>? = getParameterProducer()
+            .evaluate(evaluationContext, queryInput)
+            .map { it.asStepOutput(null) }
+            .getOrElse(null)
+        return Optional.of(transformElement(input.get().asStepOutput(null), parameter).value)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: CommonIn): Out {
         throw UnsupportedOperationException()
     }
 
-    protected abstract fun transformElement(input: In, parameter: ParameterT?): Out
+    protected abstract fun transformElement(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): IStepOutput<Out>
 
     override fun getProducers(): List<IProducingStep<CommonIn>> {
         return super.getProducers() + listOfNotNull<IProducingStep<CommonIn>>(targetProducer)

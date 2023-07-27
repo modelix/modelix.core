@@ -1,6 +1,8 @@
 package org.modelix.modelql.core
 
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.CompositeDecoder
@@ -52,3 +54,5 @@ data class MultiplexedOutputSerializer<E>(
         }
     }
 }
+
+fun <T> nullSerializer(): KSerializer<T?> = String.serializer().nullable as KSerializer<T?>

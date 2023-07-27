@@ -2,6 +2,8 @@ version: 2
 updates:
   - package-ecosystem: "gradle"
     open-pull-requests-limit: 20
-    directory: "/" 
+    directory: "/"
     schedule:
       interval: "daily"
+    reviewers:
+      - "modelix/all/developers"

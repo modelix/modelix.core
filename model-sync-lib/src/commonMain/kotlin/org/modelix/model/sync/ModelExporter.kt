@@ -2,20 +2,18 @@ package org.modelix.model.sync
 
 import org.modelix.model.api.INode
 import org.modelix.model.api.serialize
-import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.associateWithNotNull
-import java.io.File
 
-class ModelExporter(private val root: INode) {
+/**
+ * A ModelExporter exports a node and its subtree in bulk.
+ */
+expect class ModelExporter(root: INode)
 
-    fun export(outputFile: File) {
-        val modelData = ModelData(root = root.asExported())
-        outputFile.parentFile.mkdirs()
-        outputFile.writeText(modelData.toJson())
-    }
-}
-
+/**
+ * Returns a [NodeData] representation of the receiver node as it would be exported by a [ModelExporter].
+ * This function is recursively called on the node's children.
+ */
 fun INode.asExported() : NodeData {
     val idKey = NodeData.idPropertyKey
     return NodeData(

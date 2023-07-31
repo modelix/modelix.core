@@ -3,22 +3,28 @@ package org.modelix.model.sync
 import org.modelix.model.api.*
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
-import java.io.File
 
+/**
+ * A ModelImporter updates an existing [INode] and its subtree based on a [ModelData] specification.
+ *
+ * The import is incremental.
+ * Instead of simply overwriting the existing model, only a minimal amount of operations is used.
+ *
+ * Properties, references, and child links are synchronized for this node and all of its (in-)direct children.
+ *
+ * @param root the root node to be updated
+ */
 class ModelImporter(private val root: INode) {
 
     private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
     private val postponedReferences = ArrayList<() -> Unit>()
     private val nodesToRemove = HashSet<INode>()
 
-    fun import(jsonFile: File) {
-        require(jsonFile.exists())
-        require(jsonFile.extension == "json")
-
-        val data = ModelData.fromJson(jsonFile.readText())
-        import(data)
-    }
-    
+    /**
+     * Incrementally updates this importers root based on the provided [ModelData] specification.
+     *
+     * @param data the model specification
+     */
     fun import(data: ModelData) {
         originalIdToExisting.clear()
         postponedReferences.clear()

@@ -3,21 +3,12 @@ package org.modelix.model.sync
 import org.modelix.model.api.*
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
-import java.io.File
 
 class ModelImporter(private val root: INode) {
 
     private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
     private val postponedReferences = ArrayList<() -> Unit>()
     private val nodesToRemove = HashSet<INode>()
-
-    fun import(jsonFile: File) {
-        require(jsonFile.exists())
-        require(jsonFile.extension == "json")
-
-        val data = ModelData.fromJson(jsonFile.readText())
-        import(data)
-    }
     
     fun import(data: ModelData) {
         originalIdToExisting.clear()

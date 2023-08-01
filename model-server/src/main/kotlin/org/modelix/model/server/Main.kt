@@ -54,7 +54,14 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         val cmdLineArgs = CmdLineArgs()
-        JCommander(cmdLineArgs).parse(*args)
+        val commander = JCommander(cmdLineArgs)
+        commander.parse(*args)
+
+        if (cmdLineArgs.help) {
+            commander.usage()
+            return
+        }
+
         LOG.info("Max memory (bytes): " + Runtime.getRuntime().maxMemory())
         LOG.info("Server process started")
         LOG.info("In memory: " + cmdLineArgs.inmemory)

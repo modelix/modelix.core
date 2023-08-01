@@ -39,4 +39,7 @@ internal class CmdLineArgs {
         converter = BooleanConverter::class
     )
     var schemaInit = false
+
+    @Parameter(names = ["-h", "--help"], help = true)
+    var help = false
 }

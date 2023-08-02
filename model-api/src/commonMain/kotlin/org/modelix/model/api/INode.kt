@@ -159,7 +159,7 @@ interface INode {
     @Deprecated("use IReferenceLink instead of String")
     fun setReferenceTarget(role: String, target: INodeReference?) {
         // Default implementation for backward compatibility only.
-        setReferenceTarget(role, target?.resolveNode(getArea()))
+        setReferenceTarget(role, target?.resolveIn(getArea()!!))
     }
 
     /**
@@ -292,7 +292,7 @@ fun INode.getPropertyValue(property: IProperty): String? = if (this is INodeEx) 
 fun INode.setPropertyValue(property: IProperty, value: String?): Unit = if (this is INodeEx) setPropertyValue(property, value) else setPropertyValue(property.key(this), value)
 
 fun INode.getConcept(): IConcept? = getConceptReference()?.resolve()
-fun INode.getResolvedReferenceTarget(role: String): INode? = getReferenceTargetRef(role)?.resolveNode(getArea())
+fun INode.getResolvedReferenceTarget(role: String): INode? = getReferenceTargetRef(role)?.resolveIn(getArea()!!)
 fun INode.getResolvedConcept(): IConcept? = getConceptReference()?.resolve()
 
 fun INode.addNewChild(role: String?, index: Int): INode = addNewChild(role, index, null as IConceptReference?)

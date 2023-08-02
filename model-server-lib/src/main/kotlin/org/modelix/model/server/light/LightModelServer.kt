@@ -297,7 +297,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
     }
 
     private fun NodeId.resolveNode(): INode {
-        return INodeReferenceSerializer.deserialize(this).resolveNode(getArea())
+        return INodeReferenceSerializer.deserialize(this).resolveIn(getArea()!!)
             ?: throw IllegalArgumentException("Node not found: $this")
     }
 

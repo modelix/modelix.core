@@ -16,6 +16,7 @@ package org.modelix.model
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.resolveIn
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
 import org.modelix.model.lazy.CLTree
@@ -37,7 +38,7 @@ object ModelMigrations {
     private fun useCanonicalReferences(t: IWriteTransaction, area: IArea, node: Long) {
         for (role in t.getReferenceRoles(node)) {
             val original = t.getReferenceTarget(node, role) ?: continue
-            val canonical = original.resolveNode(area)?.reference ?: continue
+            val canonical = original.resolveIn(area!!)?.reference ?: continue
             if (canonical != original) {
                 t.setReferenceTarget(node, role, canonical)
             }

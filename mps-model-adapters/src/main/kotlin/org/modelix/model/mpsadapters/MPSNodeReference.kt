@@ -15,20 +15,10 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.SNodePointer
 import org.jetbrains.mps.openapi.model.SNodeReference
-import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.serialize
-import org.modelix.model.area.IArea
 
 data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
-    override fun resolveNode(area: IArea?): INode? {
-        return super.resolveNode(area)
-    }
-
-    override fun resolveIn(scope: INodeResolutionScope): INode? {
-        return super.resolveIn(scope)
-    }
 
     companion object {
         fun tryConvert(ref: INodeReference): MPSNodeReference? {

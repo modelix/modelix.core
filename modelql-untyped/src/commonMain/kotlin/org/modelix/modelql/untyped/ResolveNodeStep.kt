@@ -22,6 +22,7 @@ import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
+import org.modelix.model.api.resolveIn
 import org.modelix.model.area.ContextArea
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep

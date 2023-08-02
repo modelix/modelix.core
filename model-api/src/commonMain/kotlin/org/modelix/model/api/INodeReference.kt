@@ -40,7 +40,14 @@ interface INodeReference {
      */
     @Deprecated("use INodeResolutionScope", ReplaceWith("resolveIn(area!!)"))
     fun resolveNode(area: IArea?): INode? = resolveIn(area as INodeResolutionScope)
-    fun resolveIn(scope: INodeResolutionScope): INode? = resolveNode(scope as IArea?)
+}
+
+fun INodeReference.resolveIn(scope: INodeResolutionScope): INode? {
+    if (this is NodeReference) {
+        val deserialized = INodeReferenceSerializer.tryDeserialize(serialized)
+        if (deserialized != null) return deserialized.resolveIn(scope)
+    }
+    return scope.resolveNode(this)
 }
 
 class NodeReferenceKSerializer : KSerializer<INodeReference> {

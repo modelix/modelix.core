@@ -69,7 +69,7 @@ fun RootOrSubquery.queryNodes(node: INode): Sequence<INode> {
         is QueryReferences -> node.getAllReferences()
         is QueryReferencesAndChildren -> node.getReferencesAndChildren(recursive)
         is QueryById -> {
-            val resolved = INodeReferenceSerializer.deserialize(this.nodeId).resolveNode(node.getArea())
+            val resolved = INodeReferenceSerializer.deserialize(this.nodeId).resolveIn(node.getArea()!!)
             if (resolved != null) {
                 sequenceOf(resolved)
             } else {

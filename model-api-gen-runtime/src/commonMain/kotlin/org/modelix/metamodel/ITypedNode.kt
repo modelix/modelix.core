@@ -4,6 +4,7 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
+import org.modelix.model.api.resolveIn
 import org.modelix.model.area.IArea
 import kotlin.reflect.KClass
 
@@ -26,6 +27,6 @@ fun ITypedNode.instanceOf(concept: IConcept): Boolean {
 inline fun <reified NodeT : ITypedNode> NodeT.typedReference() = TypedNodeReference(unwrap().reference, NodeT::class)
 fun ITypedNode.untypedReference() = unwrap().reference
 data class TypedNodeReference<NodeT : ITypedNode>(val ref: INodeReference, val nodeClass: KClass<NodeT>) {
-    fun resolve(area: IArea?) = ref.resolveNode(area)?.typed(nodeClass)
+    fun resolve(area: IArea?) = ref.resolveIn(area!!)?.typed(nodeClass)
     fun untyped() = ref
 }

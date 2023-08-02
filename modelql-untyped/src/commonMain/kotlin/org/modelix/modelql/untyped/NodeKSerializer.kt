@@ -17,7 +17,9 @@ import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.serializer
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.resolveIn
 import org.modelix.model.api.serialize
 import org.modelix.model.area.ContextArea
 
@@ -42,7 +44,7 @@ open class NodeKSerializer() : KSerializer<INode> {
                 }
             }
         }
-        val nodeRef = SerializedNodeReference(serializedNodeRef!!)
+        val nodeRef = NodeReference(serializedNodeRef!!)
         val conceptReference = conceptUID?.let { ConceptReference(it) }
         return if (conceptProvided) {
             createNode(nodeRef, conceptReference)
@@ -51,10 +53,10 @@ open class NodeKSerializer() : KSerializer<INode> {
         }
     }
 
-    protected open fun createNode(ref: SerializedNodeReference): INode {
-        return ref.resolveNode(ContextArea.getArea()) ?: throw RuntimeException("Failed to resolve node: $ref")
+    protected open fun createNode(ref: NodeReference): INode {
+        return ref.resolveIn(ContextArea.getArea()!!) ?: throw RuntimeException("Failed to resolve node: $ref")
     }
-    protected open fun createNode(ref: SerializedNodeReference, concept: ConceptReference?): INode {
+    protected open fun createNode(ref: NodeReference, concept: ConceptReference?): INode {
         return createNode(ref)
     }
 

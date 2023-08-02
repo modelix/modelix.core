@@ -121,17 +121,17 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
 
     private fun resolveNodeRef(targetRef: INodeReference): INode {
         return if (targetRef is PNodeReference) {
-            targetRef.resolveNode(PArea(branch))
+            targetRef.resolveIn(PArea(branch)!!)
         } else {
             val area = ContextArea.CONTEXT_VALUE.getValue()
                 ?: throw RuntimeException(IArea::class.simpleName + " not available")
-            targetRef.resolveNode(area)
+            targetRef.resolveIn(area!!)
         } ?: throw RuntimeException("Failed to resolve node: $targetRef")
     }
 
     private suspend fun resolveNodeRefInCoroutine(targetRef: INodeReference): INode {
         return if (targetRef is PNodeReference) {
-            targetRef.resolveNode(PArea(branch))
+            targetRef.resolveIn(PArea(branch)!!)
         } else {
             val scope = coroutineContext[INodeResolutionScope]
                 ?: throw IllegalStateException("INodeResolutionScope not set")

@@ -18,7 +18,6 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.serializer
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.getAllSubConcepts
@@ -33,7 +32,6 @@ import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
-import org.modelix.modelql.core.stepOutputSerializer
 
 class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?, INode>() {
     override fun createFlow(input: StepFlow<INode?>, context: IFlowInstantiationContext): StepFlow<INode> {

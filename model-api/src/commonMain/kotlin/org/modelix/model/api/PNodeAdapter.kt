@@ -17,6 +17,7 @@ package org.modelix.model.api
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import org.modelix.model.area.ContextArea
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
@@ -116,17 +117,17 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
     override fun getReferenceTarget(role: String): INode? {
         notifyAccess()
         val targetRef = getReferenceTargetRef(role) ?: return null
-        return resolveNodeRef(targetRef)
+        return tryResolveNodeRef(targetRef)
     }
 
-    private fun resolveNodeRef(targetRef: INodeReference): INode {
+    private fun tryResolveNodeRef(targetRef: INodeReference): INode? {
         return if (targetRef is PNodeReference) {
             targetRef.resolveIn(PArea(branch)!!)
         } else {
             val area = ContextArea.CONTEXT_VALUE.getValue()
                 ?: throw RuntimeException(IArea::class.simpleName + " not available")
             targetRef.resolveIn(area!!)
-        } ?: throw RuntimeException("Failed to resolve node: $targetRef")
+        }
     }
 
     private suspend fun resolveNodeRefInCoroutine(targetRef: INodeReference): INode {
@@ -211,7 +212,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
     }
 
     override fun getReferenceTargetAsFlow(role: IReferenceLink): Flow<INode> {
-        return getReferenceTargetRefAsFlow(role).map { resolveNodeRef(it) }
+        return getReferenceTargetRefAsFlow(role).mapNotNull { tryResolveNodeRef(it) }
     }
 
     override fun getReferenceTargetRefAsFlow(role: IReferenceLink): Flow<INodeReference> {

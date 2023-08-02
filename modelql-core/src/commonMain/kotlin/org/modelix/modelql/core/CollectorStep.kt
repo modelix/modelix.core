@@ -35,14 +35,14 @@ abstract class CollectorStepOutputSerializer<E, InternalCollectionT, CollectionT
     override val descriptor: SerialDescriptor = inputSerializer.descriptor
 
     override fun deserialize(decoder: Decoder): CollectorStepOutput<E, InternalCollectionT, CollectionT> {
-        val inputCollection = decoder.decodeSerializableValue(inputSerializer)
+        val inputCollection = inputSerializer.deserialize(decoder)
         val internalCollection = inputToInternal(inputCollection)
         val outputCollection = internalToOutput(internalCollection)
         return CollectorStepOutput(inputCollection, internalCollection, outputCollection)
     }
 
     override fun serialize(encoder: Encoder, value: CollectorStepOutput<E, InternalCollectionT, CollectionT>) {
-        encoder.encodeSerializableValue(inputSerializer, value.input)
+        inputSerializer.serialize(encoder, value.input)
     }
 }
 class ListCollectorStepOutputSerializer<E>(inputElementSerializer: KSerializer<IStepOutput<E>>) :

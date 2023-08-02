@@ -66,6 +66,7 @@ dependencies {
     testImplementation(libs.ktor.server.forwarded.header)
     testImplementation(libs.ktor.server.websockets)
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.logback.classic)
 
     testImplementation(files(kotlinGenDir) {
         builtBy("generateMetaModelSources")

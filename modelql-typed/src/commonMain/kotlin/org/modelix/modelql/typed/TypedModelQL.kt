@@ -17,6 +17,7 @@ import org.modelix.metamodel.ITypedProperty
 import org.modelix.metamodel.ITypedReferenceLink
 import org.modelix.metamodel.ITypedSingleChildLink
 import org.modelix.metamodel.typed
+import org.modelix.metamodel.typedUnsafe
 import org.modelix.metamodel.untyped
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConcept
@@ -50,6 +51,7 @@ import org.modelix.modelql.core.orNull
 import org.modelix.modelql.core.stepOutputSerializer
 import org.modelix.modelql.core.toBoolean
 import org.modelix.modelql.core.toInt
+import org.modelix.modelql.core.upcast
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.conceptReference
@@ -163,7 +165,8 @@ fun IFluxStep<ITypedNode?>.untyped(): IFluxStep<INode?> = mapIfNotNull { it.unty
 
 class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : MonoTransformingStep<INode, Typed>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Typed>> {
-        return TypedNodeSerializer(nodeClass, serializersModule.serializer<INode>()).stepOutputSerializer(this)
+        val inputSerializer = getProducer().getOutputSerializer(serializersModule).upcast()
+        return TypedNodeSerializer(nodeClass, inputSerializer).stepOutputSerializer(this)
     }
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<Typed> {
@@ -183,21 +186,33 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
     }
 }
 
-class TypedNodeSerializer<Typed : ITypedNode>(val nodeClass: KClass<out Typed>, val untypedSerializer: KSerializer<INode>) : KSerializer<Typed> {
+class TypedNodeSerializer<Typed : ITypedNode>(val nodeClass: KClass<out Typed>, val untypedSerializer: KSerializer<IStepOutput<INode>>) : KSerializer<Typed> {
     override fun deserialize(decoder: Decoder): Typed {
-        return untypedSerializer.deserialize(decoder).typed(nodeClass)
+        return untypedSerializer.deserialize(decoder).value.typed(nodeClass)
     }
 
     override val descriptor: SerialDescriptor = untypedSerializer.descriptor
 
     override fun serialize(encoder: Encoder, value: Typed) {
-        untypedSerializer.serialize(encoder, value.untyped())
+        untypedSerializer.serialize(encoder, value.untyped().asStepOutput(null))
+    }
+}
+
+class UntypedNodeSerializer(val typedSerializer: KSerializer<IStepOutput<ITypedNode>>) : KSerializer<INode> {
+    override fun deserialize(decoder: Decoder): INode {
+        return typedSerializer.deserialize(decoder).value.untyped()
+    }
+
+    override val descriptor: SerialDescriptor = typedSerializer.descriptor
+
+    override fun serialize(encoder: Encoder, value: INode) {
+        typedSerializer.serialize(encoder, value.typedUnsafe<ITypedNode>().asStepOutput(null))
     }
 }
 
 class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer(this)
+        return UntypedNodeSerializer(getProducer().getOutputSerializer(serializersModule).upcast()).stepOutputSerializer(this)
     }
 
     override fun createFlow(input: StepFlow<ITypedNode>, context: IFlowInstantiationContext): StepFlow<INode> {

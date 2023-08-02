@@ -18,7 +18,6 @@ import kotlinx.serialization.serializer
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.NodeReference
-import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.resolveIn
 import org.modelix.model.api.serialize
 import org.modelix.model.area.ContextArea

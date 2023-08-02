@@ -1,0 +1,69 @@
+plugins {
+    kotlin("multiplatform")
+    kotlin("plugin.serialization")
+    `maven-publish`
+    alias(libs.plugins.ktlint)
+}
+
+kotlin {
+    jvm()
+    js(IR) {
+        browser {}
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "10s"
+                }
+            }
+        }
+        useCommonJs()
+    }
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-common"))
+                implementation(libs.kotlin.logging)
+                api(project(":modelql-core"))
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.coroutines.test)
+                implementation(kotlin("test-common"))
+                implementation(kotlin("test-annotations-common"))
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+                api(libs.ktor.server.html.builder)
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
+            }
+        }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
+    kotlinOptions {
+        jvmTarget = "11"
+        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility", "-Xcontext-receivers")
+    }
+}
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
+    kotlinOptions {
+        freeCompilerArgs += listOf("-Xcontext-receivers")
+    }
+}

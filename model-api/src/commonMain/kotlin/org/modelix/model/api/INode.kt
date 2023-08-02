@@ -15,6 +15,8 @@
 
 package org.modelix.model.api
 
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
 import org.modelix.model.area.IArea
 
 /**
@@ -41,6 +43,7 @@ interface INode {
     /**
      * Role of this node in its parent node if it exists,or null otherwise.
      */
+    @Deprecated("use getContainmentLink()")
     val roleInParent: String?
 
     /**
@@ -61,6 +64,7 @@ interface INode {
      * @param role the desired role
      * @return iterable over the child nodes
      */
+    @Deprecated("use IChildLink instead of String")
     fun getChildren(role: String?): Iterable<INode>
 
     /**
@@ -76,6 +80,7 @@ interface INode {
      * @param index target index within the role
      * @param child child node to be moved
      */
+    @Deprecated("use IChildLink instead of String")
     fun moveChild(role: String?, index: Int, child: INode)
 
     /**
@@ -90,6 +95,7 @@ interface INode {
      *
      * @see addNewChild
      */
+    @Deprecated("use IChildLink instead of String")
     fun addNewChild(role: String?, index: Int, concept: IConcept?): INode
 
     /**
@@ -102,6 +108,7 @@ interface INode {
      * @param concept reference to a concept, of which the new node is instance of
      * @return new child node
      */
+    @Deprecated("use IChildLink instead of String")
     fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
         return addNewChild(role, index, concept?.resolve())
     }
@@ -119,6 +126,7 @@ interface INode {
      * @param role the desired reference role
      * @return target node, or null if the target could not be found
      */
+    @Deprecated("use IReferenceLink instead of String")
     fun getReferenceTarget(role: String): INode?
 
     /**
@@ -127,6 +135,7 @@ interface INode {
      * @param role the desired reference role
      * @return node reference to the target, or null if the target could not be found
      */
+    @Deprecated("use IReferenceLink instead of String")
     fun getReferenceTargetRef(role: String): INodeReference? {
         return getReferenceTarget(role)?.reference
     }
@@ -137,6 +146,7 @@ interface INode {
      * @param role the desired reference role
      * @param target new target for this node's reference
      */
+    @Deprecated("use IReferenceLink instead of String")
     fun setReferenceTarget(role: String, target: INode?)
 
     /**
@@ -146,6 +156,7 @@ interface INode {
      * @param role the desired reference role
      * @param target reference to the new target for this node's reference
      */
+    @Deprecated("use IReferenceLink instead of String")
     fun setReferenceTarget(role: String, target: INodeReference?) {
         // Default implementation for backward compatibility only.
         setReferenceTarget(role, target?.resolveNode(getArea()))
@@ -157,6 +168,7 @@ interface INode {
      * @param role the desired property role
      * @return property value, or null if there is no value
      */
+    @Deprecated("use getPropertyValue(IProperty)")
     fun getPropertyValue(role: String): String?
 
     /**
@@ -165,6 +177,7 @@ interface INode {
      * @param role the desired property role
      * @param value the new property value
      */
+    @Deprecated("use setPropertyValue(IProperty, String?)")
     fun setPropertyValue(role: String, value: String?)
 
     /**
@@ -172,6 +185,7 @@ interface INode {
      *
      * @return list of all property roles
      */
+    @Deprecated("use getPropertyLinks()")
     fun getPropertyRoles(): List<String>
 
     /**
@@ -179,11 +193,11 @@ interface INode {
      *
      * @return list of all reference roles
      */
+    @Deprecated("use getReferenceLinks()")
     fun getReferenceRoles(): List<String>
-}
 
-interface INodeEx : INode {
-    fun usesRoleIds(): Boolean
+    // <editor-fold desc="non-string based API">
+    fun usesRoleIds(): Boolean = false
     fun getContainmentLink(): IChildLink? = roleInParent?.let { role ->
         parent?.concept?.getAllChildLinks()?.find { (if (usesRoleIds()) it.getUID() else it.getSimpleName()) == role }
     }
@@ -193,10 +207,74 @@ interface INodeEx : INode {
     fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode = addNewChild(role.key(this), index, concept)
     fun getReferenceTarget(link: IReferenceLink): INode? = getReferenceTarget(link.key(this))
     fun setReferenceTarget(link: IReferenceLink, target: INode?) = setReferenceTarget(link.key(this), target)
-    fun getReferenceTargetRef(role: IReferenceLink): INodeReference? = getReferenceTargetRef(role.key(this))
     fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) = setReferenceTarget(role.key(this), target)
+    fun removeReference(role: IReferenceLink) = setReferenceTarget(role, null as INodeReference?)
+    fun getReferenceTargetRef(role: IReferenceLink): INodeReference? = getReferenceTargetRef(role.key(this))
     fun getPropertyValue(property: IProperty): String? = getPropertyValue(property.key(this))
     fun setPropertyValue(property: IProperty, value: String?) = setPropertyValue(property.key(this), value)
+
+    fun getReferenceLinks(): List<IReferenceLink> = getReferenceRoles().map { tryResolveReferenceLink(it) ?: ReferenceLinkFromName(it) }
+    fun getPropertyLinks(): List<IProperty> = getPropertyRoles().map { tryResolveProperty(it) ?: PropertyFromName(it) }
+    fun getAllProperties(): List<Pair<IProperty, String>> = getPropertyLinks().map { it to getPropertyValue(it) }.filterSecondNotNull()
+    fun getAllReferenceTargets(): List<Pair<IReferenceLink, INode>> = getReferenceLinks().map { it to getReferenceTarget(it) }.filterSecondNotNull()
+    fun getAllReferenceTargetRefs(): List<Pair<IReferenceLink, INodeReference>> = getReferenceLinks().map { it to getReferenceTargetRef(it) }.filterSecondNotNull()
+    // </editor-fold>
+
+    // <editor-fold desc="flow API">
+    fun getParentAsFlow(): Flow<INode> = flowOf(parent).filterNotNull()
+    fun getPropertyValueAsFlow(role: IProperty): Flow<String?> = flowOf(getPropertyValue(role))
+    fun getAllChildrenAsFlow(): Flow<INode> = allChildren.asFlow()
+    fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> = getAllReferenceTargets().asFlow()
+    fun getAllReferenceTargetRefsAsFlow(): Flow<Pair<IReferenceLink, INodeReference>> = getAllReferenceTargetRefs().asFlow()
+    fun getChildrenAsFlow(role: IChildLink): Flow<INode> = getChildren(role).asFlow()
+    fun getReferenceTargetAsFlow(role: IReferenceLink): Flow<INode> = flowOf(getReferenceTarget(role)).filterNotNull()
+    fun getReferenceTargetRefAsFlow(role: IReferenceLink): Flow<INodeReference> = flowOf(getReferenceTargetRef(role)).filterNotNull()
+
+    @OptIn(FlowPreview::class)
+    fun getDescendantsAsFlow(includeSelf: Boolean = false): Flow<INode> {
+        return if (includeSelf) {
+            flowOf(flowOf(this), getDescendantsAsFlow(false)).flattenConcat()
+        } else {
+            getAllChildrenAsFlow().flatMapConcat { it.getDescendantsAsFlow(true) }
+        }
+    }
+    // </editor-fold>
+}
+
+fun <T1, T2> List<Pair<T1, T2?>>.filterSecondNotNull(): List<Pair<T1, T2>> = filter { it.second != null } as List<Pair<T1, T2>>
+
+@Deprecated("all members moved to INode", ReplaceWith("INode"))
+interface INodeEx : INode
+
+interface IDeprecatedNodeDefaults : INode {
+    override val roleInParent: String? get() = getContainmentLink()?.getUID()
+    override fun getChildren(role: String?): Iterable<INode> = getChildren(resolveChildLinkOrFallback(role))
+    override fun moveChild(role: String?, index: Int, child: INode) = moveChild(resolveChildLinkOrFallback(role), index, child)
+    override fun addNewChild(role: String?, index: Int, concept: IConcept?): INode = addNewChild(resolveChildLinkOrFallback(role), index, concept)
+    override fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode = addNewChild(resolveChildLinkOrFallback(role), index, concept)
+    override fun getReferenceTarget(role: String): INode? = getReferenceTarget(resolveReferenceLinkOrFallback(role))
+    override fun getReferenceTargetRef(role: String): INodeReference? = getReferenceTargetRef(resolveReferenceLinkOrFallback(role))
+    override fun setReferenceTarget(role: String, target: INode?) = setReferenceTarget(resolveReferenceLinkOrFallback(role), target)
+    override fun setReferenceTarget(role: String, target: INodeReference?) = setReferenceTarget(resolveReferenceLinkOrFallback(role), target)
+    override fun getPropertyValue(role: String): String? = getPropertyValue(resolvePropertyOrFallback(role))
+    override fun setPropertyValue(role: String, value: String?) = setPropertyValue(resolvePropertyOrFallback(role), value)
+    override fun getPropertyRoles(): List<String> = getPropertyLinks().map { it.key(this) }
+    override fun getReferenceRoles(): List<String> = getReferenceLinks().map { it.key(this) }
+
+    override fun usesRoleIds(): Boolean = true
+    override fun getContainmentLink(): IChildLink?
+    override fun getChildren(link: IChildLink): Iterable<INode>
+    override fun moveChild(role: IChildLink, index: Int, child: INode)
+    override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode
+    override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode
+    override fun getReferenceTarget(link: IReferenceLink): INode?
+    override fun setReferenceTarget(link: IReferenceLink, target: INode?)
+    override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?)
+    override fun getReferenceTargetRef(role: IReferenceLink): INodeReference?
+    override fun getPropertyValue(property: IProperty): String?
+    override fun setPropertyValue(property: IProperty, value: String?)
+    override fun getPropertyLinks(): List<IProperty>
+    override fun getReferenceLinks(): List<IReferenceLink>
 }
 
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
@@ -236,6 +314,38 @@ fun INode.resolveProperty(role: String): IProperty {
     val c = this.concept ?: throw RuntimeException("Node has no concept")
     return c.getAllProperties().find { it.key(this) == role }
         ?: throw RuntimeException("Property '$role' not found in concept ${c.getLongName()}")
+}
+
+fun INode.tryResolveChildLink(role: String): IChildLink? {
+    val c = this.concept ?: return null
+    val allLinks = c.getAllChildLinks()
+    return allLinks.find { it.key(this) == role }
+        ?: allLinks.find { it.getSimpleName() == role }
+        ?: allLinks.find { it.getUID() == role }
+}
+fun INode.resolveChildLinkOrFallback(role: String?): IChildLink {
+    if (role == null) return NullChildLink
+    return tryResolveChildLink(role) ?: IChildLink.fromName(role)
+}
+fun INode.tryResolveReferenceLink(role: String): IReferenceLink? {
+    val c = this.concept ?: return null
+    val allLinks = c.getAllReferenceLinks()
+    return allLinks.find { it.key(this) == role }
+        ?: allLinks.find { it.getSimpleName() == role }
+        ?: allLinks.find { it.getUID() == role }
+}
+fun INode.resolveReferenceLinkOrFallback(role: String): IReferenceLink {
+    return tryResolveReferenceLink(role) ?: IReferenceLink.fromName(role)
+}
+fun INode.tryResolveProperty(role: String): IProperty? {
+    val c = this.concept ?: return null
+    val allLinks = c.getAllProperties()
+    return allLinks.find { it.key(this) == role }
+        ?: allLinks.find { it.getSimpleName() == role }
+        ?: allLinks.find { it.getUID() == role }
+}
+fun INode.resolvePropertyOrFallback(role: String): IProperty {
+    return tryResolveProperty(role) ?: IProperty.fromName(role)
 }
 
 fun INode.remove() {

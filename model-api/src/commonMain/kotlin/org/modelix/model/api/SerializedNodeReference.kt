@@ -1,9 +1,12 @@
 package org.modelix.model.api
 
-import org.modelix.model.area.IArea
+@Deprecated("renamed to NodeReference", ReplaceWith("NodeReference"))
+typealias SerializedNodeReference = NodeReference
 
-data class SerializedNodeReference(val serialized: String) : INodeReference {
-    override fun resolveNode(area: IArea?): INode? {
-        return INodeReferenceSerializer.deserialize(serialized).resolveNode(area)
+data class NodeReference(val serialized: String) : INodeReference {
+    override fun resolveIn(scope: INodeResolutionScope): INode? {
+        val deserialized = INodeReferenceSerializer.tryDeserialize(serialized)
+        if (deserialized != null) return deserialized.resolveIn(scope)
+        return scope.resolveNode(this)
     }
 }

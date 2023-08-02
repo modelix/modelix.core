@@ -4,10 +4,15 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":model-server-api"))
     implementation(project(":model-api"))
+    implementation(project(":model-server-api"))
+    implementation(project(":modelql-core"))
+    implementation(project(":modelql-untyped"))
+
     implementation(kotlin("stdlib"))
     implementation(libs.modelix.incremental)
+
+    implementation(libs.kotlin.serialization.json)
 
     implementation(libs.kotlin.coroutines.core)
     implementation(libs.kotlin.coroutines.swing)

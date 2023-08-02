@@ -21,22 +21,14 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import io.ktor.util.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
-import org.modelix.model.api.ConceptReference
-import org.modelix.model.api.IConceptReference
-import org.modelix.model.api.INode
-import org.modelix.model.api.INodeReference
-import org.modelix.model.api.INodeReferenceSerializer
-import org.modelix.model.api.IRole
-import org.modelix.model.api.key
-import org.modelix.model.api.remove
-import org.modelix.model.api.serialize
-import org.modelix.model.api.usesRoleIds
+import kotlinx.serialization.KSerializer
+import org.modelix.model.api.*
 import org.modelix.model.server.api.AddNewChildNodeOpData
 import org.modelix.model.server.api.ChangeSetId
 import org.modelix.model.server.api.DeleteNodeOpData
@@ -52,14 +44,61 @@ import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
+import org.modelix.modelql.core.VersionAndData
+import org.modelix.modelql.core.IMonoUnboundQuery
+import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.QueryGraphDescriptor
+import org.modelix.modelql.core.modelqlVersion
+import org.modelix.modelql.core.upcast
+import org.modelix.modelql.untyped.UntypedModelQL
+import org.modelix.modelql.untyped.createQueryExecutor
 import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
-class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: INode, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
+class LightModelServerBuilder {
+    private var port: Int = 48302
+    private var rootNodeProvider: () -> INode? = { null }
+    private var ignoredRoles: Set<IRole> = emptySet()
+    private var additionalHealthChecks: List<LightModelServer.IHealthCheck> = emptyList()
+
+    fun port(port: Int): LightModelServerBuilder {
+        this.port = port
+        return this
+    }
+
+    fun rootNode(provider: () -> INode?): LightModelServerBuilder {
+        this.rootNodeProvider = provider
+        return this
+    }
+
+    fun rootNode(node: INode): LightModelServerBuilder {
+        this.rootNodeProvider = { node }
+        return this
+    }
+
+    fun ignoreRole(role: IRole): LightModelServerBuilder {
+        this.ignoredRoles += role
+        return this
+    }
+
+    fun healthCheck(check: LightModelServer.IHealthCheck): LightModelServerBuilder {
+        this.additionalHealthChecks += check
+        return this
+    }
+
+    fun build(): LightModelServer {
+        return LightModelServer(port, rootNodeProvider, ignoredRoles, additionalHealthChecks)
+    }
+}
+
+class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodeProvider: () -> INode?, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
+    constructor (port: Int, rootNode: INode, ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) :
+            this(port, { rootNode}, ignoredRoles, additionalHealthChecks)
 
     companion object {
         private val LOG = mu.KotlinLogging.logger {  }
+        fun builder(): LightModelServerBuilder = LightModelServerBuilder()
     }
 
     private var server: NettyApplicationEngine? = null
@@ -70,18 +109,26 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
         override val enabledByDefault: Boolean = true
 
         override fun run(output: StringBuilder): Boolean {
+            val n = rootNodeProvider()
+            if (n == null) {
+                output.appendLine("root node not available yet")
+                return false
+            }
             val count = getArea().executeRead { rootNode.allChildren.count() }
             output.appendLine("root node has $count children")
             return true
         }
     }) + additionalHealthChecks
 
-    fun start() {
+    val rootNode: INode get() = rootNodeProvider() ?: throw IllegalStateException("Root node not available yet")
+
+    @JvmOverloads
+    fun start(wait: Boolean = false) {
         LOG.trace { "server starting on port $port ..." }
         server = embeddedServer(Netty, port = port) {
-            init()
+            installHandlers()
         }
-        server!!.start()
+        server!!.start(wait)
         LOG.trace { "server started" }
     }
 
@@ -116,7 +163,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
 
     private fun getArea() = rootNode.getArea()
 
-    private fun Application.init() {
+    fun Application.installHandlers() {
         install(WebSockets) {
             pingPeriod = Duration.ofSeconds(15)
             timeout = Duration.ofSeconds(15)
@@ -135,6 +182,9 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
                 } finally {
                     sessions.remove(session)
                 }
+            }
+            get("/version") {
+                call.respondText(modelqlVersion ?: "unknown")
             }
             get("/health") {
                 val output = StringBuilder()
@@ -169,10 +219,40 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNode: I
                     } else {
                         call.respond(HttpStatusCode.InternalServerError, "unhealthy\n\n$output")
                     }
-                } catch (ex: Exception) {
+                } catch (ex: Throwable) {
                     output.appendLine()
                     output.appendLine(ex.stackTraceToString())
                     call.respond(HttpStatusCode.InternalServerError, "unhealthy\n\n$output")
+                }
+            }
+            post("query") {
+                try {
+                    val serializedQuery = call.receiveText()
+                    val json = UntypedModelQL.json
+                    val queryDescriptor = VersionAndData.deserialize(serializedQuery, QueryGraphDescriptor.serializer(), json).data
+                    val query = queryDescriptor.createRootQuery() as IMonoUnboundQuery<INode, Any?>
+                    LOG.debug { "query: $query" }
+                    val nodeResolutionScope: INodeResolutionScope = getArea()
+                    val transactionBody: () -> IStepOutput<Any?> = {
+                        runBlocking {
+                            withContext(nodeResolutionScope) {
+                                query.bind(rootNode.createQueryExecutor()).execute()
+                            }
+                        }
+                    }
+                    val result: IStepOutput<Any?> = if (query.requiresWriteAccess()) {
+                        getArea().executeWrite(transactionBody)
+                    } else {
+                        getArea().executeRead(transactionBody)
+                    }
+                    val serializer: KSerializer<IStepOutput<Any?>> =
+                        query.getAggregationOutputSerializer(json.serializersModule).upcast()
+
+                    val versionAndResult = VersionAndData(result)
+                    val serializedResult = json.encodeToString(VersionAndData.serializer(serializer), versionAndResult)
+                    call.respondText(text = serializedResult, contentType = ContentType.Application.Json)
+                } catch (ex: Throwable) {
+                    call.respondText(text = "server version: $modelqlVersion\n" + ex.stackTraceToString(), status = HttpStatusCode.InternalServerError)
                 }
             }
         }

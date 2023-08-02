@@ -15,6 +15,7 @@
 
 package org.modelix.model.lazy
 
+import kotlinx.coroutines.flow.Flow
 import org.modelix.model.persistent.*
 import kotlin.jvm.JvmStatic
 
@@ -56,7 +57,8 @@ abstract class CLHamtNode(val store: IDeserializingKeyValueStore) {
         return remove(element.id)
     }
 
-    abstract operator fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?>
+    abstract fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?>
+    abstract fun getLater(key: Long, shift: Int = 0): Flow<KVEntryReference<CPNode>?>
     abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int): CLHamtNode?
     abstract fun remove(key: Long, shift: Int): CLHamtNode?
     abstract fun visitEntries(visitor: (Long, KVEntryReference<CPNode>?) -> Boolean): Boolean

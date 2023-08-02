@@ -18,6 +18,7 @@ import org.modelix.model.area.IArea
 /**
  * Reference to an [IConcept].
  */
+@Deprecated("use ConceptReference")
 interface IConceptReference {
     companion object {
         private var deserializers: Map<Any, ((String) -> IConceptReference?)> = LinkedHashMap()

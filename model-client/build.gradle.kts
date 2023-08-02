@@ -48,6 +48,7 @@ kotlin {
             dependencies {
                 api(project(":model-api"))
                 api(project(":model-server-api"))
+                api(project(":modelql-untyped"))
                 kotlin("stdlib-common")
                 implementation(libs.kotlin.collections.immutable)
                 implementation(libs.kotlin.coroutines.core)
@@ -89,7 +90,7 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
-                implementation(kotlin("test-junit"))
+                implementation(kotlin("test"))
             }
         }
         val jsMain by getting {

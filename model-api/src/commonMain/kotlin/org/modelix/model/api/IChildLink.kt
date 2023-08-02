@@ -26,4 +26,39 @@ interface IChildLink : ILink {
 
     @Deprecated("use .targetConcept")
     val childConcept: IConcept
+
+    companion object {
+        fun fromName(name: String): IChildLink = ChildLinkFromName(name)
+    }
+}
+
+data class ChildLinkFromName(override val name: String) : LinkFromName(), IChildLink {
+    override val isMultiple: Boolean
+        get() = throw UnsupportedOperationException()
+    override val childConcept: IConcept
+        get() = throw UnsupportedOperationException()
+}
+
+object NullChildLink : IChildLink {
+    override val isMultiple: Boolean
+        get() = true
+    override val childConcept: IConcept
+        get() = throw UnsupportedOperationException()
+    override val targetConcept: IConcept
+        get() = throw UnsupportedOperationException()
+
+    override fun getConcept(): IConcept {
+        throw UnsupportedOperationException()
+    }
+
+    override fun getUID(): String {
+        throw UnsupportedOperationException()
+    }
+
+    override fun getSimpleName(): String {
+        throw UnsupportedOperationException()
+    }
+
+    override val isOptional: Boolean
+        get() = true
 }

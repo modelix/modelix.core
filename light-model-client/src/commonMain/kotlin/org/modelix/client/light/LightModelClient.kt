@@ -1,12 +1,52 @@
 package org.modelix.client.light
 
-import io.ktor.client.*
-import io.ktor.client.engine.*
-import io.ktor.client.plugins.websocket.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.plugins.websocket.WebSockets
 import kotlinx.coroutines.delay
-import org.modelix.model.api.*
-import org.modelix.model.area.*
-import org.modelix.model.server.api.*
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeEx
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.INodeReferenceSerializerEx
+import org.modelix.model.api.NodeReferenceById
+import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.getAncestors
+import org.modelix.model.api.resolve
+import org.modelix.model.area.IArea
+import org.modelix.model.area.IAreaChangeEvent
+import org.modelix.model.area.IAreaChangeList
+import org.modelix.model.area.IAreaListener
+import org.modelix.model.area.IAreaReference
+import org.modelix.model.server.api.AddNewChildNodeOpData
+import org.modelix.model.server.api.ChangeSetId
+import org.modelix.model.server.api.DeleteNodeOpData
+import org.modelix.model.server.api.ExceptionData
+import org.modelix.model.server.api.MessageFromClient
+import org.modelix.model.server.api.MessageFromServer
+import org.modelix.model.server.api.ModelQuery
+import org.modelix.model.server.api.MoveNodeOpData
+import org.modelix.model.server.api.NodeData
+import org.modelix.model.server.api.NodeId
+import org.modelix.model.server.api.NodeUpdateData
+import org.modelix.model.server.api.OperationData
+import org.modelix.model.server.api.QueryRootNode
+import org.modelix.model.server.api.SetPropertyOpData
+import org.modelix.model.server.api.SetReferenceOpData
+import org.modelix.model.server.api.VersionData
+import org.modelix.model.server.api.merge
+import org.modelix.model.server.api.replaceChildren
+import org.modelix.model.server.api.replaceContainment
+import org.modelix.model.server.api.replaceId
+import org.modelix.model.server.api.replaceReferences
+import org.modelix.modelql.client.ModelQLClient
+import org.modelix.modelql.core.IQueryExecutor
+import org.modelix.modelql.untyped.ISupportsModelQL
 import kotlin.jvm.JvmStatic
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -40,6 +80,13 @@ class LightModelClient internal constructor(
     private var exceptions: MutableList<ExceptionData> = ArrayList()
     private var currentModelQuery: ModelQuery? = null
     private var unappliedQuery: ModelQuery? = null
+    private val modelQLClient: ModelQLClient? = when (connection) {
+        is WebsocketConnection -> ModelQLClient(
+            connection.url.replace(Regex("ws://(.*)/ws"), "http://$1/query"),
+            connection.httpClient
+        )
+        else -> null
+    }
 
     init {
         connection.connect { message ->
@@ -324,7 +371,7 @@ class LightModelClient internal constructor(
         }
     }
 
-    inner class NodeAdapter(var nodeId: NodeId) : INodeEx {
+    inner class NodeAdapter(var nodeId: NodeId) : INodeEx, ISupportsModelQL {
         fun getData() = requiresRead { getNodeData(nodeId) }
 
         override fun usesRoleIds(): Boolean = usesRoleIds
@@ -561,6 +608,11 @@ class LightModelClient internal constructor(
 
         override fun toString(): String {
             return nodeId
+        }
+
+        override fun createQueryExecutor(): IQueryExecutor<INode> {
+            val client = modelQLClient ?: throw IllegalStateException("Connection doesn't support ModelQL: $connection")
+            return client.getNode(SerializedNodeReference(nodeId))
         }
     }
 

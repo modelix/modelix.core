@@ -11,3 +11,8 @@ interface ILink : IRole {
      */
     val targetConcept: IConcept
 }
+
+abstract class LinkFromName : RoleFromName(), ILink {
+    override val targetConcept: IConcept
+        get() = throw UnsupportedOperationException()
+}

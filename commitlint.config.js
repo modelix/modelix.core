@@ -15,8 +15,11 @@ module.exports = {
         "model-client",
         "model-server",
         "model-sync-lib",
+        "modelql",
+        "mps-model-adapters",
         "ts-model-api",
       ],
     ],
+    "subject-case": [0, 'never']
   },
 };

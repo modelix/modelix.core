@@ -21,7 +21,6 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.testing.*
 import io.ktor.server.websocket.*
 import kotlinx.coroutines.delay
-import org.junit.Test
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.getRootNode
@@ -34,6 +33,7 @@ import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.random.Random
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime

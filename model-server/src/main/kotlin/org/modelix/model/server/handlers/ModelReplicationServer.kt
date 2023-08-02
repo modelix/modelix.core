@@ -26,6 +26,8 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.Job
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.decodeToSequence
 import org.modelix.authorization.getUserName
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil

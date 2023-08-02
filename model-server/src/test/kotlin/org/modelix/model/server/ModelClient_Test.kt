@@ -18,14 +18,14 @@ package org.modelix.model.server
 import io.ktor.server.testing.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
-import org.junit.Assert
-import org.junit.Test
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.IKeyListener
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import java.util.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
@@ -79,7 +79,7 @@ class ModelClient_Test {
             println(" put to client $writingClientIndex")
             for (client in clients) {
                 withTimeout(1.seconds) {
-                    Assert.assertEquals(expected[key], client.getA(key))
+                    assertEquals(expected[key], client.getA(key))
                 }
             }
             println(" verified")

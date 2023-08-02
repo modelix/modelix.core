@@ -18,4 +18,13 @@ package org.modelix.model.api
 /**
  * Representation of a property within an [IConcept].
  */
-interface IProperty : IRole
+interface IProperty : IRole {
+    companion object {
+        fun fromName(name: String): IProperty = PropertyFromName(name)
+    }
+}
+
+data class PropertyFromName(override val name: String) : RoleFromName(), IProperty {
+    override val isOptional: Boolean
+        get() = throw UnsupportedOperationException()
+}

@@ -2,10 +2,10 @@ package org.modelix.metamodel.generator
 
 import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.decodeFromString
-import org.junit.Test
 import org.modelix.model.data.LanguageData
 import java.io.File
 import kotlin.io.path.*
+import kotlin.test.Test
 import kotlin.test.assertContains
 
 class KotlinGeneratorTest {

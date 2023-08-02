@@ -17,7 +17,8 @@ class SimpleChildLink(
     private val simpleName: String,
     override val isMultiple: Boolean,
     override val isOptional: Boolean,
-    override val targetConcept: IConcept
+    override val targetConcept: IConcept,
+    private val uid: String? = null
 ) : IChildLink {
     var owner: SimpleConcept? = null
     override val childConcept: IConcept = targetConcept
@@ -25,8 +26,9 @@ class SimpleChildLink(
     override fun getConcept(): IConcept = owner!!
 
     override fun getUID(): String {
-        val o = owner
-        return (if (o == null) simpleName else o.getUID() + "." + simpleName)
+        return uid
+            ?: owner?.let { it.getUID() + "." + simpleName }
+            ?: simpleName
     }
 
     override fun getSimpleName(): String = simpleName

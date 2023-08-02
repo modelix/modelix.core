@@ -5,6 +5,7 @@ import kotlin.reflect.KClass
 /**
  * Serializer for [INodeReference]s.
  */
+@Deprecated("INodeResolutionScope.resolveNode(INodeReference) is now responsible for deserializing supported references")
 interface INodeReferenceSerializer {
 
     /**
@@ -96,6 +97,10 @@ interface INodeReferenceSerializer {
         }
 
         fun deserialize(serialized: String): INodeReference {
+            return tryDeserialize(serialized) ?: SerializedNodeReference(serialized)
+        }
+
+        fun tryDeserialize(serialized: String): INodeReference? {
             val parts = serialized.split(INodeReferenceSerializerEx.SEPARATOR, limit = 2)
             if (parts.size == 2) {
                 val deserializer = deserializerForPrefix[parts[0]]
@@ -105,11 +110,11 @@ interface INodeReferenceSerializer {
             }
 
             return legacySerializers.map { it.deserialize(serialized) }.firstOrNull { it != null }
-                ?: throw RuntimeException("No deserializer found for: $serialized")
         }
     }
 }
 
+@Deprecated("INodeResolutionScope.resolveNode(INodeReference) is now responsible for deserializing supported references")
 interface INodeReferenceSerializerEx : INodeReferenceSerializer {
     val prefix: String
     val supportedReferenceClasses: Set<KClass<out INodeReference>>

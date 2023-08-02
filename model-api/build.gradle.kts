@@ -44,6 +44,7 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.serialization.json)
+                implementation(libs.kotlin.coroutines.core)
             }
         }
         val commonTest by getting {
@@ -55,18 +56,19 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+                implementation(libs.kotlin.coroutines.core)
             }
         }
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(kotlin("test-junit"))
             }
         }
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
                 api(npm("@modelix/ts-model-api", rootDir.resolve("ts-model-api")))
+                implementation(libs.kotlin.coroutines.core)
             }
             kotlin.srcDir(rootDir.resolve("ts-model-api").resolve("build/dukat"))
         }

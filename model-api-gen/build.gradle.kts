@@ -15,7 +15,6 @@ dependencies {
     implementation(libs.kotlinpoet)
     implementation(kotlin("reflect"))
     testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit"))
 }
 
 description = "Generator for Kotlin meta model classes"

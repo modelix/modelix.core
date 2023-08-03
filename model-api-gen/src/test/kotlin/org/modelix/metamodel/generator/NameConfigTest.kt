@@ -1,6 +1,6 @@
 package org.modelix.metamodel.generator
 
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 

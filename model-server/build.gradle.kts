@@ -62,7 +62,6 @@ dependencies {
     testImplementation(libs.cucumber.java)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
-    implementation(kotlin("test-junit"))
 }
 
 val cucumberRuntime by configurations.creating {

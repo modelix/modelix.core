@@ -2,7 +2,7 @@
 plugins {
     id("maven-publish")
     id("org.jetbrains.kotlin.multiplatform")
-    id("org.jlleitschuh.gradle.ktlint")
+    alias(libs.plugins.ktlint)
     kotlin("plugin.serialization")
 }
 

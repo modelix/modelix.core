@@ -13,9 +13,13 @@
  */
 package org.modelix.model.lazy
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import org.modelix.model.bitCount
 import org.modelix.model.persistent.CPHamtSingle
 import org.modelix.model.persistent.CPNode
+import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValueStore) : CLHamtNode(store) {
     private val mask: Long = maskForLevels(data.numLevels)
@@ -42,6 +46,18 @@ class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValue
                 }
         } else {
             return bulkQuery.constant(null)
+        }
+    }
+
+    override fun getLater(key: Long, shift: Int): Flow<KVEntryReference<CPNode>?> {
+        require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
+        if (maskBits(key, shift) == data.bits) {
+            return getChildLater()
+                .flatMapConcatConcurrent {
+                    it.getLater(key, shift + data.numLevels * BITS_PER_LEVEL)
+                }
+        } else {
+            return flowOf(null)
         }
     }
 
@@ -95,6 +111,10 @@ class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValue
 
     fun getChild(bulkQuery: IBulkQuery): IBulkQuery.Value<CLHamtNode> {
         return bulkQuery[data.child].map { childData -> create(childData!!, store)!! }
+    }
+
+    fun getChildLater(): Flow<CLHamtNode> {
+        return IBulkQuery2.requestLater(data.child).map { create(it, store) }
     }
 
     fun getChild(): CLHamtNode {

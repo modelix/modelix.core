@@ -15,11 +15,13 @@
 
 package org.modelix.model.lazy
 
+import kotlinx.coroutines.flow.*
 import org.modelix.model.bitCount
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPHamtSingle
 import org.modelix.model.persistent.CPNode
+import org.modelix.modelql.core.flatMapConcatConcurrent
 
 class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyValueStore) : CLHamtNode(store) {
 
@@ -85,7 +87,19 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
             if (child == null) {
                 bulkQuery.constant(null)
             } else {
-                child[key, shift + BITS_PER_LEVEL, bulkQuery]
+                child.get(key, shift + BITS_PER_LEVEL, bulkQuery)
+            }
+        }
+    }
+
+    override fun getLater(key: Long, shift: Int): Flow<KVEntryReference<CPNode>?> {
+        require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
+        val childIndex = indexFromKey(key, shift)
+        return getChildLater(childIndex).flatMapConcatConcurrent { child: CLHamtNode? ->
+            if (child == null) {
+                flowOf(null)
+            } else {
+                child.getLater(key, shift + BITS_PER_LEVEL)
             }
         }
     }
@@ -100,8 +114,25 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
         return getChild(childHash, bulkQuery)
     }
 
+    protected fun getChildLater(logicalIndex: Int): Flow<CLHamtNode?> {
+        if (isBitNotSet(data.bitmap, logicalIndex)) {
+            return flowOf(null)
+        }
+        val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
+        require(physicalIndex < data.children.size) { "Invalid physical index ($physicalIndex). N. children: ${data.children.size}. Logical index: $logicalIndex" }
+        val childHash = data.children[physicalIndex]
+        return getChildLater(childHash)
+    }
+
     protected fun getChild(childHash: KVEntryReference<CPHamtNode>, bulkQuery: IBulkQuery): IBulkQuery.Value<CLHamtNode> {
         return bulkQuery[childHash].map { childData ->
+            if (childData == null) throw RuntimeException("Entry not found in store: ${childHash.getHash()}")
+            create(childData, store)
+        }
+    }
+
+    protected fun getChildLater(childHash: KVEntryReference<CPHamtNode>): Flow<CLHamtNode> {
+        return IBulkQuery2.requestLater(childHash).map { childData ->
             if (childData == null) throw RuntimeException("Entry not found in store: ${childHash.getHash()}")
             create(childData, store)
         }

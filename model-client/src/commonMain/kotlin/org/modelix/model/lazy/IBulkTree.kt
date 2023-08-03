@@ -15,6 +15,7 @@ package org.modelix.model.lazy
 
 import org.modelix.model.api.ITree
 
+@Deprecated("use ModelQL")
 interface IBulkTree : ITree {
     fun getDescendants(root: Long, includeSelf: Boolean): Iterable<CLNode>
     fun getDescendants(roots: Iterable<Long>, includeSelf: Boolean): Iterable<CLNode>

@@ -16,18 +16,22 @@
 
 package org.modelix.client.light
 
-import io.ktor.client.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.websocket.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.websocket.CloseReason
+import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
+import io.ktor.websocket.readText
+import io.ktor.websocket.send
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
 import org.modelix.model.server.api.MessageFromClient
 import org.modelix.model.server.api.MessageFromServer
+import org.modelix.modelql.client.ModelQLClient
 
 class WebsocketConnection(val httpClient: HttpClient, val url: String) : LightModelClient.IConnection {
     val coroutineScope = CoroutineScope(Dispatchers.Default)
@@ -73,5 +77,4 @@ class WebsocketConnection(val httpClient: HttpClient, val url: String) : LightMo
             }
         }
     }
-
 }

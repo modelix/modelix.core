@@ -23,10 +23,15 @@ kotlin {
                 implementation(project(":model-api"))
                 implementation(project(":model-api-gen-runtime"))
                 implementation(project(":model-server-api"))
+                implementation(project(":modelql-core"))
+                implementation(project(":modelql-untyped"))
+                implementation(project(":modelql-client"))
+
                 implementation(libs.ktor.client.websockets)
                 implementation(libs.kotlin.stdlib.common)
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.coroutines.core)
+                implementation(libs.kotlin.serialization.json)
 
 //                implementation("io.ktor:ktor-client-core:$ktorVersion")
 //                implementation("io.ktor:ktor-client-cio:$ktorVersion")
@@ -50,10 +55,12 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(kotlin("test-junit"))
 
-                implementation(project(":model-server"))
                 implementation(project(":authorization"))
+//                implementation(project(":model-client"))
+                implementation(project(":model-server"))
+                implementation(project(":model-server-lib"))
+
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.cors)
                 implementation(libs.ktor.server.netty)

@@ -61,3 +61,20 @@ object RoleAccessContext {
         return value.getValue() ?: false
     }
 }
+
+abstract class RoleFromName() : IRole {
+    override fun getConcept(): IConcept {
+        throw UnsupportedOperationException()
+    }
+
+    override fun getUID(): String {
+        return name
+    }
+
+    override fun getSimpleName(): String {
+        return name
+    }
+
+    override val isOptional: Boolean
+        get() = throw UnsupportedOperationException()
+}

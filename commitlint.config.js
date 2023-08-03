@@ -15,6 +15,7 @@ module.exports = {
         "model-client",
         "model-server",
         "model-sync-lib",
+        "modelql",
         "mps-model-adapters",
         "mps-model-server",
         "mps-model-server-plugin",

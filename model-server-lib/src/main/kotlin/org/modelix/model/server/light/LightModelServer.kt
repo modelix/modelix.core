@@ -27,6 +27,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
+import kotlinx.serialization.KSerializer
 import org.modelix.model.api.*
 import org.modelix.model.server.api.AddNewChildNodeOpData
 import org.modelix.model.server.api.ChangeSetId
@@ -43,6 +44,14 @@ import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
+import org.modelix.modelql.core.VersionAndData
+import org.modelix.modelql.core.IMonoUnboundQuery
+import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.QueryGraphDescriptor
+import org.modelix.modelql.core.modelqlVersion
+import org.modelix.modelql.core.upcast
+import org.modelix.modelql.untyped.UntypedModelQL
+import org.modelix.modelql.untyped.createQueryExecutor
 import java.time.Duration
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
@@ -174,6 +183,9 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                     sessions.remove(session)
                 }
             }
+            get("/version") {
+                call.respondText(modelqlVersion ?: "unknown")
+            }
             get("/health") {
                 val output = StringBuilder()
                 try {
@@ -211,6 +223,36 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                     output.appendLine()
                     output.appendLine(ex.stackTraceToString())
                     call.respond(HttpStatusCode.InternalServerError, "unhealthy\n\n$output")
+                }
+            }
+            post("query") {
+                try {
+                    val serializedQuery = call.receiveText()
+                    val json = UntypedModelQL.json
+                    val queryDescriptor = VersionAndData.deserialize(serializedQuery, QueryGraphDescriptor.serializer(), json).data
+                    val query = queryDescriptor.createRootQuery() as IMonoUnboundQuery<INode, Any?>
+                    LOG.debug { "query: $query" }
+                    val nodeResolutionScope: INodeResolutionScope = getArea()
+                    val transactionBody: () -> IStepOutput<Any?> = {
+                        runBlocking {
+                            withContext(nodeResolutionScope) {
+                                query.bind(rootNode.createQueryExecutor()).execute()
+                            }
+                        }
+                    }
+                    val result: IStepOutput<Any?> = if (query.requiresWriteAccess()) {
+                        getArea().executeWrite(transactionBody)
+                    } else {
+                        getArea().executeRead(transactionBody)
+                    }
+                    val serializer: KSerializer<IStepOutput<Any?>> =
+                        query.getAggregationOutputSerializer(json.serializersModule).upcast()
+
+                    val versionAndResult = VersionAndData(result)
+                    val serializedResult = json.encodeToString(VersionAndData.serializer(serializer), versionAndResult)
+                    call.respondText(text = serializedResult, contentType = ContentType.Application.Json)
+                } catch (ex: Throwable) {
+                    call.respondText(text = "server version: $modelqlVersion\n" + ex.stackTraceToString(), status = HttpStatusCode.InternalServerError)
                 }
             }
         }

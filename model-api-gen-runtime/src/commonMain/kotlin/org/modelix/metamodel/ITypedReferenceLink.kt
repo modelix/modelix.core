@@ -18,19 +18,20 @@ import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.getReferenceTarget
 import org.modelix.model.api.setReferenceTarget
 
-interface ITypedReferenceLink<TargetT : ITypedNode?> : ITypedConceptFeature {
+interface ITypedReferenceLink<TargetT : ITypedNode> : ITypedConceptFeature {
     fun untyped(): IReferenceLink
     fun castTarget(target: INode): TargetT
+    fun getTypedTargetConcept(): IConceptOfTypedNode<TargetT>
 }
-fun <TargetT : ITypedNode?> INode.getReferenceTargetOrNull(link: ITypedReferenceLink<TargetT>): TargetT? {
+fun <TargetT : ITypedNode> INode.getReferenceTargetOrNull(link: ITypedReferenceLink<TargetT>): TargetT? {
     return getReferenceTarget(link.untyped())?.let { link.castTarget(it) }
 }
-fun <TargetT : ITypedNode?> INode.getReferenceTarget(link: ITypedReferenceLink<TargetT>): TargetT {
+fun <TargetT : ITypedNode> INode.getReferenceTarget(link: ITypedReferenceLink<TargetT>): TargetT {
     val target = getReferenceTargetOrNull(link)
     if (target == null && !link.untyped().isOptional) throw ReferenceNotSetException(this, link)
     return target as TargetT
 }
-fun <TargetT : ITypedNode?> INode.setReferenceTarget(link: ITypedReferenceLink<TargetT>, target: TargetT) {
+fun <TargetT : ITypedNode> INode.setReferenceTarget(link: ITypedReferenceLink<TargetT>, target: TargetT?) {
     setReferenceTarget(link.untyped(), target?.unwrap())
 }
 

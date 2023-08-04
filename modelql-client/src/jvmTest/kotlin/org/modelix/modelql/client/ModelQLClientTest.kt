@@ -14,6 +14,7 @@
 package org.modelix.modelql.client
 
 import io.ktor.client.HttpClient
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.IConceptReference
@@ -24,7 +25,6 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
-import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.IFluxUnboundQuery
 import org.modelix.modelql.core.buildFluxQuery
 import org.modelix.modelql.core.contains
@@ -39,6 +39,7 @@ import org.modelix.modelql.core.plus
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.toSet
 import org.modelix.modelql.core.zip
+import org.modelix.modelql.server.ModelQLServer
 import org.modelix.modelql.untyped.addNewChild
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.allReferences
@@ -66,7 +67,9 @@ class ModelQLClientTest {
                     val model1a = module1.addNewChild("models", -1, null as IConceptReference?)
                     model1a.setPropertyValue("name", "model1a")
                 }
-                LightModelServer(80, rootNode).apply { installHandlers() }
+                routing {
+                    ModelQLServer.builder(rootNode).build().installHandler(this)
+                }
             }
             val httpClient = createClient {
             }

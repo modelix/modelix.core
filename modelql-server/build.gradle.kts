@@ -1,17 +1,16 @@
 plugins {
     kotlin("jvm")
     `maven-publish`
+    alias(libs.plugins.ktlint)
 }
 
 dependencies {
     implementation(project(":model-api"))
     implementation(project(":model-server-api"))
     implementation(project(":modelql-core"))
-    implementation(project(":modelql-server"))
     implementation(project(":modelql-untyped"))
 
     implementation(kotlin("stdlib"))
-    implementation(libs.modelix.incremental)
 
     implementation(libs.kotlin.serialization.json)
 

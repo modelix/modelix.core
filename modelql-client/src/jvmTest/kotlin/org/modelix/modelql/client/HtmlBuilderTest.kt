@@ -14,6 +14,7 @@
 package org.modelix.modelql.client
 
 import io.ktor.client.HttpClient
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import kotlinx.html.FlowContent
@@ -33,12 +34,12 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
-import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.core.IFragmentBuilder
 import org.modelix.modelql.core.IRecursiveFragmentBuilder
 import org.modelix.modelql.core.buildModelQLFragment
 import org.modelix.modelql.core.isNotEmpty
 import org.modelix.modelql.html.buildHtmlQuery
+import org.modelix.modelql.server.ModelQLServer
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.createQueryExecutor
@@ -62,7 +63,9 @@ class HtmlBuilderTest {
                     val model1b = module1.addNewChild("models", -1, null as IConceptReference?)
                     model1b.setPropertyValue("name", "model1b")
                 }
-                LightModelServer(80, rootNode).apply { installHandlers() }
+                routing {
+                    ModelQLServer.builder(rootNode).build().installHandler(this)
+                }
             }
             val httpClient = createClient {
             }

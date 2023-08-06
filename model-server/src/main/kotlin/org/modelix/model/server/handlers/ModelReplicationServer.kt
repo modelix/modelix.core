@@ -27,12 +27,19 @@ import kotlinx.coroutines.Job
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.authorization.getUserName
+import org.modelix.model.api.PBranch
+import org.modelix.model.api.getRootNode
+import org.modelix.model.area.getArea
+import org.modelix.model.lazy.CLTree
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.ModelQuery
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.modelql.server.ModelQLServer
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -130,6 +137,25 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                                 )
                                 send(Json.encodeToString(delta))
                                 lastVersionHash = newVersionHash
+                            }
+                        }
+                        post("query") {
+                            val branchRef = branchRef()
+                            val version = repositoriesManager.getVersion(branchRef)
+                            val initialTree = version!!.getTree()
+                            val branch = OTBranch(PBranch(initialTree, repositoriesManager.client.idGenerator), repositoriesManager.client.idGenerator, repositoriesManager.client.storeCache)
+                            ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
+
+                            val (ops, newTree) = branch.operationsAndTree
+                            if (newTree != initialTree) {
+                                val newVersion = CLVersion.createRegularVersion(
+                                    id = repositoriesManager.client.idGenerator.generate(),
+                                    author = getUserName(),
+                                    tree = newTree as CLTree,
+                                    baseVersion = version,
+                                    operations = ops.map { it.getOriginalOp() }.toTypedArray()
+                                )
+                                repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
                             }
                         }
                     }

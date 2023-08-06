@@ -12,10 +12,12 @@ dependencies {
     implementation(libs.kotlin.serialization.json)
     implementation(libs.kotlin.serialization.yaml)
     implementation(project(":model-api-gen-runtime"))
+    implementation(project(":modelql-core"))
+    implementation(project(":modelql-untyped"))
+    implementation(project(":modelql-typed"))
     implementation(libs.kotlinpoet)
     implementation(kotlin("reflect"))
     testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit"))
 }
 
 description = "Generator for Kotlin meta model classes"

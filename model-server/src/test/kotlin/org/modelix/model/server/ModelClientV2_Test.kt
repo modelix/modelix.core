@@ -20,7 +20,6 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.testing.*
 import io.ktor.server.websocket.*
-import org.junit.Test
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
@@ -32,6 +31,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ModelClientV2_Test {

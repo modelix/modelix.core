@@ -13,10 +13,11 @@
  */
 package org.modelix.model.api
 
-class SimpleConcept(
+open class SimpleConcept(
     private val conceptName: String,
-    private val is_abstract: Boolean,
-    directSuperConcepts: Iterable<IConcept>
+    private val is_abstract: Boolean = false,
+    directSuperConcepts: Iterable<IConcept> = emptyList(),
+    private val uid: String? = null
 ) : IConcept {
     override var language: ILanguage? = null
     val properties: MutableList<SimpleProperty> = ArrayList()
@@ -24,15 +25,9 @@ class SimpleConcept(
     val referenceLinks: MutableList<IReferenceLink> = ArrayList()
     private val superConcepts: List<IConcept> = directSuperConcepts.toList()
 
-    constructor(name: String) : this(name, false, listOf())
-
-    constructor(name: String, isAbstract: Boolean) : this(name, isAbstract, listOf())
-
-    constructor(name: String, directSuperConcepts: Iterable<IConcept>) : this(name, false, directSuperConcepts)
-
     override fun isAbstract(): Boolean = this.is_abstract
 
-    override fun getUID(): String = getLongName()
+    override fun getUID(): String = uid ?: getLongName()
 
     override fun getReference(): IConceptReference {
         return ConceptReference(getUID())

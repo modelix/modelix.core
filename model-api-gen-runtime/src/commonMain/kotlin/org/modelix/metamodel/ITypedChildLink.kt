@@ -22,6 +22,7 @@ import org.modelix.model.api.remove
 interface ITypedChildLink<ChildT : ITypedNode> : ITypedConceptFeature {
     fun untyped(): IChildLink
     fun castChild(childNode: INode): ChildT
+    fun getTypedChildConcept(): IConceptOfTypedNode<ChildT>
 }
 interface ITypedSingleChildLink<ChildT : ITypedNode> : ITypedChildLink<ChildT>
 interface ITypedChildListLink<ChildT : ITypedNode> : ITypedChildLink<ChildT>

@@ -31,6 +31,7 @@ dependencies {
     implementation(project(":model-api"))
     implementation(project(":model-server-api"))
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))
+    implementation(project(":modelql-server"))
     implementation(project(":authorization"))
     implementation(libs.apache.commons.lang)
 
@@ -62,7 +63,6 @@ dependencies {
     testImplementation(libs.cucumber.java)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
-    implementation(kotlin("test-junit"))
 }
 
 val cucumberRuntime by configurations.creating {

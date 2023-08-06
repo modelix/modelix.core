@@ -7,7 +7,6 @@ import jetbrains.mps.lang.behavior.ConceptMethodDeclaration
 import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import jetbrains.mps.lang.editor.*
 import jetbrains.mps.lang.smodel.query.CustomScope_old
-import org.junit.jupiter.api.BeforeAll
 import org.modelix.metamodel.*
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode

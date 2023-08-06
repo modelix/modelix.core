@@ -18,4 +18,10 @@ package org.modelix.model.api
 /**
  * Representation of a non-containment reference link between [IConcept]s.
  */
-interface IReferenceLink : ILink
+interface IReferenceLink : ILink {
+    companion object {
+        fun fromName(name: String): IReferenceLink = ReferenceLinkFromName(name)
+    }
+}
+
+data class ReferenceLinkFromName(override val name: String) : LinkFromName(), IReferenceLink

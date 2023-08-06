@@ -1,0 +1,175 @@
+$dokka.format:html-v1
+$dokka.linkExtension:html
+$dokka.location:////PointingToDeclaration/model-api/[root]/index.html
+$dokka.location:/ChildListAccessor///PointingToDeclaration/model-api/[root]/-child-list-accessor/index.html
+$dokka.location:/ChildListAccessor/ChildListAccessor/#INodeJS#kotlin.String?/PointingToDeclaration/model-api/[root]/-child-list-accessor/-child-list-accessor.html
+$dokka.location:/ChildListAccessor/addNew/#IConceptJS?/PointingToDeclaration/model-api/[root]/-child-list-accessor/add-new.html
+$dokka.location:/ChildListAccessor/insertNew/#kotlin.Number#IConceptJS?/PointingToDeclaration/model-api/[root]/-child-list-accessor/insert-new.html
+$dokka.location:/GeneratedConcept///PointingToDeclaration/model-api/[root]/-generated-concept/index.html
+$dokka.location:/GeneratedConcept/GeneratedConcept/#kotlin.String/PointingToDeclaration/model-api/[root]/-generated-concept/-generated-concept.html
+$dokka.location:/GeneratedConcept/getDirectSuperConcepts/#/PointingToDeclaration/model-api/[root]/-generated-concept/get-direct-super-concepts.html
+$dokka.location:/GeneratedConcept/getUID/#/PointingToDeclaration/model-api/[root]/-generated-concept/get-u-i-d.html
+$dokka.location:/GeneratedConcept/uid/#/PointingToDeclaration/model-api/[root]/-generated-concept/uid.html
+$dokka.location:/GeneratedLanguage///PointingToDeclaration/model-api/[root]/-generated-language/index.html
+$dokka.location:/GeneratedLanguage/GeneratedLanguage/#kotlin.String/PointingToDeclaration/model-api/[root]/-generated-language/-generated-language.html
+$dokka.location:/GeneratedLanguage/assertRegistered/#/PointingToDeclaration/model-api/[root]/-generated-language/assert-registered.html
+$dokka.location:/GeneratedLanguage/getConcepts/#/PointingToDeclaration/model-api/[root]/-generated-language/get-concepts.html
+$dokka.location:/GeneratedLanguage/getName/#/PointingToDeclaration/model-api/[root]/-generated-language/get-name.html
+$dokka.location:/GeneratedLanguage/getUID/#/PointingToDeclaration/model-api/[root]/-generated-language/get-u-i-d.html
+$dokka.location:/GeneratedLanguage/isRegistered/#/PointingToDeclaration/model-api/[root]/-generated-language/is-registered.html
+$dokka.location:/GeneratedLanguage/name/#/PointingToDeclaration/model-api/[root]/-generated-language/name.html
+$dokka.location:/GeneratedLanguage/nodeWrappers/#/PointingToDeclaration/model-api/[root]/-generated-language/node-wrappers.html
+$dokka.location:/GeneratedLanguage/register/#/PointingToDeclaration/model-api/[root]/-generated-language/register.html
+$dokka.location:/GeneratedLanguage/unregister/#/PointingToDeclaration/model-api/[root]/-generated-language/unregister.html
+$dokka.location:/IConceptJS///PointingToDeclaration/model-api/[root]/-i-concept-j-s/index.html
+$dokka.location:/IConceptJS/getDirectSuperConcepts/#/PointingToDeclaration/model-api/[root]/-i-concept-j-s/get-direct-super-concepts.html
+$dokka.location:/IConceptJS/getUID/#/PointingToDeclaration/model-api/[root]/-i-concept-j-s/get-u-i-d.html
+$dokka.location:/ILanguage///PointingToDeclaration/model-api/[root]/-i-language/index.html
+$dokka.location:/IModelServerConnection///PointingToDeclaration/model-api/[root]/-i-model-server-connection/index.html
+$dokka.location:/IModelServerConnection/generateIds/#kotlin.Number#kotlin.Function1[IdRangeData,kotlin.Unit]/PointingToDeclaration/model-api/[root]/-i-model-server-connection/generate-ids.html
+$dokka.location:/IModelServerConnection/onMessage/#kotlin.Function1[kotlin.String,kotlin.Unit]/PointingToDeclaration/model-api/[root]/-i-model-server-connection/on-message.html
+$dokka.location:/IModelServerConnection/onModelUpdate/#kotlin.Function1[VersionData,kotlin.Unit]/PointingToDeclaration/model-api/[root]/-i-model-server-connection/on-model-update.html
+$dokka.location:/IModelServerConnection/sendUpdate/#kotlin.Array[NodeUpdateData]/PointingToDeclaration/model-api/[root]/-i-model-server-connection/send-update.html
+$dokka.location:/INodeJS///PointingToDeclaration/model-api/[root]/-i-node-j-s/index.html
+$dokka.location:/INodeJS/addNewChild/#kotlin.String?#kotlin.Number#IConceptJS?/PointingToDeclaration/model-api/[root]/-i-node-j-s/add-new-child.html
+$dokka.location:/INodeJS/getAllChildren/#/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-all-children.html
+$dokka.location:/INodeJS/getChildren/#kotlin.String?/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-children.html
+$dokka.location:/INodeJS/getConcept/#/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-concept.html
+$dokka.location:/INodeJS/getConceptUID/#/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-concept-u-i-d.html
+$dokka.location:/INodeJS/getParent/#/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-parent.html
+$dokka.location:/INodeJS/getPropertyRoles/#/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-property-roles.html
+$dokka.location:/INodeJS/getPropertyValue/#kotlin.String/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-property-value.html
+$dokka.location:/INodeJS/getReference/#/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-reference.html
+$dokka.location:/INodeJS/getReferenceRoles/#/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-reference-roles.html
+$dokka.location:/INodeJS/getReferenceTargetNode/#kotlin.String/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-reference-target-node.html
+$dokka.location:/INodeJS/getReferenceTargetRef/#kotlin.String/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-reference-target-ref.html
+$dokka.location:/INodeJS/getRoleInParent/#/PointingToDeclaration/model-api/[root]/-i-node-j-s/get-role-in-parent.html
+$dokka.location:/INodeJS/moveChild/#kotlin.String?#kotlin.Number#INodeJS/PointingToDeclaration/model-api/[root]/-i-node-j-s/move-child.html
+$dokka.location:/INodeJS/removeChild/#INodeJS/PointingToDeclaration/model-api/[root]/-i-node-j-s/remove-child.html
+$dokka.location:/INodeJS/setPropertyValue/#kotlin.String#kotlin.String?/PointingToDeclaration/model-api/[root]/-i-node-j-s/set-property-value.html
+$dokka.location:/INodeJS/setReferenceTargetNode/#kotlin.String#INodeJS?/PointingToDeclaration/model-api/[root]/-i-node-j-s/set-reference-target-node.html
+$dokka.location:/INodeJS/setReferenceTargetRef/#kotlin.String#kotlin.Any?/PointingToDeclaration/model-api/[root]/-i-node-j-s/set-reference-target-ref.html
+$dokka.location:/ITypedNode///PointingToDeclaration/model-api/[root]/-i-typed-node/index.html
+$dokka.location:/ITypedNode/unwrap/#/PointingToDeclaration/model-api/[root]/-i-typed-node/unwrap.html
+$dokka.location:/IdGenerator///PointingToDeclaration/model-api/[root]/-id-generator/index.html
+$dokka.location:/IdGenerator/IdGenerator/#kotlin.Any#kotlin.Any/PointingToDeclaration/model-api/[root]/-id-generator/-id-generator.html
+$dokka.location:/IdGenerator/generate/#/PointingToDeclaration/model-api/[root]/-id-generator/generate.html
+$dokka.location:/IdGenerator/last/#/PointingToDeclaration/model-api/[root]/-id-generator/last.html
+$dokka.location:/IdGenerator/next/#/PointingToDeclaration/model-api/[root]/-id-generator/next.html
+$dokka.location:/IdRangeData///PointingToDeclaration/model-api/[root]/-id-range-data/index.html
+$dokka.location:/IdRangeData/first/#/PointingToDeclaration/model-api/[root]/-id-range-data/first.html
+$dokka.location:/IdRangeData/last/#/PointingToDeclaration/model-api/[root]/-id-range-data/last.html
+$dokka.location:/LanguageRegistry.Companion///PointingToDeclaration/model-api/[root]/-language-registry/-companion/index.html
+$dokka.location:/LanguageRegistry.Companion/INSTANCE/#/PointingToDeclaration/model-api/[root]/-language-registry/-companion/-i-n-s-t-a-n-c-e.html
+$dokka.location:/LanguageRegistry///PointingToDeclaration/model-api/[root]/-language-registry/index.html
+$dokka.location:/LanguageRegistry/LanguageRegistry/#/PointingToDeclaration/model-api/[root]/-language-registry/-language-registry.html
+$dokka.location:/LanguageRegistry/concepts/#/PointingToDeclaration/model-api/[root]/-language-registry/concepts.html
+$dokka.location:/LanguageRegistry/getAll/#/PointingToDeclaration/model-api/[root]/-language-registry/get-all.html
+$dokka.location:/LanguageRegistry/isRegistered/#GeneratedLanguage/PointingToDeclaration/model-api/[root]/-language-registry/is-registered.html
+$dokka.location:/LanguageRegistry/languages/#/PointingToDeclaration/model-api/[root]/-language-registry/languages.html
+$dokka.location:/LanguageRegistry/nodeWrappers/#/PointingToDeclaration/model-api/[root]/-language-registry/node-wrappers.html
+$dokka.location:/LanguageRegistry/register/#GeneratedLanguage/PointingToDeclaration/model-api/[root]/-language-registry/register.html
+$dokka.location:/LanguageRegistry/resolveConcept/#kotlin.String/PointingToDeclaration/model-api/[root]/-language-registry/resolve-concept.html
+$dokka.location:/LanguageRegistry/unregister/#GeneratedLanguage/PointingToDeclaration/model-api/[root]/-language-registry/unregister.html
+$dokka.location:/LanguageRegistry/wrapNode/#INodeJS/PointingToDeclaration/model-api/[root]/-language-registry/wrap-node.html
+$dokka.location:/LanguageRegistry/wrapperCache/#/PointingToDeclaration/model-api/[root]/-language-registry/wrapper-cache.html
+$dokka.location:/ModelService///PointingToDeclaration/model-api/[root]/-model-service/index.html
+$dokka.location:/ModelService/ModelService/#IModelServerConnection/PointingToDeclaration/model-api/[root]/-model-service/-model-service.html
+$dokka.location:/ModelService/addNewNode/#kotlin.String#kotlin.String#kotlin.Number#kotlin.String/PointingToDeclaration/model-api/[root]/-model-service/add-new-node.html
+$dokka.location:/ModelService/containsNode/#kotlin.String/PointingToDeclaration/model-api/[root]/-model-service/contains-node.html
+$dokka.location:/ModelService/getChildren/#kotlin.String#kotlin.String/PointingToDeclaration/model-api/[root]/-model-service/get-children.html
+$dokka.location:/ModelService/getNodeData/#kotlin.String/PointingToDeclaration/model-api/[root]/-model-service/get-node-data.html
+$dokka.location:/ModelService/getProperty/#kotlin.String#kotlin.String/PointingToDeclaration/model-api/[root]/-model-service/get-property.html
+$dokka.location:/ModelService/idGenerator/#/PointingToDeclaration/model-api/[root]/-model-service/id-generator.html
+$dokka.location:/ModelService/loadNode/#/PointingToDeclaration/model-api/[root]/-model-service/load-node.html
+$dokka.location:/ModelService/nodes/#/PointingToDeclaration/model-api/[root]/-model-service/nodes.html
+$dokka.location:/ModelService/server/#/PointingToDeclaration/model-api/[root]/-model-service/server.html
+$dokka.location:/ModelService/setProperty/#kotlin.String#kotlin.String#kotlin.String?/PointingToDeclaration/model-api/[root]/-model-service/set-property.html
+$dokka.location:/ModelService/versionHash/#/PointingToDeclaration/model-api/[root]/-model-service/version-hash.html
+$dokka.location:/ModelService/versionReceived/#/PointingToDeclaration/model-api/[root]/-model-service/version-received.html
+$dokka.location:/NodeData///PointingToDeclaration/model-api/[root]/-node-data/index.html
+$dokka.location:/NodeData/children/#/PointingToDeclaration/model-api/[root]/-node-data/children.html
+$dokka.location:/NodeData/nodeId/#/PointingToDeclaration/model-api/[root]/-node-data/node-id.html
+$dokka.location:/NodeData/properties/#/PointingToDeclaration/model-api/[root]/-node-data/properties.html
+$dokka.location:/NodeData/references/#/PointingToDeclaration/model-api/[root]/-node-data/references.html
+$dokka.location:/NodeUpdateData///PointingToDeclaration/model-api/[root]/-node-update-data/index.html
+$dokka.location:/NodeUpdateData/children/#/PointingToDeclaration/model-api/[root]/-node-update-data/children.html
+$dokka.location:/NodeUpdateData/concept/#/PointingToDeclaration/model-api/[root]/-node-update-data/concept.html
+$dokka.location:/NodeUpdateData/index/#/PointingToDeclaration/model-api/[root]/-node-update-data/--index--.html
+$dokka.location:/NodeUpdateData/nodeId/#/PointingToDeclaration/model-api/[root]/-node-update-data/node-id.html
+$dokka.location:/NodeUpdateData/parent/#/PointingToDeclaration/model-api/[root]/-node-update-data/parent.html
+$dokka.location:/NodeUpdateData/properties/#/PointingToDeclaration/model-api/[root]/-node-update-data/properties.html
+$dokka.location:/NodeUpdateData/references/#/PointingToDeclaration/model-api/[root]/-node-update-data/references.html
+$dokka.location:/NodeUpdateData/role/#/PointingToDeclaration/model-api/[root]/-node-update-data/role.html
+$dokka.location:/SingleChildAccessor///PointingToDeclaration/model-api/[root]/-single-child-accessor/index.html
+$dokka.location:/SingleChildAccessor/SingleChildAccessor/#INodeJS#kotlin.String?/PointingToDeclaration/model-api/[root]/-single-child-accessor/-single-child-accessor.html
+$dokka.location:/SingleChildAccessor/get/#/PointingToDeclaration/model-api/[root]/-single-child-accessor/get.html
+$dokka.location:/SingleChildAccessor/setNew/#/PointingToDeclaration/model-api/[root]/-single-child-accessor/set-new.html
+$dokka.location:/TypedNode///PointingToDeclaration/model-api/[root]/-typed-node/index.html
+$dokka.location:/TypedNode/TypedNode/#INodeJS/PointingToDeclaration/model-api/[root]/-typed-node/-typed-node.html
+$dokka.location:/TypedNode/_node/#/PointingToDeclaration/model-api/[root]/-typed-node/_node.html
+$dokka.location:/TypedNode/unwrap/#/PointingToDeclaration/model-api/[root]/-typed-node/unwrap.html
+$dokka.location:/UnknownTypedNode///PointingToDeclaration/model-api/[root]/-unknown-typed-node/index.html
+$dokka.location:/UnknownTypedNode/UnknownTypedNode/#INodeJS/PointingToDeclaration/model-api/[root]/-unknown-typed-node/-unknown-typed-node.html
+$dokka.location:/VersionData///PointingToDeclaration/model-api/[root]/-version-data/index.html
+$dokka.location:/VersionData/nodes/#/PointingToDeclaration/model-api/[root]/-version-data/nodes.html
+$dokka.location:/VersionData/repositoryId/#/PointingToDeclaration/model-api/[root]/-version-data/repository-id.html
+$dokka.location:/VersionData/root/#/PointingToDeclaration/model-api/[root]/-version-data/root.html
+$dokka.location:/VersionData/versionHash/#/PointingToDeclaration/model-api/[root]/-version-data/version-hash.html
+$dokka.location:org.modelix.metamodel//descendants/org.modelix.metamodel.ITypedNode#kotlin.Boolean/PointingToDeclaration/model-api-gen-runtime/org.modelix.metamodel/[common]descendants.html
+$dokka.location:org.modelix.metamodel//typed/org.modelix.model.api.INode#/PointingToDeclaration/model-api-gen-runtime/org.modelix.metamodel/[common]typed.html
+module:authorization
+org.modelix.authorization
+module:light-model-client
+org.modelix.client.light
+module:model-api
+org.modelix.model.api
+org.modelix.model.area
+org.modelix.model.data
+org.modelix.model.test
+tsstdlib
+module:model-api-gen
+org.modelix.metamodel.generator
+module:model-api-gen-gradle
+org.modelix.metamodel.gradle
+module:model-api-gen-runtime
+org.modelix.metamodel
+module:model-client
+org.modelix.model
+org.modelix.model.client
+org.modelix.model.client2
+org.modelix.model.lazy
+org.modelix.model.metameta
+org.modelix.model.oauth
+org.modelix.model.operations
+org.modelix.model.persistent
+org.modelix.model.util
+org.modelix.model.util.pmap
+module:model-server
+org.modelix.model.server
+org.modelix.model.server.handlers
+org.modelix.model.server.store
+org.modelix.model.server.templates
+module:model-server-api
+org.modelix.model.server.api
+org.modelix.model.server.api.v2
+module:model-server-lib
+org.modelix.model.server.light
+module:model-sync-lib
+org.modelix.model.sync
+module:modelql-client
+org.modelix.modelql.client
+module:modelql-core
+org.modelix.modelql.core
+module:modelql-html
+org.modelix.modelql.html
+module:modelql-server
+org.modelix.modelql.server
+module:modelql-typed
+org.modelix.modelql.typed
+module:modelql-untyped
+org.modelix.modelql.untyped
+module:mps-model-adapters
+org.modelix.model.mpsadapters
+module:mps-model-server-plugin
+org.modelix.model.server.mps

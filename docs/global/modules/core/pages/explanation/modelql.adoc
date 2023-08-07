@@ -21,3 +21,13 @@ but still allows to reduce the number of request to a minimum.
 The downside is, that it's not just a different implementation hidden behind the model-api,
 but requires to use a different API.
 
+== Reactive Streams
+
+The query language is inspired by https://www.reactive-streams.org/[Reactive Streams]
+and the execution engine uses https://kotlinlang.org/docs/flow.html[Kotlin Flows],
+which is a https://kotlinlang.org/docs/coroutines-guide.html[Coroutines] compatible implementation of Reactive Streams.
+
+Often it's useful to know if a stream is expected to return only one element or multiple elements.
+https://projectreactor.io/[Project Reactor], another implementation of Reactive Streams,
+introduced the notion of `Mono` and `Flux` to distinguish them.
+You will also find them in ModelQL.

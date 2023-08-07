@@ -143,3 +143,47 @@ This basically ads the operand to the internal `zip` operation and returns an ob
 after receiving it from the server.
 Inside the `onSuccess` block you assemble the local object using the previously requested values.
 
+== Kotlin HTML integration
+
+One use case of the query language is to build database applications
+that generate HTML pages from the data stored in the model server.
+You can use the https://kotlinlang.org/docs/typesafe-html-dsl.html[Kotlin HTML DSL] together with ModelQL to do that.
+
+Use `buildHtmlQuery` to request data from the server and render it into an HTML string:
+
+[source,kotlin]
+--
+val html = query {
+    it.map(buildHtmlQuery {
+        val modules = input.children("modules").requestFragment<_, FlowContent> {
+            val moduleName = input.property("name").request()
+            val models = input.children("models").requestFragment<_, FlowContent> {
+                val modelName = input.property("name").request()
+                onSuccess {
+                    div {
+                        h2 {
+                            +"Model: ${modelName.get()}"
+                        }
+                    }
+                }
+            }
+            onSuccess {
+                div {
+                    h1 {
+                        +"Module: ${moduleName.get()}"
+                    }
+                    insertFragment(models)
+                }
+            }
+        }
+        onSuccess {
+            body {
+                insertFragment(modules)
+            }
+        }
+    })
+}
+--
+
+`buildHtmlQuery` and the `requestFragment` operation are similar to the `mapLocal2` operation,
+but inside the `onSuccess` block you use the Kotlin HTML DSL.

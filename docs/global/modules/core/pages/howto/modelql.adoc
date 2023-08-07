@@ -65,3 +65,81 @@ val cls: ClassConcept = client.query {
 }
 val className = cls.name
 --
+
+== Complex query results
+
+While returning a list of elements is simple
+the purpose of the query language is to reduce the number of request to a minimum.
+This requires to combine multiple values into more complex data structures.
+The `zip` operation provides a simple way of doing that:
+
+[source,kotlin]
+--
+val result: List<IZip3Output<Any, Int, String, List<String>>> = query { db ->
+    db.products.map {
+        val id = it.id
+        val title = it.title
+        val images = it.images.toList()
+        id.zip(title, images)
+    }.toList()
+}
+result.forEach { println("ID: ${it.first}, Title: ${it.second}, Images: ${it.third}") }
+--
+
+This is suitable for combining a small number of values,
+but because of the missing variable names it can be hard to read for a larger number of values
+or even multiple zip operations assembled into a hierarchical data structure.
+
+This can be solved by defining custom data classes and using the `mapLocal` operation:
+
+[source,kotlin]
+--
+data class MyProduct(val id: Int, val title: String, val images: List<MyImage>)
+data class MyImage(val url: String)
+
+val result: List<MyNonSerializableClass> = remoteProductDatabaseQuery { db ->
+    db.products.map {
+        val id = it.id
+        val title = it.title
+        val images = it.images.mapLocal { MyImage(it) }.toList()
+        id.zip(title, images).mapLocal {
+            MyProduct(it.first, it.second, it.third)
+        }
+    }.toList()
+}
+result.forEach { println("ID: ${it.id}, Title: ${it.title}, Images: ${it.images}") }
+--
+
+The `mapLocal` operation is not just useful in combination with the `zip` operation,
+but in general to create instances of classes only known to the client.
+
+The body of `mapLocal` is executed on the client after receiving the result from the server.
+That's why you only have access to the output of the `zip` operation
+and still have to use `first`, `second` and `third` inside the query.
+
+To make this even more readable there is a `mapLocal2` operation,
+which provides a different syntax for the `zip`-`mapLocal` chain.
+
+[source,kotlin]
+--
+data class MyProduct(val id: Int, val title: String, val images: List<MyImage>)
+data class MyImage(val url: String)
+
+val result: List<MyNonSerializableClass> = query { db ->
+    db.products.mapLocal2 {
+        val id = it.id.request()
+        val title = it.title.request()
+        val images = it.images.mapLocal { MyImage(it) }.toList().request()
+        onSuccess {
+            MyNonSerializableClass(id.get(), title.get(), images.get())
+        }
+    }.toList()
+}
+result.forEach { println("ID: ${it.id}, Title: ${it.title}, Images: ${it.images}") }
+--
+
+At the beginning of the `mapLocal2` body you invoke `request()` on all the values you need to assemble your object.
+This basically ads the operand to the internal `zip` operation and returns an object that gives you access to the value
+after receiving it from the server.
+Inside the `onSuccess` block you assemble the local object using the previously requested values.
+

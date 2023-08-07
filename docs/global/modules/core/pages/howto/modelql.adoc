@@ -1,0 +1,67 @@
+= ModelQL
+
+== Independent ModelQLClient
+
+ModelQL defines its own HTTP endpoint and provides server/client implementations for it.
+The `model-server` and the `mps-model-server-plugin` already implement this endpoint.
+The client can be created like this:
+
+[source,kotlin]
+--
+val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+val result: List<String?> = client.query { root ->
+    root.children("modules").property("name").toList()
+}
+--
+
+== Integration with LightModelClient
+
+When creating a `LightModelClient` you can optionally provide a `ModelQLClient` instance,
+which allows to invoke `.query { ... }` (see below) on a node returned by the `LightModelClient`.
+
+[source,kotlin]
+--
+val modelqlClient = ModelQLClient.builder().build()
+val client = LightModelClient.builder().modelQLClient(modelqlClient).build()
+val result: List<String?> = client.getRootNode()!!.query {
+    it.children("modules").property("name").toList()
+}
+--
+
+== Type safe ModelQL API
+
+You can use the `model-api-gen-gradle` plugin to generate type safe extensions from your meta-model.
+
+[source,kotlin]
+--
+val result: List<StaticMethodDeclaration> = client.query { root ->
+    root.children("classes").ofConcept(C_ClassConcept)
+        .member
+        .ofConcept(C_StaticMethodDeclaration)
+        .filter { it.visibility.instanceOf(C_PublicVisibility) }
+        .toList()
+}
+--
+
+== Run query on an INode
+
+If a query returns a node you can execute a new query starting from that node.
+
+[source,kotlin]
+--
+val cls: ClassConcept = client.query {
+    it.children("classes").ofConcept(C_ClassConcept).first()
+}
+val names = cls.query { it.member.ofConcept(C_StaticMethodDeclaration).name.toList() }
+--
+
+Or you can just use the INode API to access further data of that node.
+This is not recommended though, because each access sends a new query to the server.
+
+[source,kotlin]
+--
+val cls: ClassConcept = client.query {
+    it.children("classes").ofConcept(C_ClassConcept).first()
+}
+val className = cls.name
+--

@@ -22,7 +22,7 @@ repositories {
 }
 
 plugins {
-    kotlin("jvm") version "1.8.20"
+    alias(libs.plugins.kotlin.jvm)
     id("base")
     id("org.modelix.model-api-gen")
     id("com.github.node-gradle.node") version "3.4.0"

@@ -13,7 +13,12 @@
  */
 package org.modelix.model.area
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeWrapper
 
 class CompositeArea : IArea {
     private val areas: List<IArea>

@@ -16,9 +16,9 @@
 
 package org.modelix.client.light
 
-import io.ktor.client.*
-import io.ktor.client.engine.js.*
-import io.ktor.client.plugins.websocket.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.js.Js
+import io.ktor.client.plugins.websocket.WebSockets
 import org.modelix.model.server.api.ModelQuery
 
 fun createLightModelClient(url: String = "ws://localhost:48302/ws", query: ModelQuery? = null): LightModelClient {

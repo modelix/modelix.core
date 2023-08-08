@@ -18,7 +18,7 @@ class SimpleChildLink(
     override val isMultiple: Boolean,
     override val isOptional: Boolean,
     override val targetConcept: IConcept,
-    private val uid: String? = null
+    private val uid: String? = null,
 ) : IChildLink {
     var owner: SimpleConcept? = null
     override val childConcept: IConcept = targetConcept

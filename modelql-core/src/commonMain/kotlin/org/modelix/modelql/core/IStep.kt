@@ -47,7 +47,7 @@ interface IFlowInstantiationContext {
 class FlowInstantiationContext(
     override var evaluationContext: QueryEvaluationContext,
     override val coroutineScope: CoroutineScope?,
-    val query: UnboundQuery<*, *, *>
+    val query: UnboundQuery<*, *, *>,
 ) : IFlowInstantiationContext {
     private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
     fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
@@ -189,7 +189,7 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
         return createTransformingSequence(
             evaluationContext,
-            getProducer().createSequence(evaluationContext, queryInput)
+            getProducer().createSequence(evaluationContext, queryInput),
         )
     }
 
@@ -237,8 +237,8 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
             aggregate(
                 getProducer().createSequence(evaluationContext, sequenceOf(queryInput)).map {
                     it.asStepOutput(null)
-                }
-            ).value
+                },
+            ).value,
         )
     }
 

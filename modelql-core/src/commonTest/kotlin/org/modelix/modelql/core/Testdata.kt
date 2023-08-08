@@ -21,7 +21,7 @@ data class ProductDatabase(
     val products: List<Product>,
     val total: Int,
     val skip: Int,
-    val limit: Int
+    val limit: Int,
 )
 
 @Serializable
@@ -36,7 +36,7 @@ data class Product(
     val brand: String,
     val category: String,
     val thumbnail: String,
-    val images: List<String> = emptyList()
+    val images: List<String> = emptyList(),
 )
 
 val testDatabase: ProductDatabase = Json.decodeFromString(
@@ -598,5 +598,5 @@ val testDatabase: ProductDatabase = Json.decodeFromString(
   "total": 100,
   "skip": 0,
   "limit": 30
-}"""
+}""",
 )

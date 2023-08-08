@@ -15,14 +15,20 @@
 
 package org.modelix.model.operations
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.IIdGenerator
+import org.modelix.model.api.IReadTransaction
+import org.modelix.model.api.ITransaction
+import org.modelix.model.api.ITree
+import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 
 class OTBranch(
     private val branch: IBranch,
     private val idGenerator: IIdGenerator,
-    private val store: IDeserializingKeyValueStore
+    private val store: IDeserializingKeyValueStore,
 ) : IBranch {
     private var operations: MutableList<IAppliedOperation> = ArrayList()
     private var treeForOperations: ITree = branch.computeRead { branch.transaction.tree }

@@ -15,5 +15,4 @@ package org.modelix.client.light
 
 import org.modelix.model.server.api.ExceptionData
 
-class ServerSideException(data: ExceptionData) : Exception("Failed to apply a change on the server\n" + data.toString().lineSequence().joinToString("\n") { "> $it" }) {
-}
+class ServerSideException(data: ExceptionData) : Exception("Failed to apply a change on the server\n" + data.toString().lineSequence().joinToString("\n") { "> $it" })

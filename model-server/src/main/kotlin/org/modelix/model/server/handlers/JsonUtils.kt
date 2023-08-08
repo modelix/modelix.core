@@ -47,7 +47,7 @@ fun JSONArray.asObjectList(): List<JSONObject> {
 
 fun buildJSONArray(vararg elements: Any?): JSONArray = elements.toList().toJsonArray()
 
-fun buildJSONObject(body: JSONObject.()->Unit): JSONObject {
+fun buildJSONObject(body: JSONObject.() -> Unit): JSONObject {
     val json = JSONObject()
     body(json)
     return json

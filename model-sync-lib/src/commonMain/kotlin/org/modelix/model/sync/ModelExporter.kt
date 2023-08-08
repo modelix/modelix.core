@@ -1,7 +1,6 @@
 package org.modelix.model.sync
 
 import org.modelix.model.api.INode
-import org.modelix.model.api.serialize
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.associateWithNotNull
 
@@ -14,7 +13,7 @@ expect class ModelExporter(root: INode)
  * Returns a [NodeData] representation of the receiver node as it would be exported by a [ModelExporter].
  * This function is recursively called on the node's children.
  */
-fun INode.asExported() : NodeData {
+fun INode.asExported(): NodeData {
     val idKey = NodeData.idPropertyKey
     return NodeData(
         id = getPropertyValue(idKey) ?: reference.serialize(),
@@ -24,6 +23,6 @@ fun INode.asExported() : NodeData {
         references = getReferenceRoles().associateWithNotNull {
             getReferenceTarget(it)?.getPropertyValue(idKey) ?: getReferenceTargetRef(it)?.serialize()
         },
-        children = allChildren.map { it.asExported() }
+        children = allChildren.map { it.asExported() },
     )
 }

@@ -121,9 +121,9 @@ spotless {
                 """ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY""" + "\n" +
                 """ * KIND, either express or implied.  See the License for the""" + "\n" +
                 """ * specific language governing permissions and limitations""" + "\n" +
-                """ * under the License. """ + "\n" +
+                """ * under the License.""" + "\n" +
                 " */\n" +
-                "\n"
+                "\n",
         )
     }
 }

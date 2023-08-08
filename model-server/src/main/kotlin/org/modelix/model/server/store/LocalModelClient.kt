@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 package org.modelix.model.server.store
 
@@ -33,7 +33,7 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
     }
 
     override fun put(key: String, value: String?) {
-        store.put(key, value,)
+        store.put(key, value)
     }
 
     override fun getAll(keys_: Iterable<String>): Map<String, String?> {
@@ -47,7 +47,7 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
     }
 
     override fun putAll(entries: Map<String, String?>) {
-        store.putAll(entries,)
+        store.putAll(entries)
     }
 
     override fun prefetch(key: String) {

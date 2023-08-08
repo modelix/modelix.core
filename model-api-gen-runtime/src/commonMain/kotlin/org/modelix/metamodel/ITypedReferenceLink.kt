@@ -15,8 +15,6 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.getReferenceTarget
-import org.modelix.model.api.setReferenceTarget
 
 interface ITypedReferenceLink<TargetT : ITypedNode> : ITypedConceptFeature {
     fun untyped(): IReferenceLink
@@ -35,5 +33,5 @@ fun <TargetT : ITypedNode> INode.setReferenceTarget(link: ITypedReferenceLink<Ta
     setReferenceTarget(link.untyped(), target?.unwrap())
 }
 
-class ReferenceNotSetException(val node: INode, val link: ITypedReferenceLink<*>)
-    : Exception("Node $node has no reference target in role ${link.untyped().name}")
+class ReferenceNotSetException(val node: INode, val link: ITypedReferenceLink<*>) :
+    Exception("Node $node has no reference target in role ${link.untyped().name}")

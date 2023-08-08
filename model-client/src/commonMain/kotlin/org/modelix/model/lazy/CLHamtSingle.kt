@@ -76,9 +76,9 @@ class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValue
                 CPHamtSingle(
                     data.numLevels + newChild.data.numLevels,
                     (data.bits shl (newChild.data.numLevels * BITS_PER_LEVEL)) or newChild.data.bits,
-                    newChild.data.child
+                    newChild.data.child,
                 ),
-                store
+                store,
             )
         }
         return if (newChild == null) {
@@ -134,9 +134,9 @@ class CLHamtSingle(private val data: CPHamtSingle, store: IDeserializingKeyValue
                     CPHamtSingle(
                         child.numLevels + 1,
                         (indexFromBitmap(data.bitmap).toLong() shl (child.numLevels * BITS_PER_LEVEL)) or child.bits,
-                        child.child
+                        child.child,
                     ),
-                    node.store
+                    node.store,
                 )
             }
             return CLHamtSingle(CPHamtSingle(1, indexFromBitmap(data.bitmap).toLong(), data.children[0]), node.store)

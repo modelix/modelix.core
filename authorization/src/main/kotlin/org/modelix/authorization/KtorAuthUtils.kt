@@ -16,20 +16,33 @@ package org.modelix.authorization
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.http.*
-import io.ktor.http.auth.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import io.ktor.server.plugins.forwardedheaders.*
-import io.ktor.server.plugins.statuspages.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.util.*
-import io.ktor.util.pipeline.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.auth.AuthScheme
+import io.ktor.http.auth.HttpAuthHeader
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationCallPipeline
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.AuthenticationContext
+import io.ktor.server.auth.AuthenticationProvider
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.auth.parseAuthorizationHeader
+import io.ktor.server.auth.principal
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
+import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.request.header
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import io.ktor.util.AttributeKey
+import io.ktor.util.pipeline.PipelineContext
 import java.security.interfaces.RSAPublicKey
 
 private const val jwtAuth = "jwtAuth"
@@ -65,7 +78,7 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
                         if (token != null) {
                             return@validate token.nullIfInvalid()?.let { AccessTokenPrincipal(it) }
                         }
-                    } catch (e : Exception) {
+                    } catch (e: Exception) {
                     }
                     null
                 }
@@ -77,11 +90,11 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
             when (cause) {
                 is NoPermissionException -> call.respondText(
                     text = cause.message ?: "",
-                    status = HttpStatusCode.Forbidden
+                    status = HttpStatusCode.Forbidden,
                 )
                 is NotLoggedInException -> call.respondText(
                     text = cause.message ?: "",
-                    status = HttpStatusCode.Unauthorized
+                    status = HttpStatusCode.Unauthorized,
                 )
                 else -> {
                     val text = """
@@ -108,37 +121,39 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
                     } catch (e: Exception) {
                         e.message
                     }
-                    call.respondText("""
+                    call.respondText(
+                        """
                                 |Token: ${jwt.token}
                                 |
                                 |Validation result: $validationError
                                 |
                                 |$claims
-                                |""".trimMargin())
+                                |
+                        """.trimMargin(),
+                    )
                 }
             }
         }
     }
-
 }
 
-fun Route.requiresPermission(resource: KeycloakResource, permissionType: EPermissionType, body: Route.()->Unit) {
+fun Route.requiresPermission(resource: KeycloakResource, permissionType: EPermissionType, body: Route.() -> Unit) {
     requiresPermission(resource, permissionType.toKeycloakScope(), body)
 }
 
-fun Route.requiresRead(resource: KeycloakResource, body: Route.()->Unit) {
+fun Route.requiresRead(resource: KeycloakResource, body: Route.() -> Unit) {
     requiresPermission(resource, KeycloakScope.READ, body)
 }
 
-fun Route.requiresWrite(resource: KeycloakResource, body: Route.()->Unit) {
+fun Route.requiresWrite(resource: KeycloakResource, body: Route.() -> Unit) {
     requiresPermission(resource, KeycloakScope.WRITE, body)
 }
 
-fun Route.requiresDelete(resource: KeycloakResource, body: Route.()->Unit) {
+fun Route.requiresDelete(resource: KeycloakResource, body: Route.() -> Unit) {
     requiresPermission(resource, KeycloakScope.DELETE, body)
 }
 
-fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, body: Route.()->Unit) {
+fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, body: Route.() -> Unit) {
     authenticate(jwtAuth) {
         intercept(ApplicationCallPipeline.Call) {
             call.checkPermission(resource, scope)
@@ -147,7 +162,7 @@ fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, b
     }
 }
 
-fun Route.requiresLogin(body: Route.()->Unit) {
+fun Route.requiresLogin(body: Route.() -> Unit) {
     authenticate(jwtAuth) {
         body()
     }
@@ -215,7 +230,7 @@ fun DecodedJWT.nullIfInvalid(): DecodedJWT? {
 }
 
 private var cachedServiceAccountToken: DecodedJWT? = null
-val serviceAccountTokenProvider: ()->String = {
+val serviceAccountTokenProvider: () -> String = {
     var token: DecodedJWT? = cachedServiceAccountToken?.nullIfInvalid()
     if (token == null) {
         token = KeycloakUtils.getServiceAccountToken()

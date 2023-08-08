@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 package org.modelix.model.server.store
 
@@ -30,7 +30,7 @@ fun generateId(idStr: String?): Long {
         } else {
             candidate
         }
-    } catch (e : NumberFormatException) {
+    } catch (e: NumberFormatException) {
         0L
     } + 1L
 }
@@ -42,6 +42,7 @@ class InMemoryStoreClient : IStoreClient {
 
     private val values: MutableMap<String, String?> = HashMap()
     private val listeners: MutableMap<String?, MutableSet<IKeyListener>> = HashMap()
+
     @Synchronized
     override fun get(key: String): String? {
         return values[key]
@@ -64,7 +65,7 @@ class InMemoryStoreClient : IStoreClient {
             listeners[key]?.toList()?.forEach {
                 try {
                     it.changed(key, value)
-                } catch (ex : Exception) {
+                } catch (ex: Exception) {
                     println(ex.message)
                     ex.printStackTrace()
                     LOG.error("Failed to notify listeners after put '$key' = '$value'", ex)

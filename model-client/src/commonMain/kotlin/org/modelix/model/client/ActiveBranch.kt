@@ -96,7 +96,7 @@ open class ActiveBranch(val client: IModelClient, val repository: RepositoryId, 
         client: IModelClient,
         repositoryId: RepositoryId,
         branchName: String,
-        user: () -> String
+        user: () -> String,
     ): ReplicatedRepository =
         ReplicatedRepository(client, repositoryId, branchName, user)
 

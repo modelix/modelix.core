@@ -30,8 +30,8 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         return ZipOutputSerializer(
             arrayOf(
                 getProducer().getOutputSerializer(serializersModule).upcast(),
-                Int.serializer().stepOutputSerializer(null).upcast()
-            )
+                Int.serializer().stepOutputSerializer(null).upcast(),
+            ),
         )
     }
 

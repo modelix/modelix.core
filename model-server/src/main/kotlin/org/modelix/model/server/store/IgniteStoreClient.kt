@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 package org.modelix.model.server.store
 
@@ -50,16 +50,16 @@ class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
                         System.setProperty(pn, properties.getProperty(pn))
                     } else {
                         throw RuntimeException(
-                            "Properties not related to jdbc are not permitted. Check file "
-                                + jdbcConfFile.absolutePath
+                            "Properties not related to jdbc are not permitted. Check file " +
+                                jdbcConfFile.absolutePath,
                         )
                     }
                 }
             } catch (e: IOException) {
                 throw RuntimeException(
-                    "We are unable to load the JDBC configuration from "
-                        + jdbcConfFile.absolutePath,
-                    e
+                    "We are unable to load the JDBC configuration from " +
+                        jdbcConfFile.absolutePath,
+                    e,
                 )
             }
         }
@@ -106,7 +106,7 @@ class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
             if (!wasSubscribed) {
                 ignite.message()
                     .localListen(
-                        key
+                        key,
                     ) { nodeId: UUID?, value: Any? ->
                         if (value is String) {
                             synchronized(listeners) {

@@ -6,9 +6,10 @@ import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Sync
 import java.io.File
 import java.net.URL
-import java.util.*
+import java.util.Enumeration
+import java.util.Properties
 
-class MetaModelGradlePlugin: Plugin<Project> {
+class MetaModelGradlePlugin : Plugin<Project> {
     private lateinit var project: Project
     private lateinit var settings: MetaModelGradleSettings
     private lateinit var buildDir: File
@@ -79,7 +80,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
                 task.inputs.dir(getMpsHome())
             }
         }
-        val generateMetaModelSources = project.tasks.register("generateMetaModelSources", GenerateMetaModelSources::class.java) {task ->
+        val generateMetaModelSources = project.tasks.register("generateMetaModelSources", GenerateMetaModelSources::class.java) { task ->
             task.dependsOn(exportMetaModelFromMps)
             task.inputs.property("coreVersion", modelixCoreVersion)
         }
@@ -97,7 +98,6 @@ class MetaModelGradlePlugin: Plugin<Project> {
                 }
                 settings.registrationHelperName?.let { task.registrationHelperName.set(it) }
                 task.nameConfig.set(settings.nameConfig)
-
             }
         }
 

@@ -2,7 +2,8 @@ package org.modelix.model.api
 
 /**
  * An [ILanguageRepository] contains languages and their corresponding concepts.
- */ // TODO make it thread-safe
+ */
+// TODO make it thread-safe
 interface ILanguageRepository {
     companion object {
         val default = DefaultLanguageRepository

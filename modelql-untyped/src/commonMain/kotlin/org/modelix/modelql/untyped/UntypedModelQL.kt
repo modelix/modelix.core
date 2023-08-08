@@ -27,7 +27,6 @@ import org.modelix.modelql.core.IQueryExecutor
 import org.modelix.modelql.core.SimpleQueryExecutor
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.UnboundQuery
-import org.modelix.modelql.core.buildMonoQuery
 
 object UntypedModelQL {
     val serializersModule: SerializersModule = SerializersModule {

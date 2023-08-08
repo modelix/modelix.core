@@ -1,10 +1,21 @@
 package org.modelix.model
 
 import kotlinx.datetime.Clock
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
+import org.modelix.model.api.ITree
+import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.PBranch
+import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.TreePointer
+import org.modelix.model.api.deepUnwrapNode
 import org.modelix.model.client.IModelClient
 import org.modelix.model.client.IdGenerator
-import org.modelix.model.lazy.*
+import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLTree
+import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
@@ -78,7 +89,7 @@ object ModelFacade {
         baseVersion: CLVersion,
         branch: BranchReference,
         userId: String?,
-        body: (IWriteTransaction) -> Unit
+        body: (IWriteTransaction) -> Unit,
     ): CLVersion {
         val otBranch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache)
         MetaModelBranch(otBranch).computeWriteT { t ->
@@ -92,7 +103,7 @@ object ModelFacade {
             userId,
             operationsAndTree.second as CLTree,
             baseVersion,
-            operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
+            operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )
         val currentVersion = loadCurrentVersion(client, branch)
             ?: throw RuntimeException("$branch doesn't exist")

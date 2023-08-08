@@ -1,6 +1,11 @@
 package org.modelix.model.sync
 
-import org.modelix.model.api.*
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.getDescendants
+import org.modelix.model.api.remove
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 
@@ -84,7 +89,7 @@ class ModelImporter(private val root: INode) {
     }
 
     private fun buildExistingIndex(root: INode) {
-        root.getDescendants(true).forEach {node ->
+        root.getDescendants(true).forEach { node ->
             node.originalId()?.let { originalIdToExisting[it] = node }
         }
     }

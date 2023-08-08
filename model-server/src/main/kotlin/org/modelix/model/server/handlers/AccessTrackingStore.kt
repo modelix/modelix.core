@@ -15,7 +15,6 @@ package org.modelix.model.server.handlers
 
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 
 class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
     val accessedEntries: MutableMap<String, String?> = HashMap()

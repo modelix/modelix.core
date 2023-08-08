@@ -13,11 +13,15 @@
  */
 package org.modelix.model.server.handlers
 
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
+import io.ktor.server.application.Application
+import io.ktor.server.request.host
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
+import io.ktor.websocket.send
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -55,23 +59,8 @@ import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.store.LocalModelClient
-import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.MutableList
-import kotlin.collections.associate
-import kotlin.collections.filter
-import kotlin.collections.forEach
-import kotlin.collections.groupBy
-import kotlin.collections.ifEmpty
-import kotlin.collections.map
-import kotlin.collections.mapValues
-import kotlin.collections.plusAssign
+import java.util.Date
 import kotlin.collections.set
-import kotlin.collections.toTypedArray
 
 class LightModelServer(val client: LocalModelClient) {
 
@@ -103,12 +92,12 @@ class LightModelServer(val client: LocalModelClient) {
             var lastVersionFromClient: CLVersion? = null
             val versionMerger = VersionMerger(client.storeCache, client.idGenerator)
             val deltaMutex = Mutex()
-            val sendMsg: suspend (MessageFromServer)->Unit = {
+            val sendMsg: suspend (MessageFromServer) -> Unit = {
                 val text = it.toJson()
-                //println("message to client: $text")
+                // println("message to client: $text")
                 send(text)
             }
-            val sendDelta: suspend (CLVersion, Map<String, String>?, ChangeSetId?)->Unit = { newVersion, replacedIds, appliedChangeSet ->
+            val sendDelta: suspend (CLVersion, Map<String, String>?, ChangeSetId?) -> Unit = { newVersion, replacedIds, appliedChangeSet ->
                 require(deltaMutex.isLocked)
                 val mergedVersion: CLVersion =
                     if (lastVersionToClient == null) {
@@ -116,22 +105,26 @@ class LightModelServer(val client: LocalModelClient) {
                     } else {
                         versionMerger.mergeChange(
                             lastVersionToClient!!,
-                            newVersion
+                            newVersion,
                         )
                     }
                 client.asyncStore.put(repositoryId.getBranchReference().getKey(), mergedVersion.hash)
                 if (mergedVersion.hash != lastVersionToClient?.hash) {
-                    sendMsg(MessageFromServer(
-                        version = versionAsJson(mergedVersion, lastVersionToClient),
-                        replacedIds = replacedIds?.ifEmpty { null },
-                        appliedChangeSet = appliedChangeSet
-                    ))
+                    sendMsg(
+                        MessageFromServer(
+                            version = versionAsJson(mergedVersion, lastVersionToClient),
+                            replacedIds = replacedIds?.ifEmpty { null },
+                            appliedChangeSet = appliedChangeSet,
+                        ),
+                    )
                     lastVersionToClient = mergedVersion
                 } else if (!replacedIds.isNullOrEmpty() || appliedChangeSet != null) {
-                    sendMsg(MessageFromServer(
-                        replacedIds = replacedIds?.ifEmpty { null },
-                        appliedChangeSet = appliedChangeSet
-                    ))
+                    sendMsg(
+                        MessageFromServer(
+                            replacedIds = replacedIds?.ifEmpty { null },
+                            appliedChangeSet = appliedChangeSet,
+                        ),
+                    )
                 }
             }
 
@@ -178,10 +171,12 @@ class LightModelServer(val client: LocalModelClient) {
                                             .forEach { replacedIds[it] = client.idGenerator.generate().toString(16) }
                                         val idsKnownByClient = HashSet<String>()
                                         val operations = message.operations!!
-                                            .map { it.replaceIds { id ->
-                                                idsKnownByClient.add(id)
-                                                previouslyReplacedIds[id] ?: replacedIds[id]
-                                            } }
+                                            .map {
+                                                it.replaceIds { id ->
+                                                    idsKnownByClient.add(id)
+                                                    previouslyReplacedIds[id] ?: replacedIds[id]
+                                                }
+                                            }
                                         val baseVersion = if (message.baseChangeSet == null) {
                                             lastVersionToClient
                                         } else {
@@ -192,7 +187,7 @@ class LightModelServer(val client: LocalModelClient) {
                                         lastVersionFromClient = mergedVersion
                                         sendDelta(mergedVersion, replacedIds, message.changeSetId)
                                         previouslyReplacedIds.putAll(replacedIds)
-                                        //idsKnownByClient.forEach { previouslyReplacedIds.remove(it) }
+                                        // idsKnownByClient.forEach { previouslyReplacedIds.remove(it) }
                                         // TODO remove all other entries in `previouslyReplacedIds` that were part of the same message
                                     }
                                 }
@@ -213,7 +208,7 @@ class LightModelServer(val client: LocalModelClient) {
         baseVersion: CLVersion,
         operations: List<OperationData>,
         repositoryId: RepositoryId,
-        userId: String?
+        userId: String?,
     ): CLVersion {
         val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.computeWriteT { t ->
@@ -230,14 +225,14 @@ class LightModelServer(val client: LocalModelClient) {
                             role = op.role,
                             index = op.index,
                             concept = op.concept?.let { ConceptReference(it) },
-                            childId = op.childId.toLong(16)
+                            childId = op.childId.toLong(16),
                         )
                         is DeleteNodeOpData -> t.deleteNode(op.nodeId.toLong(16))
                         is MoveNodeOpData -> t.moveChild(
                             newParentId = op.newParentNode.toLong(16),
                             newRole = op.newRole,
                             newIndex = op.newIndex,
-                            childId = op.childId.toLong(16)
+                            childId = op.childId.toLong(16),
                         )
                         is SetReferenceOpData -> {
                             val newTargetId = op.target?.toLong(16)
@@ -267,7 +262,7 @@ class LightModelServer(val client: LocalModelClient) {
             userId,
             operationsAndTree.second as CLTree,
             baseVersion,
-            operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
+            operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )
         val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
             .mergeChange(getCurrentVersion(repositoryId), newVersion)
@@ -278,7 +273,7 @@ class LightModelServer(val client: LocalModelClient) {
 
     private fun versionAsJson(
         version: CLVersion,
-        oldVersion: CLVersion?
+        oldVersion: CLVersion?,
     ): VersionData {
         val branch = TreePointer(version.tree)
         val nodeDataList = ArrayList<NodeData>()
@@ -287,33 +282,36 @@ class LightModelServer(val client: LocalModelClient) {
             node2json(rootNode, true, nodeDataList)
         } else {
             val nodesToInclude = HashSet<Long>()
-            version.tree.visitChanges(oldVersion.tree, object : ITreeChangeVisitorEx {
-                override fun childrenChanged(nodeId: Long, role: String?) {
-                    nodesToInclude += nodeId
-                }
-
-                override fun containmentChanged(nodeId: Long) {
-                    nodesToInclude.add(nodeId)
-                    if (version.tree.getParent(nodeId) == oldVersion.tree.getParent(nodeId)) {
-                        // no childrenChanged event is received for the parent if only the role changed
-                        nodesToInclude.add(version.tree.getParent(nodeId))
+            version.tree.visitChanges(
+                oldVersion.tree,
+                object : ITreeChangeVisitorEx {
+                    override fun childrenChanged(nodeId: Long, role: String?) {
+                        nodesToInclude += nodeId
                     }
-                }
 
-                override fun propertyChanged(nodeId: Long, role: String) {
-                    nodesToInclude += nodeId
-                }
+                    override fun containmentChanged(nodeId: Long) {
+                        nodesToInclude.add(nodeId)
+                        if (version.tree.getParent(nodeId) == oldVersion.tree.getParent(nodeId)) {
+                            // no childrenChanged event is received for the parent if only the role changed
+                            nodesToInclude.add(version.tree.getParent(nodeId))
+                        }
+                    }
 
-                override fun referenceChanged(nodeId: Long, role: String) {
-                    nodesToInclude += nodeId
-                }
+                    override fun propertyChanged(nodeId: Long, role: String) {
+                        nodesToInclude += nodeId
+                    }
 
-                override fun nodeAdded(nodeId: Long) {
-                    nodesToInclude += nodeId
-                }
+                    override fun referenceChanged(nodeId: Long, role: String) {
+                        nodesToInclude += nodeId
+                    }
 
-                override fun nodeRemoved(nodeId: Long) {}
-            })
+                    override fun nodeAdded(nodeId: Long) {
+                        nodesToInclude += nodeId
+                    }
+
+                    override fun nodeRemoved(nodeId: Long) {}
+                },
+            )
             nodesToInclude.forEach { node2json(PNodeAdapter(it, branch), false, nodeDataList) }
         }
         return VersionData(
@@ -321,7 +319,7 @@ class LightModelServer(val client: LocalModelClient) {
             versionHash = version.hash,
             rootNodeId = if (oldVersion == null) ITree.ROOT_ID.toString(16) else null,
             usesRoleIds = version.tree.usesRoleIds(),
-            nodes = nodeDataList
+            nodes = nodeDataList,
         )
     }
 
@@ -352,7 +350,7 @@ class LightModelServer(val client: LocalModelClient) {
             role = node.roleInParent,
             properties = properties,
             references = references,
-            children = children
+            children = children,
         )
         outputList.add(nodeData)
 
@@ -362,7 +360,7 @@ class LightModelServer(val client: LocalModelClient) {
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {  }
+        private val LOG = mu.KotlinLogging.logger { }
     }
 }
 

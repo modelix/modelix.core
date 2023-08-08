@@ -9,4 +9,3 @@ These components include among others the
 All components in this repository have no dependencies to JetBrains MPS.
 //TODO add correct link here
 // If you are looking for MPS related modelix components, see xref:mps:index.adoc[]..
-

@@ -17,7 +17,6 @@ package org.modelix.model
 
 import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.util.StreamUtils.intersection
 import org.modelix.model.util.StreamUtils.toStream
 import java.util.Arrays
 import java.util.Collections

@@ -20,7 +20,7 @@ import org.modelix.model.persistent.SerializationUtil.intToHex
 
 class CPHamtInternal(
     val bitmap: Int,
-    val children: Array<KVEntryReference<CPHamtNode>>
+    val children: Array<KVEntryReference<CPHamtNode>>,
 ) : CPHamtNode() {
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = children.asList()

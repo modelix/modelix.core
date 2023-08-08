@@ -10,19 +10,20 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.server;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.Arrays;
-import java.util.HashSet;
 import org.json.JSONArray;
 import org.junit.Test;
 import org.modelix.model.server.handlers.KeyValueLikeModelServer;
 import org.modelix.model.server.store.InMemoryStoreClient;
+
+import java.util.Arrays;
+import java.util.HashSet;
+
+import static org.junit.Assert.assertEquals;
 
 public class RestModelServerTest {
 

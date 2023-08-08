@@ -41,7 +41,7 @@ abstract class ModelQLClientBuilder() {
         return ModelQLClient(
             url = url ?: "http://localhost:48302/query",
             client = c,
-            includedSerializersModule = serializersModule
+            includedSerializersModule = serializersModule,
         )
     }
 

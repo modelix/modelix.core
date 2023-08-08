@@ -1,6 +1,9 @@
 package org.modelix.model.test
 
-import org.modelix.model.api.*
+import org.modelix.model.api.INode
+import org.modelix.model.api.addNewChild
+import org.modelix.model.api.getAncestors
+import org.modelix.model.api.getDescendants
 import kotlin.random.Random
 
 class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) {
@@ -59,14 +62,14 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
         addNewOp,
         setPropertyOp,
         setReferenceOp,
-        moveOp
+        moveOp,
     )
 
     fun growingOperationsOnly(): RandomModelChangeGenerator {
         operations = listOf(
             addNewOp,
             setPropertyOp,
-            setReferenceOp
+            setReferenceOp,
         )
         return this
     }
@@ -78,7 +81,7 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
 
     fun addOperationOnly(): RandomModelChangeGenerator {
         operations = listOf(
-            addNewOp
+            addNewOp,
         )
         return this
     }

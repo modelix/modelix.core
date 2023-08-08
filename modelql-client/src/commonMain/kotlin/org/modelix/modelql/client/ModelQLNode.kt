@@ -30,7 +30,6 @@ import org.modelix.model.api.resolve
 import org.modelix.model.api.resolveChildLinkOrFallback
 import org.modelix.model.api.resolvePropertyOrFallback
 import org.modelix.model.api.resolveReferenceLinkOrFallback
-import org.modelix.model.api.serialize
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IFluxUnboundQuery
@@ -213,7 +212,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
 class ModelQLNodeWithKnownConcept(
     client: ModelQLClient,
     override val reference: SerializedNodeReference,
-    private val conceptReference: ConceptReference?
+    private val conceptReference: ConceptReference?,
 ) : ModelQLNode(client) {
     override fun replaceQueryRoot(root: IMonoStep<INode>): IMonoStep<INode> {
         return reference.asMono().resolve()
@@ -240,7 +239,7 @@ abstract class ModelQLNodeWithConceptCache(client: ModelQLClient) : ModelQLNode(
 
 class ModelQLNodeWithConceptQuery(
     client: ModelQLClient,
-    override val reference: SerializedNodeReference
+    override val reference: SerializedNodeReference,
 ) : ModelQLNodeWithConceptCache(client) {
 
     override fun replaceQueryRoot(root: IMonoStep<INode>): IMonoStep<INode> {

@@ -13,17 +13,23 @@
  */
 package org.modelix.model.client2
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.appendPathSegments
+import io.ktor.http.contentType
+import io.ktor.http.takeFrom
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
@@ -42,7 +48,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class ModelClientV2(
     private val httpClient: HttpClient,
-    val baseUrl: String
+    val baseUrl: String,
 ) : IModelClientV2 {
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
@@ -180,7 +186,7 @@ class ModelClientV2(
         return if (baseVersion == null) {
             CLVersion(
                 delta.versionHash,
-                store.also { it.keyValueStore.putAll(delta.objects.associateBy { HashUtil.sha256(it) }) }
+                store.also { it.keyValueStore.putAll(delta.objects.associateBy { HashUtil.sha256(it) }) },
             )
         } else if (delta.versionHash == baseVersion.hash) {
             baseVersion
@@ -189,7 +195,7 @@ class ModelClientV2(
             store.keyValueStore.putAll(delta.objects.associateBy { HashUtil.sha256(it) })
             CLVersion(
                 delta.versionHash,
-                baseVersion.store
+                baseVersion.store,
             )
         }
     }
@@ -207,7 +213,7 @@ abstract class ModelClientV2Builder {
     fun build(): ModelClientV2 {
         return ModelClientV2(
             httpClient?.config { configureHttpClient(this) } ?: createHttpClient(),
-            baseUrl
+            baseUrl,
         )
     }
 

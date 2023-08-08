@@ -103,7 +103,6 @@ abstract class QueryOwnerBuilder : FilterListBuilder() {
     fun parent(body: ParentBuilder.() -> Unit) {
         addSubquery(ParentBuilder().also(body).build())
     }
-
 }
 
 sealed class RootQueryBuilder : QueryOwnerBuilder() {
@@ -163,7 +162,6 @@ private val sandbox = buildModelQuery {
             }
         }
         reference("target") {
-
         }
     }
 }

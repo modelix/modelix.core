@@ -77,10 +77,10 @@ val generateVersionVariable by tasks.creating {
         outputDir.resolve("Version.kt").writeText(
             """
             package org.modelix.modelql.core
-            
+
             const val modelqlVersion: String = "$version"
-            
-            """.trimIndent()
+
+            """.trimIndent(),
         )
     }
 }

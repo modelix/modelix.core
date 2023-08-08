@@ -39,8 +39,8 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
             this,
             listOf(
                 getProducer().getOutputSerializer(serializersModule).upcast(),
-                nullSerializer<E>().stepOutputSerializer(this) as KSerializer<IStepOutput<E?>>
-            )
+                nullSerializer<E>().stepOutputSerializer(this) as KSerializer<IStepOutput<E?>>,
+            ),
         )
     }
 

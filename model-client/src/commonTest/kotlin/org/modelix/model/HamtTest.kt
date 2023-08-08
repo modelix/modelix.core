@@ -25,7 +25,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class Hamt_Test {
+class HamtTest {
     @Test
     fun test_random() {
         val rand = Random(1)
@@ -72,7 +72,7 @@ class Hamt_Test {
         arrayOf(),
         arrayOf(),
         arrayOf(),
-        arrayOf()
+        arrayOf(),
     )
 
     @Test

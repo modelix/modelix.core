@@ -18,7 +18,6 @@ package org.modelix.model.client
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IKeyValueStoreWrapper
-import java.lang.Runnable
 import java.util.Objects
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -118,7 +117,7 @@ class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
                     } finally {
                         consumerActive.set(false)
                     }
-                }
+                },
             )
         }
     }

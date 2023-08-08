@@ -54,7 +54,7 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
         } else {
             getParameterProducer().evaluate(
                 evaluationContext,
-                queryInput
+                queryInput,
             ).map { it.asStepOutput(null) }.getOrElse(null)
         }
         return getInputProducer().createSequence(evaluationContext, queryInput).map { transformElement(it.asStepOutput(null), parameterValue).value }

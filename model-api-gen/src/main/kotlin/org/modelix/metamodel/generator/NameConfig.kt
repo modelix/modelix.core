@@ -19,10 +19,9 @@ private val UNMODIFIED_SIMPLE_NAME: (String) -> String = {
 class ConfigurableName(
     var prefix: String = "",
     var suffix: String = "",
-    var baseNameConversion: (String) -> String = UNMODIFIED_SIMPLE_NAME
+    var baseNameConversion: (String) -> String = UNMODIFIED_SIMPLE_NAME,
 ) : Serializable {
     operator fun invoke(baseName: String): String {
         return prefix + baseNameConversion(baseName) + suffix
     }
 }
-

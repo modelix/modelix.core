@@ -13,7 +13,11 @@
  */
 package org.modelix.model.oauth
 
-import com.google.api.client.auth.oauth2.*
+import com.google.api.client.auth.oauth2.AuthorizationCodeFlow
+import com.google.api.client.auth.oauth2.BearerToken
+import com.google.api.client.auth.oauth2.ClientParametersAuthentication
+import com.google.api.client.auth.oauth2.Credential
+import com.google.api.client.auth.oauth2.StoredCredential
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.http.GenericUrl
@@ -23,9 +27,10 @@ import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.store.DataStoreFactory
 import com.google.api.client.util.store.MemoryDataStoreFactory
-import io.ktor.client.*
-import io.ktor.client.plugins.auth.*
-import io.ktor.client.plugins.auth.providers.*
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.bearer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -50,7 +55,7 @@ object ModelixOAuthClient {
                 GenericUrl("$oidcUrl/token"),
                 ClientParametersAuthentication(clientId, null),
                 clientId,
-                "$oidcUrl/auth"
+                "$oidcUrl/auth",
             )
                 .setScopes(listOf(SCOPE))
                 .enablePKCE()

@@ -11,7 +11,7 @@ actual object SerializationUtil {
         '\'' to "%27",
         '(' to "%28",
         ')' to "%29",
-        '~' to "%7E"
+        '~' to "%7E",
     )
 
     actual fun escape(value: String?): String {

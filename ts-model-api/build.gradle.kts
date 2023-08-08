@@ -7,9 +7,9 @@ plugins {
 }
 
 node {
-    version.set("18.12.1")
-    npmVersion.set("8.19.2")
-    download.set(true)
+  version.set("18.12.1")
+  npmVersion.set("8.19.2")
+  download.set(true)
 }
 
 tasks.named("npm_run_build") {

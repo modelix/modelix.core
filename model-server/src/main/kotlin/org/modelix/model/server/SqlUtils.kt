@@ -5,7 +5,6 @@ import java.sql.Connection
 import java.sql.DatabaseMetaData
 import java.sql.ResultSet
 import java.sql.SQLException
-import javax.sql.DataSource
 
 internal class SqlUtils(private val connection: Connection) {
     @Throws(SQLException::class)
@@ -34,7 +33,10 @@ internal class SqlUtils(private val connection: Connection) {
 
     @Throws(SQLException::class)
     fun ensureTableIsPresent(
-        schemaName: String?, username: String?, tableName: String, creationSql: String?
+        schemaName: String?,
+        username: String?,
+        tableName: String,
+        creationSql: String?,
     ) {
         if (!isTableExisting(schemaName, tableName)) {
             val stmt = connection.createStatement()
@@ -42,7 +44,7 @@ internal class SqlUtils(private val connection: Connection) {
         }
         val stmt = connection.createStatement()
         stmt.execute(
-            "GRANT ALL ON TABLE $schemaName.$tableName TO $username;"
+            "GRANT ALL ON TABLE $schemaName.$tableName TO $username;",
         )
     }
 
@@ -81,7 +83,7 @@ internal class SqlUtils(private val connection: Connection) {
                         reachable boolean,
                         CONSTRAINT kv_pkey PRIMARY KEY (key)
                     );
-                """
+                """,
             )
         } catch (e: SQLException) {
             LOG.error("Failed to initialize the database schema", e)

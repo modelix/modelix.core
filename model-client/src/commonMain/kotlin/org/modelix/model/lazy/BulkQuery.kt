@@ -16,7 +16,6 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.persistent.IKVValue
-import kotlin.collections.ArrayList
 import kotlin.jvm.Synchronized
 
 /**
@@ -73,7 +72,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
                     queue = ArrayList()
                 }
                 val entries: Map<String, IKVValue?> = executeBulkQuery(
-                    currentRequests.map { obj -> obj.first }.distinct()
+                    currentRequests.map { obj -> obj.first }.distinct(),
                 )
                 for (request in currentRequests) {
                     request.second(entries[request.first.getHash()])

@@ -15,8 +15,6 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
-import org.modelix.model.api.addNewChild
-import org.modelix.model.api.getChildren
 import org.modelix.model.api.remove
 
 interface ITypedChildLink<ChildT : ITypedNode> : ITypedConceptFeature {
@@ -33,11 +31,11 @@ fun <ChildT : ITypedNode> INode.getChildren(link: ITypedChildLink<ChildT>): List
     return getChildren(link.untyped()).map { link.castChild(it) }
 }
 
-fun <ChildT : ITypedNode> INode.getChild(link: ITypedSingleChildLink<ChildT>) : ChildT? {
+fun <ChildT : ITypedNode> INode.getChild(link: ITypedSingleChildLink<ChildT>): ChildT? {
     return getChildren(link).firstOrNull()
 }
 
-fun <ChildT : ITypedNode> INode.getChild(link: ITypedMandatorySingleChildLink<ChildT>) : ChildT {
+fun <ChildT : ITypedNode> INode.getChild(link: ITypedMandatorySingleChildLink<ChildT>): ChildT {
     return getChildren(link).firstOrNull() ?: throw ChildNotSetException(this, link)
 }
 
@@ -50,5 +48,5 @@ fun <ChildT : ITypedNode, ChildConceptT : INonAbstractConcept<ChildT>> INode.add
     return link.castChild(addNewChild(link.untyped(), index, subConcept?.untyped()))
 }
 
-class ChildNotSetException(val node: INode, val link: ITypedMandatorySingleChildLink<*>)
-    : Exception("Node $node has no child in role ${link.untyped().name}")
+class ChildNotSetException(val node: INode, val link: ITypedMandatorySingleChildLink<*>) :
+    Exception("Node $node has no child in role ${link.untyped().name}")

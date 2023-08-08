@@ -2,15 +2,13 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.getReferenceTarget
-import org.modelix.model.api.setReferenceTarget
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
 class OptionalReferenceAccessor<SourceT, TargetT : ITypedNode>(
     val node: INode,
     val role: IReferenceLink,
-    val targetType: KClass<TargetT>
+    val targetType: KClass<TargetT>,
 ) {
     operator fun getValue(thisRef: SourceT, property: KProperty<*>): TargetT? {
         return node.getReferenceTarget(role)?.typed(targetType)
@@ -24,7 +22,7 @@ class OptionalReferenceAccessor<SourceT, TargetT : ITypedNode>(
 class MandatoryReferenceAccessor<SourceT, TargetT : ITypedNode>(
     val node: INode,
     val role: IReferenceLink,
-    val targetType: KClass<TargetT>
+    val targetType: KClass<TargetT>,
 ) {
     operator fun getValue(thisRef: SourceT, property: KProperty<*>): TargetT {
         return node.getReferenceTarget(role)?.typed(targetType) ?: throw RuntimeException("reference '$role' is not set")
@@ -37,7 +35,7 @@ class MandatoryReferenceAccessor<SourceT, TargetT : ITypedNode>(
 
 class RawReferenceAccessor<SourceT>(
     val node: INode,
-    val role: IReferenceLink
+    val role: IReferenceLink,
 ) {
     operator fun getValue(thisRef: SourceT, property: KProperty<*>): INode? {
         return node.getReferenceTarget(role)

@@ -13,7 +13,16 @@
  */
 package org.modelix.model.lazy
 
-import org.modelix.model.operations.*
+import org.modelix.model.operations.AddNewChildOp
+import org.modelix.model.operations.AddNewChildSubtreeOp
+import org.modelix.model.operations.DeleteNodeOp
+import org.modelix.model.operations.IOperation
+import org.modelix.model.operations.MoveNodeOp
+import org.modelix.model.operations.NoOp
+import org.modelix.model.operations.RevertToOp
+import org.modelix.model.operations.SetPropertyOp
+import org.modelix.model.operations.SetReferenceOp
+import org.modelix.model.operations.UndoOp
 
 class OperationsCompressor(val resultTree: CLTree) {
 

@@ -10,6 +10,7 @@ external fun sha256(s: String): String
 @JsModule("js-sha256")
 external fun sha256(s: ByteArray): String
 
+@Suppress("ClassName")
 @JsNonModule
 @JsModule("js-sha256")
 external object sha256 {

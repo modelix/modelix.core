@@ -51,10 +51,10 @@ sealed interface IConceptFeatureData {
 
 @Serializable
 @Deprecated("use org.modelix.mode.data.*")
-data class PropertyData (
+data class PropertyData(
     override val uid: String? = null,
     override val name: String,
-    val type: PropertyType = PropertyType.STRING
+    val type: PropertyType = PropertyType.STRING,
 ) : IConceptFeatureData
 
 @Deprecated("use org.modelix.mode.data.*")

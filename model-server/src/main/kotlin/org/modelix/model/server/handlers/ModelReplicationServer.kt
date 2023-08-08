@@ -14,15 +14,25 @@
 
 package org.modelix.model.server.handlers
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.plugins.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.util.pipeline.*
-import io.ktor.websocket.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.call
+import io.ktor.server.plugins.origin
+import io.ktor.server.request.receive
+import io.ktor.server.request.receiveParameters
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.webSocket
+import io.ktor.util.pipeline.PipelineContext
+import io.ktor.websocket.send
 import kotlinx.coroutines.Job
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -41,7 +51,7 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.server.ModelQLServer
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.UUID
 
 /**
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
@@ -108,7 +118,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                             if (versionHash == null) {
                                 call.respondText(
                                     "Branch '${branch.branchName}' doesn't exist in repository '${branch.repositoryId.id}'",
-                                    status = HttpStatusCode.NotFound
+                                    status = HttpStatusCode.NotFound,
                                 )
                                 return@get
                             }
@@ -133,7 +143,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                                 val delta = VersionDelta(
                                     newVersionHash,
                                     lastVersionHash,
-                                    repositoriesManager.computeDelta(newVersionHash, lastVersionHash).values.filterNotNull().toSet()
+                                    repositoriesManager.computeDelta(newVersionHash, lastVersionHash).values.filterNotNull().toSet(),
                                 )
                                 send(Json.encodeToString(delta))
                                 lastVersionHash = newVersionHash
@@ -153,7 +163,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                                     author = getUserName(),
                                     tree = newTree as CLTree,
                                     baseVersion = version,
-                                    operations = ops.map { it.getOriginalOp() }.toTypedArray()
+                                    operations = ops.map { it.getOriginalOp() }.toTypedArray(),
                                 )
                                 repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
                             }
@@ -169,7 +179,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 if (storeClient[versionHash] == null) {
                     call.respondText(
                         "Version '$versionHash' doesn't exist",
-                        status = HttpStatusCode.NotFound
+                        status = HttpStatusCode.NotFound,
                     )
                     return@get
                 }
@@ -226,7 +236,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         val delta = VersionDelta(
             versionHash,
             baseVersionHash,
-            repositoriesManager.computeDelta(versionHash, baseVersionHash).values.filterNotNull().toSet()
+            repositoriesManager.computeDelta(versionHash, baseVersionHash).values.filterNotNull().toSet(),
         )
         respond(delta)
     }

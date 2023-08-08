@@ -13,18 +13,34 @@
  */
 package org.modelix.model.server.handlers
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.html.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.html.respondHtmlTemplate
+import io.ktor.server.request.receiveText
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
+import io.ktor.websocket.send
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.html.*
+import kotlinx.html.h1
+import kotlinx.html.table
+import kotlinx.html.tbody
+import kotlinx.html.td
+import kotlinx.html.th
+import kotlinx.html.thead
+import kotlinx.html.title
+import kotlinx.html.tr
 import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.authorization.KeycloakScope
@@ -33,7 +49,16 @@ import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.model.IKeyListener
 import org.modelix.model.VersionMerger
-import org.modelix.model.api.*
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.INode
+import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitorEx
+import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.PBranch
+import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.TreePointer
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -43,7 +68,7 @@ import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.templates.PageWithMenuBar
-import java.util.*
+import java.util.Date
 
 class DeprecatedLightModelServer(val client: LocalModelClient) {
 
@@ -68,7 +93,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
 
     private fun Route.initRouting() {
         get("/") {
-            call.respondHtmlTemplate(PageWithMenuBar("json/", ".."), status=HttpStatusCode.OK) {
+            call.respondHtmlTemplate(PageWithMenuBar("json/", ".."), status = HttpStatusCode.OK) {
                 headContent {
                     title("JSON API")
                 }
@@ -143,7 +168,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
 
             var lastVersion: CLVersion? = null
             val deltaMutex = Mutex()
-            val sendDelta: suspend (CLVersion)->Unit = { newVersion ->
+            val sendDelta: suspend (CLVersion) -> Unit = { newVersion ->
                 deltaMutex.withLock {
                     if (newVersion.hash != lastVersion?.hash) {
                         send(versionAsJson(newVersion, lastVersion).toString())
@@ -190,7 +215,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
                 userId,
                 newTree,
                 null,
-                emptyArray()
+                emptyArray(),
             )
             client.asyncStore!!.put(repositoryId.getBranchKey(), newVersion.hash)
             respondVersion(newVersion)
@@ -207,15 +232,16 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             val baseVersion = CLVersion(baseVersionData, getStore())
             val mergedVersion = applyUpdate(baseVersion, updateData, repositoryId, getUserName())
             respondVersion(mergedVersion, baseVersion)
-
         }
         post("/generate-ids") {
             val quantity = call.request.queryParameters["quantity"]?.toInt() ?: 1000
             val ids = (client.idGenerator as IdGenerator).generate(quantity)
-            respondJson(buildJSONObject {
-                put("first", ids.first)
-                put("last", ids.last)
-            })
+            respondJson(
+                buildJSONObject {
+                    put("first", ids.first)
+                    put("last", ids.last)
+                },
+            )
         }
     }
 
@@ -223,7 +249,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         baseVersion: CLVersion,
         updateData: JSONArray,
         repositoryId: RepositoryId,
-        userId: String?
+        userId: String?,
     ): CLVersion {
         val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.computeWriteT { t ->
@@ -239,7 +265,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             userId,
             operationsAndTree.second as CLTree,
             baseVersion,
-            operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
+            operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )
         repositoryId.getBranchKey()
         val mergedVersion = VersionMerger(client.storeCache!!, client.idGenerator)
@@ -261,7 +287,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
                 containmentData.role,
                 containmentData.index,
                 nodeId,
-                null as IConcept?
+                null as IConcept?,
             )
         }
         nodeData.optJSONObject("properties")?.stringEntries()?.forEach { (role, newValue) ->
@@ -294,7 +320,6 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
                 unexpected.forEach { child ->
                     t.moveChild(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE, -1, child)
                 }
-
             }
             val actualChildren = t.getChildren(nodeId, role)
             if (actualChildren != expectedChildren) {
@@ -313,7 +338,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
 
     private fun versionAsJson(
         version: CLVersion,
-        oldVersion: CLVersion?
+        oldVersion: CLVersion?,
     ): JSONObject {
         val branch = TreePointer(version.tree)
         val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
@@ -324,27 +349,30 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             json.put("root", node2json(rootNode, true))
         } else {
             val nodesToInclude = HashSet<Long>()
-            version.tree.visitChanges(oldVersion.tree, object : ITreeChangeVisitorEx {
-                override fun childrenChanged(nodeId: Long, role: String?) {
-                    nodesToInclude += nodeId
-                }
+            version.tree.visitChanges(
+                oldVersion.tree,
+                object : ITreeChangeVisitorEx {
+                    override fun childrenChanged(nodeId: Long, role: String?) {
+                        nodesToInclude += nodeId
+                    }
 
-                override fun containmentChanged(nodeId: Long) {}
+                    override fun containmentChanged(nodeId: Long) {}
 
-                override fun propertyChanged(nodeId: Long, role: String) {
-                    nodesToInclude += nodeId
-                }
+                    override fun propertyChanged(nodeId: Long, role: String) {
+                        nodesToInclude += nodeId
+                    }
 
-                override fun referenceChanged(nodeId: Long, role: String) {
-                    nodesToInclude += nodeId
-                }
+                    override fun referenceChanged(nodeId: Long, role: String) {
+                        nodesToInclude += nodeId
+                    }
 
-                override fun nodeAdded(nodeId: Long) {
-                    nodesToInclude += nodeId
-                }
+                    override fun nodeAdded(nodeId: Long) {
+                        nodesToInclude += nodeId
+                    }
 
-                override fun nodeRemoved(nodeId: Long) {}
-            })
+                    override fun nodeRemoved(nodeId: Long) {}
+                },
+            )
             val changedNodes = nodesToInclude.map { node2json(PNodeAdapter(it, branch), false) }.toJsonArray()
             json.put("nodes", changedNodes)
             version.tree

@@ -32,7 +32,6 @@ import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.resolveIn
-import org.modelix.model.api.serialize
 import org.modelix.model.area.ContextArea
 
 open class NodeKSerializer() : KSerializer<INode> {

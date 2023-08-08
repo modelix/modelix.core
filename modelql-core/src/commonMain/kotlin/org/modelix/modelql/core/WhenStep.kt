@@ -24,7 +24,7 @@ import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(
     val cases: List<Pair<IMonoUnboundQuery<In, Boolean?>, IMonoUnboundQuery<In, Out>>>,
-    val elseCase: IMonoUnboundQuery<In, Out>?
+    val elseCase: IMonoUnboundQuery<In, Out>?,
 ) : MonoTransformingStep<In, Out>() {
 
     init {
@@ -52,7 +52,7 @@ class WhenStep<In, Out>(
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor(
             cases.map { context.load(it.first) to context.load(it.second) },
-            elseCase?.let { context.load(it) }
+            elseCase?.let { context.load(it) },
         )
     }
 
@@ -62,7 +62,7 @@ class WhenStep<In, Out>(
         override fun createStep(context: QueryDeserializationContext): IStep {
             return WhenStep<Any?, Any?>(
                 cases.map { context.getOrCreateQuery(it.first) as MonoUnboundQuery<Any?, Boolean?> to context.getOrCreateQuery(it.second) as MonoUnboundQuery<Any?, Any?> },
-                elseCase?.let { context.getOrCreateQuery(it) as MonoUnboundQuery<Any?, Any?> }
+                elseCase?.let { context.getOrCreateQuery(it) as MonoUnboundQuery<Any?, Any?> },
             )
         }
     }
@@ -71,7 +71,7 @@ class WhenStep<In, Out>(
         return MultiplexedOutputSerializer<Out>(
             this,
             cases.map { it.second.getAggregationOutputSerializer(serializersModule).upcast() } +
-                listOfNotNull(elseCase?.getAggregationOutputSerializer(serializersModule)?.upcast())
+                listOfNotNull(elseCase?.getAggregationOutputSerializer(serializersModule)?.upcast()),
         )
     }
 

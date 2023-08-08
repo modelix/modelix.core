@@ -29,7 +29,7 @@ class QueryGraphDescriptorBuilder {
         return QueryGraphDescriptor(
             queries.values.map { it.buildQueryDescriptor() },
             stepDescriptors.values.associate { it.id!! to it },
-            connections.toList()
+            connections.toList(),
         )
     }
 
@@ -39,7 +39,7 @@ class QueryGraphDescriptorBuilder {
             consumer.getProducers().forEachIndexed { producerIndex, producer ->
                 connections += PortConnection(
                     PortReference(producer.id(), producer.getConsumers().indexOf(consumer)),
-                    PortReference(consumer.id(), producerIndex)
+                    PortReference(consumer.id(), producerIndex),
                 )
             }
         }
@@ -85,7 +85,7 @@ class QueryGraphDescriptorBuilder {
                 outputStepId,
                 query.sharedSteps.map { stepId(it) },
                 query is FluxUnboundQuery,
-                query.reference.getId()
+                query.reference.getId(),
             )
         }
     }
@@ -95,7 +95,7 @@ class QueryGraphDescriptorBuilder {
 data class QueryGraphDescriptor(
     val queries: List<QueryDescriptor>,
     val steps: Map<Int, StepDescriptor>,
-    val connections: List<PortConnection>
+    val connections: List<PortConnection>,
 ) {
     fun initStepIds() {
         steps.forEach { it.value.id = it.key }
@@ -112,7 +112,7 @@ data class QueryDescriptor(
     val output: Int,
     val sharedSteps: List<Int> = emptyList(),
     val isFluxOutput: Boolean = false,
-    val queryId: Long
+    val queryId: Long,
 )
 
 @Serializable
@@ -139,7 +139,7 @@ sealed interface IQueryReference<out Q : IUnboundQuery<*, *, *>> {
 class QueryReference<Q : IUnboundQuery<*, *, *>>(
     initiallyProvidedQuery: Q?,
     queryId: Long?,
-    private val queryInitializer: (() -> Q)?
+    private val queryInitializer: (() -> Q)?,
 ) : IQueryReference<Q> {
     var providedQuery: Q? = initiallyProvidedQuery
         set(value) {
@@ -254,14 +254,14 @@ class QueryDeserializationContext(val graphDescriptor: QueryGraphDescriptor) {
                     inputStep,
                     outputStep as IFluxStep<Any?>,
                     reference as QueryReference<IFluxUnboundQuery<Any?, Any?>>,
-                    sharedSteps
+                    sharedSteps,
                 )
             } else {
                 MonoUnboundQuery<Any?, Any?>(
                     inputStep,
                     outputStep as IMonoStep<Any?>,
                     reference as QueryReference<UnboundQuery<Any?, Any?, Any?>>,
-                    sharedSteps
+                    sharedSteps,
                 )
             }
         }

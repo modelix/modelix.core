@@ -1,7 +1,8 @@
 package org.modelix.model
 
 import org.apache.commons.collections4.map.LRUMap
-import java.util.*
+import java.util.Collections
+import java.util.UUID
 
 actual fun sleep(milliseconds: Long) {
     Thread.sleep(milliseconds)

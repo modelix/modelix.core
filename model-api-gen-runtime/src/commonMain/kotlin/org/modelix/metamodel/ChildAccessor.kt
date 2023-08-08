@@ -3,8 +3,6 @@ package org.modelix.metamodel
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
-import org.modelix.model.api.addNewChild
-import org.modelix.model.api.getChildren
 import kotlin.reflect.KClass
 
 abstract class ChildAccessor<ChildT : ITypedNode>(
@@ -12,14 +10,14 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
     protected val role: IChildLink,
     protected val childConcept: IConcept,
     val childType: KClass<ChildT>,
-): Iterable<ChildT> {
+) : Iterable<ChildT> {
     fun isEmpty(): Boolean = !iterator().hasNext()
 
     fun getSize(): Int {
         return this.count()
     }
 
-    fun untypedNodes() : Iterable<INode> = parent.getChildren(role)
+    fun untypedNodes(): Iterable<INode> = parent.getChildren(role)
 
     override fun iterator(): Iterator<ChildT> {
         return untypedNodes().map {

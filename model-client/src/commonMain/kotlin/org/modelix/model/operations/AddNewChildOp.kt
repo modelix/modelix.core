@@ -55,7 +55,7 @@ class AddNewChildOp(val position: PositionInRole, val childId: Long, val concept
     override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend {
         val children = tree.getChildren(position.nodeId, position.role)
         return Intend(
-            CapturedInsertPosition(position.index, children.toList().toLongArray())
+            CapturedInsertPosition(position.index, children.toList().toLongArray()),
         )
     }
 

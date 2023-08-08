@@ -45,8 +45,8 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
             this,
             listOf(
                 getProducer().getOutputSerializer(serializersModule).upcast(),
-                alternative.getElementOutputSerializer(serializersModule).upcast()
-            )
+                alternative.getElementOutputSerializer(serializersModule).upcast(),
+            ),
         )
     }
 

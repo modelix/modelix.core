@@ -15,7 +15,11 @@
 
 package org.modelix.model.lazy
 
-import org.modelix.model.persistent.*
+import org.modelix.model.persistent.CPHamtInternal
+import org.modelix.model.persistent.CPHamtLeaf
+import org.modelix.model.persistent.CPHamtNode
+import org.modelix.model.persistent.CPHamtSingle
+import org.modelix.model.persistent.CPNode
 import kotlin.jvm.JvmStatic
 
 abstract class CLHamtNode(val store: IDeserializingKeyValueStore) {

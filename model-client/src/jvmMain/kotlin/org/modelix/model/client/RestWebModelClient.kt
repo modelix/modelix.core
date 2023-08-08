@@ -15,23 +15,42 @@
 
 package org.modelix.model.client
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.auth.*
-import io.ktor.client.plugins.auth.providers.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.http.content.*
-import io.ktor.serialization.*
-import io.ktor.util.reflect.*
-import io.ktor.utils.io.*
-import io.ktor.utils.io.charsets.*
-import io.ktor.utils.io.core.*
-import kotlinx.coroutines.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpSend
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.bearer
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.plugin
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.content.TextContent
+import io.ktor.http.contentType
+import io.ktor.serialization.ContentConverter
+import io.ktor.util.reflect.TypeInfo
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.core.readText
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.model.IKeyListener
@@ -47,8 +66,27 @@ import org.modelix.model.sleep
 import org.modelix.model.util.StreamUtils.toStream
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.collections.Iterable
+import kotlin.collections.LinkedHashMap
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.MutableList
+import kotlin.collections.MutableMap
+import kotlin.collections.Set
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.emptyList
+import kotlin.collections.emptySet
+import kotlin.collections.filter
+import kotlin.collections.forEach
+import kotlin.collections.iterator
+import kotlin.collections.minus
+import kotlin.collections.plus
+import kotlin.collections.set
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -76,7 +114,7 @@ class RestWebModelClient @JvmOverloads constructor(
     var baseUrl: String = defaultUrl,
     private val authTokenProvider: (() -> String?)? = null,
     initialConnectionListeners: List<ConnectionListener> = emptyList(),
-    providedClient: HttpClient? = null
+    providedClient: HttpClient? = null,
 ) : IModelClient {
 
     companion object {
@@ -133,11 +171,11 @@ class RestWebModelClient @JvmOverloads constructor(
                         contentType: ContentType,
                         charset: Charset,
                         typeInfo: TypeInfo,
-                        value: Any
+                        value: Any,
                     ): OutgoingContent {
                         return TextContent(value.toString(), contentType)
                     }
-                }
+                },
             )
         }
         install(Auth) {
@@ -395,8 +433,8 @@ class RestWebModelClient @JvmOverloads constructor(
                         "Request for %d keys failed (%s, ...): %s",
                         keys.spliterator().exactSizeIfKnown,
                         toStream(keys).findFirst().orElse(null),
-                        response.status
-                    )
+                        response.status,
+                    ),
                 )
             }
         }
@@ -514,7 +552,7 @@ class RestWebModelClient @JvmOverloads constructor(
                     response.status,
                     entries.entries.stream().map { e: Map.Entry<String?, String?> -> e.key.toString() + " = " + e.value + ", ..." }.findFirst().orElse(""),
                     response.bodyAsText(),
-                    attempt
+                    attempt,
                 )
                 if (attempt == 3) throw RuntimeException(message) else LOG.warn(message)
                 sleep(1000)
@@ -634,6 +672,6 @@ class RestWebModelClient @JvmOverloads constructor(
         DISCONNECTED,
 
 //        SERVER_ERROR,
-        CONNECTED;
+        CONNECTED,
     }
 }

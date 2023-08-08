@@ -13,7 +13,9 @@
  */
 package org.modelix.model
 
-import org.modelix.model.api.*
+import org.modelix.model.api.ITransaction
+import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitorEx
 
 class ModelIndex private constructor(val tree: ITree, val propertyRole: String) {
     companion object {
@@ -50,7 +52,7 @@ class ModelIndex private constructor(val tree: ITree, val propertyRole: String) 
                     override fun nodeAdded(nodeId: Long) {
                         index.loadNode(nodeId)
                     }
-                }
+                },
             )
 
             return index

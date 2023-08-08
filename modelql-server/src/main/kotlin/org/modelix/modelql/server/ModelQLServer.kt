@@ -66,7 +66,7 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
         fun build(): ModelQLServer {
             return ModelQLServer(
                 rootNodeProvider,
-                area
+                area,
             )
         }
     }

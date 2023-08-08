@@ -53,7 +53,7 @@ class ConceptSwitchBuilder<In : ITypedNode, Out>(private val input: IMonoStep<In
         return WhenStep(
             sortedCases.toList().asReversed()
                 .map { case -> IUnboundQuery.buildMono { it.untyped().instanceOf(case.first) } to case.second },
-            IUnboundQuery.buildMono(elseBody)
+            IUnboundQuery.buildMono(elseBody),
         ).also { input.connect(it) }
     }
 

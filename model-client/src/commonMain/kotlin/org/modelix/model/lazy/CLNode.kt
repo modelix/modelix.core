@@ -31,7 +31,7 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
         propertyRoles: Array<String>,
         propertyValues: Array<String>,
         referenceRoles: Array<String>,
-        referenceTargets: Array<CPNodeRef>
+        referenceTargets: Array<CPNodeRef>,
     ) :
         this(
             tree,
@@ -44,8 +44,8 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
                 propertyRoles,
                 propertyValues,
                 referenceRoles,
-                referenceTargets
-            )
+                referenceTargets,
+            ),
         ) {}
 
     val id: Long

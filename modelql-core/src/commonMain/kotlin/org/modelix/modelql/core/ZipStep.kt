@@ -210,7 +210,7 @@ class CombiningSequence<Common>(private val sequences: Array<Sequence<Common>>) 
 }
 
 class ZipOutputSerializer<CommonT, Out : IZipOutput<CommonT>>(
-    val elementSerializers: Array<KSerializer<IStepOutput<CommonT>>>
+    val elementSerializers: Array<KSerializer<IStepOutput<CommonT>>>,
 ) : KSerializer<ZipStepOutput<Out, CommonT>> {
     @OptIn(ExperimentalSerializationApi::class)
     override fun deserialize(decoder: Decoder): ZipStepOutput<Out, CommonT> {

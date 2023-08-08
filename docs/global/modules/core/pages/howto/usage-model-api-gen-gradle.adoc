@@ -145,5 +145,3 @@ metamodel {
 --
 
 . Done. You can now use the generated Classes in your code Kotlin (or TypeScript) project in the `mps/metamodel` sub-project.
-
-

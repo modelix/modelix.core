@@ -36,7 +36,6 @@ extensions.configure<MPSBuildSettings> {
     search(".")
     disableParentPublication()
 
-
     publication("metamodel-export") {
         module("org.modelix.metamodel.export")
     }

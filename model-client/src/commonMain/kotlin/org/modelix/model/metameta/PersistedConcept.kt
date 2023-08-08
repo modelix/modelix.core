@@ -13,7 +13,12 @@
  */
 package org.modelix.model.metameta
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IChildLink
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.ILanguage
+import org.modelix.model.api.IProperty
+import org.modelix.model.api.IReferenceLink
 import org.modelix.model.area.IArea
 
 data class PersistedConcept(val id: Long, val uid: String?) : IConcept, IConceptReference {

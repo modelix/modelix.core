@@ -126,7 +126,7 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
                 author = author,
                 tree = newTree as CLTree,
                 baseVersion = localVersion,
-                operations = ops.map { it.getOriginalOp() }.toTypedArray()
+                operations = ops.map { it.getOriginalOp() }.toTypedArray(),
             )
         }
         if (createdVersion != null) {
@@ -139,7 +139,7 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
         New,
         Starting,
         Started,
-        Disposed
+        Disposed,
     }
 
     companion object {

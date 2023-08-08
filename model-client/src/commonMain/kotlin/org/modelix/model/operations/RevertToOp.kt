@@ -17,7 +17,7 @@ class RevertToOp(val latestKnownVersionRef: KVEntryReference<CPVersion>, val ver
         return Applied(
             captureIntend(transaction.tree, store)
                 .restoreIntend(transaction.tree)
-                .map { it.apply(transaction, store) }
+                .map { it.apply(transaction, store) },
         )
     }
 

@@ -1,6 +1,5 @@
 package org.modelix.metamodel.generator
 
-import org.modelix.model.api.IConcept
 import org.modelix.model.data.ChildLinkData
 import org.modelix.model.data.ConceptData
 import org.modelix.model.data.IConceptFeatureData
@@ -17,10 +16,9 @@ class LanguageSet(languages: List<LanguageData>) {
             languagesMap[lang.name] = LanguageInSet(lang)
             lang.concepts.map { ConceptInLanguage(it, lang) }.forEach { conceptsMap[it.fqName] = it }
         }
-
     }
 
-    fun filter(body: ConceptsFilter.()->Unit): LanguageSet {
+    fun filter(body: ConceptsFilter.() -> Unit): LanguageSet {
         return ConceptsFilter(this).also { body(it) }.apply()
     }
 
@@ -77,7 +75,7 @@ class LanguageSet(languages: List<LanguageData>) {
         fun ref() = ConceptRef(language.name, concept.name)
         fun loadInheritance(
             directSuperConcept: ConceptInLanguage,
-            inheritedFrom: MutableMap<ConceptInLanguage, MutableSet<ConceptInLanguage>>
+            inheritedFrom: MutableMap<ConceptInLanguage, MutableSet<ConceptInLanguage>>,
         ) {
             for (superConcept in resolvedDirectSuperConcepts) {
                 inheritedFrom.computeIfAbsent(superConcept, { LinkedHashSet() }).add(directSuperConcept)

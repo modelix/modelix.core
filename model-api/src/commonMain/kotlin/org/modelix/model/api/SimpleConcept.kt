@@ -17,7 +17,7 @@ open class SimpleConcept(
     private val conceptName: String,
     private val is_abstract: Boolean = false,
     directSuperConcepts: Iterable<IConcept> = emptyList(),
-    private val uid: String? = null
+    private val uid: String? = null,
 ) : IConcept {
     override var language: ILanguage? = null
     val properties: MutableList<SimpleProperty> = ArrayList()

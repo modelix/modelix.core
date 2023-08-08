@@ -13,7 +13,7 @@ class SingleChildAccessor<ChildT : ITypedNode>(
 ) : ChildAccessor<ChildT>(parent, role, childConcept, childType) {
     fun isSet(): Boolean = !isEmpty()
     fun get(): ChildT? = iterator().let { if (it.hasNext()) it.next() else null }
-    fun <T> read(receiver: (ChildT?)->T): T = receiver(get())
+    fun <T> read(receiver: (ChildT?) -> T): T = receiver(get())
     fun setNew(): ChildT {
         get()?.let { parent.removeChild(it.unwrap()) }
         return addNew()

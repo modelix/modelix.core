@@ -28,7 +28,7 @@ object RepositoryLanguage : SimpleLanguage("org.modelix.model.repositoryconcepts
     object Model : SimpleConcept(
         conceptName = "Model",
         uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892",
-        directSuperConcepts = listOf(BaseConcept, INamedConcept)
+        directSuperConcepts = listOf(BaseConcept, INamedConcept),
     ) {
         init { addConcept(this) }
         val rootNodes = SimpleChildLink(
@@ -36,14 +36,14 @@ object RepositoryLanguage : SimpleLanguage("org.modelix.model.repositoryconcepts
             isMultiple = true,
             isOptional = true,
             targetConcept = BaseConcept,
-            uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900"
+            uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900",
         )
     }
 
     object Module : SimpleConcept(
         conceptName = "Module",
         uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895",
-        directSuperConcepts = listOf(BaseConcept, INamedConcept)
+        directSuperConcepts = listOf(BaseConcept, INamedConcept),
     ) {
         init { addConcept(this) }
         val models = SimpleChildLink(
@@ -51,14 +51,14 @@ object RepositoryLanguage : SimpleLanguage("org.modelix.model.repositoryconcepts
             isMultiple = true,
             isOptional = true,
             targetConcept = Model,
-            uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898"
+            uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898",
         )
     }
 
     object Repository : SimpleConcept(
         conceptName = "Repository",
         uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902",
-        directSuperConcepts = listOf(BaseConcept)
+        directSuperConcepts = listOf(BaseConcept),
     ) {
         init { addConcept(this) }
         val modules = SimpleChildLink(
@@ -66,7 +66,7 @@ object RepositoryLanguage : SimpleLanguage("org.modelix.model.repositoryconcepts
             isMultiple = true,
             isOptional = true,
             targetConcept = Module,
-            uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903"
+            uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903",
         )
     }
 }

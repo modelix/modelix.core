@@ -15,14 +15,19 @@
 
 package org.modelix.model.client
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 
 abstract class VersionChangeDetector(
     private val store: IKeyValueStore,
     private val key: String,
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
 ) {
     private val keyListener: IKeyListener
     var lastVersionHash: String? = null

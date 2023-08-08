@@ -1,13 +1,13 @@
 package org.modelix.metamodel.generator
 
-import org.modelix.model.data.*
 import org.modelix.model.data.ChildLinkData
 import org.modelix.model.data.ConceptData
+import org.modelix.model.data.EnumData
 import org.modelix.model.data.LanguageData
 import org.modelix.model.data.PropertyData
 import org.modelix.model.data.ReferenceLinkData
 
-fun newLanguage(name: String, body: LanguageBuilder.()->Unit): LanguageData {
+fun newLanguage(name: String, body: LanguageBuilder.() -> Unit): LanguageData {
     return LanguageBuilder(name).apply(body).build()
 }
 
@@ -18,11 +18,11 @@ class LanguageBuilder(val name: String) {
         return LanguageData(
             name = name,
             concepts = concepts,
-            enums = enums
+            enums = enums,
         )
     }
 
-    fun concept(name: String, body: ConceptBuilder.()->Unit = {}) {
+    fun concept(name: String, body: ConceptBuilder.() -> Unit = {}) {
         concepts.add(ConceptBuilder(name, this).apply(body).build())
     }
 }
@@ -63,7 +63,7 @@ class ConceptBuilder(val conceptName: String, val languageBuilder: LanguageBuild
         extends.add(type)
     }
 
-    fun concept(subConceptName: String, body: ConceptBuilder.()->Unit = {}) {
+    fun concept(subConceptName: String, body: ConceptBuilder.() -> Unit = {}) {
         val parentBuilder = this
         languageBuilder.concept(subConceptName) {
             extends(parentBuilder.conceptName)
@@ -78,7 +78,7 @@ class ConceptBuilder(val conceptName: String, val languageBuilder: LanguageBuild
             properties = properties,
             children = children,
             references = references,
-            extends = extends
+            extends = extends,
         )
     }
 }

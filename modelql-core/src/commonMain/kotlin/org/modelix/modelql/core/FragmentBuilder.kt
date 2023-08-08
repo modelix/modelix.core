@@ -86,7 +86,7 @@ class FragmentBuilder<E, Context> : IRecursiveFragmentBuilder<E, Context>, IUnbo
                 queryBuilder.inputStep,
                 zipBuilder.compileOutputStep(),
                 reference = queryBuilder.queryReference,
-                sharedSteps = queryBuilder.sharedSteps
+                sharedSteps = queryBuilder.sharedSteps,
             )
         }
     }
@@ -181,7 +181,7 @@ private class LazyFragment<In, Context>(fragmentBuilder: () -> FragmentBuilder<I
     override val queryReference: QueryReference<IMonoUnboundQuery<In, IZipOutput<*>>> = QueryReference(
         null,
         null,
-        { actualFragment.getQuery() }
+        { actualFragment.getQuery() },
     )
 
     override fun processResult(result: IZipOutput<*>, context: Context) {

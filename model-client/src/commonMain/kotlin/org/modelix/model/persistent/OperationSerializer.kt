@@ -87,7 +87,7 @@ class OperationSerializer private constructor() {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return AddNewChildOp(PositionInRole(longFromHex(parts[0]), unescape(parts[1]), parts[2].toInt()), longFromHex(parts[3]), deserializeConcept(parts[4]))
                     }
-                }
+                },
             )
             INSTANCE.registerSerializer(
                 AddNewChildSubtreeOp::class,
@@ -100,7 +100,7 @@ class OperationSerializer private constructor() {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return AddNewChildSubtreeOp(KVEntryReference(parts[5], CPTree.DESERIALIZER), PositionInRole(longFromHex(parts[0]), unescape(parts[1]), parts[2].toInt()), longFromHex(parts[3]), deserializeConcept(parts[4]))
                     }
-                }
+                },
             )
             INSTANCE.registerSerializer(
                 DeleteNodeOp::class,
@@ -117,7 +117,7 @@ class OperationSerializer private constructor() {
                             DeleteNodeOp(longFromHex(parts[3]))
                         }
                     }
-                }
+                },
             )
             INSTANCE.registerSerializer(
                 MoveNodeOp::class,
@@ -134,16 +134,16 @@ class OperationSerializer private constructor() {
                         return if (parts.size == 4) {
                             MoveNodeOp(
                                 longFromHex(parts[0]),
-                                PositionInRole(longFromHex(parts[1]), unescape(parts[2]), parts[3].toInt())
+                                PositionInRole(longFromHex(parts[1]), unescape(parts[2]), parts[3].toInt()),
                             )
                         } else {
                             MoveNodeOp(
                                 longFromHex(parts[0]),
-                                PositionInRole(longFromHex(parts[4]), unescape(parts[5]), parts[6].toInt())
+                                PositionInRole(longFromHex(parts[4]), unescape(parts[5]), parts[6].toInt()),
                             )
                         }
                     }
-                }
+                },
             )
             INSTANCE.registerSerializer(
                 NoOp::class,
@@ -155,7 +155,7 @@ class OperationSerializer private constructor() {
                     override fun deserialize(serialized: String): NoOp {
                         return NoOp()
                     }
-                }
+                },
             )
             INSTANCE.registerSerializer(
                 SetPropertyOp::class,
@@ -168,7 +168,7 @@ class OperationSerializer private constructor() {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return SetPropertyOp(longFromHex(parts[0]), unescape(parts[1])!!, unescape(parts[2]))
                     }
-                }
+                },
             )
             INSTANCE.registerSerializer(
                 SetReferenceOp::class,
@@ -181,7 +181,7 @@ class OperationSerializer private constructor() {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return SetReferenceOp(longFromHex(parts[0]), unescape(parts[1])!!, deserializeReference(parts[2]))
                     }
-                }
+                },
             )
             INSTANCE.registerSerializer(
                 UndoOp::class,
@@ -193,7 +193,7 @@ class OperationSerializer private constructor() {
                     override fun deserialize(serialized: String): UndoOp {
                         return UndoOp(KVEntryReference(serialized, CPVersion.DESERIALIZER))
                     }
-                }
+                },
             )
             INSTANCE.registerSerializer(
                 RevertToOp::class,
@@ -206,7 +206,7 @@ class OperationSerializer private constructor() {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return RevertToOp(KVEntryReference(parts[0], CPVersion.DESERIALIZER), KVEntryReference(parts[1], CPVersion.DESERIALIZER))
                     }
-                }
+                },
             )
         }
     }

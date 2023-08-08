@@ -158,7 +158,7 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
                                     BiPredicate { key: Long?, value: V? ->
                                         visitor.entryRemoved(key!!, value)
                                         true
-                                    }
+                                    },
                                 )
                             }
                         } else {
@@ -167,7 +167,7 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
                                     BiPredicate { key: Long?, value: V? ->
                                         visitor.entryAdded(key!!, value)
                                         true
-                                    }
+                                    },
                                 )
                             } else {
                                 child.visitChanges(oldChild, visitor)
@@ -186,7 +186,7 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
                             visitor.entryAdded(k, v)
                         }
                         true
-                    }
+                    },
                 )
             } else {
                 throw RuntimeException("Unknown type: " + oldNode.javaClass.name)
@@ -257,7 +257,7 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
                         visitor.entryRemoved(k, v)
                     }
                     true
-                }
+                },
             )
             if (oldValue.value == null) {
                 visitor.entryAdded(key, value)
@@ -298,7 +298,7 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
                 BiPredicate { k: Long?, v: V? ->
                     visitor.entryRemoved(k!!, v)
                     true
-                }
+                },
             )
         }
     }

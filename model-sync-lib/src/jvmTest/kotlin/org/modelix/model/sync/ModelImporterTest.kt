@@ -5,13 +5,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
-import org.modelix.model.api.serialize
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
-import org.modelix.model.operations.*
+import org.modelix.model.operations.AddNewChildOp
+import org.modelix.model.operations.DeleteNodeOp
+import org.modelix.model.operations.MoveNodeOp
+import org.modelix.model.operations.OTBranch
+import org.modelix.model.operations.SetPropertyOp
+import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.test.RandomModelChangeGenerator
 import java.io.File
@@ -186,7 +190,7 @@ class ModelImporterTest {
         val numSetOriginalIdOps = specification.countNodes()
         val expectedNumOps = numChanges + numSetOriginalIdOps
 
-        assert(operations.size <= expectedNumOps ) {
+        assert(operations.size <= expectedNumOps) {
             "expected operations: <= $expectedNumOps, actual: ${operations.size}"
         }
     }

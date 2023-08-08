@@ -22,5 +22,4 @@ internal actual class ReadWriteLock {
     actual fun canRead(): Boolean = lock.isWriteLockedByCurrentThread || isReadLockedByCurrentThread.get()
 
     actual fun canWrite(): Boolean = lock.isWriteLockedByCurrentThread
-
 }

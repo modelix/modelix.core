@@ -13,8 +13,8 @@
  */
 package org.modelix.client.light
 
-import io.ktor.client.engine.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.engine.cio.CIO
 
 actual class PlatformSpecificLightModelClientBuilder : LightModelClientBuilder() {
     override fun getDefaultEngineFactory(): HttpClientEngineFactory<*> = CIO

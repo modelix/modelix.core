@@ -4,7 +4,10 @@ import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.decodeFromString
 import org.modelix.model.data.LanguageData
 import java.io.File
-import kotlin.io.path.*
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.createTempDirectory
+import kotlin.io.path.deleteRecursively
+import kotlin.io.path.readText
 import kotlin.test.Test
 import kotlin.test.assertContains
 
@@ -40,10 +43,11 @@ class KotlinGeneratorTest {
         """.trimIndent()
 
         val language = Yaml.default.decodeFromString<LanguageData>(input)
-        //val outputDir = File(".").toPath().resolve("build").resolve("test-generator-output")
+        // val outputDir = File(".").toPath().resolve("build").resolve("test-generator-output")
         val outputDir = File("build/test-generator-output").toPath()
         MetaModelGenerator(outputDir).generate(LanguageSet(listOf(language)).process())
     }
+
     @Test
     fun test_ts() {
         val input = """
@@ -74,11 +78,10 @@ class KotlinGeneratorTest {
         """.trimIndent()
 
         val language = Yaml.default.decodeFromString<LanguageData>(input)
-        //val outputDir = File(".").toPath().resolve("build").resolve("test-generator-output")
+        // val outputDir = File(".").toPath().resolve("build").resolve("test-generator-output")
         val outputDir = File("build/test-generator-output").toPath()
         TypescriptMMGenerator(outputDir).generate(LanguageSet(listOf(language)).process())
     }
-
 
     @OptIn(ExperimentalPathApi::class)
     @Test
@@ -121,5 +124,4 @@ class KotlinGeneratorTest {
             outputDir.deleteRecursively()
         }
     }
-
 }

@@ -34,7 +34,7 @@ abstract class CollectorStep<E, CollectionT>() : AggregationStep<E, CollectionT>
 class CollectorStepOutput<E, InternalCollectionT, CollectionT>(
     val input: List<IStepOutput<E>>,
     val internalCollection: InternalCollectionT,
-    val output: CollectionT
+    val output: CollectionT,
 ) : IStepOutput<CollectionT> {
     override val value: CollectionT get() = output
 }

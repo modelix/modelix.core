@@ -21,7 +21,6 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.SerializedNodeReference
-import org.modelix.model.api.serialize
 import org.modelix.modelql.core.ConstantSourceStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep

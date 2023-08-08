@@ -18,7 +18,10 @@ package org.modelix.model.operations
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.lazy.*
+import org.modelix.model.lazy.CLNode
+import org.modelix.model.lazy.CLTree
+import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.IKVValue
 import org.modelix.model.persistent.SerializationUtil
@@ -42,7 +45,7 @@ class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val pos
             val pos = PositionInRole(
                 node.parentId,
                 node.roleInParent,
-                resultTree.getChildren(node.parentId, node.roleInParent).indexOf(node.id)
+                resultTree.getChildren(node.parentId, node.roleInParent).indexOf(node.id),
             )
             decompressNode(resultTree, node, pos, false, opsVisitor)
         }
@@ -86,7 +89,7 @@ class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val pos
     override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend {
         val children = tree.getChildren(position.nodeId, position.role)
         return Intend(
-            CapturedInsertPosition(position.index, children.toList().toLongArray())
+            CapturedInsertPosition(position.index, children.toList().toLongArray()),
         )
     }
 

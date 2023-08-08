@@ -18,7 +18,6 @@ package org.modelix.model.server.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -29,7 +28,7 @@ sealed class QueryOwner {
 
 @Serializable
 data class ModelQuery(
-    override val queries: List<RootQuery>
+    override val queries: List<RootQuery>,
 ) : QueryOwner() {
     fun toJson() = Json.encodeToString(this)
     companion object {
@@ -56,20 +55,20 @@ sealed class RootQuery : RootOrSubquery() {
 @SerialName("resolve")
 data class QueryById(
     val nodeId: NodeId,
-    override val queries: List<Subquery> = emptyList()
+    override val queries: List<Subquery> = emptyList(),
 ) : RootQuery()
 
 @Serializable
 @SerialName("root")
 data class QueryRootNode(
-    override val queries: List<Subquery> = emptyList()
+    override val queries: List<Subquery> = emptyList(),
 ) : RootQuery()
 
 @Serializable
 @SerialName("allChildren")
 data class QueryAllChildren(
     override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
+    override val filters: List<Filter> = emptyList(),
 ) : Subquery()
 
 @Serializable
@@ -77,7 +76,7 @@ data class QueryAllChildren(
 data class QueryChildren(
     val role: String?,
     override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
+    override val filters: List<Filter> = emptyList(),
 ) : Subquery()
 
 @Serializable
@@ -85,14 +84,14 @@ data class QueryChildren(
 data class QueryReference(
     val role: String,
     override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
+    override val filters: List<Filter> = emptyList(),
 ) : Subquery()
 
 @Serializable
 @SerialName("references")
 data class QueryReferences(
     override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
+    override val filters: List<Filter> = emptyList(),
 ) : Subquery()
 
 @Serializable
@@ -100,28 +99,28 @@ data class QueryReferences(
 data class QueryReferencesAndChildren(
     val recursive: Boolean = false,
     override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
+    override val filters: List<Filter> = emptyList(),
 ) : Subquery()
 
 @Serializable
 @SerialName("descendants")
 data class QueryDescendants(
     override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
+    override val filters: List<Filter> = emptyList(),
 ) : Subquery()
 
 @Serializable
 @SerialName("ancestors")
 data class QueryAncestors(
     override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
+    override val filters: List<Filter> = emptyList(),
 ) : Subquery()
 
 @Serializable
 @SerialName("parent")
 data class QueryParent(
     override val queries: List<Subquery> = emptyList(),
-    override val filters: List<Filter> = emptyList()
+    override val filters: List<Filter> = emptyList(),
 ) : Subquery()
 
 @Serializable
@@ -154,28 +153,34 @@ data class FilterByConceptLongName(val operator: StringOperator) : Filter()
 @Serializable
 @SerialName("property")
 class FilterByProperty(val role: String, val operator: StringOperator) : Filter()
+
 @Serializable
 sealed class StringOperator
 
 @Serializable
 @SerialName("equals")
 data class EqualsOperator(val value: String) : StringOperator()
+
 @Serializable
 @SerialName("startsWith")
 data class StartsWithOperator(val prefix: String) : StringOperator()
+
 @Serializable
 @SerialName("endsWith")
 data class EndsWithOperator(val suffix: String) : StringOperator()
+
 @Serializable
 @SerialName("contains")
 data class ContainsOperator(val substring: String) : StringOperator()
+
 @Serializable
 @SerialName("regex")
 data class MatchesRegexOperator(val pattern: String) : StringOperator()
+
 @Serializable
 @SerialName("isNotNull")
 object IsNotNullOperator : StringOperator()
+
 @Serializable
 @SerialName("isNull")
 object IsNullOperator : StringOperator()
-

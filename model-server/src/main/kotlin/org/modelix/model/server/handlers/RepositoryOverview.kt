@@ -1,9 +1,23 @@
 package org.modelix.model.server.handlers
 
-import io.ktor.server.application.*
-import io.ktor.server.html.*
-import io.ktor.server.routing.*
-import kotlinx.html.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.html.respondHtmlTemplate
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import kotlinx.html.FlowContent
+import kotlinx.html.a
+import kotlinx.html.h1
+import kotlinx.html.i
+import kotlinx.html.p
+import kotlinx.html.span
+import kotlinx.html.table
+import kotlinx.html.tbody
+import kotlinx.html.td
+import kotlinx.html.th
+import kotlinx.html.thead
+import kotlinx.html.title
+import kotlinx.html.tr
 import org.modelix.model.server.templates.PageWithMenuBar
 
 class RepositoryOverview(private val repoManager: RepositoriesManager) {

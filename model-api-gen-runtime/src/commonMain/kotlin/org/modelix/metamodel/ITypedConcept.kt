@@ -31,4 +31,3 @@ fun <NodeT : ITypedNode> IConceptOfTypedNode<NodeT>.getInstanceClass(): KClass<o
 interface INonAbstractConcept<out NodeT : ITypedNode> : IConceptOfTypedNode<NodeT>
 
 interface ITypedConceptFeature
-

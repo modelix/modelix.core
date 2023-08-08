@@ -5,8 +5,19 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.*
-import org.modelix.metamodel.generator.*
+import org.gradle.api.tasks.CacheableTask
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.TaskAction
+import org.modelix.metamodel.generator.LanguageSet
+import org.modelix.metamodel.generator.MetaModelGenerator
+import org.modelix.metamodel.generator.NameConfig
+import org.modelix.metamodel.generator.TypescriptMMGenerator
+import org.modelix.metamodel.generator.process
 import org.modelix.model.data.LanguageData
 import javax.inject.Inject
 
@@ -42,10 +53,12 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
 
     @TaskAction
     fun generate() {
-        var languages = LanguageSet(exportedLanguagesDir.get().asFile.walk()
-            .filter { it.extension.lowercase() == "json" }
-            .map { LanguageData.fromJson(it.readText()) }
-            .toList())
+        var languages = LanguageSet(
+            exportedLanguagesDir.get().asFile.walk()
+                .filter { it.extension.lowercase() == "json" }
+                .map { LanguageData.fromJson(it.readText()) }
+                .toList(),
+        )
         val previousLanguageCount = languages.getLanguages().size
 
         val includedNamespaces = this.includedNamespaces.get().map { it.trimEnd('.') }
@@ -56,8 +69,8 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
 
         languages = languages.filter {
             languages.getLanguages().filter { lang ->
-                includedLanguagesAndNS.contains(lang.name)
-                        || namespacePrefixes.any { lang.name.startsWith(it) }
+                includedLanguagesAndNS.contains(lang.name) ||
+                    namespacePrefixes.any { lang.name.startsWith(it) }
             }.forEach { lang ->
                 lang.getConceptsInLanguage().forEach { concept ->
                     includeConcept(concept.fqName)

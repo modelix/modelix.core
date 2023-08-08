@@ -20,18 +20,21 @@ class ConceptsFilter(val languageSet: LanguageSet) {
     fun isLanguageIncluded(langName: String): Boolean = includedLanguages.contains(langName)
 
     fun apply(): LanguageSet {
-        return LanguageSet(languageSet.getLanguages()
-            .filter { includedLanguages.contains(it.name) }
-            .map { lang -> LanguageData(
-                lang.language.uid,
-                lang.name,
-                lang.getConceptsInLanguage().filter { includedConcepts.contains(it.fqName) }.map { it.concept },
-                lang.language.enums
-            ) })
+        return LanguageSet(
+            languageSet.getLanguages()
+                .filter { includedLanguages.contains(it.name) }
+                .map { lang ->
+                    LanguageData(
+                        lang.language.uid,
+                        lang.name,
+                        lang.getConceptsInLanguage().filter { includedConcepts.contains(it.fqName) }.map { it.concept },
+                        lang.language.enums,
+                    )
+                },
+        )
     }
 
     private fun resolveRelativeConcept(contextLanguage: LanguageData, conceptName: String): String {
         return if (conceptName.contains(".")) conceptName else contextLanguage.name + "." + conceptName
     }
 }
-

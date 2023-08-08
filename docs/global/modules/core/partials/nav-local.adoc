@@ -20,4 +20,3 @@ include::core:partial$nav-reference.adoc[]
 //--
 //include::core:partial$nav-explanation.adoc[]
 //--
-

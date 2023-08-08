@@ -41,13 +41,17 @@ object KeycloakUtils {
 
     val authzClient: AuthzClient by lazy {
         require(isEnabled()) { "Keycloak is not enabled" }
-        patchUrls(AuthzClient.create(Configuration(
-            BASE_URL,
-            REALM,
-            CLIENT_ID,
-            mapOf("secret" to CLIENT_SECRET),
-            null
-        )))
+        patchUrls(
+            AuthzClient.create(
+                Configuration(
+                    BASE_URL,
+                    REALM,
+                    CLIENT_ID,
+                    mapOf("secret" to CLIENT_SECRET),
+                    null,
+                ),
+            ),
+        )
     }
 
     val jwkProvider: JwkProvider by lazy {
@@ -112,11 +116,15 @@ object KeycloakUtils {
     }
 
     private fun createAccessToken(identityToken: DecodedJWT, permissions: List<Pair<String, List<String>>>): DecodedJWT {
-        return JWT.decode(authzClient.authorization(identityToken.token).authorize(AuthorizationRequest().also {
-            for (permission in permissions) {
-                it.addPermission(permission.first, permission.second)
-            }
-        }).token)
+        return JWT.decode(
+            authzClient.authorization(identityToken.token).authorize(
+                AuthorizationRequest().also {
+                    for (permission in permissions) {
+                        it.addPermission(permission.first, permission.second)
+                    }
+                },
+            ).token,
+        )
     }
 
     @Synchronized
@@ -153,18 +161,18 @@ object KeycloakUtils {
         val requests = permissions.map {
             PermissionRequest(
                 ensureResourcesExists(it.first, null).id,
-                *it.second.map { it.name }.toTypedArray()
+                *it.second.map { it.name }.toTypedArray(),
             )
         }
         val ticketResponse = authzClient.protection().permission().create(requests)
-        val authResponse = authzClient.authorization(/* service account */).authorize(AuthorizationRequest(ticketResponse.ticket))
+        val authResponse = authzClient.authorization().authorize(AuthorizationRequest(ticketResponse.ticket))
         return JWT.decode(authResponse.token)
     }
 
     @Synchronized
     fun ensureResourcesExists(
         resourceSpec: KeycloakResource,
-        owner: DecodedJWT? = null
+        owner: DecodedJWT? = null,
     ): ResourceRepresentation {
         return existingResources.get(resourceSpec.name) {
             var resource = authzClient.protection().resource().findByNameAnyOwner(resourceSpec.name)
@@ -181,7 +189,7 @@ object KeycloakUtils {
                 if (resourceSpec.type.createByUser) {
                     attributes = mapOf(
                         "created-by" to listOfNotNull(owner?.subject, owner?.getClaim("email")?.asString()),
-                        "creation-timestamp" to listOf(Instant.now().epochSecond.toString())
+                        "creation-timestamp" to listOf(Instant.now().epochSecond.toString()),
                     )
                 }
             }
@@ -189,7 +197,6 @@ object KeycloakUtils {
             permissionCache.invalidateAll()
             return@get resource
         }
-
     }
 }
 
@@ -217,9 +224,7 @@ fun EPermissionType.toKeycloakScope(): KeycloakScope = when (this) {
     EPermissionType.WRITE -> KeycloakScope.WRITE
 }
 
-data class KeycloakResource(val name: String, val type: KeycloakResourceType) {
-
-}
+data class KeycloakResource(val name: String, val type: KeycloakResourceType)
 
 data class KeycloakResourceType(val name: String, val scopes: Set<KeycloakScope>, val createByUser: Boolean = false) {
     fun createInstance(resourceName: String) = KeycloakResource(this.name + "/" + resourceName, this)
@@ -246,7 +251,7 @@ private fun ProtectedResource.findByNameAnyOwner(name: String): ResourceRepresen
             true,
             true,
             null,
-            null
+            null,
         )
     return resources.firstOrNull()
 }

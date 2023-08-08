@@ -59,7 +59,7 @@ class SubtreeChanges(val cacheSize: Int) {
                     override fun referenceChanged(nodeId: Long, role: String) {
                         affectedNodes += nodeId
                     }
-                }
+                },
             )
             affectedSubtrees = oldTree.getAncestors(affectedNodes, true)
         }

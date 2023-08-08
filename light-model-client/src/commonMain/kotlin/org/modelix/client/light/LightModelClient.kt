@@ -59,7 +59,7 @@ class LightModelClient internal constructor(
     private val transactionManager: ITransactionManager,
     val autoFilterNonLoadedNodes: Boolean,
     val debugName: String = "",
-    val modelQLClient: ModelQLClient? = null
+    val modelQLClient: ModelQLClient? = null,
 ) {
 
     private val nodes: MutableMap<NodeId, NodeData> = HashMap()
@@ -171,7 +171,7 @@ class LightModelClient internal constructor(
             throw IllegalStateException("The root node is not included in the model query: ${query.toJson()}")
         }
 
-        var result : INode? = null
+        var result: INode? = null
         kotlinx.coroutines.withTimeout(timeout) {
             while (result == null) {
                 checkException()
@@ -241,9 +241,9 @@ class LightModelClient internal constructor(
                 operations = ArrayList(pendingOperations),
                 changeSetId = changeSetId,
                 baseVersionHash = lastMergedVersionHash,
-                baseChangeSet = lastUnconfirmedChangeSetId
+                baseChangeSet = lastUnconfirmedChangeSetId,
             )
-            //println("message to server: " + message.toJson())
+            // println("message to server: " + message.toJson())
             connection.sendMessage(message)
             pendingOperations.clear()
         }
@@ -302,7 +302,7 @@ class LightModelClient internal constructor(
         val data = nodes[nodeId] ?: return
         data.children.values.flatten().forEach { removeDataRecursive(it, nodesToKeep) }
         nodes.remove(nodeId)
-        //println("Removed $nodeId: $data")
+        // println("Removed $nodeId: $data")
     }
 
     private fun replaceIds(replacements: Map<String, String>) {
@@ -318,9 +318,10 @@ class LightModelClient internal constructor(
                     children.mapValues { role2list -> role2list.value.map { child -> replacements[child] ?: child } }
                 }.let { it.replaceContainment(replacements[it.parent] ?: it.parent, it.role) }
                 nodes[sourceId] = newData
-                if (newData.references.values.all { !it.startsWith(TEMP_ID_PREFIX) }
-                    && newData.children.values.flatten().all { !it.startsWith(TEMP_ID_PREFIX) }
-                    && newData.parent?.startsWith(TEMP_ID_PREFIX) != true) {
+                if (newData.references.values.all { !it.startsWith(TEMP_ID_PREFIX) } &&
+                    newData.children.values.flatten().all { !it.startsWith(TEMP_ID_PREFIX) } &&
+                    newData.parent?.startsWith(TEMP_ID_PREFIX) != true
+                ) {
                     noTempReferencesLeft.add(sourceId)
                 }
             }
@@ -475,7 +476,7 @@ class LightModelClient internal constructor(
                         if (brokenRoles.isNotEmpty()) {
                             val sourceNode = getNode(sourceNodeId)
                             brokenRoles.forEach { brokenRole ->
-                                //println("removing reference $sourceNodeId.$brokenRole -> $childId")
+                                // println("removing reference $sourceNodeId.$brokenRole -> $childId")
                                 sourceNode.setReferenceTarget(brokenRole, null as INodeReference?)
                             }
                         }
@@ -492,7 +493,7 @@ class LightModelClient internal constructor(
                 nodes[nodeId] = newParentData
                 pendingOperations.add(DeleteNodeOpData(childId))
                 nodes.remove(childId)
-                //pendingUpdates.removeAll { it.nodeId == childId }
+                // pendingUpdates.removeAll { it.nodeId == childId }
                 nodesReferencingTemporaryIds.remove(childId)
                 checkContainmentConsistency()
             }
@@ -544,7 +545,7 @@ class LightModelClient internal constructor(
         }
 
         override fun setReferenceTarget(role: String, target: INode?) {
-            requiresWrite {  setReferenceTarget(role, target?.reference) }
+            requiresWrite { setReferenceTarget(role, target?.reference) }
         }
 
         override fun getPropertyValue(role: String): String? {
@@ -562,7 +563,7 @@ class LightModelClient internal constructor(
                         role = role,
                         properties = if (value == null) properties - propertyRole else properties + (propertyRole to value),
                         references = references,
-                        children = children
+                        children = children,
                     )
                 }
                 pendingOperations.add(SetPropertyOpData(nodeId, propertyRole, value))
@@ -592,8 +593,10 @@ class LightModelClient internal constructor(
 
         override fun hashCode(): Int {
             if (nodeId.startsWith(TEMP_ID_PREFIX)) {
-                throw IllegalStateException("The server hasn't yet assigned an ID to this node." +
-                        " The ID and the hashCode will change.")
+                throw IllegalStateException(
+                    "The server hasn't yet assigned an ID to this node." +
+                        " The ID and the hashCode will change.",
+                )
             }
             return nodeId.hashCode()
         }
@@ -691,14 +694,14 @@ class LightModelClient internal constructor(
 
     interface IConnection {
         fun sendMessage(message: MessageFromClient)
-        fun connect(messageReceiver: (message: MessageFromServer)->Unit)
+        fun connect(messageReceiver: (message: MessageFromServer) -> Unit)
         fun disconnect()
     }
 
     private enum class AccessType(val canRead: Boolean, val canWrite: Boolean) {
         NONE(false, false),
         READ(true, false),
-        WRITE(true, true);
+        WRITE(true, true),
     }
 }
 
@@ -715,11 +718,11 @@ internal interface ITransactionManager {
 private class ReadWriteLockTransactionManager : ITransactionManager {
     private var writeListener: (() -> Unit)? = null
     private val lock = ReadWriteLock()
-    override fun <T> requiresRead(body: ()->T): T {
+    override fun <T> requiresRead(body: () -> T): T {
         if (!lock.canRead()) throw IllegalStateException("Not in a read transaction")
         return body()
     }
-    override fun <T> requiresWrite(body: ()->T): T {
+    override fun <T> requiresWrite(body: () -> T): T {
         if (!lock.canWrite()) throw IllegalStateException("Not in a write transaction")
         return body()
     }
@@ -734,7 +737,7 @@ private class ReadWriteLockTransactionManager : ITransactionManager {
                 try {
                     writeListener?.invoke()
                 } catch (ex: Exception) {
-                    mu.KotlinLogging.logger {  }.error(ex) { "Exception in write listener" }
+                    mu.KotlinLogging.logger { }.error(ex) { "Exception in write listener" }
                 }
             }
         }
@@ -785,19 +788,23 @@ abstract class LightModelClientBuilder {
     fun build(): LightModelClient {
         return LightModelClient(
             connection ?: (
-                WebsocketConnection((httpClient ?: (
-                        httpEngine?.let { HttpClient(it) } ?: (httpEngineFactory ?: getDefaultEngineFactory()).let { HttpClient(it) }
-                    )
-                ).config {
-                    install(WebSockets)
-                }, url ?: (
-                    "ws://$host:$port/ws"
-                ))
-            ),
+                WebsocketConnection(
+                    (
+                        httpClient ?: (
+                            httpEngine?.let { HttpClient(it) } ?: (httpEngineFactory ?: getDefaultEngineFactory()).let { HttpClient(it) }
+                            )
+                        ).config {
+                        install(WebSockets)
+                    },
+                    url ?: (
+                        "ws://$host:$port/ws"
+                        ),
+                )
+                ),
             transactionManager,
             autoFilterNonLoadedNodes = autoFilterNonLoadedNodes,
             debugName = debugName,
-            modelQLClient = modelQLClient
+            modelQLClient = modelQLClient,
         )
     }
     fun autoFilterNonLoadedNodes(value: Boolean = true): LightModelClientBuilder {
@@ -887,7 +894,7 @@ fun NodeData.asUpdateData(): NodeUpdateData {
         concept = concept,
         references = references,
         properties = properties,
-        children = children
+        children = children,
     )
 }
 

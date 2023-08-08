@@ -15,7 +15,7 @@ data class LanguageData(
     val uid: String? = null,
     val name: String,
     val concepts: List<ConceptData>,
-    val enums: List<EnumData> = emptyList()
+    val enums: List<EnumData> = emptyList(),
 ) {
 
     fun toJson(): String = prettyJson.encodeToString(this)
@@ -42,7 +42,7 @@ data class ConceptData(
     val children: List<ChildLinkData> = emptyList(),
     val references: List<ReferenceLinkData> = emptyList(),
     val extends: List<String> = emptyList(),
-    override val deprecationMessage: String? = null
+    override val deprecationMessage: String? = null,
 ) : IDeprecatable
 
 @Serializable
@@ -51,14 +51,14 @@ data class EnumData(
     val name: String,
     val members: List<EnumMemberData> = emptyList(),
     val defaultIndex: Int,
-    override val deprecationMessage: String? = null
+    override val deprecationMessage: String? = null,
 ) : IDeprecatable
 
 @Serializable
 data class EnumMemberData(
     val uid: String,
     val name: String,
-    val presentation: String? = null
+    val presentation: String? = null,
 )
 
 sealed interface IConceptFeatureData {
@@ -72,7 +72,7 @@ data class PropertyData(
     override val name: String,
     val type: PropertyType = PrimitivePropertyType(Primitive.STRING),
     val optional: Boolean = true,
-    override val deprecationMessage: String? = null
+    override val deprecationMessage: String? = null,
 ) : IConceptFeatureData, IDeprecatable
 
 class PropertyTypeSerializer : KSerializer<PropertyType> {
@@ -117,7 +117,7 @@ data class ChildLinkData(
     val type: String,
     val multiple: Boolean = false,
     val optional: Boolean = true,
-    override val deprecationMessage: String? = null
+    override val deprecationMessage: String? = null,
 ) : IConceptFeatureData, IDeprecatable
 
 @Serializable
@@ -126,5 +126,5 @@ data class ReferenceLinkData(
     override val name: String,
     val type: String,
     val optional: Boolean = true,
-    override val deprecationMessage: String? = null
+    override val deprecationMessage: String? = null,
 ) : IConceptFeatureData, IDeprecatable

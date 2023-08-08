@@ -38,17 +38,21 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
     }
 
     private fun generateRegistry(languages: ProcessedLanguageSet) {
-        outputDir.resolve("index.ts").writeText("""
+        outputDir.resolve("index.ts").writeText(
+            """
             import { LanguageRegistry } from "@modelix/ts-model-api";
             ${languages.getLanguages().joinToString("\n") { """
                 import { ${it.simpleClassName()} } from "./${it.simpleClassName()}";
-            """.trimIndent() }}
+            """.trimIndent()
+            }}
             export function registerLanguages() {
                 ${languages.getLanguages().joinToString("\n") { """
                     LanguageRegistry.INSTANCE.register(${it.simpleClassName()}.INSTANCE);
-                """.trimIndent() }}
+            """.trimIndent()
+            }}
             }
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 
     private fun generateLanguage(language: ProcessedLanguage): String {
@@ -58,34 +62,36 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         return """
             import {
                 ChildListAccessor,
-                GeneratedConcept, 
+                GeneratedConcept,
                 GeneratedLanguage,
                 IConceptJS,
                 INodeJS,
-                ITypedNode, 
+                ITypedNode,
                 SingleChildAccessor,
                 TypedNode,
                 LanguageRegistry
             } from "@modelix/ts-model-api";
-            
+
             ${language.languageDependencies().joinToString("\n") {
-                """import * as ${it.simpleClassName()} from "./${it.simpleClassName()}";"""
-            }}
-            
+            """import * as ${it.simpleClassName()} from "./${it.simpleClassName()}";"""
+        }}
+
             export class ${language.simpleClassName()} extends GeneratedLanguage {
                 public static INSTANCE: ${language.simpleClassName()} = new ${language.simpleClassName()}();
                 constructor() {
                     super("${language.name}")
-                    
-                    ${language.getConcepts().joinToString("\n") { concept -> """
+
+                    ${language.getConcepts().joinToString("\n") { concept ->
+            """
                         this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.nodeWrapperImplName()}(node))
-                    """.trimIndent() }}
+            """.trimIndent()
+        }}
                 }
                 public getConcepts() {
                     return [$conceptNamesList]
                 }
             }
-            
+
             ${language.getConcepts().joinToString("\n") { generateConcept(it) }.replaceIndent("            ")}
         """.trimIndent()
     }
@@ -104,41 +110,43 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         }
                     """.trimIndent()
                     val typedPropertyText = if (feature.type is PrimitivePropertyType) {
-                        when((feature.type as PrimitivePropertyType).primitive) {
+                        when ((feature.type as PrimitivePropertyType).primitive) {
                             Primitive.INT -> {
                                 """
                                 public set ${feature.generatedName}(value: number) {
-                                    this.${rawValueName} = value.toString();
+                                    this.$rawValueName = value.toString();
                                 }
                                 public get ${feature.generatedName}(): number {
-                                    let str = this.${rawValueName};
+                                    let str = this.$rawValueName;
                                     return str ? parseInt(str) : 0;
                                 }
-                                
-                            """.trimIndent()
+
+                                """.trimIndent()
                             }
                             Primitive.BOOLEAN -> {
                                 """
                                 public set ${feature.generatedName}(value: boolean) {
-                                    this.${rawValueName} = value ? "true" : "false";
+                                    this.$rawValueName = value ? "true" : "false";
                                 }
                                 public get ${feature.generatedName}(): boolean {
-                                    return this.${rawValueName} === "true";
+                                    return this.$rawValueName === "true";
                                 }
-                                
-                            """.trimIndent()
+
+                                """.trimIndent()
                             }
                             Primitive.STRING -> """
                                 public set ${feature.generatedName}(value: string) {
-                                    this.${rawValueName} = value;
+                                    this.$rawValueName = value;
                                 }
                                 public get ${feature.generatedName}(): string {
-                                    return this.${rawValueName} ?? "";
+                                    return this.$rawValueName ?? "";
                                 }
-                                
+
                             """.trimIndent()
                         }
-                    } else ""
+                    } else {
+                        ""
+                    }
                     """
                         $rawPropertyText
                         $typedPropertyText
@@ -156,7 +164,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         let target = this._node.getReferenceTargetNode("${feature.originalName}");
                         return target ? LanguageRegistry.INSTANCE.wrapNode(target) as $entityType : undefined;
                     }
-                """.trimIndent()
+                    """.trimIndent()
                 }
                 is ProcessedChildLink -> {
                     val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
@@ -180,23 +188,25 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                             Primitive.BOOLEAN -> {
                                 """
                                 ${feature.generatedName}: boolean
-                                
+
                                 """.trimIndent()
                             }
                             Primitive.INT -> {
                                 """
                                 ${feature.generatedName}: number
-                                
+
                                 """.trimIndent()
                             }
                             Primitive.STRING -> {
                                 """
                                 ${feature.generatedName}: string
-                                
+
                                 """.trimIndent()
                             }
                         }
-                    } else ""
+                    } else {
+                        ""
+                    }
                     """
                         $rawPropertyText
                         $typedPropertyText
@@ -206,7 +216,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                     val typeRef = feature.type.resolved
                     val languagePrefix = typeRef.languagePrefix(concept.language)
                     val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
-                        """
+                    """
                         set ${feature.generatedName}(value: $entityType | undefined);
                         get ${feature.generatedName}(): $entityType | undefined;
                     """.trimIndent()
@@ -223,7 +233,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         val interfaceList = concept.getDirectSuperConcepts().joinToString(", ") { it.tsInterfaceRef(concept.language) }.ifEmpty { "ITypedNode" }
         // TODO extend first super concept do reduce the number of generated members
         return """
-            
+
             export class ${concept.conceptWrapperImplName()} extends GeneratedConcept {
               constructor(uid: string) {
                 super(uid);
@@ -233,22 +243,22 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
               }
             }
             export const ${concept.conceptWrapperInterfaceName()} = new ${concept.conceptWrapperImplName()}("${concept.uid}")
-            
+
             export interface ${concept.nodeWrapperInterfaceName()} extends $interfaceList {
-                ${features}
+                $features
             }
-            
+
             export function isOfConcept_${concept.name}(node: ITypedNode): node is ${concept.nodeWrapperInterfaceName()} {
                 return '${concept.markerPropertyName()}' in node.constructor;
             }
-            
+
             export class ${concept.nodeWrapperImplName()} extends TypedNode implements ${concept.nodeWrapperInterfaceName()} {
                 ${concept.getAllSuperConceptsAndSelf().joinToString("\n") {
-                    """public static readonly ${it.markerPropertyName()}: boolean = true"""
-                }}
+            """public static readonly ${it.markerPropertyName()}: boolean = true"""
+        }}
                 ${featuresImpl.replaceIndent("                ")}
             }
-            
+
         """.trimIndent()
     }
 
@@ -271,7 +281,8 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         this.generatedClassName().simpleName
 
     private fun ProcessedConcept.markerPropertyName() = "_is_" + this.fqName().replace(".", "_")
-    //private fun ProcessedConcept.tsClassName() = nameConfig.languageClassName(this.language.name) + "." + this.name
+
+    // private fun ProcessedConcept.tsClassName() = nameConfig.languageClassName(this.language.name) + "." + this.name
     private fun ProcessedConcept.tsInterfaceRef(contextLanguage: ProcessedLanguage) = languagePrefix(contextLanguage) + nodeWrapperInterfaceName()
     private fun ProcessedConcept.languagePrefix(contextLanguage: ProcessedLanguage): String {
         return if (this.language == contextLanguage) {

@@ -3,7 +3,6 @@ package org.modelix.metamodel
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
-import org.modelix.model.api.resolve
 import org.modelix.model.api.tryResolve
 import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
@@ -51,5 +50,6 @@ object TypedLanguagesRegistry : ILanguageRepository {
 fun <NodeT : ITypedNode> INode.typed(nodeClass: KClass<NodeT>): NodeT = nodeClass.cast(TypedLanguagesRegistry.wrapNode(this))
 inline fun <reified NodeT : ITypedNode> INode.typed(): NodeT = TypedLanguagesRegistry.wrapNode(this) as NodeT
 fun <NodeT : ITypedNode> INode.typedUnsafe(): NodeT = TypedLanguagesRegistry.wrapNode(this) as NodeT
+
 @JvmName("asTypedNode")
 fun INode.typed(): ITypedNode = TypedLanguagesRegistry.wrapNode(this)

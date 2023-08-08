@@ -31,7 +31,7 @@ class MultiplexedOutput<out E>(val muxIndex: Int, val output: IStepOutput<E>) : 
 
 data class MultiplexedOutputSerializer<E>(
     val owner: IStep,
-    val serializers: List<KSerializer<IStepOutput<E>>>
+    val serializers: List<KSerializer<IStepOutput<E>>>,
 ) : KSerializer<MultiplexedOutput<E>> {
     override fun deserialize(decoder: Decoder): MultiplexedOutput<E> {
         try {
@@ -48,7 +48,7 @@ data class MultiplexedOutputSerializer<E>(
             }
             return MultiplexedOutput(
                 muxIndex ?: throw IllegalStateException("muxIndex missing"),
-                caseOutput ?: throw IllegalStateException("output missing")
+                caseOutput ?: throw IllegalStateException("output missing"),
             )
         } catch (ex: Exception) {
             throw RuntimeException("Deserialization failed for step $owner", ex)

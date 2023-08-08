@@ -13,7 +13,7 @@
  */
 package org.modelix.client.light
 
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.cio.CIO
 
 @Deprecated("Use LightModelClient", ReplaceWith("LightModelClient"))
 object LightModelClientJVM {

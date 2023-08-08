@@ -13,16 +13,19 @@
  */
 package org.modelix.model
 
-import org.modelix.model.api.*
+import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitor
+import org.modelix.model.api.ITreeChangeVisitorEx
+import org.modelix.model.api.PBranch
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
-import org.modelix.model.operations.*
+import org.modelix.model.operations.OTBranch
+import org.modelix.model.operations.RoleInNode
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.persistent.SerializationUtil
 import kotlin.random.Random
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class TreeDiffTest {
 
@@ -161,11 +164,11 @@ class TreeDiffTest {
             super.assertEquals(expected)
             assertEquals(
                 expected.addedNodes.map { SerializationUtil.longToHex(it) }.sortedBy { it },
-                addedNodes.map { SerializationUtil.longToHex(it) }.sortedBy { it }
+                addedNodes.map { SerializationUtil.longToHex(it) }.sortedBy { it },
             )
             assertEquals(
                 expected.removedNodes.map { SerializationUtil.longToHex(it) }.sortedBy { it },
-                removedNodes.map { SerializationUtil.longToHex(it) }.sortedBy { it }
+                removedNodes.map { SerializationUtil.longToHex(it) }.sortedBy { it },
             )
         }
 

@@ -101,6 +101,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             .joinToString(", ") { it.name }
         builder.addFunction(
             FunSpec.builder("getConcepts")
+                .returns(List::class.asClassName().parameterizedBy(IConcept::class.asTypeName()))
                 .addModifiers(KModifier.OVERRIDE)
                 .addCode(language.getConcepts().map { it.conceptObjectType() }.toListLiteralCodeBlock())
                 .build()
@@ -139,7 +140,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     .build()
             )
 
+        val enumType = ClassName(enum.language.name, enum.name)
         val getLiteralFunBuilder = FunSpec.builder("getLiteralByMemberId")
+            .returns(enumType)
             .addParameter("uid", String::class)
         val getLiteralCodeBuilder = CodeBlock.builder().beginControlFlow("return when (uid) {")
 
@@ -166,6 +169,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
         val companion = TypeSpec.companionObjectBuilder()
             .addFunction(
                 FunSpec.builder("defaultValue")
+                    .returns(enumType)
                     .addCode("return values()[%L]", enum.defaultIndex)
                     .build())
             .addFunction(
@@ -326,12 +330,12 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 )
                             }
 
+                            val inputStepType = IMonoStep::class.asTypeName()
+                                .parameterizedBy(concept.nodeWrapperInterfaceType())
                             addFunction(
                                 FunSpec.builder(feature.setterName())
-                                    .receiver(
-                                        IMonoStep::class.asTypeName()
-                                            .parameterizedBy(concept.nodeWrapperInterfaceType())
-                                    )
+                                    .returns(inputStepType)
+                                    .receiver(inputStepType)
                                     .addParameter("value", IMonoStep::class.asTypeName().parameterizedBy(feature.asKotlinType()))
                                     .addStatement(
                                         "return %T.setProperty(this, %T.%N, value)",
@@ -417,12 +421,14 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             val instanceClassType = KClass::class.asClassName().parameterizedBy(concept.nodeWrapperImplType())
             addFunction(
                 FunSpec.builder(GeneratedConcept<*, *>::getInstanceClass.name)
+                    .returns(KClass::class.asClassName().parameterizedBy(concept.nodeWrapperImplType()))
                     .addModifiers(KModifier.OVERRIDE)
                     .addStatement("""return %T::class""", concept.nodeWrapperImplType())
                     .build()
             )
             addFunction(
                 FunSpec.builder(GeneratedConcept<*, *>::typed.name)
+                    .returns(concept.conceptWrapperInterfaceType())
                     .addModifiers(KModifier.OVERRIDE)
                     .addStatement("""return %T""", concept.conceptWrapperInterfaceClass())
                     .build()
@@ -434,6 +440,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             )
             addFunction(
                 FunSpec.builder(GeneratedConcept<*, *>::wrap.name)
+                    .returns(concept.nodeWrapperImplType())
                     .addModifiers(KModifier.OVERRIDE)
                     .addParameter("node", INode::class)
                     .addStatement("return %T(node)", concept.nodeWrapperImplType())
@@ -442,6 +449,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             concept.uid?.let { uid ->
                 addFunction(
                     FunSpec.builder(GeneratedConcept<*, *>::getUID.name)
+                        .returns(String::class)
                         .addModifiers(KModifier.OVERRIDE)
                         .addStatement(CodeBlock.of("return %S", uid).toString())
                         .build()

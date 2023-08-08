@@ -24,7 +24,7 @@ ktor="2.3.2"
 kotlinHtml="0.8.0"
 kotlinSerialization="1.5.1"
 ignite="2.15.0"
-apacheCxf="3.5.5"
+apacheCxf="4.0.2"
 
 [libraries]
 

@@ -3,7 +3,7 @@ name: MPS compatibility
 on:
   push:
     branches:
-      - '**'
+      - 'main'
   pull_request: {}
   # allow manual execution just in case
   workflow_dispatch:

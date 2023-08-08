@@ -17,13 +17,12 @@ package org.modelix.model.server;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import org.json.JSONArray;
 import org.junit.Test;
 import org.modelix.model.server.handlers.KeyValueLikeModelServer;
 import org.modelix.model.server.store.InMemoryStoreClient;
-
-import java.util.Arrays;
-import java.util.HashSet;
 
 public class RestModelServerTest {
 

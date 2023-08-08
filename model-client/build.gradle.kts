@@ -2,27 +2,14 @@ plugins {
     `maven-publish`
     id("org.jetbrains.kotlin.multiplatform")
     id("com.diffplug.spotless")
-    id("org.jlleitschuh.gradle.ktlint")
     `java-library`
     jacoco
-}
-
-configurations {
-    ktlint
 }
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(11))
     }
-}
-
-ktlint {
-    disabledRules.add("no-wildcard-imports")
-}
-
-tasks.named("check") {
-    dependsOn("ktlintCheck")
 }
 
 val kotlinCoroutinesVersion: String by rootProject

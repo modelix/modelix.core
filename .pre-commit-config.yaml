@@ -23,3 +23,11 @@ repos:
         stages: [commit-msg]
         additional_dependencies: ["@commitlint/config-angular"]
         args: ["--config", "./commitlint.config.js"]
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.10.0
+    hooks:
+      - id: pretty-format-kotlin
+        args:
+          # IMPORTANT: keep in sync with the version configured in build.gradle.kts
+          - --ktlint-version=0.50.0
+          - --autofix

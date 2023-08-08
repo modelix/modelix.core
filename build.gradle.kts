@@ -52,6 +52,8 @@ dependencies {
 subprojects {
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+
     version = rootProject.version
     group = rootProject.group
 
@@ -59,6 +61,11 @@ subprojects {
         pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
             footerMessage = createFooterMessage()
         }
+    }
+
+    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        // IMPORTANT: keep in sync with the version in .pre-commit-config.yaml
+        version.set("0.50.0")
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {

@@ -22,13 +22,11 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.base.Charsets;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -50,7 +48,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;

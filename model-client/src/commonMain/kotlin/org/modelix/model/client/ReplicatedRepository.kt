@@ -7,6 +7,7 @@ import org.modelix.model.lazy.RepositoryId
 
 expect class ReplicatedRepository(client: IModelClient, branchReference: BranchReference, user: () -> String) {
     var localVersion: CLVersion?
+        private set
     val branch: IBranch
     fun dispose()
     fun isDisposed(): Boolean

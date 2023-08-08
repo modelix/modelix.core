@@ -16,7 +16,7 @@ actual class ReplicatedRepository actual constructor(
 
     actual var localVersion: CLVersion?
         get() = TODO("Not yet implemented")
-        set(value) {}
+        private set(value) {}
     actual val branch: IBranch
         get() = TODO("Not yet implemented")
 

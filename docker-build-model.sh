@@ -8,9 +8,12 @@ TAG=$( ./modelix-version.sh )
   cd model-server
   if [ "${CI}" = "true" ]; then
     docker buildx build --platform linux/amd64,linux/arm64 --push \
+    -t modelix/model-server:latest -t "modelix/model-server:${TAG}"
     -t modelix/modelix-model:latest -t "modelix/modelix-model:${TAG}" .
   else
-    docker build -t modelix/modelix-model:latest -t "modelix/modelix-model:${TAG}" .
+    docker build \
+    -t modelix/model-server:latest -t "modelix/model-server:${TAG}" \
+    -t modelix/modelix-model:latest -t "modelix/modelix-model:${TAG}" .
   fi
 )
 

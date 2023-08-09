@@ -93,6 +93,7 @@ metamodel {
     dependsOn(resolveMps)
     mpsHome = mpsDir
     kotlinDir = kotlinGenDir
+    modelqlKotlinDir = kotlinGenDir
     kotlinProject = project
     typescriptDir = projectDir.resolve("typescript_src")
     includeNamespace("jetbrains")

@@ -33,6 +33,10 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
 
     @get:OutputDirectory
     @Optional
+    val modelqlKotlinOutputDir: DirectoryProperty = of.directoryProperty()
+
+    @get:OutputDirectory
+    @Optional
     val typescriptOutputDir: DirectoryProperty = of.directoryProperty()
 
     @get:Input
@@ -92,7 +96,11 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
 
         val kotlinOutputDir = this.kotlinOutputDir.orNull?.asFile
         if (kotlinOutputDir != null) {
-            val generator = MetaModelGenerator(kotlinOutputDir.toPath(), nameConfig.get())
+            val generator = MetaModelGenerator(
+                kotlinOutputDir.toPath(),
+                nameConfig.get(),
+                this.modelqlKotlinOutputDir.orNull?.asFile?.toPath()
+            )
             generator.generate(processedLanguages)
             registrationHelperName.orNull?.let {
                 generator.generateRegistrationHelper(it, processedLanguages)

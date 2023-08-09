@@ -3,12 +3,14 @@ plugins {
     `maven-publish`
 }
 
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
+
 dependencies {
     api(project(":model-api"))
 
-    compileOnly("com.jetbrains:mps-openapi:2021.1.4")
-    compileOnly("com.jetbrains:mps-core:2021.1.4")
-    compileOnly("com.jetbrains:mps-environment:2021.1.4")
+    compileOnly("com.jetbrains:mps-openapi:$mpsVersion")
+    compileOnly("com.jetbrains:mps-core:$mpsVersion")
+    compileOnly("com.jetbrains:mps-environment:$mpsVersion")
 
     implementation(kotlin("stdlib"))
     implementation(libs.kotlin.logging)

@@ -65,9 +65,10 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
 
     override fun getDirectSuperConcepts(): List<IConcept> {
         return when (concept) {
-            is SConcept -> listOfNotNull<SAbstractConcept>(concept.superConcept) + concept.superInterfaces
-            is SInterfaceConcept -> concept.superInterfaces
-            else -> emptyList()
+            is SConcept -> listOfNotNull<SAbstractConcept>(ConceptWorkaround(concept).superConcept) +
+                ConceptWorkaround(concept).superInterfaces
+            is SInterfaceConcept -> ConceptWorkaround(concept).superInterfaces
+            else -> emptyList<SAbstractConcept>()
         }.map { MPSConcept(it) }
     }
 

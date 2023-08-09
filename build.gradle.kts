@@ -38,12 +38,6 @@ plugins {
     alias(libs.plugins.dokka)
 }
 
-repositories {
-    mavenLocal()
-    maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
-    mavenCentral()
-}
-
 group = "org.modelix"
 description = "Projectional Editor"
 version = computeVersion()
@@ -88,7 +82,9 @@ subprojects {
             freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
         }
     }
+}
 
+allprojects {
     repositories {
         mavenLocal()
         maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }

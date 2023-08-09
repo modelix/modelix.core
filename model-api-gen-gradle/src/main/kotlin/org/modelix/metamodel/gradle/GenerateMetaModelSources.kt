@@ -99,7 +99,7 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
             val generator = MetaModelGenerator(
                 kotlinOutputDir.toPath(),
                 nameConfig.get(),
-                this.modelqlKotlinOutputDir.orNull?.asFile?.toPath()
+                this.modelqlKotlinOutputDir.orNull?.asFile?.toPath(),
             )
             generator.generate(processedLanguages)
             registrationHelperName.orNull?.let {

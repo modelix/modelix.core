@@ -5,9 +5,13 @@ import jetbrains.mps.baseLanguage.jdk8.SuperInterfaceMethodCall_old
 import jetbrains.mps.lang.behavior.C_ConceptMethodDeclaration
 import jetbrains.mps.lang.behavior.ConceptMethodDeclaration
 import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
+import jetbrains.mps.lang.editor.C_FontStyleStyleClassItem
+import jetbrains.mps.lang.editor.L_jetbrains_mps_lang_editor
+import jetbrains.mps.lang.editor._FontStyle_Enum
 import org.modelix.metamodel.IPropertyValueEnum
 import org.modelix.metamodel.TypedLanguagesRegistry
 import org.modelix.metamodel.typed
+import org.modelix.metamodel.untyped
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode

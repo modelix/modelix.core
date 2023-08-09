@@ -26,6 +26,7 @@ import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.persistent.SerializationUtil
 import kotlin.random.Random
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class TreeDiffTest {
 

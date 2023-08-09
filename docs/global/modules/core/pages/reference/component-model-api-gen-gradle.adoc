@@ -82,6 +82,14 @@ Inside of the `metamodel` block the following settings can be configured.
 |File
 |Target Kotlin directory of the generator
 
+|`modelqlKotlinDir`
+|File
+|The generation of the ModelQL API is optional, because the output has a dependency on the ModelQL runtime.
+ If this option is set, you have to add a dependency on `org.modelix:modelql-typed`.
+
+ Can be the same as `kotlinDir` or a directory in a separate subproject,
+ if you run into memory issues of the Kotlin compiler.
+
 |`kotlinProject`
 |Project
 |Target Kotlin project of the generator

@@ -20,6 +20,7 @@ open class MetaModelGradleSettings {
     val includedConcepts: MutableSet<String> = HashSet()
     val includedModules: MutableSet<String> = HashSet()
     var kotlinDir: File? = null
+    var modelqlKotlinDir: File? = null
     var kotlinProject: Project? = null
         set(value) {
             if (kotlinDir == null && value != null) {

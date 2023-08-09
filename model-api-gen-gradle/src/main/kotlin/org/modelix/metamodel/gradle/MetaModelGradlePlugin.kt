@@ -86,6 +86,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
         project.afterEvaluate {
             generateMetaModelSources.configure { task ->
                 settings.kotlinDir?.let { task.kotlinOutputDir.set(it) }
+                settings.modelqlKotlinDir?.let { task.modelqlKotlinOutputDir.set(it) }
                 settings.typescriptDir?.let { task.typescriptOutputDir.set(it) }
                 task.includedNamespaces.addAll(settings.includedLanguageNamespaces)
                 task.includedLanguages.addAll(settings.includedLanguages)

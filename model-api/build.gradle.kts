@@ -78,6 +78,6 @@ listOf(
 ).forEach {
     tasks.named(it) {
         dependsOn(":ts-model-api:npm_run_build")
-        dependsOn(":ts-model-api:patchKotlinExternals")
+        dependsOn(":ts-model-api:npm_run_generateKotlin")
     }
 }

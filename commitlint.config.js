@@ -6,6 +6,7 @@ module.exports = {
       "always",
       [
         "deps",
+        "js-model-client",
         "light-model-client",
         "model-server-lib",
         "metamodel-export",

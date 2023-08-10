@@ -16,6 +16,7 @@ spotless = { id = "com.diffplug.spotless", version = "6.20.0" }
 tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.1.0" }
 dokka = {id = "org.jetbrains.dokka", version = "1.8.20"}
+npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.1" }
 
 [versions]
 kotlin = "1.9.0"

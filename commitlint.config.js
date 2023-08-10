@@ -20,6 +20,7 @@ module.exports = {
         "mps-model-server",
         "mps-model-server-plugin",
         "ts-model-api",
+        "ts-model-client",
       ],
     ],
     "subject-case": [0, 'never']

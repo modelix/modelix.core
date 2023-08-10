@@ -36,3 +36,7 @@ tasks.named("npm_publish") {
 tasks.named("publish") {
   dependsOn("npm_publish")
 }
+
+tasks.named("clean") {
+  dependsOn("npm_run_clean")
+}

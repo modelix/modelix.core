@@ -1,0 +1,1 @@
+external interface ILanguage

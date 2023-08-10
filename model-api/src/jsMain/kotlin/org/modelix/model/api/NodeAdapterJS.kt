@@ -3,8 +3,6 @@ package org.modelix.model.api
 import IConceptJS
 import INodeJS
 import INodeReferenceJS
-import LanguageRegistry
-import TypedNode
 
 @ExperimentalJsExport
 @JsExport
@@ -32,7 +30,7 @@ object JSNodeConverter {
     fun toINode(node: Any): INode {
         if (node is INode) return node
         if (node is NodeAdapterJS) return node.node
-        if (node is TypedNode) return toINode(node._node)
+//        if (node is TypedNode) return toINode(node._node)
 
         // Workaround, because ts-model-api is loaded twice by webpack making the instanceof check on TypedNode fail.
         val unwrapped = node.asDynamic().node
@@ -51,10 +49,12 @@ interface INodeJS_ : INodeJS
 class NodeAdapterJS(val node: INode) : INodeJS_ {
     init {
         // This is called from JS, so this check is not redundant.
+        @Suppress("USELESS_IS_CHECK")
         require(node is INode) { "Not an INode: $node" }
     }
     override fun getConcept(): IConceptJS? {
-        return getConceptUID()?.let { LanguageRegistry.INSTANCE.resolveConcept(it) }
+        TODO()
+//        return getConceptUID()?.let { LanguageRegistry.INSTANCE.resolveConcept(it) }
     }
 
     override fun getConceptUID(): String? {
@@ -78,12 +78,12 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         return node.allChildren.map { NodeAdapterJS(it) }.toTypedArray()
     }
 
-    override fun moveChild(role: String?, index: Number, child: INodeJS) {
+    override fun moveChild(role: String?, index: Int, child: INodeJS) {
         // TODO use IChildLink instead of String
         node.moveChild(role, index.toInt(), (child as NodeAdapterJS).node)
     }
 
-    override fun addNewChild(role: String?, index: Number, concept: IConceptJS?): INodeJS {
+    override fun addNewChild(role: String?, index: Int, concept: IConceptJS?): INodeJS {
         val conceptRef = concept?.getUID()?.let { ConceptReference(it) }
         // TODO use IChildLink instead of String
         return NodeAdapterJS(node.addNewChild(role, index.toInt(), conceptRef))

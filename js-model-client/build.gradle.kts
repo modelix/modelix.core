@@ -57,8 +57,8 @@ kotlin {
         }
         val jsMain by getting {
             dependencies {
-                //implementation(npm("@modelix/ts-model-api", rootDir.resolve("ts-model-api")))
-                //implementation(npm("@modelix/ts-model-api", "$version"))
+                api(project(":model-api"))
+                implementation(project(":model-client"))
             }
         }
         val jsTest by getting {

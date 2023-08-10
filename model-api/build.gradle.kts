@@ -27,6 +27,9 @@ kotlin {
         useCommonJs()
     }
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.js.ExperimentalJsExport")
+        }
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
@@ -55,29 +58,13 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                api(npm("@modelix/ts-model-api", rootDir.resolve("ts-model-api")))
                 implementation(libs.kotlin.coroutines.core)
             }
-            kotlin.srcDir(rootDir.resolve("ts-model-api").resolve("build/dukat"))
         }
         val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-js"))
             }
         }
-    }
-}
-
-listOf(
-    "sourcesJar",
-    "runKtlintCheckOverJsMainSourceSet",
-    "jsSourcesJar",
-    "jsPackageJson",
-    "compileKotlinJs",
-    "jsProcessResources",
-).forEach {
-    tasks.named(it) {
-        dependsOn(":ts-model-api:npm_run_build")
-        dependsOn(":ts-model-api:npm_run_generateKotlin")
     }
 }

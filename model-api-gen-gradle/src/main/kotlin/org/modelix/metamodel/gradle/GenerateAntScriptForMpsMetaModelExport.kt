@@ -75,7 +75,7 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
                     <taskdef resource="jetbrains/mps/build/ant/antlib.xml" classpathref="path.mps.ant.path" />
                 </target>
 
-                <target name="export-languages" depends="declare-mps-tasks">
+                <target name="export-languages" depends="clean,declare-mps-tasks">
                     <echo message="Running export of languages" />
                     <runMPS solution="e52a4421-48a2-4de1-8327-d9414e799c67(org.modelix.metamodel.export)" startClass="org.modelix.metamodel.export.CommandlineExporter" startMethod="${if (exportModulesFilter.isPresent) "exportBoth" else "exportLanguages"}">
                         <library file="${getMpsLanguagesDir().absolutePath}" />

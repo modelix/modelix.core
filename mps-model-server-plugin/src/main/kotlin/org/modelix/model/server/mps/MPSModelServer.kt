@@ -19,7 +19,9 @@ import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
+import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.MPSModuleRepository
@@ -46,6 +48,28 @@ class MPSModelServer : Disposable {
             server = LightModelServer.builder()
                 .port(48305)
                 .rootNode(rootNodeProvider)
+                .healthCheck(object : LightModelServer.IHealthCheck {
+                    override val id: String
+                        get() = "indexer"
+                    override val enabledByDefault: Boolean
+                        get() = false
+
+                    override fun run(output: java.lang.StringBuilder): Boolean {
+                        var allSmart = true
+                        val projects = ProjectManager.getInstance().openedProjects
+                        for (project in projects) {
+                            project.repository.modelAccess.runReadAction {
+                                val indexerDone =
+                                    !DumbService.getInstance(ProjectHelper.toIdeaProject(project)).isDumb
+                                if (!indexerDone) {
+                                    output.append("  indexer running on project ").append(project.name)
+                                    allSmart = false
+                                }
+                            }
+                        }
+                        return allSmart
+                    }
+                })
                 .healthCheck(object : LightModelServer.IHealthCheck {
                     override val id: String
                         get() = "projects"

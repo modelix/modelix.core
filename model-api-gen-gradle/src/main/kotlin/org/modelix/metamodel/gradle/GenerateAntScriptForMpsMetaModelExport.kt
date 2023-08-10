@@ -1,31 +1,28 @@
 package org.modelix.metamodel.gradle
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 import org.gradle.api.tasks.Optional
+import java.io.File
 import java.util.*
 import javax.inject.Inject
 
 @CacheableTask
 abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: ObjectFactory) : DefaultTask() {
-    @get:InputDirectory
-    @PathSensitive(PathSensitivity.RELATIVE)
-    val mpsHome: DirectoryProperty = of.directoryProperty()
+    @Input
+    val mpsHome: Property<String> = of.property(String::class.java)
 
     @get:OutputFile
     val antScriptFile: RegularFileProperty = of.fileProperty()
 
-    @InputDirectory
-    @PathSensitive(PathSensitivity.RELATIVE)
+    @Input
     val exporterDir: Property<String> = of.property(String::class.java)
 
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
+    @Input
     val moduleFolders: ListProperty<String> = of.listProperty(String::class.java)
 
     @Input
@@ -101,8 +98,8 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
         """.trimIndent())
     }
 
-    private fun getMpsBuildPropertiesFile() = mpsHome.get().asFile.resolve("build.properties")
-    private fun getMpsLanguagesDir() = mpsHome.get().asFile.resolve("languages")
+    private fun getMpsBuildPropertiesFile() = File(mpsHome.get()).resolve("build.properties")
+    private fun getMpsLanguagesDir() = File(mpsHome.get()).resolve("languages")
 
     private fun getMpsVersion(): String {
         val buildPropertiesFile = getMpsBuildPropertiesFile()

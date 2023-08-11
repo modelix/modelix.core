@@ -1,38 +1,32 @@
 package org.modelix.metamodel.gradle
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import java.io.File
+import java.util.*
 import java.util.Properties
 import javax.inject.Inject
 
 @CacheableTask
 abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: ObjectFactory) : DefaultTask() {
-    @get:InputDirectory
-    @PathSensitive(PathSensitivity.RELATIVE)
-    val mpsHome: DirectoryProperty = of.directoryProperty()
+    @Input
+    val mpsHome: Property<String> = of.property(String::class.java)
 
     @get:OutputFile
     val antScriptFile: RegularFileProperty = of.fileProperty()
 
-    @InputDirectory
-    @PathSensitive(PathSensitivity.RELATIVE)
+    @Input
     val exporterDir: Property<String> = of.property(String::class.java)
 
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
+    @Input
     val moduleFolders: ListProperty<String> = of.listProperty(String::class.java)
 
     @Input
@@ -83,7 +77,7 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
                     <taskdef resource="jetbrains/mps/build/ant/antlib.xml" classpathref="path.mps.ant.path" />
                 </target>
 
-                <target name="export-languages" depends="declare-mps-tasks">
+                <target name="export-languages" depends="clean,declare-mps-tasks">
                     <echo message="Running export of languages" />
                     <runMPS solution="e52a4421-48a2-4de1-8327-d9414e799c67(org.modelix.metamodel.export)" startClass="org.modelix.metamodel.export.CommandlineExporter" startMethod="${if (exportModulesFilter.isPresent) "exportBoth" else "exportLanguages"}">
                         <library file="${getMpsLanguagesDir().absolutePath}" />
@@ -112,8 +106,8 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
         )
     }
 
-    private fun getMpsBuildPropertiesFile() = mpsHome.get().asFile.resolve("build.properties")
-    private fun getMpsLanguagesDir() = mpsHome.get().asFile.resolve("languages")
+    private fun getMpsBuildPropertiesFile() = File(mpsHome.get()).resolve("build.properties")
+    private fun getMpsLanguagesDir() = File(mpsHome.get()).resolve("languages")
 
     private fun getMpsVersion(): String {
         val buildPropertiesFile = getMpsBuildPropertiesFile()

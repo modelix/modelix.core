@@ -4,6 +4,7 @@ plugins {
     id("com.diffplug.spotless")
     `java-library`
     jacoco
+    alias(libs.plugins.npm.publish)
 }
 
 java {
@@ -29,6 +30,8 @@ kotlin {
             }
         }
         useCommonJs()
+        binaries.library()
+        generateTypeScriptDefinitions()
     }
     sourceSets {
         val commonMain by getting {
@@ -125,5 +128,23 @@ spotless {
                 " */\n" +
                 "\n",
         )
+    }
+}
+
+npmPublish {
+    registries {
+        register("itemis-npm-open") {
+            uri.set("https://artifacts.itemis.cloud/repository/npm-open")
+            System.getenv("NODE_AUTH_TOKEN").takeIf { !it.isNullOrBlank() }?.let {
+                authToken.set(it)
+            }
+        }
+    }
+    packages {
+        named("js") {
+            packageJson {
+                name.set("@modelix/model-client")
+            }
+        }
     }
 }

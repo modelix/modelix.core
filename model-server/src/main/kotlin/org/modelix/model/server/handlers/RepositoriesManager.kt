@@ -64,7 +64,7 @@ class RepositoriesManager(val client: LocalModelClient) {
                 author = userName,
                 tree = CLTree(client.storeCache),
                 baseVersion = null,
-                operations = emptyArray()
+                operations = emptyArray(),
             )
             store.put(branchKey(masterBranch), initialVersion!!.hash, false)
         }
@@ -120,7 +120,7 @@ class RepositoriesManager(val client: LocalModelClient) {
                 val newVersion = CLVersion(newVersionHash, client.storeCache)
                 require(headVersion.tree.getId() == newVersion.tree.getId()) {
                     "Attempt to merge a model with ID '${newVersion.tree.getId()}'" +
-                            " into one with ID '${headVersion.tree.getId()}'"
+                        " into one with ID '${headVersion.tree.getId()}'"
                 }
                 val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
                     .mergeChange(headVersion, newVersion)
@@ -166,24 +166,28 @@ class RepositoriesManager(val client: LocalModelClient) {
                 val baseVersion = CLVersion(baseVersionHash, store)
                 val oldTree = baseVersion.tree
                 val bulkQuery = BulkQuery(store)
-                newTree.nodesMap!!.visitChanges(oldTree.nodesMap!!, object : CLHamtNode.IChangeVisitor {
-                    override fun visitChangesOnly(): Boolean = false
-                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
-                        changedNodeIds += key
-                        if (value != null) bulkQuery.query(value, {})
-                    }
-                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
-                        changedNodeIds += key
-                    }
-                    override fun entryChanged(
-                        key: Long,
-                        oldValue: KVEntryReference<CPNode>?,
-                        newValue: KVEntryReference<CPNode>?
-                    ) {
-                        changedNodeIds += key
-                        if (newValue != null) bulkQuery.query(newValue, {})
-                    }
-                }, bulkQuery)
+                newTree.nodesMap!!.visitChanges(
+                    oldTree.nodesMap!!,
+                    object : CLHamtNode.IChangeVisitor {
+                        override fun visitChangesOnly(): Boolean = false
+                        override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
+                            changedNodeIds += key
+                            if (value != null) bulkQuery.query(value, {})
+                        }
+                        override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
+                            changedNodeIds += key
+                        }
+                        override fun entryChanged(
+                            key: Long,
+                            oldValue: KVEntryReference<CPNode>?,
+                            newValue: KVEntryReference<CPNode>?,
+                        ) {
+                            changedNodeIds += key
+                            if (newValue != null) bulkQuery.query(newValue, {})
+                        }
+                    },
+                    bulkQuery,
+                )
                 bulkQuery.process()
             }
         }

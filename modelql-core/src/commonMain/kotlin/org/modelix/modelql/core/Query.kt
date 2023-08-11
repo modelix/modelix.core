@@ -151,12 +151,12 @@ class MonoUnboundQuery<In, ElementOut>(
     inputStep: QueryInput<In>,
     outputStep: IMonoStep<ElementOut>,
     reference: QueryReference<*>,
-    sharedSteps: List<SharedStep<*>>
+    sharedSteps: List<SharedStep<*>>,
 ) : UnboundQuery<In, ElementOut, ElementOut>(
     inputStep,
     outputStep,
     reference as QueryReference<UnboundQuery<In, ElementOut, ElementOut>>,
-    sharedSteps
+    sharedSteps,
 ),
     IMonoUnboundQuery<In, ElementOut> {
 
@@ -198,12 +198,12 @@ class FluxUnboundQuery<In, ElementOut>(
     inputStep: QueryInput<In>,
     outputStep: IFluxStep<ElementOut>,
     reference: QueryReference<*>,
-    sharedSteps: List<SharedStep<*>>
+    sharedSteps: List<SharedStep<*>>,
 ) : UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>(
     inputStep,
     outputStep,
     reference as QueryReference<UnboundQuery<In, List<IStepOutput<ElementOut>>, ElementOut>>,
-    sharedSteps
+    sharedSteps,
 ),
     IFluxUnboundQuery<In, ElementOut> {
 
@@ -241,7 +241,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     val inputStep: QueryInput<In>,
     private val outputStep_: IProducingStep<ElementOut>,
     override val reference: QueryReference<UnboundQuery<In, AggregationOut, ElementOut>>,
-    val sharedSteps: List<SharedStep<*>>
+    val sharedSteps: List<SharedStep<*>>,
 ) : IUnboundQuery<In, AggregationOut, ElementOut> {
 
     init {
@@ -283,7 +283,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
             throw CrossQueryReferenceException(
                 illegalCrossQueryReferences
                     .sortedByDescending { it.length }
-                    .joinToString("\n")
+                    .joinToString("\n"),
             )
         }
         require(outputStep !is SharedStep<*>) { "Not allowed as output step: $outputStep" }
@@ -456,7 +456,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
 class SinglePathFlowInstantiationContext(
     override val evaluationContext: QueryEvaluationContext,
     val queryInput: QueryInput<*>,
-    val inputFlow: StepFlow<*>
+    val inputFlow: StepFlow<*>,
 ) : IFlowInstantiationContext {
     override val coroutineScope: CoroutineScope?
         get() = null

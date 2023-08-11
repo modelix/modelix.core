@@ -14,7 +14,15 @@
 package org.modelix.model.metameta
 
 import org.modelix.model.SubtreeChanges
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IChildLink
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.ILanguage
+import org.modelix.model.api.IProperty
+import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.ITree
+import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.lazy.IBulkTree
 
 class MetaModelSynchronizer(val branch: IBranch) {
@@ -232,7 +240,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
                 wt.setReferenceTarget(
                     id,
                     MetaMetaLanguage.referenceLink_ChildLink_childConcept.name,
-                    PNodeAdapter(childConceptId, branch).reference
+                    PNodeAdapter(childConceptId, branch).reference,
                 )
             }
         }
@@ -258,7 +266,7 @@ class MetaModelSynchronizer(val branch: IBranch) {
                 wt.setReferenceTarget(
                     id,
                     MetaMetaLanguage.referenceLink_ChildLink_childConcept.name,
-                    PNodeAdapter(targetConceptId, branch).reference
+                    PNodeAdapter(targetConceptId, branch).reference,
                 )
             }
         }

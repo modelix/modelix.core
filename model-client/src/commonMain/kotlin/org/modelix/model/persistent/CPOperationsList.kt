@@ -46,7 +46,7 @@ class CPOperationsList(val operations: Array<IOperation>) : IKVValue {
                 input.split(",")
                     .filter { it.isNotEmpty() }
                     .map { OperationSerializer.INSTANCE.deserialize(it) }
-                    .toTypedArray()
+                    .toTypedArray(),
             )
             data.isWritten = true
             return data

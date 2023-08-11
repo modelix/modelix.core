@@ -10,6 +10,4 @@ class ChildListAccessor<ChildT : ITypedNode>(
     role: IChildLink,
     childConcept: IConcept,
     childType: KClass<ChildT>,
-) : ChildAccessor<ChildT>(parent, role, childConcept, childType) {
-
-}
+) : ChildAccessor<ChildT>(parent, role, childConcept, childType)

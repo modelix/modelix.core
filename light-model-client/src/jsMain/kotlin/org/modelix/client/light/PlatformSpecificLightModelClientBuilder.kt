@@ -13,8 +13,8 @@
  */
 package org.modelix.client.light
 
-import io.ktor.client.engine.*
-import io.ktor.client.engine.js.*
+import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.engine.js.Js
 
 actual class PlatformSpecificLightModelClientBuilder actual constructor() : LightModelClientBuilder() {
     override fun getDefaultEngineFactory(): HttpClientEngineFactory<*> = Js

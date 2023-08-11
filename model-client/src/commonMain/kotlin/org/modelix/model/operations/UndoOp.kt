@@ -17,7 +17,7 @@ class UndoOp(val versionHash: KVEntryReference<CPVersion>) : AbstractOperation()
         return Applied(
             captureIntend(transaction.tree, store)
                 .restoreIntend(transaction.tree)
-                .map { it.apply(transaction, store) }
+                .map { it.apply(transaction, store) },
         )
     }
 

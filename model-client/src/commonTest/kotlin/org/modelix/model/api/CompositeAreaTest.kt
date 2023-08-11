@@ -119,7 +119,7 @@ class CompositeNodeResolveContextTest {
     fun resolveWhenNotEmpty() {
         val instance = CompositeArea(
             MyArea(mapOf(PNodeReference(123, "") to MyNode("foo"))),
-            MyArea(mapOf(PNodeReference(456, "") to MyNode("bar")))
+            MyArea(mapOf(PNodeReference(456, "") to MyNode("bar"))),
         )
         assertEquals(MyNode("foo"), instance.resolveOriginalNode(PNodeReference(123, "")))
         assertEquals(MyNode("bar"), instance.resolveOriginalNode(PNodeReference(456, "")))

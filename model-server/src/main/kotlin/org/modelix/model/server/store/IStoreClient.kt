@@ -10,12 +10,14 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 package org.modelix.model.server.store
 
-import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.modelix.model.IKeyListener
 import kotlin.time.Duration.Companion.seconds
 
@@ -35,7 +37,7 @@ suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: St
     var result: String? = null
     coroutineScope {
         var handlerCalled = false
-        val callHandler: suspend (String?)->Unit = {
+        val callHandler: suspend (String?) -> Unit = {
             handlerCalled = true
             result = it
         }

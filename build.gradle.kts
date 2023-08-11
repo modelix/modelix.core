@@ -1,5 +1,19 @@
-import kotlinx.html.*
+import kotlinx.html.FlowContent
+import kotlinx.html.a
+import kotlinx.html.body
+import kotlinx.html.div
+import kotlinx.html.h2
+import kotlinx.html.head
+import kotlinx.html.html
+import kotlinx.html.id
+import kotlinx.html.link
+import kotlinx.html.meta
+import kotlinx.html.p
+import kotlinx.html.span
 import kotlinx.html.stream.createHTML
+import kotlinx.html.style
+import kotlinx.html.title
+import kotlinx.html.unsafe
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
@@ -46,6 +60,8 @@ dependencies {
 subprojects {
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+
     version = rootProject.version
     group = rootProject.group
 
@@ -53,6 +69,11 @@ subprojects {
         pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
             footerMessage = createFooterMessage()
         }
+    }
+
+    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        // IMPORTANT: keep in sync with the version in .pre-commit-config.yaml
+        version.set("0.50.0")
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
@@ -92,11 +113,14 @@ allprojects {
                 //     https://github.com/orgs/community/discussions/23474
                 // this is a simple workaround for the affected components.
                 // consequently, when obtaining these dependencies, the repo url is the old modelix/modelix one...
-                if (project.name in arrayOf("model-client",
-                                "model-client-js",
-                                "model-client-jvm",
-                                "model-server",
-                                "model-server-api")){
+                if (project.name in arrayOf(
+                        "model-client",
+                        "model-client-js",
+                        "model-client-jvm",
+                        "model-server",
+                        "model-server-api",
+                    )
+                ) {
                     url = uri("https://maven.pkg.github.com/modelix/modelix")
                     credentials {
                         username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
@@ -173,9 +197,9 @@ fun FlowContent.createFooter() {
     }
     p {
         +"Except where otherwise noted, "
-        a("https://api.modelix.org")  {+"api.modelix.org"}
+        a("https://api.modelix.org") { +"api.modelix.org" }
         +", modelix, and the modelix framework, are licensed under the "
-        a("https://www.apache.org/licenses/LICENSE-2.0.html") { +"Apache-2.0 license"}
+        a("https://www.apache.org/licenses/LICENSE-2.0.html") { +"Apache-2.0 license" }
         +"."
     }
 }
@@ -195,7 +219,7 @@ fun createDocsIndexPage(): String {
                         padding-top: 6px;
                         padding-bottom: 6px;
                     }
-                """.trimIndent()
+                    """.trimIndent()
                 }
             }
         }
@@ -209,12 +233,12 @@ fun createDocsIndexPage(): String {
             div("wrapper") {
                 id = "container"
                 div {
-                    id ="leftColumn"
+                    id = "leftColumn"
                 }
                 div {
                     id = "main"
                     div("main-content") {
-                        id ="content"
+                        id = "content"
                         div("breadcrumbs")
                         div("cover") {
                             h2 { +"Available versions:" }

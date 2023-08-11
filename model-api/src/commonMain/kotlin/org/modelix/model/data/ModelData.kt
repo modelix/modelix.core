@@ -3,12 +3,17 @@ package org.modelix.model.data
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.modelix.model.api.*
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
+import org.modelix.model.api.ITree
+import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.LocalPNodeReference
 
 @Serializable
 data class ModelData(
     val id: String? = null,
-    val root: NodeData
+    val root: NodeData,
 ) {
     fun toJson(): String = prettyJson.encodeToString(this)
     fun toCompactJson(): String = Json.encodeToString(this)
@@ -34,7 +39,7 @@ data class ModelData(
         t: IWriteTransaction,
         parentId: Long,
         createdNodes: HashMap<String, Long>,
-        pendingReferences: ArrayList<() -> Unit>
+        pendingReferences: ArrayList<() -> Unit>,
     ) {
         val conceptRef = nodeData.concept?.let { ConceptReference(it) }
         val createdId = t.addNewChild(parentId, nodeData.role, -1, conceptRef)
@@ -59,7 +64,7 @@ data class ModelData(
     private fun setOriginalId(
         nodeData: NodeData,
         t: IWriteTransaction,
-        nodeId: Long
+        nodeId: Long,
     ) {
         val key = NodeData.idPropertyKey
         t.setProperty(nodeId, key, nodeData.properties[key] ?: nodeData.id)
@@ -78,7 +83,7 @@ data class NodeData(
     val role: String? = null,
     val children: List<NodeData> = emptyList(),
     val properties: Map<String, String> = emptyMap(),
-    val references: Map<String, String> = emptyMap()
+    val references: Map<String, String> = emptyMap(),
 ) {
     companion object {
         const val idPropertyKey = "#mpsNodeId#"
@@ -98,7 +103,7 @@ fun INode.asData(): NodeData = NodeData(
     role = roleInParent,
     properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) },
     references = getReferenceRoles().associateWithNotNull { getReferenceTargetRef(it)?.serialize() },
-    children = allChildren.map { it.asData() }
+    children = allChildren.map { it.asData() },
 )
 
 inline fun <K, V : Any> Iterable<K>.associateWithNotNull(valueSelector: (K) -> V?): Map<K, V> {

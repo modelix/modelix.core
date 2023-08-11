@@ -1,8 +1,14 @@
 package org.modelix.model
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.ITree
+import org.modelix.model.api.PBranch
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.client.IdGenerator
-import org.modelix.model.lazy.*
+import org.modelix.model.lazy.CLTree
+import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBaseStore
 import kotlin.test.Test
@@ -66,7 +72,7 @@ class TreeSerializationTest {
             author = null,
             tree = initialTree,
             baseVersion = null,
-            operations = arrayOf()
+            operations = arrayOf(),
         )
         val idGenerator = IdGenerator.newInstance(Int.MAX_VALUE)
         val branch = OTBranch(PBranch(initialTree, idGenerator), idGenerator, objectStore)
@@ -78,7 +84,7 @@ class TreeSerializationTest {
             author = null,
             tree = tree as CLTree,
             baseVersion = initialVersion,
-            operations = ops.map { it.getOriginalOp() }.toTypedArray()
+            operations = ops.map { it.getOriginalOp() }.toTypedArray(),
         )
         val versionHash = version.write()
         store.put("branch_master", versionHash)
@@ -117,8 +123,8 @@ class TreeSerializationTest {
                 "swOiu-pMGokZMvRT5eARK8nvnypbHwBECd-aGdNPcSg" to "1/%00/%00/i_qLKIEhmzECtAZE4n4tRdqBN1ZZljmH9hGVQd9Ywxo///0",
                 "uGTpQ2TJtRyelfhmZVWIIF4M9svxcMZtU4WTlHPFKsM" to "L/1/CTVRwa6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A",
                 "xeeMfgxyAcWthtSJLaMGxcCZGiIogYozw1rf4uxgmM4" to "I/2/uGTpQ2TJtRyelfhmZVWIIF4M9svxcMZtU4WTlHPFKsM",
-                "zQ6juYpdIcbV9hgUZcNOogQ3ryPXenGlDm-xekru4xo" to "L/7fffffff00000002/Et95z_OAINGqgFr3DvKVtdBGEa3gUNjkZF77F7CQQf0"
-            )
+                "zQ6juYpdIcbV9hgUZcNOogQ3ryPXenGlDm-xekru4xo" to "L/7fffffff00000002/Et95z_OAINGqgFr3DvKVtdBGEa3gUNjkZF77F7CQQf0",
+            ),
         )
 
         assertStore(mapStore)
@@ -149,8 +155,8 @@ class TreeSerializationTest {
                 "uGTpQ2TJtRyelfhmZVWIIF4M9svxcMZtU4WTlHPFKsM" to "L/1/CTVRwa6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A",
                 "wOL09ugqRKIO9LhVXFXY6ad51cx0JhbzYz-gKb2fe50" to "1/%00/%00/28qw_8mh6MRLX7Nd526swBVOVqAy3XDoCVrsDy_55KI/swOiu-pMGokZMvRT5eARK8nvnypbHwBECd-aGdNPcSg/AddNewChildOp;1;c1;0;7fffffff00000001;%00,AddNewChildOp;7fffffff00000001;c2;0;7fffffff00000002;%00,AddNewChildOp;1;c3;0;7fffffff00000003;%00,MoveNodeOp;7fffffff00000003;1;c3;0;7fffffff00000002;c3;0;7fffffff00000001.1,DeleteNodeOp;7fffffff00000002;c3;0;7fffffff00000003,MoveNodeOp;7fffffff00000002;7fffffff00000001;c2;0;1;c1;1;,SetPropertyOp;7fffffff00000001;p1;a-%E2%93%9C,SetPropertyOp;7fffffff00000001;p2;b-%E2%93%9C,SetReferenceOp;7fffffff00000001;r1;7fffffff00000001,SetReferenceOp;7fffffff00000001;r2;7fffffff00000002/10",
                 "xeeMfgxyAcWthtSJLaMGxcCZGiIogYozw1rf4uxgmM4" to "I/2/uGTpQ2TJtRyelfhmZVWIIF4M9svxcMZtU4WTlHPFKsM",
-                "zQ6juYpdIcbV9hgUZcNOogQ3ryPXenGlDm-xekru4xo" to "L/7fffffff00000002/Et95z_OAINGqgFr3DvKVtdBGEa3gUNjkZF77F7CQQf0"
-            )
+                "zQ6juYpdIcbV9hgUZcNOogQ3ryPXenGlDm-xekru4xo" to "L/7fffffff00000002/Et95z_OAINGqgFr3DvKVtdBGEa3gUNjkZF77F7CQQf0",
+            ),
         )
 
         assertStore(mapStore)
@@ -181,8 +187,8 @@ class TreeSerializationTest {
                 "swOiu-pMGokZMvRT5eARK8nvnypbHwBECd-aGdNPcSg" to "1/%00/%00/i_qLKIEhmzECtAZE4n4tRdqBN1ZZljmH9hGVQd9Ywxo///0",
                 "uGTpQ2TJtRyelfhmZVWIIF4M9svxcMZtU4WTlHPFKsM" to "L/1/CTVRwa6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A",
                 "xeeMfgxyAcWthtSJLaMGxcCZGiIogYozw1rf4uxgmM4" to "I/2/uGTpQ2TJtRyelfhmZVWIIF4M9svxcMZtU4WTlHPFKsM",
-                "zQ6juYpdIcbV9hgUZcNOogQ3ryPXenGlDm-xekru4xo" to "L/7fffffff00000002/Et95z_OAINGqgFr3DvKVtdBGEa3gUNjkZF77F7CQQf0"
-            )
+                "zQ6juYpdIcbV9hgUZcNOogQ3ryPXenGlDm-xekru4xo" to "L/7fffffff00000002/Et95z_OAINGqgFr3DvKVtdBGEa3gUNjkZF77F7CQQf0",
+            ),
         )
 
         assertStore(mapStore)
@@ -213,8 +219,8 @@ class TreeSerializationTest {
                 "uGTpQ2TJtRyelfhmZVWIIF4M9svxcMZtU4WTlHPFKsM" to "L/1/CTVRwa6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A",
                 "wf8TLLXCNeHYAWmOqpGMrfNrSXchl2-XU6xUoQdFH6w" to "1/%00/%00/28qw_8mh6MRLX7Nd526swBVOVqAy3XDoCVrsDy_55KI/ikCeRQZueRYEc3SoY6FLfIqGQPaxszBySFXcBVNxz5M/AddNewChildOp;1;c1;0;7fffffff00000001;%00,AddNewChildOp;7fffffff00000001;c2;0;7fffffff00000002;%00,AddNewChildOp;1;c3;0;7fffffff00000003;%00,MoveNodeOp;7fffffff00000003;7fffffff00000002;c3;0,DeleteNodeOp;7fffffff00000003,MoveNodeOp;7fffffff00000002;1;c1;1,SetPropertyOp;7fffffff00000001;p1;a-%E2%93%9C,SetPropertyOp;7fffffff00000001;p2;b-%E2%93%9C,SetReferenceOp;7fffffff00000001;r1;7fffffff00000001,SetReferenceOp;7fffffff00000001;r2;7fffffff00000002/10/",
                 "xeeMfgxyAcWthtSJLaMGxcCZGiIogYozw1rf4uxgmM4" to "I/2/uGTpQ2TJtRyelfhmZVWIIF4M9svxcMZtU4WTlHPFKsM",
-                "zQ6juYpdIcbV9hgUZcNOogQ3ryPXenGlDm-xekru4xo" to "L/7fffffff00000002/Et95z_OAINGqgFr3DvKVtdBGEa3gUNjkZF77F7CQQf0"
-            )
+                "zQ6juYpdIcbV9hgUZcNOogQ3ryPXenGlDm-xekru4xo" to "L/7fffffff00000002/Et95z_OAINGqgFr3DvKVtdBGEa3gUNjkZF77F7CQQf0",
+            ),
         )
 
         assertStore(mapStore)
@@ -240,8 +246,8 @@ class TreeSerializationTest {
                 "pdFUB*oUqfKisgMWISa51tIYiGSQSEktOwmH5CmWsqP8" to "1/%00/0/%00/7fffffff00000001,7fffffff00000002//",
                 "pr1xK*QDIr3d0xzEHyfNIyGagxR-B9kV6sDqTqZcum4s" to "I/1/cXiQQ*hmMY4hI4DLXtzBFm_2bUz4KLnnfsbupiGXDNyU",
                 "wpWTu*_jgNVwPY3xKfEMb2kOMHhIYxU1A3mHCXXKzwN4" to "L/1/pdFUB*oUqfKisgMWISa51tIYiGSQSEktOwmH5CmWsqP8",
-                "x_bof*v8CBnjMI9fRH9QiRYsS3RqrdHjRA8zhqeTVuwQ" to "I/1/omCN-*elaFM3_USYahuiPS8SsPcRKoDn7rIL-7fKJ6kw"
-            )
+                "x_bof*v8CBnjMI9fRH9QiRYsS3RqrdHjRA8zhqeTVuwQ" to "I/1/omCN-*elaFM3_USYahuiPS8SsPcRKoDn7rIL-7fKJ6kw",
+            ),
         )
 
         assertStore(mapStore)
@@ -275,8 +281,8 @@ class TreeSerializationTest {
                 "qYCCM*hnYowY5aEKef26etn8sO_yfH898xZnX3xQcgqs" to "L/1/CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A",
                 "s61HN*MQLl_sNdFNvx0sf5twkvawYv1Dqy8bNpIVaF_s" to "I/2/qYCCM*hnYowY5aEKef26etn8sO_yfH898xZnX3xQcgqs",
                 "tn1yU*AaRfmUj0lQDjnNuie3Ln5nIW4-hxHg2ZKRbLcw" to "1/%00/0/%00/7fffffff00000001,7fffffff00000002,7fffffff00000004//",
-                "yD2bw*OVABfbL3WyEPYPLdnQeYD4K3rbEaIripgx8j9o" to "I/1/Xhga2*Mj3BjwVYg01WhIax37895EcWBwOVnBYoIY5s7M"
-            )
+                "yD2bw*OVABfbL3WyEPYPLdnQeYD4K3rbEaIripgx8j9o" to "I/1/Xhga2*Mj3BjwVYg01WhIax37895EcWBwOVnBYoIY5s7M",
+            ),
         )
 
         assertStore(mapStore)
@@ -303,8 +309,8 @@ class TreeSerializationTest {
                 "pdFUB*oUqfKisgMWISa51tIYiGSQSEktOwmH5CmWsqP8" to "1/%00/0/%00/7fffffff00000001,7fffffff00000002//",
                 "qYCCM*hnYowY5aEKef26etn8sO_yfH898xZnX3xQcgqs" to "L/1/CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A",
                 "wpWTu*_jgNVwPY3xKfEMb2kOMHhIYxU1A3mHCXXKzwN4" to "L/1/pdFUB*oUqfKisgMWISa51tIYiGSQSEktOwmH5CmWsqP8",
-                "y9sre*4LpC3weZAxs3esUcmKQFP86G38KnOeyIK285Zs" to "S/11/7ffffff0000000/4m5y_*_CL9M94j1tS6Mgobmjn-hqA_KE1UaSWkk0Dgp8"
-            )
+                "y9sre*4LpC3weZAxs3esUcmKQFP86G38KnOeyIK285Zs" to "S/11/7ffffff0000000/4m5y_*_CL9M94j1tS6Mgobmjn-hqA_KE1UaSWkk0Dgp8",
+            ),
         )
 
         assertStore(mapStore)

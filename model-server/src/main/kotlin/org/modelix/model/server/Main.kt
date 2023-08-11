@@ -10,30 +10,46 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 package org.modelix.model.server
 
 import com.beust.jcommander.JCommander
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.html.*
-import io.ktor.server.http.content.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.forwardedheaders.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import kotlinx.html.*
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.html.respondHtmlTemplate
+import io.ktor.server.http.content.resources
+import io.ktor.server.http.content.static
+import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.Routing
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import kotlinx.html.a
+import kotlinx.html.h1
+import kotlinx.html.li
+import kotlinx.html.style
+import kotlinx.html.ul
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.server.handlers.*
+import org.modelix.model.server.handlers.ContentExplorer
+import org.modelix.model.server.handlers.DeprecatedLightModelServer
+import org.modelix.model.server.handlers.HistoryHandler
+import org.modelix.model.server.handlers.KeyValueLikeModelServer
+import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.RepositoriesManager
+import org.modelix.model.server.handlers.RepositoryOverview
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
@@ -95,7 +111,7 @@ object Main {
                     val file = File(cmdLineArgs.dumpInName)
                     val keys = storeClient.load(FileReader(file))
                     println(
-                        "Values loaded from " + file.absolutePath + " (" + keys + ")"
+                        "Values loaded from " + file.absolutePath + " (" + keys + ")",
                     )
                 }
                 if (cmdLineArgs.dumpOutName != null) {
@@ -103,22 +119,23 @@ object Main {
                         .addShutdownHook(
                             DumpOutThread(
                                 storeClient,
-                                cmdLineArgs.dumpOutName
-                            )
+                                cmdLineArgs.dumpOutName,
+                            ),
                         )
                 }
             } else {
                 storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile)
                 if (cmdLineArgs.schemaInit) {
                     val dataSource: DataSource = Ignition.loadSpringBean<DataSource>(
-                        Main::class.java.getResource("ignite.xml"), "dataSource"
+                        Main::class.java.getResource("ignite.xml"),
+                        "dataSource",
                     )
                     SqlUtils(dataSource.connection).ensureSchemaInitialization()
                 }
             }
             var i = 0
             while (i < cmdLineArgs.setValues.size) {
-                storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1],)
+                storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
                 i += 2
             }
             val modelServer = KeyValueLikeModelServer(storeClient)
@@ -126,7 +143,7 @@ object Main {
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {
                 modelServer.setSharedSecret(
-                    FileUtils.readFileToString(sharedSecretFile, StandardCharsets.UTF_8)
+                    FileUtils.readFileToString(sharedSecretFile, StandardCharsets.UTF_8),
                 )
             }
 
@@ -166,7 +183,8 @@ object Main {
                     get("/") {
                         call.respondHtmlTemplate(PageWithMenuBar("root", ".")) {
                             headContent {
-                                style { +"""
+                                style {
+                                    +"""
                                     body {
                                         font-family: sans-serif;
                                     table {
@@ -176,7 +194,8 @@ object Main {
                                         border: 1px solid #888;
                                         padding: 3px 12px;
                                     }
-                                """.trimIndent() }
+                                    """.trimIndent()
+                                }
                             }
                             bodyContent {
                                 h1 { +"Model Server" }
@@ -202,14 +221,16 @@ object Main {
             }
             ktorServer.start(wait = true)
             LOG.info("Server started")
-            Runtime.getRuntime().addShutdownHook(Thread {
-                try {
-                    ktorServer.stop()
-                    LOG.info("Server stopped")
-                } catch (ex: Exception) {
-                    LOG.error("", ex)
-                }
-            })
+            Runtime.getRuntime().addShutdownHook(
+                Thread {
+                    try {
+                        ktorServer.stop()
+                        LOG.info("Server stopped")
+                    } catch (ex: Exception) {
+                        LOG.error("", ex)
+                    }
+                },
+            )
         } catch (ex: Exception) {
             LOG.error("", ex)
         }
@@ -234,5 +255,6 @@ object Main {
                         }
                     }
                 }
-            })
+            },
+        )
 }

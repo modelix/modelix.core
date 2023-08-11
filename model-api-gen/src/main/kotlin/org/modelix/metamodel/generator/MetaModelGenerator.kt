@@ -1,9 +1,51 @@
 package org.modelix.metamodel.generator
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import org.modelix.metamodel.*
-import org.modelix.model.api.*
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeAliasSpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.asTypeName
+import com.squareup.kotlinpoet.withIndent
+import org.modelix.metamodel.ChildListAccessor
+import org.modelix.metamodel.GeneratedChildListLink
+import org.modelix.metamodel.GeneratedConcept
+import org.modelix.metamodel.GeneratedLanguage
+import org.modelix.metamodel.GeneratedMandatorySingleChildLink
+import org.modelix.metamodel.GeneratedProperty
+import org.modelix.metamodel.GeneratedReferenceLink
+import org.modelix.metamodel.GeneratedSingleChildLink
+import org.modelix.metamodel.IConceptOfTypedNode
+import org.modelix.metamodel.INonAbstractConcept
+import org.modelix.metamodel.IPropertyValueEnum
+import org.modelix.metamodel.ITypedConcept
+import org.modelix.metamodel.ITypedNode
+import org.modelix.metamodel.MandatoryBooleanPropertySerializer
+import org.modelix.metamodel.MandatoryEnumSerializer
+import org.modelix.metamodel.MandatoryIntPropertySerializer
+import org.modelix.metamodel.MandatoryReferenceAccessor
+import org.modelix.metamodel.MandatoryStringPropertySerializer
+import org.modelix.metamodel.OptionalBooleanPropertySerializer
+import org.modelix.metamodel.OptionalEnumSerializer
+import org.modelix.metamodel.OptionalIntPropertySerializer
+import org.modelix.metamodel.OptionalReferenceAccessor
+import org.modelix.metamodel.OptionalStringPropertySerializer
+import org.modelix.metamodel.RawPropertyAccessor
+import org.modelix.metamodel.RawReferenceAccessor
+import org.modelix.metamodel.SingleChildAccessor
+import org.modelix.metamodel.TypedNodeImpl
+import org.modelix.metamodel.TypedPropertyAccessor
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.ILanguage
+import org.modelix.model.api.INode
 import org.modelix.model.data.EnumPropertyType
 import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
@@ -21,7 +63,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
 
     private fun ProcessedProperty.asKotlinType(): TypeName {
         val nonNullableType = when (type) {
-            is PrimitivePropertyType -> when((type as PrimitivePropertyType).primitive) {
+            is PrimitivePropertyType -> when ((type as PrimitivePropertyType).primitive) {
                 Primitive.STRING -> String::class.asTypeName()
                 Primitive.BOOLEAN -> Boolean::class.asTypeName()
                 Primitive.INT -> Int::class.asTypeName()
@@ -30,7 +72,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                 val enumType = (type as EnumPropertyType)
                 ClassName(enumType.pckg, enumType.enumName)
             }
-            else -> { throw RuntimeException("Unexpected property type: $type")}
+            else -> { throw RuntimeException("Unexpected property type: $type") }
         }
         return if (!optional || alwaysUseNonNullableProperties) nonNullableType else nonNullableType.copy(nullable = true)
     }
@@ -57,10 +99,14 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     internal fun generateRegistrationHelper(classFqName: String, languages: ProcessedLanguageSet) {
         val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
         val cls = TypeSpec.objectBuilder(typeName)
-            .addProperty(PropertySpec.builder("languages", List::class.parameterizedBy(GeneratedLanguage::class))
-                .initializer("listOf(" + languages.getLanguages().map { it.generatedClassName() }
-                    .joinToString(", ") { it.canonicalName } + ")")
-                .build())
+            .addProperty(
+                PropertySpec.builder("languages", List::class.parameterizedBy(GeneratedLanguage::class))
+                    .initializer(
+                        "listOf(" + languages.getLanguages().map { it.generatedClassName() }
+                            .joinToString(", ") { it.canonicalName } + ")",
+                    )
+                    .build(),
+            )
             .addFunction(FunSpec.builder("registerAll").addStatement("""languages.forEach { it.register() }""").build())
             .build()
 
@@ -106,7 +152,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                 .returns(List::class.asClassName().parameterizedBy(IConcept::class.asTypeName()))
                 .addModifiers(KModifier.OVERRIDE)
                 .addCode(language.getConcepts().map { it.conceptObjectType() }.toListLiteralCodeBlock())
-                .build()
+                .build(),
         )
         builder.superclass(GeneratedLanguage::class)
         builder.addSuperclassConstructorParameter("\"${language.name}\"")
@@ -114,7 +160,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             builder.addProperty(
                 PropertySpec.builder(concept.name, concept.conceptWrapperInterfaceType())
                     .initializer("%T", concept.conceptWrapperInterfaceClass())
-                    .build()
+                    .build(),
             )
         }
         return builder.build()
@@ -133,13 +179,13 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             .addProperty(
                 PropertySpec.builder("uid", String::class)
                     .initializer("uid")
-                    .build()
+                    .build(),
             )
             .addProperty(
                 PropertySpec.builder("presentation", String::class.asTypeName().copy(nullable = true))
                     .initializer("presentation")
                     .addModifiers(KModifier.OVERRIDE)
-                    .build()
+                    .build(),
             )
 
         val enumType = ClassName(enum.language.name, enum.name)
@@ -155,8 +201,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     .addSuperclassConstructorParameter("%S", member.uid)
                     .addSuperclassConstructorParameter(
                         if (member.presentation == null) "null" else "%S",
-                        member.presentation ?: "")
-                    .build()
+                        member.presentation ?: "",
+                    )
+                    .build(),
             )
             getLiteralCodeBuilder.addStatement("%S -> %N", member.uid, member.name)
         }
@@ -165,7 +212,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             getLiteralCodeBuilder
                 .addStatement("else -> defaultValue()")
                 .endControlFlow()
-                .build()
+                .build(),
         )
 
         val companion = TypeSpec.companionObjectBuilder()
@@ -173,9 +220,10 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                 FunSpec.builder("defaultValue")
                     .returns(enumType)
                     .addCode("return values()[%L]", enum.defaultIndex)
-                    .build())
+                    .build(),
+            )
             .addFunction(
-                getLiteralFunBuilder.build()
+                getLiteralFunBuilder.build(),
             )
             .build()
 
@@ -206,28 +254,28 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             addProperty(
                                 PropertySpec.builder(
                                     feature.generatedName,
-                                    List::class.asTypeName().parameterizedBy(feature.asKotlinType())
+                                    List::class.asTypeName().parameterizedBy(feature.asKotlinType()),
                                 )
                                     .receiver(receiverType)
                                     .getter(
                                         FunSpec.getterBuilder()
-                                            .addStatement("return map { it.%N }", feature.generatedName).build()
+                                            .addStatement("return map { it.%N }", feature.generatedName).build(),
                                     )
-                                    .build()
+                                    .build(),
                             )
                             addProperty(
                                 PropertySpec.builder(
                                     "raw_" + feature.generatedName,
                                     List::class.asTypeName()
-                                        .parameterizedBy(String::class.asTypeName().copy(nullable = true))
+                                        .parameterizedBy(String::class.asTypeName().copy(nullable = true)),
                                 )
                                     .receiver(receiverType)
                                     .getter(
                                         FunSpec.getterBuilder()
                                             .addStatement("return map { it.%N }", "raw_" + feature.generatedName)
-                                            .build()
+                                            .build(),
                                     )
-                                    .build()
+                                    .build(),
                             )
                         }
 
@@ -236,14 +284,14 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             addProperty(
                                 PropertySpec.builder(
                                     feature.generatedName,
-                                    List::class.asTypeName().parameterizedBy(targetType)
+                                    List::class.asTypeName().parameterizedBy(targetType),
                                 )
                                     .receiver(receiverType)
                                     .getter(
                                         FunSpec.getterBuilder()
-                                            .addStatement("return flatMap { it.%N }", feature.generatedName).build()
+                                            .addStatement("return flatMap { it.%N }", feature.generatedName).build(),
                                     )
-                                    .build()
+                                    .build(),
                             )
                         }
 
@@ -254,39 +302,39 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             addProperty(
                                 PropertySpec.builder(
                                     feature.generatedName,
-                                    List::class.asTypeName().parameterizedBy(targetType)
+                                    List::class.asTypeName().parameterizedBy(targetType),
                                 )
                                     .receiver(receiverType)
                                     .getter(
                                         FunSpec.getterBuilder()
-                                            .addStatement("return map { it.%N }", feature.generatedName).build()
+                                            .addStatement("return map { it.%N }", feature.generatedName).build(),
                                     )
-                                    .build()
+                                    .build(),
                             )
                             addProperty(
                                 PropertySpec.builder(
                                     feature.generatedName + "_orNull",
-                                    List::class.asTypeName().parameterizedBy(targetType.copy(nullable = true))
+                                    List::class.asTypeName().parameterizedBy(targetType.copy(nullable = true)),
                                 )
                                     .receiver(receiverType)
                                     .getter(
                                         FunSpec.getterBuilder()
-                                            .addStatement("return map { it.%N }", feature.generatedName + "_orNull").build()
+                                            .addStatement("return map { it.%N }", feature.generatedName + "_orNull").build(),
                                     )
-                                    .build()
+                                    .build(),
                             )
                             addProperty(
                                 PropertySpec.builder(
                                     "raw_" + feature.generatedName,
-                                    List::class.asTypeName().parameterizedBy(rawTargetType)
+                                    List::class.asTypeName().parameterizedBy(rawTargetType),
                                 )
                                     .receiver(receiverType)
                                     .getter(
                                         FunSpec.getterBuilder()
                                             .addStatement("return map { it.%N }", "raw_" + feature.generatedName)
-                                            .build()
+                                            .build(),
                                     )
-                                    .build()
+                                    .build(),
                             )
                         }
                     }
@@ -321,14 +369,18 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 addProperty(
                                     PropertySpec.builder(feature.generatedName, outputType)
                                         .receiver(inputType)
-                                        .getter(FunSpec.getterBuilder()
-                                            .addStatement("return %T.%N(this, %T.%N)",
-                                                TypedModelQL::class.asTypeName(),
-                                                functionName,
-                                                concept.conceptWrapperInterfaceClass(),
-                                                feature.generatedName)
-                                            .build())
-                                        .build()
+                                        .getter(
+                                            FunSpec.getterBuilder()
+                                                .addStatement(
+                                                    "return %T.%N(this, %T.%N)",
+                                                    TypedModelQL::class.asTypeName(),
+                                                    functionName,
+                                                    concept.conceptWrapperInterfaceClass(),
+                                                    feature.generatedName,
+                                                )
+                                                .build(),
+                                        )
+                                        .build(),
                                 )
                             }
 
@@ -343,9 +395,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                         "return %T.setProperty(this, %T.%N, value)",
                                         TypedModelQL::class.asTypeName(),
                                         concept.conceptWrapperInterfaceClass(),
-                                        feature.generatedName
+                                        feature.generatedName,
                                     )
-                                    .build()
+                                    .build(),
                             )
                         }
 
@@ -357,18 +409,22 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             val inputType = inputStepType.parameterizedBy(concept.nodeWrapperInterfaceType())
                             val isOptionalSingle = feature.optional && !feature.multiple
                             val outputType = outputStepType.parameterizedBy(
-                                targetType.copy(nullable = isOptionalSingle)
+                                targetType.copy(nullable = isOptionalSingle),
                             )
                             addProperty(
                                 PropertySpec.builder(feature.generatedName, outputType)
                                     .receiver(inputType)
-                                    .getter(FunSpec.getterBuilder()
-                                        .addStatement("return %T.children(this, %T.%N)",
-                                            TypedModelQL::class.asTypeName(),
-                                            concept.conceptWrapperInterfaceClass(),
-                                            feature.generatedName)
-                                        .build())
-                                    .build()
+                                    .getter(
+                                        FunSpec.getterBuilder()
+                                            .addStatement(
+                                                "return %T.children(this, %T.%N)",
+                                                TypedModelQL::class.asTypeName(),
+                                                concept.conceptWrapperInterfaceClass(),
+                                                feature.generatedName,
+                                            )
+                                            .build(),
+                                    )
+                                    .build(),
                             )
                         }
 
@@ -383,24 +439,32 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 addProperty(
                                     PropertySpec.builder(feature.generatedName, outputType)
                                         .receiver(inputType)
-                                        .getter(FunSpec.getterBuilder()
-                                            .addStatement("return %T.reference(this, %T.%N)",
-                                                TypedModelQL::class.asTypeName(),
-                                                concept.conceptWrapperInterfaceClass(),
-                                                feature.generatedName)
-                                            .build())
-                                        .build()
+                                        .getter(
+                                            FunSpec.getterBuilder()
+                                                .addStatement(
+                                                    "return %T.reference(this, %T.%N)",
+                                                    TypedModelQL::class.asTypeName(),
+                                                    concept.conceptWrapperInterfaceClass(),
+                                                    feature.generatedName,
+                                                )
+                                                .build(),
+                                        )
+                                        .build(),
                                 )
                                 addProperty(
                                     PropertySpec.builder(feature.generatedName + "_orNull", outputTypeNullable)
                                         .receiver(inputType)
-                                        .getter(FunSpec.getterBuilder()
-                                            .addStatement("return %T.referenceOrNull(this, %T.%N)",
-                                                TypedModelQL::class.asTypeName(),
-                                                concept.conceptWrapperInterfaceClass(),
-                                                feature.generatedName)
-                                            .build())
-                                        .build()
+                                        .getter(
+                                            FunSpec.getterBuilder()
+                                                .addStatement(
+                                                    "return %T.referenceOrNull(this, %T.%N)",
+                                                    TypedModelQL::class.asTypeName(),
+                                                    concept.conceptWrapperInterfaceClass(),
+                                                    feature.generatedName,
+                                                )
+                                                .build(),
+                                        )
+                                        .build(),
                                 )
                             }
                         }
@@ -415,8 +479,8 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             superclass(
                 GeneratedConcept::class.asTypeName().parameterizedBy(
                     concept.nodeWrapperInterfaceType(),
-                    concept.conceptWrapperInterfaceType()
-                )
+                    concept.conceptWrapperInterfaceType(),
+                ),
             )
             addSuperclassConstructorParameter("%S", concept.name)
             addSuperclassConstructorParameter(concept.abstract.toString())
@@ -426,19 +490,19 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     .returns(KClass::class.asClassName().parameterizedBy(concept.nodeWrapperImplType()))
                     .addModifiers(KModifier.OVERRIDE)
                     .addStatement("""return %T::class""", concept.nodeWrapperImplType())
-                    .build()
+                    .build(),
             )
             addFunction(
                 FunSpec.builder(GeneratedConcept<*, *>::typed.name)
                     .returns(concept.conceptWrapperInterfaceType())
                     .addModifiers(KModifier.OVERRIDE)
                     .addStatement("""return %T""", concept.conceptWrapperInterfaceClass())
-                    .build()
+                    .build(),
             )
             addProperty(
                 PropertySpec.builder(IConcept::language.name, ILanguage::class, KModifier.OVERRIDE)
                     .initializer(concept.language.generatedClassName().simpleName)
-                    .build()
+                    .build(),
             )
             addFunction(
                 FunSpec.builder(GeneratedConcept<*, *>::wrap.name)
@@ -446,7 +510,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     .addModifiers(KModifier.OVERRIDE)
                     .addParameter("node", INode::class)
                     .addStatement("return %T(node)", concept.nodeWrapperImplType())
-                    .build()
+                    .build(),
             )
             concept.uid?.let { uid ->
                 addFunction(
@@ -454,7 +518,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         .returns(String::class)
                         .addModifiers(KModifier.OVERRIDE)
                         .addStatement(CodeBlock.of("return %S", uid).toString())
-                        .build()
+                        .build(),
                 )
             }
             addFunction(
@@ -462,60 +526,64 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     .addModifiers(KModifier.OVERRIDE)
                     .addCode(
                         concept.getDirectSuperConcepts().map { it.conceptObjectType() }.toList()
-                            .toListLiteralCodeBlock()
+                            .toListLiteralCodeBlock(),
                     )
                     .returns(List::class.asTypeName().parameterizedBy(IConcept::class.asTypeName()))
-                    .build()
+                    .build(),
             )
             for (feature in concept.getOwnRoles()) {
                 when (feature) {
                     is ProcessedProperty -> {
-                        val serializer = (if (!feature.optional || alwaysUseNonNullableProperties) {
-                            when (feature.type) {
-                                is PrimitivePropertyType -> when((feature.type as PrimitivePropertyType).primitive) {
-                                    Primitive.STRING -> MandatoryStringPropertySerializer::class
-                                    Primitive.BOOLEAN -> MandatoryBooleanPropertySerializer::class
-                                    Primitive.INT -> MandatoryIntPropertySerializer::class
+                        val serializer = (
+                            if (!feature.optional || alwaysUseNonNullableProperties) {
+                                when (feature.type) {
+                                    is PrimitivePropertyType -> when ((feature.type as PrimitivePropertyType).primitive) {
+                                        Primitive.STRING -> MandatoryStringPropertySerializer::class
+                                        Primitive.BOOLEAN -> MandatoryBooleanPropertySerializer::class
+                                        Primitive.INT -> MandatoryIntPropertySerializer::class
+                                    }
+                                    is EnumPropertyType -> MandatoryEnumSerializer::class
+                                    else -> throw RuntimeException("Unexpected property type: ${feature.type}")
                                 }
-                                is EnumPropertyType -> MandatoryEnumSerializer::class
-                                else -> throw RuntimeException("Unexpected property type: ${feature.type}")
-                            }
-                        } else {
-                            when (feature.type) {
-                                is PrimitivePropertyType -> when((feature.type as PrimitivePropertyType).primitive) {
-                                    Primitive.STRING -> OptionalStringPropertySerializer::class
-                                    Primitive.BOOLEAN -> OptionalBooleanPropertySerializer::class
-                                    Primitive.INT -> OptionalIntPropertySerializer::class
+                            } else {
+                                when (feature.type) {
+                                    is PrimitivePropertyType -> when ((feature.type as PrimitivePropertyType).primitive) {
+                                        Primitive.STRING -> OptionalStringPropertySerializer::class
+                                        Primitive.BOOLEAN -> OptionalBooleanPropertySerializer::class
+                                        Primitive.INT -> OptionalIntPropertySerializer::class
+                                    }
+                                    is EnumPropertyType -> OptionalEnumSerializer::class
+                                    else -> throw RuntimeException("Unexpected property type: ${feature.type}")
                                 }
-                                is EnumPropertyType -> OptionalEnumSerializer::class
-                                else -> throw RuntimeException("Unexpected property type: ${feature.type}")
                             }
-                        }).asTypeName()
+                            ).asTypeName()
 
                         val propBuilder = PropertySpec.builder(
                             feature.generatedName,
-                            GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType())
+                            GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType()),
                         )
                         if (feature.type is EnumPropertyType) {
                             if (serializer == MandatoryEnumSerializer::class.asTypeName()) {
                                 propBuilder.initializer(
-                                    """newProperty(%S, %S, %T({ it.uid }, 
-                                        |{ if (it != null) %T.getLiteralByMemberId(it) else %T.defaultValue() }), 
-                                        |${feature.optional})""".trimMargin(),
+                                    """newProperty(%S, %S, %T({ it.uid },
+                                        |{ if (it != null) %T.getLiteralByMemberId(it) else %T.defaultValue() }),
+                                        |${feature.optional})
+                                    """.trimMargin(),
                                     feature.originalName,
                                     feature.uid,
                                     serializer,
                                     feature.asKotlinType(),
-                                    feature.asKotlinType()
+                                    feature.asKotlinType(),
                                 )
                             } else {
                                 propBuilder.initializer(
-                                    """newProperty(%S, %S, %T( { it.uid }, { %T.getLiteralByMemberId(it) }), 
-                                        |${feature.optional})""".trimMargin(),
+                                    """newProperty(%S, %S, %T( { it.uid }, { %T.getLiteralByMemberId(it) }),
+                                        |${feature.optional})
+                                    """.trimMargin(),
                                     feature.originalName,
                                     feature.uid,
                                     serializer,
-                                    feature.asKotlinType()
+                                    feature.asKotlinType(),
                                 )
                             }
                         } else {
@@ -523,7 +591,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                 """newProperty(%S, %S, %T, ${feature.optional})""",
                                 feature.originalName,
                                 feature.uid,
-                                serializer
+                                serializer,
                             )
                         }
                         addProperty(propBuilder.build())
@@ -546,9 +614,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     feature.originalName,
                                     feature.uid,
                                     feature.type.resolved.conceptObjectType(),
-                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                    feature.type.resolved.nodeWrapperInterfaceType(),
                                 )
-                                .build()
+                                .build(),
                         )
                     }
 
@@ -560,9 +628,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     feature.originalName,
                                     feature.uid,
                                     feature.type.resolved.conceptObjectType(),
-                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                    feature.type.resolved.nodeWrapperInterfaceType(),
                                 )
-                                .build()
+                                .build(),
                         )
                     }
                 }
@@ -584,48 +652,50 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                     is ProcessedProperty -> addProperty(
                         PropertySpec.builder(
                             feature.generatedName,
-                            GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType())
+                            GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType()),
                         )
                             .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
                             .addDeprecationIfNecessary(feature)
-                            .build()
+                            .build(),
                     )
 
                     is ProcessedChildLink -> addProperty(
                         PropertySpec.builder(feature.generatedName, feature.generatedChildLinkType())
                             .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
                             .addDeprecationIfNecessary(feature)
-                            .build()
+                            .build(),
                     )
 
                     is ProcessedReferenceLink -> addProperty(
                         PropertySpec.builder(feature.generatedName, feature.generatedReferenceLinkType())
                             .getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
                             .addDeprecationIfNecessary(feature)
-                            .build()
+                            .build(),
                     )
                 }
             }
 
-            addType(TypeSpec.companionObjectBuilder().apply {
-                addSuperinterface(concept.conceptWrapperInterfaceType())
-                val t = if (concept.abstract) IConceptOfTypedNode::class else INonAbstractConcept::class
-                addSuperinterface(t.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
-                addFunction(
-                    FunSpec.builder(IConceptOfTypedNode<*>::getInstanceInterface.name)
-                        .addModifiers(KModifier.OVERRIDE)
-                        .returns(KClass::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
-                        .addStatement("return %T::class", concept.nodeWrapperInterfaceType())
-                        .build()
-                )
-                addFunction(
-                    FunSpec.builder(ITypedConcept::untyped.name)
-                        .returns(IConcept::class)
-                        .addModifiers(KModifier.OVERRIDE)
-                        .addStatement("return %T", concept.conceptObjectType())
-                        .build()
-                )
-            }.build())
+            addType(
+                TypeSpec.companionObjectBuilder().apply {
+                    addSuperinterface(concept.conceptWrapperInterfaceType())
+                    val t = if (concept.abstract) IConceptOfTypedNode::class else INonAbstractConcept::class
+                    addSuperinterface(t.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
+                    addFunction(
+                        FunSpec.builder(IConceptOfTypedNode<*>::getInstanceInterface.name)
+                            .addModifiers(KModifier.OVERRIDE)
+                            .returns(KClass::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType()))
+                            .addStatement("return %T::class", concept.nodeWrapperInterfaceType())
+                            .build(),
+                    )
+                    addFunction(
+                        FunSpec.builder(ITypedConcept::untyped.name)
+                            .returns(IConcept::class)
+                            .addModifiers(KModifier.OVERRIDE)
+                            .addStatement("return %T", concept.conceptObjectType())
+                            .build(),
+                    )
+                }.build(),
+            )
         }.build()
     }
 
@@ -636,13 +706,13 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                 PropertySpec.builder(
                     TypedNodeImpl::_concept.name,
                     concept.conceptWrapperInterfaceType(),
-                    KModifier.OVERRIDE
+                    KModifier.OVERRIDE,
                 )
                     .getter(
                         FunSpec.getterBuilder().addStatement("""return %T""", concept.conceptWrapperInterfaceClass())
-                            .build()
+                            .build(),
                     )
-                    .build()
+                    .build(),
             )
 
             if (concept.extends.size > 1) {
@@ -652,7 +722,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         .addModifiers(KModifier.OVERRIDE)
                         .returns(INode::class)
                         .addStatement("return " + TypedNodeImpl::wrappedNode.name)
-                        .build()
+                        .build(),
                 )
             }
             primaryConstructor(FunSpec.constructorBuilder().addParameter("_node", INode::class).build())
@@ -665,7 +735,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                 for (extended in concept.extends.drop(1)) {
                     addSuperinterface(
                         extended.resolved.nodeWrapperInterfaceType(),
-                        CodeBlock.of("%T(_node)", extended.resolved.nodeWrapperImplType())
+                        CodeBlock.of("%T(_node)", extended.resolved.nodeWrapperImplType()),
                     )
                 }
             }
@@ -683,12 +753,12 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     feature.concept.conceptObjectType(),
                                     feature.generatedName,
                                 )
-                                .build()
+                                .build(),
                         )
                         addProperty(
                             PropertySpec.builder(
                                 "raw_" + feature.generatedName,
-                                String::class.asTypeName().copy(nullable = true)
+                                String::class.asTypeName().copy(nullable = true),
                             )
                                 .addModifiers(KModifier.OVERRIDE)
                                 .mutable(true)
@@ -698,7 +768,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     feature.concept.conceptObjectType(),
                                     feature.generatedName,
                                 )
-                                .build()
+                                .build(),
                         )
                     }
 
@@ -708,7 +778,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             if (feature.multiple) ChildListAccessor::class else SingleChildAccessor::class
                         val type = accessorSubclass.asClassName()
                             .parameterizedBy(
-                                feature.type.resolved.nodeWrapperInterfaceType()
+                                feature.type.resolved.nodeWrapperInterfaceType(),
                             )
                         addProperty(
                             PropertySpec.builder(feature.generatedName, type)
@@ -720,9 +790,9 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     feature.concept.conceptObjectType(),
                                     feature.generatedName,
                                     feature.type.resolved.conceptObjectType(),
-                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                    feature.type.resolved.nodeWrapperInterfaceType(),
                                 )
-                                .build()
+                                .build(),
                         )
                     }
 
@@ -732,7 +802,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         addProperty(
                             PropertySpec.builder(
                                 feature.generatedName,
-                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional),
                             )
                                 .addModifiers(KModifier.OVERRIDE)
                                 .mutable(true)
@@ -742,14 +812,14 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     ITypedNode::unwrap.name,
                                     feature.concept.conceptObjectType(),
                                     feature.generatedName,
-                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                    feature.type.resolved.nodeWrapperInterfaceType(),
                                 )
-                                .build()
+                                .build(),
                         )
                         addProperty(
                             PropertySpec.builder(
                                 feature.generatedName + "_orNull",
-                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = true)
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = true),
                             )
                                 .addModifiers(KModifier.OVERRIDE)
                                 .mutable(false)
@@ -759,14 +829,14 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     ITypedNode::unwrap.name,
                                     feature.concept.conceptObjectType(),
                                     feature.generatedName,
-                                    feature.type.resolved.nodeWrapperInterfaceType()
+                                    feature.type.resolved.nodeWrapperInterfaceType(),
                                 )
-                                .build()
+                                .build(),
                         )
                         addProperty(
                             PropertySpec.builder(
                                 "raw_" + feature.generatedName,
-                                INode::class.asTypeName().copy(nullable = true)
+                                INode::class.asTypeName().copy(nullable = true),
                             )
                                 .addModifiers(KModifier.OVERRIDE)
                                 .mutable(true)
@@ -776,7 +846,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                                     feature.concept.conceptObjectType(),
                                     feature.generatedName,
                                 )
-                                .build()
+                                .build(),
                         )
                     }
                 }
@@ -798,16 +868,16 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             PropertySpec.builder(feature.generatedName, feature.asKotlinType())
                                 .addDeprecationIfNecessary(feature)
                                 .mutable(true)
-                                .build()
+                                .build(),
                         )
                         addProperty(
                             PropertySpec.builder(
                                 "raw_" + feature.generatedName,
-                                String::class.asTypeName().copy(nullable = true)
+                                String::class.asTypeName().copy(nullable = true),
                             )
                                 .addDeprecationIfNecessary(feature)
                                 .mutable(true)
-                                .build()
+                                .build(),
                         )
                     }
 
@@ -817,12 +887,12 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             if (feature.multiple) ChildListAccessor::class else SingleChildAccessor::class
                         val type = accessorSubclass.asClassName()
                             .parameterizedBy(
-                                feature.type.resolved.nodeWrapperInterfaceType()
+                                feature.type.resolved.nodeWrapperInterfaceType(),
                             )
                         addProperty(
                             PropertySpec.builder(feature.generatedName, type)
                                 .addDeprecationIfNecessary(feature)
-                                .build()
+                                .build(),
                         )
                     }
 
@@ -830,28 +900,28 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                         addProperty(
                             PropertySpec.builder(
                                 feature.generatedName,
-                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional),
                             )
                                 .addDeprecationIfNecessary(feature)
                                 .mutable(true)
-                                .build()
+                                .build(),
                         )
                         addProperty(
                             PropertySpec.builder(
                                 feature.generatedName + "_orNull",
-                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = true)
+                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = true),
                             )
                                 .mutable(false)
-                                .build()
+                                .build(),
                         )
                         addProperty(
                             PropertySpec.builder(
                                 "raw_" + feature.generatedName,
-                                INode::class.asTypeName().copy(nullable = true)
+                                INode::class.asTypeName().copy(nullable = true),
                             )
                                 .addDeprecationIfNecessary(feature)
                                 .mutable(true)
-                                .build()
+                                .build(),
                         )
                     }
                 }
@@ -865,11 +935,11 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
         return annotationBuilder.build()
     }
 
-    private fun TypeSpec.Builder.addDeprecationIfNecessary(deprecatable: IProcessedDeprecatable) : TypeSpec.Builder {
+    private fun TypeSpec.Builder.addDeprecationIfNecessary(deprecatable: IProcessedDeprecatable): TypeSpec.Builder {
         return deprecatable.deprecationMessage?.let { addAnnotation(generateDeprecationAnnotation(it)) } ?: this
     }
 
-    private fun PropertySpec.Builder.addDeprecationIfNecessary(deprecatable: IProcessedDeprecatable) : PropertySpec.Builder {
+    private fun PropertySpec.Builder.addDeprecationIfNecessary(deprecatable: IProcessedDeprecatable): PropertySpec.Builder {
         return deprecatable.deprecationMessage?.let { addAnnotation(generateDeprecationAnnotation(it)) } ?: this
     }
 
@@ -884,15 +954,15 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     private fun ProcessedConcept.nodeWrapperImplName() = nameConfig.typedNodeImpl(name)
     private fun ProcessedConcept.conceptObjectName() = nameConfig.untypedConcept(name)
     private fun ProcessedConcept.conceptTypeAliasName() = nameConfig.conceptTypeAlias(name)
-    //private fun ProcessedConcept.conceptWrapperImplName() = nameConfig.conceptWrapperImplName(name)
-    //private fun ProcessedConcept.conceptWrapperInterfaceName() = nameConfig.conceptWrapperInterfaceName(name)
+    // private fun ProcessedConcept.conceptWrapperImplName() = nameConfig.conceptWrapperImplName(name)
+    // private fun ProcessedConcept.conceptWrapperInterfaceName() = nameConfig.conceptWrapperInterfaceName(name)
 
-    //private fun ProcessedConcept.getConceptFqName() = language.name + "." + name
+    // private fun ProcessedConcept.getConceptFqName() = language.name + "." + name
     private fun ProcessedConcept.conceptObjectType() = ClassName(language.name, conceptObjectName())
     private fun ProcessedConcept.nodeWrapperImplType() = ClassName(language.name, nodeWrapperImplName())
     private fun ProcessedConcept.nodeWrapperInterfaceType() = ClassName(language.name, nodeWrapperInterfaceName())
 
-    //private fun ProcessedRole.kotlinRef() = CodeBlock.of("%T.%N", concept.conceptObjectType(), generatedName)
+    // private fun ProcessedRole.kotlinRef() = CodeBlock.of("%T.%N", concept.conceptObjectType(), generatedName)
     private fun ProcessedRole.returnKotlinRef() =
         CodeBlock.of("return %T.%N", concept.conceptObjectType(), generatedName)
 
@@ -904,14 +974,16 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             if (optional) GeneratedSingleChildLink::class else GeneratedMandatorySingleChildLink::class
         }
         return linkClass.asClassName().parameterizedBy(
-            childConcept.nodeWrapperInterfaceType(), childConcept.conceptWrapperInterfaceType()
+            childConcept.nodeWrapperInterfaceType(),
+            childConcept.conceptWrapperInterfaceType(),
         )
     }
 
     private fun ProcessedReferenceLink.generatedReferenceLinkType(): TypeName {
         val targetConcept = type.resolved
         return GeneratedReferenceLink::class.asClassName().parameterizedBy(
-            targetConcept.nodeWrapperInterfaceType(), targetConcept.conceptWrapperInterfaceType()
+            targetConcept.nodeWrapperInterfaceType(),
+            targetConcept.conceptWrapperInterfaceType(),
         )
     }
 }

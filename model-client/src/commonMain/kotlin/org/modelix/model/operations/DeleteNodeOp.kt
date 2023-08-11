@@ -15,7 +15,10 @@
 
 package org.modelix.model.operations
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.ITree
+import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.SerializationUtil
 
@@ -65,7 +68,7 @@ class DeleteNodeOp(val childId: Long) : AbstractOperation(), IOperationIntend {
         val position: PositionInRole,
         val concept: IConceptReference?,
         val properties: Map<String, String?>,
-        val references: Map<String, INodeReference?>
+        val references: Map<String, INodeReference?>,
     ) : AbstractOperation.Applied(), IAppliedOperation {
         override fun getOriginalOp() = this@DeleteNodeOp
 

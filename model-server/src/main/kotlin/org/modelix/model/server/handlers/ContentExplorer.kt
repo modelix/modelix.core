@@ -1,11 +1,38 @@
 package org.modelix.model.server.handlers
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.html.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import kotlinx.html.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.html.respondHtml
+import io.ktor.server.html.respondHtmlTemplate
+import io.ktor.server.response.respondRedirect
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import kotlinx.html.BODY
+import kotlinx.html.FlowContent
+import kotlinx.html.UL
+import kotlinx.html.b
+import kotlinx.html.body
+import kotlinx.html.br
+import kotlinx.html.button
+import kotlinx.html.div
+import kotlinx.html.h1
+import kotlinx.html.h3
+import kotlinx.html.id
+import kotlinx.html.li
+import kotlinx.html.link
+import kotlinx.html.script
+import kotlinx.html.small
+import kotlinx.html.style
+import kotlinx.html.table
+import kotlinx.html.td
+import kotlinx.html.th
+import kotlinx.html.thead
+import kotlinx.html.title
+import kotlinx.html.tr
+import kotlinx.html.ul
+import kotlinx.html.unsafe
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
@@ -13,6 +40,11 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.client.IModelClient
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.server.templates.PageWithMenuBar
+import kotlin.collections.List
+import kotlin.collections.isNotEmpty
+import kotlin.collections.mutableListOf
+import kotlin.collections.set
+import kotlin.collections.toList
 
 class ContentExplorer(private val client: IModelClient, private val repoManager: RepositoriesManager) {
 
@@ -48,7 +80,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                         link("../../public/content-explorer.css", rel = "stylesheet")
                         script("text/javascript", src = "../../public/content-explorer.js") {}
                     }
-                    bodyContent {contentPageBody(rootNode, versionHash)}
+                    bodyContent { contentPageBody(rootNode, versionHash) }
                 }
             }
             get("/content/{versionHash}/{nodeId}/") {
@@ -71,18 +103,18 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
     }
 
     private fun FlowContent.contentPageBody(rootNode: PNodeAdapter, versionHash: String) {
-        h1 {+"Model Server Content"}
+        h1 { +"Model Server Content" }
         small {
             style = "color: #888; text-align: center; margin-bottom: 15px;"
             +versionHash
         }
         div {
             style = "display: flex;"
-            button(classes="btn") {
+            button(classes = "btn") {
                 id = "expandAllBtn"
                 +"Expand all"
             }
-            button(classes="btn") {
+            button(classes = "btn") {
                 id = "collapseAllBtn"
                 +"Collapse all"
             }
@@ -112,8 +144,8 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                         +"Unnamed Node"
                     }
                 }
-                small { +"(${node})" }
-                br {  }
+                small { +"($node)" }
+                br { }
                 val conceptRef = node.getConceptReference()
                 small {
                     if (conceptRef != null) {
@@ -122,7 +154,6 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                         +"No concept reference"
                     }
                 }
-
             }
             div("nested") {
                 ul("nodeTree") {
@@ -131,7 +162,6 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     }
                 }
             }
-
         }
     }
 

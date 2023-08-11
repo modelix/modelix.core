@@ -19,16 +19,16 @@ import kotlinx.serialization.Serializable
 data class NodeUpdateData(
     val nodeId: NodeId? = null,
     val temporaryNodeId: NodeId? = null,
-    //val parent: NodeId? = null,
-    //val role: String? = null,
-    //val index: Int? = null, // when a new node is created, this is the position in the parent
+    // val parent: NodeId? = null,
+    // val role: String? = null,
+    // val index: Int? = null, // when a new node is created, this is the position in the parent
     val concept: String? = null,
     val references: Map<String, String?>? = null,
     val properties: Map<String, String?>? = null,
-    val children: Map<String?, List<NodeId>>? = null
+    val children: Map<String?, List<NodeId>>? = null,
 ) {
-    fun replaceIds(replacer: (String)->String?): NodeUpdateData {
-        val replaceOrKeep: (String)->String = { replacer(it) ?: it }
+    fun replaceIds(replacer: (String) -> String?): NodeUpdateData {
+        val replaceOrKeep: (String) -> String = { replacer(it) ?: it }
 
         val newNodeId = nodeId ?: temporaryNodeId?.let(replacer)
         return NodeUpdateData(
@@ -40,7 +40,7 @@ data class NodeUpdateData(
             concept = concept,
             references = references?.mapValues { it.value?.let(replaceOrKeep) },
             properties = properties,
-            children = children?.mapValues { it.value.map(replaceOrKeep) }
+            children = children?.mapValues { it.value.map(replaceOrKeep) },
         )
     }
 
@@ -53,7 +53,7 @@ data class NodeUpdateData(
         concept = concept,
         references = (references ?: emptyMap()) + (referenceRole to target),
         properties = properties,
-        children = children
+        children = children,
     )
     fun withProperty(propertyRole: String, value: String?) = NodeUpdateData(
         nodeId = nodeId,
@@ -64,7 +64,7 @@ data class NodeUpdateData(
         concept = concept,
         references = references,
         properties = (properties ?: emptyMap()) + (propertyRole to value),
-        children = children
+        children = children,
     )
     fun withChildren(childrenRole: String?, newChildren: List<NodeId>?) = NodeUpdateData(
         nodeId = nodeId,
@@ -75,7 +75,7 @@ data class NodeUpdateData(
         concept = concept,
         references = references,
         properties = properties,
-        children = (children ?: emptyMap()) + (childrenRole to (newChildren ?: emptyList()))
+        children = (children ?: emptyMap()) + (childrenRole to (newChildren ?: emptyList())),
     )
     fun withConcept(newConceptUID: String?): NodeUpdateData {
         return NodeUpdateData(
@@ -87,16 +87,16 @@ data class NodeUpdateData(
             concept = newConceptUID,
             references = references,
             properties = properties,
-            children = children
+            children = children,
         )
     }
 
 //    fun withContainment(newParent: NodeId, newRole: String?, newIndex: Int) = NodeUpdateData(
 //        nodeId = nodeId,
 //        temporaryNodeId = temporaryNodeId,
-////        parent = newParent,
-////        role = newRole,
-////        index = newIndex,
+// //        parent = newParent,
+// //        role = newRole,
+// //        index = newIndex,
 //        concept = concept,
 //        references = references,
 //        properties = properties,
@@ -104,16 +104,13 @@ data class NodeUpdateData(
 //    )
 
     companion object {
-        fun newNode(tempId: NodeId, /*parent: NodeId, role: String?, index: Int,*/ concept: String?) = NodeUpdateData(
+        fun newNode(tempId: NodeId, concept: String?) = NodeUpdateData(
             nodeId = null,
             temporaryNodeId = tempId,
-//            parent = parent,
-//            role = role,
-//            index = index,
             concept = concept,
             references = null,
             properties = null,
-            children = null
+            children = null,
         )
 
         fun nothing(nodeId: NodeId) = NodeUpdateData(nodeId = nodeId)

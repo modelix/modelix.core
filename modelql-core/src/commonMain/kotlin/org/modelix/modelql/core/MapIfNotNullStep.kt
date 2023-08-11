@@ -49,8 +49,8 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
             this,
             listOf(
                 inputSerializer.upcast() as KSerializer<IStepOutput<Out?>>,
-                mappedSerializer.upcast() as KSerializer<IStepOutput<Out?>>
-            )
+                mappedSerializer.upcast() as KSerializer<IStepOutput<Out?>>,
+            ),
         )
         return multiplexedSerializer
     }

@@ -37,7 +37,7 @@ class VersionAndData<E>(val data: E, val version: String?) {
             try {
                 return json.decodeFromString(
                     VersionAndData.serializer(dataSerializer),
-                    serializedJson
+                    serializedJson,
                 )
             } catch (ex: Exception) {
                 val actualVersion = readVersionOnly(serializedJson)

@@ -15,17 +15,30 @@
 
 package org.modelix.model.lazy
 
-import org.modelix.model.api.*
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.IRole
+import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitor
+import org.modelix.model.api.ITreeChangeVisitorEx
+import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.tryResolve
 import org.modelix.model.lazy.COWArrays.add
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.lazy.RepositoryId.Companion.random
-import org.modelix.model.persistent.*
+import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNode.Companion.create
+import org.modelix.model.persistent.CPNodeRef
 import org.modelix.model.persistent.CPNodeRef.Companion.foreign
 import org.modelix.model.persistent.CPNodeRef.Companion.global
 import org.modelix.model.persistent.CPNodeRef.Companion.local
+import org.modelix.model.persistent.CPTree
 
 class CLTree : ITree, IBulkTree {
     val store: IDeserializingKeyValueStore
@@ -52,7 +65,7 @@ class CLTree : ITree, IBulkTree {
                 arrayOf(),
                 arrayOf(),
                 arrayOf(),
-                arrayOf()
+                arrayOf(),
             )
             val idToHash = storeElement(root, CLHamtInternal.createEmpty(store))
             this.data = CPTree(repositoryId.id, KVEntryReference(idToHash.getData()), useRoleIds)
@@ -161,7 +174,7 @@ class CLTree : ITree, IBulkTree {
             arrayOf(),
             arrayOf(),
             arrayOf(),
-            arrayOf()
+            arrayOf(),
         )
         newIdToHash = newIdToHash!!.put(newChildData)!!
         return CLTree(data.id, newIdToHash, store, data.usesRoleIds)
@@ -183,7 +196,7 @@ class CLTree : ITree, IBulkTree {
             childData.propertyRoles,
             childData.propertyValues,
             childData.referenceRoles,
-            childData.referenceTargets
+            childData.referenceTargets,
         )
         newIdToHash = newIdToHash!!.put(newChildData)
         var newChildrenArray = parent!!.getData().childrenIdArray
@@ -199,7 +212,7 @@ class CLTree : ITree, IBulkTree {
                 insert(
                     newChildrenArray,
                     indexInAll,
-                    childData.id
+                    childData.id,
                 )
             }
         }
@@ -212,7 +225,7 @@ class CLTree : ITree, IBulkTree {
             parent.getData().propertyRoles,
             parent.getData().propertyValues,
             parent.getData().referenceRoles,
-            parent.getData().referenceTargets
+            parent.getData().referenceTargets,
         )
         newIdToHash = newIdToHash!!.put(newParentData)
         return CLTree(data.id, newIdToHash!!, store, data.usesRoleIds)
@@ -264,7 +277,7 @@ class CLTree : ITree, IBulkTree {
             parent.getData().propertyRoles,
             parent.getData().propertyValues,
             parent.getData().referenceRoles,
-            parent.getData().referenceTargets
+            parent.getData().referenceTargets,
         )
         newIdToHash = newIdToHash.put(newParentData)
             ?: throw RuntimeException("Unexpected empty nodes map. There should be at least the root node.")
@@ -484,7 +497,7 @@ class CLTree : ITree, IBulkTree {
                         }
                     }
                 },
-                bulkQuery
+                bulkQuery,
             )
         }
     }
@@ -599,7 +612,7 @@ class CLTree : ITree, IBulkTree {
                 data = null as CPTree?,
                 repositoryId_ = repositoryId ?: RepositoryId.random(),
                 store_ = store,
-                useRoleIds = useRoleIds
+                useRoleIds = useRoleIds,
             )
         }
     }

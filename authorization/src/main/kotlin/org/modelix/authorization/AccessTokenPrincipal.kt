@@ -14,7 +14,7 @@
 package org.modelix.authorization
 
 import com.auth0.jwt.interfaces.DecodedJWT
-import io.ktor.server.auth.*
+import io.ktor.server.auth.Principal
 
 class AccessTokenPrincipal(val jwt: DecodedJWT) : Principal {
     fun getUserName(): String? = jwt.getClaim("email")?.asString()

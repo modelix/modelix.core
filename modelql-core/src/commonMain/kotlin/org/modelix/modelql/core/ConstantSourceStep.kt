@@ -43,7 +43,7 @@ private val supportedTypes = setOf(
     typeOf<Float>(), typeOf<Float?>(),
     typeOf<Double>(), typeOf<Double?>(),
     typeOf<String>(), typeOf<String?>(),
-    typeOf<Set<String>>(), typeOf<Set<String?>>()
+    typeOf<Set<String>>(), typeOf<Set<String?>>(),
 )
 private val string2type: Map<String, KType> = supportedTypes.associateBy { it.toString() }
 
@@ -88,7 +88,7 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ConstantSourceStep<Any?>(
                 element,
-                string2type[elementType] ?: throw IllegalArgumentException("Unsupported type: $elementType")
+                string2type[elementType] ?: throw IllegalArgumentException("Unsupported type: $elementType"),
             )
         }
 

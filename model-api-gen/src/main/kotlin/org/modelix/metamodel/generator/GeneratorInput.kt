@@ -22,7 +22,7 @@ import kotlin.reflect.KClass
 
 val reservedPropertyNames: Set<String> = setOf(
     "constructor", // already exists on JS objects
-    "_node" // exists in TypedNode in ts-model-api
+    "_node", // exists in TypedNode in ts-model-api
 ) + IConcept::class.members.map { it.name }
 
 interface IProcessedLanguageSet
@@ -48,10 +48,12 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
 
     fun load(dataList: List<LanguageData>) {
         for (data in dataList) {
-            addLanguage(ProcessedLanguage(data.name, data.uid).also { lang ->
-                lang.load(data.concepts)
-                lang.loadEnums(data.enums)
-            })
+            addLanguage(
+                ProcessedLanguage(data.name, data.uid).also { lang ->
+                    lang.load(data.concepts)
+                    lang.loadEnums(data.enums)
+                },
+            )
         }
         process()
     }
@@ -159,9 +161,11 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
 
     fun load(dataList: List<ConceptData>) {
         for (data in dataList) {
-            addConcept(ProcessedConcept(data.name, data.uid, data.abstract, data.extends.map { ProcessedConceptReference(it) }.toMutableList(), data.deprecationMessage).also { concept ->
-                concept.loadRoles(data)
-            })
+            addConcept(
+                ProcessedConcept(data.name, data.uid, data.abstract, data.extends.map { ProcessedConceptReference(it) }.toMutableList(), data.deprecationMessage).also { concept ->
+                    concept.loadRoles(data)
+                },
+            )
         }
     }
 
@@ -193,7 +197,7 @@ internal class ProcessedEnum(
     var name: String,
     var uid: String?,
     var defaultIndex: Int,
-    override var deprecationMessage: String?
+    override var deprecationMessage: String?,
 ) : IProcessedDeprecatable {
     lateinit var language: ProcessedLanguage
     private val members: MutableList<ProcessedEnumMember> = ArrayList()
@@ -215,7 +219,7 @@ internal class ProcessedConcept(
     var uid: String?,
     var abstract: Boolean,
     val extends: MutableList<ProcessedConceptReference>,
-    override var deprecationMessage: String?
+    override var deprecationMessage: String?,
 ) : IProcessedDeprecatable {
     lateinit var language: ProcessedLanguage
     private val roles: MutableList<ProcessedRole> = ArrayList()
@@ -255,7 +259,7 @@ internal sealed class ProcessedRole(
     var originalName: String,
     var uid: String?,
     var optional: Boolean,
-    override var deprecationMessage: String?
+    override var deprecationMessage: String?,
 ) : IProcessedDeprecatable {
     lateinit var concept: ProcessedConcept
     var generatedName: String = originalName
@@ -265,20 +269,20 @@ internal sealed class ProcessedRole(
     abstract fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit)
 }
 
-internal class ProcessedProperty(name: String, uid: String?, optional: Boolean, var type: PropertyType, deprecationMessage: String?)
-    : ProcessedRole(name, uid, optional, deprecationMessage) {
+internal class ProcessedProperty(name: String, uid: String?, optional: Boolean, var type: PropertyType, deprecationMessage: String?) :
+    ProcessedRole(name, uid, optional, deprecationMessage) {
     override fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit) {}
 }
 
-internal sealed class ProcessedLink(name: String, uid: String?, optional: Boolean, var type: ProcessedConceptReference, deprecationMessage: String?)
-    : ProcessedRole(name, uid, optional, deprecationMessage) {
+internal sealed class ProcessedLink(name: String, uid: String?, optional: Boolean, var type: ProcessedConceptReference, deprecationMessage: String?) :
+    ProcessedRole(name, uid, optional, deprecationMessage) {
     override fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit) {
         visitor(type)
     }
 }
 
-internal class ProcessedChildLink(name: String, uid: String?, optional: Boolean, var multiple: Boolean, type: ProcessedConceptReference, deprecationMessage: String?)
-    : ProcessedLink(name, uid, optional, type, deprecationMessage)
+internal class ProcessedChildLink(name: String, uid: String?, optional: Boolean, var multiple: Boolean, type: ProcessedConceptReference, deprecationMessage: String?) :
+    ProcessedLink(name, uid, optional, type, deprecationMessage)
 
-internal class ProcessedReferenceLink(name: String, uid: String?, optional: Boolean, type: ProcessedConceptReference, deprecationMessage: String?)
-    : ProcessedLink(name, uid, optional, type, deprecationMessage)
+internal class ProcessedReferenceLink(name: String, uid: String?, optional: Boolean, type: ProcessedConceptReference, deprecationMessage: String?) :
+    ProcessedLink(name, uid, optional, type, deprecationMessage)

@@ -15,11 +15,15 @@
 
 package org.modelix.model
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IIdGenerator
+import org.modelix.model.api.ITree
+import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.operations.*
+import org.modelix.model.operations.IOperation
+import org.modelix.model.operations.IOperationIntend
 import org.modelix.model.persistent.CPVersion
 
 class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private val idGenerator: IIdGenerator) {
@@ -84,7 +88,7 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
                 leftVersion,
                 rightVersion,
                 appliedOps.map { it.getOriginalOp() }.toTypedArray(),
-                storeCache
+                storeCache,
             )
 //            println("result ${mergedVersion?.id?.toString(16)}")
         }

@@ -143,7 +143,7 @@ abstract class SmallPMap<K, V> : CustomPMap<K, V> {
         fun <K, V> createS(keys: Iterable<K>?, values: Iterable<V>?): SmallPMap<K, V> {
             return create<K, V>(
                 toStream(keys!!).collect(Collectors.toList()).toTypedArray(),
-                toStream(values!!).collect(Collectors.toList()).toTypedArray()
+                toStream(values!!).collect(Collectors.toList()).toTypedArray(),
             ) as SmallPMap<K, V>
         }
     }

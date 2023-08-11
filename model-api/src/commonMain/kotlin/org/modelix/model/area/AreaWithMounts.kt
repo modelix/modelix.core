@@ -13,7 +13,12 @@
  */
 package org.modelix.model.area
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeWrapper
 
 class AreaWithMounts(val rootArea: IArea, mounts: Map<INode, IArea>) : IArea {
     private val mounts: Map<INode, IArea>
@@ -141,7 +146,7 @@ class AreaWithMounts(val rootArea: IArea, mounts: Map<INode, IArea>) : IArea {
     data class AreaReference(
         val rootArea: IAreaReference,
         val mountKeys: List<INodeReference>,
-        val mountValues: List<IAreaReference>
+        val mountValues: List<IAreaReference>,
     ) : IAreaReference
 
     inner class NodeWrapper(val node: INode) : INode, INodeWrapper {

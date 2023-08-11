@@ -82,7 +82,7 @@ fun <In, Out> buildMonoQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>)
             inputStep,
             outputStep,
             reference = context.queryReference as QueryReference<UnboundQuery<In, Out, Out>>,
-            context.sharedSteps
+            context.sharedSteps,
         )
     }.also { context.validateAllIfRoot() }
 }
@@ -94,7 +94,7 @@ fun <In, Out> buildFluxQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>)
             inputStep,
             outputStep,
             reference = context.queryReference as QueryReference<IFluxUnboundQuery<In, Out>>,
-            context.sharedSteps
+            context.sharedSteps,
         )
     }.also { context.validateAllIfRoot() }
 }

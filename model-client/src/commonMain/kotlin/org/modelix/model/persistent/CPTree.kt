@@ -21,7 +21,7 @@ import kotlin.jvm.JvmStatic
 class CPTree(
     val id: String,
     var idToHash: KVEntryReference<CPHamtNode>,
-    val usesRoleIds: Boolean
+    val usesRoleIds: Boolean,
 ) : IKVValue {
     override var isWritten: Boolean = false
 
@@ -52,7 +52,7 @@ class CPTree(
             if (persistenceVersion != PERSISTENCE_VERSION && persistenceVersion != NAMED_BASED_PERSISTENCE_VERSION) {
                 throw RuntimeException(
                     "Tree $treeId has persistence version $persistenceVersion, " +
-                        "but only version $PERSISTENCE_VERSION is supported"
+                        "but only version $PERSISTENCE_VERSION is supported",
                 )
             }
             val usesRoleIds = persistenceVersion == PERSISTENCE_VERSION

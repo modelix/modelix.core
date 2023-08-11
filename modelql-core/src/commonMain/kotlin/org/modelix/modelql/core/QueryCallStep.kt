@@ -93,7 +93,7 @@ fun <In, Out> IMonoStep<In>.callQuery(query: () -> IMonoUnboundQuery<In, Out>): 
         QueryReference(null, null) {
             val q: IMonoUnboundQuery<In, Out>? = query()
             q ?: throw RuntimeException("No query was provided. Possible cyclic dependency.", creationStacktrace)
-        }
+        },
     )
 }
 fun <In, Out> IMonoStep<In>.callFluxQuery(query: () -> IFluxUnboundQuery<In, Out>): IFluxStep<Out> {
@@ -102,7 +102,7 @@ fun <In, Out> IMonoStep<In>.callFluxQuery(query: () -> IFluxUnboundQuery<In, Out
         QueryReference(null, null) {
             val q: IFluxUnboundQuery<In, Out>? = query()
             q ?: throw RuntimeException("No query was provided. Possible cyclic dependency.", creationStacktrace)
-        }
+        },
     )
 }
 

@@ -14,4 +14,3 @@ Currently, the generator supports either Kotlin and TypeScipt as target language
 As a source for the generated API, `model-api-gen` consumes a given metamodel specified by JSON files.
 
 The Model API Generator is mainly used in the corresponding gradle plugin xref:core:reference/component-model-api-gen-gradle.adoc[model-api-gen-gradle].
-

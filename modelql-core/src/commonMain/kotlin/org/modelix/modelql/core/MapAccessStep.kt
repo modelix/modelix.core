@@ -39,8 +39,8 @@ class MapAccessStep<K, V>() : TransformingStepWithParameter<Map<K, V>, K, Any?, 
             this,
             listOf(
                 valueSerializer as KSerializer<IStepOutput<V?>>,
-                nullSerializer<V>().stepOutputSerializer(this) as KSerializer<IStepOutput<V?>>
-            )
+                nullSerializer<V>().stepOutputSerializer(this) as KSerializer<IStepOutput<V?>>,
+            ),
         )
     }
 

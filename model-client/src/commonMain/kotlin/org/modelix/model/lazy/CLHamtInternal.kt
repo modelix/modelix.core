@@ -125,13 +125,13 @@ class CLHamtInternal(private val data: CPHamtInternal, store: IDeserializingKeyV
             create(
                 data.bitmap or (1 shl logicalIndex),
                 COWArrays.insert(data.children, physicalIndex, childHash),
-                store
+                store,
             )
         } else {
             create(
                 data.bitmap,
                 COWArrays.set(data.children, physicalIndex, childHash),
-                store
+                store,
             )
         }
         return if (shift < MAX_BITS - BITS_PER_LEVEL) CLHamtSingle.replaceIfSingleChild(newNode) else newNode

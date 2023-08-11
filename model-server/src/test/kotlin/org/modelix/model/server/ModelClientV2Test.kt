@@ -10,16 +10,17 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.server
 
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.testing.*
-import io.ktor.server.websocket.*
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.install
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.testing.ApplicationTestBuilder
+import io.ktor.server.testing.testApplication
+import io.ktor.server.websocket.WebSockets
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
@@ -34,7 +35,7 @@ import org.modelix.model.server.store.InMemoryStoreClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ModelClientV2_Test {
+class ModelClientV2Test {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
@@ -68,12 +69,12 @@ class ModelClientV2_Test {
             null,
             newTree as CLTree,
             initialVersion as CLVersion,
-            ops.map { it.getOriginalOp() }.toTypedArray()
+            ops.map { it.getOriginalOp() }.toTypedArray(),
         )
 
         assertEquals(
             client.listBranches(repositoryId).toSet(),
-            setOf(repositoryId.getBranchReference())
+            setOf(repositoryId.getBranchReference()),
         )
 
         val branchId = repositoryId.getBranchReference("my-branch")
@@ -82,7 +83,7 @@ class ModelClientV2_Test {
 
         assertEquals(
             client.listBranches(repositoryId).toSet(),
-            setOf(repositoryId.getBranchReference(), branchId)
+            setOf(repositoryId.getBranchReference(), branchId),
         )
     }
 }

@@ -44,6 +44,7 @@ object JSNodeConverter {
 
 // workaround: because of the missing import for INodeJS, this intermediate interface prevents it from being generated
 // into the .d.ts file.
+@Suppress("ClassName")
 interface INodeJS_ : INodeJS
 
 @JsExport // this is only required to prevent the compiler from renaming the methods in the generated JS

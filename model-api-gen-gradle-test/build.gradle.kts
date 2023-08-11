@@ -68,9 +68,11 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.logback.classic)
 
-    testImplementation(files(kotlinGenDir) {
-        builtBy("generateMetaModelSources")
-    })
+    testImplementation(
+        files(kotlinGenDir) {
+            builtBy("generateMetaModelSources")
+        },
+    )
 }
 
 tasks.test {

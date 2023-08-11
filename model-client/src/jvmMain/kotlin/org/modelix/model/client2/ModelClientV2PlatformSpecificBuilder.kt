@@ -1,7 +1,8 @@
 package org.modelix.model.client2
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.cio.CIO
 import org.modelix.model.oauth.ModelixOAuthClient
 
 actual class ModelClientV2PlatformSpecificBuilder : ModelClientV2Builder() {

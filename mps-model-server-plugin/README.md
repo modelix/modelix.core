@@ -6,7 +6,7 @@ mps.plugins.dir=/Users/yourUserName/Library/Application Support/JetBrains/Toolbo
 ```
 
 Then run the task `installMpsPlugin` and restart MPS.
-Automatically reloading the plugin is not supported yet, 
+Automatically reloading the plugin is not supported yet,
 because failing to unloading the classes of the ktor server prevents that.
 
 Alternatively you can install the plugin manually by first running the task `buildPlugin`

@@ -4,7 +4,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.model.api.INode
 import org.modelix.model.api.getDescendants
-import org.modelix.model.api.serialize
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.associateWithNotNull
 import org.modelix.model.operations.AddNewChildOp
@@ -18,11 +17,11 @@ object SyncTestUtil {
     val json = Json { prettyPrint = true }
 }
 
-fun INode.toJson() : String {
+fun INode.toJson(): String {
     return this.asExported().toJson()
 }
 
-fun NodeData.toJson() : String {
+fun NodeData.toJson(): String {
     return SyncTestUtil.json.encodeToString(this)
 }
 
@@ -36,9 +35,9 @@ internal fun assertAllNodesConformToSpec(expectedRoot: NodeData, actualRoot: INo
     }
 }
 
-private fun buildSpecIndex(nodeData: NodeData) : Map<String, NodeData> {
+private fun buildSpecIndex(nodeData: NodeData): Map<String, NodeData> {
     val map = mutableMapOf<String, NodeData>()
-    nodeData.originalId()?.let { map[it] = nodeData}
+    nodeData.originalId()?.let { map[it] = nodeData }
     nodeData.children.forEach {
         map.putAll(buildSpecIndex(it))
     }
@@ -60,7 +59,7 @@ internal fun assertNodePropertiesConformToSpec(expected: NodeData, actual: INode
 internal fun assertNodeReferencesConformToSpec(
     expected: NodeData,
     actual: INode,
-    originalIdToSpec: Map<String, NodeData> = emptyMap()
+    originalIdToSpec: Map<String, NodeData> = emptyMap(),
 ) {
     var numUnresolvableRefs = 0
 
@@ -77,18 +76,17 @@ internal fun assertNodeReferencesConformToSpec(
     assert(expected.references.entries.containsAll(actualResolvableRefs.entries))
     val unresolved = expected.references.entries.subtract(actualResolvableRefs.entries)
     unresolved.forEach {
-        assert(!originalIdToSpec.containsKey(it.value)) { "node ref with target ${it.value} should have been resolved"}
+        assert(!originalIdToSpec.containsKey(it.value)) { "node ref with target ${it.value} should have been resolved" }
     }
 }
 
 internal fun assertNodeChildOrderConformsToSpec(expected: NodeData, actual: INode) {
-    val specifiedOrder = expected.children.groupBy {it.role}.mapValues { (_, children) -> children.map { it.originalId() }}
-    val actualOrder = actual.allChildren.groupBy { it.roleInParent }.mapValues {  (_, children) -> children.map { it.originalId() }}
+    val specifiedOrder = expected.children.groupBy { it.role }.mapValues { (_, children) -> children.map { it.originalId() } }
+    val actualOrder = actual.allChildren.groupBy { it.roleInParent }.mapValues { (_, children) -> children.map { it.originalId() } }
     assertEquals(specifiedOrder, actualOrder)
 }
 
 internal fun assertNoOverlappingOperations(operations: List<IAppliedOperation>) {
-
     val opsByType = operations.groupBy { it.getOriginalOp()::class }
 
     val additionsSet = opsByType[AddNewChildOp::class]?.map { (it.getOriginalOp() as AddNewChildOp).childId }?.toSet() ?: emptySet()

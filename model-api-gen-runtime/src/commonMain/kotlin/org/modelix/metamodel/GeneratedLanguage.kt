@@ -26,6 +26,4 @@ abstract class GeneratedLanguage(private val name: String) : ILanguage {
     override fun getUID(): String {
         return getName()
     }
-
-
 }

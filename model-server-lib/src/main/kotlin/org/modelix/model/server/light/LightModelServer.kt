@@ -16,18 +16,41 @@
 
 package org.modelix.model.server.light
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
-import kotlinx.coroutines.*
-import org.modelix.model.api.*
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.DefaultWebSocketServerSession
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
+import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
+import io.ktor.websocket.send
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.IRole
+import org.modelix.model.api.key
+import org.modelix.model.api.remove
 import org.modelix.model.server.api.AddNewChildNodeOpData
 import org.modelix.model.server.api.ChangeSetId
 import org.modelix.model.server.api.DeleteNodeOpData
@@ -85,12 +108,12 @@ class LightModelServerBuilder {
     }
 }
 
-class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodeProvider: () -> INode?, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
+class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProvider: () -> INode?, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
     constructor (port: Int, rootNode: INode, ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) :
-            this(port, { rootNode}, ignoredRoles, additionalHealthChecks)
+        this(port, { rootNode }, ignoredRoles, additionalHealthChecks)
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {  }
+        private val LOG = mu.KotlinLogging.logger { }
         fun builder(): LightModelServerBuilder = LightModelServerBuilder()
     }
 
@@ -234,9 +257,11 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
     private suspend fun DefaultWebSocketServerSession.handleWebsocket(session: SessionData) {
         LOG.trace { "New client connected" }
         withTimeout(10.seconds) {
-            session.sendMessage(getArea().executeRead {
-                session.createUpdateMessage()
-            })
+            session.sendMessage(
+                getArea().executeRead {
+                    session.createUpdateMessage()
+                },
+            )
         }
 
         for (frame in incoming) {
@@ -290,7 +315,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                 versionHash = null,
                 rootNodeId = rootNode.nodeId(),
                 usesRoleIds = rootNode.usesRoleIds(),
-                nodes = nodeDataList
+                nodes = nodeDataList,
             )
         }
 
@@ -299,7 +324,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                 version = createUpdate(),
                 replacedIds = null,
                 appliedChangeSet = null,
-                exception = null
+                exception = null,
             )
         }
 
@@ -344,7 +369,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                         val newNode = parent.addNewChild(
                             role = op.role,
                             index = op.index,
-                            concept = op.concept?.let { ConceptReference(it) }
+                            concept = op.concept?.let { ConceptReference(it) },
                         )
                         replacedIds[op.childId] = newNode.nodeId()
                     }
@@ -363,7 +388,7 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
                         newParent.moveChild(
                             role = op.newRole,
                             index = op.newIndex,
-                            child = child
+                            child = child,
                         )
                     }
                     is SetPropertyOpData -> {
@@ -383,11 +408,15 @@ class LightModelServer @JvmOverloads constructor (val port: Int, val rootNodePro
 
     private fun INode.toData(): NodeData {
         val conceptRef = concept?.getReference()
-        val ignored = if (conceptRef == null) IgnoredRoles.EMPTY else ignoredRolesCache.getOrPut(conceptRef) {
-            val ignoredChildRoles = concept?.getAllChildLinks()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
-            val ignoredPropertyRoles = concept?.getAllProperties()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
-            val ignoredReferenceRoles = concept?.getAllReferenceLinks()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
-            IgnoredRoles(ignoredChildRoles, ignoredPropertyRoles, ignoredReferenceRoles).optimizeEmpty()
+        val ignored = if (conceptRef == null) {
+            IgnoredRoles.EMPTY
+        } else {
+            ignoredRolesCache.getOrPut(conceptRef) {
+                val ignoredChildRoles = concept?.getAllChildLinks()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
+                val ignoredPropertyRoles = concept?.getAllProperties()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
+                val ignoredReferenceRoles = concept?.getAllReferenceLinks()?.intersect(ignoredRoles)?.map { it.key(this) }?.toSet() ?: emptySet()
+                IgnoredRoles(ignoredChildRoles, ignoredPropertyRoles, ignoredReferenceRoles).optimizeEmpty()
+            }
         }
 
         val childrenMap = LinkedHashMap<String?, List<NodeId>>()

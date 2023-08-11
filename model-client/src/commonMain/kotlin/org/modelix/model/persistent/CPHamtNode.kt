@@ -40,12 +40,12 @@ abstract class CPHamtNode : IKVValue {
                     parts[2].split(",")
                         .filter { it.isNotEmpty() }
                         .map { KVEntryReference(it, DESERIALIZER) }
-                        .toTypedArray()
+                        .toTypedArray(),
                 )
                 "S" -> CPHamtSingle(
                     parts[1].toInt(),
                     longFromHex(parts[2]),
-                    KVEntryReference(parts[3], DESERIALIZER)
+                    KVEntryReference(parts[3], DESERIALIZER),
                 )
                 else -> throw RuntimeException("Unknown type: " + parts[0] + ", input: " + input)
             }

@@ -31,5 +31,5 @@ internal actual class ReadWriteLock {
 private enum class LockType {
     Unlocked,
     Read,
-    Write
+    Write,
 }

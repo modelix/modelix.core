@@ -24,7 +24,6 @@ data class VersionData(
     val nodes: List<NodeData>,
 )
 
-
 fun VersionData.merge(older: VersionData): VersionData {
     val mergedNodes: Map<NodeId, NodeData> = older.nodes.associateBy { it.nodeId } + nodes.associateBy { it.nodeId }
     val deletedNodes: List<NodeData> = mergedNodes.values.filter { node ->
@@ -39,7 +38,7 @@ fun VersionData.merge(older: VersionData): VersionData {
         versionHash = versionHash,
         rootNodeId = rootNodeId ?: older.rootNodeId,
         usesRoleIds = usesRoleIds || older.usesRoleIds,
-        nodes = filteredMergedNodes.values.toList()
+        nodes = filteredMergedNodes.values.toList(),
     )
 }
 

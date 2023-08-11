@@ -10,12 +10,13 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 
 package org.modelix.model.server
 
-import io.ktor.server.testing.*
+import io.ktor.server.testing.ApplicationTestBuilder
+import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
@@ -23,13 +24,13 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.store.InMemoryStoreClient
-import java.util.*
+import java.util.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
-class ModelClient_Test {
+class ModelClientTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {

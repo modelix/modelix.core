@@ -13,7 +13,11 @@
  */
 package org.modelix.model.server.light
 
-import org.modelix.model.api.*
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.getAncestors
+import org.modelix.model.api.getDescendants
+import org.modelix.model.api.resolveReferenceLink
 import org.modelix.model.server.api.AndFilter
 import org.modelix.model.server.api.ContainsOperator
 import org.modelix.model.server.api.EndsWithOperator

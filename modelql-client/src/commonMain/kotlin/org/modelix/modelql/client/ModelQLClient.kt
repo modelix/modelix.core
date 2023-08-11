@@ -63,7 +63,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
             VersionAndData.deserialize(
                 serializedJson,
                 query.getAggregationOutputSerializer(json.serializersModule),
-                json
+                json,
             ).data.value
         }
     }

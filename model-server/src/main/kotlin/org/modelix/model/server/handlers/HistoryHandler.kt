@@ -1,15 +1,38 @@
 package org.modelix.model.server.handlers
 
-import io.ktor.server.application.*
-import io.ktor.server.html.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.html.respondHtmlTemplate
+import io.ktor.server.request.receiveParameters
+import io.ktor.server.response.respondRedirect
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.routing
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.html.*
+import kotlinx.html.FlowContent
+import kotlinx.html.FormMethod
+import kotlinx.html.HEAD
+import kotlinx.html.TBODY
+import kotlinx.html.a
+import kotlinx.html.br
+import kotlinx.html.div
+import kotlinx.html.form
+import kotlinx.html.h1
+import kotlinx.html.hiddenInput
+import kotlinx.html.li
+import kotlinx.html.span
+import kotlinx.html.style
+import kotlinx.html.submitInput
+import kotlinx.html.table
+import kotlinx.html.tbody
+import kotlinx.html.td
+import kotlinx.html.th
+import kotlinx.html.thead
+import kotlinx.html.tr
+import kotlinx.html.ul
 import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
@@ -17,8 +40,12 @@ import org.modelix.authorization.requiresPermission
 import org.modelix.model.LinearHistory
 import org.modelix.model.api.PBranch
 import org.modelix.model.client.IModelClient
-import org.modelix.model.lazy.*
+import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLTree
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.createRegularVersion
+import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RevertToOp
 import org.modelix.model.operations.applyOperation
@@ -90,7 +117,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
             author ?: "<server>",
             (tree as CLTree),
             version,
-            ops.map { it.getOriginalOp() }.toTypedArray()
+            ops.map { it.getOriginalOp() }.toTypedArray(),
         )
         repositoriesManager.mergeChanges(repositoryAndBranch, newVersion.getContentHash())
     }
@@ -128,7 +155,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
               border-top-right-radius: 6px;
               border-bottom-right-radius: 6px;
             }
-        """.trimIndent()
+            """.trimIndent()
         }
     }
 
@@ -176,7 +203,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                 tr {
                     th {
                         +"ID"
-                        br {  }
+                        br { }
                         +"Hash"
                     }
                     th { +"Author" }
@@ -218,7 +245,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         tr {
             td {
                 +version.id.toString(16)
-                br {  }
+                br { }
                 span(classes = "hash") { +version.getContentHash() }
             }
             td {

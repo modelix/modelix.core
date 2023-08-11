@@ -16,7 +16,6 @@ package org.modelix.modelql.html
 import io.ktor.server.html.Template
 import io.ktor.server.html.TemplatePlaceholder
 import kotlinx.html.HTML
-import kotlinx.html.body
 import kotlinx.html.html
 import kotlinx.html.stream.createHTML
 import org.modelix.modelql.core.IBoundFragment
@@ -35,7 +34,7 @@ interface IModelQLTemplate<in In, in Context> {
 
 class ModelQLTemplateInstance<in Context, out Template : IModelQLTemplate<*, Context>>(
     val template: Template,
-    val fragment: IRequestedFragment<Context>
+    val fragment: IRequestedFragment<Context>,
 )
 
 context(IFragmentBuilder<*, *>)
@@ -50,7 +49,7 @@ fun <In, Context, Template : IModelQLTemplate<In, Context>> IMonoStep<In>.reques
 
 fun <TTemplate : IModelQLTemplate<*, TOuter>, TOuter> TOuter.insert(
     templateInstance: ModelQLTemplateInstance<TOuter, TTemplate>,
-    placeholder: TemplatePlaceholder<TTemplate>
+    placeholder: TemplatePlaceholder<TTemplate>,
 ) {
     placeholder.apply(templateInstance.template)
     templateInstance.fragment.get().insertInto(this)

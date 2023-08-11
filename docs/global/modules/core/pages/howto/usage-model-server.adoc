@@ -25,4 +25,3 @@ NOTE: If you are interested in a more practical usage of what is presented here,
 --
 [modelix.core] $ ./gradlew model-server:run --args='-inmemory'
 --
-

@@ -20,7 +20,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import org.apache.commons.lang3.mutable.MutableObject
 import org.modelix.model.VersionMerger
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.ITree
+import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.PBranch
 import org.modelix.model.client.SharedExecutors.fixDelay
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
@@ -42,7 +46,7 @@ import java.util.function.Supplier
 actual open class ReplicatedRepository actual constructor(
     private val client: IModelClient,
     private val branchReference: BranchReference,
-    private val user: () -> String
+    private val user: () -> String,
 ) {
     private val localBranch: IBranch
     private val localOTBranch: OTBranch
@@ -140,7 +144,7 @@ actual open class ReplicatedRepository actual constructor(
                                     "Merged local %s with remote %s -> %s",
                                     newLocalVersion.hash,
                                     remoteBase!!.hash,
-                                    mergedVersion.hash
+                                    mergedVersion.hash,
                                 )
                             }
                         } catch (ex: Exception) {
@@ -209,7 +213,7 @@ actual open class ReplicatedRepository actual constructor(
             author = user(),
             tree = tree,
             baseVersion = previousVersion,
-            operations = operations
+            operations = operations,
         )
     }
 
@@ -293,8 +297,8 @@ actual open class ReplicatedRepository actual constructor(
                                         "Merged remote %s with local %s -> %s",
                                         newRemoteVersion.hash,
                                         localBase.value!!.hash,
-                                        mergedVersion.hash
-                                    )
+                                        mergedVersion.hash,
+                                    ),
                                 )
                             }
                         } catch (ex: Exception) {
@@ -357,7 +361,7 @@ actual open class ReplicatedRepository actual constructor(
                 if (divergenceTime > 5) {
                     synchronized(mergeLock) { divergenceTime = 0 }
                 }
-            }
+            },
         )
     }
 }

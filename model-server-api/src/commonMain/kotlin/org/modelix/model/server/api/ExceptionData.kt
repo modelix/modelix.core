@@ -19,12 +19,12 @@ import kotlinx.serialization.Serializable
 data class ExceptionData(
     val message: String,
     val stacktrace: List<String>,
-    val cause: ExceptionData? = null
+    val cause: ExceptionData? = null,
 ) {
     constructor(exception: Throwable) : this(
         exception.message ?: "",
         exception.stackTraceToString().lines(),
-        if (exception.cause == exception) null else exception.cause?.let { ExceptionData(it) }
+        if (exception.cause == exception) null else exception.cause?.let { ExceptionData(it) },
     )
 
     fun allMessages() = generateSequence(this) { it.cause }.map { it.message }

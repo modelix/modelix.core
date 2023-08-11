@@ -13,7 +13,14 @@
  */
 package org.modelix.model.area
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.ITree
+import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.PNodeReference
 
 class PArea(val branch: IBranch) : IArea {
 

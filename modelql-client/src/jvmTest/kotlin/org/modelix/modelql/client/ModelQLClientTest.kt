@@ -115,7 +115,7 @@ class ModelQLClientTest {
                     it.property("p1"),
                     it.property("p2"),
                     it.property("p3"),
-                    it.property("p4")
+                    it.property("p4"),
                 ).firstOrNull()
             }.toList()
         }

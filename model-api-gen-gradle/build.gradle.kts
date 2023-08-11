@@ -35,9 +35,11 @@ gradlePlugin {
 val writeVersionFile by tasks.registering {
     val propertiesFile = projectDir.resolve("src/main/resources/modelix.core.version.properties")
     propertiesFile.parentFile.mkdirs()
-    propertiesFile.writeText("""
+    propertiesFile.writeText(
+        """
         modelix.core.version=$version
-    """.trimIndent())
+        """.trimIndent(),
+    )
 }
 tasks.named("processResources") {
     dependsOn(writeVersionFile)

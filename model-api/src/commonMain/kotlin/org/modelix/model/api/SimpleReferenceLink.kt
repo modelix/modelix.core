@@ -16,7 +16,7 @@ package org.modelix.model.api
 class SimpleReferenceLink(
     private val simpleName: String,
     override val isOptional: Boolean,
-    override var targetConcept: IConcept
+    override var targetConcept: IConcept,
 ) : IReferenceLink {
     var owner: SimpleConcept? = null
 

@@ -1,6 +1,11 @@
 package org.modelix.model
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.ITree
+import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.PBranch
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.client.IdGenerator
 import kotlin.random.Random
 
@@ -57,7 +62,7 @@ class RandomTreeChangeGenerator(private val idGenerator: IdGenerator, private va
         val parent = util.getRandomNode(
             util
                 .allNodes
-                .filter { it: Long -> util.getAncestors(it, true).none { it2: Long -> it2 == childId } }
+                .filter { it: Long -> util.getAncestors(it, true).none { it2: Long -> it2 == childId } },
         )
         if (childId != 0L && parent != 0L) {
             val role = childRoles[rand.nextInt(childRoles.size)]
@@ -84,14 +89,14 @@ class RandomTreeChangeGenerator(private val idGenerator: IdGenerator, private va
         addNewOp,
         setPropertyOp,
         setReferenceOp,
-        moveOp
+        moveOp,
     )
 
     fun growingOperationsOnly(): RandomTreeChangeGenerator {
         operations = listOf(
             addNewOp,
             setPropertyOp,
-            setReferenceOp
+            setReferenceOp,
         )
         return this
     }
@@ -103,7 +108,7 @@ class RandomTreeChangeGenerator(private val idGenerator: IdGenerator, private va
 
     fun addOperationOnly(): RandomTreeChangeGenerator {
         operations = listOf(
-            addNewOp
+            addNewOp,
         )
         return this
     }

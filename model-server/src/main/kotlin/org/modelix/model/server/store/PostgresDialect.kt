@@ -10,7 +10,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- * under the License. 
+ * under the License.
  */
 package org.modelix.model.server.store
 
@@ -23,7 +23,9 @@ class PostgresDialect : BasicJdbcDialect() {
     }
 
     override fun mergeQuery(
-        fullTblName: String, keyCols: Collection<String>, uniqCols: Collection<String>
+        fullTblName: String,
+        keyCols: Collection<String>,
+        uniqCols: Collection<String>,
     ): String {
         val cols = F.concat(false, keyCols, uniqCols)
         val updPart = mkString(
@@ -31,7 +33,7 @@ class PostgresDialect : BasicJdbcDialect() {
             { String.format("%s = excluded.%s", it, it) },
             "",
             ", ",
-            ""
+            "",
         )
         return String.format(
             "INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
@@ -39,7 +41,7 @@ class PostgresDialect : BasicJdbcDialect() {
             mkString(cols, ", "),
             repeat("?", cols.size, "", ",", ""),
             mkString(keyCols, ", "),
-            updPart
+            updPart,
         )
     }
 }

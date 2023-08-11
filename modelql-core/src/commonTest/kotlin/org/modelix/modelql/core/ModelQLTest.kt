@@ -76,7 +76,7 @@ class ModelQLTest {
         }
         assertEquals(
             testDatabase.products.map { it.title to it.id },
-            result.map { it.first to it.second }
+            result.map { it.first to it.second },
         )
     }
 
@@ -93,7 +93,7 @@ class ModelQLTest {
         println(result)
         assertEquals(
             testDatabase.products.map { it.title to it.id },
-            result.map { it.first to it.second }
+            result.map { it.first to it.second },
         )
     }
 

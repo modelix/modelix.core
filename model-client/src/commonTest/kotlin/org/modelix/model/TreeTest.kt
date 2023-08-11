@@ -18,7 +18,7 @@ package org.modelix.model
 import org.modelix.model.api.ITree
 import kotlin.test.Test
 
-class Tree_Test : TreeTestBase() {
+class TreeTest : TreeTestBase() {
     @Test
     fun test_random() {
         var tree: ITree = initialTree

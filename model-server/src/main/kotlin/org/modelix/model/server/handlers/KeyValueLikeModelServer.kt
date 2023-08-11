@@ -14,20 +14,34 @@
 
 package org.modelix.model.server.handlers
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.html.*
-import io.ktor.server.plugins.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.util.pipeline.*
-import kotlinx.html.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.call
+import io.ktor.server.html.respondHtmlTemplate
+import io.ktor.server.request.receiveText
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.routing.routing
+import io.ktor.util.pipeline.PipelineContext
+import kotlinx.html.br
+import kotlinx.html.div
+import kotlinx.html.h1
+import kotlinx.html.span
 import org.json.JSONArray
 import org.json.JSONObject
-import org.modelix.authorization.*
+import org.modelix.authorization.EPermissionType
+import org.modelix.authorization.KeycloakResourceType
+import org.modelix.authorization.KeycloakScope
+import org.modelix.authorization.NoPermissionException
+import org.modelix.authorization.asResource
+import org.modelix.authorization.checkPermission
+import org.modelix.authorization.getUserName
+import org.modelix.authorization.requiresPermission
+import org.modelix.authorization.toKeycloakScope
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
@@ -85,7 +99,6 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
     }
 
     private fun Application.modelServerModule() {
-
         routing {
             get("/health") {
                 if (isHealthy()) {
@@ -96,7 +109,7 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
             }
             get("/headers") {
                 val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
-                call.respondHtmlTemplate(PageWithMenuBar("headers",".")) {
+                call.respondHtmlTemplate(PageWithMenuBar("headers", ".")) {
                     bodyContent {
                         h1 { +"HTTP Headers" }
                         div {
@@ -104,7 +117,7 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
                                 span {
                                     +"${it.first}: ${it.second}"
                                 }
-                                br {  }
+                                br { }
                             }
                         }
                     }
@@ -195,7 +208,6 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
                 }
             }
             requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.WRITE) {
-
             }
         }
     }
@@ -317,11 +329,9 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
         call.checkPermission(MODEL_SERVER_ENTRY.createInstance(key), type.toKeycloakScope())
     }
 
-
-
     fun isHealthy(): Boolean {
         val value = toLong(storeClient[HEALTH_KEY]) + 1
-        storeClient.put(HEALTH_KEY, java.lang.Long.toString(value),)
+        storeClient.put(HEALTH_KEY, java.lang.Long.toString(value))
         return toLong(storeClient[HEALTH_KEY]) >= value
     }
 }

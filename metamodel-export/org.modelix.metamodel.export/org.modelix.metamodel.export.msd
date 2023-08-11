@@ -81,4 +81,3 @@
     <module reference="e52a4421-48a2-4de1-8327-d9414e799c67(org.modelix.metamodel.export)" version="0" />
   </dependencyVersions>
 </solution>
-

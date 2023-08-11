@@ -56,13 +56,13 @@ object SharedExecutors {
                             workerTask?.cancel(true)
                         },
                         timeoutMs,
-                        TimeUnit.MILLISECONDS
+                        TimeUnit.MILLISECONDS,
                     )
                 }
             },
             periodMs,
             periodMs,
-            TimeUnit.MILLISECONDS
+            TimeUnit.MILLISECONDS,
         )
     }
 }

@@ -57,7 +57,7 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
     override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend {
         val capturedTargetPosition = CapturedInsertPosition(
             targetPosition.index,
-            tree.getChildren(targetPosition.nodeId, targetPosition.role).toList().toLongArray()
+            tree.getChildren(targetPosition.nodeId, targetPosition.role).toList().toLongArray(),
         )
 
         return Intend(capturedTargetPosition)
@@ -69,7 +69,7 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
             val newSourcePosition = getNodePosition(tree, childId)
             if (!tree.containsNode(targetPosition.nodeId)) {
                 return listOf(
-                    withPos(getDetachedNodesEndPosition(tree))
+                    withPos(getDetachedNodesEndPosition(tree)),
                 )
             }
             if (getAncestors(tree, targetPosition.nodeId).contains(childId)) return listOf(NoOp())

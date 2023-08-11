@@ -34,4 +34,3 @@ abstract class TypedNodeImpl(val wrappedNode: INode) : ITypedNode {
         return wrappedNode.hashCode()
     }
 }
-

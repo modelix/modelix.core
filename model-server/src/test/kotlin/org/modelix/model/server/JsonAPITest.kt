@@ -14,12 +14,18 @@
 
 package org.modelix.model.server
 
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.testing.*
-import io.ktor.server.websocket.*
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.server.application.install
+import io.ktor.server.testing.ApplicationTestBuilder
+import io.ktor.server.testing.testApplication
+import io.ktor.server.websocket.WebSockets
 import org.json.JSONObject
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.ITree
@@ -29,7 +35,9 @@ import org.modelix.model.server.handlers.buildJSONArray
 import org.modelix.model.server.handlers.buildJSONObject
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class JsonAPITest {
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
@@ -110,7 +118,7 @@ class JsonAPITest {
             put("name", "EntityA")
         }
         val v1 = v1json.getString("versionHash")
-        val queryAndAssert: suspend (String, String?)->Unit = { role, expectedValue ->
+        val queryAndAssert: suspend (String, String?) -> Unit = { role, expectedValue ->
             val merged = getCurrentVersion()
             val entity = getFirstEntity(merged)
             assertEquals(expectedValue, entity.getJSONObject("properties").getString(role))
@@ -131,7 +139,7 @@ class JsonAPITest {
             put("name", "EntityA")
         }
         val v1 = v1json.getString("versionHash")
-        val queryAndAssert: suspend (String, String?)->Unit = { role, expectedValue ->
+        val queryAndAssert: suspend (String, String?) -> Unit = { role, expectedValue ->
             val merged = getCurrentVersion()
             val entity = getFirstEntity(merged)
             assertEquals(expectedValue, entity.getJSONObject("properties").getString(role))
@@ -149,18 +157,23 @@ class JsonAPITest {
     private suspend fun ApplicationTestBuilder.changeNode(versionHash: String, id: Long, role: String, value: String) {
         val response = client.post("/json/$repoId/$versionHash/update") {
             contentType(ContentType.Application.Json)
-            setBody(buildJSONArray(
-                buildJSONObject {
-                    put("nodeId", id.toString())
-                    put("properties", buildJSONObject {
-                        put(role, value)
-                    })
-                }
-            ).toString(2))
+            setBody(
+                buildJSONArray(
+                    buildJSONObject {
+                        put("nodeId", id.toString())
+                        put(
+                            "properties",
+                            buildJSONObject {
+                                put(role, value)
+                            },
+                        )
+                    },
+                ).toString(2),
+            )
         }
     }
 
-    private suspend fun ApplicationTestBuilder.createNode(baseVersionHash: String, parentId: Long, role: String?, index: Int?, content: JSONObject.()->Unit): Pair<Long, JSONObject> {
+    private suspend fun ApplicationTestBuilder.createNode(baseVersionHash: String, parentId: Long, role: String?, index: Int?, content: JSONObject.() -> Unit): Pair<Long, JSONObject> {
         val id = JSONObject(client.post("/json/generate-ids?quantity=1").bodyAsText()).getLong("first")
         val response = client.post("/json/$repoId/$baseVersionHash/update") {
             contentType(ContentType.Application.Json)
@@ -170,10 +183,13 @@ class JsonAPITest {
                     put("parent", parentId)
                     put("role", role)
                     if (index != null) put("index", index)
-                    put("properties", buildJSONObject {
-                        content(this)
-                    })
-                }
+                    put(
+                        "properties",
+                        buildJSONObject {
+                            content(this)
+                        },
+                    )
+                },
             ).toString(2)
             setBody(jsonString)
         }
@@ -185,5 +201,4 @@ class JsonAPITest {
 
     private fun getFirstEntity(version: JSONObject) =
         version.getJSONObject("root").getJSONObject("children").getJSONArray("entities").getJSONObject(0)
-
 }

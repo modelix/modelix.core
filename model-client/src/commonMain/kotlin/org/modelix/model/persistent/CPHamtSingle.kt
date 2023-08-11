@@ -21,7 +21,7 @@ import org.modelix.model.persistent.SerializationUtil.longToHex
 class CPHamtSingle(
     val numLevels: Int,
     val bits: Long,
-    val child: KVEntryReference<CPHamtNode>
+    val child: KVEntryReference<CPHamtNode>,
 ) : CPHamtNode() {
 
     init {

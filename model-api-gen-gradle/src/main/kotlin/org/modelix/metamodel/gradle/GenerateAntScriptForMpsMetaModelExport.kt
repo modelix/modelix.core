@@ -5,10 +5,14 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.*
+import org.gradle.api.tasks.CacheableTask
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.TaskAction
 import java.io.File
 import java.util.*
+import java.util.Properties
 import javax.inject.Inject
 
 @CacheableTask
@@ -43,7 +47,8 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
             listOf("lib/ant/lib/ant-mps.jar", "lib/util.jar", "lib/3rd-party-rt.jar")
         }
         antScriptFile.get().asFile.parentFile.mkdirs()
-        antScriptFile.get().asFile.writeText("""
+        antScriptFile.get().asFile.writeText(
+            """
             <project name="export-languages" default="build">
                 <property name="build.dir" location="build" />
                 <property name="build.mps.config.path" location="${"$"}{build.dir}/config" />
@@ -56,8 +61,8 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
 
                 <path id="path.mps.ant.path">
                     ${antLibs.joinToString("\n                    ") {
-                        """<pathelement location="${"$"}{artifacts.mps}/$it" />"""
-                    }}
+                """<pathelement location="${"$"}{artifacts.mps}/$it" />"""
+            }}
                 </path>
 
                 <target name="build" depends="export-languages" />
@@ -78,8 +83,8 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
                         <library file="${getMpsLanguagesDir().absolutePath}" />
                         <library file="${exporterDir.get()}" />
                         ${moduleFolders.get().joinToString("\n                        ") {
-                            """<library file="$it" />"""
-                        }}                                
+                """<library file="$it" />"""
+            }}
 
                         <jvmargs>
                             <arg value="-Didea.config.path=${"$"}{build.mps.config.path}" />
@@ -87,15 +92,18 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
                             <arg value="-ea" />
                             <arg value="-Xmx${heapSize.get()}" />
                             ${
-                                if (exportModulesFilter.isPresent) {
-                                    """<arg value="-Dmodelix.export.includedModules=${exportModulesFilter.get()}" />"""
-                                } else ""
-                            }
+                if (exportModulesFilter.isPresent) {
+                    """<arg value="-Dmodelix.export.includedModules=${exportModulesFilter.get()}" />"""
+                } else {
+                    ""
+                }
+            }
                         </jvmargs>
                     </runMPS>
                 </target>
             </project>
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 
     private fun getMpsBuildPropertiesFile() = File(mpsHome.get()).resolve("build.properties")
@@ -110,7 +118,7 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
         return listOfNotNull(
             buildProperties["mpsBootstrapCore.version.major"],
             buildProperties["mpsBootstrapCore.version.minor"],
-            //buildProperties["mpsBootstrapCore.version.bugfixNr"],
+            // buildProperties["mpsBootstrapCore.version.bugfixNr"],
             buildProperties["mpsBootstrapCore.version.eap"],
         )
             .map { it.toString().trim('.') }

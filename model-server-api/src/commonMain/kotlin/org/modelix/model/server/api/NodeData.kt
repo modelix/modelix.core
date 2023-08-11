@@ -25,11 +25,10 @@ data class NodeData(
     val role: String? = null,
     val properties: Map<String, String> = emptyMap(),
     val references: Map<String, String> = emptyMap(),
-    val children: Map<String?, List<NodeId>> = emptyMap()
+    val children: Map<String?, List<NodeId>> = emptyMap(),
 )
 
-
-fun NodeData.replaceReferences(f: (Map<String, String>)->Map<String, String>): NodeData {
+fun NodeData.replaceReferences(f: (Map<String, String>) -> Map<String, String>): NodeData {
     return NodeData(
         nodeId = nodeId,
         concept = concept,
@@ -37,11 +36,11 @@ fun NodeData.replaceReferences(f: (Map<String, String>)->Map<String, String>): N
         role = role,
         properties = properties,
         references = f(references),
-        children = children
+        children = children,
     )
 }
 
-fun NodeData.replaceChildren(f: (Map<String?, List<String>>)->Map<String?, List<String>>): NodeData {
+fun NodeData.replaceChildren(f: (Map<String?, List<String>>) -> Map<String?, List<String>>): NodeData {
     return NodeData(
         nodeId = nodeId,
         concept = concept,
@@ -49,11 +48,11 @@ fun NodeData.replaceChildren(f: (Map<String?, List<String>>)->Map<String?, List<
         role = role,
         properties = properties,
         references = references,
-        children = f(children)
+        children = f(children),
     )
 }
 
-fun NodeData.replaceChildren(role: String?, f: (List<String>)->List<String>): NodeData {
+fun NodeData.replaceChildren(role: String?, f: (List<String>) -> List<String>): NodeData {
     return replaceChildren { allOldChildren ->
         val oldChildren = (allOldChildren[role] ?: emptyList()).toMutableList()
         val newChildren = f(oldChildren)
@@ -69,7 +68,7 @@ fun NodeData.replaceContainment(newParent: NodeId?, newRole: String?): NodeData 
         role = newRole,
         properties = properties,
         references = references,
-        children = children
+        children = children,
     )
 }
 
@@ -81,7 +80,7 @@ fun NodeData.replaceId(newId: String): NodeData {
         role = role,
         properties = properties,
         references = references,
-        children = children
+        children = children,
     )
 }
 

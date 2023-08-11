@@ -8,7 +8,7 @@ import org.modelix.model.lazy.RepositoryId
 actual class ReplicatedRepository actual constructor(
     client: IModelClient,
     branchReference: BranchReference,
-    user: () -> String
+    user: () -> String,
 ) {
     actual constructor(client: IModelClient, repositoryId: RepositoryId, branchName: String, user: () -> String) :
         this(client, repositoryId.getBranchReference(branchName), user) {

@@ -286,4 +286,3 @@ Further, the `metamodel-export` provides a command line interface to export thes
 
 
 The `metamodel-export` is primarily intended to be used by the xref:core:reference/component-model-api-gen.adoc[].
-

@@ -4,7 +4,7 @@ import org.modelix.model.persistent.SerializationUtil
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class SerializationUtil_longHex_Test {
+class SerializationUtilLongHexTest {
 
     @Test
     fun longToHex_maxValue() {

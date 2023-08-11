@@ -6,7 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 
-class SerializationUtil_nullEmptyString {
+class SerializationUtilNullEmptyStringTest {
 
     @Test
     fun nullAsEmptyString_null() {

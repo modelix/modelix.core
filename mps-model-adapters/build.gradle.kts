@@ -1,7 +1,6 @@
 plugins {
     kotlin("jvm")
     `maven-publish`
-    alias(libs.plugins.ktlint)
 }
 
 val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"

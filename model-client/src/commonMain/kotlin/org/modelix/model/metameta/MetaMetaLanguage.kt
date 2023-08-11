@@ -13,7 +13,11 @@
  */
 package org.modelix.model.metameta
 
-import org.modelix.model.api.*
+import org.modelix.model.api.SimpleChildLink
+import org.modelix.model.api.SimpleConcept
+import org.modelix.model.api.SimpleLanguage
+import org.modelix.model.api.SimpleProperty
+import org.modelix.model.api.SimpleReferenceLink
 
 object MetaMetaLanguage {
     val language_metameta = SimpleLanguage("modelix.metameta")

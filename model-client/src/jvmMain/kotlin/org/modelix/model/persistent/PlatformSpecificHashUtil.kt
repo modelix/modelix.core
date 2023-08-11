@@ -18,7 +18,7 @@ package org.modelix.model.persistent
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.*
+import java.util.Base64
 
 actual object PlatformSpecificHashUtil {
     private val UTF8 = StandardCharsets.UTF_8

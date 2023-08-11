@@ -85,7 +85,7 @@ abstract class EnumSerializer {
 
 class MandatoryEnumSerializer<E : Enum<*>>(
     private val memberIdOf: (E) -> String,
-    private val fromMemberId: (String?) -> E
+    private val fromMemberId: (String?) -> E,
 ) : EnumSerializer(), IPropertyValueSerializer<E> {
 
     override fun serialize(value: E): String {
@@ -99,7 +99,7 @@ class MandatoryEnumSerializer<E : Enum<*>>(
 
 class OptionalEnumSerializer<E : Enum<*>>(
     private val memberIdOf: (E) -> String,
-    private val fromMemberId: (String) -> E
+    private val fromMemberId: (String) -> E,
 ) : EnumSerializer(), IPropertyValueSerializer<E?> {
 
     override fun serialize(value: E?): String? {
@@ -110,4 +110,3 @@ class OptionalEnumSerializer<E : Enum<*>>(
         return deserializeEnumMemberId(serialized)?.let { fromMemberId(it) }
     }
 }
-

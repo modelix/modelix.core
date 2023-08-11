@@ -2,8 +2,6 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
-import org.modelix.model.api.getPropertyValue
-import org.modelix.model.api.setPropertyValue
 import kotlin.reflect.KProperty
 
 abstract class PropertyAccessor<ValueT>(val node: INode, val role: IProperty) {

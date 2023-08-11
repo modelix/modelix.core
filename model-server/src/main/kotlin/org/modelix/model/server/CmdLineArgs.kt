@@ -5,7 +5,7 @@ import com.beust.jcommander.converters.BooleanConverter
 import com.beust.jcommander.converters.IntegerConverter
 import com.beust.jcommander.converters.StringConverter
 import java.io.File
-import java.util.*
+import java.util.LinkedList
 
 internal class CmdLineArgs {
     @Parameter(names = ["-secret"], description = "Path to the secretfile", converter = FileConverter::class)
@@ -14,7 +14,7 @@ internal class CmdLineArgs {
     @Parameter(
         names = ["-jdbcconf"],
         description = "Path to the JDBC configuration file",
-        converter = FileConverter::class
+        converter = FileConverter::class,
     )
     var jdbcConfFile: File? = null
 
@@ -36,7 +36,7 @@ internal class CmdLineArgs {
     @Parameter(
         names = ["-schemainit"],
         description = "Initialize the schema, if necessary",
-        converter = BooleanConverter::class
+        converter = BooleanConverter::class,
     )
     var schemaInit = false
 

@@ -14,7 +14,19 @@
 package org.modelix.model.metameta
 
 import org.modelix.model.ITransactionWrapper
-import org.modelix.model.api.*
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IReadTransaction
+import org.modelix.model.api.ITransaction
+import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitor
+import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.key
 import org.modelix.model.lazy.CLNode
 import org.modelix.model.lazy.IBulkTree
 import org.modelix.model.lazy.ITreeWrapper

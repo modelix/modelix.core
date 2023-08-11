@@ -47,7 +47,7 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
         return getProducer().createSequence(evaluationContext, queryInput).filter {
             condition.evaluate(
                 evaluationContext,
-                it
+                it,
             ).presentAndEqual(true)
         }
     }

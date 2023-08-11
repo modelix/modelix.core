@@ -13,12 +13,11 @@
  */
 package org.modelix.client.light
 
-import io.ktor.client.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.client.request.*
-import io.ktor.server.application.*
-import io.ktor.server.testing.*
-import io.ktor.websocket.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.request.post
+import io.ktor.server.application.install
+import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -26,9 +25,9 @@ import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
-import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.LightModelServer
+import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.random.Random
@@ -57,12 +56,12 @@ class LightModelClientTest {
         block(client)
     }
 
-    fun runClientTest(block: suspend (suspend (debugName: String)->LightModelClient) -> Unit) = runTest { httpClient ->
+    fun runClientTest(block: suspend (suspend (debugName: String) -> LightModelClient) -> Unit) = runTest { httpClient ->
         withTimeout(2.minutes) {
             val response = httpClient.post("http://localhost/json/test-repo/init").status
-            //println("init: $response")
+            // println("init: $response")
 
-            val createClient: suspend (debugName: String)->LightModelClient = { debugName ->
+            val createClient: suspend (debugName: String) -> LightModelClient = { debugName ->
                 val client = LightModelClient.builder()
                     .httpClient(httpClient)
                     .url("ws://localhost/json/v2/test-repo/ws")
@@ -76,7 +75,7 @@ class LightModelClientTest {
     }
 
     @Test
-    fun setProperty() = runClientTest {  createClient ->
+    fun setProperty() = runClientTest { createClient ->
         val client1 = createClient("1")
         val client2 = createClient("2")
         val role = "name"
@@ -147,13 +146,13 @@ class LightModelClientTest {
         for (i in (1..200)) {
             wait { client1.isInSync() && client2.isInSync() }
             client1.runWrite {
-                for (k in (0..rand.nextInt(1,10))) {
+                for (k in (0..rand.nextInt(1, 10))) {
                     changeGenerator1.applyRandomChange()
                     client1.checkException()
                 }
             }
             wait { client1.isInSync() && client2.isInSync() }
-            //if (rand.nextInt(5) == 0) wait { client2.isInSync() }
+            // if (rand.nextInt(5) == 0) wait { client2.isInSync() }
         }
 
         wait { client1.isInSync() && client2.isInSync() }
@@ -164,7 +163,7 @@ class LightModelClientTest {
         for (i in (1..200)) {
             wait { client1.isInSync() && client2.isInSync() }
             client2.runWrite {
-                for (k in (0..rand.nextInt(1,10))) {
+                for (k in (0..rand.nextInt(1, 10))) {
                     changeGenerator2.applyRandomChange()
                     client2.checkException()
                 }
@@ -188,7 +187,7 @@ class LightModelClientTest {
                 val changeGenerator1 = RandomModelChangeGenerator(client1.runRead { client1.getRootNode()!! }, rand1)
                 for (i in (1..10)) {
                     client1.runWrite {
-                        for (k in (0..rand1.nextInt(1,10))) {
+                        for (k in (0..rand1.nextInt(1, 10))) {
                             changeGenerator1.applyRandomChange()
                             client1.checkException()
                         }
@@ -204,7 +203,7 @@ class LightModelClientTest {
                 val changeGenerator2 = RandomModelChangeGenerator(client2.runRead { client2.getRootNode()!! }, rand2)
                 for (i in (1..10)) {
                     client2.runWrite {
-                        for (k in (0..rand2.nextInt(1,10))) {
+                        for (k in (0..rand2.nextInt(1, 10))) {
                             changeGenerator2.applyRandomChange()
                             client2.checkException()
                         }
@@ -220,25 +219,27 @@ class LightModelClientTest {
         println("writing done")
         wait { client1.isInSync() && client2.isInSync() }
         wait {
-            client1.runRead { client1.getRootNode()!!.getPropertyValue("client2done") } == "true"
-                    && client2.runRead { client2.getRootNode()!!.getPropertyValue("client1done") } == "true"
+            client1.runRead { client1.getRootNode()!!.getPropertyValue("client2done") } == "true" &&
+                client2.runRead { client2.getRootNode()!!.getPropertyValue("client1done") } == "true"
         }
         compareClients(client1, client2)
     }
 
     private fun compareClients(client1: LightModelClient, client2: LightModelClient) {
-        client1.runRead { client2.runRead {
-            val nodes1 = client1.getRootNode()!!.getDescendants(true).sortedBy { (it as LightModelClient.NodeAdapter).nodeId }.toList()
-            val nodes2 = client2.getRootNode()!!.getDescendants(true).sortedBy { (it as LightModelClient.NodeAdapter).nodeId }.toList()
-            assertEquals(nodes1.size, nodes2.size)
-            assertEquals(
-                nodes1.map { (it as LightModelClient.NodeAdapter).nodeId },
-                nodes2.map { (it as LightModelClient.NodeAdapter).nodeId }
-            )
-        }}
+        client1.runRead {
+            client2.runRead {
+                val nodes1 = client1.getRootNode()!!.getDescendants(true).sortedBy { (it as LightModelClient.NodeAdapter).nodeId }.toList()
+                val nodes2 = client2.getRootNode()!!.getDescendants(true).sortedBy { (it as LightModelClient.NodeAdapter).nodeId }.toList()
+                assertEquals(nodes1.size, nodes2.size)
+                assertEquals(
+                    nodes1.map { (it as LightModelClient.NodeAdapter).nodeId },
+                    nodes2.map { (it as LightModelClient.NodeAdapter).nodeId },
+                )
+            }
+        }
     }
 
-    private suspend fun wait(condition: ()->Boolean) {
+    private suspend fun wait(condition: () -> Boolean) {
         withTimeout(30.seconds) {
             while (!condition()) {
                 delay(1.milliseconds)

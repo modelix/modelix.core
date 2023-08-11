@@ -3,7 +3,11 @@ package org.modelix.model
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.client.IdGenerator
-import org.modelix.model.lazy.*
+import org.modelix.model.lazy.CLTree
+import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.UndoOp
@@ -110,7 +114,7 @@ class UndoTest {
             author = "undo",
             tree = version.baseVersion!!.tree,
             baseVersion = version,
-            operations = arrayOf(UndoOp(KVEntryReference(version.data!!)))
+            operations = arrayOf(UndoOp(KVEntryReference(version.data!!))),
         )
     }
 
@@ -127,7 +131,7 @@ class UndoTest {
         opsAndTree: Pair<List<IAppliedOperation>, ITree>,
         previousVersion: CLVersion?,
         idGenerator: IdGenerator,
-        storeCache: IDeserializingKeyValueStore
+        storeCache: IDeserializingKeyValueStore,
     ): CLVersion {
         return CLVersion.createRegularVersion(
             id = idGenerator.generate(),
@@ -135,7 +139,7 @@ class UndoTest {
             author = null,
             tree = opsAndTree.second as CLTree,
             baseVersion = previousVersion,
-            operations = opsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
+            operations = opsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )
     }
 }

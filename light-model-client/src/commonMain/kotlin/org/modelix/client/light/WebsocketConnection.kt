@@ -31,7 +31,6 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
 import org.modelix.model.server.api.MessageFromClient
 import org.modelix.model.server.api.MessageFromServer
-import org.modelix.modelql.client.ModelQLClient
 
 class WebsocketConnection(val httpClient: HttpClient, val url: String) : LightModelClient.IConnection {
     val coroutineScope = CoroutineScope(Dispatchers.Default)
@@ -71,7 +70,7 @@ class WebsocketConnection(val httpClient: HttpClient, val url: String) : LightMo
                             else -> {}
                         }
                     }
-                } catch (ex : ClosedReceiveChannelException) {
+                } catch (ex: ClosedReceiveChannelException) {
                     println("WebSocket closed")
                 }
             }

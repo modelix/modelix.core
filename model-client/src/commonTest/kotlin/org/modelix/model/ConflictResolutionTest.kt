@@ -1,6 +1,10 @@
 package org.modelix.model
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitorEx
+import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.PBranch
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.operations.IAppliedOperation
@@ -120,7 +124,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.moveChild(ITree.ROOT_ID, "role1", 1, 0x12)
                 t.deleteNode(0xe)
                 t.deleteNode(0x12)
-            }
+            },
         )
     }
 
@@ -137,7 +141,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.deleteNode(0x3)
                 t.addNewChild(ITree.ROOT_ID, "role2", 0, 0x13, null as IConcept?)
                 t.deleteNode(0x13)
-            }
+            },
         )
     }
 
@@ -157,7 +161,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t ->
                 t.addNewChild(1, "role2", 0, 0xff0000000e, null as IConcept?)
                 t.deleteNode(0xff0000000e)
-            }
+            },
         )
     }
 
@@ -173,7 +177,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t ->
                 t.addNewChild(1, "role3", 0, 0xff0000000e, null as IConcept?)
-            }
+            },
         )
     }
 
@@ -192,7 +196,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 3
                 t.addNewChild(0x1, "role3", 0, 0xff00000011, null as IConcept?)
                 t.deleteNode(0xff00000011)
-            }
+            },
         )
     }
 
@@ -213,7 +217,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.moveChild(0x1, "role1", 0, 0xff00000011)
                 t.deleteNode(0xff00000010)
                 t.moveChild(0x1, "role1", 0, 0xff00000011)
-            }
+            },
         )
         // 1.role1[0] expected to be ff00000011, but was ff00000010
     }
@@ -232,7 +236,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.moveChild(0x1, "role2", 0, 0xff00000011)
                 t.addNewChild(0x1, "role2", 0, 0xff00000032, null as IConcept?)
-            }
+            },
         )
         // Attempt to access a deleted location: 1
     }
@@ -251,7 +255,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.moveChild(0x1, "role1", 0, 0xff00000011)
-            }
+            },
         )
         // Attempt to access a deleted location: 0
     }
@@ -269,7 +273,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.moveChild(0x1, "role1", 0, 0xff00000011)
                 t.deleteNode(0xff00000011)
-            }
+            },
         )
     }
 
@@ -286,7 +290,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.moveChild(0x1, "role1", 1, 0xff00000011)
                 t.deleteNode(0xff00000011)
-            }
+            },
         )
     }
 
@@ -304,7 +308,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.moveChild(0x1, "role1", 0, 0xff00000011)
                 t.deleteNode(0xff00000011)
-            }
+            },
         )
     }
 
@@ -320,7 +324,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.addNewChild(0xff00000010, "role1", 0, 0xff0000002b, null as IConcept?)
                 t.deleteNode(0xff0000002b)
-            }
+            },
         )
     }
 
@@ -339,7 +343,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 2
                 t.addNewChild(0xff00000011, "role3", 0, 0xff00000043, null as IConcept?)
-            }
+            },
         )
     }
 
@@ -358,7 +362,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.addNewChild(0xff00000012, "role3", 0, 0xff00000043, null as IConcept?)
                 t.addNewChild(0xff0000000e, "role3", 0, 0xff00000044, null as IConcept?)
                 t.deleteNode(0xff00000043)
-            }
+            },
         )
     }
 
@@ -377,7 +381,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.moveChild(0xff00000012, "role5", 0, 0xff00000044)
                 t.deleteNode(0xff00000043)
                 t.deleteNode(0xff00000044)
-            }
+            },
         )
     }
 
@@ -393,7 +397,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.moveChild(0x1, "role1", 0, 0xff00000011)
                 t.addNewChild(0x1, "role1", 1, 0xff0000002d, null as IConcept?)
-            }
+            },
         )
     }
 
@@ -411,7 +415,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.addNewChild(0xff00000012, "role3", 0, 0xff00000045, null as IConcept?)
                 t.deleteNode(0xff00000045)
                 t.deleteNode(0xff00000043)
-            }
+            },
         )
     }
 
@@ -438,7 +442,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.addNewChild(0xff00000043, "role3", 0, 0xff00000044, null as IConcept?)
                 t.moveChild(0xff0000000e, "role3", 0, 0xff00000044)
                 t.deleteNode(0xff00000043)
-            }
+            },
         )
     }
 
@@ -455,7 +459,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.addNewChild(0x1, "role2", 0, 0xff0000000d, null as IConcept?)
                 t.moveChild(0x1, "role2", 1, 0xff0000000d)
                 t.deleteNode(0xff0000000d)
-            }
+            },
         )
     }
 
@@ -472,7 +476,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.addNewChild(0x1, "role5", 0, 0xff0000005c, null as IConcept?)
                 t.moveChild(0x1, "role3", 1, 0xff0000005c)
                 t.deleteNode(0xff00000059)
-            }
+            },
         )
     }
 
@@ -487,7 +491,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.deleteNode(0xff00000012)
-            }
+            },
         )
     }
 
@@ -503,7 +507,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.deleteNode(0xff00000012)
-            }
+            },
         )
     }
 
@@ -532,7 +536,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.moveChild(0x1, "role1", 1, 0xff00000010)
                 t.moveChild(0x1, "role1", 1, 0xff00000012)
                 t.deleteNode(0xff0000000e)
-            }
+            },
         )
     }
 
@@ -549,7 +553,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.addNewChild(0xff00000011, "role2", 0, 0xff0000002e, null as IConcept?)
                 t.addNewChild(0xff00000011, "role3", 0, 0xff00000030, null as IConcept?)
                 t.moveChild(0x1, "role3", 0, 0xff0000002e)
-            }
+            },
         )
     }
 
@@ -565,7 +569,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.deleteNode(0xff00000001)
-            }
+            },
         )
     }
 
@@ -582,7 +586,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.deleteNode(0xff00000004)
                 t.deleteNode(0xff00000003)
-            }
+            },
         )
     }
 
@@ -597,7 +601,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.moveChild(0x1, "cRole2", 1, 0xff00000001)
-            }
+            },
         )
     }
 
@@ -613,7 +617,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.moveChild(0xff00000003, "cRole3", 0, 0xff00000002)
-            }
+            },
         )
     }
 
@@ -630,7 +634,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.deleteNode(0xff00000004)
-            }
+            },
         )
     }
 
@@ -649,7 +653,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.moveChild(0xff00000001, "cRole1", 0, 0xff00000002)
                 t.addNewChild(0x1, "cRole1", 0, 0xff00000006, null as IConcept?)
                 t.moveChild(0xff00000006, "cRole3", 0, 0xff00000002)
-            }
+            },
         )
     }
 
@@ -666,7 +670,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.moveChild(0xff00000004, "cRole1", 0, 0xff00000002)
-            }
+            },
         )
     }
 
@@ -683,7 +687,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.deleteNode(0xff00000004)
                 t.moveChild(0x1, "cRole3", 1, 0xff00000003)
-            }
+            },
         )
     }
 
@@ -704,7 +708,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 t.deleteNode(0xff00000005)
                 t.moveChild(0xff00000004, "cRole1", 0, 0xff00000002)
                 t.moveChild(0x1, "cRole1", 0, 0xff00000004)
-            }
+            },
         )
     }
 
@@ -723,7 +727,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.moveChild(0x1, "cRole3", 0, 0xff00000004)
                 t.moveChild(0xff00000001, "cRole3", 1, 0xff00000002)
-            }
+            },
         )
     }
 
@@ -740,7 +744,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.moveChild(0xff00000002, "cRole3", 0, 0xff00000003)
-            }
+            },
         )
     }
 
@@ -761,7 +765,7 @@ class ConflictResolutionTest : TreeTestBase() {
             { t -> // 1
                 t.moveChild(0xff00000004, "cRole3", 0, 0xff00000003)
                 t.deleteNode(0xff00000005)
-            }
+            },
         )
     }
 
@@ -781,7 +785,7 @@ class ConflictResolutionTest : TreeTestBase() {
             },
             { t -> // 1
                 t.deleteNode(0xff00000003)
-            }
+            },
         )
     }
 
@@ -793,7 +797,7 @@ class ConflictResolutionTest : TreeTestBase() {
             author = null,
             tree = clTree,
             baseVersion = previousVersion,
-            operations = opsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
+            operations = opsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )
     }
 
@@ -824,7 +828,7 @@ class ConflictResolutionTest : TreeTestBase() {
                 override fun nodeAdded(nodeId: Long) {
                     fail("nodeAdded nodeId")
                 }
-            }
+            },
         )
     }
 }

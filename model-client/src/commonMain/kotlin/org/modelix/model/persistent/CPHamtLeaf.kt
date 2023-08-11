@@ -20,7 +20,7 @@ import org.modelix.model.persistent.SerializationUtil.longToHex
 
 class CPHamtLeaf(
     val key: Long,
-    val value: KVEntryReference<CPNode>
+    val value: KVEntryReference<CPNode>,
 ) : CPHamtNode() {
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(value)

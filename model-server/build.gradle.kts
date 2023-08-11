@@ -103,7 +103,6 @@ val cucumber = task("cucumber") {
             // Change glue for your project package where the step definitions are.
             // And where the feature files are.
             args = listOf("--plugin", "pretty", "--glue", "org.modelix.model.server.functionaltests", "src/test/resources/functionaltests")
-
         }
     }
 }
@@ -146,21 +145,23 @@ publishing {
 spotless {
     java {
         googleJavaFormat("1.8").aosp()
-        licenseHeader("/*\n" +
+        licenseHeader(
+            "/*\n" +
                 """ * Licensed under the Apache License, Version 2.0 (the "License");""" + "\n" +
                 """ * you may not use this file except in compliance with the License.""" + "\n" +
                 """ * You may obtain a copy of the License at""" + "\n" +
                 """ *""" + "\n" +
-                """ *  http://www.apache.org/licenses/LICENSE-2.0"""+ "\n" +
+                """ *  http://www.apache.org/licenses/LICENSE-2.0""" + "\n" +
                 """ *""" + "\n" +
                 """ * Unless required by applicable law or agreed to in writing,""" + "\n" +
                 """ * software distributed under the License is distributed on an""" + "\n" +
                 """ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY""" + "\n" +
                 """ * KIND, either express or implied.  See the License for the""" + "\n" +
                 """ * specific language governing permissions and limitations""" + "\n" +
-                """ * under the License. """ + "\n" +
-                " */\n"+
-                "\n")
+                """ * under the License.""" + "\n" +
+                " */\n" +
+                "\n",
+        )
         /*licenseHeader '/*\n' +
                 ' * Licensed under the Apache License, Version 2.0 (the "License");\n' +
                 ' * you may not use this file except in compliance with the License.\n' +
@@ -173,9 +174,8 @@ spotless {
                 ' * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n' +
                 ' * KIND, either express or implied.  See the License for the\n' +
                 ' * specific language governing permissions and limitations\n' +
-                ' * under the License. \n' +
+                ' * under the License.\n' +
                 ' */\n' +
                 '\n'*/
     }
 }
-

@@ -35,7 +35,7 @@ class CPVersion(
     mergedVersion2: KVEntryReference<CPVersion>?, // null if this is not a merge
     operations: Array<IOperation>?,
     operationsHash: KVEntryReference<CPOperationsList>?,
-    numberOfOperations: Int
+    numberOfOperations: Int,
 ) : IKVValue {
     private val logger = mu.KotlinLogging.logger {}
     override var isWritten: Boolean = false
@@ -87,7 +87,7 @@ class CPVersion(
             baseVersion,
             mergedVersion1,
             mergedVersion2,
-            operationsHash
+            operationsHash,
         ) + (operations ?: arrayOf()).map { it.getReferencedEntries() }.flatten()
     }
 
@@ -124,7 +124,7 @@ class CPVersion(
                         mergedVersion2 = emptyStringAsNull(parts[6])?.let { KVEntryReference(it, DESERIALIZER) },
                         operations = ops,
                         operationsHash = opsHash?.let { KVEntryReference(it, CPOperationsList.DESERIALIZER) },
-                        numberOfOperations = parts[7].toInt()
+                        numberOfOperations = parts[7].toInt(),
                     )
                     data.isWritten = true
                     return data
@@ -152,7 +152,7 @@ class CPVersion(
                         mergedVersion2 = null,
                         ops,
                         opsHash?.let { KVEntryReference(it, CPOperationsList.DESERIALIZER) },
-                        numOps
+                        numOps,
                     )
                     data.isWritten = true
                     return data

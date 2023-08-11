@@ -16,7 +16,6 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.smodel.SNodePointer
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.serialize
 
 data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
 

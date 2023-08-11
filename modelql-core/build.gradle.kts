@@ -15,7 +15,6 @@ plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     `maven-publish`
-    alias(libs.plugins.ktlint)
 }
 
 kotlin {
@@ -78,10 +77,10 @@ val generateVersionVariable by tasks.creating {
         outputDir.resolve("Version.kt").writeText(
             """
             package org.modelix.modelql.core
-            
+
             const val modelqlVersion: String = "$version"
-            
-            """.trimIndent()
+
+            """.trimIndent(),
         )
     }
 }

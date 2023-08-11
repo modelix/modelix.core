@@ -23,7 +23,8 @@ import org.modelix.model.IVersion
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
-import org.modelix.model.operations.*
+import org.modelix.model.operations.IOperation
+import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.persistent.CPOperationsList
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
@@ -45,7 +46,7 @@ class CLVersion : IVersion {
         baseVersion: CLVersion?,
         mergedVersion1: CLVersion?,
         mergedVersion2: CLVersion?,
-        operations: Array<IOperation>
+        operations: Array<IOperation>,
     ) {
         this.store = tree.store
         this.treeHash = KVEntryReference(tree.data)
@@ -63,7 +64,7 @@ class CLVersion : IVersion {
                 mergedVersion2 = mergedVersion2?.let { KVEntryReference(it.data!!) },
                 operations = localizedOps,
                 operationsHash = null,
-                numberOfOperations = localizedOps.size
+                numberOfOperations = localizedOps.size,
             )
         } else {
             val opsList = CPOperationsList(localizedOps)
@@ -79,7 +80,7 @@ class CLVersion : IVersion {
                 mergedVersion2 = mergedVersion2?.let { KVEntryReference(it.data!!) },
                 operations = null,
                 operationsHash = KVEntryReference(opsList),
-                numberOfOperations = localizedOps.size
+                numberOfOperations = localizedOps.size,
             )
         }
         write()
@@ -88,7 +89,7 @@ class CLVersion : IVersion {
     constructor(hash: String, store: IDeserializingKeyValueStore) : this(
         store.get<CPVersion>(hash, { CPVersion.deserialize(it) })
             ?: throw IllegalArgumentException("version '$hash' not found"),
-        store
+        store,
     )
     constructor(data: CPVersion?, store: IDeserializingKeyValueStore) {
         if (data == null) {
@@ -192,7 +193,7 @@ class CLVersion : IVersion {
             mergedVersion1: CLVersion,
             mergedVersion2: CLVersion,
             operations: Array<IOperation>,
-            store: IDeserializingKeyValueStore
+            store: IDeserializingKeyValueStore,
         ) = CLVersion(
             id = id,
             time = null,
@@ -203,7 +204,7 @@ class CLVersion : IVersion {
             baseVersion = baseVersion,
             mergedVersion1 = mergedVersion1,
             mergedVersion2 = mergedVersion2,
-            operations = operations
+            operations = operations,
         )
 
         fun createRegularVersion(
@@ -212,7 +213,7 @@ class CLVersion : IVersion {
             author: String?,
             tree: CLTree,
             baseVersion: CLVersion?,
-            operations: Array<IOperation>
+            operations: Array<IOperation>,
         ): CLVersion = CLVersion(
             id = id,
             time = time,
@@ -223,7 +224,7 @@ class CLVersion : IVersion {
             baseVersion = baseVersion,
             mergedVersion1 = null,
             mergedVersion2 = null,
-            operations = OperationsCompressor(tree).compressOperations(operations)
+            operations = OperationsCompressor(tree).compressOperations(operations),
         )
 
         fun createRegularVersion(
@@ -232,14 +233,14 @@ class CLVersion : IVersion {
             author: String?,
             tree: CLTree,
             baseVersion: CLVersion?,
-            operations: Array<IOperation>
+            operations: Array<IOperation>,
         ): CLVersion = createRegularVersion(
             id = id,
             time = time.epochSeconds.toString(),
             author = author,
             tree = tree,
             baseVersion = baseVersion,
-            operations = operations
+            operations = operations,
         )
 
         fun loadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion {

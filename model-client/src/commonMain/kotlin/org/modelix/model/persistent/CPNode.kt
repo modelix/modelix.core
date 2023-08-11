@@ -36,7 +36,7 @@ class CPNode private constructor(
     val propertyRoles: Array<String>,
     val propertyValues: Array<String>,
     val referenceRoles: Array<String>,
-    val referenceTargets: Array<CPNodeRef>
+    val referenceTargets: Array<CPNodeRef>,
 ) : IKVValue {
 
     override var isWritten: Boolean = false
@@ -106,7 +106,7 @@ class CPNode private constructor(
                     removeAt(propertyRoles, index),
                     removeAt(propertyValues, index),
                     referenceRoles,
-                    referenceTargets
+                    referenceTargets,
                 )
             }
         } else {
@@ -121,7 +121,7 @@ class CPNode private constructor(
                     insert(propertyRoles, index, role),
                     insert(propertyValues, index, value),
                     referenceRoles,
-                    referenceTargets
+                    referenceTargets,
                 )
             } else {
                 create(
@@ -133,7 +133,7 @@ class CPNode private constructor(
                     propertyRoles,
                     set(propertyValues, index, value),
                     referenceRoles,
-                    referenceTargets
+                    referenceTargets,
                 )
             }
         }
@@ -148,7 +148,7 @@ class CPNode private constructor(
                 create(
                     id, concept, parentId, roleInParent, childrenIds,
                     propertyRoles, propertyValues,
-                    removeAt(referenceRoles, index), removeAt(referenceTargets, index)
+                    removeAt(referenceRoles, index), removeAt(referenceTargets, index),
                 )
             }
         } else {
@@ -163,7 +163,7 @@ class CPNode private constructor(
                     propertyRoles,
                     propertyValues,
                     insert(referenceRoles, index, role),
-                    insert(referenceTargets, index, target)
+                    insert(referenceTargets, index, target),
                 )
             } else {
                 create(
@@ -175,7 +175,7 @@ class CPNode private constructor(
                     propertyRoles,
                     propertyValues,
                     referenceRoles,
-                    set(referenceTargets, index, target)
+                    set(referenceTargets, index, target),
                 )
             }
         }
@@ -197,7 +197,7 @@ class CPNode private constructor(
             propertyRoles: Array<String>,
             propertyValues: Array<String>,
             referenceRoles: Array<String>,
-            referenceTargets: Array<CPNodeRef>
+            referenceTargets: Array<CPNodeRef>,
         ): CPNode {
             checkForDuplicates(childrenIds)
             require(propertyRoles.size == propertyValues.size) { propertyRoles.size.toString() + " != " + propertyValues.size }
@@ -211,7 +211,7 @@ class CPNode private constructor(
                 propertyRoles,
                 propertyValues,
                 referenceRoles,
-                referenceTargets
+                referenceTargets,
             )
         }
 
@@ -247,7 +247,7 @@ class CPNode private constructor(
                     propertiesWithoutNull.map { it.first }.toTypedArray(),
                     propertiesWithoutNull.map { it.second!! }.toTypedArray(),
                     references.map { unescape(it[0])!! }.toTypedArray(),
-                    references.map { fromString(unescape(it[1])!!) }.toTypedArray()
+                    references.map { fromString(unescape(it[1])!!) }.toTypedArray(),
                 )
                 data.isWritten = true
                 data

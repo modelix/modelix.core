@@ -19,5 +19,5 @@ import kotlinx.serialization.Serializable
 class VersionDelta(
     val versionHash: String,
     val baseVersionHash: String? = null,
-    val objects: Set<String> = emptySet()
+    val objects: Set<String> = emptySet(),
 )

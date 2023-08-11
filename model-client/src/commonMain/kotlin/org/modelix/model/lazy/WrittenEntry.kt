@@ -17,7 +17,7 @@ import org.modelix.model.persistent.IKVValue
 
 class WrittenEntry<E : IKVValue>(
     private val hash: String,
-    private val deserializer: (String) -> E
+    private val deserializer: (String) -> E,
 ) : IKVEntryReference<E> {
     override fun getHash(): String = hash
 

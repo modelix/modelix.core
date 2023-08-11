@@ -53,4 +53,3 @@ To reformat and add license header to all files run:
 Valid keys are keys starting with the PROTECTED_PREFIX ($$$).
 
 For details please refer to the OpenAPI documentation under `doc/model-server.json`.
-

@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed class OperationData {
-    abstract fun replaceIds(replacer: (String)->String?): OperationData
+    abstract fun replaceIds(replacer: (String) -> String?): OperationData
 }
 
 @Serializable
@@ -29,13 +29,13 @@ sealed class OperationData {
 data class SetPropertyOpData(
     val node: NodeId,
     val role: String,
-    val value: String?
+    val value: String?,
 ) : OperationData() {
     override fun replaceIds(replacer: (String) -> String?): OperationData {
         return SetPropertyOpData(
             node = replacer(node) ?: node,
             role = role,
-            value = value
+            value = value,
         )
     }
 }
@@ -45,13 +45,13 @@ data class SetPropertyOpData(
 data class SetReferenceOpData(
     val node: NodeId,
     val role: String,
-    val target: NodeId?
+    val target: NodeId?,
 ) : OperationData() {
     override fun replaceIds(replacer: (String) -> String?): OperationData {
         return SetReferenceOpData(
             node = replacer(node) ?: node,
             role = role,
-            target = target?.let(replacer) ?: target
+            target = target?.let(replacer) ?: target,
         )
     }
 }
@@ -63,7 +63,7 @@ data class AddNewChildNodeOpData(
     val role: String?,
     val index: Int = -1,
     val concept: String?,
-    val childId: NodeId
+    val childId: NodeId,
 ) : OperationData() {
     override fun replaceIds(replacer: (String) -> String?): OperationData {
         return AddNewChildNodeOpData(
@@ -71,7 +71,7 @@ data class AddNewChildNodeOpData(
             role = role,
             index = index,
             concept = concept,
-            childId = replacer(childId) ?: childId
+            childId = replacer(childId) ?: childId,
         )
     }
 }
@@ -89,7 +89,7 @@ data class MoveNodeOpData(
             newParentNode = replacer(newParentNode) ?: newParentNode,
             newRole = newRole,
             newIndex = newIndex,
-            childId = replacer(childId) ?: childId
+            childId = replacer(childId) ?: childId,
         )
     }
 }
@@ -103,4 +103,3 @@ data class DeleteNodeOpData(
         return DeleteNodeOpData(replacer(nodeId) ?: nodeId)
     }
 }
-

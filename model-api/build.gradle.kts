@@ -1,29 +1,17 @@
-
 plugins {
     id("maven-publish")
     id("org.jetbrains.kotlin.multiplatform")
-    id("org.jlleitschuh.gradle.ktlint")
     kotlin("plugin.serialization")
-}
-
-configurations {
-    ktlint
 }
 
 description = "API to access models stored in Modelix"
 
 ktlint {
-    disabledRules.add("no-wildcard-imports")
-    outputToConsole.set(true)
-    this.filter {
-        this.exclude {
+    filter {
+        exclude {
             it.file.toPath().toAbsolutePath().startsWith(project(":ts-model-api").buildDir.toPath().toAbsolutePath())
         }
     }
-}
-
-tasks.named("check") {
-    dependsOn("ktlintCheck")
 }
 
 kotlin {
@@ -80,7 +68,14 @@ kotlin {
     }
 }
 
-listOf("sourcesJar", "runKtlintCheckOverJsMainSourceSet", "jsSourcesJar", "jsPackageJson", "compileKotlinJs", "jsProcessResources").forEach {
+listOf(
+    "sourcesJar",
+    "runKtlintCheckOverJsMainSourceSet",
+    "jsSourcesJar",
+    "jsPackageJson",
+    "compileKotlinJs",
+    "jsProcessResources",
+).forEach {
     tasks.named(it) {
         dependsOn(":ts-model-api:npm_run_build")
         dependsOn(":ts-model-api:patchKotlinExternals")

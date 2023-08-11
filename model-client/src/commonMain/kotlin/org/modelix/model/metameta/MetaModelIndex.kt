@@ -13,7 +13,13 @@
  */
 package org.modelix.model.metameta
 
-import org.modelix.model.api.*
+import org.modelix.model.api.IChildLink
+import org.modelix.model.api.IConcept
+import org.modelix.model.api.ILanguage
+import org.modelix.model.api.IProperty
+import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitor
 
 class MetaModelIndex private constructor(val tree: ITree) {
     companion object {
@@ -64,7 +70,7 @@ class MetaModelIndex private constructor(val tree: ITree) {
 
                     override fun referenceChanged(nodeId: Long, role: String) {}
                     override fun containmentChanged(nodeId: Long) {}
-                }
+                },
             )
 
             return index

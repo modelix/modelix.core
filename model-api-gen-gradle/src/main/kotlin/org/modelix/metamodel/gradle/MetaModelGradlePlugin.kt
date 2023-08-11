@@ -32,7 +32,7 @@ class MetaModelGradlePlugin: Plugin<Project> {
             task.enabled = settings.jsonDir == null
             task.dependsOn(downloadExporterDependencies)
             task.dependsOn(*settings.taskDependencies.toTypedArray())
-            task.mpsHome.set(getMpsHome())
+            task.mpsHome.set(getMpsHome()?.absolutePath)
             task.heapSize.set(settings.mpsHeapSize)
             if (settings.includedModules.isNotEmpty()) task.exportModulesFilter.set(settings.includedModules.joinToString(","))
             task.antScriptFile.set(getAntScriptFile())

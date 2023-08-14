@@ -9,6 +9,7 @@ import java.nio.file.Path
 import kotlin.io.path.writeText
 
 class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = NameConfig()) {
+    var npmPackageName = "@modelix/model-client"
 
     private fun LanguageData.packageDir(): Path {
         val packageName = name
@@ -40,7 +41,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
     private fun generateRegistry(languages: ProcessedLanguageSet) {
         outputDir.resolve("index.ts").writeText(
             """
-            import { LanguageRegistry } from "@modelix/ts-model-api";
+            import { LanguageRegistry } from "$npmPackageName";
             ${languages.getLanguages().joinToString("\n") { """
                 import { ${it.simpleClassName()} } from "./${it.simpleClassName()}";
             """.trimIndent()
@@ -70,7 +71,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                 SingleChildAccessor,
                 TypedNode,
                 LanguageRegistry
-            } from "@modelix/ts-model-api";
+            } from "$npmPackageName";
 
             ${language.languageDependencies().joinToString("\n") {
             """import * as ${it.simpleClassName()} from "./${it.simpleClassName()}";"""

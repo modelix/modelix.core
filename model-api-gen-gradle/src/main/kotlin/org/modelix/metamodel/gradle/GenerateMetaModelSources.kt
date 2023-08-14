@@ -40,6 +40,10 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
     val typescriptOutputDir: DirectoryProperty = of.directoryProperty()
 
     @get:Input
+    @Optional
+    val npmPackageName: Property<String> = of.property(String::class.java)
+
+    @get:Input
     val includedNamespaces: ListProperty<String> = of.listProperty(String::class.java)
 
     @get:Input
@@ -110,6 +114,7 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
         val typescriptOutputDir = this.typescriptOutputDir.orNull?.asFile
         if (typescriptOutputDir != null) {
             val tsGenerator = TypescriptMMGenerator(typescriptOutputDir.toPath(), nameConfig.get())
+            if (npmPackageName.isPresent) tsGenerator.npmPackageName = npmPackageName.get()
             tsGenerator.generate(processedLanguages)
         }
     }

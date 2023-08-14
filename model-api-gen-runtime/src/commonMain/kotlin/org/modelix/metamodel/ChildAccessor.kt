@@ -3,12 +3,19 @@ package org.modelix.metamodel
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
+import kotlin.js.JsExport
+import kotlin.js.JsName
 import kotlin.reflect.KClass
 
+@JsExport
 abstract class ChildAccessor<ChildT : ITypedNode>(
+    @JsExport.Ignore
     protected val parent: INode,
+    @JsExport.Ignore
     protected val role: IChildLink,
+    @JsExport.Ignore
     protected val childConcept: IConcept,
+    @JsExport.Ignore
     val childType: KClass<ChildT>,
 ) : Iterable<ChildT> {
     fun isEmpty(): Boolean = !iterator().hasNext()
@@ -17,8 +24,10 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         return this.count()
     }
 
+    @JsExport.Ignore
     fun untypedNodes(): Iterable<INode> = parent.getChildren(role)
 
+    @JsExport.Ignore
     override fun iterator(): Iterator<ChildT> {
         return untypedNodes().map {
             when (childConcept) {
@@ -28,14 +37,17 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         }.iterator()
     }
 
+    @JsName("addNew_index")
     fun addNew(index: Int = -1): ChildT {
         return parent.addNewChild(role, index, childConcept).typed(childType)
     }
 
+    @JsName("addNew_index_concept")
     fun <NewNodeT : ChildT> addNew(index: Int = -1, concept: INonAbstractConcept<NewNodeT>): NewNodeT {
         return parent.addNewChild(role, index, concept.untyped()).typed(concept.getInstanceClass())
     }
 
+    @JsName("addNew_concept")
     fun <NewNodeT : ChildT> addNew(concept: INonAbstractConcept<NewNodeT>): NewNodeT {
         return addNew(-1, concept)
     }

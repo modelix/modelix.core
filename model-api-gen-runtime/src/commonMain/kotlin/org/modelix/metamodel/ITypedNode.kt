@@ -5,10 +5,13 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.area.IArea
+import kotlin.js.JsExport
 import kotlin.reflect.KClass
 
+@JsExport
 interface ITypedNode {
     val _concept: ITypedConcept
+    @JsExport.Ignore
     fun unwrap(): INode
 }
 

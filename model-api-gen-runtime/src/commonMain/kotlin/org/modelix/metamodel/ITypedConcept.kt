@@ -1,9 +1,12 @@
 package org.modelix.metamodel
 
 import org.modelix.model.api.IConcept
+import kotlin.js.JsExport
 import kotlin.reflect.KClass
 
+@JsExport
 interface ITypedConcept {
+    @JsExport.Ignore
     fun untyped(): IConcept
 }
 
@@ -28,6 +31,7 @@ fun <NodeT : ITypedNode> IConceptOfTypedNode<NodeT>.getInstanceClass(): KClass<o
     return getInstanceInterface()
 }
 
+@JsExport
 interface INonAbstractConcept<out NodeT : ITypedNode> : IConceptOfTypedNode<NodeT>
 
 interface ITypedConceptFeature

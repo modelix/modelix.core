@@ -56,6 +56,9 @@ import org.modelix.modelql.typed.TypedModelQL
 import java.nio.file.Path
 import kotlin.reflect.KClass
 
+private val jsExportAnnotation = ClassName("kotlin.js", "JsExport")
+private val jsExportIgnoreAnnotation = jsExportAnnotation.nestedClass("Ignore")
+
 class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameConfig(), val modelqlOutputDir: Path? = null) {
     var alwaysUseNonNullableProperties: Boolean = true
 
@@ -99,8 +102,10 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     internal fun generateRegistrationHelper(classFqName: String, languages: ProcessedLanguageSet) {
         val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
         val cls = TypeSpec.objectBuilder(typeName)
+            .addAnnotation(jsExportAnnotation)
             .addProperty(
                 PropertySpec.builder("languages", List::class.parameterizedBy(GeneratedLanguage::class))
+                    .addAnnotation(jsExportIgnoreAnnotation)
                     .initializer(
                         "listOf(" + languages.getLanguages().map { it.generatedClassName() }
                             .joinToString(", ") { it.canonicalName } + ")",
@@ -856,6 +861,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
 
     private fun generateNodeWrapperInterface(concept: ProcessedConcept): TypeSpec {
         return TypeSpec.interfaceBuilder(concept.nodeWrapperInterfaceType()).apply {
+            addAnnotation(jsExportAnnotation)
             addDeprecationIfNecessary(concept)
             if (concept.extends.isEmpty()) addSuperinterface(ITypedNode::class.asTypeName())
             for (extended in concept.extends) {

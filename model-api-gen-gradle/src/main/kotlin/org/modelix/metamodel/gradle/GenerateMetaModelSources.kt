@@ -13,6 +13,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.modelix.metamodel.generator.KotlinTargetPlatform
 import org.modelix.metamodel.generator.LanguageSet
 import org.modelix.metamodel.generator.MetaModelGenerator
 import org.modelix.metamodel.generator.NameConfig
@@ -42,6 +43,10 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
     @get:Input
     @Optional
     val npmPackageName: Property<String> = of.property(String::class.java)
+
+    @get:Input
+    @Optional
+    val kotlinTargetPlatform: Property<KotlinTargetPlatform> = of.property(KotlinTargetPlatform::class.java)
 
     @get:Input
     val includedNamespaces: ListProperty<String> = of.listProperty(String::class.java)
@@ -105,6 +110,7 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
                 nameConfig.get(),
                 this.modelqlKotlinOutputDir.orNull?.asFile?.toPath(),
             )
+            kotlinTargetPlatform.orNull?.let { generator.kotlinTargetPlatform = it }
             generator.generate(processedLanguages)
             registrationHelperName.orNull?.let {
                 generator.generateRegistrationHelper(it, processedLanguages)

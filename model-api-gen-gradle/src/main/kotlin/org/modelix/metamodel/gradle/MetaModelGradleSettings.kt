@@ -2,6 +2,7 @@ package org.modelix.metamodel.gradle
 
 import org.gradle.api.Action
 import org.gradle.api.Project
+import org.modelix.metamodel.generator.KotlinTargetPlatform
 import org.modelix.metamodel.generator.NameConfig
 import java.io.File
 
@@ -30,6 +31,7 @@ open class MetaModelGradleSettings {
         }
     var typescriptDir: File? = null
     var npmPackageName: String? = null
+    var kotlinTargetPlatform: KotlinTargetPlatform? = null
     var registrationHelperName: String? = null
     val taskDependencies: MutableList<Any> = ArrayList()
 
@@ -72,4 +74,8 @@ open class MetaModelGradleSettings {
     fun exportModules(namePrefix: String) {
         includedModules += namePrefix
     }
+
+    fun generateKotlinCommon() { kotlinTargetPlatform = KotlinTargetPlatform.Common }
+    fun generateKotlinJs() { kotlinTargetPlatform = KotlinTargetPlatform.JS }
+    fun generateKotlinJvm() { kotlinTargetPlatform = KotlinTargetPlatform.JVM }
 }

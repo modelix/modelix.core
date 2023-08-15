@@ -95,6 +95,7 @@ metamodel {
     kotlinDir = kotlinGenDir
     modelqlKotlinDir = kotlinGenDir
     kotlinProject = project
+    generateKotlinJvm()
     typescriptDir = projectDir.resolve("typescript_src")
     includeNamespace("jetbrains")
     exportModules("jetbrains.mps.baseLanguage")

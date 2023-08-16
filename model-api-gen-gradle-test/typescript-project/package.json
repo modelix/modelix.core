@@ -34,7 +34,7 @@
     "watch": "tsc --watch"
   },
   "dependencies": {
-    "@modelix/ts-model-api": "file:../ts-model-api"
+    "@modelix/api-gen-test-kotlin-project": "file:../kotlin-project/build/package/js"
   },
   "devDependencies": {
     "@reallyland/tsconfig": "^2.0.0",

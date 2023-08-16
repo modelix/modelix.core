@@ -2,6 +2,7 @@ plugins {
     id("maven-publish")
     id("org.jetbrains.kotlin.multiplatform")
     kotlin("plugin.serialization")
+    alias(libs.plugins.npm.publish)
 }
 
 description = "API to access models stored in Modelix"
@@ -25,6 +26,8 @@ kotlin {
             }
         }
         useCommonJs()
+        binaries.library()
+        generateTypeScriptDefinitions()
     }
     sourceSets {
         all {
@@ -64,6 +67,24 @@ kotlin {
         val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-js"))
+            }
+        }
+    }
+}
+
+npmPublish {
+    registries {
+        register("itemis-npm-open") {
+            uri.set("https://artifacts.itemis.cloud/repository/npm-open")
+            System.getenv("NODE_AUTH_TOKEN").takeIf { !it.isNullOrBlank() }?.let {
+                authToken.set(it)
+            }
+        }
+    }
+    packages {
+        named("js") {
+            packageJson {
+                name.set("@modelix/model-api")
             }
         }
     }

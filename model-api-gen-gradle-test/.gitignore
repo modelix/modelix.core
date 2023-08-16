@@ -1,3 +1,5 @@
 node_modules/
 dist/
 typescript_src/
+typescript-project/src/gen/
+/*/build/

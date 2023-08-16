@@ -1,7 +1,7 @@
 pluginManagement {
     val modelixCoreVersion: String = file("../version.txt").readText()
     plugins {
-        id("org.modelix.model-api-gen") version modelixCoreVersion
+        id("org.modelix.model-api-gen") version modelixCoreVersion apply false
     }
     resolutionStrategy {
     }
@@ -25,3 +25,7 @@ pluginManagement {
         }
     }
 }
+
+include("apigen-project")
+include("kotlin-project")
+include("typescript-project")

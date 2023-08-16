@@ -77,9 +77,12 @@ subprojects {
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-        kotlinOptions {
-            jvmTarget = "11"
-            freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+        if (!name.lowercase().contains("test")) {
+            kotlinOptions {
+                jvmTarget = "11"
+                freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+                apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6.version
+            }
         }
     }
 }

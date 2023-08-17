@@ -45,9 +45,9 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
-                implementation("org.modelix:modelql-typed:$modelixCoreVersion")
-                implementation("org.modelix:modelql-untyped:$modelixCoreVersion")
+                api("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
+                api("org.modelix:modelql-typed:$modelixCoreVersion")
+                api("org.modelix:modelql-untyped:$modelixCoreVersion")
             }
             kotlin {
                 srcDir(kotlinGenDir)
@@ -92,8 +92,9 @@ metamodel {
     kotlinDir = kotlinGenDir
     modelqlKotlinDir = kotlinGenDir
     kotlinProject = project
-    generateKotlinJvm()
+    generateKotlinCommon()
     typescriptDir = projectDir.resolve("../typescript-project/src/gen")
+    npmPackageName = "@modelix/api-gen-test-kotlin-project"
     includeNamespace("jetbrains")
     exportModules("jetbrains.mps.baseLanguage")
 

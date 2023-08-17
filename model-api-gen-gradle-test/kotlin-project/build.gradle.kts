@@ -56,8 +56,8 @@ kotlin {
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.serialization.json)
                 api(libs.kotlin.coroutines.core)
+                api(project(":apigen-project"))
             }
-            kotlin.srcDir(buildDir.resolve("version_gen"))
         }
         val commonTest by getting {
             dependencies {
@@ -72,8 +72,6 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
-                implementation(project(":apigen-project"))
-
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation(kotlin("test"))
@@ -99,6 +97,7 @@ kotlin {
         }
         val jsMain by getting {
             dependencies {
+                api(project(":apigen-project"))
             }
         }
         val jsTest by getting {

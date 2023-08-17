@@ -2,6 +2,6 @@
 
 set -e
 
-docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_KEY"
+echo "$DOCKER_HUB_KEY" | docker login -u "$DOCKER_HUB_USER" --password-stdin
 
 ./docker-build-model.sh

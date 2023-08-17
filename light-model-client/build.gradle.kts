@@ -24,8 +24,9 @@ kotlin {
                 implementation(project(":model-api-gen-runtime"))
                 implementation(project(":model-server-api"))
                 implementation(project(":modelql-core"))
-                implementation(project(":modelql-untyped"))
                 implementation(project(":modelql-client"))
+
+                api(project(":modelql-untyped"))
 
                 implementation(libs.ktor.client.websockets)
                 implementation(libs.kotlin.stdlib.common)

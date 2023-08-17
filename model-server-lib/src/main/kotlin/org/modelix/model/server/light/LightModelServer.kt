@@ -182,8 +182,8 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
 
     fun Application.installHandlers() {
         install(WebSockets) {
-            pingPeriod = Duration.ofSeconds(15)
-            timeout = Duration.ofSeconds(15)
+            pingPeriod = Duration.ofSeconds(30)
+            timeout = Duration.ofSeconds(30)
             maxFrameSize = Long.MAX_VALUE
             masking = false
         }

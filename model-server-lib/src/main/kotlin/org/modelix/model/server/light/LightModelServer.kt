@@ -74,12 +74,18 @@ import kotlin.time.Duration.Companion.seconds
 
 class LightModelServerBuilder {
     private var port: Int = 48302
+    private var websocketTimeout = Duration.ofSeconds(15)
     private var rootNodeProvider: () -> INode? = { null }
     private var ignoredRoles: Set<IRole> = emptySet()
     private var additionalHealthChecks: List<LightModelServer.IHealthCheck> = emptyList()
 
     fun port(port: Int): LightModelServerBuilder {
         this.port = port
+        return this
+    }
+
+    fun websocketTimeout(websocketTimeout: Duration): LightModelServerBuilder {
+        this.websocketTimeout = websocketTimeout
         return this
     }
 
@@ -108,7 +114,7 @@ class LightModelServerBuilder {
     }
 }
 
-class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProvider: () -> INode?, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
+class LightModelServer @JvmOverloads constructor(val port: Int, val websocketTimeout: Duration, val rootNodeProvider: () -> INode?, val ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) {
     constructor (port: Int, rootNode: INode, ignoredRoles: Set<IRole> = emptySet(), additionalHealthChecks: List<IHealthCheck> = emptyList()) :
         this(port, { rootNode }, ignoredRoles, additionalHealthChecks)
 
@@ -182,8 +188,8 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
 
     fun Application.installHandlers() {
         install(WebSockets) {
-            pingPeriod = Duration.ofSeconds(15)
-            timeout = Duration.ofSeconds(15)
+            pingPeriod = websocketTimeout
+            timeout = websocketTimeout
             maxFrameSize = Long.MAX_VALUE
             masking = false
         }

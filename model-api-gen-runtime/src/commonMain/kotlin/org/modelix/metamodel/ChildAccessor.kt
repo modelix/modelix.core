@@ -9,13 +9,9 @@ import kotlin.reflect.KClass
 
 @JsExport
 abstract class ChildAccessor<ChildT : ITypedNode>(
-    @JsExport.Ignore
     protected val parent: INode,
-    @JsExport.Ignore
     protected val role: IChildLink,
-    @JsExport.Ignore
     protected val childConcept: IConcept,
-    @JsExport.Ignore
     val childType: KClass<ChildT>,
 ) : Iterable<ChildT> {
     fun isEmpty(): Boolean = !iterator().hasNext()
@@ -24,10 +20,8 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         return this.count()
     }
 
-    @JsExport.Ignore
     fun untypedNodes(): Iterable<INode> = parent.getChildren(role)
 
-    @JsExport.Ignore
     override fun iterator(): Iterator<ChildT> {
         return untypedNodes().map {
             when (childConcept) {

@@ -6,7 +6,6 @@ import kotlin.reflect.KClass
 
 @JsExport
 interface ITypedConcept {
-    @JsExport.Ignore
     fun untyped(): IConcept
 }
 

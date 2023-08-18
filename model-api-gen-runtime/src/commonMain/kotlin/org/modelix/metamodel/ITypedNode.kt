@@ -11,7 +11,6 @@ import kotlin.reflect.KClass
 @JsExport
 interface ITypedNode {
     val _concept: ITypedConcept
-    @JsExport.Ignore
     fun unwrap(): INode
 }
 

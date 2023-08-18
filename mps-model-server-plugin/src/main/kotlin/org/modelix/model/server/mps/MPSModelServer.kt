@@ -29,6 +29,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.server.light.LightModelServer
+import java.time.Duration
 
 @Service(Service.Level.APP)
 class MPSModelServer : Disposable {
@@ -47,6 +48,7 @@ class MPSModelServer : Disposable {
             val rootNodeProvider: () -> INode? = { MPSModuleRepository.getInstance()?.let { MPSRepositoryAsNode(it) } }
             server = LightModelServer.builder()
                 .port(48305)
+                .websocketTimeout(Duration.ofSeconds(30))
                 .rootNode(rootNodeProvider)
                 .healthCheck(object : LightModelServer.IHealthCheck {
                     override val id: String

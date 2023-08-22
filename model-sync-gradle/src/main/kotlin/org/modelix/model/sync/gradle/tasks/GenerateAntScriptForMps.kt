@@ -64,7 +64,7 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
             }}
             </path>
 
-            <target name="build" depends="export-modules" />
+            <target name="build" depends="${if (isExport) "export" else "import"}-modules" />
 
             <target name="clean">
                 <delete dir="${"$"}{build.mps.config.path}" />
@@ -75,7 +75,7 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
                 <taskdef resource="jetbrains/mps/build/ant/antlib.xml" classpathref="path.mps.ant.path" />
             </target>
 
-            <target name="export-modules" depends="clean,declare-mps-tasks">
+            <target name="${if (isExport) "export" else "import"}-modules" depends="clean,declare-mps-tasks">
                 <echo message="Running ${if (isExport) "export" else "import"} of modules" />
                 <runMPS solution="ac6b4971-2a89-49fb-9c30-c2f0e85de741(org.modelix.model.sync.mps)" startClass="org.modelix.model.sync.mps.MPSRepositorySynchronizer" startMethod="${if (isExport) "export" else "import"}Repository">
                     <library file="${mpsDependenciesPath.get()}" />

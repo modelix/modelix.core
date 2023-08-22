@@ -22,7 +22,8 @@ class WrittenEntry<E : IKVValue>(
     override fun getHash(): String = hash
 
     override fun getValue(store: IDeserializingKeyValueStore): E {
-        return store.get(hash, deserializer) ?: throw RuntimeException("Entry $hash not found")
+        return store.get(hash, deserializer)
+            ?: throw RuntimeException("Entry $hash not found")
     }
 
     override fun write(store: IDeserializingKeyValueStore) {}

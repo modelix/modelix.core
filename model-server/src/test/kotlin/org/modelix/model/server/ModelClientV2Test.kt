@@ -78,7 +78,7 @@ class ModelClientV2Test {
         )
 
         val branchId = repositoryId.getBranchReference("my-branch")
-        val mergedVersion = client.push(branchId, newVersion)
+        val mergedVersion = client.push(branchId, newVersion, initialVersion)
         assertEquals(1, mergedVersion.getTree().getAllChildren(ITree.ROOT_ID).count())
 
         assertEquals(

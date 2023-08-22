@@ -111,7 +111,7 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
             createdVersion = applyPendingLocalChanges()
         }
         if (createdVersion != null) {
-            remoteVersionReceived(client.push(branchRef, createdVersion) as CLVersion)
+            remoteVersionReceived(client.push(branchRef, createdVersion, baseVersion = lastRemoteVersion) as CLVersion)
         }
     }
 
@@ -147,6 +147,11 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
     }
 }
 
-fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, query: ModelQuery? = null): ReplicatedModel {
+fun IModelClientV2.getReplicatedModel(branchRef: BranchReference): ReplicatedModel {
+    return ReplicatedModel(this, branchRef)
+}
+
+@Deprecated("ModelQuery is not supported and ignored", ReplaceWith("getReplicatedModel(branchRef)"))
+fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, query: ModelQuery?): ReplicatedModel {
     return ReplicatedModel(this, branchRef, query)
 }

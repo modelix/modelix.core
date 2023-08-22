@@ -22,18 +22,20 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.NodeReference
+import org.modelix.model.api.NullChildLink
 import org.modelix.model.area.IArea
+import org.modelix.model.data.NodeData
 
 data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     override fun getArea(): IArea {
-        TODO("Not yet implemented")
+        return MPSArea(model.repository)
     }
 
     override val isValid: Boolean
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
-        get() = SerializedNodeReference("mps-model:" + model.reference.toString())
+        get() = NodeReference("mps-model:" + model.reference.toString())
     override val concept: IConcept
         get() = RepositoryLanguage.Model
     override val parent: INode
@@ -50,12 +52,14 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
         TODO("Not yet implemented")
     }
 
-    override fun getContainmentLink(): IChildLink? {
-        TODO("Not yet implemented")
+    override fun getContainmentLink(): IChildLink {
+        return RepositoryLanguage.Module.models
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith(RepositoryLanguage.Model.rootNodes.getUID()) ||
+        return if (link is NullChildLink) {
+            emptyList()
+        } else if (link.getUID().endsWith(RepositoryLanguage.Model.rootNodes.getUID()) ||
             link.getUID().contains("rootNodes") ||
             link.getSimpleName() == "rootNodes"
         ) {
@@ -99,6 +103,8 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
             property.getSimpleName() == "name"
         ) {
             model.name.value
+        } else if (property.getSimpleName() == NodeData.idPropertyKey) {
+            model.modelId.toString()
         } else {
             null
         }

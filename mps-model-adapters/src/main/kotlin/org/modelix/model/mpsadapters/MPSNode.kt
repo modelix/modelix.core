@@ -13,7 +13,9 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.smodel.MPSModuleRepository
+import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
@@ -24,8 +26,9 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.resolveIn
 import org.modelix.model.area.IArea
+import org.modelix.model.data.NodeData
 
 data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     override fun getArea(): IArea {
@@ -35,7 +38,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     override val isValid: Boolean
         get() = true
     override val reference: INodeReference
-        get() = SerializedNodeReference("mps-node:${node.reference}") // MPSNodeReference(node.reference)
+        get() = MPSNodeReference(node.reference)
     override val concept: IConcept
         get() = MPSConcept(node.concept)
     override val parent: INode?
@@ -49,7 +52,8 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
         get() = node.children.map { MPSNode(it) }
 
     override fun removeChild(child: INode) {
-        TODO("Not yet implemented")
+        require(child is MPSNode) { "child must be an MPSNode" }
+        node.removeChild(child.node)
     }
 
     override fun getPropertyLinks(): List<IProperty> {
@@ -60,8 +64,8 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
         return node.references.map { MPSReferenceLink(it.link) }
     }
 
-    override fun getContainmentLink(): IChildLink? {
-        return node.containmentLink?.let { MPSChildLink(it) }
+    override fun getContainmentLink(): IChildLink {
+        return node.containmentLink?.let { MPSChildLink(it) } ?: RepositoryLanguage.Model.rootNodes
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
@@ -74,15 +78,52 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun moveChild(role: IChildLink, index: Int, child: INode) {
-        TODO("Not yet implemented")
+        require(role is MPSChildLink) { "role must be an MPSChildLink" }
+
+        val link = role.link
+        val children = node.getChildren(link).toList()
+        require(index <= children.size) { "index out of bounds: $index > ${children.size}" }
+
+        require(child is MPSNode)
+        val sChild = child.node
+        SNodeOperations.deleteNode(sChild)
+
+        if (index == -1 || index == children.size) {
+            node.addChild(link, sChild)
+        } else {
+            node.insertChildBefore(link, sChild, children[index])
+        }
     }
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode {
-        TODO("Not yet implemented")
+        require(role is MPSChildLink) { "role must be an MPSChildLink" }
+
+        val link = role.link
+        val children = node.getChildren(link).toList()
+        require(index <= children.size) { "index out of bounds: $index > ${children.size}" }
+
+        val targetConcept = if (concept is MPSConcept) concept.concept else link.targetConcept
+        val instantiatableConcept = MetaAdapterByDeclaration.asInstanceConcept(targetConcept)
+
+        val model = node.model
+        val newChild = if (model == null) {
+            jetbrains.mps.smodel.SNode(instantiatableConcept)
+        } else {
+            model.createNode(instantiatableConcept)
+        }
+
+        if (index == -1 || index == children.size) {
+            node.addChild(link, newChild)
+        } else {
+            node.insertChildBefore(link, newChild, children[index])
+        }
+        return MPSNode(newChild)
     }
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode {
-        TODO("Not yet implemented")
+        val repo = checkNotNull(node.model?.repository)
+        val targetConcept = concept?.let { MPSLanguageRepository(repo).resolveConcept(it.getUID()) }
+        return addNewChild(role, index, targetConcept)
     }
 
     override fun getReferenceTarget(link: IReferenceLink): INode? {
@@ -91,11 +132,13 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
-        TODO("Not yet implemented")
+        val ref = node.references.first { MPSReferenceLink(it.link).getUID() == link.getUID() }
+        val targetNode = target?.let { getArea().resolveNode(it.reference) } as MPSNode
+        node.setReferenceTarget(ref.link, targetNode.node)
     }
 
     override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {
-        TODO("Not yet implemented")
+        setReferenceTarget(role, target?.resolveIn(getArea()))
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {
@@ -104,11 +147,15 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
+        if (property.getSimpleName() == NodeData.idPropertyKey) {
+            return node.nodeId.toString()
+        }
         val mpsProperty = node.properties.firstOrNull { MPSProperty(it).getUID() == property.getUID() } ?: return null
         return node.getProperty(mpsProperty)
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        TODO("Not yet implemented")
+        val mpsProperty = node.properties.first { MPSProperty(it).getUID() == property.getUID() }
+        node.setProperty(mpsProperty, value)
     }
 }

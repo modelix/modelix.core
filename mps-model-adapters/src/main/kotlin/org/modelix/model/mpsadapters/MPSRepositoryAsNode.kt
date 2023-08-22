@@ -22,7 +22,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.NodeReference
+import org.modelix.model.api.NullChildLink
 import org.modelix.model.area.IArea
 
 data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDefaults {
@@ -33,7 +34,7 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     override val isValid: Boolean
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
-        get() = SerializedNodeReference("mps-repository")
+        get() = NodeReference("mps-repository")
     override val concept: IConcept
         get() = RepositoryLanguage.Repository
     override val parent: INode?
@@ -51,11 +52,13 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun getContainmentLink(): IChildLink? {
-        TODO("Not yet implemented")
+        return null
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903") ||
+        return if (link is NullChildLink) {
+            return emptyList()
+        } else if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903") ||
             link.getUID().contains("modules") ||
             link.getSimpleName() == "modules"
         ) {
@@ -78,23 +81,23 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun getReferenceTarget(link: IReferenceLink): INode? {
-        TODO("Not yet implemented")
+        return null
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
-        TODO("Not yet implemented")
+        return
     }
 
     override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {
-        TODO("Not yet implemented")
+        return
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {
-        TODO("Not yet implemented")
+        return null
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        TODO("Not yet implemented")
+        return null
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
@@ -102,10 +105,10 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun getPropertyLinks(): List<IProperty> {
-        TODO("Not yet implemented")
+        return emptyList()
     }
 
     override fun getReferenceLinks(): List<IReferenceLink> {
-        TODO("Not yet implemented")
+        return emptyList()
     }
 }

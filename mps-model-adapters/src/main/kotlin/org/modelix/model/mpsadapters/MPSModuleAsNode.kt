@@ -15,6 +15,7 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
+import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -24,18 +25,18 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 
 data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     override fun getArea(): IArea {
-        TODO("Not yet implemented")
+        return MPSArea(module.repository ?: MPSModuleRepository.getInstance())
     }
 
     override val isValid: Boolean
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
-        get() = SerializedNodeReference("mps-module:" + module.moduleReference.toString())
+        get() = NodeReference("mps-module:" + module.moduleReference.toString())
     override val concept: IConcept
         get() = RepositoryLanguage.Module
     override val parent: INode?
@@ -52,8 +53,8 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
         TODO("Not yet implemented")
     }
 
-    override fun getContainmentLink(): IChildLink? {
-        TODO("Not yet implemented")
+    override fun getContainmentLink(): IChildLink {
+        return RepositoryLanguage.Repository.modules
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {

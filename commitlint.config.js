@@ -5,6 +5,9 @@ module.exports = {
       2,
       "always",
       [
+        "bulk-model-sync-gradle",
+        "bulk-model-sync-lib",
+        "bulk-model-sync-solution",
         "deps",
         "light-model-client",
         "model-server-lib",
@@ -15,7 +18,6 @@ module.exports = {
         "model-client",
         "model-datastructure",
         "model-server",
-        "model-sync-lib",
         "modelql",
         "mps-model-adapters",
         "mps-model-server",

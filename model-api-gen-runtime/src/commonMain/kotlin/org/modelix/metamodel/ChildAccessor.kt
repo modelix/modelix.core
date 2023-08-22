@@ -31,6 +31,9 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         }.iterator()
     }
 
+    fun asArray(): Array<ChildT> = this.toList().toTypedArray<Any>() as Array<ChildT>
+    fun asList(): List<ChildT> = this.toList()
+
     @JsName("addNew_index")
     fun addNew(index: Int = -1): ChildT {
         return parent.addNewChild(role, index, childConcept).typed(childType)

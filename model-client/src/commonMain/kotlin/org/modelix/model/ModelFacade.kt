@@ -11,6 +11,7 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.api.deepUnwrapNode
 import org.modelix.model.client.IModelClient
 import org.modelix.model.client.IdGenerator
+import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -20,8 +21,26 @@ import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.MapBaseStore
+import kotlin.js.JsExport
+import kotlin.js.JsName
 
+@JsExport
 object ModelFacade {
+
+    @JsName("loadModelFromJsonInto")
+    fun loadModelFromJson(json: String, branch: IBranch): INode = loadModelsFromJson(arrayOf(json), branch)
+
+    @JsName("loadModelsFromJsonInto")
+    fun loadModelsFromJson(json: Array<String>, branch: IBranch): INode {
+        json.forEach { ModelData.fromJson(it).load(branch) }
+        val rootNode = ModelFacade.getRootNode(branch)
+        return rootNode
+    }
+
+    fun loadModelsFromJson(json: Array<String>): INode {
+        val branch = PBranch(newLocalTree(), IdGenerator.getInstance(1))
+        return loadModelsFromJson(json, branch)
+    }
 
     fun newLocalTree(): ITree {
         return CLTree(ObjectStoreCache(MapBaseStore()))

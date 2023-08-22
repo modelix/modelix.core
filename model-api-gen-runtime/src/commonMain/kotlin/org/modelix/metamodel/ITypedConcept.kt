@@ -1,6 +1,7 @@
 package org.modelix.metamodel
 
 import org.modelix.model.api.IConcept
+import org.modelix.model.api.IRole
 import kotlin.js.JsExport
 import kotlin.reflect.KClass
 
@@ -21,6 +22,7 @@ fun IConcept.typed(): ITypedConcept = when (this) {
     else -> FallbackTypedConcept(this)
 }
 
+@JsExport
 interface IConceptOfTypedNode<out NodeT : ITypedNode> : ITypedConcept {
     fun getInstanceInterface(): KClass<out NodeT>
 }
@@ -33,4 +35,4 @@ fun <NodeT : ITypedNode> IConceptOfTypedNode<NodeT>.getInstanceClass(): KClass<o
 @JsExport
 interface INonAbstractConcept<out NodeT : ITypedNode> : IConceptOfTypedNode<NodeT>
 
-interface ITypedConceptFeature
+interface ITypedConceptFeature : IRole

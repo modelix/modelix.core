@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
@@ -22,8 +24,11 @@ kotlin {
 
     sourceSets {
         all {
-            languageSettings.optIn("kotlin.js.ExperimentalJsExport")
-            languageSettings.optIn("kotlin.js.JsExport")
+            languageSettings {
+                optIn("kotlin.js.ExperimentalJsExport")
+                optIn("kotlin.js.JsExport")
+                apiVersion = KotlinVersion.KOTLIN_1_6.version
+            }
         }
         val commonMain by getting {
             dependencies {

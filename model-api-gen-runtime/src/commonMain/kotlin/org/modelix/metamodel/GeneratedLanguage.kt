@@ -1,7 +1,9 @@
 package org.modelix.metamodel
 
 import org.modelix.model.api.ILanguage
+import kotlin.js.JsExport
 
+@JsExport
 abstract class GeneratedLanguage(private val name: String) : ILanguage {
     fun register() {
         TypedLanguagesRegistry.register(this)

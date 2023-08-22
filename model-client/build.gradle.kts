@@ -34,11 +34,15 @@ kotlin {
         generateTypeScriptDefinitions()
     }
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.js.ExperimentalJsExport")
+        }
         val commonMain by getting {
             dependencies {
                 api(project(":model-api"))
                 api(project(":model-server-api"))
                 kotlin("stdlib-common")
+                implementation(libs.modelix.incremental)
                 implementation(libs.kotlin.collections.immutable)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)

@@ -96,16 +96,20 @@ metamodel {
     modelqlKotlinDir = kotlinGenDir
     kotlinProject = project
     generateKotlinCommon()
-    typescriptDir = projectDir.resolve("../typescript-project/src/gen")
+//    typescriptDir = projectDir.resolve("../typescript-project/src/gen")
     npmPackageName = "@modelix/api-gen-test-kotlin-project"
-    includeNamespace("jetbrains")
+//    includeNamespace("jetbrains")
+    includeLanguage("jetbrains.mps.baseLanguage")
+    includeLanguage("org.modelix.model.repositoryconcepts")
+    includeConcept("jetbrains.mps.lang.editor.FontStyleStyleClassItem")
+    includeConcept("jetbrains.mps.baseLanguage.jdk8.SuperInterfaceMethodCall_old")
+    includeConcept("jetbrains.mps.lang.behavior.ConceptMethodDeclaration")
     exportModules("jetbrains.mps.baseLanguage")
 
     names {
         languageClass.prefix = "L_"
         languageClass.baseNameConversion = { it.replace(".", "_") }
-        typedNode.prefix = ""
-        typedNodeImpl.suffix = "Impl"
+        typedNode.prefix = "N_"
     }
     registrationHelperName = "org.modelix.apigen.test.ApigenTestLanguages"
 }

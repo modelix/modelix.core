@@ -98,7 +98,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                     super("${language.name}")
 
                     ${language.getConcepts().joinToString("\n") { concept ->
-                        """this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.nodeWrapperImplName()}(node))"""
+                        "" //"""this.nodeWrappers.set("${concept.uid}", (node: INodeJS) => new ${concept.nodeWrapperImplName()}(node))"""
                     }}
                 }
                 public getConcepts() {
@@ -106,7 +106,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                 }
             }
 
-            ${language.getConcepts().joinToString("\n") { generateConcept(it) }}
+            ${language.getConcepts().joinToString("\n") { "" /*generateConcept(it)*/ }}
         """
     }
 

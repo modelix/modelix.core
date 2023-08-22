@@ -1,0 +1,20 @@
+@startuml
+
+component "model-client" as mc
+component "light-model-client" as lmc
+interface "model-api" as modelapi
+component "typed-model-api" {
+    component "output of model-api-gen"
+    component "model-api-gen-runtime"
+}
+component "customer specific\nweb application" as webapp
+
+modelapi <.. mc
+modelapi <.. lmc
+
+[model-api-gen-runtime] --> modelapi
+[model-api-gen] .left.> "output of model-api-gen" : generates
+webapp --> "typed-model-api"
+"output of model-api-gen" --> "model-api-gen-runtime"
+
+@enduml

@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2023.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,33 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.api
 
-import kotlin.js.JsExport
-
-/**
- * Representation of a language.
- */
 @JsExport
-interface ILanguage {
-    /**
-     * Returns the unique id of this language.
-     *
-     * @return unique language id
-     */
-    fun getUID(): String
-
-    /**
-     * Returns the name of this language.
-     *
-     * @return language name
-     */
-    fun getName(): String
-
-    /**
-     * Returns all the concepts defined in this language.
-     *
-     * @return list of all concepts
-     */
-    fun getConcepts(): List<IConcept>
+object TypeConversions {
+    fun <T> listToArray(list: List<T>): Array<T> = list.toTypedArray()
 }

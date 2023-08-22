@@ -1,0 +1,421 @@
+{
+    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80",
+    "name": "org.modelix.model.repositoryconcepts",
+    "concepts": [
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892",
+            "name": "Model",
+            "properties": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/2615330535972958738",
+                    "name": "id"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/3832696962605996173",
+                    "name": "stereotype"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900",
+                    "name": "rootNodes",
+                    "type": "jetbrains.mps.lang.core.BaseConcept",
+                    "multiple": true
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/6402965165736931000",
+                    "name": "modelImports",
+                    "type": "org.modelix.model.repositoryconcepts.ModelReference",
+                    "multiple": true
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/5381564949800872334",
+                    "name": "usedLanguages",
+                    "type": "org.modelix.model.repositoryconcepts.SingleLanguageDependency",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/6402965165736932003",
+            "name": "ModelReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/6402965165736932003/6402965165736932004",
+                    "name": "model",
+                    "type": "org.modelix.model.repositoryconcepts.Model",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895",
+            "name": "Module",
+            "properties": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/4225291329823310560",
+                    "name": "id"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242370",
+                    "name": "moduleVersion",
+                    "type": "INT"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242373",
+                    "name": "compileInMPS",
+                    "type": "BOOLEAN"
+                }
+            ],
+            "children": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242412",
+                    "name": "facets",
+                    "type": "org.modelix.model.repositoryconcepts.ModuleFacet",
+                    "multiple": true
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898",
+                    "name": "models",
+                    "type": "org.modelix.model.repositoryconcepts.Model",
+                    "multiple": true
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242425",
+                    "name": "dependencies",
+                    "type": "org.modelix.model.repositoryconcepts.ModuleDependency",
+                    "multiple": true
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242439",
+                    "name": "languageDependencies",
+                    "type": "org.modelix.model.repositoryconcepts.LanguageDependency",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/5782622473578468308",
+            "name": "ModuleReference",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/5782622473578468308/5782622473578468333",
+                    "name": "module",
+                    "type": "org.modelix.model.repositoryconcepts.Module",
+                    "optional": false
+                }
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313",
+            "name": "Project",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4008363636171860450",
+                    "name": "modules",
+                    "type": "org.modelix.model.repositoryconcepts.Module",
+                    "multiple": true,
+                    "deprecationMessage": "modules is deprecated"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4201834143491306088",
+                    "name": "projectModules",
+                    "type": "org.modelix.model.repositoryconcepts.ProjectModule",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept",
+                "jetbrains.mps.lang.core.INamedConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902",
+            "name": "Repository",
+            "properties": [
+            ],
+            "children": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903",
+                    "name": "modules",
+                    "type": "org.modelix.model.repositoryconcepts.Module",
+                    "multiple": true
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/7064605579395546636",
+                    "name": "projects",
+                    "type": "org.modelix.model.repositoryconcepts.Project",
+                    "multiple": true
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/8226136427470548682",
+                    "name": "tempModules",
+                    "type": "org.modelix.model.repositoryconcepts.Module",
+                    "multiple": true
+                }
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598211",
+            "name": "Solution",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "org.modelix.model.repositoryconcepts.Module"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598212",
+            "name": "Language",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "org.modelix.model.repositoryconcepts.Module"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598213",
+            "name": "DevKit",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "org.modelix.model.repositoryconcepts.Module"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242403",
+            "name": "ModuleFacet",
+            "abstract": true,
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406",
+            "name": "JavaModuleFacet",
+            "properties": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406/2206727074858242407",
+                    "name": "generated",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406/2206727074858242409",
+                    "name": "path"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "org.modelix.model.repositoryconcepts.ModuleFacet"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415",
+            "name": "ModuleDependency",
+            "properties": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242416",
+                    "name": "reexport",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242418",
+                    "name": "uuid"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242421",
+                    "name": "name"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750565",
+                    "name": "explicit",
+                    "type": "BOOLEAN"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750570",
+                    "name": "version",
+                    "type": "INT"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/8438396892798826745",
+                    "name": "scope",
+                    "type": "org.modelix.model.repositoryconcepts.DependencyScope"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429",
+            "name": "SingleLanguageDependency",
+            "properties": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429/2206727074858242435",
+                    "name": "version",
+                    "type": "INT"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "org.modelix.model.repositoryconcepts.LanguageDependency"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/4201834143491306084",
+            "name": "ProjectModule",
+            "properties": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4201834143491306084/4201834143491306085",
+                    "name": "virtualFolder"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "org.modelix.model.repositoryconcepts.ModuleReference"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311",
+            "name": "LanguageDependency",
+            "abstract": true,
+            "properties": [
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575314",
+                    "name": "uuid"
+                },
+                {
+                    "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575315",
+                    "name": "name"
+                }
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "jetbrains.mps.lang.core.BaseConcept"
+            ]
+        },
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575318",
+            "name": "DevkitDependency",
+            "properties": [
+            ],
+            "children": [
+            ],
+            "references": [
+            ],
+            "extends": [
+                "org.modelix.model.repositoryconcepts.LanguageDependency"
+            ]
+        }
+    ],
+    "enums": [
+        {
+            "uid": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/8438396892798824468",
+            "name": "DependencyScope",
+            "members": [
+                {
+                    "uid": "7krdkfP2b0l",
+                    "name": "DEFAULT"
+                },
+                {
+                    "uid": "7krdkfP2b0q",
+                    "name": "DESIGN"
+                },
+                {
+                    "uid": "7krdkfP2b0t",
+                    "name": "COMPILE"
+                },
+                {
+                    "uid": "7krdkfP2b0_",
+                    "name": "RUNTIME"
+                },
+                {
+                    "uid": "7krdkfP2b0E",
+                    "name": "PROVIDED"
+                },
+                {
+                    "uid": "7krdkfP2b0O",
+                    "name": "EXTENDS"
+                },
+                {
+                    "uid": "7krdkfP2b0V",
+                    "name": "GENERATES_INTO"
+                },
+                {
+                    "uid": "7krdkfP4i5y",
+                    "name": "UNSPECIFIED"
+                }
+            ],
+            "defaultIndex": 0
+        }
+    ]
+}

@@ -69,6 +69,15 @@ class MetaModelGradlePlugin : Plugin<Project> {
 
             task.dependsOn(generateAntScriptForMpsMetaModelExport)
             task.dependsOn(downloadExporterDependencies)
+
+            task.doLast {
+                val repositoryConceptsFileName = "org.modelix.model.repositoryconcepts.json"
+                val jsonResource = MetaModelGradlePlugin::class.java.getResource("/$repositoryConceptsFileName")
+                    ?: throw RuntimeException("$repositoryConceptsFileName not found")
+                val content = jsonResource.readText()
+                val outputFile = exportedLanguagesDir.resolve(repositoryConceptsFileName)
+                if (!outputFile.exists()) outputFile.writeText(content)
+            }
         }
         project.afterEvaluate {
             exportMetaModelFromMps.configure { task ->

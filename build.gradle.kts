@@ -1,3 +1,4 @@
+import com.diffplug.gradle.spotless.KotlinExtension
 import kotlinx.html.FlowContent
 import kotlinx.html.a
 import kotlinx.html.body
@@ -17,6 +18,11 @@ import kotlinx.html.unsafe
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinMultiplatformPlugin
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 import org.semver.Version
 
 buildscript {
@@ -76,12 +82,24 @@ subprojects {
         version.set("0.50.0")
     }
 
+    val kotlinVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6
+    plugins.withType(KotlinMultiplatformPlugin::class.java) {
+        project.the<KotlinMultiplatformExtension>().sourceSets.all {
+            languageSettings {
+                optIn("kotlin.js.ExperimentalJsExport")
+                if (!name.lowercase().contains("test")) {
+                    apiVersion = kotlinVersion.version
+                }
+            }
+        }
+    }
+
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
         if (!name.lowercase().contains("test")) {
             kotlinOptions {
                 jvmTarget = "11"
                 freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
-                apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6.version
+                apiVersion = kotlinVersion.version
             }
         }
     }

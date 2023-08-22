@@ -4,6 +4,7 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.tryResolve
+import kotlin.js.JsExport
 import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
@@ -46,6 +47,9 @@ object TypedLanguagesRegistry : ILanguageRepository {
         return concept.wrap(node)
     }
 }
+
+@JsExport
+fun <NodeT : ITypedNode> INode.typed(concept: IConceptOfTypedNode<NodeT>): NodeT = typed(concept.getInstanceInterface())
 
 fun <NodeT : ITypedNode> INode.typed(nodeClass: KClass<NodeT>): NodeT = nodeClass.cast(TypedLanguagesRegistry.wrapNode(this))
 inline fun <reified NodeT : ITypedNode> INode.typed(): NodeT = TypedLanguagesRegistry.wrapNode(this) as NodeT

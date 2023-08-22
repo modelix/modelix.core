@@ -7,6 +7,7 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.IRole
 import org.modelix.model.api.RoleAccessContext
 import org.modelix.model.api.getAllConcepts
 import kotlin.reflect.KClass
@@ -22,6 +23,15 @@ abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     private val propertiesMap: MutableMap<String, GeneratedProperty<*>> = LinkedHashMap()
     private val childLinksMap: MutableMap<String, GeneratedChildLink<*, *>> = LinkedHashMap()
     private val referenceLinksMap: MutableMap<String, GeneratedReferenceLink<*, *>> = LinkedHashMap()
+    private val allRoles: Map<String, ITypedConceptFeature> by lazy {
+        getAllProperties().map { it as GeneratedProperty<*> }.associateBy { it.getSimpleName() } +
+            getAllReferenceLinks().map { it as GeneratedReferenceLink<*, *> }.associateBy { it.getSimpleName() } +
+            getAllChildLinks().map { it as GeneratedChildLink<*, *> }.associateBy { it.getSimpleName() }
+    }
+
+    fun getRoleByName(name: String): ITypedConceptFeature {
+        return allRoles[name] ?: throw IllegalArgumentException("Role '$name' not found in concept ${getLongName()}")
+    }
 
     abstract fun wrap(node: INode): NodeT
 

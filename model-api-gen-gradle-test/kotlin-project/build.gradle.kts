@@ -57,6 +57,8 @@ kotlin {
                 implementation(libs.kotlin.serialization.json)
                 api(libs.kotlin.coroutines.core)
                 api(project(":apigen-project"))
+                api("org.modelix:model-api:$modelixCoreVersion")
+                api("org.modelix:model-client:$modelixCoreVersion")
             }
         }
         val commonTest by getting {

@@ -34,6 +34,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":model-api"))
+                api(project(":model-datastructure"))
                 api(project(":model-server-api"))
                 kotlin("stdlib-common")
                 implementation(libs.kotlin.collections.immutable)

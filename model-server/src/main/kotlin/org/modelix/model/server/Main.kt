@@ -34,6 +34,8 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
 import kotlinx.html.a
 import kotlinx.html.h1
 import kotlinx.html.li
@@ -61,6 +63,7 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.time.Duration
 import javax.sql.DataSource
 
 object Main {
@@ -157,7 +160,12 @@ object Main {
                 install(Routing)
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)
-                install(WebSockets)
+                install(WebSockets) {
+                    pingPeriod = Duration.ofSeconds(30)
+                    timeout = Duration.ofSeconds(30)
+                    maxFrameSize = Long.MAX_VALUE
+                    masking = false
+                }
                 install(ContentNegotiation) {
                     json()
                 }

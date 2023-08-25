@@ -123,9 +123,9 @@ class ReplicatedRepositoryTest {
         }
 
         val repositoryId = RepositoryId("repo1")
-        clients[0].initRepository(repositoryId)
-//        val branchId = repositoryId.getBranchReference("my-branch")
-        val branchId = repositoryId.getBranchReference()
+        val initialVersion = clients[0].initRepository(repositoryId)
+        val branchId = repositoryId.getBranchReference("my-branch")
+        clients[0].push(branchId, initialVersion, initialVersion)
         val models = clients.map { client -> client.getReplicatedModel(branchId).also { it.start() } }
 
         val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())

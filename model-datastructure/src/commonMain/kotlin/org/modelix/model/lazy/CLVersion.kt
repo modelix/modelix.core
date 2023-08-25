@@ -285,9 +285,12 @@ class CLVersion : IVersion {
     }
 }
 
-fun CLVersion.computeDelta(baseVersion: CLVersion?): Map<String, String?> {
-    return computeDelta(store.keyValueStore, this.getContentHash(), baseVersion?.getContentHash())
+fun CLVersion.computeDelta(baseVersion: CLVersion?): Map<String, String> {
+    return computeDelta(store.keyValueStore, this.getContentHash(), baseVersion?.getContentHash()).filterNotNullValues()
 }
+
+@Suppress("UNCHECKED_CAST")
+fun <K, V> Map<K, V?>.filterNotNullValues(): Map<K, V> = filterValues { it != null } as Map<K, V>
 
 private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, baseVersionHash: String?): Map<String, String?> {
     val changedNodeIds = HashSet<Long>()

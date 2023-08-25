@@ -19,5 +19,7 @@ import kotlinx.serialization.Serializable
 class VersionDelta(
     val versionHash: String,
     val baseVersionHash: String? = null,
+    @Deprecated("use .objectsMap")
     val objects: Set<String> = emptySet(),
+    val objectsMap: Map<String, String> = emptyMap(),
 )

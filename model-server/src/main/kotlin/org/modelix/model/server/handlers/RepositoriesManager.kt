@@ -147,7 +147,7 @@ class RepositoriesManager(val client: LocalModelClient) {
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
-    fun computeDelta(versionHash: String, baseVersionHash: String?): Map<String, String?> {
+    fun computeDelta(versionHash: String, baseVersionHash: String?): Map<String, String> {
         val version = CLVersion(versionHash, client.storeCache)
         val baseVersion = baseVersionHash?.let { CLVersion(it, client.storeCache) }
         return version.computeDelta(baseVersion)

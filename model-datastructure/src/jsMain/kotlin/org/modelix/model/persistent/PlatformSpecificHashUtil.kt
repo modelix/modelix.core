@@ -1,24 +1,8 @@
 package org.modelix.model.persistent
 
+import Sha256
+import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
-
-@JsNonModule
-@JsModule("js-sha256")
-external fun sha256(s: String): String
-
-@JsNonModule
-@JsModule("js-sha256")
-external fun sha256(s: ByteArray): String
-
-@Suppress("ClassName")
-@JsNonModule
-@JsModule("js-sha256")
-external object sha256 {
-    fun array(s: IntArray): IntArray
-}
-
-// Just to avoid having this shadowed in HashUtil...
-fun wrapperSha256(s: String) = sha256(s)
 
 @JsModule("js-base64")
 @JsNonModule
@@ -30,35 +14,18 @@ external object Base64 {
 }
 
 actual object PlatformSpecificHashUtil {
-    actual fun sha256(input: ByteArray?): String {
-        val sha256Bytes = sha256asByteArray(input)
-        val base64 = base64encode(sha256Bytes)
-        return base64.substring(0, 5) + "*" + base64.substring(5)
-    }
-
-    actual fun sha256(input: String): String {
-        return sha256(input.encodeToByteArray())
-    }
-
-    actual fun base64encode(input: String): String {
-        return Base64.encode(input, true)
-    }
-
-    actual fun base64decode(input: String): String {
-        return Base64.decode(input)
-    }
-
-    actual fun sha256asByteArray(input: ByteArray?): ByteArray {
-        require(input != null)
-        val preparedInput = input.map { if (it < 0) (it + 256).toInt() else it.toInt() }.toIntArray()
-        return sha256.array(preparedInput).map { if (it >= 128) (it - 256).toByte() else it.toByte() }.toByteArray()
+    actual fun sha256asByteArray(input: String): ByteArray {
+        val hash = Sha256()
+        hash.update(input)
+        return hash.digestSync().asByteArray()
     }
 
     actual fun base64encode(input: ByteArray): String {
         return Base64.fromUint8Array(Uint8Array(input.toTypedArray()), true)
     }
+}
 
-    actual fun stringToUTF8ByteArray(input: String): ByteArray {
-        return input.encodeToByteArray(throwOnInvalidSequence = true)
-    }
+@Suppress("UnsafeCastFromDynamic")
+private fun Uint8Array.asByteArray(): ByteArray {
+    return Int8Array(buffer, byteOffset, length).asDynamic()
 }

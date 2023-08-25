@@ -134,14 +134,15 @@ class ModelClientV2(
         require(version is CLVersion)
         require(baseVersion is CLVersion?)
         version.write()
-        val objects = version.computeDelta(baseVersion).values.filterNotNull().toSet()
+        val objects = version.computeDelta(baseVersion)
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
             contentType(ContentType.Application.Json)
-            val body = VersionDelta(version.getContentHash(), null, objects)
+            val body = VersionDelta(version.getContentHash(), null, objectsMap = objects)
+            body.checkObjectHashes()
             setBody(body)
         }
         val mergedVersionDelta = response.body<VersionDelta>()
@@ -192,13 +193,13 @@ class ModelClientV2(
         return if (baseVersion == null) {
             CLVersion(
                 delta.versionHash,
-                store.also { it.keyValueStore.putAll(delta.objects.associateBy { HashUtil.sha256(it) }) },
+                store.also { it.keyValueStore.putAll(delta.getAllObjects()) },
             )
         } else if (delta.versionHash == baseVersion.hash) {
             baseVersion
         } else {
             require(baseVersion.store == store) { "baseVersion was not created by this client" }
-            store.keyValueStore.putAll(delta.objects.associateBy { HashUtil.sha256(it) })
+            store.keyValueStore.putAll(delta.getAllObjects())
             CLVersion(
                 delta.versionHash,
                 baseVersion.store,
@@ -275,3 +276,9 @@ abstract class ModelClientV2Builder {
 }
 
 expect class ModelClientV2PlatformSpecificBuilder() : ModelClientV2Builder
+
+fun VersionDelta.checkObjectHashes() {
+    HashUtil.checkObjectHashes(objectsMap)
+}
+
+fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.associateBy { HashUtil.sha256(it) }

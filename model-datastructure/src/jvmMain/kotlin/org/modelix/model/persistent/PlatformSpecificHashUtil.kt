@@ -15,46 +15,22 @@
 
 package org.modelix.model.persistent
 
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.Base64
 
 actual object PlatformSpecificHashUtil {
-    private val UTF8 = StandardCharsets.UTF_8
-    actual fun sha256asByteArray(input: ByteArray?): ByteArray {
-        return try {
+    actual fun sha256asByteArray(input: String): ByteArray {
+        try {
             val digest = MessageDigest.getInstance("SHA-256")
-            digest.update(input)
+            digest.update(input.encodeToByteArray(throwOnInvalidSequence = true))
             return digest.digest()
         } catch (ex: NoSuchAlgorithmException) {
             throw RuntimeException(ex)
         }
     }
 
-    actual fun sha256(input: ByteArray?): String {
-        val sha256Bytes = sha256asByteArray(input)
-        val base64 = Base64.getUrlEncoder().withoutPadding().encodeToString(sha256Bytes)
-        return base64.substring(0, 5) + "*" + base64.substring(5)
-    }
-
-    actual fun sha256(input: String): String {
-        return sha256(input.toByteArray(UTF8))
-    }
-
-    actual fun base64encode(input: String): String {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(input.toByteArray(UTF8))
-    }
-
     actual fun base64encode(input: ByteArray): String {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(input)
-    }
-
-    actual fun base64decode(input: String): String {
-        return String(Base64.getUrlDecoder().decode(input.toByteArray(UTF8)), UTF8)
-    }
-
-    actual fun stringToUTF8ByteArray(input: String): ByteArray {
-        return input.toByteArray(StandardCharsets.UTF_8)
     }
 }

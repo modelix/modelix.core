@@ -6,7 +6,7 @@ plugins {
 kotlin {
     jvm()
     js(IR) {
-        // browser {}
+        browser {}
         nodejs {
             testTask {
                 useMocha {
@@ -34,8 +34,8 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-//                kotlin("test-common")
-//                kotlin("test-annotations-common")
+                kotlin("test-common")
+                kotlin("test-annotations-common")
             }
         }
         val jvmMain by getting {
@@ -62,7 +62,7 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
-//                implementation(kotlin("test"))
+                implementation(kotlin("test"))
             }
         }
         val jsMain by getting {
@@ -70,12 +70,13 @@ kotlin {
 //                implementation(kotlin("stdlib-js"))
 //                implementation(npm("uuid", "^8.3.0"))
 //                implementation(npm("js-sha256", "^0.9.0"))
+                implementation(npm("@aws-crypto/sha256-js", "^5.0.0"))
 //                implementation(npm("js-base64", "^3.4.5"))
             }
         }
         val jsTest by getting {
             dependencies {
-//                implementation(kotlin("test-js"))
+                implementation(kotlin("test-js"))
             }
         }
     }

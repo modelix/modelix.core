@@ -23,6 +23,16 @@ class SerializationUtilEscapeTest {
     }
 
     @Test
+    fun escape_space() {
+        assertEquals("+", SerializationUtil.escape(" "))
+    }
+
+    @Test
+    fun unescape_space() {
+        assertEquals(" ", SerializationUtil.unescape("+"))
+    }
+
+    @Test
     fun unescape_emptyString() {
         assertEquals("", SerializationUtil.unescape(""))
     }

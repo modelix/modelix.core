@@ -39,11 +39,11 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.computeDelta
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.server.api.ModelQuery
 import org.modelix.model.server.api.v2.VersionDelta
-import kotlin.jvm.Synchronized
 import kotlin.time.Duration.Companion.seconds
 
 class ModelClientV2(
@@ -53,7 +53,7 @@ class ModelClientV2(
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
     private var userId: String? = null
-    private val kvStore = UncommitedEntriesStore()
+    private val kvStore = MapBaseStore()
     val store = ObjectStoreCache(kvStore) // TODO the store will accumulate garbage
 
     suspend fun init() {
@@ -129,17 +129,20 @@ class ModelClientV2(
         return createVersion(null, delta)
     }
 
-    override suspend fun push(branch: BranchReference, version: IVersion): IVersion {
+    override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
+        LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
         require(version is CLVersion)
+        require(baseVersion is CLVersion?)
         version.write()
-        val objects = kvStore.getUncommitedEntries().values.filterNotNull().toSet()
+        val objects = version.computeDelta(baseVersion)
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
             contentType(ContentType.Application.Json)
-            val body = VersionDelta(version.hash, null, objects)
+            val body = VersionDelta(version.getContentHash(), null, objectsMap = objects)
+            body.checkObjectHashes()
             setBody(body)
         }
         val mergedVersionDelta = response.body<VersionDelta>()
@@ -157,7 +160,9 @@ class ModelClientV2(
                 }
             }
         }
-        return createVersion(lastKnownVersion, response.body())
+        val receivedVersion = createVersion(lastKnownVersion, response.body())
+        LOG.debug { "${clientId.toString(16)}.pull($branch, $lastKnownVersion) -> $receivedVersion" }
+        return receivedVersion
     }
 
     override suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
@@ -171,7 +176,9 @@ class ModelClientV2(
                 }
             }
         }
-        return createVersion(lastKnownVersion, response.body())
+        val receivedVersion = createVersion(lastKnownVersion, response.body())
+        LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
+        return receivedVersion
     }
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion {
@@ -186,13 +193,13 @@ class ModelClientV2(
         return if (baseVersion == null) {
             CLVersion(
                 delta.versionHash,
-                store.also { it.keyValueStore.putAll(delta.objects.associateBy { HashUtil.sha256(it) }) },
+                store.also { it.keyValueStore.putAll(delta.getAllObjects()) },
             )
         } else if (delta.versionHash == baseVersion.hash) {
             baseVersion
         } else {
             require(baseVersion.store == store) { "baseVersion was not created by this client" }
-            store.keyValueStore.putAll(delta.objects.associateBy { HashUtil.sha256(it) })
+            store.keyValueStore.putAll(delta.getAllObjects())
             CLVersion(
                 delta.versionHash,
                 baseVersion.store,
@@ -201,6 +208,7 @@ class ModelClientV2(
     }
 
     companion object {
+        private val LOG = mu.KotlinLogging.logger {}
         fun builder(): ModelClientV2Builder = ModelClientV2PlatformSpecificBuilder()
     }
 }
@@ -269,19 +277,8 @@ abstract class ModelClientV2Builder {
 
 expect class ModelClientV2PlatformSpecificBuilder() : ModelClientV2Builder
 
-private class UncommitedEntriesStore() : MapBaseStore() {
-    private var uncommitedEntries: MutableMap<String, String?> = HashMap()
-
-    @Synchronized
-    fun getUncommitedEntries(): Map<String, String?> {
-        val result = uncommitedEntries
-        uncommitedEntries = HashMap()
-        return result
-    }
-
-    @Synchronized
-    override fun putAll(entries: Map<String, String?>) {
-        uncommitedEntries.putAll(entries)
-        super.putAll(entries)
-    }
+fun VersionDelta.checkObjectHashes() {
+    HashUtil.checkObjectHashes(objectsMap)
 }
+
+fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.associateBy { HashUtil.sha256(it) }

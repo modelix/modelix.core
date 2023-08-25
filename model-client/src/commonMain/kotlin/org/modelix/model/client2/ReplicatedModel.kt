@@ -3,6 +3,7 @@ package org.modelix.model.client2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -50,13 +51,21 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
         otBranch = OTBranch(rawBranch, client.getIdGenerator(), lastRemoteVersion.store)
 
         scope.launch {
+            var nextDelayMs: Long = 0
             while (state != State.Disposed) {
-                val newRemoteVersion = if (query == null) {
-                    client.poll(branchRef, lastRemoteVersion)
-                } else {
-                    client.poll(branchRef, lastRemoteVersion, query)
-                } as CLVersion
-                remoteVersionReceived(newRemoteVersion)
+                if (nextDelayMs > 0) delay(nextDelayMs)
+                try {
+                    val newRemoteVersion = if (query == null) {
+                        client.poll(branchRef, lastRemoteVersion)
+                    } else {
+                        client.poll(branchRef, lastRemoteVersion, query)
+                    } as CLVersion
+                    remoteVersionReceived(newRemoteVersion)
+                    nextDelayMs = 0
+                } catch (ex: Throwable) {
+                    LOG.error(ex) { "Failed to poll branch $branchRef" }
+                    nextDelayMs = (nextDelayMs * 3 / 2).coerceIn(1000, 30000)
+                }
             }
         }
 
@@ -111,7 +120,7 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
             createdVersion = applyPendingLocalChanges()
         }
         if (createdVersion != null) {
-            remoteVersionReceived(client.push(branchRef, createdVersion) as CLVersion)
+            remoteVersionReceived(client.push(branchRef, createdVersion, baseVersion = lastRemoteVersion) as CLVersion)
         }
     }
 
@@ -147,6 +156,11 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
     }
 }
 
-fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, query: ModelQuery? = null): ReplicatedModel {
+fun IModelClientV2.getReplicatedModel(branchRef: BranchReference): ReplicatedModel {
+    return ReplicatedModel(this, branchRef)
+}
+
+@Deprecated("ModelQuery is not supported and ignored", ReplaceWith("getReplicatedModel(branchRef)"))
+fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, query: ModelQuery?): ReplicatedModel {
     return ReplicatedModel(this, branchRef, query)
 }

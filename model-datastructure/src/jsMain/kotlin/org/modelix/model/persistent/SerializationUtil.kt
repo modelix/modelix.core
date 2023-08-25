@@ -18,14 +18,16 @@ actual object SerializationUtil {
         if (value == null) {
             return NULL_ENCODING
         }
-        return encodeURIComponent(value).map { SPECIAL_ENCODING[it] ?: it.toString() }.joinToString(separator = "")
+        return encodeURIComponent(value).asSequence()
+            .joinToString(separator = "") { SPECIAL_ENCODING[it] ?: it.toString() }
+            .replace("%20", "+")
     }
 
     actual fun unescape(value: String?): String? {
         if (value == NULL_ENCODING) {
             return null
         }
-        return decodeURIComponent(value!!)
+        return decodeURIComponent(value!!.replace("+", " "))
     }
 
     actual fun longToHex(value: Long): String {

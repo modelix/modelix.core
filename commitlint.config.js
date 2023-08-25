@@ -13,6 +13,7 @@ module.exports = {
         "model-api-gen-gradle",
         "model-api",
         "model-client",
+        "model-datastructure",
         "model-server",
         "model-sync-lib",
         "modelql",

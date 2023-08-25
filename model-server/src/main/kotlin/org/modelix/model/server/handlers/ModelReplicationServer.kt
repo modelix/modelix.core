@@ -40,6 +40,8 @@ import org.modelix.authorization.getUserName
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.area.getArea
+import org.modelix.model.client2.checkObjectHashes
+import org.modelix.model.client2.getAllObjects
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
@@ -126,7 +128,8 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                         }
                         post {
                             val deltaFromClient = call.receive<VersionDelta>()
-                            storeClient.putAll(deltaFromClient.objects.associateBy { HashUtil.sha256(it) })
+                            deltaFromClient.checkObjectHashes()
+                            storeClient.putAll(deltaFromClient.getAllObjects())
                             val mergedHash = repositoriesManager.mergeChanges(branchRef(), deltaFromClient.versionHash)
                             call.respondDelta(mergedHash, deltaFromClient.versionHash)
                         }
@@ -143,8 +146,9 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                                 val delta = VersionDelta(
                                     newVersionHash,
                                     lastVersionHash,
-                                    repositoriesManager.computeDelta(newVersionHash, lastVersionHash).values.filterNotNull().toSet(),
+                                    objectsMap = repositoriesManager.computeDelta(newVersionHash, lastVersionHash),
                                 )
+                                delta.checkObjectHashes()
                                 send(Json.encodeToString(delta))
                                 lastVersionHash = newVersionHash
                             }
@@ -236,8 +240,9 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         val delta = VersionDelta(
             versionHash,
             baseVersionHash,
-            repositoriesManager.computeDelta(versionHash, baseVersionHash).values.filterNotNull().toSet(),
+            objectsMap = repositoriesManager.computeDelta(versionHash, baseVersionHash),
         )
+        delta.checkObjectHashes()
         respond(delta)
     }
 }

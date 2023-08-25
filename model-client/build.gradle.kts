@@ -20,7 +20,13 @@ val kotlinxSerializationVersion: String by rootProject
 kotlin {
     jvm()
     js(IR) {
-        // browser {}
+        browser {
+            testTask {
+                useMocha {
+                    timeout = "30s"
+                }
+            }
+        }
         nodejs {
             testTask {
                 useMocha {
@@ -34,6 +40,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":model-api"))
+                api(project(":model-datastructure"))
                 api(project(":model-server-api"))
                 kotlin("stdlib-common")
                 implementation(libs.kotlin.collections.immutable)

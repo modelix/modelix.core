@@ -32,8 +32,8 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
         if (newVersion.hash == lastMergedVersion.hash) {
             return lastMergedVersion
         }
-        val merged = mergeHistory(lastMergedVersion, newVersion)
         checkRepositoryIds(lastMergedVersion, newVersion)
+        val merged = mergeHistory(lastMergedVersion, newVersion)
         return merged
     }
 

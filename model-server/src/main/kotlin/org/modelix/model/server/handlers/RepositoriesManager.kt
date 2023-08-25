@@ -21,16 +21,11 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.BulkQuery
-import org.modelix.model.lazy.CLHamtNode
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.computeDelta
 import org.modelix.model.metameta.MetaModelBranch
-import org.modelix.model.persistent.CPNode
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
@@ -152,67 +147,10 @@ class RepositoriesManager(val client: LocalModelClient) {
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
-    fun computeDelta(versionHash: String, baseVersionHash: String?): Map<String, String?> {
-        val changedNodeIds = HashSet<Long>()
-        val oldAndNewEntries: Map<String, String?> = trackAccessedEntries { store ->
-            val version = CLVersion(versionHash, store)
-
-            version.operations
-
-            val newTree = version.tree
-            if (baseVersionHash == null) {
-                newTree.root?.getDescendants(BulkQuery(store), true)?.execute()
-            } else {
-                val baseVersion = CLVersion(baseVersionHash, store)
-                val oldTree = baseVersion.tree
-                val bulkQuery = BulkQuery(store)
-                newTree.nodesMap!!.visitChanges(
-                    oldTree.nodesMap!!,
-                    object : CLHamtNode.IChangeVisitor {
-                        override fun visitChangesOnly(): Boolean = false
-                        override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
-                            changedNodeIds += key
-                            if (value != null) bulkQuery.query(value, {})
-                        }
-                        override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
-                            changedNodeIds += key
-                        }
-                        override fun entryChanged(
-                            key: Long,
-                            oldValue: KVEntryReference<CPNode>?,
-                            newValue: KVEntryReference<CPNode>?,
-                        ) {
-                            changedNodeIds += key
-                            if (newValue != null) bulkQuery.query(newValue, {})
-                        }
-                    },
-                    bulkQuery,
-                )
-                bulkQuery.process()
-            }
-        }
-        val oldEntries: Map<String, String?> = trackAccessedEntries { store ->
-            if (baseVersionHash == null) return@trackAccessedEntries
-            val baseVersion = CLVersion(baseVersionHash, store)
-            baseVersion.operations
-            val oldTree = baseVersion.tree
-            val bulkQuery = BulkQuery(store)
-
-            val nodesMap = oldTree.nodesMap!!
-            changedNodeIds.forEach { changedNodeId ->
-                nodesMap.get(changedNodeId, 0, bulkQuery).onSuccess { nodeRef ->
-                    if (nodeRef != null) bulkQuery.query(nodeRef) {}
-                }
-            }
-        }
-        return oldAndNewEntries - oldEntries.keys
-    }
-
-    private fun trackAccessedEntries(body: (IDeserializingKeyValueStore) -> Unit): Map<String, String?> {
-        val accessTrackingStore = AccessTrackingStore(client.asyncStore)
-        val objectStore = ObjectStoreCache(accessTrackingStore)
-        body(objectStore)
-        return accessTrackingStore.accessedEntries
+    fun computeDelta(versionHash: String, baseVersionHash: String?): Map<String, String> {
+        val version = CLVersion(versionHash, client.storeCache)
+        val baseVersion = baseVersionHash?.let { CLVersion(it, client.storeCache) }
+        return version.computeDelta(baseVersion)
     }
 
     private fun branchKey(branch: BranchReference): String {

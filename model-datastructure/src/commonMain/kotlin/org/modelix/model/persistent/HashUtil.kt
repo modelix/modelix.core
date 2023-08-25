@@ -18,9 +18,12 @@ package org.modelix.model.persistent
 object HashUtil {
     val HASH_PATTERN = Regex("""[a-zA-Z0-9\-_]{5}\*[a-zA-Z0-9\-_]{38}""")
 
-    fun sha256asByteArray(input: ByteArray?): ByteArray = PlatformSpecificHashUtil.sha256asByteArray(input)
-    fun sha256(input: ByteArray?): String = PlatformSpecificHashUtil.sha256(input)
-    fun sha256(input: String): String = PlatformSpecificHashUtil.sha256(input)
+    fun sha256asByteArray(input: String): ByteArray = PlatformSpecificHashUtil.sha256asByteArray(input)
+
+    fun sha256(input: String): String {
+        val base64 = PlatformSpecificHashUtil.base64encode(sha256asByteArray(input))
+        return base64.substring(0, 5) + "*" + base64.substring(5)
+    }
 
     fun isSha256(value: String?): Boolean {
         return if (value == null || value.length != 44) {
@@ -35,8 +38,16 @@ object HashUtil {
         return HASH_PATTERN.findAll(input).map { it.groupValues.first() }.asIterable()
     }
 
-    fun base64encode(input: String): String = PlatformSpecificHashUtil.base64encode(input)
-    fun base64encode(input: ByteArray): String = PlatformSpecificHashUtil.base64encode(input)
-    fun base64decode(input: String): String = PlatformSpecificHashUtil.base64decode(input)
-    fun stringToUTF8ByteArray(input: String): ByteArray = PlatformSpecificHashUtil.stringToUTF8ByteArray(input)
+    fun checkObjectHashes(entries: Map<String, String?>) {
+        for (entry in entries) {
+            val value = entry.value ?: continue
+            if (!isSha256(entry.key)) continue
+            val computedHash = sha256(value)
+            val providedHash = entry.key
+            require(computedHash == providedHash) {
+                val bytes = value.encodeToByteArray(throwOnInvalidSequence = true)
+                "Provided hash $providedHash doesn't match the computed hash $computedHash for value: $value\n    Value as ByteArray$bytes"
+            }
+        }
+    }
 }

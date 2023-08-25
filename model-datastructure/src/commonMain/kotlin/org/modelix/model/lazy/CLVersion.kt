@@ -19,12 +19,16 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import org.modelix.model.IKeyListener
+import org.modelix.model.IKeyValueStore
 import org.modelix.model.IVersion
+import org.modelix.model.LinearHistory
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.SetReferenceOp
+import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPOperationsList
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
@@ -278,5 +282,152 @@ class CLVersion : IVersion {
                 else -> it
             }
         }
+    }
+}
+
+fun CLVersion.computeDelta(baseVersion: CLVersion?): Map<String, String> {
+    return computeDelta(store.keyValueStore, this.getContentHash(), baseVersion?.getContentHash()).filterNotNullValues()
+}
+
+@Suppress("UNCHECKED_CAST")
+fun <K, V> Map<K, V?>.filterNotNullValues(): Map<K, V> = filterValues { it != null } as Map<K, V>
+
+private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, baseVersionHash: String?): Map<String, String?> {
+    val changedNodeIds = HashSet<Long>()
+    val oldAndNewEntries: Map<String, String?> = trackAccessedEntries(keyValueStore) { store ->
+        val version = CLVersion(versionHash, store)
+//        generateSequence(version) { it.baseVersion }.map { it.getTree() }.count()
+
+        val visitedVersions = HashSet<String>()
+        if (baseVersionHash != null) visitedVersions += baseVersionHash
+        fun iterateHistory(v: CLVersion?) {
+            if (v == null) return
+            if (v.getContentHash() == baseVersionHash) return
+            if (visitedVersions.contains(v.getContentHash())) return
+            visitedVersions += v.getContentHash()
+            val tree = v.getTree()
+            v.operations.forEach {
+                // we only need to record the required entries
+                runCatching {
+                    it.captureIntend(tree, store)
+                }
+            }
+            iterateHistory(v.baseVersion)
+            iterateHistory(v.getMergedVersion1())
+            iterateHistory(v.getMergedVersion2())
+        }
+        iterateHistory(version)
+
+        val baseVersion = baseVersionHash?.let { CLVersion(it, store) }
+//        if (baseVersion != null) {
+//            VersionMerger(store, IdGenerator.newInstance(0)).mergeChange(version, baseVersion)
+//        }
+
+        val history = LinearHistory(baseVersionHash).load(version)
+        val bulkQuery = BulkQuery(store)
+        var v1 = baseVersion
+        for (v2 in history) {
+            v2.operations // include them in the result
+
+            if (v1 == null) {
+                v2.getTree().root?.getDescendants(BulkQuery(store), true)?.execute()
+                continue
+            }
+
+            val oldTree = v1.getTree()
+            v2.getTree().nodesMap!!.visitChanges(
+                oldTree.nodesMap!!,
+                object : CLHamtNode.IChangeVisitor {
+                    override fun visitChangesOnly(): Boolean = false
+                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
+                        changedNodeIds += key
+                        if (value != null) bulkQuery.query(value, {})
+                    }
+
+                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
+                        changedNodeIds += key
+                    }
+
+                    override fun entryChanged(
+                        key: Long,
+                        oldValue: KVEntryReference<CPNode>?,
+                        newValue: KVEntryReference<CPNode>?,
+                    ) {
+                        changedNodeIds += key
+                        if (newValue != null) bulkQuery.query(newValue, {})
+                    }
+                },
+                bulkQuery,
+            )
+            v1 = v2
+        }
+        bulkQuery.process()
+    }
+    val oldEntries: Map<String, String?> = trackAccessedEntries(keyValueStore) { store ->
+        if (baseVersionHash == null) return@trackAccessedEntries
+
+        // record read access on the version data itself
+        val baseVersion = CLVersion(baseVersionHash, store)
+        baseVersion.operations
+
+        val oldTree = baseVersion.getTree()
+        val bulkQuery = BulkQuery(store)
+
+        val nodesMap = oldTree.nodesMap!!
+        changedNodeIds.forEach { changedNodeId ->
+            nodesMap.get(changedNodeId, 0, bulkQuery).onSuccess { nodeRef: KVEntryReference<CPNode>? ->
+                if (nodeRef != null) bulkQuery.query(nodeRef) { a: CPNode? -> }
+            }
+        }
+
+        bulkQuery.process()
+    }
+    return oldAndNewEntries - oldEntries.keys
+}
+
+private fun trackAccessedEntries(store: IKeyValueStore, body: (IDeserializingKeyValueStore) -> Unit): Map<String, String?> {
+    val accessTrackingStore = AccessTrackingStore(store)
+    val objectStore = ObjectStoreCache(accessTrackingStore)
+    body(objectStore)
+    return accessTrackingStore.accessedEntries
+}
+
+private class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
+    val accessedEntries: MutableMap<String, String?> = HashMap()
+
+    override fun get(key: String): String? {
+        val value = store.get(key)
+        accessedEntries.put(key, value)
+        return value
+    }
+
+    override fun put(key: String, value: String?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getAll(keys: Iterable<String>): Map<String, String?> {
+        val entries = store.getAll(keys)
+        accessedEntries.putAll(entries)
+        return entries
+    }
+
+    override fun putAll(entries: Map<String, String?>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun prefetch(key: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun listen(key: String, listener: IKeyListener) {
+        TODO("Not yet implemented")
+    }
+
+    override fun removeListener(key: String, listener: IKeyListener) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getPendingSize(): Int {
+        TODO("Not yet implemented")
     }
 }

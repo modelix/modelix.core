@@ -34,8 +34,10 @@ interface IModelClientV2 {
     /**
      * The pushed version is merged automatically by the server with the current head.
      * The merge result is returned.
+     * @param baseVersion Some version that is known to exist on the server.
+     *                    Is used for optimizing the amount of data sent to the server.
      */
-    suspend fun push(branch: BranchReference, version: IVersion): IVersion
+    suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion
 
     suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
     suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion

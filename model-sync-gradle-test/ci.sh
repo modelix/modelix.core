@@ -6,7 +6,7 @@ set -e
 
   (
     cd graph-lang-api
-    ./gradlew publishToMavenLocal
+    ./gradlew publishToMavenLocal --console=plain
   )
 
   ./gradlew assemble --console=plain
@@ -30,6 +30,6 @@ set -e
 
   ./gradlew runSyncTestPush --console=plain --stacktrace
   ./gradlew test --tests 'PushTest'
-  #./gradlew runSyncTestPull --console=plain --stacktrace
-  #./gradlew test --tests 'PullTest'
+  ./gradlew runSyncTestPull --console=plain --stacktrace
+  ./gradlew test --tests 'PullTest'
 )

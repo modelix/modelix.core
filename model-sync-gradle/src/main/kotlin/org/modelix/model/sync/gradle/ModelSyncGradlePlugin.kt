@@ -31,6 +31,9 @@ class ModelSyncGradlePlugin : Plugin<Project> {
 
         project.afterEvaluate {
             val validateSyncSettings = project.tasks.register("validateSyncSettings", ValidateSyncSettings::class.java) {
+                settings.taskDependencies.forEach { dependency ->
+                    it.dependsOn(dependency)
+                }
                 it.settings.set(settings)
             }
             val modelixCoreVersion = readModelixCoreVersion() ?: throw RuntimeException("modelix.core version not found")

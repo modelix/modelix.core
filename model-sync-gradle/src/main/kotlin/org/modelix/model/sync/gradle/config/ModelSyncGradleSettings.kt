@@ -7,11 +7,16 @@ import java.io.File
 
 open class ModelSyncGradleSettings {
     internal val syncDirections = mutableListOf<SyncDirection>()
+    internal val taskDependencies = mutableListOf<Any>()
 
     fun direction(name: String, action: Action<SyncDirection>) {
         val syncDirection = SyncDirection(name)
         action.execute(syncDirection)
         syncDirections.add(syncDirection)
+    }
+
+    fun dependsOn(task: Any) {
+        taskDependencies.add(task)
     }
 }
 

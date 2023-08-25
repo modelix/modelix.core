@@ -78,9 +78,16 @@ val resolveMps by tasks.registering(Copy::class) {
     into(mpsDir)
 }
 
-val repoDir = projectDir.resolve("test-repo")
+val repoDir = buildDir.resolve("test-repo")
+
+val copyTestRepo by tasks.registering(Sync::class) {
+    from(projectDir.resolve("test-repo"))
+    into(repoDir)
+}
 
 modelSync {
+    dependsOn(resolveMps)
+    dependsOn(copyTestRepo)
     direction("testPush") {
         registerLanguage(L_GraphLang)
         includeModule("GraphSolution")

@@ -3,7 +3,7 @@
 When working with large models you will quickly run into performance issues
 when you try to replicate the whole model into the client.
 
-While the data structure for model replication in Modelix supports partial loading of models
+While the data structure for model replication in Modelix supports partial loading of models,
 you still need a way to describe which data you need on the client.
 Loading data on demand while traversing the model also results in a poor performance,
 because of the potentially large number of fine-grained request.
@@ -12,9 +12,9 @@ A first attempt to solve this problem was to disallow lazy loading
 and require the client to load all required data at the beginning,
 before working with the model.
 A special query language was used to filter the data and an attempt to access a node that is not included by that query
-results in an exception, forcing the developer to adjust the query.
-While this results in a more predictable performance it's hard to maintain and still not optimal for the performance.
-You have to download all the data at the beginning that you might eventually need.
+resulted in an exception, forcing the developer to adjust the query.
+While this results in a more predictable performance, it is also hard to maintain and still not optimal for the performance.
+You have to download all the data at the beginning that you might eventually need, potentially exceeding the available memory of the system.
 
 The ModelQL query language provides a more dynamic way of loading parts of the model on demand,
 but still allows to reduce the number of request to a minimum.

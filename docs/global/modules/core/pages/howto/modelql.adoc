@@ -31,6 +31,7 @@ val result: List<String?> = client.getRootNode()!!.query {
 == Type safe ModelQL API
 
 You can use the `model-api-gen-gradle` plugin to generate type safe extensions from your meta-model.
+Specify the `modelqlKotlinDir` property to enable the generation.
 
 [source,kotlin]
 --
@@ -45,7 +46,7 @@ val result: List<StaticMethodDeclaration> = client.query { root ->
 
 == Run query on an INode
 
-If a query returns a node you can execute a new query starting from that node.
+If a query returns a node, you can execute a new query starting from that node.
 
 [source,kotlin]
 --
@@ -55,8 +56,8 @@ val cls: ClassConcept = client.query {
 val names = cls.query { it.member.ofConcept(C_StaticMethodDeclaration).name.toList() }
 --
 
-Or you can just use the INode API to access further data of that node.
-This is not recommended though, because each access sends a new query to the server.
+For convenience, it's possible to access further data of that node using the INode API,
+but this is not recommended though, because each access sends a new query to the server.
 
 [source,kotlin]
 --
@@ -68,9 +69,9 @@ val className = cls.name
 
 == Complex query results
 
-While returning a list of elements is simple
+While returning a list of elements is simple,
 the purpose of the query language is to reduce the number of request to a minimum.
-This requires to combine multiple values into more complex data structures.
+This requires combining multiple values into more complex data structures.
 The `zip` operation provides a simple way of doing that:
 
 [source,kotlin]
@@ -97,7 +98,7 @@ This can be solved by defining custom data classes and using the `mapLocal` oper
 data class MyProduct(val id: Int, val title: String, val images: List<MyImage>)
 data class MyImage(val url: String)
 
-val result: List<MyNonSerializableClass> = remoteProductDatabaseQuery { db ->
+val result: List<MyProduct> = remoteProductDatabaseQuery { db ->
     db.products.map {
         val id = it.id
         val title = it.title
@@ -125,13 +126,12 @@ which provides a different syntax for the `zip`-`mapLocal` chain.
 data class MyProduct(val id: Int, val title: String, val images: List<MyImage>)
 data class MyImage(val url: String)
 
-val result: List<MyNonSerializableClass> = query { db ->
-    db.products.mapLocal2 {
+val result: List<MyProduct> = query { db ->
         val id = it.id.request()
         val title = it.title.request()
         val images = it.images.mapLocal { MyImage(it) }.toList().request()
         onSuccess {
-            MyNonSerializableClass(id.get(), title.get(), images.get())
+            MyProduct(id.get(), title.get(), images.get())
         }
     }.toList()
 }

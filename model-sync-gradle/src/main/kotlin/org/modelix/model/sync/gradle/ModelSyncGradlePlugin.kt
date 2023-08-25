@@ -141,6 +141,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         val importIntoModelServer = project.tasks.register(importTaskName, ImportIntoModelServer::class.java) {
             it.dependsOn(previousTask)
             it.inputDir.set(jsonDir)
+            it.registeredLanguages.set(syncDirection.registeredLanguages)
             val serverTarget = syncDirection.target as ServerTarget
 
             it.url.set(serverTarget.url)

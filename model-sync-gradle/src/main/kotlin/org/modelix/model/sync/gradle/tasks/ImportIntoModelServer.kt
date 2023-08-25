@@ -5,18 +5,21 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
+import org.modelix.model.api.ILanguage
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.ModelImporter
-import org.modelix.model.sync.import
+import org.modelix.model.sync.importFile
 import javax.inject.Inject
 
 abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : DefaultTask() {
@@ -34,8 +37,15 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val url: Property<String> = of.property(String::class.java)
 
+    @Input
+    val registeredLanguages: SetProperty<ILanguage> = of.setProperty(ILanguage::class.java)
+
     @TaskAction
     fun import() {
+        registeredLanguages.get().forEach {
+            ILanguageRepository.default.registerLanguage(it)
+        }
+
         val inputDir = inputDir.get().asFile
         val repoId = RepositoryId(repositoryId.get())
 
@@ -52,7 +62,7 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
             val rootNode = branch.getRootNode()
             println("Got root node: $rootNode")
             println("Importing...")
-            ModelImporter(branch.getRootNode()).import(file)
+            ModelImporter(branch.getRootNode()).importFile(file)
             println("Import finished")
         }
     }

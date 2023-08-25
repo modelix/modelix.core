@@ -11,6 +11,7 @@ repositories {
 dependencies {
     implementation(project(":model-client", "jvmRuntimeElements"))
     implementation(project(":model-sync-lib"))
+    implementation(project(":mps-model-adapters"))
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
 }

@@ -59,7 +59,6 @@
       <concept id="1068498886296" name="jetbrains.mps.baseLanguage.structure.VariableReference" flags="nn" index="37vLTw">
         <reference id="1068581517664" name="variableDeclaration" index="3cqZAo" />
       </concept>
-      <concept id="1068498886292" name="jetbrains.mps.baseLanguage.structure.ParameterDeclaration" flags="ir" index="37vLTG" />
       <concept id="1068498886294" name="jetbrains.mps.baseLanguage.structure.AssignmentExpression" flags="nn" index="37vLTI" />
       <concept id="4972933694980447171" name="jetbrains.mps.baseLanguage.structure.BaseVariableDeclaration" flags="ng" index="19Szcq">
         <child id="5680397130376446158" name="type" index="1tU5fm" />
@@ -118,11 +117,9 @@
       </concept>
       <concept id="1146644602865" name="jetbrains.mps.baseLanguage.structure.PublicVisibility" flags="nn" index="3Tm1VV" />
       <concept id="1146644623116" name="jetbrains.mps.baseLanguage.structure.PrivateVisibility" flags="nn" index="3Tm6S6" />
-      <concept id="1080120340718" name="jetbrains.mps.baseLanguage.structure.AndExpression" flags="nn" index="1Wc70l" />
     </language>
     <language id="fd392034-7849-419d-9071-12563d152375" name="jetbrains.mps.baseLanguage.closures">
       <concept id="1199569711397" name="jetbrains.mps.baseLanguage.closures.structure.ClosureLiteral" flags="nn" index="1bVj0M">
-        <child id="1199569906740" name="parameter" index="1bW2Oz" />
         <child id="1199569916463" name="body" index="1bW5cS" />
       </concept>
     </language>
@@ -376,22 +373,6 @@
           </node>
         </node>
         <node concept="3clFbH" id="7gc0jqT1Ain" role="3cqZAp" />
-        <node concept="3cpWs8" id="7gc0jqT1xFT" role="3cqZAp">
-          <node concept="3cpWsn" id="7gc0jqT1xFU" role="3cpWs9">
-            <property role="TrG5h" value="importer" />
-            <node concept="3uibUv" id="7gc0jqT1xFV" role="1tU5fm">
-              <ref role="3uigEE" to="2iw0:~ModelImporter" resolve="ModelImporter" />
-            </node>
-            <node concept="2ShNRf" id="7gc0jqT1xFW" role="33vP2m">
-              <node concept="1pGfFk" id="7gc0jqT1xFX" role="2ShVmc">
-                <ref role="37wK5l" to="2iw0:~ModelImporter.&lt;init&gt;(org.modelix.model.api.INode)" resolve="ModelImporter" />
-                <node concept="37vLTw" id="7gc0jqT1xFY" role="37wK5m">
-                  <ref role="3cqZAo" node="7gc0jqT1ApC" resolve="repoAsNode" />
-                </node>
-              </node>
-            </node>
-          </node>
-        </node>
         <node concept="3cpWs8" id="7gc0jqT1xFZ" role="3cqZAp">
           <node concept="3cpWsn" id="7gc0jqT1xG0" role="3cpWs9">
             <property role="TrG5h" value="inputPath" />
@@ -403,22 +384,6 @@
               <ref role="37wK5l" to="wyt6:~System.getProperty(java.lang.String)" resolve="getProperty" />
               <node concept="Xl_RD" id="7gc0jqT1xG3" role="37wK5m">
                 <property role="Xl_RC" value="modelix.model.sync.input.path" />
-              </node>
-            </node>
-          </node>
-        </node>
-        <node concept="3cpWs8" id="7gc0jqT1xG4" role="3cqZAp">
-          <node concept="3cpWsn" id="7gc0jqT1xG5" role="3cpWs9">
-            <property role="TrG5h" value="inputDir" />
-            <node concept="3uibUv" id="7gc0jqT1xG6" role="1tU5fm">
-              <ref role="3uigEE" to="guwi:~File" resolve="File" />
-            </node>
-            <node concept="2ShNRf" id="7gc0jqT1xG7" role="33vP2m">
-              <node concept="1pGfFk" id="7gc0jqT1xG8" role="2ShVmc">
-                <ref role="37wK5l" to="guwi:~File.&lt;init&gt;(java.lang.String)" resolve="File" />
-                <node concept="37vLTw" id="7gc0jqT1xG9" role="37wK5m">
-                  <ref role="3cqZAo" node="7gc0jqT1xG0" resolve="inputPath" />
-                </node>
               </node>
             </node>
           </node>
@@ -439,59 +404,106 @@
               </node>
             </node>
             <node concept="liA8E" id="7gc0jqT4dK5" role="2OqNvi">
-              <ref role="37wK5l" to="lui3:~ModelAccess.runWriteAction(java.lang.Runnable)" resolve="runWriteAction" />
-              <node concept="1bVj0M" id="7gc0jqT4dNT" role="37wK5m">
-                <node concept="3clFbS" id="7gc0jqT4dNU" role="1bW5cS">
-                  <node concept="3clFbF" id="2rlXDkQH5ke" role="3cqZAp">
-                    <node concept="2YIFZM" id="2rlXDkQHKkS" role="3clFbG">
-                      <ref role="37wK5l" to="2iw0:~PlatformSpecificKt.importFilesAsRootChildren(org.modelix.model.sync.ModelImporter,java.io.File...)" resolve="importFilesAsRootChildren" />
-                      <ref role="1Pybhc" to="2iw0:~PlatformSpecificKt" resolve="PlatformSpecificKt" />
-                      <node concept="37vLTw" id="2rlXDkQHKkT" role="37wK5m">
-                        <ref role="3cqZAo" node="7gc0jqT1xFU" resolve="importer" />
-                      </node>
-                      <node concept="2OqwBi" id="2rlXDkQHKkU" role="37wK5m">
-                        <node concept="37vLTw" id="2rlXDkQHKkV" role="2Oq$k0">
-                          <ref role="3cqZAo" node="7gc0jqT1xG5" resolve="inputDir" />
+              <ref role="37wK5l" to="lui3:~ModelAccess.runWriteInEDT(java.lang.Runnable)" resolve="runWriteInEDT" />
+              <node concept="1bVj0M" id="2rlXDkQJYC6" role="37wK5m">
+                <node concept="3clFbS" id="2rlXDkQJYC7" role="1bW5cS">
+                  <node concept="2Gpval" id="2rlXDkQJYPO" role="3cqZAp">
+                    <node concept="2GrKxI" id="2rlXDkQJYPQ" role="2Gsz3X">
+                      <property role="TrG5h" value="module" />
+                    </node>
+                    <node concept="2OqwBi" id="2rlXDkQJZ_J" role="2GsD0m">
+                      <node concept="2OqwBi" id="2rlXDkQJZ8x" role="2Oq$k0">
+                        <node concept="37vLTw" id="2rlXDkQJYWE" role="2Oq$k0">
+                          <ref role="3cqZAo" node="7gc0jqT1ApC" resolve="repoAsNode" />
                         </node>
-                        <node concept="liA8E" id="2rlXDkQHKkW" role="2OqNvi">
-                          <ref role="37wK5l" to="guwi:~File.listFiles(java.io.FileFilter)" resolve="listFiles" />
-                          <node concept="1bVj0M" id="2rlXDkQHUeo" role="37wK5m">
-                            <node concept="37vLTG" id="2rlXDkQHUls" role="1bW2Oz">
-                              <property role="TrG5h" value="file" />
-                              <node concept="3uibUv" id="2rlXDkQHUtF" role="1tU5fm">
-                                <ref role="3uigEE" to="guwi:~File" resolve="File" />
-                              </node>
-                            </node>
-                            <node concept="3clFbS" id="2rlXDkQHUep" role="1bW5cS">
-                              <node concept="3clFbF" id="2rlXDkQHUVn" role="3cqZAp">
-                                <node concept="1Wc70l" id="2rlXDkQI0id" role="3clFbG">
-                                  <node concept="2OqwBi" id="2rlXDkQI1uX" role="3uHU7w">
-                                    <node concept="2OqwBi" id="2rlXDkQI0N$" role="2Oq$k0">
-                                      <node concept="37vLTw" id="2rlXDkQI0rY" role="2Oq$k0">
-                                        <ref role="3cqZAo" node="2rlXDkQHUls" resolve="file" />
-                                      </node>
-                                      <node concept="liA8E" id="2rlXDkQI0Zg" role="2OqNvi">
-                                        <ref role="37wK5l" to="guwi:~File.getName()" resolve="getName" />
-                                      </node>
+                        <node concept="liA8E" id="2rlXDkQJZiN" role="2OqNvi">
+                          <ref role="37wK5l" to="zxfz:~MPSRepositoryAsNode.getRepository()" resolve="getRepository" />
+                        </node>
+                      </node>
+                      <node concept="liA8E" id="2rlXDkQJZK3" role="2OqNvi">
+                        <ref role="37wK5l" to="lui3:~SRepository.getModules()" resolve="getModules" />
+                      </node>
+                    </node>
+                    <node concept="3clFbS" id="2rlXDkQJYPU" role="2LFqv$">
+                      <node concept="3cpWs8" id="2rlXDkQK1M3" role="3cqZAp">
+                        <node concept="3cpWsn" id="2rlXDkQK1M4" role="3cpWs9">
+                          <property role="TrG5h" value="moduleFile" />
+                          <node concept="3uibUv" id="2rlXDkQK1M5" role="1tU5fm">
+                            <ref role="3uigEE" to="guwi:~File" resolve="File" />
+                          </node>
+                          <node concept="2ShNRf" id="2rlXDkQK2xB" role="33vP2m">
+                            <node concept="1pGfFk" id="2rlXDkQK2xu" role="2ShVmc">
+                              <ref role="37wK5l" to="guwi:~File.&lt;init&gt;(java.lang.String)" resolve="File" />
+                              <node concept="3cpWs3" id="2rlXDkQK5o3" role="37wK5m">
+                                <node concept="Xl_RD" id="2rlXDkQK5_c" role="3uHU7w">
+                                  <property role="Xl_RC" value=".json" />
+                                </node>
+                                <node concept="3cpWs3" id="2rlXDkQK3JI" role="3uHU7B">
+                                  <node concept="3cpWs3" id="2rlXDkQK34a" role="3uHU7B">
+                                    <node concept="37vLTw" id="2rlXDkQK2Os" role="3uHU7B">
+                                      <ref role="3cqZAo" node="7gc0jqT1xG0" resolve="inputPath" />
                                     </node>
-                                    <node concept="liA8E" id="2rlXDkQI1Nc" role="2OqNvi">
-                                      <ref role="37wK5l" to="wyt6:~String.endsWith(java.lang.String)" resolve="endsWith" />
-                                      <node concept="Xl_RD" id="2rlXDkQI1VF" role="37wK5m">
-                                        <property role="Xl_RC" value=".json" />
-                                      </node>
+                                    <node concept="10M0yZ" id="2rlXDkQK3tA" role="3uHU7w">
+                                      <ref role="3cqZAo" to="guwi:~File.separator" resolve="separator" />
+                                      <ref role="1PxDUh" to="guwi:~File" resolve="File" />
                                     </node>
                                   </node>
-                                  <node concept="2OqwBi" id="2rlXDkQHV7H" role="3uHU7B">
-                                    <node concept="37vLTw" id="2rlXDkQHUVm" role="2Oq$k0">
-                                      <ref role="3cqZAo" node="2rlXDkQHUls" resolve="file" />
+                                  <node concept="2OqwBi" id="2rlXDkQK4CM" role="3uHU7w">
+                                    <node concept="2GrUjf" id="2rlXDkQK3SO" role="2Oq$k0">
+                                      <ref role="2Gs0qQ" node="2rlXDkQJYPQ" resolve="module" />
                                     </node>
-                                    <node concept="liA8E" id="2rlXDkQHVh5" role="2OqNvi">
-                                      <ref role="37wK5l" to="guwi:~File.isFile()" resolve="isFile" />
+                                    <node concept="liA8E" id="2rlXDkQK56z" role="2OqNvi">
+                                      <ref role="37wK5l" to="lui3:~SModule.getModuleName()" resolve="getModuleName" />
                                     </node>
                                   </node>
                                 </node>
                               </node>
                             </node>
+                          </node>
+                        </node>
+                      </node>
+                      <node concept="3clFbJ" id="2rlXDkQK6oT" role="3cqZAp">
+                        <node concept="3clFbS" id="2rlXDkQK6oV" role="3clFbx">
+                          <node concept="3cpWs8" id="2rlXDkQK7C_" role="3cqZAp">
+                            <node concept="3cpWsn" id="2rlXDkQK7CA" role="3cpWs9">
+                              <property role="TrG5h" value="importer" />
+                              <node concept="3uibUv" id="2rlXDkQK7CB" role="1tU5fm">
+                                <ref role="3uigEE" to="2iw0:~ModelImporter" resolve="ModelImporter" />
+                              </node>
+                              <node concept="2ShNRf" id="2rlXDkQK8dz" role="33vP2m">
+                                <node concept="1pGfFk" id="2rlXDkQK8dq" role="2ShVmc">
+                                  <ref role="37wK5l" to="2iw0:~ModelImporter.&lt;init&gt;(org.modelix.model.api.INode)" resolve="ModelImporter" />
+                                  <node concept="2ShNRf" id="2rlXDkQK8wO" role="37wK5m">
+                                    <node concept="1pGfFk" id="2rlXDkQK8Rd" role="2ShVmc">
+                                      <ref role="37wK5l" to="zxfz:~MPSModuleAsNode.&lt;init&gt;(org.jetbrains.mps.openapi.module.SModule)" resolve="MPSModuleAsNode" />
+                                      <node concept="2GrUjf" id="2rlXDkQK91S" role="37wK5m">
+                                        <ref role="2Gs0qQ" node="2rlXDkQJYPQ" resolve="module" />
+                                      </node>
+                                    </node>
+                                  </node>
+                                </node>
+                              </node>
+                            </node>
+                          </node>
+                          <node concept="3clFbF" id="2rlXDkQK9wk" role="3cqZAp">
+                            <node concept="2YIFZM" id="2rlXDkQKa9p" role="3clFbG">
+                              <ref role="37wK5l" to="2iw0:~PlatformSpecificKt.importFile(org.modelix.model.sync.ModelImporter,java.io.File)" resolve="importFile" />
+                              <ref role="1Pybhc" to="2iw0:~PlatformSpecificKt" resolve="PlatformSpecificKt" />
+                              <node concept="37vLTw" id="2rlXDkQKaix" role="37wK5m">
+                                <ref role="3cqZAo" node="2rlXDkQK7CA" resolve="importer" />
+                              </node>
+                              <node concept="37vLTw" id="2rlXDkQKatp" role="37wK5m">
+                                <ref role="3cqZAo" node="2rlXDkQK1M4" resolve="moduleFile" />
+                              </node>
+                            </node>
+                          </node>
+                        </node>
+                        <node concept="2OqwBi" id="2rlXDkQK6ZI" role="3clFbw">
+                          <node concept="37vLTw" id="2rlXDkQK6xK" role="2Oq$k0">
+                            <ref role="3cqZAo" node="2rlXDkQK1M4" resolve="moduleFile" />
+                          </node>
+                          <node concept="liA8E" id="2rlXDkQK7kO" role="2OqNvi">
+                            <ref role="37wK5l" to="guwi:~File.exists()" resolve="exists" />
                           </node>
                         </node>
                       </node>

@@ -19,7 +19,7 @@ import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.ModelImporter
-import org.modelix.model.sync.importFile
+import org.modelix.model.sync.importFilesAsRootChildren
 import javax.inject.Inject
 
 abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : DefaultTask() {
@@ -56,13 +56,13 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
             client.getReplicatedModel(branchRef).start()
         }
 
-        val file = inputDir.listFiles()?.first { it.extension == "json" } ?: error("json file not found")
+        val files = inputDir.listFiles()?.filter { it.extension == "json" } ?: error("no json files found")
 
         branch.runWrite {
             val rootNode = branch.getRootNode()
             println("Got root node: $rootNode")
             println("Importing...")
-            ModelImporter(branch.getRootNode()).importFile(file)
+            ModelImporter(branch.getRootNode()).importFilesAsRootChildren(*files.toTypedArray())
             println("Import finished")
         }
     }

@@ -11,6 +11,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.IProperty
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.IModelClientV2
@@ -18,6 +19,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.RepositoryLanguage
 import org.modelix.model.sync.ModelExporter
 import javax.inject.Inject
 
@@ -53,8 +55,11 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
         branch.runRead {
             val root = branch.getRootNode()
             println("Got root node: $root")
-            val outputFile = outputDir.get().asFile.resolve("exported-repo.json")
-            ModelExporter(root).export(outputFile)
+            val outputDir = outputDir.get().asFile
+            root.allChildren.forEach {
+                val outputFile = outputDir.resolve("${it.getPropertyValue(IProperty.fromName(RepositoryLanguage.NamePropertyUID))}.json")
+                ModelExporter(it).export(outputFile)
+            }
         }
     }
 

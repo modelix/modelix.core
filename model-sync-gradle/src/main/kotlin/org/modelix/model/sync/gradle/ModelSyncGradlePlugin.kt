@@ -171,7 +171,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         val antDependencies = project.configurations.create("model-import-ant-dependencies")
         project.dependencies.add(antDependencies.name, "org.apache.ant:ant-junit:1.10.12")
 
-        val generateAntScriptName = "${syncDirection.name}generateAntScriptForImport"
+        val generateAntScriptName = "${syncDirection.name}GenerateAntScriptForImport"
         val generateAntScript = project.tasks.register(generateAntScriptName, GenerateAntScriptForMps::class.java) {
             it.dependsOn(previousTask)
             it.mpsHomePath.set(localTarget.mpsHome?.absolutePath)

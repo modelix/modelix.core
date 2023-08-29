@@ -21,6 +21,7 @@ import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.RepositoryLanguage
 import org.modelix.model.server.Main
+import org.modelix.model.sleep
 import org.modelix.model.sync.asExported
 import java.io.File
 import kotlin.test.assertEquals
@@ -70,5 +71,6 @@ class PushTest {
             graphNodes[1].name = "Y"
             graphNodes[2].name = "Z"
         }
+        sleep(5000) // wait for changes to be sent to server
     }
 }

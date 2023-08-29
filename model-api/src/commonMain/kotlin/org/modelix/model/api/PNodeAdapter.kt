@@ -18,10 +18,7 @@ package org.modelix.model.api
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
-import org.modelix.model.area.ContextArea
-import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
-import kotlin.coroutines.coroutineContext
 
 open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx {
 
@@ -121,23 +118,15 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
     }
 
     private fun tryResolveNodeRef(targetRef: INodeReference): INode? {
-        return if (targetRef is PNodeReference) {
-            targetRef.resolveIn(PArea(branch)!!)
-        } else {
-            val area = ContextArea.CONTEXT_VALUE.getValue()
-                ?: throw RuntimeException(IArea::class.simpleName + " not available")
-            targetRef.resolveIn(area!!)
-        }
+        (targetRef as? PNodeReference)
+            ?.takeIf { it.branchId == branch.getId() }
+            ?.resolveIn(PArea(branch))
+            ?.let { return it }
+        return targetRef.resolveInCurrentContext()
     }
 
     private suspend fun resolveNodeRefInCoroutine(targetRef: INodeReference): INode {
-        return if (targetRef is PNodeReference) {
-            targetRef.resolveIn(PArea(branch)!!)
-        } else {
-            val scope = coroutineContext[INodeResolutionScope]
-                ?: throw IllegalStateException("INodeResolutionScope not set")
-            targetRef.resolveIn(scope)
-        } ?: throw RuntimeException("Failed to resolve node: $targetRef")
+        return tryResolveNodeRef(targetRef) ?: throw RuntimeException("Failed to resolve node: $targetRef")
     }
 
     override fun getReferenceTargetRef(role: String): INodeReference? {

@@ -19,6 +19,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api(project(":kotlin-utils"))
                 api(project(":model-api"))
 //                api(project(":model-server-api"))
 //                kotlin("stdlib-common")

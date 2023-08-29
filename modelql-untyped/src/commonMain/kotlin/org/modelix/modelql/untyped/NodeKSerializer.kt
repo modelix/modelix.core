@@ -31,8 +31,7 @@ import kotlinx.serialization.serializer
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.NodeReference
-import org.modelix.model.api.resolveIn
-import org.modelix.model.area.ContextArea
+import org.modelix.model.api.resolveInCurrentContext
 
 open class NodeKSerializer() : KSerializer<INode> {
     @OptIn(InternalSerializationApi::class)
@@ -65,7 +64,7 @@ open class NodeKSerializer() : KSerializer<INode> {
     }
 
     protected open fun createNode(ref: NodeReference): INode {
-        return ref.resolveIn(ContextArea.getArea()!!) ?: throw RuntimeException("Failed to resolve node: $ref")
+        return ref.resolveInCurrentContext() ?: throw RuntimeException("Failed to resolve node: $ref")
     }
     protected open fun createNode(ref: NodeReference, concept: ConceptReference?): INode {
         return createNode(ref)

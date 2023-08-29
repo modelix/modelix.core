@@ -44,11 +44,16 @@ interface INodeReference {
     fun serialize(): String = INodeReferenceSerializer.serialize(this)
 }
 
+fun INodeReference.resolveInCurrentContext(): INode? {
+    return resolveIn(INodeResolutionScope.getCurrentScope())
+}
+
 fun INodeReference.resolveIn(scope: INodeResolutionScope): INode? {
     if (this is NodeReference) {
         val deserialized = INodeReferenceSerializer.tryDeserialize(serialized)
         if (deserialized != null) return deserialized.resolveIn(scope)
     }
+    @Suppress("DEPRECATION")
     return scope.resolveNode(this)
 }
 

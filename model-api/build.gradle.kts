@@ -29,6 +29,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api(project(":kotlin-utils"))
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.serialization.json)

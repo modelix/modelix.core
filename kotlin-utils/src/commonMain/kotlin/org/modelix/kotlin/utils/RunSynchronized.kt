@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2023.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,14 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.api
 
-@Deprecated("use org.modelix.kotlin.utils.ContextValue from org.modelix:kotlin-utils")
-expect class ContextValue<E> {
+package org.modelix.kotlin.utils
 
-    constructor()
-    constructor(defaultValue: E)
-
-    fun getValue(): E?
-    fun <T> computeWith(newValue: E, r: () -> T): T
-}
+expect inline fun <R> runSynchronized(lock: Any, block: () -> R): R

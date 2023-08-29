@@ -11,14 +11,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.api
+package org.modelix.kotlin.utils
 
-@Deprecated("use org.modelix.kotlin.utils.ContextValue from org.modelix:kotlin-utils")
 expect class ContextValue<E> {
 
     constructor()
     constructor(defaultValue: E)
 
-    fun getValue(): E?
-    fun <T> computeWith(newValue: E, r: () -> T): T
+    fun getValue(): E
+    fun getValueOrNull(): E?
+    fun getAllValues(): List<E>
+    fun <T> computeWith(newValue: E, body: () -> T): T
+
+    suspend fun <T> runInCoroutine(newValue: E, body: suspend () -> T): T
+}
+
+fun <E, T> ContextValue<E>.offer(value: E, body: () -> T): T {
+    return if (getAllValues().isEmpty()) {
+        computeWith(value, body)
+    } else {
+        body()
+    }
 }

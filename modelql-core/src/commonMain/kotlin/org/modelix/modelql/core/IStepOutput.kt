@@ -31,7 +31,9 @@ typealias StepFlow<E> = Flow<IStepOutput<E>>
 val <T> Flow<IStepOutput<T>>.value: Flow<T> get() = map { it.value }
 fun <T> Flow<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { SimpleStepOutput(it, owner) }
 
-class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E>?) : IStepOutput<E>
+class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E>?) : IStepOutput<E> {
+    override fun toString(): String = "SimpleStepOutput[$value]"
+}
 
 class SimpleStepOutputSerializer<E>(val valueSerializer: KSerializer<E>, val owner: IProducingStep<E>?) : KSerializer<SimpleStepOutput<E>> {
     init {

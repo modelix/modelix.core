@@ -46,7 +46,7 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
                 ?: coroutineContext[INodeResolutionScope]
                 ?: ContextArea.getArea()
                 ?: throw IllegalStateException("No INodeResolutionScope found in the coroutine context")
-            it.value.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $it")
+            it.value.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: ${it.value}")
         }.asStepFlow(this)
     }
 

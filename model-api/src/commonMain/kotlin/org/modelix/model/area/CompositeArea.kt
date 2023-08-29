@@ -20,6 +20,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeWrapper
 
+@Deprecated("not supported anymore")
 class CompositeArea : IArea {
     private val areas: List<IArea>
     private val rootNode = Root()

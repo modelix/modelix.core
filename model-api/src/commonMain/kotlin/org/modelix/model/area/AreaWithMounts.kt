@@ -20,6 +20,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeWrapper
 
+@Deprecated("not supported anymore")
 class AreaWithMounts(val rootArea: IArea, mounts: Map<INode, IArea>) : IArea {
     private val mounts: Map<INode, IArea>
     private val mountedRoot2hiddenNode: Map<INode, INode>

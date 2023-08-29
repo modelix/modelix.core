@@ -1,41 +1,83 @@
 package org.modelix.model.api
 
-import kotlin.coroutines.CoroutineContext
+import org.modelix.kotlin.utils.ContextValue
 
-interface INodeResolutionScope : CoroutineContext.Element {
-    override val key: CoroutineContext.Key<*>
-        get() = Key
+interface INodeResolutionScope {
 
+    @Deprecated("Don't call this method directly. Use INodeReference.resolveIn instead.")
     fun resolveNode(ref: INodeReference): INode?
 
-    companion object Key : CoroutineContext.Key<INodeResolutionScope>
+    fun <T> runWithOnly(body: () -> T): T = contextScope.computeWith(this, body)
 
-    override fun plus(context: CoroutineContext): CoroutineContext {
-        // coroutines are not compiled with -Xjvm-default=all-compatibility
-        // to not break existing IAreas implemented in Java, this override is necessary
-        return super.plus(context)
+    suspend fun <T> runWithOnlyInCoroutine(body: () -> T): T = contextScope.runInCoroutine(this, body)
+
+    fun <T> runWithAlso(body: () -> T): T = runWithAlso(this, body)
+
+    suspend fun <T> runWithAlsoInCoroutine(body: suspend () -> T): T = runWithAlsoInCoroutine(this, body)
+
+    companion object {
+        internal val contextScope = ContextValue<INodeResolutionScope>()
+
+        private fun combineScopes(scopeToAdd: INodeResolutionScope): List<INodeResolutionScope> {
+            return listOf(scopeToAdd) + (getCurrentScopes() - scopeToAdd)
+        }
+
+        fun <T> runWithAlso(scope: INodeResolutionScope, body: () -> T): T {
+            val newScopes = combineScopes(scope)
+            return when (newScopes.size) {
+                0 -> throw RuntimeException("Impossible case")
+                1 -> contextScope.computeWith(newScopes.single(), body)
+                else -> contextScope.computeWith(CompositeNodeResolutionScope(newScopes), body)
+            }
+        }
+
+        suspend fun <T> runWithAlsoInCoroutine(scope: INodeResolutionScope, body: suspend () -> T): T {
+            val newScopes = combineScopes(scope)
+            return when (newScopes.size) {
+                0 -> throw RuntimeException("Impossible case")
+                1 -> contextScope.runInCoroutine(newScopes.single(), body)
+                else -> contextScope.runInCoroutine(CompositeNodeResolutionScope(newScopes), body)
+            }
+        }
+
+        fun getCurrentScope(): INodeResolutionScope {
+            return contextScope.getValueOrNull() ?: NullNodeResolutionScope
+        }
+
+        fun getCurrentScopes(): List<INodeResolutionScope> {
+            return when (val current = contextScope.getValueOrNull()) {
+                null -> emptyList()
+                is CompositeNodeResolutionScope -> current.scopes
+                else -> listOf(current)
+            }
+        }
+
+        /**
+         * Like runWithAlso, but doesn't change the resolution order if it already exists in the context.
+         */
+        fun <T> ensureInContext(scope: INodeResolutionScope, body: () -> T): T {
+            val current = getCurrentScopes()
+            return if (current.contains(scope)) {
+                body()
+            } else {
+                scope.runWithOnly(body)
+            }
+        }
     }
+}
 
-    override fun <R> fold(initial: R, operation: (R, CoroutineContext.Element) -> R): R {
-        // coroutines are not compiled with -Xjvm-default=all-compatibility
-        // to not break existing IAreas implemented in Java, this override is necessary
-        return super.fold(initial, operation)
-    }
-
-    override fun <E : CoroutineContext.Element> get(key: CoroutineContext.Key<E>): E? {
-        // coroutines are not compiled with -Xjvm-default=all-compatibility
-        // to not break existing IAreas implemented in Java, this override is necessary
-        return super.get(key)
-    }
-
-    override fun minusKey(key: CoroutineContext.Key<*>): CoroutineContext {
-        // coroutines are not compiled with -Xjvm-default=all-compatibility
-        // to not break existing IAreas implemented in Java, this override is necessary
-        return super.minusKey(key)
+object NullNodeResolutionScope : INodeResolutionScope {
+    override fun resolveNode(ref: INodeReference): INode? {
+        throw IllegalStateException("INodeResolutionScope not set")
     }
 }
 
 class CompositeNodeResolutionScope(val scopes: List<INodeResolutionScope>) : INodeResolutionScope {
+    init {
+        require(scopes.all { it !is CompositeNodeResolutionScope }) {
+            "Nesting of CompositeNodeResolutionScope not allowed"
+        }
+    }
     override fun resolveNode(ref: INodeReference): INode? {
         return scopes.asSequence().mapNotNull { it.resolveNode(ref) }.firstOrNull()
     }

@@ -13,6 +13,7 @@ plugins {
 rootProject.name = "modelix.core"
 
 include("authorization")
+include("kotlin-utils")
 include("light-model-client")
 include("metamodel-export")
 include("model-api")

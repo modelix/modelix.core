@@ -1,5 +1,7 @@
 package org.modelix.model.api
 
+import org.modelix.kotlin.utils.ContextValue
+
 /**
  * An [IRole] is a structural feature of a concept.
  * It can either be an [IProperty] or an [ILink].
@@ -58,7 +60,7 @@ object RoleAccessContext {
     }
 
     fun isUsingRoleIds(): Boolean {
-        return value.getValue() ?: false
+        return value.getValueOrNull() ?: false
     }
 }
 

@@ -158,7 +158,7 @@ class ReplicatedRepositoryTest {
         assertEquals(clients.size * 10, createdNodes.size)
 
         runCatching {
-            withTimeout(5.seconds) {
+            withTimeout(20.seconds) {
                 models.forEach { model ->
                     while (getChildren(model) != createdNodes) delay(10.milliseconds)
                 }

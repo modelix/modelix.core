@@ -22,10 +22,8 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import org.modelix.model.api.INode
-import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IStepOutput
@@ -84,10 +82,9 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
                 val queryDescriptor = VersionAndData.deserialize(serializedQuery, QueryGraphDescriptor.serializer(), json).data
                 val query = queryDescriptor.createRootQuery() as IMonoUnboundQuery<INode, Any?>
                 LOG.debug { "query: $query" }
-                val nodeResolutionScope: INodeResolutionScope = area
                 val transactionBody: () -> IStepOutput<Any?> = {
                     runBlocking {
-                        withContext(nodeResolutionScope) {
+                        area.runWithAlsoInCoroutine {
                             query.bind(rootNode.createQueryExecutor()).execute()
                         }
                     }

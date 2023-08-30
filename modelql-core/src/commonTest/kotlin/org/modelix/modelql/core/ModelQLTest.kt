@@ -279,6 +279,22 @@ class ModelQLTest {
         assertEquals(flowSize, sequenceSize)
     }
 
+    @Test
+    fun test_firstOrNull_nullIfEmpty() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.firstOrNull().nullIfEmpty()
+        }
+        assertEquals(testDatabase.products.firstOrNull(), result)
+    }
+
+    @Test
+    fun test_nullIfEmpty() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.nullIfEmpty().toList()
+        }
+        assertEquals(testDatabase.products, result)
+    }
+
 //    @Test
 //    fun testIndexLookup() {
 //        val result = remoteProductDatabaseQuery { db ->

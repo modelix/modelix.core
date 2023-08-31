@@ -8,6 +8,7 @@ import org.modelix.model.api.getDescendants
 import org.modelix.model.api.remove
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
+import kotlin.jvm.JvmName
 
 /**
  * A ModelImporter updates an existing [INode] and its subtree based on a [ModelData] specification.
@@ -30,6 +31,7 @@ class ModelImporter(private val root: INode) {
      *
      * @param data the model specification
      */
+    @JvmName("importData")
     fun import(data: ModelData) {
         originalIdToExisting.clear()
         postponedReferences.clear()

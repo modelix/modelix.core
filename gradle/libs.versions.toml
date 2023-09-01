@@ -86,4 +86,4 @@ apache-cxf-sse = { group = "org.apache.cxf", name = "cxf-rt-rs-sse", version.ref
 apache-cxf-client = { group = "org.apache.cxf", name = "cxf-rt-rs-client", version.ref = "apacheCxf" }
 
 semver = { group = "org.semver", name = "api", version = "0.9.33"}
-dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", version = "1.8.20"}
+dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", version = "1.9.0"}

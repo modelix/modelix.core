@@ -15,6 +15,7 @@
  */
 
 import GraphLang.L_GraphLang
+import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import org.modelix.model.server.Main
 
 buildscript {
@@ -90,6 +91,7 @@ modelSync {
     dependsOn(copyTestRepo)
     direction("testPush") {
         registerLanguage(L_GraphLang)
+        registerLanguage(L_jetbrains_mps_lang_core)
         includeModule("GraphSolution")
         fromLocal {
             mpsHome = mpsDir

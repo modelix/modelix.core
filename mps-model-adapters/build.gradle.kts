@@ -3,7 +3,7 @@ plugins {
     `maven-publish`
 }
 
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2021.1.4"
 
 dependencies {
     api(project(":model-api"))

@@ -40,6 +40,9 @@ internal class CmdLineArgs {
     )
     var schemaInit = false
 
+    @Parameter(names = ["-useroleids"], description = "Use IDs for roles instead of simpleNames. Required for bulk sync.", converter = BooleanConverter::class)
+    var useRoleIds = false
+
     @Parameter(names = ["-h", "--help"], help = true)
     var help = false
 }

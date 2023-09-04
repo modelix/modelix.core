@@ -30,7 +30,7 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
 
-class RepositoriesManager(val client: LocalModelClient) {
+class RepositoriesManager(val client: LocalModelClient, val useRoleIds: Boolean = false) {
     init {
         migrateLegacyRepositoriesList()
     }
@@ -57,7 +57,7 @@ class RepositoriesManager(val client: LocalModelClient) {
                 id = client.idGenerator.generate(),
                 time = Clock.System.now().epochSeconds.toString(),
                 author = userName,
-                tree = CLTree(client.storeCache),
+                tree = CLTree(null, null, client.storeCache, useRoleIds = useRoleIds),
                 baseVersion = null,
                 operations = emptyArray(),
             )

@@ -64,3 +64,13 @@ val <T> IMonoStep<IZip8Output<*, *, *, *, *, *, *, *, T>>.eighth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(7).also { connect(it) }
 val <T> IMonoStep<IZip9Output<*, *, *, *, *, *, *, *, *, T>>.ninth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(8).also { connect(it) }
+
+operator fun <T> IMonoStep<IZip1Output<*, T>>.component1() = first
+operator fun <T> IMonoStep<IZip2Output<*, *, T>>.component2() = second
+operator fun <T> IMonoStep<IZip3Output<*, *, *, T>>.component3() = third
+operator fun <T> IMonoStep<IZip4Output<*, *, *, *, T>>.component4() = forth
+operator fun <T> IMonoStep<IZip5Output<*, *, *, *, *, T>>.component5() = fifth
+operator fun <T> IMonoStep<IZip6Output<*, *, *, *, *, *, T>>.component6() = sixth
+operator fun <T> IMonoStep<IZip7Output<*, *, *, *, *, *, *, T>>.component7() = seventh
+operator fun <T> IMonoStep<IZip8Output<*, *, *, *, *, *, *, *, T>>.component8() = eighth
+operator fun <T> IMonoStep<IZip9Output<*, *, *, *, *, *, *, *, *, T>>.component9() = ninth

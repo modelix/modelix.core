@@ -223,6 +223,32 @@ class ModelQLTest {
     }
 
     @Test
+    fun zipDestructingMap() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.filter { it.title.equalTo("iPhone 9") }.map {
+                it.title.zip(it.category).map { (_, category) ->
+                    category
+                }
+            }.first()
+        }
+
+        assertEquals("smartphones", result)
+    }
+
+    @Test
+    fun zipDestructingMapLocal() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.filter { it.title.equalTo("iPhone 9") }.map {
+                it.title.zip(it.category).mapLocal { (title, category) ->
+                    "$title: $category"
+                }
+            }.first()
+        }
+
+        assertEquals("iPhone 9: smartphones", result)
+    }
+
+    @Test
     fun testMapLocal2_unusedInput() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
             db.products.mapLocal2 {

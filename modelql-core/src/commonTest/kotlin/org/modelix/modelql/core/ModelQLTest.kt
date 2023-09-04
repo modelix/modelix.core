@@ -152,6 +152,14 @@ class ModelQLTest {
     }
 
     @Test
+    fun testIsEmpty() = runTestWithTimeout {
+        val result: Boolean = remoteProductDatabaseQuery { db ->
+            db.products.filter { it.id.equalTo(-1) }.isEmpty()
+        }
+        assertTrue(result)
+    }
+
+    @Test
     fun test2() = runTestWithTimeout {
         val result: List<String> = remoteProductDatabaseQuery { db ->
             val products = db.products

@@ -44,8 +44,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(libs.kotlin.coroutines.test)
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
+                implementation(kotlin("test"))
             }
         }
         val jvmMain by getting {
@@ -55,7 +54,6 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
-                implementation(kotlin("test"))
 
                 implementation(project(":authorization"))
 //                implementation(project(":model-client"))
@@ -81,7 +79,6 @@ kotlin {
         }
         val jsTest by getting {
             dependencies {
-                implementation(kotlin("test-js"))
                 implementation(npm("jsdom-global", "3.0.2"))
                 implementation(npm("jsdom", "20.0.2"))
             }

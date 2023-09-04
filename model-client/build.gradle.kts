@@ -42,7 +42,7 @@ kotlin {
                 api(project(":model-api"))
                 api(project(":model-datastructure"))
                 api(project(":model-server-api"))
-                kotlin("stdlib-common")
+                implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.collections.immutable)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)
@@ -55,13 +55,12 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                kotlin("test-common")
-                kotlin("test-annotations-common")
+                implementation(kotlin("test"))
             }
         }
         val jvmMain by getting {
             dependencies {
-                kotlin("stdlib-jdk8")
+                implementation(kotlin("stdlib-jdk8"))
 
                 implementation(libs.vavr)
                 implementation(libs.apache.commons.lang)
@@ -83,7 +82,6 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
-                implementation(kotlin("test"))
             }
         }
         val jsMain by getting {
@@ -96,7 +94,6 @@ kotlin {
         }
         val jsTest by getting {
             dependencies {
-                implementation(kotlin("test-js"))
             }
         }
     }

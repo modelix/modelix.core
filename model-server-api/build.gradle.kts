@@ -38,8 +38,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
 //                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutinesVersion")
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
+                implementation(kotlin("test"))
             }
         }
         val jvmMain by getting {
@@ -48,7 +47,6 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
-                implementation(kotlin("test"))
             }
         }
         val jsMain by getting {
@@ -57,7 +55,6 @@ kotlin {
         }
         val jsTest by getting {
             dependencies {
-                implementation(kotlin("test-js"))
 //                implementation(npm("jsdom-global", "3.0.2"))
 //                implementation(npm("jsdom", "20.0.2"))
             }

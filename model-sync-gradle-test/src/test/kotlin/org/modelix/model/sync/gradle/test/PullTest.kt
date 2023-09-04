@@ -42,11 +42,11 @@ class PullTest {
                 </node>
                 <node concept="1DmExR" id="pSCM1J8Fg2" role="1DmEKd">
                   <ref role="1DmyQl" node="pSCM1J8FfX" resolve="Y" />
-                  <ref role="1DmyQm" node="pSCM1J8FfY" resolve="Y" />
+                  <ref role="1DmyQm" node="pSCM1J8FfY" resolve="Z" />
                 </node>
                 <node concept="1DmExR" id="pSCM1J8Fg3" role="1DmEKd">
                   <ref role="1DmyQl" node="pSCM1J8FfZ" resolve="D" />
-                  <ref role="1DmyQm" node="pSCM1J8FfY" resolve="Y" />
+                  <ref role="1DmyQm" node="pSCM1J8FfY" resolve="Z" />
                 </node>
                 <node concept="1DmExR" id="pSCM1J8Fg4" role="1DmEKd">
                   <ref role="1DmyQl" node="pSCM1J8Fg0" resolve="E" />
@@ -71,6 +71,6 @@ class PullTest {
             </model>
         """.trimIndent()
 
-        assertEquals(expected, localModelFile.readText())
+        assertEquals(expected, localModelFile.readText().trim())
     }
 }

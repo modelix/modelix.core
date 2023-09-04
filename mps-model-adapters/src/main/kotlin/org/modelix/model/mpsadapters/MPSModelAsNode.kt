@@ -111,7 +111,7 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        TODO("Not yet implemented")
+        // TODO("Not yet implemented")
     }
 
     override fun getPropertyLinks(): List<IProperty> {

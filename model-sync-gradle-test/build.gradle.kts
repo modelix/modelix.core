@@ -72,6 +72,7 @@ tasks.register("runModelServer", JavaExec::class) {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("org.modelix.model.server.Main")
     args("-inmemory")
+    args("-useroleids")
 }
 
 val resolveMps by tasks.registering(Copy::class) {

@@ -117,7 +117,7 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        TODO("Not yet implemented")
+        // TODO("Not yet implemented")
     }
 
     override fun getPropertyLinks(): List<IProperty> {

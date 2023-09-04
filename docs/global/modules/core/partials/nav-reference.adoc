@@ -3,5 +3,6 @@
 * xref:core:reference/component-metamodel-export.adoc[]
 * xref:core:reference/component-model-api-gen.adoc[]
 * xref:core:reference/component-model-api-gen-gradle.adoc[]
+* xref:core:reference/component-model-sync-gradle.adoc[]
 * xref:core:reference/component-light-model-client.adoc[]
 * xref:core:reference/component-mps-model-server-plugin.adoc[]

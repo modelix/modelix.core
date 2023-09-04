@@ -167,7 +167,7 @@ Inside the `metamodel` block a `names` block can be declared to configure `prefi
 |"N_"
 |""
 
-|`typedNodeImpl``
+|`typedNodeImpl`
 |"\_N_TypedImpl_"
 |""
 
@@ -175,11 +175,11 @@ Inside the `metamodel` block a `names` block can be declared to configure `prefi
 |"\_C_UntypedImpl_"
 |""
 
-|`typedConcept``
+|`typedConcept`
 |"C_"
 |""
 
-|`typedConceptImpl``
+|`typedConceptImpl`
 |"\_C_TypedImpl_"
 |""
 

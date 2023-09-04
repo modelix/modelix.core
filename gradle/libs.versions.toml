@@ -15,7 +15,7 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "11.5.1" }
 spotless = { id = "com.diffplug.spotless", version = "6.21.0" }
 tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.1.0" }
-dokka = {id = "org.jetbrains.dokka", version = "1.8.20"}
+dokka = {id = "org.jetbrains.dokka", version = "1.9.0"}
 
 [versions]
 kotlin = "1.9.10"
@@ -86,4 +86,4 @@ apache-cxf-sse = { group = "org.apache.cxf", name = "cxf-rt-rs-sse", version.ref
 apache-cxf-client = { group = "org.apache.cxf", name = "cxf-rt-rs-client", version.ref = "apacheCxf" }
 
 semver = { group = "org.semver", name = "api", version = "0.9.33"}
-dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", version = "1.8.20"}
+dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", version = "1.9.0"}

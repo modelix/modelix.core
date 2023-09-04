@@ -38,9 +38,9 @@ import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IQueryExecutor
 import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.IZip2Output
-import org.modelix.modelql.core.SimpleStepOutput
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asMono
+import org.modelix.modelql.core.asStepOutput
 import org.modelix.modelql.core.filterNotNull
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.flatMap
@@ -79,7 +79,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
                 is IMonoUnboundQuery<*, *> -> {
                     val castedQuery = query as IMonoUnboundQuery<INode, Out>
                     val queryOnNode = IUnboundQuery.buildMono { replaceQueryRoot(it).map(castedQuery) }
-                    emit(SimpleStepOutput(client.runQuery(queryOnNode), null))
+                    emit(client.runQuery(queryOnNode).asStepOutput(null))
                 }
                 is IFluxUnboundQuery<*, *> -> {
                     val castedQuery = query as IFluxUnboundQuery<INode, Out>

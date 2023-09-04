@@ -295,6 +295,18 @@ class ModelQLTest {
         assertEquals(testDatabase.products, result)
     }
 
+    @Test
+    fun zipElementAccess() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.flatMap { enum ->
+                enum.images.allowEmpty().zip(enum.title.firstOrNull()).map { it ->
+                    it.first.zip(it.second).mapLocal { "" }
+                }
+            }.toList()
+        }
+        assertEquals(testDatabase.products.flatMap { it.images }.map { "" }, result)
+    }
+
 //    @Test
 //    fun testIndexLookup() {
 //        val result = remoteProductDatabaseQuery { db ->

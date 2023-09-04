@@ -28,6 +28,10 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
 
     override fun requiresSingularQueryInput(): Boolean = true
 
+    override fun transform(evaluationContext: QueryEvaluationContext, input: IStepOutput<E>): IStepOutput<E> {
+        return input
+    }
+
     override fun transform(evaluationContext: QueryEvaluationContext, input: E): E {
         return input
     }

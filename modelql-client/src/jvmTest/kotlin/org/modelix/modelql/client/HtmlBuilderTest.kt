@@ -175,7 +175,7 @@ class HtmlBuilderTest {
                 }
             }
         }
-        val expected = """<html><body><ul><li>null<ul><li>abc<ul><li>model1a<ul></ul></li><li>model1b<ul></ul></li></ul></li></ul></li></ul></body></html>"""
+        val expected = """<html><body><ul><li>null<ul><li>abc<ul><li>model1a</li><li>model1b</li></ul></li></ul></li></ul></body></html>"""
         assertEquals(expected, actual)
     }
 }

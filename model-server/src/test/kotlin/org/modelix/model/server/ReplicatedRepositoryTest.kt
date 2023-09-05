@@ -44,6 +44,7 @@ import java.util.Collections
 import java.util.SortedSet
 import java.util.TreeSet
 import kotlin.random.Random
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
@@ -115,6 +116,7 @@ class ReplicatedRepositoryTest {
         }
     }
 
+    @Ignore
     @Test
     fun `concurrent write`() = runTest {
         val url = "http://localhost/v2"

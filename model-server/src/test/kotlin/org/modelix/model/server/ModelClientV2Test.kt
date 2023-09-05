@@ -86,4 +86,19 @@ class ModelClientV2Test {
             setOf(repositoryId.getBranchReference(), branchId),
         )
     }
+
+    @Test
+    fun testSlashesInPathSegmentsFromRepositoryIdAndBranchId() = runTest {
+        val url = "http://localhost/v2"
+        val client = ModelClientV2.builder().url(url).client(client).build()
+        client.init()
+        val repositoryId = RepositoryId("repo/v1")
+        val initialVersion = client.initRepository(repositoryId)
+        val branchId = repositoryId.getBranchReference("my-branch/v1")
+        client.push(branchId, initialVersion, null)
+        assertEquals(
+            client.listBranches(repositoryId).toSet(),
+            setOf(repositoryId.getBranchReference(), branchId),
+        )
+    }
 }

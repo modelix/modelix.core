@@ -3,6 +3,10 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+repositories {
+    maven { url = uri("https://www.jetbrains.com/intellij-repository/releases") }
+}
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(libs.kotlin.coroutines.core)
@@ -20,7 +24,7 @@ dependencies {
     compileOnly("com.jetbrains:mps-workbench:2021.1.4")
     compileOnly("com.jetbrains:mps-platform:2021.1.4")
     compileOnly("com.jetbrains:mps-environment:2021.1.4")
-    compileOnly("com.jetbrains:ideaIC:211.7628.21")
+    compileOnly("com.jetbrains.intellij.idea:ideaIC:211.7628.21")
 }
 
 description = "Generic helper library to sync model-server content with MPS"

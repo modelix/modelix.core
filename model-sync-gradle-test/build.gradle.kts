@@ -69,6 +69,10 @@ kotlin {
 
 tasks.register("runModelServer", JavaExec::class) {
     group = "modelix"
+
+    description = "Launches a model-server instance to be used as a target for the test. " +
+        "This task will block and is intended to be run in a separate process, apart from the actual test execution."
+
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("org.modelix.model.server.Main")
     args("-inmemory")
@@ -96,7 +100,7 @@ modelSync {
         includeModule("GraphSolution")
         fromLocal {
             mpsHome = mpsDir
-            mpsHeapSize = "4g"
+            mpsHeapSize = "2g"
             repositoryDir = repoDir
         }
         toModelServer {

@@ -1,5 +1,5 @@
 == Gradle Plugin for synchronizing models between model-api endpoints
-:navtitle: `model-sync-gradle`
+:navtitle: `bulk-model-sync-gradle`
 
 :tip-caption: 🔗 Quick Links
 [TIP]
@@ -9,16 +9,19 @@ https://github.com/modelix/modelix.core[Repository^] | https://github.com/modeli
 
 == Overview
 
-The `model-sync` gradle plugin synchronizes models between `model-api` endpoints.
+The `bulk-model-sync` Gradle plugin synchronizes models between `model-api` endpoints.
 A common example would be synchronizing a local MPS project to a `model-server`.
 
-image::model-sync-gradle.png[]
+IMPORTANT: For correct synchronization the used model-server is required to use IDs for roles. This can be achieved by starting the model-server with the `-useroleids` flag.
+
+.Bulk Synchronization between MPS and model-server
+image::bulk-model-sync-gradle.overview.png[Bulk Synchronization between MPS and model-server]
 
 It allows the definition of sync directions by specifying source and target endpoint.
 Based on these directions, Gradle tasks will be generated, which can be run to trigger the corresponding synchronization.
 
-Internally, the node data will be bulk exported from the source endpoint and stored as json files.
-After that, those json files serve as a specification to incrementally update the target model through via the target `model-api` endpoint.
+Internally, the node data will be bulk exported from the source endpoint and stored as JSON files.
+After that, these JSON files serve as a specification to incrementally update the target model via the target `model-api` endpoint.
 This means that only a minimal amount of write operations is used to update the target model.
 
 == Configuration settings

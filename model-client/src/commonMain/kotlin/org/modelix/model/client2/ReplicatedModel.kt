@@ -17,6 +17,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.api.ModelQuery
+import kotlin.coroutines.cancellation.CancellationException
 
 class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference, val query: ModelQuery? = null) {
     private val scope = CoroutineScope(Dispatchers.Default)
@@ -62,6 +63,9 @@ class ReplicatedModel(val client: IModelClientV2, val branchRef: BranchReference
                     } as CLVersion
                     remoteVersionReceived(newRemoteVersion)
                     nextDelayMs = 0
+                } catch (ex: CancellationException) {
+                    LOG.debug { "Stop to poll branch $branchRef after disposing." }
+                    throw ex
                 } catch (ex: Throwable) {
                     LOG.error(ex) { "Failed to poll branch $branchRef" }
                     nextDelayMs = (nextDelayMs * 3 / 2).coerceIn(1000, 30000)

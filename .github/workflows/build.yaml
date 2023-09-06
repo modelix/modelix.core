@@ -34,10 +34,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: model-api-gen-gradle-test/ci.sh
-      - name: Test Model Sync Gradle Plugin
+      - name: Test Bulk Model Sync Gradle Plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: model-sync-gradle-test/ci.sh
+        run: bulk-model-sync-gradle-test/ci.sh
       - name: Archive test report
         uses: actions/upload-artifact@v3
         if: always()

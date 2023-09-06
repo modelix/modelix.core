@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="MPSProject">
-    <projectModules>
-      <modulePath path="$PROJECT_DIR$/solutions/org.modelix.model.sync.mps/org.modelix.model.sync.mps.msd" folder="" />
-    </projectModules>
-  </component>
-</project>

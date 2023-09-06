@@ -241,4 +241,13 @@ class ModelQLClientTest {
         println(result)
         assertEquals(listOf(1002, 2002), result)
     }
+
+    @Test
+    fun `test IMonoStep nodeRefAndConcept`() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+
+        val nullNode = client.getRootNode().getReferenceTarget("nonExistentReference")
+
+        assertEquals(null, nullNode)
+    }
 }

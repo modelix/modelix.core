@@ -198,7 +198,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
     }
 
     private fun IMonoStep<INode>.nodeRefAndConcept(): IMonoStep<IZip2Output<Any?, INodeReference, ConceptReference?>> {
-        return nodeReference().zip(conceptReference())
+        return map { it.nodeReference().zip(it.conceptReference()) }
     }
 
     private fun IFluxStep<INode>.nodeRefAndConcept(): IFluxStep<IZip2Output<Any?, INodeReference, ConceptReference?>> {

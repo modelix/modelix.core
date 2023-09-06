@@ -13,13 +13,14 @@
  */
 package org.modelix.model.client2
 
+import io.ktor.utils.io.core.Closeable
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.ModelQuery
 
-interface IModelClientV2 {
+interface IModelClientV2 : Closeable {
     fun getClientId(): Int
     fun getIdGenerator(): IIdGenerator
     fun getUserId(): String?
@@ -44,4 +45,6 @@ interface IModelClientV2 {
 
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion
+
+    override fun close()
 }

@@ -190,6 +190,10 @@ class ModelClientV2(
         TODO("Not yet implemented")
     }
 
+    override fun close() {
+        httpClient.close()
+    }
+
     private fun createVersion(baseVersion: CLVersion?, delta: VersionDelta): CLVersion {
         return if (baseVersion == null) {
             CLVersion(

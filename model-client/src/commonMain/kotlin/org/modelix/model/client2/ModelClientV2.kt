@@ -24,6 +24,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
 import io.ktor.http.contentType
 import io.ktor.http.takeFrom
@@ -90,7 +91,7 @@ class ModelClientV2(
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)
-                appendPathSegments("repositories", repository.id, "init")
+                appendPathSegmentsEncodingSlash("repositories", repository.id, "init")
             }
         }
         val delta = response.body<VersionDelta>()
@@ -110,7 +111,7 @@ class ModelClientV2(
         return httpClient.get {
             url {
                 takeFrom(baseUrl)
-                appendPathSegments("repositories", repository.id, "branches")
+                appendPathSegmentsEncodingSlash("repositories", repository.id, "branches")
             }
         }.bodyAsText().lines().map { repository.getBranchReference(it) }
     }
@@ -138,7 +139,7 @@ class ModelClientV2(
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)
-                appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName)
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
             contentType(ContentType.Application.Json)
             val body = VersionDelta(version.getContentHash(), null, objectsMap = objects)
@@ -154,7 +155,7 @@ class ModelClientV2(
         val response = httpClient.get {
             url {
                 takeFrom(baseUrl)
-                appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName)
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
                 if (lastKnownVersion != null) {
                     parameters["lastKnown"] = lastKnownVersion.hash
                 }
@@ -170,7 +171,7 @@ class ModelClientV2(
         val response = httpClient.get {
             url {
                 takeFrom(baseUrl)
-                appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName, "poll")
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "poll")
                 if (lastKnownVersion != null) {
                     parameters["lastKnown"] = lastKnownVersion.hash
                 }
@@ -279,6 +280,9 @@ expect class ModelClientV2PlatformSpecificBuilder() : ModelClientV2Builder
 
 fun VersionDelta.checkObjectHashes() {
     HashUtil.checkObjectHashes(objectsMap)
+}
+private fun URLBuilder.appendPathSegmentsEncodingSlash(vararg components: String): URLBuilder {
+    return appendPathSegments(components.toList(), true)
 }
 
 fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.associateBy { HashUtil.sha256(it) }

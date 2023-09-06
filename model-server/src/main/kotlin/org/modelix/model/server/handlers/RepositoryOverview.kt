@@ -1,11 +1,13 @@
 package org.modelix.model.server.handlers
 
+import io.ktor.http.encodeURLPathPart
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.html.FlowContent
+import kotlinx.html.FlowOrInteractiveOrPhrasingContent
 import kotlinx.html.a
 import kotlinx.html.h1
 import kotlinx.html.i
@@ -74,9 +76,7 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                                         }
                                     }
                                     td {
-                                        a("../history/${branch.repositoryId.id}/${branch.branchName}/") {
-                                            +"Show History"
-                                        }
+                                        buildHistoryLink(branch.repositoryId.id, branch.branchName)
                                     }
                                     td {
                                         val latestVersion = repoManager.getVersion(branch)
@@ -92,5 +92,11 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                 }
             }
         }
+    }
+}
+
+fun FlowOrInteractiveOrPhrasingContent.buildHistoryLink(repositoryId: String, branchName: String) {
+    a("../history/${repositoryId.encodeURLPathPart()}/${branchName.encodeURLPathPart()}/") {
+        +"Show History"
     }
 }

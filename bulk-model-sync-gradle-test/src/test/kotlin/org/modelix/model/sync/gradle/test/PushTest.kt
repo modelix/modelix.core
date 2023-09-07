@@ -24,7 +24,7 @@ import org.modelix.model.server.Main
 import org.modelix.model.sleep
 import org.modelix.model.sync.bulk.asExported
 import java.io.File
-import kotlin.test.assertEquals
+import kotlin.test.assertContentEquals
 
 class PushTest {
 
@@ -51,9 +51,7 @@ class PushTest {
             client.getReplicatedModel(branchRef).start()
         }
         branch.runRead {
-            branch.getRootNode().allChildren.forEachIndexed { index, child ->
-                assertEquals(inputModel.root.children[index], child.asExported())
-            }
+            assertContentEquals(inputModel.root.children, branch.getRootNode().allChildren.map { it.asExported() })
         }
 
         applyChangesForPullTest(branch)
@@ -71,6 +69,6 @@ class PushTest {
             graphNodes[1].name = "Y"
             graphNodes[2].name = "Z"
         }
-        sleep(5000) // wait for changes to be sent to server
+        sleep(5000) // changes are pushed asynchronously to the server. wait for the propagation
     }
 }

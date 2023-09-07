@@ -22,7 +22,7 @@ module.exports = {
         "mps-model-adapters",
         "mps-model-server",
         "mps-model-server-plugin",
-        "mps-sync-lib",
+        "sync-plugin-lib",
         "ts-model-api",
       ],
     ],

@@ -149,7 +149,7 @@ abstract class BaseBinding(val initialSyncDirection: SyncDirection?) : Binding {
     @Throws(IllegalStateException::class)
     private fun checkActive() = check(isActive) { "Activate the binding first: $this" }
 
-    private fun isSynchronizing() = runningTask?.isRunning() ?: false
+    fun isSynchronizing() = runningTask?.isRunning() ?: false
 
     private fun syncToMPS(tree: ITree) {
         assertSyncThread()

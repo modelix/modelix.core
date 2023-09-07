@@ -73,11 +73,11 @@ class BindingImpl(replicatedModel: ReplicatedModel, mpsPproject: MPSProject) : B
         })
     }
 
-    override fun deactivate() {
+    override fun deactivate(callback: Runnable?) {
 //        this.replicatedModel.dispose()
     }
 
-    override fun activate() {
+    override fun activate(callback: Runnable?) {
         TODO("Not yet implemented")
     }
 }

@@ -30,6 +30,11 @@ import org.modelix.model.sync.bulk.gradle.config.ServerTarget
 import org.modelix.model.sync.bulk.gradle.config.SyncDirection
 import javax.inject.Inject
 
+/**
+ * Instead of throwing exceptions for single configuration errors,
+ * this task collects all configuration errors and puts them into a single exception,
+ * so the user can see all steps that must be taken at a glance.
+ */
 @CacheableTask
 abstract class ValidateSyncSettings @Inject constructor(of: ObjectFactory) : DefaultTask() {
 
@@ -67,14 +72,8 @@ abstract class ValidateSyncSettings @Inject constructor(of: ObjectFactory) : Def
                 appendLine("Undefined name.")
             }
 
-            if (direction.source == null) {
-                appendLine("Undefined source.")
-            }
-            if (direction.target == null) {
-                appendLine("Undefined target.")
-            }
-
             if (direction.source == null || direction.target == null) {
+                appendLine("Both source and target have to be defined.")
                 return@buildString
             }
 
@@ -88,15 +87,15 @@ abstract class ValidateSyncSettings @Inject constructor(of: ObjectFactory) : Def
                 return@buildString
             }
 
-            val sourceErrors = direction.source?.getValidationErrors() ?: ""
+            val sourceErrors = direction.source?.getValidationErrors() ?: emptyList()
             if (sourceErrors.isNotEmpty()) {
                 appendLine()
-                appendLine(sourceErrors)
+                appendLine(sourceErrors.joinToString(separator = "\n") { it })
             }
 
-            val targetErrors = direction.target?.getValidationErrors() ?: ""
+            val targetErrors = direction.target?.getValidationErrors() ?: emptyList()
             if (targetErrors.isNotEmpty()) {
-                appendLine(targetErrors)
+                appendLine(targetErrors.joinToString(separator = "\n") { it })
             }
         }
 

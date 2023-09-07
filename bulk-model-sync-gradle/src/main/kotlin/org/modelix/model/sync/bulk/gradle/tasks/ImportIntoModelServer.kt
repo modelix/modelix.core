@@ -72,14 +72,15 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
             client.getReplicatedModel(branchRef).start()
         }
 
-        val files = inputDir.listFiles()?.filter { it.extension == "json" } ?: error("no json files found")
+        val files = inputDir.listFiles()?.filter { it.extension == "json" }
+        if (files.isNullOrEmpty()) error("no json files found")
 
         branch.runWrite {
             val rootNode = branch.getRootNode()
-            println("Got root node: $rootNode")
-            println("Importing...")
+            logger.info("Got root node: {}", rootNode)
+            logger.info("Importing...")
             ModelImporter(branch.getRootNode()).importFilesAsRootChildren(*files.toTypedArray())
-            println("Import finished")
+            logger.info("Import finished")
         }
     }
 }

@@ -70,10 +70,11 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
 
         branch.runRead {
             val root = branch.getRootNode()
-            println("Got root node: $root")
+            logger.info("Got root node: {}", root)
             val outputDir = outputDir.get().asFile
             root.allChildren.forEach {
-                val outputFile = outputDir.resolve("${it.getPropertyValue(IProperty.fromName(RepositoryLanguage.NamePropertyUID))}.json")
+                val nameRole = IProperty.fromName(RepositoryLanguage.NamePropertyUID)
+                val outputFile = outputDir.resolve("${it.getPropertyValue(nameRole)}.json")
                 ModelExporter(it).export(outputFile)
             }
         }

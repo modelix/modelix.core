@@ -33,8 +33,6 @@ import org.modelix.model.sync.bulk.gradle.tasks.ImportIntoModelServer
 import org.modelix.model.sync.bulk.gradle.tasks.ImportIntoMps
 import org.modelix.model.sync.bulk.gradle.tasks.ValidateSyncSettings
 import java.io.File
-import java.net.URL
-import java.util.Enumeration
 import java.util.Properties
 
 class ModelSyncGradlePlugin : Plugin<Project> {
@@ -83,7 +81,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         val sourceTask = when (syncDirection.source) {
             is LocalSource -> registerTasksForLocalSource(syncDirection, project, previousTask, jsonDir)
             is ServerSource -> registerTasksForServerSource(syncDirection, project, previousTask, jsonDir)
-            else -> previousTask
+            else -> error("Unknown sync direction source")
         }
 
         when (syncDirection.target) {
@@ -226,8 +224,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
     }
 
     private fun readModelixCoreVersion(): String? {
-        val resources: Enumeration<URL>? = javaClass.classLoader.getResources("modelix.core.version.properties")
-        while (resources != null && resources.hasMoreElements()) {
+        val resources = javaClass.classLoader.getResources("modelix.core.version.properties") ?: return null
+        if (resources.hasMoreElements()) {
             val properties = resources.nextElement().openStream().use { Properties().apply { load(it) } }
             return properties.getProperty("modelix.core.version")
         }

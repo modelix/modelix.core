@@ -77,7 +77,7 @@ data class SyncDirection(
 }
 
 interface SyncEndPoint {
-    fun getValidationErrors(): String
+    fun getValidationErrors(): List<String>
 }
 
 sealed interface LocalEndpoint : SyncEndPoint {
@@ -85,15 +85,15 @@ sealed interface LocalEndpoint : SyncEndPoint {
     var mpsHeapSize: String
     var repositoryDir: File?
 
-    override fun getValidationErrors(): String {
-        return buildString {
-            if (mpsHome == null) {
-                appendUndefinedLocalFieldError("mpsHome")
-            }
-            if (repositoryDir == null) {
-                appendUndefinedLocalFieldError("repositoryDir")
-            }
+    override fun getValidationErrors(): List<String> {
+        val errors = mutableListOf<String>()
+        if (mpsHome == null) {
+            errors.addUndefinedLocalFieldError("mpsHome")
         }
+        if (repositoryDir == null) {
+            errors.addUndefinedLocalFieldError("repositoryDir")
+        }
+        return errors
     }
 }
 
@@ -114,12 +114,12 @@ sealed interface ServerEndpoint : SyncEndPoint {
     var repositoryId: String?
     var branchName: String?
 
-    override fun getValidationErrors(): String {
-        return buildString {
-            if (url == null) {
-                appendUndefinedServerFieldError("url")
-            }
+    override fun getValidationErrors(): List<String> {
+        val errors = mutableListOf<String>()
+        if (url == null) {
+            errors.addUndefinedServerFieldError("url")
         }
+        return errors
     }
 }
 
@@ -129,19 +129,28 @@ data class ServerSource(
     override var branchName: String? = null,
     var revision: String? = null,
 ) : ServerEndpoint {
-    override fun getValidationErrors(): String {
-        return buildString {
-            append(super.getValidationErrors())
-            if (revision == null) {
-                if (repositoryId == null && branchName == null) {
-                    appendLine("Invalid server source. Please either specify a revision or repositoryId and branchName.")
-                } else if (repositoryId == null) {
-                    appendUndefinedServerFieldError("repositoryId")
-                } else if (branchName == null) {
-                    appendUndefinedServerFieldError("branchName")
-                }
-            }
+    override fun getValidationErrors(): List<String> {
+        val errors = mutableListOf<String>()
+        errors.addAll(super.getValidationErrors())
+        if (revision != null) {
+            // If a revision is specified, repo and branch are not required
+            return errors
         }
+
+        if (repositoryId == null && branchName == null) {
+            // Give hint is configuration is completely off
+            errors.add("Invalid server source. Please either specify a revision or repositoryId and branchName.")
+            return errors
+        }
+
+        // Configuration is incomplete
+        if (repositoryId == null) {
+            errors.addUndefinedServerFieldError("repositoryId")
+        } else if (branchName == null) {
+            errors.addUndefinedServerFieldError("branchName")
+        }
+
+        return errors
     }
 }
 
@@ -150,29 +159,29 @@ data class ServerTarget(
     override var repositoryId: String? = null,
     override var branchName: String? = null,
 ) : ServerEndpoint {
-    override fun getValidationErrors(): String {
-        return buildString {
-            append(super.getValidationErrors())
+    override fun getValidationErrors(): List<String> {
+        val errors = mutableListOf<String>()
+        errors.addAll(super.getValidationErrors())
 
-            if (repositoryId == null) {
-                appendUndefinedServerFieldError("repositoryId")
-            }
-
-            if (branchName == null) {
-                appendUndefinedServerFieldError("branchName")
-            }
+        if (repositoryId == null) {
+            errors.addUndefinedServerFieldError("repositoryId")
         }
+
+        if (branchName == null) {
+            errors.addUndefinedServerFieldError("branchName")
+        }
+        return errors
     }
 }
 
-private fun StringBuilder.appendUndefinedLocalFieldError(fieldName: String) {
-    appendUndefinedFieldError(fieldName, "LocalEndpoint")
+private fun MutableList<String>.addUndefinedLocalFieldError(fieldName: String) {
+    addUndefinedFieldError(fieldName, "LocalEndpoint")
 }
 
-private fun StringBuilder.appendUndefinedServerFieldError(fieldName: String) {
-    appendUndefinedFieldError(fieldName, "ServerEndpoint")
+private fun MutableList<String>.addUndefinedServerFieldError(fieldName: String) {
+    addUndefinedFieldError(fieldName, "ServerEndpoint")
 }
 
-private fun StringBuilder.appendUndefinedFieldError(fieldName: String, block: String) {
-    appendLine("Undefined '$fieldName' in '$block'.")
+private fun MutableList<String>.addUndefinedFieldError(fieldName: String, block: String) {
+    add("Undefined '$fieldName' in '$block'.")
 }

@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.synchronization
 
+import org.modelix.model.api.ITree
 import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.RootBinding
@@ -26,6 +27,13 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 
 class SyncQueue(val owner: RootBinding) {
+
+    @Volatile
+    var isSynchronizing = false
+        private set
+
+    var lastTreeAfterSync: ITree? = null
+        private set
 
     private val flushExecutor: FlushExecutor = FlushExecutor()
     private val syncQueue: MutableMap<Binding, SyncTask> = mutableMapOf()

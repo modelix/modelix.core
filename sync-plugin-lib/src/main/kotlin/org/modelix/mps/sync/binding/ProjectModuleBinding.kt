@@ -19,8 +19,6 @@ package org.modelix.mps.sync.binding
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.mps.sync.synchronization.SyncDirection
 
-class ProjectModuleBinding(private val module: SModule, moduleNodeId: Long, initialSyncDirection: SyncDirection) :
-    ModuleBinding(moduleNodeId, initialSyncDirection) {
-
-    override fun getModule() = this.module
-}
+// status: ready to test
+class ProjectModuleBinding(override val module: SModule, moduleNodeId: Long, initialSyncDirection: SyncDirection) :
+    ModuleBinding(moduleNodeId, initialSyncDirection)

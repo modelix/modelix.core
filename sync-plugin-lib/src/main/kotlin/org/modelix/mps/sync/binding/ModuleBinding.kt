@@ -1,21 +1,20 @@
 package org.modelix.mps.sync.binding
 
-import org.jetbrains.mps.openapi.event.SNodeAddEvent
-import org.jetbrains.mps.openapi.event.SNodeRemoveEvent
-import org.jetbrains.mps.openapi.event.SPropertyChangeEvent
-import org.jetbrains.mps.openapi.event.SReferenceChangeEvent
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
-import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
 import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.Synchronizer
 
+// status: ready to test
 abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncDirection) :
     BaseBinding(initialSyncDirection) {
+
+    abstract val module: SModule
 
     private val logger = mu.KotlinLogging.logger {}
 
@@ -46,41 +45,30 @@ abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncD
         }
     }
 
-    private val ownedBindings = hashSetOf<Binding>()
+    private val treeChangeVisitor = object : ITreeChangeVisitor {
+        override fun childrenChanged(nodeId: Long, role: String?) {
+            assertSyncThread()
+            if (nodeId == moduleNodeId) {
+                enqueueSync(SyncDirection.TO_MPS, false, null)
+            }
+        }
+
+        override fun containmentChanged(nodeId: Long) {}
+        override fun referenceChanged(nodeId: Long, role: String) {}
+        override fun propertyChanged(nodeId: Long, role: String) {}
+    }
+
+    override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree?): ITreeChangeVisitor? = treeChangeVisitor
 
     override fun doActivate() {
-        getModule().addModuleListener(moduleListener)
+        module.addModuleListener(moduleListener)
         if (getRootBinding().syncQueue.getTask(this) == null) {
             enqueueSync(initialSyncDirection ?: SyncDirection.TO_MPS, true, null)
         }
     }
 
-    abstract fun getModule(): SModule
-
-    var nodeChangedListener = object : SNodeChangeListener {
-        override fun propertyChanged(event: SPropertyChangeEvent) {
-            TODO("Not yet implemented")
-        }
-
-        override fun referenceChanged(event: SReferenceChangeEvent) {
-            TODO("Not yet implemented")
-        }
-
-        override fun nodeAdded(event: SNodeAddEvent) {
-            TODO("Not yet implemented")
-        }
-
-        override fun nodeRemoved(event: SNodeRemoveEvent) {
-            TODO("Not yet implemented")
-        }
-    }
-
-    override fun deactivate() {
-        TODO("Not yet implemented")
-    }
-
     override fun doDeactivate() {
-        getModule().removeModuleListener(moduleListener)
+        module.removeModuleListener(moduleListener)
     }
 
     override fun doSyncToMPS(tree: ITree) {
@@ -121,5 +109,7 @@ abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncD
         }
     }
 
-    protected fun getModelsSynchronizer(): Synchronizer<SModel> = ModelsSynchronizer(moduleNodeId, getModule())
+    private fun getModelsSynchronizer(): Synchronizer<SModel> = ModelsSynchronizer(moduleNodeId, module)
+
+    override fun toString() = "Module: ${java.lang.Long.toHexString(moduleNodeId)} -> ${module.moduleName}"
 }

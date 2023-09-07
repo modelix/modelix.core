@@ -18,10 +18,14 @@ package org.modelix.mps.sync.binding
 
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.mps.sync.ICloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.SyncTask
+import java.util.Collections
 
+// status: ready to test
 abstract class BaseBinding(val initialSyncDirection: SyncDirection?) : Binding {
 
     private val logger = mu.KotlinLogging.logger {}
@@ -29,7 +33,7 @@ abstract class BaseBinding(val initialSyncDirection: SyncDirection?) : Binding {
     private var isActive = false
     private var lastTask: SyncTask? = null
     private val listeners = mutableListOf<IListener>()
-    private val ownedBindings = mutableSetOf<BaseBinding>()
+    protected val ownedBindings = mutableSetOf<BaseBinding>()
     var owner: BaseBinding? = null
         get() = this
         set(newOwner) {
@@ -45,7 +49,7 @@ abstract class BaseBinding(val initialSyncDirection: SyncDirection?) : Binding {
 
             owner?.let {
                 it.ownedBindings.remove(this)
-                it.notifyListeners { it.bindingRemoved(this) }
+                it.notifyListeners { listener -> listener.bindingRemoved(this) }
             }
 
             field = newOwner
@@ -62,69 +66,20 @@ abstract class BaseBinding(val initialSyncDirection: SyncDirection?) : Binding {
     protected abstract fun doActivate()
     protected abstract fun doDeactivate()
 
-    fun getOwners(): Iterable<Binding> = owner?.let { mutableListOf(it).plus(it.getOwners()) } ?: emptyList()
-    fun getRootOwnerOrSelf(): BaseBinding = owner?.getRootOwnerOrSelf() ?: this
-    fun getRootBinding(): RootBinding {
-        val root = getRootOwnerOrSelf()
-        if (root !is RootBinding) {
-            throw IllegalStateException("Not attached: $this")
-        }
-        return root
-    }
+    /**
+     * It's more efficient to diff the tree only once and notify all bindings together about changes instead of calling
+     * ITree.visitChanges in each binding.
+     * First the visitor is notified about changes and then syncToMPS is called. The binding has to remember which model
+     * elements are dirty.
+     */
+    abstract fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree?): ITreeChangeVisitor?
 
-    override fun activate() {
-        if (getRootOwnerOrSelf() !is RootBinding) {
-            throw IllegalStateException("Set an owner first: $this")
-        }
-        if (isActive) {
-            return
-        }
-        if (this !is RootBinding && owner?.isActive != true) {
-            throw IllegalStateException("Activate $owner first, before activating $this")
-        }
-        logger.debug { "Activate $this" }
-        isActive = true
-        doActivate()
-        if (getRootBinding().syncQueue.getTask(this) == null) {
-            enqueueSync(initialSyncDirection ?: SyncDirection.TO_MPS, true, null)
-        }
-        notifyListeners {
-            it.bindingActivated()
-        }
-    }
+    protected abstract fun doSyncToCloud(transaction: IWriteTransaction)
+    protected abstract fun doSyncToMPS(tree: ITree)
 
-    private fun notifyListeners(notifier: (IListener) -> Unit) {
-        listeners.forEach {
-            try {
-                notifier.invoke(it)
-            } catch (ex: Exception) {
-                logger.error(ex.message, ex)
-            }
-        }
-    }
+    protected fun assertSyncThread() = getRootBinding().syncQueue.assertSyncThread()
 
-    fun enqueueSync(direction: SyncDirection, initial: Boolean, callback: Runnable?) {
-        if (isSynchronizing()) {
-            return
-        }
-        forceEnqueueSyncTo(direction, initial, callback)
-    }
-
-    fun isSynchronizing() = runningTask?.isRunning() ?: false
-
-    fun forceEnqueueSyncTo(direction: SyncDirection, initial: Boolean, callback: Runnable?) {
-        val task: SyncTask = createTask(direction, initial, callback)
-        val isEnqueued: Boolean = getRootBinding().syncQueue.enqueue(task)
-        if (isEnqueued) {
-            lastTask = task
-        }
-    }
-
-    fun createTask(direction: SyncDirection, initial: Boolean, callback: Runnable?): SyncTask {
-        val task = createTask(direction, initial)
-        task.whenDone(callback)
-        return task
-    }
+    private fun getDepth(): Int = owner?.let { it.getDepth() + 1 } ?: 0
 
     private fun createTask(direction: SyncDirection, initial: Boolean): SyncTask {
         return when (direction) {
@@ -154,46 +109,132 @@ abstract class BaseBinding(val initialSyncDirection: SyncDirection?) : Binding {
         }
     }
 
-    fun syncToCloud() {
-        assertSyncThread()
-        checkActive()
-        getBranch()?.let {
-            syncToCloud(it.writeTransaction)
+    fun createTask(direction: SyncDirection, initial: Boolean, callback: Runnable?): SyncTask {
+        val task = createTask(direction, initial)
+        task.whenDone(callback)
+        return task
+    }
+
+    fun getRequiredSyncLocks(direction: SyncDirection?): Set<ELockType> {
+        return direction?.let {
+            when (direction) {
+                SyncDirection.TO_CLOUD -> setOf(ELockType.MPS_READ, ELockType.CLOUD_WRITE)
+                SyncDirection.TO_MPS ->
+                    // Even if the ITree is passed to the sync method we still need a read transaction on the cloud model
+                    // ITree.getReferenceTarget(...).resolveNode(...) requires a read transaction
+                    setOf(ELockType.MPS_COMMAND, ELockType.CLOUD_READ)
+            }
+        } ?: Collections.emptySet()
+    }
+
+    fun enqueueSync(direction: SyncDirection, initial: Boolean, callback: Runnable?) {
+        if (isSynchronizing()) {
+            return
+        }
+        forceEnqueueSyncTo(direction, initial, callback)
+    }
+
+    fun forceEnqueueSyncTo(direction: SyncDirection, initial: Boolean, callback: Runnable?) {
+        val task: SyncTask = createTask(direction, initial, callback)
+        val isEnqueued: Boolean = getRootBinding().syncQueue.enqueue(task)
+        if (isEnqueued) {
+            lastTask = task
         }
     }
 
-    fun syncToCloud(transaction: IWriteTransaction) {
-        assertSyncThread()
-        checkActive()
-        doSyncToCloud(transaction)
-    }
+    private fun isDone(): Boolean = (lastTask == null || lastTask!!.isDone()) && ownedBindings.all { it.isDone() }
 
-    abstract fun doSyncToCloud(transaction: IWriteTransaction)
+    protected open fun getBranch(): IBranch? = owner?.getBranch()
 
-    fun syncToMPS(tree: ITree) {
+    @Throws(IllegalStateException::class)
+    private fun checkActive() = check(isActive) { "Activate the binding first: $this" }
+
+    private fun isSynchronizing() = runningTask?.isRunning() ?: false
+
+    private fun syncToMPS(tree: ITree) {
         assertSyncThread()
         checkActive()
         doSyncToMPS(tree)
     }
 
-    protected abstract fun doSyncToMPS(tree: ITree)
+    private fun syncToCloud(transaction: IWriteTransaction? = null) {
+        assertSyncThread()
+        checkActive()
 
-    fun getBranch(): IBranch? = owner?.getBranch()
-
-    private fun assertSyncThread() {
-        getRootBinding().syncQueue.assertSyncThread()
+        val tr = transaction ?: getBranch()?.writeTransaction
+        tr?.let { doSyncToCloud(it) }
     }
 
-    @Throws(IllegalStateException::class)
-    private fun checkActive() {
-        check(isActive) { "Activate the binding first: $this" }
-    }
-}
+    protected open fun getCloudRepository(): ICloudRepository? = owner?.getCloudRepository()
 
-interface IListener {
-    fun bindingAdded(binding: Binding)
-    fun bindingRemoved(binding: Binding)
-    fun ownerChanged(newOwner: Binding)
-    fun bindingActivated()
-    fun bindingDeactivated()
+    private fun getOwners(): Iterable<Binding> = owner?.let { mutableListOf(it).plus(it.getOwners()) } ?: emptyList()
+
+    private fun getRootOwnerOrSelf(): BaseBinding = owner?.getRootOwnerOrSelf() ?: this
+
+    fun getRootBinding(): RootBinding {
+        val root = getRootOwnerOrSelf()
+        if (root !is RootBinding) {
+            throw IllegalStateException("Not attached: $this")
+        }
+        return root
+    }
+
+    protected fun getAllBindings(): Iterable<BaseBinding> =
+        mutableListOf(this).plus(ownedBindings.flatMap { it.getAllBindings() })
+
+    override fun activate(callback: Runnable?) {
+        if (getRootOwnerOrSelf() !is RootBinding) {
+            throw IllegalStateException("Set an owner first: $this")
+        }
+        if (isActive) {
+            return
+        }
+        if (this !is RootBinding && owner?.isActive != true) {
+            throw IllegalStateException("Activate $owner first, before activating $this")
+        }
+        logger.debug { "Activate $this" }
+        isActive = true
+        doActivate()
+        if (getRootBinding().syncQueue.getTask(this) == null) {
+            enqueueSync(initialSyncDirection ?: SyncDirection.TO_MPS, true, null)
+        }
+        notifyListeners {
+            it.bindingActivated()
+        }
+
+        callback?.run()
+    }
+
+    override fun deactivate(callback: Runnable?) {
+        if (!isActive) return
+
+        logger.debug { "Deactivate: $this" }
+        isActive = false
+        ownedBindings.forEach { it.deactivate() }
+        doDeactivate()
+        notifyListeners { it.bindingDeactivated() }
+        callback?.run()
+    }
+
+    fun addListener(listener: IListener) = listeners.add(listener)
+
+    fun removeListener(listener: IListener) = listeners.remove(listener)
+
+    private fun notifyListeners(notifier: (IListener) -> Unit) {
+        listeners.forEach {
+            try {
+                notifier.invoke(it)
+            } catch (ex: Exception) {
+                logger.error(ex) { ex.message }
+            }
+        }
+    }
+
+    interface IListener {
+        fun bindingAdded(binding: Binding)
+        fun bindingRemoved(binding: Binding)
+        fun ownerChanged(newOwner: Binding)
+        fun bindingActivated()
+        fun bindingDeactivated()
+    }
 }

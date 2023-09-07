@@ -14,34 +14,29 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.binding
+package org.modelix.mps.sync
 
-import org.jetbrains.mps.openapi.model.SModel
-import org.modelix.model.api.ITree
-import org.modelix.model.api.ITreeChangeVisitor
-import org.modelix.model.api.IWriteTransaction
-import org.modelix.mps.sync.synchronization.SyncDirection
+import org.modelix.model.api.IBranch
+import org.modelix.model.client.IIndirectBranch
+import org.modelix.model.lazy.RepositoryId
+import org.modelix.mps.sync.connection.ModelServerConnection
 
-class ModelBinding(val modelNodeId: Long, val model: SModel, initialSyncDirection: SyncDirection) :
-    BaseBinding(initialSyncDirection) {
+class CloudRepository(private val modelServer: ModelServerConnection, private val repositoryId: RepositoryId) :
+    ICloudRepository {
 
-    override fun doActivate() {
+    override fun getBranch(): IBranch {
         TODO("Not yet implemented")
     }
 
-    override fun doDeactivate() {
+    override fun getActiveBranch(): IIndirectBranch {
         TODO("Not yet implemented")
     }
 
-    override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree?): ITreeChangeVisitor? {
+    override fun completeId(): String {
         TODO("Not yet implemented")
     }
 
-    override fun doSyncToCloud(transaction: IWriteTransaction) {
-        TODO("Not yet implemented")
-    }
-
-    override fun doSyncToMPS(tree: ITree) {
+    override fun getRepositoryId(): RepositoryId {
         TODO("Not yet implemented")
     }
 }

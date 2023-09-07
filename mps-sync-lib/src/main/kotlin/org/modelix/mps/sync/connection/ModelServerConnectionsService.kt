@@ -6,9 +6,6 @@ object ModelServerConnectionsService {
 
     // The list of individual connections to model-servers
     private var modelServers: ArrayList<ModelServerConnection> = ArrayList<ModelServerConnection>()
-        set(value) {
-            field = value
-        }
 
     // internal helper function to test contains
     private fun ArrayList<ModelServerConnection>.contains(serverURL: URL): Boolean {

@@ -19,7 +19,13 @@ class SyncServiceImpl : SyncService {
 
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 
-    override fun bindRepository(serverURL: URL, branchReference: BranchReference, jwt: String, mpsPproject: MPSProject, afterActivate: () -> Unit): Binding {
+    override fun bindRepository(
+        serverURL: URL,
+        branchReference: BranchReference,
+        jwt: String,
+        mpsPproject: MPSProject,
+        afterActivate: () -> Unit,
+    ): Binding {
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         val modelClientV2: ModelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
         val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
@@ -40,6 +46,7 @@ class SyncServiceImpl : SyncService {
         // todo: check if replication and connection work and raise exception otherwise
         return bindingImpl
     }
+
     fun dispose() {
         coroutineScope.cancel()
     }
@@ -53,9 +60,9 @@ class BindingImpl(replicatedModel: ReplicatedModel, mpsPproject: MPSProject) : B
         branch = replicatedModel.getBranch()
 
         // todo: test if there is a module already
-        if (!mpsPproject.projectModels.any { it.name.equals(branch.getId()) }) {
-            // todo: create model
-        }
+        // if (!mpsPproject.projectModels.any { it.name.equals(branch.getId()) }) {
+        // todo: create model
+        // }
 
         // listen to changes on the branch in the replicatedModel (model-server side) ...
         branch.addListener(object : IBranchListener {
@@ -65,7 +72,12 @@ class BindingImpl(replicatedModel: ReplicatedModel, mpsPproject: MPSProject) : B
             }
         })
     }
+
     override fun deactivate() {
 //        this.replicatedModel.dispose()
+    }
+
+    override fun activate() {
+        TODO("Not yet implemented")
     }
 }

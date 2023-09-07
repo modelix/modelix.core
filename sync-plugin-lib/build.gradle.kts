@@ -27,6 +27,7 @@ dependencies {
     compileOnly("com.jetbrains.intellij.idea:ideaIC:211.7628.21")
 }
 
+group = "org.modelix.mps"
 description = "Generic helper library to sync model-server content with MPS"
 
 publishing {

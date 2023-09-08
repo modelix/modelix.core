@@ -50,7 +50,7 @@ import kotlin.time.Duration.Companion.seconds
 class ModelClientV2(
     private val httpClient: HttpClient,
     val baseUrl: String,
-) : IModelClientV2 {
+) : IModelClientV2, Closable {
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
     private var userId: String? = null

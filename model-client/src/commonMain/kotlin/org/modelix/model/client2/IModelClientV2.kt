@@ -13,14 +13,26 @@
  */
 package org.modelix.model.client2
 
-import io.ktor.utils.io.core.Closeable
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.ModelQuery
 
-interface IModelClientV2 : Closeable {
+/**
+ * This interface is meant exclusively for model client usage.
+ *
+ * It is designed to ensure decoupling between model client usage operations and other aspects,
+ * such as lifecycle management.
+ * Users of this interface cannot incidentally depend on non-usage functionality.
+ * See also: [Interface segregation principle](https://en.wikipedia.org/wiki/Interface_segregation_principle)
+ *
+ * Specifically, this interface should not be used for managing the client's lifecycle,
+ * as the lifecycle management may vary depending on the specific implementation.
+ * If you need to manage the client's lifecycle, use the methods in the class interface of the concrete implementations,
+ * such as [ModelClientV2].
+ */
+interface IModelClientV2 {
     fun getClientId(): Int
     fun getIdGenerator(): IIdGenerator
     fun getUserId(): String?
@@ -45,6 +57,4 @@ interface IModelClientV2 : Closeable {
 
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion
-
-    override fun close()
 }

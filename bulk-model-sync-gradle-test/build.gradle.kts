@@ -48,7 +48,7 @@ val mpsDir = buildDir.resolve("mps").apply { mkdirs() }
 val kotlinGenDir = buildDir.resolve("metamodel/kotlin").apply { mkdirs() }
 
 dependencies {
-    mps("com.jetbrains:mps:2021.1.4")
+    mps("com.jetbrains:mps:2021.2.5")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
     implementation("org.modelix:model-server:$modelixCoreVersion")
     implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")

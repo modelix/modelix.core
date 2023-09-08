@@ -19,7 +19,7 @@ val mps: Configuration by configurations.creating
 val kotlinGenDir = buildDir.resolve("metamodel/kotlin").apply { mkdirs() }
 
 dependencies {
-    mps("com.jetbrains:mps:2021.1.4")
+    mps("com.jetbrains:mps:2021.2.5")
     api("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
 }
 

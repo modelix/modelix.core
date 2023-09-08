@@ -28,16 +28,7 @@ jobs:
           arguments: |
             --build-cache
             build
-            publishToMavenLocal
             -PciBuild=true
-      - name: Test Model API Generator Gradle Plugin
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: model-api-gen-gradle-test/ci.sh
-      - name: Test Bulk Model Sync Gradle Plugin
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bulk-model-sync-gradle-test/ci.sh
       - name: Archive test report
         uses: actions/upload-artifact@v3
         if: always()
@@ -46,3 +37,52 @@ jobs:
           path: |
             */build/test-results
             */build/reports
+
+  test-model-api-gen-gradle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: Assemble
+        uses: gradle/gradle-build-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          arguments: |
+            --build-cache
+            assemble
+            publishToMavenLocal
+            -PciBuild=true
+      - name: Test Model API Generator Gradle Plugin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: model-api-gen-gradle-test/ci.sh
+
+  test-bulk-model-sync-gradle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: Assemble
+        uses: gradle/gradle-build-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          arguments: |
+            --build-cache
+            assemble
+            publishToMavenLocal
+            -PciBuild=true
+
+      - name: Test Bulk Model Sync Gradle Plugin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bulk-model-sync-gradle-test/ci.sh

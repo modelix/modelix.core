@@ -140,12 +140,23 @@ subprojects {
     }
 }
 
+val user = project.findProperty("gpr.user").toString()
+val key = project.findProperty("gpr.key").toString()
+
 allprojects {
     repositories {
         mavenLocal()
         maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
         maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
         mavenCentral()
+
+        maven {
+            url = uri("https://maven.pkg.github.com/modelix/modelix.core")
+            credentials {
+                username = user
+                password = key
+            }
+        }
     }
 
     publishing {

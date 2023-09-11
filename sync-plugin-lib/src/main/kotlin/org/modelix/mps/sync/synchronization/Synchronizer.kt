@@ -19,15 +19,18 @@ package org.modelix.mps.sync.synchronization
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 
+// status: ready to test
 /**
-Synchronizes an unordered list of children
+ * Synchronizes an unordered list of children
  */
-abstract class Synchronizer<MPSChildT>(val cloudParentId: Long, val cloudRole: String) {
+abstract class Synchronizer<MPSChildT>(private val cloudParentId: Long, private val cloudRole: String) {
+
+    fun getCloudChildren(tree: ITree): Iterable<Long> = tree.getChildren(cloudParentId, cloudRole)
 
     abstract fun getMPSChildren(): Iterable<MPSChildT>
+    protected abstract fun createMPSChild(tree: ITree, cloudChildId: Long): MPSChildT?
     protected abstract fun createCloudChild(transaction: IWriteTransaction, mpsChild: MPSChildT): Long
     protected abstract fun removeMPSChild(mpsChild: MPSChildT)
-    protected abstract fun createMPSChild(tree: ITree, cloudChildId: Long): MPSChildT?
 
     abstract fun associate(
         tree: ITree,
@@ -36,7 +39,20 @@ abstract class Synchronizer<MPSChildT>(val cloudParentId: Long, val cloudRole: S
         direction: SyncDirection,
     ): MutableMap<Long, MPSChildT>
 
-    fun getCloudChildren(tree: ITree): Iterable<Long> = tree.getChildren(cloudParentId, cloudRole)
+    open fun syncToMPS(tree: ITree): Map<Long, MPSChildT> {
+        val expectedChildren = getCloudChildren(tree).toList()
+        val existingChildren = getMPSChildren().toList()
+
+        val mappings = associate(tree, expectedChildren, existingChildren, SyncDirection.TO_MPS)
+
+        val toAdd = expectedChildren.minus(mappings.keys).toList()
+        val toRemove = existingChildren.minus(mappings.values.toSet()).toList()
+
+        toRemove.forEach { removeMPSChild(it) }
+        toAdd.forEach { id -> createMPSChild(tree, id)?.let { child -> mappings[id] = child } }
+
+        return mappings
+    }
 
     fun syncToCloud(transaction: IWriteTransaction): Map<Long, MPSChildT> {
         val expectedChildren = getMPSChildren().toList()
@@ -49,21 +65,6 @@ abstract class Synchronizer<MPSChildT>(val cloudParentId: Long, val cloudRole: S
 
         toRemove.forEach { transaction.moveChild(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE, -1, it) }
         toAdd.forEach { mappings[createCloudChild(transaction, it)] = it }
-
-        return mappings
-    }
-
-    fun syncToMPS(tree: ITree): Map<Long, MPSChildT> {
-        val expectedChildren = getCloudChildren(tree).toList()
-        val existingChildren = getMPSChildren().toList()
-
-        val mappings = associate(tree, expectedChildren, existingChildren, SyncDirection.TO_MPS)
-
-        val toAdd = expectedChildren.minus(mappings.keys).toList()
-        val toRemove = existingChildren.minus(mappings.values.toSet()).toList()
-
-        toRemove.forEach { removeMPSChild(it) }
-        toAdd.forEach { id -> createMPSChild(tree, id)?.let { child -> mappings[id] = child } }
 
         return mappings
     }

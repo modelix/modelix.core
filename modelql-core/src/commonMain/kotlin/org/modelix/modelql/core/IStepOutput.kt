@@ -27,9 +27,11 @@ interface IStepOutput<out E> {
     val value: E
 }
 
+fun <T> IStepOutput<*>.upcast(): IStepOutput<T> = this as IStepOutput<T>
+
 typealias StepFlow<E> = Flow<IStepOutput<E>>
 val <T> Flow<IStepOutput<T>>.value: Flow<T> get() = map { it.value }
-fun <T> Flow<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { SimpleStepOutput(it, owner) }
+fun <T> Flow<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { it.asStepOutput(owner) }
 
 class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E>?) : IStepOutput<E>
 

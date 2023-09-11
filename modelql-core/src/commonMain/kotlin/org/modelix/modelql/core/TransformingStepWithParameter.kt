@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.map
 
 abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : MonoTransformingStep<CommonIn, Out>() {
     private var hasStaticParameter: Boolean = false
-    private var staticParameterValue: ParameterT? = null
+    private var staticParameterValue: IStepOutput<ParameterT>? = null
 
     private var targetProducer: IProducingStep<ParameterT>? = null
 
@@ -32,25 +32,25 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
         require(!getParameterProducer().canBeMultiple()) { "only mono parameters are supported: ${getParameterProducer()}" }
         hasStaticParameter = getParameterProducer().canEvaluateStatically()
         if (hasStaticParameter) {
-            staticParameterValue = getParameterProducer().evaluateStatically()
+            staticParameterValue = getParameterProducer().evaluateStatically().asStepOutput(null)
         }
     }
 
     override fun createFlow(input: StepFlow<CommonIn>, context: IFlowInstantiationContext): StepFlow<Out> {
         if (hasStaticParameter) {
-            return input.map { transformElement(it as IStepOutput<In>, (staticParameterValue as ParameterT).asStepOutput(null)) }
+            return input.map { transformElement(it.upcast<In>(), staticParameterValue as IStepOutput<ParameterT>) }
         } else {
             val parameterFlow = context.getOrCreateFlow<ParameterT>(getParameterProducer())
             return flow {
                 val parameterValue = parameterFlow.firstOrNull()
-                emitAll(input.map { transformElement(it as IStepOutput<In>, parameterValue) })
+                emitAll(input.map { transformElement(it.upcast<In>(), parameterValue) })
             }
         }
     }
 
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
         val parameterValue: IStepOutput<ParameterT>? = if (hasStaticParameter) {
-            (staticParameterValue as ParameterT).asStepOutput(null)
+            staticParameterValue
         } else {
             getParameterProducer().evaluate(
                 evaluationContext,

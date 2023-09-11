@@ -12,7 +12,7 @@ import org.modelix.mps.sync.synchronization.Synchronizer
 
 // status: ready to test
 abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncDirection) :
-    BaseBinding(initialSyncDirection) {
+    Binding(initialSyncDirection) {
 
     abstract val module: SModule
 

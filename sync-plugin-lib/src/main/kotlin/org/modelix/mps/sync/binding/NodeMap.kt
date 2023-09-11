@@ -46,7 +46,7 @@ class NodeMap(private val branchProvider: BranchProvider) : AbstractArea(), IAre
     // Map from Cloud ID to Node
     private val id2node: TLongObjectMap<SNode> = TLongObjectHashMap()
 
-    @Deprecated("use ILanguageRepository.resolveConcept")
+    @Deprecated("use ILanguageRepository.resolveConcept", ReplaceWith("ILanguageRepository.resolveConcept"))
     override fun resolveConcept(ref: IConceptReference): IConcept? = null
 
     override fun getReference(): IAreaReference = this

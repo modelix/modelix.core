@@ -91,7 +91,7 @@ class NodeMap(private val branchProvider: BranchProvider) : AbstractArea(), IAre
 
     fun hasMappingForCloudNode(cloudID: Long): Boolean = id2node.containsKey(cloudID)
 
-    fun getOrCreateNode(id: Long, conceptProducer: () -> Any): SNode {
+    fun getOrCreateNode(id: Long, conceptProducer: () -> Any?): SNode {
         var node = getNode(id)
         if (node == null) {
             try {

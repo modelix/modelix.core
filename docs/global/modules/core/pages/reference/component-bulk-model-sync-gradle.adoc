@@ -15,7 +15,7 @@ A common example would be synchronizing a local MPS project to a `model-server`.
 .Bulk Synchronization between MPS and model-server
 image::bulk-model-sync-gradle.overview.png[Bulk Synchronization between MPS and model-server]
 
-It allows the definition of sync directions by specifying source and target endpoint.
+The plugin allows the definition of sync directions inside of a `modelSync` block by specifying source and target endpoint.
 Based on these directions, Gradle tasks will be generated, which can be run to trigger the corresponding synchronization.
 
 Internally, the node data will be bulk exported from the source endpoint and stored as JSON files.
@@ -140,4 +140,4 @@ modelSync {
 }
 --
 
-Generated gradle task to perform synchronization: `runSyncPushToMyServer`.
+Generated Gradle task to perform synchronization: `runSyncPushToMyServer`.

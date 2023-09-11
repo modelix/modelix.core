@@ -19,22 +19,8 @@ package org.modelix.mps.sync.synchronization
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.model.api.INode
 
+// status: ready to test
 /**
  * This represents just a pair of associated models: one physical and one on the cloud.
  */
-class PhysicalToCloudModelMapping(physicalModel: SModel, cloudModel: INode) {
-    private val physicalModel: SModel
-    private val cloudModel: INode
-    fun getPhysicalModel(): SModel {
-        return physicalModel
-    }
-
-    fun getCloudModel(): INode {
-        return cloudModel
-    }
-
-    init {
-        this.physicalModel = physicalModel
-        this.cloudModel = cloudModel
-    }
-}
+class PhysicalToCloudModelMapping(private val physicalModel: SModel, private val cloudModel: INode)

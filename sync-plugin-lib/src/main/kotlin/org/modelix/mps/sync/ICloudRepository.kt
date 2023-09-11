@@ -20,6 +20,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.client.IIndirectBranch
 import org.modelix.model.lazy.RepositoryId
 
+// status: ready to test
 interface ICloudRepository {
 
     fun getBranch(): IBranch

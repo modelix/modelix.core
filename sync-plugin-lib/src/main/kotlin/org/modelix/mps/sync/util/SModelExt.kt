@@ -21,6 +21,8 @@ import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModuleReference
 
+// status: ready to test
+
 fun SModel.getRootsAsList() = this.rootNodes.toList()
 
 fun SModel.addDevKit(devKitModuleReference: SModuleReference) {

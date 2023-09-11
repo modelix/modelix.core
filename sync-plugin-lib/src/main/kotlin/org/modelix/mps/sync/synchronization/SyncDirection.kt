@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.synchronization
 
+// status: ready to test
 enum class SyncDirection {
     TO_MPS, TO_CLOUD
 }

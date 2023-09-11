@@ -20,6 +20,7 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.modelix.mps.sync.binding.ModelsSynchronizer
 
+// status: ready to test
 class TransientModelsSynchronizer(cloudParentId: Long, module: CloudTransientModule) :
     ModelsSynchronizer(cloudParentId, module) {
 

@@ -13,12 +13,10 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import org.modelix.metamodel.generator.LanguageSet
 import org.modelix.metamodel.generator.MetaModelGenerator
 import org.modelix.metamodel.generator.NameConfig
 import org.modelix.metamodel.generator.TypescriptMMGenerator
-import org.modelix.metamodel.generator.process
-import org.modelix.model.data.LanguageData
+import org.modelix.metamodel.generator.processLanguageData
 import javax.inject.Inject
 
 @CacheableTask
@@ -57,42 +55,14 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
 
     @TaskAction
     fun generate() {
-        var languages = LanguageSet(
-            exportedLanguagesDir.get().asFile.walk()
-                .filter { it.extension.lowercase() == "json" }
-                .map { LanguageData.fromJson(it.readText()) }
-                .toList(),
+        val languagesData = loadLanguageDataFromExportedLanguages(exportedLanguagesDir.get().asFile)
+
+        val processedLanguages = processLanguageData(
+            languagesData,
+            this.includedNamespaces.get(),
+            this.includedLanguages.get(),
+            this.includedConcepts.get(),
         )
-        val previousLanguageCount = languages.getLanguages().size
-
-        val includedNamespaces = this.includedNamespaces.get().map { it.trimEnd('.') }
-        val includedLanguages = this.includedLanguages.get()
-        val includedLanguagesAndNS = this.includedLanguages.get() + includedNamespaces
-        val namespacePrefixes = includedNamespaces.map { it + "." }
-        val includedConcepts = this.includedConcepts.get()
-
-        languages = languages.filter {
-            languages.getLanguages().filter { lang ->
-                includedLanguagesAndNS.contains(lang.name) ||
-                    namespacePrefixes.any { lang.name.startsWith(it) }
-            }.forEach { lang ->
-                lang.getConceptsInLanguage().forEach { concept ->
-                    includeConcept(concept.fqName)
-                }
-            }
-            includedConcepts.forEach { includeConcept(it) }
-        }
-
-        val missingLanguages = includedLanguages - languages.getLanguages().map { it.name }.toSet()
-        val missingConcepts = includedConcepts - languages.getLanguages().flatMap { it.getConceptsInLanguage() }.map { it.fqName }.toSet()
-
-        if (missingLanguages.isNotEmpty() || missingConcepts.isNotEmpty()) {
-            throw RuntimeException("The following languages or concepts were not found: " + (missingLanguages + missingConcepts))
-        }
-
-        println("${languages.getLanguages().size} of $previousLanguageCount languages included")
-
-        val processedLanguages = languages.process()
 
         val kotlinOutputDir = this.kotlinOutputDir.orNull?.asFile
         if (kotlinOutputDir != null) {

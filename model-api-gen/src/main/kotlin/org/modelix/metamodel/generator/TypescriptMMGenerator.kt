@@ -21,11 +21,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         return packageDir
     }
 
-    fun generate(languages: IProcessedLanguageSet) {
-        generate(languages as ProcessedLanguageSet)
-    }
-
-    internal fun generate(languages: ProcessedLanguageSet) {
+    fun generate(languages: ReadonlyProcessedLanguageSet) {
         Files.createDirectories(outputDir)
         for (language in languages.getLanguages()) {
             // TODO delete old files from previous generation
@@ -37,7 +33,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         }
     }
 
-    private fun generateRegistry(languages: ProcessedLanguageSet) {
+    private fun generateRegistry(languages: ReadonlyProcessedLanguageSet) {
         outputDir.resolve("index.ts").writeText(
             """
             import { LanguageRegistry } from "@modelix/ts-model-api";
@@ -55,7 +51,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         )
     }
 
-    private fun generateLanguage(language: ProcessedLanguage): String {
+    private fun generateLanguage(language: ReadonlyProcessedLanguage): String {
         val conceptNamesList = language.getConcepts()
             .joinToString(", ") { it.conceptWrapperInterfaceName() }
 
@@ -96,10 +92,10 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         """.trimIndent()
     }
 
-    private fun generateConcept(concept: ProcessedConcept): String {
+    private fun generateConcept(concept: ReadonlyProcessedConcept): String {
         val featuresImpl = concept.getAllSuperConceptsAndSelf().flatMap { it.getOwnRoles() }.joinToString("\n") { feature ->
             when (feature) {
-                is ProcessedProperty -> {
+                is ReadonlyProcessedProperty -> {
                     val rawValueName = feature.rawValueName()
                     val rawPropertyText = """
                         public set $rawValueName(value: string | undefined) {
@@ -152,7 +148,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         $typedPropertyText
                     """.trimIndent()
                 }
-                is ProcessedReferenceLink -> {
+                is ReadonlyProcessedReferenceLink -> {
                     val typeRef = feature.type.resolved
                     val languagePrefix = typeRef.languagePrefix(concept.language)
                     val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
@@ -166,7 +162,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                     }
                     """.trimIndent()
                 }
-                is ProcessedChildLink -> {
+                is ReadonlyProcessedChildLink -> {
                     val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     val typeRef = feature.type.resolved
                     val languagePrefix = typeRef.languagePrefix(concept.language)
@@ -174,12 +170,11 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         public ${feature.generatedName}: $accessorClassName<$languagePrefix${typeRef.nodeWrapperInterfaceName()}> = new $accessorClassName(this._node, "${feature.originalName}")
                     """.trimIndent()
                 }
-                else -> ""
             }
         }
         val features = concept.getOwnRoles().joinToString("\n") { feature ->
             when (feature) {
-                is ProcessedProperty -> {
+                is ReadonlyProcessedProperty -> {
                     val rawPropertyText = """
                         ${feature.rawValueName()}: string | undefined
                     """.trimIndent()
@@ -212,7 +207,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         $typedPropertyText
                     """.trimIndent()
                 }
-                is ProcessedReferenceLink -> {
+                is ReadonlyProcessedReferenceLink -> {
                     val typeRef = feature.type.resolved
                     val languagePrefix = typeRef.languagePrefix(concept.language)
                     val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
@@ -221,13 +216,12 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         get ${feature.generatedName}(): $entityType | undefined;
                     """.trimIndent()
                 }
-                is ProcessedChildLink -> {
+                is ReadonlyProcessedChildLink -> {
                     val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     """
                         ${feature.generatedName}: $accessorClassName<${feature.type.resolved.tsInterfaceRef(concept.language)}>
                     """.trimIndent()
                 }
-                else -> ""
             }
         }
         val interfaceList = concept.getDirectSuperConcepts().joinToString(", ") { it.tsInterfaceRef(concept.language) }.ifEmpty { "ITypedNode" }
@@ -262,29 +256,29 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         """.trimIndent()
     }
 
-    private fun ProcessedConcept.nodeWrapperInterfaceName() =
+    private fun ReadonlyProcessedConcept.nodeWrapperInterfaceName() =
         nameConfig.typedNode(this.name)
 
-    private fun ProcessedConcept.conceptWrapperImplName() =
+    private fun ReadonlyProcessedConcept.conceptWrapperImplName() =
         nameConfig.typedConceptImpl(this.name)
 
-    private fun ProcessedConcept.nodeWrapperImplName() =
+    private fun ReadonlyProcessedConcept.nodeWrapperImplName() =
         nameConfig.typedNodeImpl(this.name)
 
-    private fun ProcessedConcept.conceptWrapperInterfaceName() =
+    private fun ReadonlyProcessedConcept.conceptWrapperInterfaceName() =
         nameConfig.typedConcept(this.name)
 
-    private fun ProcessedLanguage.generatedClassName() =
+    private fun ReadonlyProcessedLanguage.generatedClassName() =
         ClassName(name, nameConfig.languageClass(name))
 
-    private fun ProcessedLanguage.simpleClassName() =
+    private fun ReadonlyProcessedLanguage.simpleClassName() =
         this.generatedClassName().simpleName
 
-    private fun ProcessedConcept.markerPropertyName() = "_is_" + this.fqName().replace(".", "_")
+    private fun ReadonlyProcessedConcept.markerPropertyName() = "_is_" + this.fqName().replace(".", "_")
 
     // private fun ProcessedConcept.tsClassName() = nameConfig.languageClassName(this.language.name) + "." + this.name
-    private fun ProcessedConcept.tsInterfaceRef(contextLanguage: ProcessedLanguage) = languagePrefix(contextLanguage) + nodeWrapperInterfaceName()
-    private fun ProcessedConcept.languagePrefix(contextLanguage: ProcessedLanguage): String {
+    private fun ReadonlyProcessedConcept.tsInterfaceRef(contextLanguage: ReadonlyProcessedLanguage) = languagePrefix(contextLanguage) + nodeWrapperInterfaceName()
+    private fun ReadonlyProcessedConcept.languagePrefix(contextLanguage: ReadonlyProcessedLanguage): String {
         return if (this.language == contextLanguage) {
             ""
         } else {
@@ -293,12 +287,12 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
     }
 }
 
-internal fun ProcessedLanguage.languageDependencies(): List<ProcessedLanguage> {
+internal fun ReadonlyProcessedLanguage.languageDependencies(): List<ReadonlyProcessedLanguage> {
     val languageNames = this.getConcepts()
         .flatMap { it.getAllSuperConceptsAndSelf().flatMap { it.getOwnRoles() } }
         .mapNotNull {
             when (it) {
-                is ProcessedLink -> it.type.resolved
+                is ReadonlyProcessedLink -> it.type.resolved
                 else -> null
             }
         }
@@ -308,4 +302,4 @@ internal fun ProcessedLanguage.languageDependencies(): List<ProcessedLanguage> {
     return languageSet.getLanguages().filter { languageNames.contains(it.name) }.minus(this)
 }
 
-private fun ProcessedProperty.rawValueName() = "raw_$generatedName"
+private fun ReadonlyProcessedProperty.rawValueName() = "raw_$generatedName"

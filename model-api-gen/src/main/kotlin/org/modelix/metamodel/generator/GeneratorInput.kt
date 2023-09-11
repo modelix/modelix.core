@@ -25,10 +25,9 @@ val reservedPropertyNames: Set<String> = setOf(
     "_node", // exists in TypedNode in ts-model-api
 ) + IConcept::class.members.map { it.name }
 
-interface IProcessedLanguageSet
-fun LanguageSet.process(): IProcessedLanguageSet = ProcessedLanguageSet(getLanguages().map { it.language })
+internal fun LanguageSet.process(): ReadonlyProcessedLanguageSet = ProcessedLanguageSet(getLanguages().map { it.language })
 
-internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLanguageSet {
+internal class ProcessedLanguageSet(dataList: List<LanguageData>) : ReadonlyProcessedLanguageSet {
 
     private val languages: MutableList<ProcessedLanguage> = ArrayList()
 
@@ -134,13 +133,13 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
         }
     }
 
-    fun getLanguages(): List<ProcessedLanguage> {
+    override fun getLanguages(): List<ProcessedLanguage> {
         return languages
     }
 }
 
-internal class ProcessedLanguage(var name: String, var uid: String?) {
-    lateinit var languageSet: ProcessedLanguageSet
+internal class ProcessedLanguage(override var name: String, var uid: String?) : ReadonlyProcessedLanguage {
+    override lateinit var languageSet: ProcessedLanguageSet
     private val concepts: MutableList<ProcessedConcept> = ArrayList()
     private val enums: MutableList<ProcessedEnum> = ArrayList()
     lateinit var simpleName2concept: Map<String, ProcessedConcept>
@@ -150,7 +149,7 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
         concept.language = this
     }
 
-    fun getConcepts(): List<ProcessedConcept> = concepts
+    override fun getConcepts(): List<ProcessedConcept> = concepts
 
     fun addEnum(enum: ProcessedEnum) {
         enums.add(enum)
@@ -185,12 +184,12 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
     }
 }
 
-internal class ProcessedConceptReference(var name: String) {
-    lateinit var resolved: ProcessedConcept
+internal class ProcessedConceptReference(override var name: String) : ReadonlyProcessedConceptReference {
+    override lateinit var resolved: ProcessedConcept
 }
 
-internal sealed interface IProcessedDeprecatable {
-    var deprecationMessage: String?
+sealed interface IProcessedDeprecatable : ReadonlyProcessedDeprecatable {
+    override var deprecationMessage: String?
 }
 
 internal class ProcessedEnum(
@@ -215,23 +214,23 @@ internal class ProcessedEnumMember(var name: String, var uid: String, var presen
 }
 
 internal class ProcessedConcept(
-    var name: String,
-    var uid: String?,
+    override var name: String,
+    override var uid: String?,
     var abstract: Boolean,
     val extends: MutableList<ProcessedConceptReference>,
     override var deprecationMessage: String?,
-) : IProcessedDeprecatable {
-    lateinit var language: ProcessedLanguage
+) : ReadonlyProcessedConcept, IProcessedDeprecatable {
+    override lateinit var language: ProcessedLanguage
     private val roles: MutableList<ProcessedRole> = ArrayList()
 
-    fun fqName() = language.name + "." + name
+    override fun fqName() = language.name + "." + name
 
     fun addRole(role: ProcessedRole) {
         roles.add(role)
         role.concept = this
     }
 
-    fun getOwnRoles(): List<ProcessedRole> = roles
+    override fun getOwnRoles(): List<ProcessedRole> = roles
 
     fun getOwnAndDuplicateRoles(): List<ProcessedRole> = roles + getDuplicateSuperConcepts().flatMap { it.getOwnRoles() }
 
@@ -246,43 +245,43 @@ internal class ProcessedConcept(
         roles.forEach { it.visitConceptReferences(visitor) }
     }
 
-    fun getDirectSuperConcepts(): Sequence<ProcessedConcept> = extends.asSequence().map { it.resolved }
+    override fun getDirectSuperConcepts(): Sequence<ProcessedConcept> = extends.asSequence().map { it.resolved }
     private fun getAllSuperConcepts_(): Sequence<ProcessedConcept> = getDirectSuperConcepts().flatMap { it.getAllSuperConceptsAndSelf_() }
     private fun getAllSuperConceptsAndSelf_(): Sequence<ProcessedConcept> = sequenceOf(this) + getAllSuperConcepts_()
 
     fun getAllSuperConcepts(): Sequence<ProcessedConcept> = getAllSuperConcepts_().distinct()
-    fun getAllSuperConceptsAndSelf(): Sequence<ProcessedConcept> = getAllSuperConceptsAndSelf_().distinct()
-    fun getDuplicateSuperConcepts() = getAllSuperConcepts_().groupBy { it }.filter { it.value.size > 1 }.map { it.key }
+    override fun getAllSuperConceptsAndSelf(): Sequence<ProcessedConcept> = getAllSuperConceptsAndSelf_().distinct()
+    override fun getDuplicateSuperConcepts() = getAllSuperConcepts_().groupBy { it }.filter { it.value.size > 1 }.map { it.key }
 }
 
 internal sealed class ProcessedRole(
-    var originalName: String,
-    var uid: String?,
-    var optional: Boolean,
+    override var originalName: String,
+    override var uid: String?,
+    override var optional: Boolean,
     override var deprecationMessage: String?,
-) : IProcessedDeprecatable {
+) : ReadonlyProcessedRole, IProcessedDeprecatable {
     lateinit var concept: ProcessedConcept
-    var generatedName: String = originalName
+    override var generatedName: String = originalName
 
     fun setterName() = "set" + generatedName.take(1).uppercase() + generatedName.drop(1)
 
     abstract fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit)
 }
 
-internal class ProcessedProperty(name: String, uid: String?, optional: Boolean, var type: PropertyType, deprecationMessage: String?) :
-    ProcessedRole(name, uid, optional, deprecationMessage) {
+internal class ProcessedProperty(name: String, uid: String?, optional: Boolean, override var type: PropertyType, deprecationMessage: String?) :
+    ReadonlyProcessedProperty, ProcessedRole(name, uid, optional, deprecationMessage) {
     override fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit) {}
 }
 
-internal sealed class ProcessedLink(name: String, uid: String?, optional: Boolean, var type: ProcessedConceptReference, deprecationMessage: String?) :
-    ProcessedRole(name, uid, optional, deprecationMessage) {
+internal sealed class ProcessedLink(name: String, uid: String?, optional: Boolean, override var type: ProcessedConceptReference, deprecationMessage: String?) :
+    ReadonlyProcessedLink, ProcessedRole(name, uid, optional, deprecationMessage) {
     override fun visitConceptReferences(visitor: (ProcessedConceptReference) -> Unit) {
         visitor(type)
     }
 }
 
-internal class ProcessedChildLink(name: String, uid: String?, optional: Boolean, var multiple: Boolean, type: ProcessedConceptReference, deprecationMessage: String?) :
-    ProcessedLink(name, uid, optional, type, deprecationMessage)
+internal class ProcessedChildLink(name: String, uid: String?, optional: Boolean, override var multiple: Boolean, type: ProcessedConceptReference, deprecationMessage: String?) :
+    ReadonlyProcessedChildLink, ProcessedLink(name, uid, optional, type, deprecationMessage)
 
 internal class ProcessedReferenceLink(name: String, uid: String?, optional: Boolean, type: ProcessedConceptReference, deprecationMessage: String?) :
-    ProcessedLink(name, uid, optional, type, deprecationMessage)
+    ReadonlyProcessedReferenceLink, ProcessedLink(name, uid, optional, type, deprecationMessage)

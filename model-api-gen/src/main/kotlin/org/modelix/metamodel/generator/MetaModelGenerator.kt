@@ -92,11 +92,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
         return packageDir
     }
 
-    fun generateRegistrationHelper(classFqName: String, languages: IProcessedLanguageSet) {
-        generateRegistrationHelper(classFqName, languages as ProcessedLanguageSet)
-    }
-
-    internal fun generateRegistrationHelper(classFqName: String, languages: ProcessedLanguageSet) {
+    fun generateRegistrationHelper(classFqName: String, languages: ReadonlyProcessedLanguageSet) {
         val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
         val cls = TypeSpec.objectBuilder(typeName)
             .addProperty(
@@ -117,7 +113,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             .write()
     }
 
-    fun generate(languages: IProcessedLanguageSet) {
+    fun generate(languages: ReadonlyProcessedLanguageSet) {
         generate(languages as ProcessedLanguageSet)
     }
 
@@ -949,7 +945,7 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
     private fun ProcessedConcept.conceptWrapperInterfaceClass() =
         ClassName(language.name, nameConfig.typedConcept(name))
 
-    private fun ProcessedLanguage.generatedClassName() = ClassName(name, nameConfig.languageClass(name))
+    private fun ReadonlyProcessedLanguage.generatedClassName() = ClassName(name, nameConfig.languageClass(name))
     private fun ProcessedConcept.nodeWrapperInterfaceName() = nameConfig.typedNode(name)
     private fun ProcessedConcept.nodeWrapperImplName() = nameConfig.typedNodeImpl(name)
     private fun ProcessedConcept.conceptObjectName() = nameConfig.untypedConcept(name)

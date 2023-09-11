@@ -2,7 +2,7 @@ package org.modelix.mps.sync
 
 import jetbrains.mps.project.MPSProject
 import org.modelix.model.lazy.BranchReference
-import org.modelix.mps.sync.binding.Binding
+import org.modelix.mps.sync.binding.IBinding
 import java.net.URL
 
 interface SyncService {
@@ -12,5 +12,5 @@ interface SyncService {
         jwt: String,
         project: MPSProject,
         afterActivate: () -> Unit,
-    ): Binding
+    ): IBinding
 }

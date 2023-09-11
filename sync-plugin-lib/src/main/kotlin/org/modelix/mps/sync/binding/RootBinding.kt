@@ -31,7 +31,7 @@ import org.modelix.mps.sync.synchronization.SyncQueue
 /**
  * Just a parent for all actual bindings
  */
-class RootBinding(private val cloudRepository: ICloudRepository) : BaseBinding(null), IBranchListener {
+class RootBinding(private val cloudRepository: ICloudRepository) : Binding(null), IBranchListener {
 
     private var disposed = false
     val syncQueue: SyncQueue = SyncQueue(this)

@@ -12,7 +12,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
-import org.modelix.mps.sync.binding.Binding
+import org.modelix.mps.sync.binding.IBinding
 import java.net.URL
 
 class SyncServiceImpl : SyncService {
@@ -25,7 +25,7 @@ class SyncServiceImpl : SyncService {
         jwt: String,
         mpsPproject: MPSProject,
         afterActivate: () -> Unit,
-    ): Binding {
+    ): IBinding {
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         val modelClientV2: ModelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
         val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
@@ -52,7 +52,7 @@ class SyncServiceImpl : SyncService {
     }
 }
 
-class BindingImpl(replicatedModel: ReplicatedModel, mpsPproject: MPSProject) : Binding {
+class BindingImpl(replicatedModel: ReplicatedModel, mpsPproject: MPSProject) : IBinding {
 
     val branch: IBranch
 

@@ -16,13 +16,13 @@
 
 package org.modelix.mps.sync.synchronization
 
-import org.modelix.mps.sync.binding.BaseBinding
+import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ELockType
 import java.util.Collections
 
 class SyncTask : Runnable {
 
-    val binding: BaseBinding
+    val binding: Binding
     private val callbacks: MutableList<Runnable> = mutableListOf()
     val direction: SyncDirection
     private val implementation: Runnable
@@ -31,7 +31,7 @@ class SyncTask : Runnable {
     private val state: State = State.NEW
 
     constructor(
-        binding: BaseBinding,
+        binding: Binding,
         direction: SyncDirection,
         initialSync: Boolean,
         requiredLocks: Set<ELockType>,

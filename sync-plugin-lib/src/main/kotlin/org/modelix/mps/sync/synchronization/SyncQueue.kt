@@ -18,7 +18,7 @@ package org.modelix.mps.sync.synchronization
 
 import org.modelix.model.api.ITree
 import org.modelix.model.client.SharedExecutors
-import org.modelix.mps.sync.binding.Binding
+import org.modelix.mps.sync.binding.IBinding
 import org.modelix.mps.sync.binding.RootBinding
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
@@ -36,10 +36,10 @@ class SyncQueue(val owner: RootBinding) {
         private set
 
     private val flushExecutor: FlushExecutor = FlushExecutor()
-    private val syncQueue: MutableMap<Binding, SyncTask> = mutableMapOf()
+    private val syncQueue: MutableMap<IBinding, SyncTask> = mutableMapOf()
     private val syncThread: Thread? = null
 
-    fun getTask(binding: Binding): SyncTask? = syncQueue[binding]
+    fun getTask(binding: IBinding): SyncTask? = syncQueue[binding]
 
     fun enqueue(task: SyncTask): Boolean {
         require(task.binding.getRootBinding() == owner) { task.binding.toString() + " is not attached to " + this }

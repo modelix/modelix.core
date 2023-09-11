@@ -44,7 +44,7 @@ import org.modelix.mps.sync.synchronization.SyncDirection
 
 // status: ready to test
 class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSyncDirection: SyncDirection) :
-    BaseBinding(initialSyncDirection) {
+    Binding(initialSyncDirection) {
 
     private val logger = mu.KotlinLogging.logger {}
 

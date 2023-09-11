@@ -38,6 +38,7 @@ import org.modelix.model.area.PArea
 import org.modelix.model.mpsadapters.MPSNodeReference
 import org.modelix.mps.sync.util.mappedMpsNodeID
 
+// status: ready to test
 class NodeMap(private val branchProvider: BranchProvider) : AbstractArea(), IAreaReference {
 
     // Map from Node to Cloud ID
@@ -51,45 +52,14 @@ class NodeMap(private val branchProvider: BranchProvider) : AbstractArea(), IAre
 
     override fun getReference(): IAreaReference = this
 
-    override fun getRoot(): INode = throw UnsupportedOperationException()
-
-    override fun resolveOriginalNode(ref: INodeReference): INode? {
-        if (ref is MPSNodeReference) {
-            val targetNodeId = ref.ref.nodeId
-            val sNode = node2id.keySet().stream().filter { sNode -> sNode.nodeId == targetNodeId }.findFirst()
-            return if (sNode.isPresent) {
-                // TODO fix SNode -> INode transformation. Problem SNodeToNodeAdapter.wrap does not exist anymore in modelix...
-                // return SNodeToNodeAdapter.wrap(sNode.get());
-                null
-            } else {
-                null
-            }
-        }
-        return null
-    }
-
     fun put(id: Long, node: SNode?) {
         id2node.put(id, node)
         node2id.put(node, id)
     }
 
-    fun removeId(id: Long) {
-        val node = id2node.remove(id)
-        if (node != null) {
-            node2id.remove(node)
-        }
-    }
-
-    fun removeNode(node: SNode?) {
-        val id = node2id.remove(node)
-        id2node.remove(id)
-    }
-
     fun getNode(id: Long): SNode? = id2node[id]
 
     fun getId(node: SNode?): Long = node2id.get(node)
-
-    fun hasMappingForCloudNode(cloudID: Long): Boolean = id2node.containsKey(cloudID)
 
     fun getOrCreateNode(id: Long, conceptProducer: () -> Any?): SNode {
         var node = getNode(id)
@@ -138,6 +108,23 @@ class NodeMap(private val branchProvider: BranchProvider) : AbstractArea(), IAre
         }
         return node
     }
+
+    override fun resolveOriginalNode(ref: INodeReference): INode? {
+        if (ref is MPSNodeReference) {
+            val targetNodeId = ref.ref.nodeId
+            val sNode = node2id.keySet().stream().filter { sNode -> sNode.nodeId == targetNodeId }.findFirst()
+            return if (sNode.isPresent) {
+                // TODO fix SNode -> INode transformation. Problem SNodeToNodeAdapter.wrap does not exist anymore in modelix...
+                // return SNodeToNodeAdapter.wrap(sNode.get());
+                null
+            } else {
+                null
+            }
+        }
+        return null
+    }
+
+    override fun getRoot(): INode = throw UnsupportedOperationException()
 
     fun interface BranchProvider {
         fun getBranch(): IBranch?

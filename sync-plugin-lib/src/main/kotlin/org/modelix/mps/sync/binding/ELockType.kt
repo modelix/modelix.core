@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.binding
 
+// status: ready to test
 enum class ELockType {
     MPS_COMMAND, MPS_READ, CLOUD_WRITE, CLOUD_READ
 }

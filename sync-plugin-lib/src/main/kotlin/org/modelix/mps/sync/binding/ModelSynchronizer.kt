@@ -45,6 +45,7 @@ import org.modelix.mps.sync.synchronization.Synchronizer
 import org.modelix.mps.sync.util.index
 import org.modelix.mps.sync.util.mapToMpsNode
 
+// status: migrated, but needs some bugfixes
 class ModelSynchronizer(
     private val modelNodeId: Long,
     private val model: SModel,

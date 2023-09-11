@@ -21,9 +21,8 @@ import org.modelix.mps.sync.synchronization.SyncDirection
 
 class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, SyncDirection.TO_MPS) {
 
-    private lateinit var module: CloudTransientModule
+    override lateinit var module: CloudTransientModule
 
-    override fun getModule(): CloudTransientModule = module
     override fun doDeactivate() {
         TODO("Not yet implemented")
     }

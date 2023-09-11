@@ -30,12 +30,13 @@ import org.modelix.mps.sync.synchronization.Synchronizer
 import org.modelix.mps.sync.util.createModel
 import org.modelix.mps.sync.util.getModelsWithoutDescriptor
 
+// status: migrated, but needs some bugfixes
 // TODO concepts in this class are from the org.modelix.modelix.repositoryconcepts language
 // TODO instead of "models" it must be link/Module: models/.getName() --> i.e. get the name of the module.models reference
 open class ModelsSynchronizer(cloudParentId: Long, val module: SModule) :
     Synchronizer<SModel>(cloudParentId, "models") {
 
-    open fun getModule() = this.module
+    open fun getModule() = module
 
     override fun getMPSChildren(): Iterable<SModel> = module.getModelsWithoutDescriptor().filter { !it.isReadOnly }
 

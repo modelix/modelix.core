@@ -16,4 +16,5 @@
 
 package org.modelix.mps.sync.userobject
 
+// status: ready to test
 data class UserObjectKey(val id: String?)

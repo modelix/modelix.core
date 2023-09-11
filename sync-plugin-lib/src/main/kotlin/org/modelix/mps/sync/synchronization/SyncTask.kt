@@ -20,32 +20,50 @@ import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ELockType
 import java.util.Collections
 
-class SyncTask : Runnable {
+// status: ready to test
+class SyncTask(
+    val binding: Binding,
+    val direction: SyncDirection,
+    initialSync: Boolean,
+    requiredLocks: Set<ELockType>,
+    private val implementation: Runnable,
+) : Runnable {
 
-    val binding: Binding
+    private val logger = mu.KotlinLogging.logger {}
     private val callbacks: MutableList<Runnable> = mutableListOf()
-    val direction: SyncDirection
-    private val implementation: Runnable
-    val isInitialSync: Boolean
+    val isInitialSync: Boolean = initialSync
     private val requiredLocks: Set<ELockType>
-    private val state: State = State.NEW
+    private var state: State = State.NEW
 
-    constructor(
-        binding: Binding,
-        direction: SyncDirection,
-        initialSync: Boolean,
-        requiredLocks: Set<ELockType>,
-        implementation: Runnable,
-    ) {
-        this.binding = binding
-        this.direction = direction
-        this.isInitialSync = initialSync
-        this.implementation = implementation
+    init {
         this.requiredLocks = Collections.unmodifiableSet(HashSet<ELockType>(requiredLocks))
     }
 
     override fun run() {
-        TODO("Not yet implemented")
+        assert(state != State.NEW) { "Current state: $state" }
+        try {
+            state = State.RUNNING
+            if (binding.isActive) {
+                binding.runningTask = this
+                implementation.run()
+            } else {
+                logger.warn { "Skipped $this, because the binding is inactive" }
+                return
+            }
+        } finally {
+            binding.runningTask = null
+            state = State.DONE
+        }
+    }
+
+    fun invokeCallbacks() {
+        callbacks.forEach { callback ->
+            try {
+                callback.run()
+            } catch (ex: Exception) {
+                logger.error(ex) { ex.message }
+            }
+        }
     }
 
     fun isDone(): Boolean = state === State.DONE
@@ -53,6 +71,8 @@ class SyncTask : Runnable {
     fun isRunning(): Boolean = state === State.RUNNING
 
     fun whenDone(callback: Runnable?) = callback?.let { callbacks.add(it) }
+
+    override fun toString(): String = "task[$binding, $direction, $requiredLocks]"
 }
 
 private enum class State {

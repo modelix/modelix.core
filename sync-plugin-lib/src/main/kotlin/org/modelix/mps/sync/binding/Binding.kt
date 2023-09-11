@@ -30,7 +30,8 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
 
     private val logger = mu.KotlinLogging.logger {}
 
-    private var isActive = false
+    var isActive = false
+        private set
     private var lastTask: SyncTask? = null
     private val listeners = mutableListOf<IListener>()
     protected val ownedBindings = mutableSetOf<Binding>()

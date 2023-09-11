@@ -1,4 +1,6 @@
 import com.github.gradle.node.npm.task.NpmSetupTask
+import org.modelix.metamodel.generator.UnstableGeneratorFeature
+import org.modelix.metamodel.gradle.PerformWithExportedLanguagesTask
 
 buildscript {
     repositories {
@@ -108,6 +110,19 @@ metamodel {
     registrationHelperName = "org.modelix.apigen.test.ApigenTestLanguages"
 }
 
+@OptIn(UnstableGeneratorFeature::class)
+tasks.register<PerformWithExportedLanguagesTask>("generateUsedLanguagesSummary") {
+    val outputFile = buildDir.resolve("languagesSummary.txt")
+    outputs.file(outputFile)
+    dependsOn("exportMetaModelFromMps")
+    includedLanguages.set(listOf("jetbrains.mps.lang.core"))
+    performWithExportedLanguages { languages ->
+        // One use case would be to write a generator (e.g. for code, documentation).
+        val content = languages.getLanguages().map { it.name }.joinToString("\n")
+        outputFile.writeText(content)
+    }
+}
+
 node {
     version.set("18.3.0")
     npmVersion.set("8.11.0")
@@ -128,4 +143,8 @@ tasks.named("npm_run_build") {
 
 tasks.named("assemble") {
     dependsOn("npm_run_build")
+}
+
+tasks.named("test") {
+    dependsOn("generateUsedLanguagesSummary")
 }

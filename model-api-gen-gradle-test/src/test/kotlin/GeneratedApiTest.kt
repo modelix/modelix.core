@@ -44,6 +44,13 @@ class GeneratedApiTest {
     }
 
     @Test
+    fun `PerformWithExportedLanguagesTask is executed with access to MPS languages`() {
+        val actualOutput = File("build/languagesSummary.txt").readText()
+        val expectedOutput = "jetbrains.mps.lang.core"
+        assertEquals(expectedOutput, actualOutput)
+    }
+
+    @Test
     fun `propagates deprecations`() {
         val foundDeprecatedConcept = C_SuperInterfaceMethodCall_old::class.hasDeprecationWithMessage()
         val foundDeprecatedProperty = C_ConceptMethodDeclaration::class.members.any { it.hasDeprecationWithMessage() }

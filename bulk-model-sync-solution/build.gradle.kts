@@ -10,7 +10,7 @@ group = "org.modelix.mps"
 val generatorLibs: Configuration by configurations.creating
 
 dependencies {
-    "generatorLibs"(project(":bulk-model-sync-lib"))
+    generatorLibs(project(":bulk-model-sync-lib"))
     generatorLibs(project(":mps-model-adapters"))
 }
 

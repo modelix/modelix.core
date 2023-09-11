@@ -37,8 +37,8 @@ open class ModelSyncGradleSettings {
 
 data class SyncDirection(
     internal val name: String,
-    internal var source: SyncEndPoint? = null,
-    internal var target: SyncEndPoint? = null,
+    internal var source: SyncEndpoint? = null,
+    internal var target: SyncEndpoint? = null,
     internal val includedModules: Set<String> = mutableSetOf(),
     internal val registeredLanguages: Set<ILanguage> = mutableSetOf(),
 ) {
@@ -75,11 +75,11 @@ data class SyncDirection(
     }
 }
 
-interface SyncEndPoint {
+interface SyncEndpoint {
     fun getValidationErrors(): List<String>
 }
 
-sealed interface LocalEndpoint : SyncEndPoint {
+sealed interface LocalEndpoint : SyncEndpoint {
     var mpsHome: File?
     var mpsHeapSize: String
     var repositoryDir: File?
@@ -108,7 +108,7 @@ data class LocalTarget(
     override var repositoryDir: File? = null,
 ) : LocalEndpoint
 
-sealed interface ServerEndpoint : SyncEndPoint {
+sealed interface ServerEndpoint : SyncEndpoint {
     var url: String?
     var repositoryId: String?
     var branchName: String?

@@ -16,6 +16,39 @@
 
 package org.modelix.mps.sync.transient
 
+import jetbrains.mps.extapi.module.TransientSModule
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.ModuleId
+import jetbrains.mps.project.structure.modules.ModuleDescriptor
+import org.modelix.model.util.pmap.CustomPMap
+import org.modelix.model.util.pmap.SmallPMap.Companion.empty
+import org.modelix.mps.sync.userobject.IUserObjectContainer
+import org.modelix.mps.sync.userobject.UserObjectKey
 
-class CloudTransientModule : AbstractModule()
+// status: ready to test
+class CloudTransientModule(name: String, id: ModuleId) : AbstractModule(null), IUserObjectContainer, TransientSModule {
+
+    private val myDescriptor: ModuleDescriptor = ModuleDescriptor()
+    private var userObjects: CustomPMap<Any, Any> = empty()
+
+    init {
+        myDescriptor.id = id
+        myDescriptor.namespace = name
+        moduleReference = myDescriptor.moduleReference
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T> getUserObject(key: UserObjectKey): T = userObjects[key] as T
+
+    override fun <T> putUserObject(key: UserObjectKey, value: T) {
+        userObjects = userObjects.put(key, value as Any)!!
+    }
+
+    override fun getModuleDescriptor(): ModuleDescriptor = myDescriptor
+
+    override fun collectMandatoryFacetTypes(types: Set<String>) {}
+
+    override fun isPackaged() = false
+
+    override fun isReadOnly() = false
+}

@@ -18,6 +18,6 @@ package org.modelix.mps.sync.userobject
 
 // status: ready to test
 interface IUserObjectContainer {
-    fun <T> putUserObject(key: UserObjectKey?, value: T)
-    fun <T> getUserObject(key: UserObjectKey?): T
+    fun <T> putUserObject(key: UserObjectKey, value: T)
+    fun <T> getUserObject(key: UserObjectKey): T
 }

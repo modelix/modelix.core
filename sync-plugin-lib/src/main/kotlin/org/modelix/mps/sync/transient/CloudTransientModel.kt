@@ -68,11 +68,11 @@ class CloudTransientModel(module: CloudTransientModule, name: String, modelId: S
         TODO("Not yet implemented")
     }
 
-    override fun <T> putUserObject(key: UserObjectKey?, value: T) {
+    override fun <T> putUserObject(key: UserObjectKey, value: T) {
         TODO("Not yet implemented")
     }
 
-    override fun <T> getUserObject(key: UserObjectKey?): T {
+    override fun <T> getUserObject(key: UserObjectKey): T {
         TODO("Not yet implemented")
     }
 }

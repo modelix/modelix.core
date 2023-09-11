@@ -16,7 +16,9 @@
 
 package org.modelix.mps.sync.binding
 
+import jetbrains.mps.lang.migration.runtime.base.VersionFixer
 import jetbrains.mps.model.ModelDeleteHelper
+import jetbrains.mps.project.ProjectManager
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
@@ -35,14 +37,16 @@ open class ModelsSynchronizer(cloudParentId: Long, val module: SModule) :
 
     open fun getModule() = this.module
 
-    protected open fun createModel(name: String, id: SModelId, modelNodeId: Long) = module.createModel(name, id)
     override fun getMPSChildren(): Iterable<SModel> = module.getModelsWithoutDescriptor().filter { !it.isReadOnly }
+
     override fun createMPSChild(tree: ITree, cloudChildId: Long): SModel? {
         val id = getModelId(tree, cloudChildId) ?: jetbrains.mps.smodel.SModelId.foreign("cloud-$cloudChildId")
         // TODO instead of "name" it must be property/Model: name/.getName()
         val name = tree.getProperty(cloudChildId, "name")!!
         return createModel(name, id, cloudChildId)
     }
+
+    protected open fun createModel(name: String, id: SModelId, modelNodeId: Long) = module.createModel(name, id)
 
     override fun removeMPSChild(mpsChild: SModel) = ModelDeleteHelper(mpsChild).delete()
 
@@ -75,7 +79,7 @@ open class ModelsSynchronizer(cloudParentId: Long, val module: SModule) :
         return result
     }
 
-    fun getModelId(tree: ITree, cloudModelId: Long): SModelId? {
+    private fun getModelId(tree: ITree, cloudModelId: Long): SModelId? {
         // TODO instead of "id" it must be property/Model: id/.getName()
         val serializedId = tree.getProperty(cloudModelId, "id")
         return if (serializedId.isNullOrEmpty()) {
@@ -93,5 +97,14 @@ open class ModelsSynchronizer(cloudParentId: Long, val module: SModule) :
         // TODO instead of "name" it must be property/Model: name/.getName()
         transaction.setProperty(modelNodeId, "name", mpsChild.name.value)
         return modelNodeId
+    }
+
+    override fun syncToMPS(tree: ITree): Map<Long, SModel> {
+        val result = super.syncToMPS(tree)
+        val projects = ProjectManager.getInstance().openedProjects
+        if (projects.isNotEmpty()) {
+            VersionFixer(projects.first(), module, true).updateImportVersions()
+        }
+        return result
     }
 }

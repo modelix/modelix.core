@@ -166,7 +166,7 @@ class ModelSynchronizer(
                 node.setProperty(property, tree.getProperty(nodeId, property.name))
             }
 
-            concept!!.referenceLinks.forEach { link ->
+            concept.referenceLinks.forEach { link ->
                 syncReferenceToMPS(nodeId, link.name, tree)
             }
         } catch (ex: Exception) {
@@ -432,7 +432,7 @@ class ModelSynchronizer(
             val children = transaction.getChildren(parentNodeId, link.name)
             val actualId = children.drop(1).firstOrNull() ?: 0L
             if (actualId != cloudId) {
-                transaction.moveChild(parentNodeId, link.getName(), index, cloudId)
+                transaction.moveChild(parentNodeId, link.name, index, cloudId)
             }
             index++
         }
@@ -495,7 +495,8 @@ class ModelSynchronizer(
                     var childId = nodeMap.getId(child)
                     if (childId == 0L || !transaction.containsNode(childId)) {
                         // TODO fix last parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-                        childId = 0L // transaction.addNewChild(parentId, role, -1, SConceptAdapter.wrap(child.concept));
+                        childId =
+                            0L // transaction.addNewChild(parentId, role, -1, SConceptAdapter.wrap(child.concept));
                         nodeMap.put(childId, child)
                     } else {
                         transaction.moveChild(parentId, role, -1, childId)
@@ -521,8 +522,8 @@ class ModelSynchronizer(
     fun handleReferenceChanged(event: SReferenceChangeEvent) {
         PArea(branch).executeWrite {
             val transaction = branch.writeTransaction
-            val targetSNode = event.getNewValue()?.targetNode
-            val sourceId = getOrCreateCloudNode(event.getNode())
+            val targetSNode = event.newValue?.targetNode
+            val sourceId = getOrCreateCloudNode(event.node)
             if (targetSNode == null) {
                 transaction.setReferenceTarget(sourceId, event.associationLink.name, null)
             } else {

@@ -17,16 +17,33 @@
 package org.modelix.mps.sync.binding
 
 import jetbrains.mps.project.ModelImporter
+import kotlinx.collections.immutable.toImmutableSet
 import org.jetbrains.mps.openapi.event.SNodeAddEvent
 import org.jetbrains.mps.openapi.event.SNodeRemoveEvent
 import org.jetbrains.mps.openapi.event.SReferenceChangeEvent
+import org.jetbrains.mps.openapi.language.SAbstractConcept
+import org.jetbrains.mps.openapi.language.SConcept
+import org.jetbrains.mps.openapi.language.SContainmentLink
+import org.jetbrains.mps.openapi.language.SProperty
+import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.deepUnwrapNode
+import org.modelix.model.api.resolveIn
+import org.modelix.model.area.CompositeArea
+import org.modelix.model.area.PArea
+import org.modelix.model.lazy.IBulkTree
+import org.modelix.model.lazy.PrefetchCache
+import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.mps.sync.ICloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.Synchronizer
+import org.modelix.mps.sync.util.index
+import org.modelix.mps.sync.util.mapToMpsNode
 
 class ModelSynchronizer(
     private val modelNodeId: Long,
@@ -38,13 +55,408 @@ class ModelSynchronizer(
         val MPS_NODE_ID_PROPERTY_NAME = "#mpsNodeId#"
     }
 
+    private val logger = mu.KotlinLogging.logger {}
+
     private val pendingReferences: PendingReferences = PendingReferences()
 
-    protected val nodeMap = NodeMap { this.getBranch() }
+    private val branch: IBranch
+        get() = this.cloudRepository.getBranch()
 
-    fun getBranch() = cloudRepository.getBranch()
+    private val nodeMap = NodeMap { this.branch }
+
+    private fun prefetchModelContent(tree: ITree?) {
+        if (tree is IBulkTree) {
+            tree.getDescendants(modelNodeId, true)
+        }
+    }
 
     fun runAndFlushReferences(runnable: Runnable) = pendingReferences.runAndFlush(runnable)
+
+    fun syncModelToMPS(tree: ITree, withInitialRemoval: Boolean) {
+        PrefetchCache.Companion.with(tree) {
+            logger.trace { "syncModel initialRemoval=$withInitialRemoval on model ${model.name.longName}" }
+            if (withInitialRemoval) {
+                // TODO originally it was: foreach root in new arraylist<SNode>(copy: model.getRootNodes()).ofType<node<>>
+                // TODO how to get the node<> type in kotlin?
+                // TODO detach() method does not exist
+                // model.rootNodes.toList().forEach { root -> root.children.forEach { it.detach } }
+            }
+            pendingReferences.runAndFlush {
+                prefetchModelContent(tree)
+                syncRootNodesToMPS()
+                syncModelPropertiesToMPS(tree)
+            }
+        }
+    }
+
+    fun syncModelPropertiesToMPS(tree: ITree) =
+        ModelPropertiesSynchronizer.syncModelPropertiesToMPS(tree, model, modelNodeId, cloudRepository)
+
+    fun fullSyncFromMPS() {
+        val tree = branch.transaction.tree
+        if (!tree.containsNode(modelNodeId)) {
+            logger.warn { "Skipping sync for $this, because the model node ${java.lang.Long.toHexString(modelNodeId)} doesn't exist in the cloud model" }
+            return
+        }
+        PrefetchCache.Companion.with(tree) {
+            pendingReferences.runAndFlush {
+                prefetchModelContent(tree)
+                syncModelPropertiesFromMPS()
+                syncRootNodesFromMPS()
+            }
+        }
+        PArea(branch).executeWrite { }
+    }
+
+    private fun syncRootNodesFromMPS() {
+        val transaction = branch.writeTransaction
+        // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
+        val syncedNodes = createChildrenSynchronizer(modelNodeId, "rootNodes").syncToCloud(transaction)
+        syncedNodes.forEach {
+            syncNodeFromMPS(it.value, true)
+        }
+    }
+
+    private fun syncRootNodesToMPS() {
+        val transaction = branch.transaction
+        // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
+        val syncedNodes = createChildrenSynchronizer(modelNodeId, "rootNodes").syncToMPS(transaction.tree)
+        syncedNodes.forEach {
+            syncNodeToMPS(it.key, transaction.tree, true)
+        }
+    }
+
+    private fun syncModelPropertiesFromMPS() =
+        ModelPropertiesSynchronizer(modelNodeId, model, cloudRepository).syncModelPropertiesFromMPS()
+
+    fun syncUsedLanguagesAndDevKitsFromMPS() =
+        ModelPropertiesSynchronizer(modelNodeId, model, cloudRepository).syncUsedLanguagesAndDevKitsFromMPS()
+
+    fun syncModelImportsFromMPS() {
+        ModelPropertiesSynchronizer(modelNodeId, model, cloudRepository).syncModelImportsFromMPS()
+    }
+
+    fun getOrCreateMPSNode(nodeId: Long, tree: ITree): SNode {
+        assert(nodeId == 0L || nodeId == ITree.ROOT_ID) { "Invalid ID $nodeId" }
+        return nodeMap.getOrCreateNode(nodeId) {
+            val concept = tree.getConcept(nodeId)
+            assert(concept == null) { "Node has no concept: $nodeId" }
+            // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
+            val sconcept: SNode? = null // SConceptAdapter.unwrap(concept)
+            assert(sconcept == null) { "Node has no MPS concept: $nodeId, $concept" }
+            sconcept!!
+        }
+    }
+
+    fun syncNodeToMPS(nodeId: Long, tree: ITree, includeDescendants: Boolean) {
+        logger.trace { "syncNode nodeId: $nodeId" }
+        try {
+            // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
+            val concept: SAbstractConcept? = null // SConceptAdapter.unwrap(tree.getConcept(nodeId));
+
+            assert(concept == null) {
+                "Node has no concept: ${java.lang.Long.toHexString(nodeId)}. Role: ${
+                    tree.getRole(
+                        nodeId,
+                    )
+                }, Concept: ${tree.getConcept(nodeId)}"
+            }
+            val node = nodeMap.getOrCreateNode(nodeId) { concept }
+            concept!!.properties.forEach { property ->
+                node.setProperty(property, tree.getProperty(nodeId, property.name))
+            }
+
+            concept!!.referenceLinks.forEach { link ->
+                syncReferenceToMPS(nodeId, link.name, tree)
+            }
+        } catch (ex: Exception) {
+            logger.error(ex) { "Failed to snyc node $nodeId" }
+        }
+
+        syncChildrenToMPS(nodeId, tree, includeDescendants)
+    }
+
+    fun syncPropertyToMPS(nodeId: Long, role: String, tree: ITree) {
+        // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
+        val concept: SAbstractConcept? = null // SConceptAdapter.unwrap(tree.getConcept(nodeId))
+        val mpsNode = getOrCreateMPSNode(nodeId, tree)
+        val mpsProperty: SProperty = findProperty(concept!!, role)
+        mpsNode.setProperty(mpsProperty, tree.getProperty(nodeId, role))
+    }
+
+    fun syncReferenceToMPS(nodeId: Long, role: String, tree: ITree): SNode? {
+        pendingReferences.add {
+            try {
+                val node = getOrCreateMPSNode(nodeId, tree)
+                val target = tree.getReferenceTarget(nodeId, role)
+
+                val repo = model.repository
+                val resolveContext = if (repo == null) {
+                    // We look in NodeMap instead
+                    CompositeArea(PArea(branch), nodeMap)
+                } else {
+                    CompositeArea(PArea(branch), MPSArea(repo), nodeMap)
+                }
+                var targetNode = target?.resolveIn(resolveContext)
+
+                var targetSNode: SNode? = null
+                var targetAsPNodeAdapter: PNodeAdapter? = null
+                if (targetNode != null) {
+                    targetNode = deepUnwrapNode(targetNode)
+                }
+                if (targetNode is PNodeAdapter) {
+                    targetAsPNodeAdapter = targetNode
+                }
+                if (targetAsPNodeAdapter == null) {
+                    // TODO org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found...
+                    targetSNode = null // NodeToSNodeAdapter.wrap(targetNode, repo);
+                } else {
+                    val targetId = targetAsPNodeAdapter.nodeId
+                    targetSNode = if (targetId == 0L) {
+                        null
+                    } else {
+                        getOrCreateMPSNode(targetId, tree)
+                    }
+                }
+                val link = findReferenceLink(node.concept, role)
+                node.setReferenceTarget(link, targetSNode)
+                targetSNode
+            } catch (ex: RuntimeException) {
+                throw RuntimeException("issue in syncReference, nodeId $nodeId, role $role", ex)
+            }
+        }
+        return null
+    }
+
+    private fun syncChildrenToMPS(nodeId: Long, tree: ITree, includeDescendants: Boolean) {
+        tree.getChildRoles(nodeId).forEach { linkName ->
+            linkName?.let { syncChildrenToMPS(nodeId, it, tree, includeDescendants) }
+        }
+    }
+
+    fun syncChildrenToMPS(parentId: Long, role: String, tree: ITree, includeDescendants: Boolean) {
+        logger.trace { "syncChildren nodeId: $parentId, role: $role, descendants? $includeDescendants" }
+
+        val syncedNodes = createChildrenSynchronizer(parentId, role).syncToMPS(tree)
+
+        // order
+        // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
+        val isRootNodes = parentId == modelNodeId && role == "rootNodes"
+        if (!isRootNodes) {
+            val parentNode = nodeMap.getNode(parentId)!!
+            val link = findContainmentLink(parentNode.concept, role)
+            var index = 0
+            tree.getChildren(parentId, role).forEach { expectedId ->
+                val expectedNode = nodeMap.getNode(expectedId)
+                val actualNode = parentNode.getChildren(link).toList()[index]
+                if (actualNode != expectedNode) {
+                    // TODO detach() method does not exist
+                    //  expectedNode.detach
+
+                    // TODO how to insert a child at a position?
+                    // parentNode.children.insert(index, expectedNode);
+                    // does mutable list reflect the changes back to the original collection (that backs the Iterable?)
+                    parentNode.getChildren(link).toMutableList().add(index, expectedNode)
+                }
+                index++
+            }
+        }
+
+        if (includeDescendants) {
+            syncedNodes.keys.forEach { childCloudId ->
+                syncNodeToMPS(childCloudId, tree, includeDescendants)
+            }
+        }
+    }
+
+    private fun createChildrenSynchronizer(parentId: Long, role: String): Synchronizer<SNode> {
+        return object : Synchronizer<SNode>(parentId, role) {
+            override fun associate(
+                tree: ITree,
+                cloudChildren: List<Long>,
+                mpsChildren: List<SNode>,
+                direction: SyncDirection,
+            ): MutableMap<Long, SNode> {
+                val mpsIdToNode = mutableMapOf<String, SNode>()
+                mpsChildren.forEach { mpsIdToNode[it.nodeId.toString()] = it }
+                val mpsChildrenSet = mpsChildren.toImmutableSet()
+                val cloudChildrenSet = cloudChildren.toImmutableSet()
+
+                val mapping = mutableMapOf<Long, SNode>()
+                cloudChildren.forEach { cloudChild ->
+                    var mpsChild = nodeMap.getNode(cloudChild)
+                    if (mpsChild == null) {
+                        val persistedMpsId = tree.getProperty(cloudChild, MPS_NODE_ID_PROPERTY_NAME)
+                        if (persistedMpsId != null) {
+                            mpsChild = mpsIdToNode[persistedMpsId]
+                            nodeMap.put(cloudChild, mpsChild)
+                        }
+                    }
+                    if (mpsChild != null && mpsChildrenSet.contains(mpsChild)) {
+                        mapping[cloudChild] = mpsChild
+                    }
+                }
+                mpsChildren.forEach { mpsChild ->
+                    val cloudChild = nodeMap.getId(mpsChild)
+                    if (cloudChild != 0L && tree.containsNode(cloudChild) && cloudChildrenSet.contains(cloudChild)) {
+                        mapping[cloudChild] = mpsChild
+                    }
+                }
+                return mapping
+            }
+
+            override fun createCloudChild(transaction: IWriteTransaction, mpsChild: SNode): Long {
+                val nodeId: Long = getOrCreateCloudNode(mpsChild, parentId, role)
+                if (transaction.getParent(nodeId) != parentId || transaction.getRole(nodeId) !== role) {
+                    transaction.moveChild(parentId, role, -1, nodeId)
+                }
+                return nodeId
+            }
+
+            override fun createMPSChild(tree: ITree, cloudChildId: Long): SNode {
+                val newNode = getOrCreateMPSNode(cloudChildId, tree)
+                if (isRootNodes()) {
+                    model.addRootNode(newNode)
+                } else {
+                    val parentMPSNode = nodeMap.getNode(tree.getParent(cloudChildId))!!
+                    val containmentLink = findContainmentLink(parentMPSNode.concept, role)
+                    parentMPSNode.addChild(containmentLink, newNode)
+                }
+                return newNode
+            }
+
+            override fun getMPSChildren(): Iterable<SNode> {
+                return if (isRootNodes()) {
+                    model.rootNodes
+                } else {
+                    val parentNode = nodeMap.getNode(parentId)
+                    assert(parentNode == null) { "Node has no parent but it is not a root node" }
+                    val children = parentNode!!.getChildren(findContainmentLink(parentNode.concept, role))
+                    children.filterIsInstance<SNode>()
+                }
+            }
+
+            private fun isRootNodes(): Boolean {
+                // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
+                return parentId == modelNodeId && role == "rootNodes"
+            }
+
+            override fun removeMPSChild(mpsChild: SNode) {
+                // TODO detach() method does not exist
+                // mpsChild.detach
+            }
+        }
+    }
+
+    private fun findContainmentLink(concept: SConcept, linkName: String): SContainmentLink {
+        val links = concept.containmentLinks
+        val link = links.first { it.name == linkName }
+        assert(link == null) { "$concept. $linkName not found" }
+        return link
+    }
+
+    private fun findReferenceLink(concept: SConcept, linkName: String): SReferenceLink {
+        val links = concept.referenceLinks
+        val link = links.first { it.name == linkName }
+        assert(link == null) { "$concept. $linkName not found" }
+        return link
+    }
+
+    private fun findProperty(concept: SAbstractConcept, role: String): SProperty {
+        val properties = concept.properties
+        val property = properties.first { it.name == role }
+        assert(property == null) { "$concept. $role not found" }
+        return property
+    }
+
+    private fun syncNodeFromMPS(parentNode: SNode, includeDescendants: Boolean) {
+        assert(parentNode.model != model) { "Not part of this model: $parentNode" }
+        val transaction = branch.writeTransaction
+        val concept = parentNode.concept
+
+        val parentNodeId = getOrCreateCloudNode(parentNode)
+
+        val cloudNode = PNodeAdapter(parentNodeId, branch)
+        cloudNode.mapToMpsNode(parentNode)
+
+        concept.properties.forEach { property ->
+            val oldValue = transaction.getProperty(parentNodeId, property.name)
+            val newValue = parentNode.getProperty(property)
+            if (newValue != oldValue) {
+                transaction.setProperty(parentNodeId, property.name, newValue)
+            }
+        }
+
+        concept.referenceLinks.forEach { link ->
+            pendingReferences.add {
+                val targetSNode = parentNode.getReferenceTarget(link)
+                val currentTarget = transaction.getReferenceTarget(parentNodeId, link.name)
+                if (targetSNode == null) {
+                    if (currentTarget != null) {
+                        transaction.setReferenceTarget(parentNodeId, link.name, null)
+                    }
+                } else {
+                    val targetId = nodeMap.getId(targetSNode)
+                    val targetNode = if (targetId == 0L || !transaction.containsNode(targetId)) {
+                        // TODO fix SNode -> INode transformation. Problem SNodeToNodeAdapter.wrap does not exist anymore in modelix...
+                        null!! // SNodeToNodeAdapter.wrap(targetSNode);
+                    } else {
+                        PNodeAdapter(targetId, branch)
+                    }
+                    if (currentTarget != targetNode.reference) {
+                        transaction.setReferenceTarget(parentNodeId, link.name, targetNode.reference)
+                    }
+                }
+                null
+            }
+        }
+
+        concept.containmentLinks.forEach { link ->
+            syncChildrenFromMPS(link, transaction, parentNodeId, includeDescendants)
+        }
+    }
+
+    private fun syncChildrenFromMPS(
+        link: SContainmentLink,
+        transaction: IWriteTransaction,
+        parentNodeId: Long,
+        includeDescendants: Boolean,
+    ) {
+        val syncedNodes = createChildrenSynchronizer(parentNodeId, link.name).syncToCloud(transaction)
+
+        // order
+        val sortedMappings = syncedNodes.toList().sortedBy { (key, value) -> value.index() }.toMap()
+        var index = 0
+        sortedMappings.forEach { mapping ->
+            val cloudId = mapping.key
+            val children = transaction.getChildren(parentNodeId, link.name)
+            val actualId = children.drop(1).firstOrNull() ?: 0L
+            if (actualId != cloudId) {
+                transaction.moveChild(parentNodeId, link.getName(), index, cloudId)
+            }
+            index++
+        }
+
+        if (includeDescendants) {
+            syncedNodes.values.forEach { childNode ->
+                syncNodeFromMPS(childNode, includeDescendants)
+            }
+        }
+    }
+
+    private fun getOrCreateCloudNode(node: SNode, parentIfCreate: Long, roleIfCreate: String): Long {
+        var nodeId = nodeMap.getId(node)
+        val transaction = branch.writeTransaction
+        if (nodeId == 0L || !transaction.containsNode(nodeId)) {
+            // TODO fix last parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
+            nodeId = 0L // t.addNewChild(parentIfCreate, roleIfCreate, -1, SConceptAdapter.wrap(node.concept))
+            nodeMap.put(nodeId, node)
+        }
+        return nodeId
+    }
+
+    private fun getOrCreateCloudNode(node: SNode): Long =
+        getOrCreateCloudNode(node, ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE)
 
     fun getOrSyncToCloud(node: SNode, transaction: IWriteTransaction): Long {
         var cloudId = nodeMap.getId(node)
@@ -53,7 +465,7 @@ class ModelSynchronizer(
             if (parent == null) {
                 syncRootNodesFromMPS()
             } else {
-                val parentCloudId = getOrSyncToCloud(parent, transaction)
+                getOrSyncToCloud(parent, transaction)
                 syncNodeFromMPS(parent, true)
             }
             cloudId = nodeMap.getId(node)
@@ -61,95 +473,74 @@ class ModelSynchronizer(
         return cloudId
     }
 
-    private fun syncRootNodesFromMPS() {
-        val transaction = getBranch().writeTransaction
-        // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
-        val syncedNodes = createChildrenSynchronizer(modelNodeId, "rootNodes").syncToCloud(transaction)
-        syncedNodes.forEach {
-            syncNodeFromMPS(it.value, true)
+    fun handleMPSNodeAdded(event: SNodeAddEvent) {
+        PArea(branch).executeWrite {
+            pendingReferences.runAndFlush {
+                val transaction = branch.writeTransaction
+                val parentId: Long
+                val role: String?
+                if (event.isRoot) {
+                    parentId = modelNodeId
+                    // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
+                    role = "rootNodes"
+                } else {
+                    parentId = nodeMap.getId(event.parent)
+                    role = event.aggregationLink!!.name
+                }
+                if (parentId == 0L || !transaction.containsNode(parentId)) {
+                    return@runAndFlush
+                }
+                val child = event.child
+                if (event.isRoot) {
+                    var childId = nodeMap.getId(child)
+                    if (childId == 0L || !transaction.containsNode(childId)) {
+                        // TODO fix last parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
+                        childId = 0L // transaction.addNewChild(parentId, role, -1, SConceptAdapter.wrap(child.concept));
+                        nodeMap.put(childId, child)
+                    } else {
+                        transaction.moveChild(parentId, role, -1, childId)
+                    }
+                } else {
+                    syncChildrenFromMPS(event.aggregationLink!!, transaction, parentId, false)
+                }
+                syncNodeFromMPS(child, true)
+            }
         }
     }
 
-    private fun syncNodeFromMPS(parentNode: SNode, includeDescendants: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    private fun createChildrenSynchronizer(parentId: Long, role: String): Synchronizer<SNode> {
-        return object : Synchronizer<SNode>(parentId, role) {
-            override fun getMPSChildren(): Iterable<SNode> {
-                TODO("Not yet implemented")
-            }
-
-            override fun createMPSChild(tree: ITree, cloudChildId: Long): SNode? {
-                TODO("Not yet implemented")
-            }
-
-            override fun associate(
-                tree: ITree,
-                cloudChildren: List<Long>,
-                mpsChildren: List<SNode>,
-                direction: SyncDirection,
-            ): MutableMap<Long, SNode> {
-                TODO("Not yet implemented")
-            }
-
-            override fun removeMPSChild(mpsChild: SNode) {
-                TODO("Not yet implemented")
-            }
-
-            override fun createCloudChild(transaction: IWriteTransaction, mpsChild: SNode): Long {
-                TODO("Not yet implemented")
+    fun handleMPSNodeRemoved(event: SNodeRemoveEvent) {
+        PArea(branch).executeWrite {
+            val transaction = branch.writeTransaction
+            val childId = nodeMap.getId(event.child)
+            if (childId != 0L && transaction.containsNode(childId)) {
+                transaction.moveChild(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE, -1, childId)
             }
         }
     }
 
     fun handleReferenceChanged(event: SReferenceChangeEvent) {
-        TODO("Not yet implemented")
-    }
-
-    fun handleMPSNodeAdded(event: SNodeAddEvent) {
-        TODO("Not yet implemented")
-    }
-
-    fun handleMPSNodeRemoved(event: SNodeRemoveEvent) {
-        TODO("Not yet implemented")
-    }
-
-    fun syncUsedLanguagesAndDevKitsFromMPS() {
-        TODO("Not yet implemented")
-    }
-
-    fun syncModelImportsFromMPS() {
-        TODO("Not yet implemented")
-    }
-
-    fun fullSyncFromMPS() {
-        TODO("Not yet implemented")
-    }
-
-    fun syncModelToMPS(tree: ITree, withInitialRemoval: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    fun syncChildrenToMPS(nodeId: Long, role: String?, tree: ITree, includeDescendants: Boolean) {
-    }
-
-    fun syncReferenceToMPS(nodeId: Long, role: String?, tree: ITree) {
-    }
-
-    fun syncPropertyToMPS(nodeId: Long, role: String?, tree: ITree) {
-    }
-
-    fun syncNodeToMPS(nodeId: Long, tree: ITree, includeDescendants: Boolean) {
-    }
-
-    fun syncModelPropertiesToMPS(tree: ITree) {
+        PArea(branch).executeWrite {
+            val transaction = branch.writeTransaction
+            val targetSNode = event.getNewValue()?.targetNode
+            val sourceId = getOrCreateCloudNode(event.getNode())
+            if (targetSNode == null) {
+                transaction.setReferenceTarget(sourceId, event.associationLink.name, null)
+            } else {
+                val targetId = nodeMap.getId(targetSNode)
+                val targetNode = if (targetId == 0L || !transaction.containsNode(targetId)) {
+                    null!! // SNodeToNodeAdapter.wrap(targetSNode);
+                } else {
+                    PNodeAdapter(targetId, branch)
+                }
+                transaction.setReferenceTarget(sourceId, event.associationLink.name, targetNode.reference)
+            }
+        }
     }
 
     inner class PendingReferences {
         private val logger = mu.KotlinLogging.logger {}
 
-        private var currentReferences: MutableList<() -> SNode>? = null
+        private var currentReferences: MutableList<() -> SNode?>? = null
 
         fun runAndFlush(runnable: Runnable) {
             synchronized(this) {
@@ -172,12 +563,20 @@ class ModelSynchronizer(
             }
         }
 
+        fun add(producer: () -> SNode?) {
+            synchronized(this) {
+                assert(currentReferences == null) { "Call runAndFlush first" }
+
+                currentReferences!!.add(producer)
+            }
+        }
+
         private fun processPendingReferences() {
             val targetModels = mutableSetOf<SModel?>()
-            currentReferences!!.forEach {
+            currentReferences!!.forEach { producer ->
                 try {
-                    val targetNode = it.invoke()
-                    targetModels.add(targetNode.model)
+                    val targetNode = producer.invoke()
+                    targetNode?.let { targetModels.add(it.model) }
                 } catch (ex: Exception) {
                     logger.error(ex) { ex.message }
                 }

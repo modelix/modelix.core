@@ -260,7 +260,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                 childrenSyncToMPSRequired.forEach { roleInNode ->
                     try {
                         if (tree.containsNode(roleInNode.nodeId)) {
-                            synchronizer?.syncChildrenToMPS(roleInNode.nodeId, roleInNode.role, tree, false)
+                            synchronizer?.syncChildrenToMPS(roleInNode.nodeId, roleInNode.role!!, tree, false)
                         }
                     } catch (ex: Exception) {
                         logger.error(ex) { ex.message }
@@ -271,7 +271,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                 referenceSyncToMPSRequired.forEach { roleInNode ->
                     try {
                         if (tree.containsNode(roleInNode.nodeId)) {
-                            synchronizer?.syncReferenceToMPS(roleInNode.nodeId, roleInNode.role, tree)
+                            synchronizer?.syncReferenceToMPS(roleInNode.nodeId, roleInNode.role!!, tree)
                         }
                     } catch (ex: Exception) {
                         logger.error(ex) { ex.message }
@@ -282,7 +282,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                 propertySyncToMPSRequired.forEach { roleInNode ->
                     try {
                         if (tree.containsNode(roleInNode.nodeId)) {
-                            synchronizer?.syncPropertyToMPS(roleInNode.nodeId, roleInNode.role, tree)
+                            synchronizer?.syncPropertyToMPS(roleInNode.nodeId, roleInNode.role!!, tree)
                         }
                     } catch (ex: Exception) {
                         logger.error(ex) { ex.message }

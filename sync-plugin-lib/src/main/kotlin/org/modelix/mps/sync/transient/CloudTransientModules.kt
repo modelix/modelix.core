@@ -81,8 +81,6 @@ class CloudTransientModules private constructor(private val mpsRepository: SRepo
             logger.debug { "Unregister module ${module.moduleId}" }
             mpsRepository.unregisterModule(module, moduleOwner)
         }
-        val models = module.getModels()
-        models.filterIsInstance<CloudTransientModel>().forEach { it.dispose() }
     }
 
     fun dispose() {

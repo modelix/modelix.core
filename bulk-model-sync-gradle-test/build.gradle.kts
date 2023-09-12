@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import GraphLang.L_GraphLang
-import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import org.modelix.model.server.Main
 
 buildscript {
@@ -95,8 +93,7 @@ modelSync {
     dependsOn(resolveMps)
     dependsOn(copyTestRepo)
     direction("testPush") {
-        registerLanguage(L_GraphLang)
-        registerLanguage(L_jetbrains_mps_lang_core)
+        org.modelix.model.sync.gradle.test.GraphLanguagesHelper.registerAll()
         includeModule("GraphSolution")
         fromLocal {
             mpsHome = mpsDir

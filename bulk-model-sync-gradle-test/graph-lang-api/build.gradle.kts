@@ -49,6 +49,7 @@ metamodel {
     mpsHome = mpsDir
     kotlinDir = kotlinGenDir
     includeLanguage("GraphLang")
+    registrationHelperName = "org.modelix.model.sync.gradle.test.GraphLanguagesHelper"
 }
 
 publishing {

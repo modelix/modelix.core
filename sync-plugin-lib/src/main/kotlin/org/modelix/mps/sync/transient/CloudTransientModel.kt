@@ -75,4 +75,8 @@ class CloudTransientModel(module: CloudTransientModule, name: String, modelId: S
     override fun <T> getUserObject(key: UserObjectKey): T {
         TODO("Not yet implemented")
     }
+
+    fun dispose() {
+        TODO()
+    }
 }

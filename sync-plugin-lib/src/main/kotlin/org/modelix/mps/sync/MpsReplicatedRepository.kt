@@ -22,6 +22,7 @@ import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.command.undo.UndoableAction
 import com.intellij.openapi.command.undo.UnexpectedUndoException
 import jetbrains.mps.smodel.MPSModuleRepository
+import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.mps.openapi.repository.CommandListener
 import org.modelix.model.area.PArea
 import org.modelix.model.client.IModelClient
@@ -32,6 +33,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.UndoOp
 import org.modelix.model.operations.applyOperation
 
+// status: ready to test
 class MpsReplicatedRepository(
     client: IModelClient,
     repositoryId: RepositoryId,
@@ -40,8 +42,25 @@ class MpsReplicatedRepository(
 ) : ReplicatedRepository(client, repositoryId, branchName, user) {
 
     companion object {
-        private val INSTANCES = mutableSetOf<MpsReplicatedRepository>()
+        private val instances = mutableSetOf<MpsReplicatedRepository>()
+
         private val affectedDocuments = mutableSetOf<DocumentReference>()
+
+        private val logger = mu.KotlinLogging.logger {}
+
+        fun disposeAll() {
+            val list: List<MpsReplicatedRepository>
+            synchronized(instances) {
+                list = instances.toImmutableList()
+            }
+            list.forEach { instance ->
+                try {
+                    instance.dispose()
+                } catch (ex: Exception) {
+                    logger.error(ex) { ex.message }
+                }
+            }
+        }
 
         fun documentChanged(refForDoc: DocumentReference) {
             affectedDocuments.add(refForDoc)
@@ -64,7 +83,16 @@ class MpsReplicatedRepository(
 
     init {
         MPSModuleRepository.getInstance().modelAccess.addCommandListener(commandListener)
-        synchronized(INSTANCES) { INSTANCES.add(this) }
+        synchronized(instances) { instances.add(this) }
+    }
+
+    override fun dispose() {
+        synchronized(instances) { instances.remove(this) }
+        if (isDisposed()) {
+            return
+        }
+        MPSModuleRepository.getInstance().modelAccess.removeCommandListener(commandListener)
+        super.dispose()
     }
 
     inner class ModelixUndoableAction(private val version: CLVersion, docs: Iterable<DocumentReference>) :

@@ -47,7 +47,7 @@ class RootBinding(private val cloudRepository: ICloudRepository) : Binding(null)
         ),
     )
 
-    override fun getBranch() = super.getBranch() ?: cloudRepository.getBranch()
+    public override fun getBranch() = super.getBranch() ?: cloudRepository.getBranch()
 
     override fun getCloudRepository(): ICloudRepository = cloudRepository
 

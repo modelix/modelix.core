@@ -32,7 +32,7 @@ class SyncTask(
     private val logger = mu.KotlinLogging.logger {}
     private val callbacks: MutableList<Runnable> = mutableListOf()
     val isInitialSync: Boolean = initialSync
-    private val requiredLocks: Set<ELockType>
+    val requiredLocks: Set<ELockType>
     private var state: State = State.NEW
 
     init {
@@ -40,7 +40,7 @@ class SyncTask(
     }
 
     override fun run() {
-        assert(state != State.NEW) { "Current state: $state" }
+        check(state != State.NEW) { "Current state: $state" }
         try {
             state = State.RUNNING
             if (binding.isActive) {

@@ -18,6 +18,8 @@ package org.modelix.mps.sync.util
 
 import org.jetbrains.mps.openapi.model.SNode
 
+// status: ready to test
+
 // based on INode.index()
 fun SNode.index(): Int {
     return (parent ?: return 0).getChildren(roleInParent).indexOf(this)

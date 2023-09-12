@@ -17,10 +17,14 @@
 package org.modelix.mps.sync.util
 
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
+import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
 import org.modelix.mps.sync.binding.ModelSynchronizer
+
+// status: ready to test
 
 val MPS_NODE_ID_PROPERTY_NAME: String = ModelSynchronizer.MPS_NODE_ID_PROPERTY_NAME
 
@@ -102,4 +106,51 @@ fun INode.replicateChildHelper(
         target?.let { postponedReferencesAssignments.add(Triple(copy, refLink.name, target)) }
     }
     return copy
+}
+
+fun INode.nodeIdAsLong(): Long = (this as PNodeAdapter).nodeId
+
+fun INode.containingModule(): INode? {
+    if (this.isModule()) {
+        return this
+    }
+    val parent: INode = this.parent ?: return null
+    return parent.containingModule()
+}
+
+fun INode.containingModel(): INode? {
+    if (this.isModel()) {
+        return this
+    }
+    val parent: INode = this.parent ?: return null
+    return parent.containingModel()
+}
+
+fun INode.isModule(): Boolean {
+    val concept = this.concept ?: return false
+    // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
+    // SConceptAdapter.wrap(concept/Module/)
+    val parentConcept: IConcept? = null
+    return concept.isSubConceptOf(parentConcept)
+}
+
+fun INode.isModel(): Boolean {
+    val concept = this.concept ?: return false
+    // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
+    // SConceptAdapter.wrap(concept/Model/)
+    val parentConcept: IConcept? = null
+    return concept.isSubConceptOf(parentConcept)
+}
+
+fun INode.removeAllChildrenWithRole(role: String) {
+    this.getChildren(role).forEach { child ->
+        this.removeChild(child)
+    }
+}
+
+fun INode.cloneChildren(original: INode, role: String) {
+    this.removeAllChildrenWithRole(role)
+    original.getChildren(role).forEach { originalChild ->
+        this.replicateChild(role, originalChild)
+    }
 }

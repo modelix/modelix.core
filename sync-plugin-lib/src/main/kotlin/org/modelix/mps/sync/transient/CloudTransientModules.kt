@@ -18,15 +18,51 @@ package org.modelix.mps.sync.transient
 
 import jetbrains.mps.extapi.module.SRepositoryExt
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.smodel.MPSModuleOwner
 import jetbrains.mps.smodel.MPSModuleRepository
+import org.jetbrains.mps.openapi.module.SModuleId
+import org.modelix.mps.sync.util.WriteAccessUtil
 
+// status: migrated, but needs some bugfixes
 class CloudTransientModules private constructor(private val mpsRepository: SRepositoryExt) {
 
     companion object {
         val instance = CloudTransientModules(MPSModuleRepository.getInstance())
     }
 
+    private val logger = mu.KotlinLogging.logger {}
+
     private val modules = mutableListOf<CloudTransientModule>()
+
+    private val moduleOwner = MPSModuleOwner { false }
+
+    fun isModuleIdUsed(moduleId: SModuleId): Boolean {
+        // TODO How to translate this correctly?
+        /**
+         read action with mpsRepository {
+         result = this.mpsRepository.getModule(moduleId) != null;
+         }
+         */
+        return this.mpsRepository.getModule(moduleId) != null
+    }
+
+    fun createModule(name: String, id: ModuleId): CloudTransientModule {
+        // TODO How to translate this correctly?
+        /**
+         write action with mpsRepository {
+         module = new CloudTransientModule (name, id);
+         modules.add(module);
+         log debug "Register module " + id, <no throwable>;
+         mpsRepository.registerModule(module, moduleOwner);
+         }
+         */
+
+        val module = CloudTransientModule(name, id)
+        modules.add(module)
+        logger.debug { "Register module $id" }
+        mpsRepository.registerModule(module, moduleOwner)
+        return module
+    }
 
     fun disposeModule(module: CloudTransientModule) {
         // TODO How to translate this correctly?
@@ -41,14 +77,24 @@ class CloudTransientModules private constructor(private val mpsRepository: SRepo
     }
 
     private fun doDisposeModule(module: CloudTransientModule) {
-        TODO()
+        if (module.repository != null) {
+            logger.debug { "Unregister module ${module.moduleId}" }
+            mpsRepository.unregisterModule(module, moduleOwner)
+        }
+        val models = module.getModels()
+        models.filterIsInstance<CloudTransientModel>().forEach { it.dispose() }
     }
 
-    fun isModuleIdUsed(temptativeModuleId: ModuleId): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    fun createModule(moduleName: String, moduleId: ModuleId): CloudTransientModule {
-        TODO()
+    fun dispose() {
+        WriteAccessUtil.runWrite(mpsRepository) {
+            try {
+                modules.forEach {
+                    doDisposeModule(it)
+                }
+                modules.clear()
+            } catch (ex: Exception) {
+                logger.error(ex) { ex.message }
+            }
+        }
     }
 }

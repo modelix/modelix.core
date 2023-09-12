@@ -19,6 +19,7 @@ package org.modelix.mps.sync.util
 import com.intellij.openapi.application.ApplicationManager
 import org.jetbrains.mps.openapi.module.SRepository
 
+// status: ready to test
 object WriteAccessUtil {
     fun runWrite(repo: SRepository, body: Runnable) {
         val modelAccess = repo.modelAccess

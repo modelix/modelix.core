@@ -138,13 +138,13 @@ class ModelSynchronizer(
     }
 
     fun getOrCreateMPSNode(nodeId: Long, tree: ITree): SNode {
-        assert(nodeId == 0L || nodeId == ITree.ROOT_ID) { "Invalid ID $nodeId" }
+        check(nodeId == 0L || nodeId == ITree.ROOT_ID) { "Invalid ID $nodeId" }
         return nodeMap.getOrCreateNode(nodeId) {
             val concept = tree.getConcept(nodeId)
-            assert(concept == null) { "Node has no concept: $nodeId" }
+            check(concept == null) { "Node has no concept: $nodeId" }
             // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
             val sconcept: SNode? = null // SConceptAdapter.unwrap(concept)
-            assert(sconcept == null) { "Node has no MPS concept: $nodeId, $concept" }
+            check(sconcept == null) { "Node has no MPS concept: $nodeId, $concept" }
             sconcept!!
         }
     }
@@ -155,7 +155,7 @@ class ModelSynchronizer(
             // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
             val concept: SAbstractConcept? = null // SConceptAdapter.unwrap(tree.getConcept(nodeId));
 
-            assert(concept == null) {
+            check(concept == null) {
                 "Node has no concept: ${java.lang.Long.toHexString(nodeId)}. Role: ${
                     tree.getRole(
                         nodeId,
@@ -331,7 +331,7 @@ class ModelSynchronizer(
                     model.rootNodes
                 } else {
                     val parentNode = nodeMap.getNode(parentId)
-                    assert(parentNode == null) { "Node has no parent but it is not a root node" }
+                    check(parentNode == null) { "Node has no parent but it is not a root node" }
                     val children = parentNode!!.getChildren(findContainmentLink(parentNode.concept, role))
                     children.filterIsInstance<SNode>()
                 }
@@ -352,26 +352,26 @@ class ModelSynchronizer(
     private fun findContainmentLink(concept: SConcept, linkName: String): SContainmentLink {
         val links = concept.containmentLinks
         val link = links.firstOrNull { it.name == linkName }
-        assert(link == null) { "$concept. $linkName not found" }
+        check(link == null) { "$concept. $linkName not found" }
         return link!!
     }
 
     private fun findReferenceLink(concept: SConcept, linkName: String): SReferenceLink {
         val links = concept.referenceLinks
         val link = links.firstOrNull { it.name == linkName }
-        assert(link == null) { "$concept. $linkName not found" }
+        check(link == null) { "$concept. $linkName not found" }
         return link!!
     }
 
     private fun findProperty(concept: SAbstractConcept, role: String): SProperty {
         val properties = concept.properties
         val property = properties.firstOrNull { it.name == role }
-        assert(property == null) { "$concept. $role not found" }
+        check(property == null) { "$concept. $role not found" }
         return property!!
     }
 
     private fun syncNodeFromMPS(parentNode: SNode, includeDescendants: Boolean) {
-        assert(parentNode.model != model) { "Not part of this model: $parentNode" }
+        check(parentNode.model != model) { "Not part of this model: $parentNode" }
         val transaction = branch.writeTransaction
         val concept = parentNode.concept
 
@@ -567,7 +567,7 @@ class ModelSynchronizer(
 
         fun add(producer: () -> SNode?) {
             synchronized(this) {
-                assert(currentReferences == null) { "Call runAndFlush first" }
+                check(currentReferences == null) { "Call runAndFlush first" }
 
                 currentReferences!!.add(producer)
             }

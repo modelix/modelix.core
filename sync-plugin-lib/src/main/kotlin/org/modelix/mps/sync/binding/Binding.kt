@@ -80,7 +80,7 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
 
     protected fun assertSyncThread() = getRootBinding().syncQueue.assertSyncThread()
 
-    private fun getDepth(): Int = owner?.let { it.getDepth() + 1 } ?: 0
+    fun getDepth(): Int = owner?.let { it.getDepth() + 1 } ?: 0
 
     private fun createTask(direction: SyncDirection, initial: Boolean): SyncTask {
         return when (direction) {

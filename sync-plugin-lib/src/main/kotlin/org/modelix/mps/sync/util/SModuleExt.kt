@@ -33,9 +33,9 @@ fun SModule.getModelsWithoutDescriptor(): List<SModel> = this.models.filter { !S
 
 fun SModule.createModel(name: String, id: SModelId): SModel? {
     val modelName = SModelName(name)
-    val modelRoot = this.modelRoots.filterIsInstance<DefaultModelRoot>().first { it.canCreateModel(modelName) }
+    val modelRoot = this.modelRoots.filterIsInstance<DefaultModelRoot>().firstOrNull { it.canCreateModel(modelName) }
     try {
-        return modelRoot.createModel(modelName, null, null, ModelPersistenceWithFixedId(this.moduleReference, id))
+        return modelRoot?.createModel(modelName, null, null, ModelPersistenceWithFixedId(this.moduleReference, id))
     } catch (e: ModelCannotBeCreatedException) {
         val logger = mu.KotlinLogging.logger {}
         logger.error("Failed to create model $modelName", e)

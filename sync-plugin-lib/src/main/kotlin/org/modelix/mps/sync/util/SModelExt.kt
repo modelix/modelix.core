@@ -17,9 +17,11 @@
 package org.modelix.mps.sync.util
 
 import jetbrains.mps.extapi.model.SModelDescriptorStub
+import jetbrains.mps.project.SModuleOperations
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModuleReference
+import org.jetbrains.mps.openapi.module.SRepository
 
 // status: ready to test
 
@@ -33,11 +35,30 @@ fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
     }
 }
 
-fun SModel.addLanguageImport(sLanguage: SLanguage?, version: Int) {
+fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
     if (this is SModelDescriptorStub) {
-        this.addLanguage(sLanguage!!)
+        this.addLanguage(sLanguage)
         this.setLanguageImportVersion(sLanguage, version)
     } else {
         throw IllegalStateException("Unable to handle this model $this (class: ${this.javaClass.canonicalName})")
+    }
+}
+
+fun SModel.runInWriteActionIfNeeded(runnable: Runnable) {
+    var repo: SRepository? = null
+    if (this.module != null) {
+        val project = SModuleOperations.getProjectForModule(this.module)
+        project?.let { repo = it.repository }
+    }
+    if (repo == null) {
+        runnable.run()
+    } else {
+        // TODO How to translate this correctly?
+        /*
+        write action with repo {
+            runnable.run();
+        }
+         */
+        runnable.run()
     }
 }

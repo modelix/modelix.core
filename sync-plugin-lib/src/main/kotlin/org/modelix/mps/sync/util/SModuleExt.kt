@@ -27,8 +27,6 @@ import org.modelix.mps.sync.ModelPersistenceWithFixedId
 
 // status: ready to test
 
-fun SModule.printModulesNames(comment: String): String = this.getModelsWithoutDescriptor().joinToString { it.modelName }
-
 fun SModule.getModelsWithoutDescriptor(): List<SModel> = this.models.filter { !SModelStereotype.isDescriptorModel(it) }
 
 fun SModule.createModel(name: String, id: SModelId): SModel? {

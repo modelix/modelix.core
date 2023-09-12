@@ -55,6 +55,6 @@ object MPSNodeReferenceSerializer : INodeReferenceSerializerEx {
     }
 
     override fun deserialize(serialized: String): INodeReference {
-        TODO("Not yet implemented")
+        return MPSNodeReference(SNodePointer.deserialize(serialized))
     }
 }

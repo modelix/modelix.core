@@ -85,11 +85,15 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
-        return
+        if (target != null) {
+            throw IllegalArgumentException("$concept doesn't contain a reference link $link")
+        }
     }
 
     override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {
-        return
+        if (target != null) {
+            throw IllegalArgumentException("$concept doesn't contain a reference link $role")
+        }
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {
@@ -101,7 +105,9 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        TODO("Not yet implemented")
+        if (value != null) {
+            throw IllegalArgumentException("$concept doesn't contain a property $property")
+        }
     }
 
     override fun getPropertyLinks(): List<IProperty> {

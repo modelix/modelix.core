@@ -111,7 +111,9 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        // TODO("Not yet implemented")
+        if (getPropertyValue(property) != value) {
+            throw UnsupportedOperationException("Property $property of $concept is read-only")
+        }
     }
 
     override fun getPropertyLinks(): List<IProperty> {

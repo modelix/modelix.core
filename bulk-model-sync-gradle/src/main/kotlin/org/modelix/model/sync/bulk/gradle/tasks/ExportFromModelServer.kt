@@ -26,8 +26,8 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.IProperty
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.IModelClientV2
@@ -35,7 +35,6 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.RepositoryLanguage
 import org.modelix.model.sync.bulk.ModelExporter
 import javax.inject.Inject
 
@@ -73,8 +72,9 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
             logger.info("Got root node: {}", root)
             val outputDir = outputDir.get().asFile
             root.allChildren.forEach {
-                val nameRole = IProperty.fromName(RepositoryLanguage.NamePropertyUID)
-                val outputFile = outputDir.resolve("${it.getPropertyValue(nameRole)}.json")
+                val nameRole = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
+                val fileName = it.getPropertyValue(nameRole)
+                val outputFile = outputDir.resolve("$fileName.json")
                 ModelExporter(it).export(outputFile)
             }
         }

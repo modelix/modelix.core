@@ -33,7 +33,7 @@ fun INode.asExported(): NodeData {
     val idKey = NodeData.idPropertyKey
     return NodeData(
         id = getPropertyValue(idKey) ?: reference.serialize(),
-        concept = concept?.getUID(),
+        concept = getConceptReference()?.getUID(),
         role = roleInParent,
         properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) }.filterKeys { it != idKey },
         references = getReferenceRoles().associateWithNotNull {

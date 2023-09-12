@@ -47,4 +47,6 @@ class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepo
         }
         return result
     }
+
+    override fun getPriority(): Int = 1000
 }

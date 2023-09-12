@@ -64,6 +64,18 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
         return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role, index, concept), branch)
     }
 
+    override fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
+        return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role, index, concept), branch)
+    }
+
+    override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode {
+        return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept), branch)
+    }
+
+    override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode {
+        return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept), branch)
+    }
+
     override val allChildren: Iterable<INode>
         get() {
             notifyAccess()

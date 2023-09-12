@@ -17,6 +17,8 @@ import kotlinx.html.unsafe
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.semver.Version
 
 buildscript {
@@ -76,12 +78,25 @@ subprojects {
         version.set("0.50.0")
     }
 
+    val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
         if (!name.lowercase().contains("test")) {
             kotlinOptions {
                 jvmTarget = "11"
                 freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
-                apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6.version
+                apiVersion = kotlinApiVersion.version
+            }
+        }
+    }
+
+    plugins.withType<KotlinMultiplatformPluginWrapper> {
+        project.extensions.configure<KotlinMultiplatformExtension> {
+            sourceSets.all {
+                if (!name.lowercase().contains("test")) {
+                    languageSettings {
+                        apiVersion = kotlinApiVersion.version
+                    }
+                }
             }
         }
     }

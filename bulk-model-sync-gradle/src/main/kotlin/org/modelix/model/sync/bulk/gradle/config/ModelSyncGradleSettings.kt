@@ -18,7 +18,6 @@ package org.modelix.model.sync.bulk.gradle.config
 
 import org.gradle.api.Action
 import org.modelix.model.api.ILanguage
-import org.modelix.model.mpsadapters.RepositoryLanguage
 import java.io.File
 
 open class ModelSyncGradleSettings {
@@ -41,7 +40,7 @@ data class SyncDirection(
     internal var source: SyncEndPoint? = null,
     internal var target: SyncEndPoint? = null,
     internal val includedModules: Set<String> = mutableSetOf(),
-    internal val registeredLanguages: Set<ILanguage> = mutableSetOf(RepositoryLanguage),
+    internal val registeredLanguages: Set<ILanguage> = mutableSetOf(),
 ) {
     fun fromModelServer(action: Action<ServerSource>) {
         val endpoint = ServerSource()

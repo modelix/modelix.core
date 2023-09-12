@@ -13,14 +13,22 @@
  */
 package org.modelix.model.api
 
-class SimpleProperty(private val simpleName: String, override val isOptional: Boolean = true) : IProperty {
+import kotlin.jvm.JvmOverloads
+
+class SimpleProperty
+@JvmOverloads constructor(
+    private val simpleName: String,
+    override val isOptional: Boolean = true,
+    private val uid: String? = null,
+) : IProperty {
     var owner: SimpleConcept? = null
 
     override fun getConcept(): IConcept = owner!!
 
     override fun getUID(): String {
-        val o = owner
-        return (if (o == null) simpleName else o.getUID() + "." + simpleName)
+        return uid
+            ?: owner?.let { it.getUID() + "." + simpleName }
+            ?: simpleName
     }
 
     override fun getSimpleName(): String = simpleName

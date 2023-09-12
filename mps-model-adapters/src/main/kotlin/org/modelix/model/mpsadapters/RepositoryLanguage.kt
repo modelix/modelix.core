@@ -22,6 +22,7 @@ import org.modelix.model.mpsadapters.RepositoryLanguage.BaseConcept
 import org.modelix.model.mpsadapters.RepositoryLanguage.INamedConcept
 import org.modelix.model.mpsadapters.RepositoryLanguage.addConcept
 
+@Deprecated("use org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts", ReplaceWith("org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts"))
 object RepositoryLanguage : SimpleLanguage("org.modelix.model.repositoryconcepts", uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80") {
     val BaseConcept = MPSConcept(SConceptAdapterById.deserialize("c:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626:jetbrains.mps.lang.core.structure.BaseConcept"))
     val INamedConcept = MPSConcept(SInterfaceConceptAdapterById.deserialize("i:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1169194658468:jetbrains.mps.lang.core.structure.INamedConcept"))

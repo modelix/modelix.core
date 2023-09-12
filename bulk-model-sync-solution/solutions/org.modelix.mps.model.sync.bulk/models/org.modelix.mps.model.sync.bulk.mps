@@ -12,7 +12,6 @@
     <import index="4nm9" ref="498d89d2-c2e9-11e2-ad49-6cf049e62fe5/java:com.intellij.openapi.project(MPS.IDEA/)" />
     <import index="guwi" ref="6354ebe7-c22a-4a0f-ac54-50b52ab9b065/java:java.io(JDK/)" />
     <import index="lui2" ref="8865b7a8-5271-43d3-884c-6fd1d9cfdd34/java:org.jetbrains.mps.openapi.module(MPS.OpenAPI/)" />
-    <import index="lui3" ref="ac6b4971-2a89-49fb-9c30-c2f0e85de741/java:org.jetbrains.mps.openapi.module(org.modelix.model.sync.mps/)" />
     <import index="bd8o" ref="498d89d2-c2e9-11e2-ad49-6cf049e62fe5/java:com.intellij.openapi.application(MPS.IDEA/)" />
     <import index="vgv4" ref="ac6b4971-2a89-49fb-9c30-c2f0e85de741/java:org.modelix.model.sync.bulk(org.modelix.mps.model.sync.bulk/)" />
     <import index="wyt6" ref="6354ebe7-c22a-4a0f-ac54-50b52ab9b065/java:java.lang(JDK/)" implicit="true" />
@@ -214,11 +213,11 @@
                 </node>
               </node>
               <node concept="liA8E" id="7gc0jqT50Zl" role="2OqNvi">
-                <ref role="37wK5l" to="lui3:~SRepository.getModelAccess()" resolve="getModelAccess" />
+                <ref role="37wK5l" to="lui2:~SRepository.getModelAccess()" resolve="getModelAccess" />
               </node>
             </node>
             <node concept="liA8E" id="7gc0jqT51ES" role="2OqNvi">
-              <ref role="37wK5l" to="lui3:~ModelAccess.runReadAction(java.lang.Runnable)" resolve="runReadAction" />
+              <ref role="37wK5l" to="lui2:~ModelAccess.runReadAction(java.lang.Runnable)" resolve="runReadAction" />
               <node concept="1bVj0M" id="7gc0jqT52FG" role="37wK5m">
                 <node concept="3clFbS" id="7gc0jqT52FH" role="1bW5cS">
                   <node concept="2Gpval" id="7gc0jqT4L4n" role="3cqZAp">
@@ -292,7 +291,7 @@
                                           <ref role="2Gs0qQ" node="7gc0jqT4L4p" resolve="module" />
                                         </node>
                                         <node concept="liA8E" id="7gc0jqT4VGG" role="2OqNvi">
-                                          <ref role="37wK5l" to="lui3:~SModule.getModuleName()" resolve="getModuleName" />
+                                          <ref role="37wK5l" to="lui2:~SModule.getModuleName()" resolve="getModuleName" />
                                         </node>
                                       </node>
                                     </node>
@@ -325,7 +324,7 @@
                                 <ref role="2Gs0qQ" node="7gc0jqT4L4p" resolve="module" />
                               </node>
                               <node concept="liA8E" id="7gc0jqT4Pxy" role="2OqNvi">
-                                <ref role="37wK5l" to="lui3:~SModule.getModuleName()" resolve="getModuleName" />
+                                <ref role="37wK5l" to="lui2:~SModule.getModuleName()" resolve="getModuleName" />
                               </node>
                             </node>
                           </node>
@@ -342,7 +341,7 @@
                         </node>
                       </node>
                       <node concept="liA8E" id="2rlXDkQHjK2" role="2OqNvi">
-                        <ref role="37wK5l" to="lui3:~SRepository.getModules()" resolve="getModules" />
+                        <ref role="37wK5l" to="lui2:~SRepository.getModules()" resolve="getModules" />
                       </node>
                     </node>
                   </node>
@@ -393,7 +392,7 @@
           <node concept="3cpWsn" id="5hPHAtnuNfe" role="3cpWs9">
             <property role="TrG5h" value="access" />
             <node concept="3uibUv" id="5hPHAtnuNff" role="1tU5fm">
-              <ref role="3uigEE" to="lui3:~ModelAccess" resolve="ModelAccess" />
+              <ref role="3uigEE" to="lui2:~ModelAccess" resolve="ModelAccess" />
             </node>
             <node concept="2OqwBi" id="5hPHAtnuPZo" role="33vP2m">
               <node concept="2OqwBi" id="5hPHAtnuP3e" role="2Oq$k0">
@@ -405,7 +404,7 @@
                 </node>
               </node>
               <node concept="liA8E" id="5hPHAtnuQzp" role="2OqNvi">
-                <ref role="37wK5l" to="lui3:~SRepository.getModelAccess()" resolve="getModelAccess" />
+                <ref role="37wK5l" to="lui2:~SRepository.getModelAccess()" resolve="getModelAccess" />
               </node>
             </node>
           </node>
@@ -413,7 +412,7 @@
         <node concept="3clFbF" id="7gc0jqT4cDu" role="3cqZAp">
           <node concept="2OqwBi" id="7gc0jqT4duu" role="3clFbG">
             <node concept="liA8E" id="7gc0jqT4dK5" role="2OqNvi">
-              <ref role="37wK5l" to="lui3:~ModelAccess.runWriteInEDT(java.lang.Runnable)" resolve="runWriteInEDT" />
+              <ref role="37wK5l" to="lui2:~ModelAccess.runWriteInEDT(java.lang.Runnable)" resolve="runWriteInEDT" />
               <node concept="1bVj0M" id="2rlXDkQJYC6" role="37wK5m">
                 <node concept="3clFbS" id="2rlXDkQJYC7" role="1bW5cS">
                   <node concept="3clFbH" id="5hPHAtnv11y" role="3cqZAp" />
@@ -423,7 +422,7 @@
                         <ref role="3cqZAo" node="5hPHAtnuNfe" resolve="access" />
                       </node>
                       <node concept="liA8E" id="5hPHAtnuXkz" role="2OqNvi">
-                        <ref role="37wK5l" to="lui3:~ModelAccess.executeCommand(java.lang.Runnable)" resolve="executeCommand" />
+                        <ref role="37wK5l" to="lui2:~ModelAccess.executeCommand(java.lang.Runnable)" resolve="executeCommand" />
                         <node concept="1bVj0M" id="5hPHAtnuXKQ" role="37wK5m">
                           <node concept="3clFbS" id="5hPHAtnuXKR" role="1bW5cS">
                             <node concept="2Gpval" id="2rlXDkQJYPO" role="3cqZAp">
@@ -440,7 +439,7 @@
                                   </node>
                                 </node>
                                 <node concept="liA8E" id="2rlXDkQJZK3" role="2OqNvi">
-                                  <ref role="37wK5l" to="lui3:~SRepository.getModules()" resolve="getModules" />
+                                  <ref role="37wK5l" to="lui2:~SRepository.getModules()" resolve="getModules" />
                                 </node>
                               </node>
                               <node concept="3clFbS" id="2rlXDkQJYPU" role="2LFqv$">
@@ -472,7 +471,7 @@
                                                 <ref role="2Gs0qQ" node="2rlXDkQJYPQ" resolve="module" />
                                               </node>
                                               <node concept="liA8E" id="2rlXDkQK56z" role="2OqNvi">
-                                                <ref role="37wK5l" to="lui3:~SModule.getModuleName()" resolve="getModuleName" />
+                                                <ref role="37wK5l" to="lui2:~SModule.getModuleName()" resolve="getModuleName" />
                                               </node>
                                             </node>
                                           </node>
@@ -564,11 +563,11 @@
                           </node>
                         </node>
                         <node concept="liA8E" id="5hPHAtnunD1" role="2OqNvi">
-                          <ref role="37wK5l" to="lui3:~SRepository.getModelAccess()" resolve="getModelAccess" />
+                          <ref role="37wK5l" to="lui2:~SRepository.getModelAccess()" resolve="getModelAccess" />
                         </node>
                       </node>
                       <node concept="liA8E" id="5hPHAtnuoMh" role="2OqNvi">
-                        <ref role="37wK5l" to="lui3:~ModelAccess.runWriteAction(java.lang.Runnable)" resolve="runWriteAction" />
+                        <ref role="37wK5l" to="lui2:~ModelAccess.runWriteAction(java.lang.Runnable)" resolve="runWriteAction" />
                         <node concept="1bVj0M" id="5hPHAtnupBD" role="37wK5m">
                           <node concept="3clFbS" id="5hPHAtnupBE" role="1bW5cS">
                             <node concept="3clFbF" id="5hPHAtnuqbK" role="3cqZAp">
@@ -582,7 +581,7 @@
                                   </node>
                                 </node>
                                 <node concept="liA8E" id="5hPHAtnuseN" role="2OqNvi">
-                                  <ref role="37wK5l" to="lui3:~SRepository.saveAll()" resolve="saveAll" />
+                                  <ref role="37wK5l" to="lui2:~SRepository.saveAll()" resolve="saveAll" />
                                 </node>
                               </node>
                             </node>

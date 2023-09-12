@@ -8,9 +8,9 @@ val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.is
 dependencies {
     api(project(":model-api"))
 
-    implementation("com.jetbrains:mps-openapi:$mpsVersion")
-    implementation("com.jetbrains:mps-core:$mpsVersion")
-    implementation("com.jetbrains:mps-environment:$mpsVersion")
+    compileOnly("com.jetbrains:mps-openapi:$mpsVersion")
+    compileOnly("com.jetbrains:mps-core:$mpsVersion")
+    compileOnly("com.jetbrains:mps-environment:$mpsVersion")
     implementation(libs.trove)
 
     implementation(kotlin("stdlib"))

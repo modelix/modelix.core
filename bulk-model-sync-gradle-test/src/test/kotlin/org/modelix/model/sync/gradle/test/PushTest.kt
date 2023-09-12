@@ -11,7 +11,6 @@ import org.modelix.metamodel.typed
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
@@ -19,7 +18,6 @@ import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.RepositoryLanguage
 import org.modelix.model.server.Main
 import org.modelix.model.sleep
 import org.modelix.model.sync.bulk.asExported
@@ -38,7 +36,6 @@ class PushTest {
 
         TypedLanguagesRegistry.register(L_GraphLang)
         TypedLanguagesRegistry.register(L_jetbrains_mps_lang_core)
-        ILanguageRepository.default.registerLanguage(RepositoryLanguage)
 
         val repoId = RepositoryId("ci-test")
         val branchName = "master"

@@ -18,6 +18,7 @@ package org.modelix.mps.sync.util
 
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.INode
+import org.modelix.model.api.IProperty
 import org.modelix.model.api.PropertyFromName
 import org.modelix.mps.sync.binding.ModelSynchronizer
 
@@ -41,3 +42,64 @@ fun INode.mappedMpsNodeID(): String? {
 }
 
 fun INode.isMappedToMpsNode() = this.mappedMpsNodeID() != null
+
+fun INode.copyPropertyIfNecessary(original: INode, property: IProperty) {
+    if (original.getPropertyValue(property) != this.getPropertyValue(property)) {
+        this.copyProperty(original, property)
+    }
+}
+
+fun INode.copyProperty(original: INode, property: IProperty) {
+    try {
+        this.setPropertyValue(property, original.getPropertyValue(property))
+    } catch (ex: Exception) {
+        throw RuntimeException("Unable to copy property ${property.name} from $original to $this", ex)
+    }
+}
+
+fun INode.replicateChild(role: String, original: INode): INode {
+    try {
+        val equivalenceMap = mutableMapOf<INode, INode>()
+        val postponedReferencesAssignments = mutableListOf<Triple<INode, String, INode>>()
+        val result = this.replicateChildHelper(role, original, equivalenceMap, postponedReferencesAssignments)
+        postponedReferencesAssignments.forEach { postponedRefAssignment ->
+            var target = postponedRefAssignment.third
+            if (equivalenceMap.containsKey(target)) {
+                target = equivalenceMap[target]!!
+            }
+            postponedRefAssignment.first.setReferenceTarget(postponedRefAssignment.second, target)
+        }
+        return result
+    } catch (ex: Exception) {
+        throw RuntimeException("Unable to replicate child in role $role. Original: $original, This: $this", ex)
+    }
+}
+
+fun INode.replicateChildHelper(
+    role: String,
+    original: INode,
+    equivalenceMap: Map<INode, INode>,
+    postponedReferencesAssignments: MutableList<Triple<INode, String, INode>>,
+): INode {
+    val concept = original.concept
+    val copy: INode
+    try {
+        copy = this.addNewChild(role, -1, concept)
+    } catch (ex: Exception) {
+        throw RuntimeException("Unable to add child to $this with role $role and concept $concept", ex)
+    }
+
+    concept?.getAllProperties()?.forEach { property ->
+        copy.setPropertyValue(property, original.getPropertyValue(property))
+    }
+    concept?.getAllChildLinks()?.forEach { childLink ->
+        original.getChildren(childLink).forEach { child ->
+            copy.replicateChildHelper(childLink.name, child, equivalenceMap, postponedReferencesAssignments)
+        }
+    }
+    concept?.getAllReferenceLinks()?.forEach { refLink ->
+        val target = original.getReferenceTarget(refLink)
+        target?.let { postponedReferencesAssignments.add(Triple(copy, refLink.name, target)) }
+    }
+    return copy
+}

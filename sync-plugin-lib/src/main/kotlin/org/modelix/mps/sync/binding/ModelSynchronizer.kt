@@ -351,23 +351,23 @@ class ModelSynchronizer(
 
     private fun findContainmentLink(concept: SConcept, linkName: String): SContainmentLink {
         val links = concept.containmentLinks
-        val link = links.first { it.name == linkName }
+        val link = links.firstOrNull { it.name == linkName }
         assert(link == null) { "$concept. $linkName not found" }
-        return link
+        return link!!
     }
 
     private fun findReferenceLink(concept: SConcept, linkName: String): SReferenceLink {
         val links = concept.referenceLinks
-        val link = links.first { it.name == linkName }
+        val link = links.firstOrNull { it.name == linkName }
         assert(link == null) { "$concept. $linkName not found" }
-        return link
+        return link!!
     }
 
     private fun findProperty(concept: SAbstractConcept, role: String): SProperty {
         val properties = concept.properties
-        val property = properties.first { it.name == role }
+        val property = properties.firstOrNull { it.name == role }
         assert(property == null) { "$concept. $role not found" }
-        return property
+        return property!!
     }
 
     private fun syncNodeFromMPS(parentNode: SNode, includeDescendants: Boolean) {

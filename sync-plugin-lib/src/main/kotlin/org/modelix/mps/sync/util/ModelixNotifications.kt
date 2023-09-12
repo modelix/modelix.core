@@ -22,6 +22,7 @@ import com.intellij.notification.Notifications
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
 
+// status: ready to test
 object ModelixNotifications {
 
     private const val GROUP_ID: String = "modelix"

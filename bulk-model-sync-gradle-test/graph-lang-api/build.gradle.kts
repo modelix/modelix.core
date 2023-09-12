@@ -1,7 +1,7 @@
 plugins {
     id("org.modelix.model-api-gen")
     `maven-publish`
-    kotlin("jvm") version "1.9.0"
+    alias(libs.plugins.kotlin.jvm)
 }
 
 repositories {

@@ -25,7 +25,7 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.jvm)
     id("org.modelix.bulk-model-sync")
 }
 

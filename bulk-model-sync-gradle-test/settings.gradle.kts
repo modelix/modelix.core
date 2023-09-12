@@ -19,12 +19,24 @@ pluginManagement {
     plugins {
         id("org.modelix.bulk-model-sync") version modelixCoreVersion
         id("org.modelix.model-api-gen") version modelixCoreVersion
-        kotlin("jvm") version "1.9.0"
     }
     repositories {
         mavenLocal()
         gradlePluginPortal()
         maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
         mavenCentral()
+    }
+    dependencyResolutionManagement {
+        repositories {
+            mavenLocal()
+            gradlePluginPortal()
+            maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+            mavenCentral()
+        }
+        versionCatalogs {
+            create("libs") {
+                from("org.modelix:core-version-catalog:$modelixCoreVersion")
+            }
+        }
     }
 }

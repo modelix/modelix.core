@@ -7,6 +7,8 @@ repositories {
     maven { url = uri("https://www.jetbrains.com/intellij-repository/releases") }
 }
 
+val mpsZip by configurations.creating
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(libs.kotlin.coroutines.core)
@@ -19,6 +21,13 @@ dependencies {
     implementation(project(":model-datastructure", configuration = "jvmRuntimeElements"))
 
     // MPS dependencies
+    mpsZip("com.jetbrains:mps:2021.1.4")
+    compileOnly(
+        zipTree({ mpsZip.singleFile }).matching {
+            include("lib/mps-persistence.jar")
+        },
+    )
+
     compileOnly("com.jetbrains:mps-openapi:2021.1.4")
     compileOnly("com.jetbrains:mps-core:2021.1.4")
     compileOnly("com.jetbrains:mps-workbench:2021.1.4")

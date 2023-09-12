@@ -16,19 +16,28 @@
 
 package org.modelix.mps.sync.transient
 
+import com.intellij.openapi.command.CommandProcessor
 import jetbrains.mps.extapi.model.TransientSModel
+import jetbrains.mps.ide.project.ProjectHelper
+import jetbrains.mps.ide.undo.MPSUndoUtil
 import jetbrains.mps.smodel.EditableModelDescriptor
 import jetbrains.mps.smodel.ModelLoadResult
 import jetbrains.mps.smodel.SModel
+import jetbrains.mps.smodel.SNodeUndoableAction
+import jetbrains.mps.smodel.loading.ModelLoadingState
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.persistence.NullDataSource
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.modelix.model.util.pmap.CustomPMap
+import org.modelix.model.util.pmap.SmallPMap.Companion.empty
+import org.modelix.mps.sync.MpsReplicatedRepository
 import org.modelix.mps.sync.userobject.IUserObjectContainer
 import org.modelix.mps.sync.userobject.UserObjectKey
 
+// status: ready to test
 class CloudTransientModel(module: CloudTransientModule, name: String, modelId: SModelId) :
     EditableModelDescriptor(
         createModelRef(name, module.moduleReference, modelId),
@@ -43,40 +52,49 @@ class CloudTransientModel(module: CloudTransientModule, name: String, modelId: S
             modelName: String,
             moduleReference: SModuleReference,
             modelId: SModelId,
-        ): SModelReference {
-            return PersistenceFacade.getInstance().createModelReference(moduleReference, modelId, modelName)
-        }
+        ): SModelReference =
+            PersistenceFacade.getInstance().createModelReference(moduleReference, modelId, modelName)
     }
 
-    override fun createModel(): ModelLoadResult<SModel> {
-        TODO("Not yet implemented")
-    }
+    private val logger = mu.KotlinLogging.logger {}
 
-    override fun rename(newModelName: String, changeFile: Boolean) {
-        TODO("Not yet implemented")
-    }
+    private var userObjects: CustomPMap<Any, Any> = empty()
 
-    override fun updateTimestamp() {
-        TODO("Not yet implemented")
-    }
-
-    override fun needsReloading(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun reloadFromSource() {
-        TODO("Not yet implemented")
-    }
+    override fun <T> getUserObject(key: UserObjectKey): T = userObjects[key] as T
 
     override fun <T> putUserObject(key: UserObjectKey, value: T) {
-        TODO("Not yet implemented")
+        userObjects = userObjects.put(key, value as Any)!!
     }
 
-    override fun <T> getUserObject(key: UserObjectKey): T {
-        TODO("Not yet implemented")
+    override fun updateTimestamp() {}
+
+    override fun needsReloading(): Boolean = false
+
+    override fun createModel(): ModelLoadResult<SModel> {
+        val smodel = object : SModel(reference) {
+            override fun performUndoableAction(action: SNodeUndoableAction) {
+                try {
+                    val project = CommandProcessor.getInstance().currentCommandProject ?: return
+                    val repository = ProjectHelper.getProjectRepository(project) ?: return
+                    val affectedNode = action.affectedNode ?: return
+                    val rootNode = affectedNode.containingRoot
+                    val doc = MPSUndoUtil.getDoc(repository, rootNode.reference)
+                    MpsReplicatedRepository.documentChanged(MPSUndoUtil.getRefForDoc(doc))
+                } catch (ex: Exception) {
+                    logger.error(ex) { ex.message }
+                }
+            }
+        }
+        return ModelLoadResult<SModel>(smodel, ModelLoadingState.FULLY_LOADED)
     }
 
-    fun dispose() {
-        TODO()
-    }
+    override fun isChanged(): Boolean = false
+
+    override fun save() {}
+
+    override fun rename(newModelName: String, changeFile: Boolean): Unit = throw UnsupportedOperationException()
+
+    override fun isReadOnly(): Boolean = false
+
+    override fun reloadFromSource(): Unit = throw UnsupportedOperationException()
 }

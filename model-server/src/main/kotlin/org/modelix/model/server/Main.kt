@@ -151,7 +151,7 @@ object Main {
             }
 
             val jsonModelServer = DeprecatedLightModelServer(localModelClient)
-            val repositoriesManager = RepositoriesManager(localModelClient, cmdLineArgs.useRoleIds)
+            val repositoriesManager = RepositoriesManager(localModelClient)
             val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)

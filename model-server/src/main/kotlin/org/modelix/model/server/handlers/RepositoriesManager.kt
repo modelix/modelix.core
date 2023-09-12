@@ -30,7 +30,7 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
 
-class RepositoriesManager(val client: LocalModelClient, val useRoleIds: Boolean = false) {
+class RepositoriesManager(val client: LocalModelClient) {
     init {
         migrateLegacyRepositoriesList()
     }
@@ -45,7 +45,7 @@ class RepositoriesManager(val client: LocalModelClient, val useRoleIds: Boolean 
         return store[REPOSITORIES_LIST_KEY]?.lines()?.map { RepositoryId(it) }?.toSet() ?: emptySet()
     }
 
-    fun createRepository(repositoryId: RepositoryId, userName: String?): CLVersion {
+    fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true): CLVersion {
         var initialVersion: CLVersion? = null
         store.runTransaction {
             val masterBranch = repositoryId.getBranchReference()

@@ -12,8 +12,6 @@ https://github.com/modelix/modelix.core[Repository^] | https://github.com/modeli
 The `bulk-model-sync` Gradle plugin synchronizes models between `model-api` endpoints.
 A common example would be synchronizing a local MPS project to a `model-server`.
 
-IMPORTANT: For correct synchronization the used model-server is required to use IDs for roles. This can be achieved by starting the model-server with the `-useroleids` flag.
-
 .Bulk Synchronization between MPS and model-server
 image::bulk-model-sync-gradle.overview.png[Bulk Synchronization between MPS and model-server]
 

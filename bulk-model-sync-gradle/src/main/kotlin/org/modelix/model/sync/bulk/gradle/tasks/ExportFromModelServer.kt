@@ -60,7 +60,12 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
 
     @TaskAction
     fun export() {
-        val client = ModelClientV2PlatformSpecificBuilder().url(url.get()).build().apply { runBlocking { init() } }
+        val client = ModelClientV2PlatformSpecificBuilder()
+            .url(url.get())
+            .build()
+
+        runBlocking { client.init() }
+
         val branch = if (revision.isPresent) {
             getBranchByRevision(client)
         } else {

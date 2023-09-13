@@ -9,29 +9,38 @@ syncLib.resolutionStrategy {
     force("org.modelix:model-client:2.10.9")
 }
 
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2021.3.3"
+val ideaVersion = "213.7172.25"
+
+// TODO: map the version number to the correct idea platform number here and reuse below
+// MPS - IDEA VERSION - URL
+// 2022.3   - 223.8836.41 - https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties ???
+// 2022.2   - 222.4554.10 - https://github.com/JetBrains/MPS/blob/2022.2.1/build/version.properties
+// 2021.3.3 - 213.7172.25 - https://github.com/JetBrains/MPS/blob/2021.3.3/build/version.properties
+// 2021.2.6 - 212.5284.40 - https://github.com/JetBrains/MPS/blob/2021.2.5/build/version.properties ???
+// 2021.1.4 - 211.7628.21 - https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties
+// 2020.3.6 - 203.8084.24 - https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
+
 dependencies {
 //    implementation(project(":model-server-lib"))
+    api(project(":model-api"))
+
     implementation(project(":mps-model-adapters"))
 
     syncLib("org.modelix:mps-sync-lib:2.11.0-SECURE-SNAPSHOT")
 
-    compileOnly("com.jetbrains:mps-openapi:2021.1.4")
-    compileOnly("com.jetbrains:mps-core:2021.1.4")
-    compileOnly("com.jetbrains:mps-environment:2021.1.4")
-    compileOnly("com.jetbrains:mps-platform:2021.1.4")
+    compileOnly("com.jetbrains:mps-openapi:$mpsVersion")
+    compileOnly("com.jetbrains:mps-core:$mpsVersion")
+    compileOnly("com.jetbrains:mps-environment:$mpsVersion")
+    compileOnly("com.jetbrains:mps-platform:$mpsVersion")
 }
 
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
+    version.set(ideaVersion)
 
-    // IDEA platform version used in MPS 2021.1.4: https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties#L11
-    version.set("211.7628.21")
-    // MPS 2020.3
-    // version.set("203.8084.24")
-
-    // type.set("IC") // Target IDE Platform
-
+    // only relevant when running MPS 'inside of intellij'
     // plugins.set(listOf("jetbrains.mps.core", "com.intellij.modules.mps"))
 }
 

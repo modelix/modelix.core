@@ -1,4 +1,4 @@
-package org.modelix.model.sync.gradle.test
+package org.modelix.model.sync.bulk.gradle.test
 
 import GraphLang.L_GraphLang
 import GraphLang.N_Node

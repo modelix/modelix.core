@@ -1,4 +1,4 @@
-package org.modelix.model.sync.gradle.test
+package org.modelix.model.sync.bulk.gradle.test
 
 import org.junit.jupiter.api.Test
 import java.io.File

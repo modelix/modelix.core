@@ -92,7 +92,7 @@ modelSync {
     dependsOn(resolveMps)
     dependsOn(copyTestRepo)
     direction("testPush") {
-        org.modelix.model.sync.gradle.test.GraphLanguagesHelper.registerAll()
+        org.modelix.model.sync.bulk.gradle.test.GraphLanguagesHelper.registerAll()
         includeModule("GraphSolution")
         fromLocal {
             mpsHome = mpsDir

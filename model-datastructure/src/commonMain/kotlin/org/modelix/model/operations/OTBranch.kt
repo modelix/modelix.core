@@ -30,30 +30,47 @@ class OTBranch(
     private val idGenerator: IIdGenerator,
     private val store: IDeserializingKeyValueStore,
 ) : IBranch {
-    private var operations: MutableList<IAppliedOperation> = ArrayList()
-    private var treeForOperations: ITree = branch.computeRead { branch.transaction.tree }
-    private val operationsLock = Any()
+    private var currentOperations: MutableList<IAppliedOperation> = ArrayList()
+    private val completedChanges: MutableList<Pair<List<IAppliedOperation>, ITree>> = ArrayList()
     private val id: String = branch.getId()
 
     fun operationApplied(op: IAppliedOperation) {
-        runSynchronized(operationsLock) {
-            operations.add(op)
-            treeForOperations = transaction.tree
-        }
+        check(canWrite()) { "Only allowed inside a write transaction" }
+        currentOperations.add(op)
     }
 
     override fun getId(): String {
         return id
     }
 
+    @Deprecated("renamed to getPendingChanges()", ReplaceWith("getPendingChanges()"))
     val operationsAndTree: Pair<List<IAppliedOperation>, ITree>
         get() {
-            runSynchronized(operationsLock) {
-                val newOperations: List<IAppliedOperation> = operations
-                operations = ArrayList()
-                return Pair(newOperations, treeForOperations)
+            return runSynchronized(completedChanges) {
+                val result = when (completedChanges.size) {
+                    0 -> emptyList<IAppliedOperation>() to computeReadT { it.tree }
+                    1 -> completedChanges[0]
+                    else -> completedChanges.flatMap { it.first } to completedChanges.last().second
+                }
+                completedChanges.clear()
+                result
             }
         }
+
+    /**
+     * @return the operations applied to the branch since the last call of this function and the resulting ITree.
+     */
+    fun getPendingChanges(): Pair<List<IAppliedOperation>, ITree> {
+        return runSynchronized(completedChanges) {
+            val result = when (completedChanges.size) {
+                0 -> emptyList<IAppliedOperation>() to computeReadT { it.tree }
+                1 -> completedChanges[0]
+                else -> completedChanges.flatMap { it.first } to completedChanges.last().second
+            }
+            completedChanges.clear()
+            result
+        }
+    }
 
     override fun addListener(l: IBranchListener) {
         branch.addListener(l)
@@ -78,7 +95,21 @@ class OTBranch(
 
     override fun <T> computeWrite(computable: () -> T): T {
         checkNotEDT()
-        return branch.computeWrite(computable)
+        return if (canWrite()) {
+            branch.computeWrite(computable)
+        } else {
+            branch.computeWriteT { t ->
+                try {
+                    val result = computable()
+                    runSynchronized(completedChanges) {
+                        completedChanges += currentOperations to t.tree
+                    }
+                    result
+                } finally {
+                    currentOperations = ArrayList()
+                }
+            }
+        }
     }
 
     override val readTransaction: IReadTransaction
@@ -96,8 +127,7 @@ class OTBranch(
     }
 
     override fun runWrite(runnable: () -> Unit) {
-        checkNotEDT()
-        branch.runWrite(runnable)
+        computeWrite(runnable)
     }
 
     fun wrap(t: ITransaction): ITransaction {

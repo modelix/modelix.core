@@ -210,7 +210,8 @@ class ModelSynchronizer(
                 }
                 if (targetAsPNodeAdapter == null) {
                     // TODO org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found...
-                    targetSNode = null // NodeToSNodeAdapter.wrap(targetNode, repo);
+                    // NodeToSNodeAdapter.wrap(targetNode, repo);
+                    targetSNode = null
                 } else {
                     val targetId = targetAsPNodeAdapter.nodeId
                     targetSNode = if (targetId == 0L) {

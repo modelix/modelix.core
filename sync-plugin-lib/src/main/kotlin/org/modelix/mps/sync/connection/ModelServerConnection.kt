@@ -1,8 +1,31 @@
 package org.modelix.mps.sync.connection
 
+import org.modelix.model.api.IBranch
+import org.modelix.model.client.ActiveBranch
+import org.modelix.model.lazy.RepositoryId
+import org.modelix.mps.sync.binding.RootBinding
 import java.net.URL
 
 class ModelServerConnection(var baseUrl: URL) {
+    fun getActiveBranch(repositoryId: RepositoryId): ActiveBranch {
+        TODO("Not yet implemented")
+    }
+
+    fun isConnected(): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    fun getInfoBranch(): IBranch {
+        TODO("Not yet implemented")
+    }
+
+    fun getRootBinding(repositoryId: RepositoryId): RootBinding {
+        TODO("Not yet implemented")
+    }
+
+    fun addBinding(repositoryId: RepositoryId, binding: Any) {
+        TODO("Not yet implemented")
+    }
 
     init {
         println("lolz")

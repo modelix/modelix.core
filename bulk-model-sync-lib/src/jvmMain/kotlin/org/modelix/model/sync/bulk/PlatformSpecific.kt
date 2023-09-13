@@ -30,7 +30,6 @@ import java.io.File
 @JvmName("importFile")
 fun ModelImporter.import(jsonFile: File) {
     require(jsonFile.exists())
-    require(jsonFile.extension == "json")
 
     val data = ModelData.fromJson(jsonFile.readText())
     import(data)

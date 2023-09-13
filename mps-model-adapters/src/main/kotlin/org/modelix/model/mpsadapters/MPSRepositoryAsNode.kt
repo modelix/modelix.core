@@ -111,10 +111,10 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun getPropertyLinks(): List<IProperty> {
-        return emptyList()
+        return emptyList() // A repository has no properties
     }
 
     override fun getReferenceLinks(): List<IReferenceLink> {
-        return emptyList()
+        return emptyList() // A repository has no references
     }
 }

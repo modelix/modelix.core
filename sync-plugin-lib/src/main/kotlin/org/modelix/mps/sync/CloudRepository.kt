@@ -40,6 +40,7 @@ import org.modelix.mps.sync.util.createModuleInRepository
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.function.Consumer
 
+// status: migrated, but needs some bugfixes
 class CloudRepository(val modelServer: ModelServerConnection, private val repositoryId: RepositoryId) :
     ICloudRepository {
 
@@ -188,8 +189,8 @@ class CloudRepository(val modelServer: ModelServerConnection, private val reposi
             val newProject: INode? = null!!
 
             // TODO instead of "name" it must be property/Project : name/.getName()
-            val property = PropertyFromName("name")
-            newProject!!.setPropertyValue(property, name)
+            val nameProperty = PropertyFromName("name")
+            newProject!!.setPropertyValue(nameProperty, name)
             newProject
         }
     }

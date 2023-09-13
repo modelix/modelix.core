@@ -87,16 +87,16 @@ class ModelPropertiesSynchronizer(
                     dependenciesInCloud.forEach { dependencyInCloud ->
                         val matchingDependencyInMPS = dependenciesInMPS.firstOrNull { dependencyInMPS ->
                             // TODO instead of "uuid" it must be property/SingleLanguageDependency : uuid/.getName()
-                            val property = PropertyFromName("uuid")
-                            dependencyInCloud.getPropertyValue(property) == dependencyInMPS.getPropertyValue(property)
+                            val uuidProperty = PropertyFromName("uuid")
+                            dependencyInCloud.getPropertyValue(uuidProperty) == dependencyInMPS.getPropertyValue(uuidProperty)
                         }
                         if (matchingDependencyInMPS == null) {
                             // TODO fixme. We need the Concept class of DevkitDependency to do: concept/DevkitDependency/.getLanguage().getQualifiedName() and  concept/DevkitDependency/.getName()
                             if (dependencyInCloud.concept?.getLongName() == "fixme DevkitDependencyLanguageQualifiedName.fixme DevkitDependency.name") {
                                 val repo = model.repository
                                 // TODO instead of "uuid" it must be property/DevkitDependency : uuid/.getName()
-                                val property = PropertyFromName("uuid")
-                                val devKitUUID = dependencyInCloud.getPropertyValue(property)
+                                val uuidProperty = PropertyFromName("uuid")
+                                val devKitUUID = dependencyInCloud.getPropertyValue(uuidProperty)
                                 val devKit = repo.getModule(ModuleId.regular(UUID.fromString(devKitUUID))) as DevKit
                                 val devKitModuleReference = devKit.moduleReference
                                 // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
@@ -107,8 +107,8 @@ class ModelPropertiesSynchronizer(
                             } else if (dependencyInCloud.concept?.getLongName() == "fixme SingleLanguageDependency.fixme SingleLanguageDependency.name") {
                                 val repo = model.repository
                                 // TODO instead of "uuid" it must be property/SingleLanguageDependency : uuid/.getName()
-                                val property = PropertyFromName("uuid")
-                                val languageUUID = dependencyInCloud.getPropertyValue(property)
+                                val uuidProperty = PropertyFromName("uuid")
+                                val languageUUID = dependencyInCloud.getPropertyValue(uuidProperty)
                                 val language =
                                     repo.getModule(ModuleId.regular(UUID.fromString(languageUUID))) as Language
                                 val sLanguage = MetaAdapterFactory.getLanguage(language.moduleReference)
@@ -319,8 +319,8 @@ class ModelPropertiesSynchronizer(
             dependenciesInCloud.forEach { dependencyInCloud ->
                 val matchingDependencyInMPS = dependenciesInCloud.firstOrNull { dependencyInMPS ->
                     // TODO instead of "uuid" it must be property/SingleLanguageDependency : uuid/.getName()
-                    val property = PropertyFromName("uuid")
-                    dependencyInCloud.getPropertyValue(property) == dependencyInMPS.getPropertyValue(property)
+                    val uuidProperty = PropertyFromName("uuid")
+                    dependencyInCloud.getPropertyValue(uuidProperty) == dependencyInMPS.getPropertyValue(uuidProperty)
                 }
                 if (matchingDependencyInMPS == null) {
                     cloudModelNode.removeChild(dependencyInCloud)

@@ -39,13 +39,13 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
         val branch = getBranch()!!
         var moduleName = PArea(branch).executeRead {
             // TODO instead of "name" it must be property/Module: name/.getName()
-            val property = PropertyFromName("name")
-            PNodeAdapter(moduleNodeId, branch).getPropertyValue(property)
+            val nameProperty = PropertyFromName("name")
+            PNodeAdapter(moduleNodeId, branch).getPropertyValue(nameProperty)
         }
         val moduleIdStr = PArea(branch).executeRead {
             // TODO instead of "id" it must be property/Module: id/.getName()
-            val property = PropertyFromName("id")
-            PNodeAdapter(moduleNodeId, branch).getPropertyValue(property)
+            val idProperty = PropertyFromName("id")
+            PNodeAdapter(moduleNodeId, branch).getPropertyValue(idProperty)
         }
         if (moduleName?.isEmpty() == true) {
             moduleName = "cloud.module ${NAME_SEQUENCE.incrementAndGet()}"

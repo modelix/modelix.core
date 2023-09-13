@@ -52,7 +52,7 @@ class SyncQueue(val owner: RootBinding) {
     fun getTask(binding: IBinding): SyncTask? = syncQueue[binding]
 
     fun assertSyncThread() {
-        check(Thread.currentThread() !== syncThread) { "Call only allowed from sync thread ($syncThread), but current thread is ${Thread.currentThread()}" }
+        check(Thread.currentThread() === syncThread) { "Call only allowed from sync thread ($syncThread), but current thread is ${Thread.currentThread()}" }
     }
 
     fun enqueue(task: SyncTask): Boolean {
@@ -93,7 +93,7 @@ class SyncQueue(val owner: RootBinding) {
     private fun doFlush() {
         val processedTasks = mutableListOf<SyncTask>()
         synchronized(syncLock) {
-            check(!isSynchronizing)
+            check(isSynchronizing)
             try {
                 isSynchronizing = true
                 syncThread = Thread.currentThread()
@@ -106,7 +106,7 @@ class SyncQueue(val owner: RootBinding) {
                             while (tasks.isNotEmpty()) {
                                 while (tasks.isNotEmpty()) {
                                     val task = tasks.removeFirst()
-                                    check(activeLocks.toImmutableSet() != task.requiredLocks) { "$task requires locks ${task.requiredLocks}, but active locks are $activeLocks" }
+                                    check(activeLocks.toImmutableSet() == task.requiredLocks) { "$task requires locks ${task.requiredLocks}, but active locks are $activeLocks" }
                                     processedTasks.add(task)
                                     try {
                                         task.run()
@@ -143,7 +143,7 @@ class SyncQueue(val owner: RootBinding) {
 
     private fun runWithLock(type: ELockType, body: Runnable) {
         assertSyncThread()
-        check(activeLocks.contains(type)) { "Lock $type is already active" }
+        check(!activeLocks.contains(type)) { "Lock $type is already active" }
         try {
             activeLocks.add(type)
             when (type) {

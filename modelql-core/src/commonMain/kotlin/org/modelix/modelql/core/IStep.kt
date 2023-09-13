@@ -102,7 +102,7 @@ fun IProducingStep<*>.isSingle(): Boolean = !canBeEmpty() && !canBeMultiple()
 fun <T> IProducingStep<T>.connect(consumer: IConsumingStep<T>) {
     val producer: IProducingStep<T> = this
     if (consumer.owner != this.owner && producer !is SharedStep<*>) {
-        val producerContext = QueryBuilderContext.CONTEXT_VALUE.getStack().find { it.queryReference == producer.owner }
+        val producerContext = QueryBuilderContext.CONTEXT_VALUE.getAllValues().find { it.queryReference == producer.owner }
         checkNotNull(producerContext) { "Step belongs to a different query that is already finalized: $producer" }
         producerContext.computeWith {
             with(producerContext) { producer.shared() }

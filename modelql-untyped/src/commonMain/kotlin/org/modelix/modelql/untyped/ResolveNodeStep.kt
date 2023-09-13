@@ -21,9 +21,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.INodeResolutionScope
-import org.modelix.model.api.resolveIn
-import org.modelix.model.area.ContextArea
+import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -37,23 +35,16 @@ import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.stepOutputSerializer
-import kotlin.coroutines.coroutineContext
 
 class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
     override fun createFlow(input: StepFlow<INodeReference>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.map {
-            val refScope = context.coroutineScope?.let { it.coroutineContext[INodeResolutionScope] }
-                ?: coroutineContext[INodeResolutionScope]
-                ?: ContextArea.getArea()
-                ?: throw IllegalStateException("No INodeResolutionScope found in the coroutine context")
-            it.value.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $it")
+            it.value.resolveInCurrentContext() ?: throw IllegalArgumentException("Node not found: $it")
         }.asStepFlow(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: INodeReference): INode {
-        val refScope: INodeResolutionScope = ContextArea.getArea()
-            ?: throw IllegalStateException("No context IArea found")
-        return input.resolveIn(refScope) ?: throw IllegalArgumentException("Node not found: $input")
+        return input.resolveInCurrentContext() ?: throw IllegalArgumentException("Node not found: $input")
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {

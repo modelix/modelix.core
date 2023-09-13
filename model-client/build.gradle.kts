@@ -42,7 +42,7 @@ kotlin {
                 api(project(":model-api"))
                 api(project(":model-datastructure"))
                 api(project(":model-server-api"))
-                kotlin("stdlib-common")
+                implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.collections.immutable)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)
@@ -62,7 +62,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                kotlin("stdlib-jdk8")
+                implementation(kotlin("stdlib-jdk8"))
 
                 implementation(libs.vavr)
                 implementation(libs.apache.commons.lang)

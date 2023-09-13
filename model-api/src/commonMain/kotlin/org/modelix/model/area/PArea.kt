@@ -18,11 +18,12 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PNodeReference
 
-class PArea(val branch: IBranch) : IArea {
+data class PArea(val branch: IBranch) : IArea {
 
     override fun getRoot(): INode = PNodeAdapter(ITree.ROOT_ID, branch)
 
@@ -53,9 +54,9 @@ class PArea(val branch: IBranch) : IArea {
 
     fun containsNode(nodeId: Long): Boolean = branch.transaction.containsNode(nodeId)
 
-    override fun <T> executeRead(f: () -> T): T = ContextArea.offer(this) { branch.computeRead(f) }
+    override fun <T> executeRead(f: () -> T): T = INodeResolutionScope.ensureInContext(this) { branch.computeRead(f) }
 
-    override fun <T> executeWrite(f: () -> T): T = ContextArea.offer(this) { branch.computeWrite(f) }
+    override fun <T> executeWrite(f: () -> T): T = INodeResolutionScope.ensureInContext(this) { branch.computeWrite(f) }
 
     override fun canRead(): Boolean = branch.canRead()
 

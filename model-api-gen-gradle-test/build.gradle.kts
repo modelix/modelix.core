@@ -46,8 +46,6 @@ dependencies {
     implementation("org.modelix:modelql-typed:$modelixCoreVersion")
     implementation("org.modelix:modelql-untyped:$modelixCoreVersion")
 
-    testImplementation(kotlin("test-common"))
-    testImplementation(kotlin("test-annotations-common"))
     testImplementation(kotlin("test"))
     testImplementation(kotlin("reflect"))
 

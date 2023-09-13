@@ -13,6 +13,8 @@
  */
 package org.modelix.modelql.core
 
+import org.modelix.kotlin.utils.ContextValue
+
 interface IStepSharingContext {
     fun <T> IMonoStep<T>.shared(): IMonoStep<T>
     fun <T> IFluxStep<T>.shared(): IFluxStep<T>
@@ -24,7 +26,7 @@ interface IQueryBuilderContext<in In, out Out> : IStepSharingContext {
 
 class QueryBuilderContext<In, Out, Q : IUnboundQuery<*, *, *>> : IQueryBuilderContext<In, Out> {
     private val childContexts = ArrayList<QueryBuilderContext<*, *, *>>()
-    private val parentContext: QueryBuilderContext<*, *, *>? = CONTEXT_VALUE.tryGetValue()?.also { it.childContexts.add(this) }
+    private val parentContext: QueryBuilderContext<*, *, *>? = CONTEXT_VALUE.getValueOrNull()?.also { it.childContexts.add(this) }
     val sharedSteps = ArrayList<SharedStep<*>>()
     val queryReference = QueryReference<Q>(null, null, null)
     val inputStep = computeWith { QueryInput<In>() }

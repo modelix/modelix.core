@@ -43,8 +43,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
+                implementation(kotlin("test"))
             }
         }
         val jvmMain by getting {
@@ -53,7 +52,6 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
-                implementation(kotlin("test"))
             }
         }
         val jsMain by getting {
@@ -62,7 +60,6 @@ kotlin {
         }
         val jsTest by getting {
             dependencies {
-                implementation(kotlin("test-js"))
             }
         }
     }

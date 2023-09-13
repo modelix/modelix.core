@@ -23,7 +23,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.area.ContextArea
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IUnboundQuery
@@ -59,7 +58,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
     }
 
     protected fun <T> deserialize(serializedJson: String, query: IUnboundQuery<*, T, *>): T {
-        return ContextArea.withAdditionalContext(ModelQLArea(this)) {
+        return ModelQLArea(this).runWithAdditionalScope {
             VersionAndData.deserialize(
                 serializedJson,
                 query.getAggregationOutputSerializer(json.serializersModule),

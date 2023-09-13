@@ -15,6 +15,8 @@
 
 package org.modelix.model.api
 
+import org.modelix.kotlin.utils.ContextValue
+import org.modelix.model.area.PArea
 import kotlin.jvm.Volatile
 
 class PBranch constructor(@field:Volatile private var tree: ITree, private val idGenerator: IIdGenerator) : IBranch {
@@ -30,12 +32,14 @@ class PBranch constructor(@field:Volatile private var tree: ITree, private val i
 
     private fun <T> runWithTransaction(transaction: ITransaction, runnable: () -> T): T {
         return RoleAccessContext.runWith(transaction.tree.usesRoleIds()) {
-            contextTransactions.computeWith(transaction as Transaction, runnable)
+            INodeResolutionScope.ensureInContext(PArea(this)) {
+                contextTransactions.computeWith(transaction as Transaction, runnable)
+            }
         }
     }
 
     override fun runRead(runnable: () -> Unit) {
-        val prevTransaction = contextTransactions.getValue()
+        val prevTransaction = contextTransactions.getValueOrNull()
         if (prevTransaction is IReadTransaction) {
             runnable()
         } else {
@@ -47,7 +51,7 @@ class PBranch constructor(@field:Volatile private var tree: ITree, private val i
 
     override fun runWrite(runnable: () -> Unit) {
         runSynchronized(writeLock) {
-            val prevTransaction = contextTransactions.getValue()
+            val prevTransaction = contextTransactions.getValueOrNull()
             check(prevTransaction !is ReadTransaction) { "Cannot run write from read" }
             val prevWrite = prevTransaction as WriteTransaction?
             val oldTree: ITree = prevWrite?.tree ?: tree
@@ -81,15 +85,15 @@ class PBranch constructor(@field:Volatile private var tree: ITree, private val i
     }
 
     override fun canRead(): Boolean {
-        return contextTransactions.getValue() != null
+        return contextTransactions.getValueOrNull() != null
     }
 
     override fun canWrite(): Boolean {
-        return contextTransactions.getValue() is IWriteTransaction
+        return contextTransactions.getValueOrNull() is IWriteTransaction
     }
 
     override val transaction: ITransaction
-        get() = contextTransactions.getValue() ?: throw IllegalStateException("Not in a transaction")
+        get() = contextTransactions.getValueOrNull() ?: throw IllegalStateException("Not in a transaction")
 
     override val readTransaction: IReadTransaction
         get() {

@@ -15,6 +15,7 @@ package org.modelix.modelql.core
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import org.modelix.kotlin.utils.ContextValue
 
 typealias QueryId = Long
 

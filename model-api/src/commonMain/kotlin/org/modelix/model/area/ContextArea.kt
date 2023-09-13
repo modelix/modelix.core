@@ -13,26 +13,31 @@
  */
 package org.modelix.model.area
 
-import org.modelix.model.api.ContextValue
+import org.modelix.model.api.INodeResolutionScope
 
+@Deprecated("use INodeResolutionScope")
 object ContextArea {
-    val CONTEXT_VALUE = ContextValue<IArea>()
 
-    fun getArea() = CONTEXT_VALUE.getValue()
-
-    fun <T> withAdditionalContext(area: IArea, runnable: () -> T): T {
-        val activeContext = CONTEXT_VALUE.getValue()
-        return if (activeContext == null) {
-            CONTEXT_VALUE.computeWith(area, runnable)
-        } else {
-            CONTEXT_VALUE.computeWith(CompositeArea(listOf(area, activeContext)), runnable)
+    @Deprecated("use INodeResolutionScope.getCurrentScope()")
+    fun getArea(): IArea? {
+        val scopes = INodeResolutionScope.getCurrentScopes().filterIsInstance<IArea>()
+        return when (scopes.size) {
+            0 -> null
+            1 -> scopes.single()
+            else -> CompositeArea(scopes)
         }
     }
 
+    @Deprecated("use INodeResolutionScope.runWithAdditional() or area.runWithAdditional")
+    fun <T> withAdditionalContext(area: IArea, runnable: () -> T): T {
+        return INodeResolutionScope.runWithAdditionalScope(area, runnable)
+    }
+
+    @Deprecated("use INodeResolutionScope.offer")
     fun <T> offer(area: IArea, r: () -> T): T {
-        val current = CONTEXT_VALUE.getValue()
+        val current = getArea()
         return if (current == null || !current.collectAreas().contains(area)) {
-            CONTEXT_VALUE.computeWith(area, r)
+            area.runWith(r)
         } else {
             r()
         }

@@ -13,8 +13,8 @@
  */
 package org.modelix.model.lazy
 
+import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IKeyValueStore
-import org.modelix.model.api.ContextValue
 import org.modelix.model.api.ITree
 
 /**
@@ -64,7 +64,7 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
         fun <T> with(store_: IDeserializingKeyValueStore, f: () -> T): T {
             val store = if (store_ is ContextIndirectCache) store_.directStore else store_
             val unwrapped = unwrap(store)
-            val current = contextValue.getValue()
+            val current = contextValue.getValueOrNull()
             return if (current != null && current.store == unwrapped) {
                 f()
             } else {
@@ -99,7 +99,7 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
             }
 
             override fun getStore(): IDeserializingKeyValueStore {
-                return contextValue.getValue() ?: directStore
+                return contextValue.getValueOrNull() ?: directStore
             }
         }
     }

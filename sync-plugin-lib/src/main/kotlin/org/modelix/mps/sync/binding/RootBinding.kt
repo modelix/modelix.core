@@ -73,7 +73,7 @@ class RootBinding(private val cloudRepository: ICloudRepository) : Binding(null)
     override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree?): ITreeChangeVisitor? = null
 
     override fun doActivate() {
-        check(disposed) { "Reactivation not supported" }
+        check(!disposed) { "Reactivation not supported" }
         cloudRepository.getActiveBranch().addListener(this)
     }
 

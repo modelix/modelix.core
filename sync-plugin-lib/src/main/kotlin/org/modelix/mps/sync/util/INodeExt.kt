@@ -29,14 +29,14 @@ import org.modelix.mps.sync.binding.ModelSynchronizer
 val MPS_NODE_ID_PROPERTY_NAME: String = ModelSynchronizer.MPS_NODE_ID_PROPERTY_NAME
 
 fun INode.mapToMpsNode(mpsNode: SNode) {
-    val property = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
-    this.setPropertyValue(property, mpsNode.nodeId.toString())
+    val nodeIdProperty = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
+    this.setPropertyValue(nodeIdProperty, mpsNode.nodeId.toString())
 }
 
 fun INode.mappedMpsNodeID(): String? {
     return try {
-        val property = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
-        this.getPropertyValue(property)
+        val nodeIdProperty = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
+        this.getPropertyValue(nodeIdProperty)
     } catch (e: RuntimeException) {
         throw RuntimeException(
             "Failed to retrieve the $MPS_NODE_ID_PROPERTY_NAME property in mappedMpsNodeID. The INode is $this , concept: ${this.concept}",

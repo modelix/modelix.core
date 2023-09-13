@@ -40,7 +40,7 @@ class SyncTask(
     }
 
     override fun run() {
-        check(state != State.NEW) { "Current state: $state" }
+        check(state == State.NEW) { "Current state: $state" }
         try {
             state = State.RUNNING
             if (binding.isActive) {

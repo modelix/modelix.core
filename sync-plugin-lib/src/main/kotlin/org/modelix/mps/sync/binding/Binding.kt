@@ -38,15 +38,15 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
     var owner: Binding? = null
         get() = this
         set(newOwner) {
-            if (owner == newOwner) {
+            if (owner == newOwner || newOwner == null) {
                 return
             }
             if (isActive) {
                 deactivate()
             }
 
-            check(newOwner == this) { "Binding can't own itself" }
-            check(newOwner.getOwners().contains(this)) { "Binding would be an indirect owner of itself" }
+            check(newOwner != this) { "Binding can't own itself" }
+            check(!newOwner.getOwners().contains(this)) { "Binding would be an indirect owner of itself" }
 
             owner?.let {
                 it.ownedBindings.remove(this)
@@ -148,7 +148,7 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
     protected open fun getBranch(): IBranch? = owner?.getBranch()
 
     @Throws(IllegalStateException::class)
-    private fun checkActive() = check(isActive) { "Activate the binding first: $this" }
+    private fun checkActive() = check(!isActive) { "Activate the binding first: $this" }
 
     fun isSynchronizing() = runningTask?.isRunning() ?: false
 

@@ -55,6 +55,7 @@ dependencies {
     testImplementation("org.modelix.mps:model-adapters:$modelixCoreVersion")
     testImplementation("org.modelix:graph-lang-api:$modelixCoreVersion")
     testImplementation(kotlin("test"))
+    testImplementation(libs.xmlunit.core)
 }
 
 tasks.test {

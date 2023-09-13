@@ -13,6 +13,7 @@
  */
 package org.modelix.model.lazy
 
+import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.ITree
 
@@ -58,7 +59,7 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
     }
 
     companion object {
-        private val contextValue: org.modelix.kotlin.utils.ContextValue<PrefetchCache> = org.modelix.kotlin.utils.ContextValue()
+        private val contextValue: ContextValue<PrefetchCache> = ContextValue()
 
         fun <T> with(store_: IDeserializingKeyValueStore, f: () -> T): T {
             val store = if (store_ is ContextIndirectCache) store_.directStore else store_

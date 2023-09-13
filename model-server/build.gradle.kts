@@ -107,7 +107,7 @@ val cucumber = task("cucumber") {
     }
 }
 
-tasks.named("test") {
+tasks.named("build") {
     dependsOn("cucumber")
 }
 

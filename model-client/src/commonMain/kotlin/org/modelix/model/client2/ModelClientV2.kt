@@ -168,6 +168,7 @@ class ModelClientV2(
 
     override suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
         require(lastKnownVersion is CLVersion?)
+        LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion)" }
         val response = httpClient.get {
             url {
                 takeFrom(baseUrl)

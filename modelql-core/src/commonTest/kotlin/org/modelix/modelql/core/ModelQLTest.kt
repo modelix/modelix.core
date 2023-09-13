@@ -152,6 +152,14 @@ class ModelQLTest {
     }
 
     @Test
+    fun testIsEmpty() = runTestWithTimeout {
+        val result: Boolean = remoteProductDatabaseQuery { db ->
+            db.products.filter { it.id.equalTo(-1) }.isEmpty()
+        }
+        assertTrue(result)
+    }
+
+    @Test
     fun test2() = runTestWithTimeout {
         val result: List<String> = remoteProductDatabaseQuery { db ->
             val products = db.products
@@ -212,6 +220,32 @@ class ModelQLTest {
             db.products.map { it.id }.allowEmpty().zip("abc".asMono()).toList()
         }.map { it.values }
         assertEquals((1..30).map { listOf(it, "abc") }, result)
+    }
+
+    @Test
+    fun zipDestructingMap() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.filter { it.title.equalTo("iPhone 9") }.map {
+                it.title.zip(it.category).map { (_, category) ->
+                    category
+                }
+            }.first()
+        }
+
+        assertEquals("smartphones", result)
+    }
+
+    @Test
+    fun zipDestructingMapLocal() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.filter { it.title.equalTo("iPhone 9") }.map {
+                it.title.zip(it.category).mapLocal { (title, category) ->
+                    "$title: $category"
+                }
+            }.first()
+        }
+
+        assertEquals("iPhone 9: smartphones", result)
     }
 
     @Test
@@ -277,6 +311,34 @@ class ModelQLTest {
         }.fold(0) { acc, it -> acc + (it[0] as Int) * (it[1] as Int) }
 
         assertEquals(flowSize, sequenceSize)
+    }
+
+    @Test
+    fun test_firstOrNull_nullIfEmpty() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.firstOrNull().nullIfEmpty()
+        }
+        assertEquals(testDatabase.products.firstOrNull(), result)
+    }
+
+    @Test
+    fun test_nullIfEmpty() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.nullIfEmpty().toList()
+        }
+        assertEquals(testDatabase.products, result)
+    }
+
+    @Test
+    fun zipElementAccess() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.flatMap { enum ->
+                enum.images.allowEmpty().zip(enum.title.firstOrNull()).map { it ->
+                    it.first.zip(it.second).mapLocal { "" }
+                }
+            }.toList()
+        }
+        assertEquals(testDatabase.products.flatMap { it.images }.map { "" }, result)
     }
 
 //    @Test

@@ -183,7 +183,7 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.map { transform(context.evaluationContext, it.value).asStepOutput(this) }
+        return input.map { transform(context.evaluationContext, it) }
     }
 
     override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
@@ -200,6 +200,11 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
     override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
         return getProducer().evaluate(evaluationContext, queryInput).map { transform(evaluationContext, it) }
     }
+
+    protected open fun transform(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<Out> {
+        return transform(evaluationContext, input.value).asStepOutput(this)
+    }
+
     abstract fun transform(evaluationContext: QueryEvaluationContext, input: In): Out
 }
 
@@ -226,6 +231,10 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         } else {
             flow
         }
+    }
+
+    override fun transform(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<Out> {
+        return aggregate(sequenceOf(input))
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {

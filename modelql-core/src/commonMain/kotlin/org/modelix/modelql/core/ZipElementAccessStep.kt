@@ -25,6 +25,13 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
         return zipSerializer.elementSerializers[index]
     }
 
+    override fun transform(
+        evaluationContext: QueryEvaluationContext,
+        input: IStepOutput<IZipOutput<Any?>>,
+    ): IStepOutput<Out> {
+        return (input as ZipStepOutput<*, *>).values[index] as IStepOutput<Out>
+    }
+
     override fun transform(evaluationContext: QueryEvaluationContext, input: IZipOutput<Any?>): Out {
         return input.values[index] as Out
     }
@@ -52,7 +59,11 @@ val <T> IMonoStep<IZip2Output<*, *, T>>.second: IMonoStep<T>
     get() = ZipElementAccessStep<T>(1).also { connect(it) }
 val <T> IMonoStep<IZip3Output<*, *, *, T>>.third: IMonoStep<T>
     get() = ZipElementAccessStep<T>(2).also { connect(it) }
+
+@Deprecated("Use fourth, the version without type", ReplaceWith("fourth"))
 val <T> IMonoStep<IZip4Output<*, *, *, *, T>>.forth: IMonoStep<T>
+    get() = ZipElementAccessStep<T>(3).also { connect(it) }
+val <T> IMonoStep<IZip4Output<*, *, *, *, T>>.fourth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(3).also { connect(it) }
 val <T> IMonoStep<IZip5Output<*, *, *, *, *, T>>.fifth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(4).also { connect(it) }
@@ -64,3 +75,13 @@ val <T> IMonoStep<IZip8Output<*, *, *, *, *, *, *, *, T>>.eighth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(7).also { connect(it) }
 val <T> IMonoStep<IZip9Output<*, *, *, *, *, *, *, *, *, T>>.ninth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(8).also { connect(it) }
+
+operator fun <T> IMonoStep<IZip1Output<*, T>>.component1() = first
+operator fun <T> IMonoStep<IZip2Output<*, *, T>>.component2() = second
+operator fun <T> IMonoStep<IZip3Output<*, *, *, T>>.component3() = third
+operator fun <T> IMonoStep<IZip4Output<*, *, *, *, T>>.component4() = fourth
+operator fun <T> IMonoStep<IZip5Output<*, *, *, *, *, T>>.component5() = fifth
+operator fun <T> IMonoStep<IZip6Output<*, *, *, *, *, *, T>>.component6() = sixth
+operator fun <T> IMonoStep<IZip7Output<*, *, *, *, *, *, *, T>>.component7() = seventh
+operator fun <T> IMonoStep<IZip8Output<*, *, *, *, *, *, *, *, T>>.component8() = eighth
+operator fun <T> IMonoStep<IZip9Output<*, *, *, *, *, *, *, *, *, T>>.component9() = ninth

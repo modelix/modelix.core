@@ -55,6 +55,8 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(libs.ktor.client.mock)
+                implementation(libs.kotlin.coroutines.test)
                 implementation(kotlin("test"))
             }
         }
@@ -80,20 +82,12 @@ kotlin {
                 implementation(libs.ktor.serialization.json)
             }
         }
-        val jvmTest by getting {
-            dependencies {
-            }
-        }
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
                 implementation(npm("uuid", "^8.3.0"))
                 implementation(npm("js-sha256", "^0.9.0"))
                 implementation(npm("js-base64", "^3.4.5"))
-            }
-        }
-        val jsTest by getting {
-            dependencies {
             }
         }
     }

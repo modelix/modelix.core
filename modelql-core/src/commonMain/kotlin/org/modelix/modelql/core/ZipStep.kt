@@ -296,12 +296,28 @@ interface IZipOutput<out Common> { val values: List<Common> }
 interface IZip1Output<out Common, out E1> : IZipOutput<Common> { val first: E1 }
 interface IZip2Output<out Common, out E1, out E2> : IZip1Output<Common, E1> { val second: E2 }
 interface IZip3Output<out Common, out E1, out E2, out E3> : IZip2Output<Common, E1, E2> { val third: E3 }
-interface IZip4Output<out Common, out E1, out E2, out E3, out E4> : IZip3Output<Common, E1, E2, E3> { val forth: E4 }
+interface IZip4Output<out Common, out E1, out E2, out E3, out E4> : IZip3Output<Common, E1, E2, E3> {
+    val fourth: E4
+
+    @Deprecated("Use fourth, the version without typo", ReplaceWith("fourth"))
+    val forth
+        get() = fourth
+}
 interface IZip5Output<out Common, out E1, out E2, out E3, out E4, out E5> : IZip4Output<Common, E1, E2, E3, E4> { val fifth: E5 }
 interface IZip6Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6> : IZip5Output<Common, E1, E2, E3, E4, E5> { val sixth: E6 }
 interface IZip7Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7> : IZip6Output<Common, E1, E2, E3, E4, E5, E6> { val seventh: E7 }
 interface IZip8Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8> : IZip7Output<Common, E1, E2, E3, E4, E5, E6, E7> { val eighth: E8 }
 interface IZip9Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8, out E9> : IZip8Output<Common, E1, E2, E3, E4, E5, E6, E7, E8> { val ninth: E9 }
+
+operator fun <T> IZip1Output<*, T>.component1() = first
+operator fun <T> IZip2Output<*, *, T>.component2() = second
+operator fun <T> IZip3Output<*, *, *, T>.component3() = third
+operator fun <T> IZip4Output<*, *, *, *, T>.component4() = fourth
+operator fun <T> IZip5Output<*, *, *, *, *, T>.component5() = fifth
+operator fun <T> IZip6Output<*, *, *, *, *, *, T>.component6() = sixth
+operator fun <T> IZip7Output<*, *, *, *, *, *, *, T>.component7() = seventh
+operator fun <T> IZip8Output<*, *, *, *, *, *, *, *, T>.component8() = eighth
+operator fun <T> IZip9Output<*, *, *, *, *, *, *, *, *, T>.component9() = ninth
 
 @Serializable
 @SerialName("modelix.modelql.zip.output")
@@ -310,7 +326,7 @@ data class ZipOutput<out Common, out E1, out E2, out E3, out E4, out E5, out E6,
     override val first: E1 get() = values[0] as E1
     override val second: E2 get() = values[1] as E2
     override val third: E3 get() = values[2] as E3
-    override val forth: E4 get() = values[3] as E4
+    override val fourth: E4 get() = values[3] as E4
     override val fifth: E5 get() = values[4] as E5
     override val sixth: E6 get() = values[5] as E6
     override val seventh: E7 get() = values[6] as E7

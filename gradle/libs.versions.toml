@@ -12,15 +12,15 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 gitVersion = { id = "com.palantir.git-version", version = "3.0.0" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "11.5.1" }
-spotless = { id = "com.diffplug.spotless", version = "6.20.0" }
+spotless = { id = "com.diffplug.spotless", version = "6.21.0" }
 tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.1.0" }
-dokka = {id = "org.jetbrains.dokka", version = "1.8.20"}
+dokka = {id = "org.jetbrains.dokka", version = "1.9.0"}
 
 [versions]
 kotlin = "1.9.10"
 kotlinCoroutines="1.7.3"
-ktor="2.3.3"
+ktor="2.3.4"
 kotlinHtml="0.8.0"
 kotlinSerialization="1.6.0"
 ignite="2.15.0"
@@ -34,7 +34,7 @@ kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-s
 kotlin-serialization-yaml = { group = "com.charleskorn.kaml", name = "kaml", version = "0.55.0" }
 kotlin-logging = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
 kotlin-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version = "0.3.5" }
-kotlin-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version = "0.4.0" }
+kotlin-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version = "0.4.1" }
 
 kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
 kotlin-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinCoroutines" }
@@ -55,6 +55,7 @@ ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", v
 
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
 ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
 ktor-client-js = { group = "io.ktor", name = "ktor-client-js", version.ref = "ktor" }
@@ -62,7 +63,7 @@ ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref =
 
 ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
-keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "22.0.1" }
+keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "22.0.3" }
 guava = { group = "com.google.guava", name = "guava", version = "32.1.2-jre" }
 modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.2.0" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "1.14.2" }
@@ -79,11 +80,11 @@ ignite-indexing = { group = "org.apache.ignite", name = "ignite-indexing", versi
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.4.11" }
 postgresql = { group = "org.postgresql", name = "postgresql", version = "42.6.0" }
 jcommander = { group = "com.beust", name = "jcommander", version = "1.82" }
-cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.13.0" }
+cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.14.0" }
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 
 apache-cxf-sse = { group = "org.apache.cxf", name = "cxf-rt-rs-sse", version.ref = "apacheCxf" }
 apache-cxf-client = { group = "org.apache.cxf", name = "cxf-rt-rs-client", version.ref = "apacheCxf" }
 
 semver = { group = "org.semver", name = "api", version = "0.9.33"}
-dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", version = "1.8.20"}
+dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", version = "1.9.0"}

@@ -38,6 +38,10 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
         }
     }
 
+    override fun transform(evaluationContext: QueryEvaluationContext, input: IStepOutput<In?>): IStepOutput<Out?> {
+        throw UnsupportedOperationException("use MapIfNotNullStep.createFlow")
+    }
+
     override fun transform(evaluationContext: QueryEvaluationContext, input: In?): Out? {
         return input?.let { query.outputStep.evaluate(evaluationContext, it).getOrElse(null) }
     }

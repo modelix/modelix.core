@@ -21,9 +21,15 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
       - name: Build
+        uses: gradle/gradle-build-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew build publishToMavenLocal -PciBuild=true
+        with:
+          arguments: |
+            --build-cache
+            build
+            publishToMavenLocal
+            -PciBuild=true
       - name: Test Model API Generator Gradle Plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

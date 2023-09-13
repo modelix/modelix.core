@@ -1,0 +1,25 @@
+= mps-model-server-plugin
+
+== Health checks
+
+The plugin offers a set of health checks via HTTP on port 48305 and path `/health`.
+Health checks can be enabled adding query parameters with the health check name and the value `true` to the request.
+
+=== indexer
+
+The check fails, if the indexer is currently running for one of the opened projects.
+
+[NOTE]
+====
+This check indicates a healthy system until a project is opened.
+Combine it with the `projects` health check to effectively wait for the system to be ready to serve data immediately.
+====
+
+=== projects
+
+Reports an unhealthy system whenever no project is loaded.
+
+=== virtualFolders
+
+Reports an unhealthy system when no virtual folders are available.
+This might also be true in case a project without virtual folders is fully loaded.

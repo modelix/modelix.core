@@ -17,6 +17,7 @@ import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.module.SModule
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -38,7 +39,7 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     override val reference: INodeReference
         get() = NodeReference("mps-module:" + module.moduleReference.toString())
     override val concept: IConcept
-        get() = RepositoryLanguage.Module
+        get() = BuiltinLanguages.MPSRepositoryConcepts.Module
     override val parent: INode?
         get() = module.repository?.let { MPSRepositoryAsNode(it) }
 
@@ -97,12 +98,12 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.getUID().endsWith(RepositoryLanguage.NamePropertyUID) ||
+        return if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()) ||
             property.getUID().contains("name") ||
             property.getSimpleName() == "name"
         ) {
             module.moduleName
-        } else if (property.getUID().endsWith(RepositoryLanguage.VirtualPackagePropertyUID) ||
+        } else if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.getUID()) ||
             property.getUID().contains("virtualPackage") ||
             property.getSimpleName() == "virtualPackage"
         ) {

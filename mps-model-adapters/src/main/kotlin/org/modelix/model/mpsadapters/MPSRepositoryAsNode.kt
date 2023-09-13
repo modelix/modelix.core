@@ -14,6 +14,7 @@
 package org.modelix.model.mpsadapters
 
 import org.jetbrains.mps.openapi.module.SRepository
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -36,7 +37,7 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     override val reference: INodeReference
         get() = NodeReference("mps-repository")
     override val concept: IConcept
-        get() = RepositoryLanguage.Repository
+        get() = BuiltinLanguages.MPSRepositoryConcepts.Repository
     override val parent: INode?
         get() = null
 

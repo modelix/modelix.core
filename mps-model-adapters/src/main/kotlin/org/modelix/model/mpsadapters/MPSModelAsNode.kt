@@ -14,6 +14,7 @@
 package org.modelix.model.mpsadapters
 
 import org.jetbrains.mps.openapi.model.SModel
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -53,13 +54,13 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun getContainmentLink(): IChildLink {
-        return RepositoryLanguage.Module.models
+        return BuiltinLanguages.MPSRepositoryConcepts.Module.models
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
         return if (link is NullChildLink) {
             emptyList()
-        } else if (link.getUID().endsWith(RepositoryLanguage.Model.rootNodes.getUID()) ||
+        } else if (link.getUID().endsWith(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getUID()) ||
             link.getUID().contains("rootNodes") ||
             link.getSimpleName() == "rootNodes"
         ) {
@@ -98,7 +99,7 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.getUID().endsWith(RepositoryLanguage.NamePropertyUID) ||
+        return if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()) ||
             property.getUID().contains("name") ||
             property.getSimpleName() == "name"
         ) {

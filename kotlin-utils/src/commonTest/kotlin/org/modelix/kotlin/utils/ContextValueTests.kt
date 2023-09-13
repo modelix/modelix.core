@@ -27,7 +27,10 @@ import kotlin.time.Duration.Companion.milliseconds
 class ContextValueTests {
 
     @Test
-    fun multipleCoroutines() = runTest {
+    fun testIsolation() = runTest {
+        // run multiple suspendable and non-suspendable functions in parallel to ensure they always read their own value
+        // and not a value from a different coroutine/thread.
+
         val contextValue = ContextValue<String>("a")
         assertEquals("a", contextValue.getValueOrNull())
         coroutineScope {

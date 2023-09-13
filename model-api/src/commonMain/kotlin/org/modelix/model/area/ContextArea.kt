@@ -30,14 +30,14 @@ object ContextArea {
 
     @Deprecated("use INodeResolutionScope.runWithAdditional() or area.runWithAdditional")
     fun <T> withAdditionalContext(area: IArea, runnable: () -> T): T {
-        return INodeResolutionScope.runWithAlso(area, runnable)
+        return INodeResolutionScope.runWithAdditionalScope(area, runnable)
     }
 
     @Deprecated("use INodeResolutionScope.offer")
     fun <T> offer(area: IArea, r: () -> T): T {
         val current = getArea()
         return if (current == null || !current.collectAreas().contains(area)) {
-            area.runWithOnly(r)
+            area.runWith(r)
         } else {
             r()
         }

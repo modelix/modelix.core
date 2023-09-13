@@ -84,7 +84,7 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
                 LOG.debug { "query: $query" }
                 val transactionBody: () -> IStepOutput<Any?> = {
                     runBlocking {
-                        area.runWithAlsoInCoroutine {
+                        area.runWithAdditionalScopeInCoroutine {
                             query.bind(rootNode.createQueryExecutor()).execute()
                         }
                     }

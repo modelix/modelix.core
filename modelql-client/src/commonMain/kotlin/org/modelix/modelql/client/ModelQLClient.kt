@@ -58,7 +58,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
     }
 
     protected fun <T> deserialize(serializedJson: String, query: IUnboundQuery<*, T, *>): T {
-        return ModelQLArea(this).runWithAlso {
+        return ModelQLArea(this).runWithAdditionalScope {
             VersionAndData.deserialize(
                 serializedJson,
                 query.getAggregationOutputSerializer(json.serializersModule),

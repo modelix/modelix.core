@@ -20,23 +20,23 @@ interface INodeResolutionScope {
      * All node references inside the body are resolved against this scope. Compared to runWithAlso, the existing scopes
      * in the current context are not used, meaning they are replaced.
      */
-    fun <T> runWithOnly(body: () -> T): T = contextScope.computeWith(this, body)
+    fun <T> runWith(body: () -> T): T = contextScope.computeWith(this, body)
 
     /**
      * Does the same as runWithOnly, but with support for suspendable functions.
      */
-    suspend fun <T> runWithOnlyInCoroutine(body: suspend () -> T): T = contextScope.runInCoroutine(this, body)
+    suspend fun <T> runWithInCoroutine(body: suspend () -> T): T = contextScope.runInCoroutine(this, body)
 
     /**
      * All node references inside the body are resolved against this scope and if that fails against any other scope in
      * the current context.
      */
-    fun <T> runWithAlso(body: () -> T): T = runWithAlso(this, body)
+    fun <T> runWithAdditionalScope(body: () -> T): T = runWithAdditionalScope(this, body)
 
     /**
      * Does the same as runWithAlso, but with support for suspendable functions.
      */
-    suspend fun <T> runWithAlsoInCoroutine(body: suspend () -> T): T = runWithAlsoInCoroutine(this, body)
+    suspend fun <T> runWithAdditionalScopeInCoroutine(body: suspend () -> T): T = runWithAdditionalScopeInCoroutine(this, body)
 
     companion object {
         internal val contextScope = ContextValue<INodeResolutionScope>()
@@ -45,7 +45,7 @@ interface INodeResolutionScope {
             return listOf(scopeToAdd) + (getCurrentScopes() - scopeToAdd)
         }
 
-        fun <T> runWithAlso(scope: INodeResolutionScope, body: () -> T): T {
+        fun <T> runWithAdditionalScope(scope: INodeResolutionScope, body: () -> T): T {
             val newScopes = combineScopes(scope)
             return when (newScopes.size) {
                 0 -> throw RuntimeException("Impossible case")
@@ -54,7 +54,7 @@ interface INodeResolutionScope {
             }
         }
 
-        suspend fun <T> runWithAlsoInCoroutine(scope: INodeResolutionScope, body: suspend () -> T): T {
+        suspend fun <T> runWithAdditionalScopeInCoroutine(scope: INodeResolutionScope, body: suspend () -> T): T {
             val newScopes = combineScopes(scope)
             return when (newScopes.size) {
                 0 -> throw RuntimeException("Impossible case")
@@ -90,7 +90,7 @@ interface INodeResolutionScope {
             return if (current.contains(scope)) {
                 body()
             } else {
-                scope.runWithAlso(body)
+                scope.runWithAdditionalScope(body)
             }
         }
     }

@@ -39,6 +39,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
 
     private lateinit var settings: ModelSyncGradleSettings
 
+    private val antDependenciesConfigName = "model-sync-ant-dependencies"
+
     override fun apply(project: Project) {
         settings = project.extensions.create("modelSync", ModelSyncGradleSettings::class.java)
         getBaseDir(project).mkdirs()
@@ -50,8 +52,9 @@ class ModelSyncGradlePlugin : Plugin<Project> {
                 }
                 it.settings.set(settings)
             }
-            val modelixCoreVersion = readModelixCoreVersion() ?: throw RuntimeException("modelix.core version not found")
-            val antDependencies = project.configurations.create("model-sync-ant-dependencies")
+            val modelixCoreVersion = readModelixCoreVersion()
+                ?: throw RuntimeException("modelix.core version not found. Try running the writeVersionFile task.")
+            val antDependencies = project.configurations.create(antDependenciesConfigName)
             project.dependencies.add(antDependencies.name, "org.apache.ant:ant-junit:1.10.12")
 
             val mpsDependencies = project.configurations.create("modelSyncMpsDependencies")
@@ -146,7 +149,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         return exportFromMps
     }
 
-    private fun Project.getAntDependencies() = configurations.getByName("model-sync-ant-dependencies")
+    private fun Project.getAntDependencies() = configurations.getByName(antDependenciesConfigName)
 
     private fun registerTasksForServerTarget(
         syncDirection: SyncDirection,

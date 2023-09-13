@@ -26,11 +26,16 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class ContextValueTests {
 
+    /*
+     * Runs multiple suspendable and non-suspendable functions in parallel to ensure they always read their own value
+     * and not a value from a different coroutine/thread.
+
+     * This test starts two coroutines and tries to run into a race-condition. A successful test doesn't proof the
+     * correctness, but a failing test proofs its incorrectness. If it ever becomes unstable, meaning it first fails
+     * and then succeeds after a second run, this shouldn't be ignored.
+     */
     @Test
     fun testIsolation() = runTest {
-        // run multiple suspendable and non-suspendable functions in parallel to ensure they always read their own value
-        // and not a value from a different coroutine/thread.
-
         val contextValue = ContextValue<String>("a")
         assertEquals("a", contextValue.getValueOrNull())
         coroutineScope {

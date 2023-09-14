@@ -44,7 +44,6 @@ import java.util.Collections
 import java.util.SortedSet
 import java.util.TreeSet
 import kotlin.random.Random
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
@@ -116,9 +115,27 @@ class ReplicatedRepositoryTest {
         }
     }
 
-    @Ignore
-    @Test
-    fun `concurrent write`() = runTest {
+    @Test fun `concurrent write 0`() = concurrentWrite(0)
+
+    @Test fun `concurrent write 1`() = concurrentWrite(1)
+
+    @Test fun `concurrent write 2`() = concurrentWrite(2)
+
+    @Test fun `concurrent write 3`() = concurrentWrite(3)
+
+    @Test fun `concurrent write 4`() = concurrentWrite(4)
+
+    @Test fun `concurrent write 5`() = concurrentWrite(5)
+
+    @Test fun `concurrent write 6`() = concurrentWrite(6)
+
+    @Test fun `concurrent write 7`() = concurrentWrite(7)
+
+    @Test fun `concurrent write 8`() = concurrentWrite(8)
+
+    @Test fun `concurrent write 9`() = concurrentWrite(9)
+
+    fun concurrentWrite(iteration: Int) = runTest {
         val url = "http://localhost/v2"
         val clients = (1..3).map {
             ModelClientV2.builder().url(url).client(client).build().also { it.init() }
@@ -145,7 +162,7 @@ class ReplicatedRepositoryTest {
                 }
             }
             models.forEachIndexed { index, model ->
-                launchWriter(model, 56456 + index)
+                launchWriter(model, 56456 + index + iteration * 100000)
                 delay(200.milliseconds)
             }
         }

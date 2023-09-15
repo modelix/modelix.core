@@ -13,6 +13,7 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.smodel.GlobalModelAccess
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
@@ -23,13 +24,14 @@ import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 
-data class MPSArea(val repository: SRepository) : IArea {
+data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     override fun getRoot(): INode {
         return MPSRepositoryAsNode(repository)
     }
 
+    @Deprecated("use ILanguageRepository.resolveConcept")
     override fun resolveConcept(ref: IConceptReference): IConcept? {
-        TODO("Not yet implemented")
+        return MPSLanguageRepository(repository).resolveConcept(ref.getUID())
     }
 
     override fun resolveNode(ref: INodeReference): INode? {
@@ -49,11 +51,11 @@ data class MPSArea(val repository: SRepository) : IArea {
     }
 
     override fun getReference(): IAreaReference {
-        TODO("Not yet implemented")
+        return this
     }
 
     override fun resolveArea(ref: IAreaReference): IArea? {
-        TODO("Not yet implemented")
+        return takeIf { ref == it }
     }
 
     override fun <T> executeRead(f: () -> T): T {
@@ -61,11 +63,17 @@ data class MPSArea(val repository: SRepository) : IArea {
         repository.modelAccess.runReadAction {
             result = f()
         }
-        return result as T
+        return result!!
     }
 
     override fun <T> executeWrite(f: () -> T): T {
-        TODO("Not yet implemented")
+        var result: T? = null
+        if (repository.modelAccess is GlobalModelAccess) {
+            repository.modelAccess.runWriteAction { result = f() }
+        } else {
+            repository.modelAccess.executeCommand { result = f() }
+        }
+        return result!!
     }
 
     override fun canRead(): Boolean {
@@ -77,10 +85,10 @@ data class MPSArea(val repository: SRepository) : IArea {
     }
 
     override fun addListener(l: IAreaListener) {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException("Not implemented")
     }
 
     override fun removeListener(l: IAreaListener) {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException("Not implemented")
     }
 }

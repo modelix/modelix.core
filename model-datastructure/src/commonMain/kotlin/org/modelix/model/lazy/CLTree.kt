@@ -48,7 +48,7 @@ class CLTree : ITree, IBulkTree {
     constructor(hash: String?, store: IDeserializingKeyValueStore) : this(if (hash == null) null else store.get<CPTree>(hash) { CPTree.deserialize(it) }, store)
     constructor(store: IDeserializingKeyValueStore) : this(null as CPTree?, store)
     constructor(data: CPTree?, store_: IDeserializingKeyValueStore) : this(data, null as RepositoryId?, store_)
-    private constructor(data: CPTree?, repositoryId_: RepositoryId?, store_: IDeserializingKeyValueStore, useRoleIds: Boolean = false) {
+    constructor(data: CPTree?, repositoryId_: RepositoryId?, store_: IDeserializingKeyValueStore, useRoleIds: Boolean = false) {
         var repositoryId = repositoryId_
         var store = store_
         if (data == null) {
@@ -580,8 +580,10 @@ class CLTree : ITree, IBulkTree {
     private fun checkPropertyRoleId(nodeId: Long, role: String?) = checkRoleId(nodeId, role) { it.getAllProperties() }
     private fun checkRoleId(nodeId: Long, role: String?, rolesGetter: (IConcept) -> Iterable<IRole>) {
         if (role != null && usesRoleIds()) {
-            val concept = getConceptReference(nodeId)?.tryResolve()
-            if (concept != null && rolesGetter(concept).any { it.getSimpleName() == role }) {
+            val isKnownRoleName = getConceptReference(nodeId)?.tryResolve()?.let { concept ->
+                runCatching { rolesGetter(concept).any { it.getSimpleName() == role } }.getOrNull()
+            } ?: false
+            if (isKnownRoleName) {
                 throw IllegalArgumentException("A role UID is expected, but a name was provided: $role")
             }
         }

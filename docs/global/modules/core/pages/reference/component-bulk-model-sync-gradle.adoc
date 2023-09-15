@@ -1,0 +1,143 @@
+== Gradle Plugin for synchronizing models between model-api endpoints
+:navtitle: `bulk-model-sync-gradle`
+
+:tip-caption: 🔗 Quick Links
+[TIP]
+--
+https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-sync-gradle/build.gradle.kts[buildfile^]
+--
+
+== Overview
+
+The `bulk-model-sync` Gradle plugin synchronizes models between `model-api` endpoints.
+A common example would be synchronizing a local MPS project to a `model-server`.
+
+.Bulk Synchronization between MPS and model-server
+image::bulk-model-sync-gradle.overview.png[Bulk Synchronization between MPS and model-server]
+
+The plugin allows the definition of sync directions inside of a `modelSync` block by specifying source and target endpoint.
+Based on these directions, Gradle tasks will be generated, which can be run to trigger the corresponding synchronization.
+
+Internally, the node data will be bulk exported from the source endpoint and stored as JSON files.
+After that, these JSON files serve as a specification to incrementally update the target model via the target `model-api` endpoint.
+This means that only a minimal amount of write operations is used to update the target model.
+
+== Configuration settings
+
+=== modelSync configuration
+[%header, cols="1,1,2"]
+|===
+|method
+|parameter type
+|description
+
+|`dependsOn`
+|Any
+|Adds the given task as a dependency of this task.
+
+|`direction`
+|String, Action<SyncDirection>
+|Defines a new sync direction with the given name.
+|===
+
+=== SyncDirection configuration
+[%header, cols="1,1,2"]
+|===
+|method
+|parameter type
+|description
+
+|`fromLocal`
+|Action<LocalSource>
+|Defines a local source (MPS).
+
+|`toModelServer`
+|Action<ServerTarget>
+|Defines a model-server target.
+
+|`fromModelServer`
+|Action<ServerSource>
+|Defines a model-server source.
+
+|`toLocal`
+|Action<LocalTarget>
+|Defines a local target (MPS).
+
+|`registerLanguage`
+|ILanguage
+|Registers the given language and all of its concepts for the synchronisation process.
+
+|`includeModule`
+|String
+|Includes the module specified by the given fully qualified name in the synchronisation process.
+|===
+
+=== LocalSource/-Target configuration
+[%header, cols="1,1,2"]
+|===
+|setting
+|type
+|description
+
+|`mpsHome`
+|File
+|Location of the MPS to be used for the sync.
+
+|`mpsHeapSize`
+|String
+|MPS heap size specified as a String, e.g. "2g" for 2GB (default: "2g")
+
+|`repositoryDir`
+|File
+|Directory in which the modules are stored.
+|===
+
+=== ServerSource/-Target configuration
+[%header, cols="1,1,2"]
+|===
+|setting
+|type
+|description
+
+|`url`
+|String
+|URL of the model-server API endpoint.
+
+|`repositoryId`
+|String
+|Id of the target/source model-server repository.
+
+|`branchName`
+|String
+|Name of the target/source model-server branch.
+
+|`revision`
+|String
+|Source model-server revision. Can be used instead of `repositoryId` and `branchName`. Only available in ServerSource.
+
+|===
+
+== Example
+
+[source,kotlin]
+--
+modelSync {
+    dependsOn(someOtherTask)
+    direction("pushToMyServer") {
+        registerLanguage(L_MyGeneratedLanguage)
+        includeModule("MySolution")
+        fromLocal {
+            mpsHome = buildDir.resolve("mps")
+            mpsHeapSize = "4g"
+            repositoryDir = projectDir.resolve("my-repo")
+        }
+        toModelServer {
+            url = "http://0.0.0.0:28101/v2"
+            repositoryId = "my-repo"
+            branchName = "dev"
+        }
+    }
+}
+--
+
+Generated Gradle task to perform synchronization: `runSyncPushToMyServer`.

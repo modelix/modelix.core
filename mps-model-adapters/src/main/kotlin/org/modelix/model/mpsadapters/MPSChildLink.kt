@@ -22,6 +22,8 @@ data class MPSChildLink(val link: SContainmentLinkAdapter) : IChildLink {
     constructor(link: SContainmentLink) : this(link as SContainmentLinkAdapter)
     override val isMultiple: Boolean
         get() = link.isMultiple
+
+    @Deprecated("use .targetConcept", ReplaceWith("targetConcept"))
     override val childConcept: IConcept
         get() = targetConcept
     override val targetConcept: IConcept

@@ -14,6 +14,7 @@
 package org.modelix.model.mpsadapters
 
 import org.jetbrains.mps.openapi.model.SModel
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -22,18 +23,20 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.NodeReference
+import org.modelix.model.api.NullChildLink
 import org.modelix.model.area.IArea
+import org.modelix.model.data.NodeData
 
 data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     override fun getArea(): IArea {
-        TODO("Not yet implemented")
+        return MPSArea(model.repository)
     }
 
     override val isValid: Boolean
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
-        get() = SerializedNodeReference("mps-model:" + model.reference.toString())
+        get() = NodeReference("mps-model:" + model.reference.toString())
     override val concept: IConcept
         get() = RepositoryLanguage.Model
     override val parent: INode
@@ -50,12 +53,14 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
         TODO("Not yet implemented")
     }
 
-    override fun getContainmentLink(): IChildLink? {
-        TODO("Not yet implemented")
+    override fun getContainmentLink(): IChildLink {
+        return BuiltinLanguages.MPSRepositoryConcepts.Module.models
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith(RepositoryLanguage.Model.rootNodes.getUID()) ||
+        return if (link is NullChildLink) {
+            emptyList()
+        } else if (link.getUID().endsWith(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getUID()) ||
             link.getUID().contains("rootNodes") ||
             link.getSimpleName() == "rootNodes"
         ) {
@@ -94,18 +99,22 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.getUID().endsWith(RepositoryLanguage.NamePropertyUID) ||
+        return if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()) ||
             property.getUID().contains("name") ||
             property.getSimpleName() == "name"
         ) {
             model.name.value
+        } else if (property.getSimpleName() == NodeData.idPropertyKey) {
+            model.modelId.toString()
         } else {
             null
         }
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        TODO("Not yet implemented")
+        if (getPropertyValue(property) != value) {
+            throw UnsupportedOperationException("Property $property of $concept is read-only")
+        }
     }
 
     override fun getPropertyLinks(): List<IProperty> {

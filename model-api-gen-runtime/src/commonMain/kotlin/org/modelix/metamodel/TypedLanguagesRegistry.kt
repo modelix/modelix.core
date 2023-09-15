@@ -45,6 +45,8 @@ object TypedLanguagesRegistry : ILanguageRepository {
             ?: return UnknownConceptInstance(node)
         return concept.wrap(node)
     }
+
+    override fun getPriority(): Int = 2000
 }
 
 fun <NodeT : ITypedNode> INode.typed(nodeClass: KClass<NodeT>): NodeT = nodeClass.cast(TypedLanguagesRegistry.wrapNode(this))

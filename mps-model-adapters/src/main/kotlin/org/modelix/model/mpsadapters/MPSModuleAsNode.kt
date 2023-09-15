@@ -15,7 +15,9 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
+import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.module.SModule
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -24,20 +26,20 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 
 data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     override fun getArea(): IArea {
-        TODO("Not yet implemented")
+        return MPSArea(module.repository ?: MPSModuleRepository.getInstance())
     }
 
     override val isValid: Boolean
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
-        get() = SerializedNodeReference("mps-module:" + module.moduleReference.toString())
+        get() = NodeReference("mps-module:" + module.moduleReference.toString())
     override val concept: IConcept
-        get() = RepositoryLanguage.Module
+        get() = BuiltinLanguages.MPSRepositoryConcepts.Module
     override val parent: INode?
         get() = module.repository?.let { MPSRepositoryAsNode(it) }
 
@@ -52,8 +54,8 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
         TODO("Not yet implemented")
     }
 
-    override fun getContainmentLink(): IChildLink? {
-        TODO("Not yet implemented")
+    override fun getContainmentLink(): IChildLink {
+        return RepositoryLanguage.Repository.modules
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
@@ -96,12 +98,12 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.getUID().endsWith(RepositoryLanguage.NamePropertyUID) ||
+        return if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()) ||
             property.getUID().contains("name") ||
             property.getSimpleName() == "name"
         ) {
             module.moduleName
-        } else if (property.getUID().endsWith(RepositoryLanguage.VirtualPackagePropertyUID) ||
+        } else if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.getUID()) ||
             property.getUID().contains("virtualPackage") ||
             property.getSimpleName() == "virtualPackage"
         ) {
@@ -116,7 +118,7 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        TODO("Not yet implemented")
+        // TODO("Not yet implemented")
     }
 
     override fun getPropertyLinks(): List<IProperty> {

@@ -103,7 +103,8 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
                 fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
                 post("init") {
-                    val initialVersion = repositoriesManager.createRepository(repositoryId(), call.getUserName())
+                    val useRoleIds = call.request.queryParameters["useRoleIds"] != "false"
+                    val initialVersion = repositoriesManager.createRepository(repositoryId(), call.getUserName(), useRoleIds)
                     call.respondDelta(initialVersion.getContentHash(), null)
                 }
                 route("branches") {

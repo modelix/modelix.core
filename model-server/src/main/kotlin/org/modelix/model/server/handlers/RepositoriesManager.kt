@@ -45,7 +45,7 @@ class RepositoriesManager(val client: LocalModelClient) {
         return store[REPOSITORIES_LIST_KEY]?.lines()?.map { RepositoryId(it) }?.toSet() ?: emptySet()
     }
 
-    fun createRepository(repositoryId: RepositoryId, userName: String?): CLVersion {
+    fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true): CLVersion {
         var initialVersion: CLVersion? = null
         store.runTransaction {
             val masterBranch = repositoryId.getBranchReference()
@@ -57,7 +57,7 @@ class RepositoriesManager(val client: LocalModelClient) {
                 id = client.idGenerator.generate(),
                 time = Clock.System.now().epochSeconds.toString(),
                 author = userName,
-                tree = CLTree(client.storeCache),
+                tree = CLTree(null, null, client.storeCache, useRoleIds = useRoleIds),
                 baseVersion = null,
                 operations = emptyArray(),
             )

@@ -30,11 +30,18 @@ interface ILanguageRepository {
          * @throws RuntimeException if multiple concepts were found for the given reference
          */
         fun tryResolveConcept(ref: IConceptReference): IConcept? {
-            val concepts = repositories.mapNotNull { it.resolveConcept(ref.getUID()) }
+            val concepts = repositories.map { it to it.resolveConcept(ref.getUID()) }.filterSecondNotNull()
             return when (concepts.size) {
                 0 -> null
-                1 -> concepts.first()
-                else -> throw RuntimeException("Multiple concepts found for $ref: $concepts")
+                1 -> concepts.first().second
+                else ->
+                    concepts
+                        .groupBy { it.first.getPriority() }
+                        .maxByOrNull { it.key }!!
+                        .value
+                        .singleOrNull()
+                        ?.second
+                        ?: throw RuntimeException("Multiple concepts found for $ref: $concepts")
             }
         }
 
@@ -95,6 +102,12 @@ interface ILanguageRepository {
      * @return list of all concepts
      */
     fun getAllConcepts(): List<IConcept>
+
+    /**
+     * If multiple repositories can provide information for the same concept UID, the IConcept from the repository with
+     * the highest priority is used.
+     */
+    fun getPriority(): Int = 0
 }
 
 /**
@@ -160,5 +173,11 @@ object DefaultLanguageRepository : ILanguageRepository {
 
     override fun getAllConcepts(): List<IConcept> {
         return concepts.values.toList()
+    }
+
+    override fun getPriority(): Int = 0
+
+    init {
+        BuiltinLanguages.getAllLanguages().forEach { registerLanguage(it) }
     }
 }

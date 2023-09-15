@@ -13,6 +13,9 @@ plugins {
 rootProject.name = "modelix.core"
 
 include("authorization")
+include("bulk-model-sync-gradle")
+include("bulk-model-sync-lib")
+include("bulk-model-sync-solution")
 include("kotlin-utils")
 include("light-model-client")
 include("metamodel-export")
@@ -25,7 +28,6 @@ include("model-datastructure")
 include("model-server")
 include("model-server-api")
 include("model-server-lib")
-include("model-sync-lib")
 include("modelql-client")
 include("modelql-core")
 include("modelql-html")

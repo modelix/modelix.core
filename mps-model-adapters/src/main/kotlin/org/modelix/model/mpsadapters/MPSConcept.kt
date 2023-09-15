@@ -23,19 +23,18 @@ import org.jetbrains.mps.openapi.language.SInterfaceConcept
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
-import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ILanguage
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 
 data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
     constructor(concept: SAbstractConcept) : this(concept as SAbstractConceptAdapter)
-    override fun getReference(): IConceptReference {
+    override fun getReference(): ConceptReference {
         return ConceptReference(getUID())
     }
 
-    override val language: ILanguage?
-        get() = TODO("Not yet implemented")
+    override val language: ILanguage
+        get() = MPSLanguage(concept.language)
 
     override fun getUID(): String {
         val id: SConceptId = when (concept) {
@@ -72,8 +71,8 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
         }.map { MPSConcept(it) }
     }
 
-    override fun isExactly(other: IConcept?): Boolean {
-        val otherMpsConcept = other as? MPSConcept ?: return false
+    override fun isExactly(concept: IConcept?): Boolean {
+        val otherMpsConcept = concept as? MPSConcept ?: return false
         return this.concept == otherMpsConcept.concept
     }
 

@@ -16,10 +16,18 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.smodel.SNodePointer
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.INodeReferenceSerializerEx
+import kotlin.reflect.KClass
 
 data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
 
     companion object {
+
+        init {
+            INodeReferenceSerializer.register(MPSNodeReferenceSerializer)
+        }
+
         fun tryConvert(ref: INodeReference): MPSNodeReference? {
             if (ref is MPSNodeReference) return ref
             val serialized = ref.serialize()
@@ -36,4 +44,17 @@ data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
 fun INodeReference.toMPSNodeReference(): MPSNodeReference {
     return MPSNodeReference.tryConvert(this)
         ?: throw IllegalArgumentException("Not an MPS node reference: $this")
+}
+
+object MPSNodeReferenceSerializer : INodeReferenceSerializerEx {
+    override val prefix = "mps"
+    override val supportedReferenceClasses: Set<KClass<out INodeReference>> = setOf(MPSNodeReference::class)
+
+    override fun serialize(ref: INodeReference): String {
+        return (ref as MPSNodeReference).ref.nodeId.toString()
+    }
+
+    override fun deserialize(serialized: String): INodeReference {
+        return MPSNodeReference(SNodePointer.deserialize(serialized))
+    }
 }

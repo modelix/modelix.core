@@ -13,18 +13,23 @@
  */
 package org.modelix.model.api
 
-class SimpleReferenceLink(
+import kotlin.jvm.JvmOverloads
+
+class SimpleReferenceLink
+@JvmOverloads constructor(
     private val simpleName: String,
     override val isOptional: Boolean,
     override var targetConcept: IConcept,
+    private val uid: String? = null,
 ) : IReferenceLink {
     var owner: SimpleConcept? = null
 
     override fun getConcept(): IConcept = owner!!
 
     override fun getUID(): String {
-        val o = owner
-        return (if (o == null) simpleName else o.getUID() + "." + simpleName)
+        return uid
+            ?: owner?.let { it.getUID() + "." + simpleName }
+            ?: simpleName
     }
 
     override fun getSimpleName(): String = simpleName

@@ -28,6 +28,7 @@ import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.SetReferenceOp
+import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPOperationsList
 import org.modelix.model.persistent.CPTree
@@ -330,14 +331,14 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
             v2.operations // include them in the result
 
             if (v1 == null) {
-                v2.getTree().root?.getDescendants(BulkQuery(store), true)?.execute()
+                v2.getTree().getDescendants(v2.getTree().root!!.id, true)
                 continue
             }
 
             val oldTree = v1.getTree()
             v2.getTree().nodesMap!!.visitChanges(
                 oldTree.nodesMap!!,
-                object : CLHamtNode.IChangeVisitor {
+                object : CPHamtNode.IChangeVisitor {
                     override fun visitChangesOnly(): Boolean = false
                     override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
                         changedNodeIds += key

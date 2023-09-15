@@ -90,8 +90,8 @@ class TreeDiffTest {
 
     private fun logicalDiff(oldTree: CLTree, newTree: CLTree): DiffData {
         val diffData: DiffData = DiffData()
-        val newNodes = newTree.getDescendants(ITree.ROOT_ID, true).associateBy { it.id }
-        val oldNodes = oldTree.getDescendants(ITree.ROOT_ID, true).associateBy { it.id }
+        val newNodes = newTree.getDescendants(ITree.ROOT_ID, true).map { it.getData() }.associateBy { it.id }
+        val oldNodes = oldTree.getDescendants(ITree.ROOT_ID, true).map { it.getData() }.associateBy { it.id }
 
         for (newNode in newNodes.values) {
             val oldNode = oldNodes[newNode.id]
@@ -99,13 +99,13 @@ class TreeDiffTest {
                 diffData.addedNodes.add(newNode.id)
             } else {
                 if (oldNode.roleInParent != newNode.roleInParent) diffData.changedContainments.add(newNode.id)
-                for (role in (newNode.getData().propertyRoles + oldNode.getData().propertyRoles).distinct()) {
-                    if (newNode.getData().getPropertyValue(role) != oldNode.getData().getPropertyValue(role)) {
+                for (role in (newNode.propertyRoles + oldNode.propertyRoles).distinct()) {
+                    if (newNode.getPropertyValue(role) != oldNode.getPropertyValue(role)) {
                         diffData.changedRoles.add(RoleInNode(newNode.id, role))
                     }
                 }
-                for (role in (newNode.getData().referenceRoles + oldNode.getData().referenceRoles).distinct()) {
-                    if (newNode.getData().getReferenceTarget(role) != oldNode.getData().getReferenceTarget(role)) {
+                for (role in (newNode.referenceRoles + oldNode.referenceRoles).distinct()) {
+                    if (newNode.getReferenceTarget(role) != oldNode.getReferenceTarget(role)) {
                         diffData.changedRoles.add(RoleInNode(newNode.id, role))
                     }
                 }

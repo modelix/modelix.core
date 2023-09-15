@@ -42,7 +42,7 @@ import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.ModelQuery
 import org.modelix.model.server.api.v2.VersionDelta
 import kotlin.time.Duration.Companion.seconds
@@ -54,7 +54,7 @@ class ModelClientV2(
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
     private var userId: String? = null
-    private val kvStore = MapBaseStore()
+    private val kvStore = MapBasedStore()
     val store = ObjectStoreCache(kvStore) // TODO the store will accumulate garbage
 
     suspend fun init() {

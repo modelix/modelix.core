@@ -1,5 +1,3 @@
-package org.modelix.model
-
 import org.modelix.model.persistent.emptyStringAsNull
 import org.modelix.model.persistent.nullAsEmptyString
 import kotlin.test.Test

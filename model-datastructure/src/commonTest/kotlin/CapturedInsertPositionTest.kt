@@ -1,5 +1,3 @@
-package org.modelix.model
-
 import org.modelix.model.operations.CapturedInsertPosition
 import kotlin.test.Test
 import kotlin.test.assertEquals

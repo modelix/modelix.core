@@ -13,8 +13,6 @@
  * under the License.
  */
 
-package org.modelix.model
-
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.CPHamtInternal

@@ -1,5 +1,3 @@
-package org.modelix.model
-
 import org.modelix.model.persistent.SerializationUtil
 import kotlin.test.Test
 import kotlin.test.assertEquals

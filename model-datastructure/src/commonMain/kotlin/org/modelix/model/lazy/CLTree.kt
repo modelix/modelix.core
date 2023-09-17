@@ -420,84 +420,82 @@ class CLTree : ITree, IBulkTree {
     fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor, bulkQuery: IBulkQuery) {
         require(oldVersion is CLTree) { "Diff is only supported between two instances of CLTree" }
         if (data.idToHash == oldVersion.data.idToHash) return
-        NonBulkQuery.runWithDisabled {
-            val changesOnly = visitor !is ITreeChangeVisitorEx
-            nodesMap!!.visitChanges(
-                oldVersion.nodesMap,
-                object : CPHamtNode.IChangeVisitor {
-                    override fun visitChangesOnly(): Boolean {
-                        return changesOnly
-                    }
+        val changesOnly = visitor !is ITreeChangeVisitorEx
+        nodesMap!!.visitChanges(
+            oldVersion.nodesMap,
+            object : CPHamtNode.IChangeVisitor {
+                override fun visitChangesOnly(): Boolean {
+                    return changesOnly
+                }
 
-                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
-                        if (visitor is ITreeChangeVisitorEx) {
-                            createElement(value, bulkQuery).map { element ->
-                                visitor.nodeAdded(element!!.id)
-                            }
+                override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
+                    if (visitor is ITreeChangeVisitorEx) {
+                        createElement(value, bulkQuery).map { element ->
+                            visitor.nodeAdded(element!!.id)
                         }
                     }
+                }
 
-                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
-                        if (visitor is ITreeChangeVisitorEx) {
-                            oldVersion.createElement(value, bulkQuery).map { element ->
-                                visitor.nodeRemoved(element!!.id)
-                            }
+                override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
+                    if (visitor is ITreeChangeVisitorEx) {
+                        oldVersion.createElement(value, bulkQuery).map { element ->
+                            visitor.nodeRemoved(element!!.id)
                         }
                     }
+                }
 
-                    override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>?, newValue: KVEntryReference<CPNode>?) {
-                        oldVersion.createElement(oldValue, bulkQuery).map { oldElement ->
-                            createElement(newValue, bulkQuery).map { newElement ->
-                                if (oldElement!!::class != newElement!!::class) {
-                                    throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
-                                }
-                                if (oldElement.parentId != newElement.parentId || oldElement.roleInParent != newElement.roleInParent) {
-                                    visitor.containmentChanged(key)
-                                }
-                                oldElement.propertyRoles.asSequence()
-                                    .plus(newElement.propertyRoles.asSequence())
-                                    .distinct()
-                                    .forEach { role: String ->
-                                        if (oldElement.getPropertyValue(role) != newElement.getPropertyValue(role)) {
-                                            visitor.propertyChanged(newElement.id, role)
-                                        }
+                override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>?, newValue: KVEntryReference<CPNode>?) {
+                    oldVersion.createElement(oldValue, bulkQuery).map { oldElement ->
+                        createElement(newValue, bulkQuery).map { newElement ->
+                            if (oldElement!!::class != newElement!!::class) {
+                                throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
+                            }
+                            if (oldElement.parentId != newElement.parentId || oldElement.roleInParent != newElement.roleInParent) {
+                                visitor.containmentChanged(key)
+                            }
+                            oldElement.propertyRoles.asSequence()
+                                .plus(newElement.propertyRoles.asSequence())
+                                .distinct()
+                                .forEach { role: String ->
+                                    if (oldElement.getPropertyValue(role) != newElement.getPropertyValue(role)) {
+                                        visitor.propertyChanged(newElement.id, role)
                                     }
-                                oldElement.referenceRoles.asSequence()
-                                    .plus(newElement.referenceRoles.asSequence())
-                                    .distinct()
-                                    .forEach { role: String ->
-                                        if (oldElement.getReferenceTarget(role) != newElement.getReferenceTarget(role)) {
-                                            visitor.referenceChanged(newElement.id, role)
-                                        }
+                                }
+                            oldElement.referenceRoles.asSequence()
+                                .plus(newElement.referenceRoles.asSequence())
+                                .distinct()
+                                .forEach { role: String ->
+                                    if (oldElement.getReferenceTarget(role) != newElement.getReferenceTarget(role)) {
+                                        visitor.referenceChanged(newElement.id, role)
                                     }
+                                }
 
-                                bulkQuery.map(listOf(oldVersion.getChildren(oldElement, bulkQuery), getChildren(newElement, bulkQuery))) { it }.onSuccess { childrenLists ->
-                                    val (oldChildrenList, newChildrenList) = childrenLists
-                                    val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
-                                    val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
-                                    oldChildrenList.forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
-                                    newChildrenList.forEach { newChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
+                            bulkQuery.map(listOf(oldVersion.getChildren(oldElement, bulkQuery), getChildren(newElement, bulkQuery))) { it }.onSuccess { childrenLists ->
+                                val (oldChildrenList, newChildrenList) = childrenLists
+                                val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
+                                val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
+                                oldChildrenList.forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
+                                newChildrenList.forEach { newChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
 
-                                    val roles: MutableSet<String?> = HashSet()
-                                    roles.addAll(oldChildren.keys)
-                                    roles.addAll(newChildren.keys)
-                                    for (role in roles) {
-                                        val oldChildrenInRole = oldChildren[role]
-                                        val newChildrenInRole = newChildren[role]
-                                        val oldValues = oldChildrenInRole?.map { it.id }
-                                        val newValues = newChildrenInRole?.map { it.id }
-                                        if (oldValues != newValues) {
-                                            visitor.childrenChanged(newElement.id, role)
-                                        }
+                                val roles: MutableSet<String?> = HashSet()
+                                roles.addAll(oldChildren.keys)
+                                roles.addAll(newChildren.keys)
+                                for (role in roles) {
+                                    val oldChildrenInRole = oldChildren[role]
+                                    val newChildrenInRole = newChildren[role]
+                                    val oldValues = oldChildrenInRole?.map { it.id }
+                                    val newValues = newChildrenInRole?.map { it.id }
+                                    if (oldValues != newValues) {
+                                        visitor.childrenChanged(newElement.id, role)
                                     }
                                 }
                             }
                         }
                     }
-                },
-                bulkQuery,
-            )
-        }
+                }
+            },
+            bulkQuery,
+        )
     }
 
     protected fun deleteElements(node: CPNode, idToHash: CPHamtNode): CPHamtNode? {

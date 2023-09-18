@@ -2,14 +2,8 @@ import com.github.gradle.node.npm.task.NpmTask
 
 plugins {
   base
-  id("com.github.node-gradle.node") version "7.0.0"
+  alias(libs.plugins.node)
   id("org.jlleitschuh.gradle.ktlint") apply false
-}
-
-node {
-  version.set("18.12.1")
-  npmVersion.set("8.19.2")
-  download.set(true)
 }
 
 tasks.named("npm_run_build") {

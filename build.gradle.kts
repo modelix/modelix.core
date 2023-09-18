@@ -1,3 +1,5 @@
+import com.github.gradle.node.NodeExtension
+import com.github.gradle.node.NodePlugin
 import kotlinx.html.FlowContent
 import kotlinx.html.a
 import kotlinx.html.body
@@ -38,6 +40,7 @@ plugins {
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.tasktree)
     alias(libs.plugins.dokka)
+    alias(libs.plugins.node) apply false
 }
 
 group = "org.modelix"
@@ -98,6 +101,13 @@ subprojects {
                     }
                 }
             }
+        }
+    }
+
+    plugins.withType<NodePlugin> {
+        project.extensions.configure<NodeExtension> {
+            version.set(libs.versions.node)
+            download.set(true)
         }
     }
 }

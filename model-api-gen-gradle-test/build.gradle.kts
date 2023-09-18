@@ -23,9 +23,9 @@ repositories {
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    id("base")
+    base
     id("org.modelix.model-api-gen")
-    id("com.github.node-gradle.node") version "3.4.0"
+    alias(libs.plugins.node)
 }
 
 val mps by configurations.creating

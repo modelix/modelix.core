@@ -35,7 +35,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.gitVersion)
     alias(libs.plugins.ktlint) apply false
-    alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.spotless)
     alias(libs.plugins.tasktree)
     alias(libs.plugins.dokka)
 }
@@ -63,6 +63,7 @@ subprojects {
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "com.diffplug.spotless")
 
     version = rootProject.version
     group = rootProject.group
@@ -98,6 +99,25 @@ subprojects {
                     }
                 }
             }
+        }
+    }
+
+    ifKotlinProject {
+        spotless {
+            kotlin {
+                target("src/**/*.kt")
+                licenseHeaderFile(rootDir.resolve("LicenseHeader.kt"))
+            }
+        }
+    }
+}
+
+fun Project.ifKotlinProject(body: () -> Unit) {
+    var bodyExecuted = false
+    tasks.all {
+        if (name.contains("compileKotlin") && !bodyExecuted) {
+            bodyExecuted = true
+            body()
         }
     }
 }

@@ -17,40 +17,132 @@
 package org.modelix.mps.sync.binding
 
 import jetbrains.mps.project.MPSProject
+import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SModuleReference
+import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.mps.sync.synchronization.SyncDirection
 
+// status: migrated, but needs some bugfixes
 class ProjectBinding(
     private val mpsProject: MPSProject,
-    private val projectNodeId: Long,
+    private var projectNodeId: Long,
     initialSyncDirection: SyncDirection,
 ) : Binding(initialSyncDirection) {
 
     private val logger = mu.KotlinLogging.logger {}
+    private val repositoryListener = RepositoryListener()
 
     init {
         logger.debug { "Project binding created: $this" }
     }
 
     override fun doActivate() {
-        TODO("Not yet implemented")
+        logger.debug { "Activating: $this" }
+        val branch = getBranch() ?: return
+
+        if (projectNodeId == 0L) {
+            // TODO How to translate this correctly?
+            /*
+            read action with mpsProject . getRepository () {
+                branch.runWriteT({
+                    IWriteTransaction t =>
+                    projectNodeId =
+                        t.addNewChild(ITree.ROOT_ID, "projects", -1, SConceptAdapter.wrap(concept / Project /));
+                    t.setProperty(projectNodeId, property / Project : name/.getName(), mpsProject.getName());
+                    return Unit.INSTANCE;
+                });
+                enqueueSync(SyncDirection.TO_CLOUD, true, null);
+            }*/
+            branch.runWriteT {
+                projectNodeId =
+                    // TODO fixme. Problem SConceptAdapter.wrap does not exist anymore in modelix...
+                    // it.addNewChild(ITree.ROOT_ID, "projects", -1, SConceptAdapter.wrap(concept/Project/));
+                    0
+
+                // TODO instead of "name" it must be property/Project: name/.getName()
+                it.setProperty(projectNodeId, "name", mpsProject.name)
+            }
+            enqueueSync(SyncDirection.TO_CLOUD, true, null)
+        } else {
+            val cloudProjectIsEmpty = branch.computeReadT {
+                // TODO instead of "modules" it must be link/Project: modules/.getName()
+                val children = it.getChildren(projectNodeId, "modules")
+                !children.any()
+            }
+            if (cloudProjectIsEmpty) {
+                enqueueSync(SyncDirection.TO_CLOUD, true, null)
+            } else {
+                enqueueSync(SyncDirection.TO_MPS, true, null)
+            }
+        }
+        mpsProject.repository.addRepositoryListener(repositoryListener)
+        logger.debug { "Activated: $this" }
     }
 
-    override fun doDeactivate() {
-        TODO("Not yet implemented")
-    }
+    override fun doDeactivate() = mpsProject.repository.removeRepositoryListener(repositoryListener)
 
-    override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree?): ITreeChangeVisitor? {
-        TODO("Not yet implemented")
-    }
+    override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree?): ITreeChangeVisitor {
+        assertSyncThread()
+        return object : ITreeChangeVisitor {
+            override fun containmentChanged(nodeId: Long) {}
 
-    override fun doSyncToCloud(transaction: IWriteTransaction) {
-        TODO("Not yet implemented")
+            override fun childrenChanged(nodeId: Long, role: String?) {
+                assertSyncThread()
+                // TODO instead of "modules" it must be link/Project : modules/.getName()
+                if (nodeId == projectNodeId && role == "modules") {
+                    enqueueSync(SyncDirection.TO_MPS, false, null)
+                }
+            }
+
+            override fun referenceChanged(nodeId: Long, role: String) {}
+
+            override fun propertyChanged(nodeId: Long, role: String) {}
+        }
     }
 
     override fun doSyncToMPS(tree: ITree) {
-        TODO("Not yet implemented")
+        val mappings = ProjectModulesSynchronizer(projectNodeId, mpsProject).syncToMPS(tree)
+        updateBindings(mappings, SyncDirection.TO_MPS)
+    }
+
+    override fun doSyncToCloud(transaction: IWriteTransaction) {
+        val mappings = ProjectModulesSynchronizer(projectNodeId, mpsProject).syncToCloud(transaction)
+        updateBindings(mappings, SyncDirection.TO_CLOUD)
+    }
+
+    private fun updateBindings(mappings: Map<Long, SModule>, syncDirection: SyncDirection) {
+        val mappingsWithoutReadonly = mappings.filter { !it.value.isPackaged && !it.value.isReadOnly }
+
+        val bindings = mutableMapOf<Long, ProjectModuleBinding>()
+        ownedBindings.filterIsInstance<ProjectModuleBinding>().forEach { bindings[it.moduleNodeId] = it }
+
+        val toAdd = mappingsWithoutReadonly.map { it.key }.minus(bindings.keys)
+        val toRemove = bindings.keys.minus(mappingsWithoutReadonly.map { it.key }.toSet())
+
+        toRemove.forEach {
+            val binding = bindings[it]!!
+            binding.deactivate(null)
+            binding.owner = null
+        }
+
+        toAdd.forEach {
+            val binding = ProjectModuleBinding(it, mappings[it]!!, syncDirection)
+            binding.owner = this
+            binding.activate(null)
+        }
+    }
+
+    override fun toString() = "Project: ${java.lang.Long.toHexString(projectNodeId)} -> ${mpsProject.name}"
+
+    @Suppress("removal")
+    inner class RepositoryListener : SRepositoryListenerBase() {
+        override fun moduleAdded(p1: SModule) = enqueueSyncToCloud()
+
+        override fun moduleRemoved(p1: SModuleReference) = enqueueSyncToCloud()
+
+        private fun enqueueSyncToCloud() = enqueueSync(SyncDirection.TO_CLOUD, false, null)
     }
 }

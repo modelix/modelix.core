@@ -23,9 +23,9 @@ import org.modelix.model.api.IWriteTransaction
 /**
  * Synchronizes an unordered list of children
  */
-abstract class Synchronizer<MPSChildT>(private val cloudParentId: Long, private val cloudRole: String) {
+abstract class Synchronizer<MPSChildT>(protected val cloudParentId: Long, private val cloudRole: String) {
 
-    fun getCloudChildren(tree: ITree): Iterable<Long> = tree.getChildren(cloudParentId, cloudRole)
+    open fun getCloudChildren(tree: ITree): Iterable<Long> = tree.getChildren(cloudParentId, cloudRole)
 
     abstract fun getMPSChildren(): Iterable<MPSChildT>
     protected abstract fun createMPSChild(tree: ITree, cloudChildId: Long): MPSChildT?

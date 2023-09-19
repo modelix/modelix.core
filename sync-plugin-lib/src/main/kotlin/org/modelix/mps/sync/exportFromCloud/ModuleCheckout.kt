@@ -18,7 +18,7 @@ package org.modelix.mps.sync.exportFromCloud
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.project.Project
+import jetbrains.mps.project.Project
 import jetbrains.mps.project.Solution
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.mps.sync.CloudRepository
@@ -30,7 +30,7 @@ class ModuleCheckout(private val mpsProject: Project, private val treeInReposito
     fun checkoutCloudModule(cloudModule: PNodeAdapter): Solution {
         val modelCloudExporter = ModelCloudExporter(treeInRepository)
         modelCloudExporter.setCheckoutMode()
-        val exportPath = mpsProject.projectFile?.path
+        val exportPath = mpsProject.projectFile!!.path
         val moduleIds = hashSetOf(cloudModule.nodeId)
         var solutions = listOf<Solution>()
 

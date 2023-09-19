@@ -184,7 +184,6 @@ class CPNode private constructor(
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf()
 
     companion object {
-        private val EMPTY_LONG_ARRAY = LongArray(0)
         val DESERIALIZER = { s: String -> deserialize(s) }
 
         @JvmStatic

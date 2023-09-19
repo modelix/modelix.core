@@ -13,8 +13,6 @@
  * under the License.
  */
 
-package org.modelix.model
-
 import org.modelix.model.api.PBranch
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.OTBranch

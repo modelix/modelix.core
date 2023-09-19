@@ -1,5 +1,3 @@
-package org.modelix.model
-
 import org.modelix.model.api.ITree
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

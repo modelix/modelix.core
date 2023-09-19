@@ -20,6 +20,7 @@ import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import kotlin.jvm.JvmStatic
 
+@Deprecated("use CPNode")
 class CLNode(private val tree: CLTree, private val data: CPNode) {
     constructor(
         tree: CLTree,
@@ -56,7 +57,7 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
     }
 
     val parent: CLNode?
-        get() = tree.resolveElement(data.parentId)
+        get() = tree.resolveElement(data.parentId)?.let { CLNode(tree, it) }
 
     val parentId: Long
         get() = data.parentId
@@ -73,7 +74,7 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
 
     fun getChildren(bulkQuery: IBulkQuery): IBulkQuery.Value<Iterable<CLNode>> {
         return (getTree() as CLTree).resolveElements(getData().getChildrenIds().toList(), bulkQuery)
-            .map { elements -> elements }
+            .map { elements -> elements.map { CLNode(tree, it) } }
     }
 
     fun getDescendants(bulkQuery: IBulkQuery, includeSelf: Boolean): IBulkQuery.Value<Iterable<CLNode>> {

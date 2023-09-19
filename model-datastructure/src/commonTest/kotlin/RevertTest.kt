@@ -1,5 +1,21 @@
-package org.modelix.model
+/*
+ * Copyright (c) 2023.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+import org.modelix.model.VersionMerger
+import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.client.IdGenerator
@@ -57,7 +73,7 @@ class RevertTest {
         }
     }
 
-    fun revert(latestKnownVersion: CLVersion, versionToRevertTo: CLVersion, idGenerator: IdGenerator): CLVersion {
+    fun revert(latestKnownVersion: CLVersion, versionToRevertTo: CLVersion, idGenerator: IIdGenerator): CLVersion {
         val revertOp = RevertToOp(KVEntryReference(latestKnownVersion.data!!), KVEntryReference(versionToRevertTo.data!!))
         val branch = OTBranch(PBranch(latestKnownVersion.tree, idGenerator), idGenerator, latestKnownVersion.store)
         branch.runWriteT { t ->
@@ -84,7 +100,7 @@ class RevertTest {
         return allVersions
     }
 
-    private fun randomChanges(baseBranch: OTBranch, numChanges: Int, idGenerator: IdGenerator, rand: Random) {
+    private fun randomChanges(baseBranch: OTBranch, numChanges: Int, idGenerator: IIdGenerator, rand: Random) {
         baseBranch.runWrite {
             val changeGenerator = RandomTreeChangeGenerator(idGenerator, rand).growingOperationsOnly()
             for (i in 0 until numChanges) {
@@ -96,7 +112,7 @@ class RevertTest {
     fun createVersion(
         opsAndTree: Pair<List<IAppliedOperation>, ITree>,
         previousVersion: CLVersion?,
-        idGenerator: IdGenerator,
+        idGenerator: IIdGenerator,
         storeCache: IDeserializingKeyValueStore,
     ): CLVersion {
         return CLVersion.createRegularVersion(

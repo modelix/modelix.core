@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model
 
 import org.modelix.model.api.ITreeChangeVisitorEx
 import kotlin.test.fail

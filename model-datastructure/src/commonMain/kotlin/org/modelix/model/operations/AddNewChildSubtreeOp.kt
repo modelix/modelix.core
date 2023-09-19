@@ -18,10 +18,10 @@ package org.modelix.model.operations
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.lazy.CLNode
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.IKVValue
 import org.modelix.model.persistent.SerializationUtil
@@ -47,24 +47,24 @@ class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val pos
                 node.roleInParent,
                 resultTree.getChildren(node.parentId, node.roleInParent).indexOf(node.id),
             )
-            decompressNode(resultTree, node, pos, false, opsVisitor)
+            decompressNode(resultTree, node.getData(), pos, false, opsVisitor)
         }
         for (node in resultTree.getDescendants(childId, true)) {
-            decompressNode(resultTree, node, null, true, opsVisitor)
+            decompressNode(resultTree, node.getData(), null, true, opsVisitor)
         }
     }
 
     private fun getResultTree(store: IDeserializingKeyValueStore): CLTree = CLTree(resultTreeHash.getValue(store), store)
 
-    private fun decompressNode(tree: ITree, node: CLNode, position: PositionInRole?, references: Boolean, opsVisitor: (IOperation) -> Unit) {
+    private fun decompressNode(tree: ITree, node: CPNode, position: PositionInRole?, references: Boolean, opsVisitor: (IOperation) -> Unit) {
         if (references) {
-            for (role in node.getData().referenceRoles) {
+            for (role in node.referenceRoles) {
                 opsVisitor(SetReferenceOp(node.id, role, tree.getReferenceTarget(node.id, role)))
             }
         } else {
             opsVisitor(AddNewChildOp(position!!, node.id, tree.getConceptReference(node.id)))
-            for (property in node.getData().propertyRoles) {
-                opsVisitor(SetPropertyOp(node.id, property, node.getData().getPropertyValue(property)))
+            for (property in node.propertyRoles) {
+                opsVisitor(SetPropertyOp(node.id, property, node.getPropertyValue(property)))
             }
         }
     }

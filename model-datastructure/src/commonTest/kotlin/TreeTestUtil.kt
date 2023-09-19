@@ -13,8 +13,6 @@
  * under the License.
  */
 
-package org.modelix.model
-
 import org.modelix.model.api.ITree
 import kotlin.random.Random
 

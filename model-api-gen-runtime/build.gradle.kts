@@ -20,6 +20,7 @@ kotlin {
         useCommonJs()
     }
 
+    @Suppress("UNUSED_VARIABLE", "KotlinRedundantDiagnosticSuppress")
     sourceSets {
         all {
             languageSettings.optIn("kotlin.js.ExperimentalJsExport")

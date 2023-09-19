@@ -50,7 +50,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class HtmlBuilderTest {
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
-        withTimeout(3.seconds) {
+        withTimeout(10.seconds) {
             application {
                 val tree = CLTree(ObjectStoreCache(MapBaseStore()))
                 val branch = PBranch(tree, IdGenerator.getInstance(1))

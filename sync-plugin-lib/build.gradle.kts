@@ -48,6 +48,7 @@ dependencies {
         },
     )
 
+    // TODO clarify it with Sascha, if we have to copy the ReflectionUtil to us simply, so we'll not have any dependency for MPS Extensions
     mpsExtensionsZip("de.itemis.mps:extensions:2021.1.+")
     implementation(
         zipTree({ mpsExtensionsZip.singleFile }).matching {

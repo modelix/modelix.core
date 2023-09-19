@@ -39,7 +39,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
     override fun createFlow(input: StepFlow<INodeReference>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.map {
-            it.value.resolveInCurrentContext() ?: throw IllegalArgumentException("Node not found: $it")
+            it.value.resolveInCurrentContext() ?: throw IllegalArgumentException("Node not found: ${it.value}")
         }.asStepFlow(this)
     }
 

@@ -41,7 +41,7 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.function.Consumer
 
 // status: migrated, but needs some bugfixes
-class CloudRepository(val modelServer: ModelServerConnection, private val repositoryId: RepositoryId) :
+class CloudRepository(public val modelServer: ModelServerConnection, private val repositoryId: RepositoryId) :
     ICloudRepository {
 
     companion object {

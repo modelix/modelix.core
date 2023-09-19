@@ -21,6 +21,10 @@ class ModelServerConnections {
         TODO()
     }
 
+    fun getModelServer(url: String): ModelServerConnection? {
+        TODO()
+    }
+
     companion object {
         fun getInstance(): ModelServerConnections {
             TODO()

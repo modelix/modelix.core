@@ -44,7 +44,7 @@ import java.io.IOException
  * Uses the provided model ID instead of SModelId.generate().
  * Everything else is just copied from DefaultModelPersistence.
  */
-class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val modelId: SModelId) : DefaultModelPersistence() {
+open class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val modelId: SModelId) : DefaultModelPersistence() {
 
     @Throws(UnsupportedDataSourceException::class)
     override fun create(
@@ -59,40 +59,40 @@ class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val modelId: 
         val modelReference: SModelReference =
             PersistenceFacade.getInstance().createModelReference(moduleRef, modelId, modelName.value)
         header.modelReference = modelReference
-        val rv = DefaultSModelDescriptor(PersistenceFacility(this, dataSource as StreamDataSource), header)
+        val rv = DefaultSModelDescriptor(ModelPersistenceFacility(this, dataSource as StreamDataSource), header)
         if (dataSource.getTimestamp() != -1L) {
             rv.replace(DefaultSModel(modelReference, header))
         }
         return rv
     }
+}
 
-    private class PersistenceFacility(modelFactory: DefaultModelPersistence?, dataSource: StreamDataSource?) :
-        LazyLoadFacility(modelFactory!!, dataSource!!, true) {
-        private val source0: StreamDataSource
-            get() = super.getSource() as StreamDataSource
+open class ModelPersistenceFacility(modelFactory: DefaultModelPersistence, dataSource: StreamDataSource) :
+    LazyLoadFacility(modelFactory, dataSource, true) {
+    protected val source0: StreamDataSource
+        get() = super.getSource() as StreamDataSource
 
-        @Throws(ModelReadException::class)
-        override fun readHeader(): SModelHeader {
-            return ModelPersistence.loadDescriptor(source0)
-        }
+    @Throws(ModelReadException::class)
+    override fun readHeader(): SModelHeader {
+        return ModelPersistence.loadDescriptor(source0)
+    }
 
-        @Throws(ModelReadException::class)
-        override fun readModel(header: SModelHeader, state: ModelLoadingState): ModelLoadResult {
-            return ModelPersistence.readModel(header, source0, state)
-        }
+    @Throws(ModelReadException::class)
+    override fun readModel(header: SModelHeader, state: ModelLoadingState): ModelLoadResult {
+        return ModelPersistence.readModel(header, source0, state)
+    }
 
-        override fun doesSaveUpgradePersistence(header: SModelHeader): Boolean {
-            // not sure !=-1 is really needed, just left to be ensured about compatibility
-            return header.persistenceVersion != ModelPersistence.LAST_VERSION && header.persistenceVersion != -1
-        }
+    override fun doesSaveUpgradePersistence(header: SModelHeader): Boolean {
+        // not sure !=-1 is really needed, just left to be ensured about compatibility
+        return header.persistenceVersion != ModelPersistence.LAST_VERSION && header.persistenceVersion != -1
+    }
 
-        @Throws(IOException::class)
-        override fun saveModel(header: SModelHeader, modelData: SModelData) {
-            try {
-                ModelPersistence.saveModel(modelData as SModel, source0, header.persistenceVersion)
-            } catch (e: ModelSaveException) {
-                throw RuntimeException(e)
-            }
+    @Throws(IOException::class)
+    override fun saveModel(header: SModelHeader, modelData: SModelData) {
+        try {
+            ModelPersistence.saveModel(modelData as SModel, source0, header.persistenceVersion)
+        } catch (e: ModelSaveException) {
+            throw RuntimeException(e)
         }
     }
 }

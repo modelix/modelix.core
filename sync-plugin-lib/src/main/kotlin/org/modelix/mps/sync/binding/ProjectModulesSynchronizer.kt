@@ -16,9 +16,17 @@
 
 package org.modelix.mps.sync.binding
 
+import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.module.SModule
-import org.modelix.mps.sync.synchronization.SyncDirection
+import org.modelix.model.api.ITree
+import org.modelix.model.api.IWriteTransaction
 
-// status: ready to test
-class ProjectModuleBinding(moduleNodeId: Long, override val module: SModule, initialSyncDirection: SyncDirection) :
-    ModuleBinding(moduleNodeId, initialSyncDirection)
+class ProjectModulesSynchronizer(projectNodeId: Long, mpsProject: MPSProject) {
+    fun syncToMPS(tree: ITree): Map<Long, SModule> {
+        TODO("Not yet implemented")
+    }
+
+    fun syncToCloud(transaction: IWriteTransaction): Map<Long, SModule> {
+        TODO()
+    }
+}

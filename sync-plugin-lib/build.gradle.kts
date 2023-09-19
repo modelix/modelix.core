@@ -19,6 +19,7 @@ dependencies {
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))
     implementation(project(":model-api", configuration = "jvmRuntimeElements"))
     implementation(project(":model-datastructure", configuration = "jvmRuntimeElements"))
+    implementation(project(":mps-model-adapters", configuration = "jvmRuntimeElements"))
 
     // MPS dependencies
     mpsZip("com.jetbrains:mps:2021.1.4")

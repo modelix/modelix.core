@@ -330,6 +330,14 @@ class ModelQLTest {
     }
 
     @Test
+    fun mapIfNotNull() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            "a".asMono().mapIfNotNull { it.identity() }.mapIfNotNull { it.identity() }
+        }
+        assertEquals("a", result)
+    }
+
+    @Test
     fun zipElementAccess() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
             db.products.flatMap { enum ->
@@ -385,7 +393,7 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
     val deserializedQuery = json.decodeFromString<QueryGraphDescriptor>(serializedQuery).createRootQuery() as MonoUnboundQuery<ProductDatabase, ResultT>
     println("original query    : $query")
     println("deserialized query: $deserializedQuery")
-    val remoteResult: IStepOutput<ResultT> = deserializedQuery.execute(QueryEvaluationContext.EMPTY, testDatabase)
+    val remoteResult: IStepOutput<ResultT> = deserializedQuery.execute(QueryEvaluationContext.EMPTY, testDatabase.asStepOutput(null))
     val serializedResult = json.encodeToString(deserializedQuery.getAggregationOutputSerializer(json.serializersModule), remoteResult)
 //    println(serializedResult)
     return json.decodeFromString(query.getAggregationOutputSerializer(json.serializersModule), serializedResult).value

@@ -37,7 +37,7 @@ interface IQueryExecutor<out In> {
 
 class SimpleQueryExecutor<E>(val input: E) : IQueryExecutor<E> {
     override fun <ElementOut> createFlow(query: IUnboundQuery<E, *, ElementOut>): StepFlow<ElementOut> {
-        return query.asFlow(QueryEvaluationContext.EMPTY, input)
+        return query.asFlow(QueryEvaluationContext.EMPTY, input.asStepOutput(null))
     }
 }
 
@@ -105,9 +105,8 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 
 interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     val reference: IQueryReference<IUnboundQuery<In, AggregationOut, ElementOut>>
-    suspend fun execute(evaluationContext: QueryEvaluationContext, input: In): IStepOutput<AggregationOut>
+    suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<AggregationOut>
     fun asFlow(evaluationContext: QueryEvaluationContext, input: StepFlow<In>): StepFlow<ElementOut>
-    fun asFlow(evaluationContext: QueryEvaluationContext, input: In): StepFlow<ElementOut> = asFlow(evaluationContext, flowOf(input).asStepFlow(null))
     fun asFlow(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(evaluationContext, flowOf(input))
     fun asSequence(evaluationContext: QueryEvaluationContext, input: Sequence<In>): Sequence<ElementOut>
 
@@ -165,7 +164,7 @@ class MonoUnboundQuery<In, ElementOut>(
 
     override fun bind(executor: IQueryExecutor<In>): IMonoQuery<ElementOut> = MonoBoundQuery(executor, this)
 
-    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: In): IStepOutput<ElementOut> {
+    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<ElementOut> {
         try {
             return asFlow(evaluationContext, input).single()
         } catch (ex: NoSuchElementException) {
@@ -212,7 +211,7 @@ class FluxUnboundQuery<In, ElementOut>(
 
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<ElementOut> = FluxBoundQuery(executor, this)
 
-    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: In): IStepOutput<List<IStepOutput<ElementOut>>> {
+    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<List<IStepOutput<ElementOut>>> {
         return asFlow(evaluationContext, input).toList().asStepOutput(null)
     }
 

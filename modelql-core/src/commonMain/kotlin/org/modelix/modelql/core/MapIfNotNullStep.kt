@@ -32,9 +32,9 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     }
 
     override fun createFlow(input: StepFlow<In?>, context: IFlowInstantiationContext): StepFlow<Out?> {
-        return input.flatMapConcat {
-            it.value?.let { query.asFlow(context.evaluationContext, it).map { MultiplexedOutput(1, it) } }
-                ?: flowOf(MultiplexedOutput(0, it as IStepOutput<Out?>))
+        return input.flatMapConcat { stepOutput ->
+            stepOutput.value?.let { query.asFlow(context.evaluationContext, stepOutput.upcast()).map { MultiplexedOutput(1, it) } }
+                ?: flowOf(MultiplexedOutput(0, stepOutput.upcast()))
         }
     }
 

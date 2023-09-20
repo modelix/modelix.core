@@ -26,7 +26,7 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         val downCastedInput: StepFlow<Out> = input
         return downCastedInput.map { MultiplexedOutput(0, it) }.onEmpty {
-            emitAll(alternative.asFlow(context.evaluationContext, Unit).map { MultiplexedOutput(1, it) })
+            emitAll(alternative.asFlow(context.evaluationContext, Unit.asStepOutput(null)).map { MultiplexedOutput(1, it) })
         }
     }
 

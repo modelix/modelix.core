@@ -4,6 +4,7 @@ import jetbrains.mps.baseLanguage.jdk8.C_SuperInterfaceMethodCall_old
 import jetbrains.mps.baseLanguage.jdk8.SuperInterfaceMethodCall_old
 import jetbrains.mps.lang.behavior.C_ConceptMethodDeclaration
 import jetbrains.mps.lang.behavior.ConceptMethodDeclaration
+import jetbrains.mps.lang.core.C_BaseConcept
 import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import jetbrains.mps.lang.editor.C_FontStyleStyleClassItem
 import jetbrains.mps.lang.editor.L_jetbrains_mps_lang_editor
@@ -15,6 +16,7 @@ import org.modelix.metamodel.untyped
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
+import org.modelix.model.data.ConceptData
 import org.modelix.model.data.ModelData
 import java.io.File
 import kotlin.reflect.KAnnotatedElement
@@ -23,6 +25,8 @@ import kotlin.reflect.full.isSubclassOf
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class GeneratedApiTest {
 
@@ -35,7 +39,7 @@ class GeneratedApiTest {
         branch.runWrite {
             data.load(branch)
             val node = findNodeWithStyleAttribute(branch.getRootNode())!!.typed(C_FontStyleStyleClassItem.getInstanceInterface())
-            assert(_FontStyle_Enum::class.isSubclassOf(IPropertyValueEnum::class))
+            assertTrue(_FontStyle_Enum::class.isSubclassOf(IPropertyValueEnum::class))
             assertContains(_FontStyle_Enum.values(), node.style)
             val enumValue = _FontStyle_Enum.BOLD_ITALIC
             node.style = enumValue
@@ -55,15 +59,28 @@ class GeneratedApiTest {
         val foundDeprecatedNodeChildLink = ClassConcept::class.members.any { it.hasDeprecationWithMessage() }
         val foundDeprecatedNodeReference = SuperInterfaceMethodCall_old::class.members.any { it.hasDeprecationWithMessage() }
 
-        assert(foundDeprecatedConcept)
-        assert(foundDeprecatedProperty)
-        assert(foundDeprecatedChildLink)
-        assert(foundDeprecatedReference)
+        assertTrue(foundDeprecatedConcept)
+        assertTrue(foundDeprecatedProperty)
+        assertTrue(foundDeprecatedChildLink)
+        assertTrue(foundDeprecatedReference)
 
-        assert(foundDeprecatedNodeWrapper)
-        assert(foundDeprecatedNodeProperty)
-        assert(foundDeprecatedNodeChildLink)
-        assert(foundDeprecatedNodeReference)
+        assertTrue(foundDeprecatedNodeWrapper)
+        assertTrue(foundDeprecatedNodeProperty)
+        assertTrue(foundDeprecatedNodeChildLink)
+        assertTrue(foundDeprecatedNodeReference)
+    }
+
+    @Test
+    fun `metaProperty alias is generated`() {
+        val hasAlias = C_BaseConcept::class.members.any { it.name == ConceptData.ALIAS_KEY }
+        assertTrue(hasAlias)
+        assertNull(C_BaseConcept.alias)
+    }
+
+    @Test
+    fun `metaProperty alias has value`() {
+        val alias = C_ClassConcept.alias
+        assertEquals("class", alias)
     }
 
     private fun KAnnotatedElement.hasDeprecationWithMessage() =

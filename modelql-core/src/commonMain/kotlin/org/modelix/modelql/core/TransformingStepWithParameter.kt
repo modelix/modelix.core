@@ -48,32 +48,6 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
         }
     }
 
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
-        val parameterValue: IStepOutput<ParameterT>? = if (hasStaticParameter) {
-            staticParameterValue
-        } else {
-            getParameterProducer().evaluate(
-                evaluationContext,
-                queryInput,
-            ).map { it.asStepOutput(null) }.getOrElse(null)
-        }
-        return getInputProducer().createSequence(evaluationContext, queryInput).map { transformElement(it.asStepOutput(null), parameterValue).value }
-    }
-
-    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
-        val input = getInputProducer().evaluate(evaluationContext, queryInput)
-        if (!input.isPresent()) return Optional.empty()
-        val parameter: IStepOutput<ParameterT>? = getParameterProducer()
-            .evaluate(evaluationContext, queryInput)
-            .map { it.asStepOutput(null) }
-            .getOrElse(null)
-        return Optional.of(transformElement(input.get().asStepOutput(null), parameter).value)
-    }
-
-    override fun transform(evaluationContext: QueryEvaluationContext, input: CommonIn): Out {
-        throw UnsupportedOperationException()
-    }
-
     protected abstract fun transformElement(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): IStepOutput<Out>
 
     override fun getProducers(): List<IProducingStep<CommonIn>> {

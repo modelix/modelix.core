@@ -45,10 +45,6 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
         return input.map { it.value.remove() }.count().asStepOutput(this)
     }
 
-    override fun aggregate(input: Sequence<IStepOutput<INode>>): IStepOutput<Int> {
-        return input.map { it.value.remove() }.count().asStepOutput(this)
-    }
-
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return Descriptor()
     }

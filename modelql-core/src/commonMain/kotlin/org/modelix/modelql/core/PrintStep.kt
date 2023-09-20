@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,9 +24,11 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
         return getProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun transform(evaluationContext: QueryEvaluationContext, input: E): E {
-        println(prefix + input)
-        return input
+    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
+        return input.map {
+            println(prefix + input)
+            it
+        }
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor = Descriptor(prefix)

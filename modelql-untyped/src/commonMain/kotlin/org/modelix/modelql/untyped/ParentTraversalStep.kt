@@ -27,7 +27,6 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
-import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
@@ -43,14 +42,6 @@ class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<IN
     override fun canBeEmpty(): Boolean = true
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
-
-    override fun transform(evaluationContext: QueryEvaluationContext, input: INode): INode {
-        return input.parent!!
-    }
-
-    override fun createTransformingSequence(evaluationContext: QueryEvaluationContext, input: Sequence<INode>): Sequence<INode> {
-        return input.mapNotNull { it.parent }
-    }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
         return serializersModule.serializer<INode>().stepOutputSerializer(this)

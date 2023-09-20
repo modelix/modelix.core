@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-class NotOperatorStep() : MonoTransformingStep<Boolean, Boolean>() {
+class NotOperatorStep() : SimpleMonoTransformingStep<Boolean, Boolean>() {
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: Boolean): Boolean {
         return !input

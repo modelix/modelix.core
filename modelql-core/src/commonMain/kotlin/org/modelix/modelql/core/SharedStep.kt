@@ -23,10 +23,6 @@ class SharedStep<E>() : MonoTransformingStep<E, E>() {
         return getProducer().getOutputSerializer(serializersModule)
     }
 
-    override fun transform(evaluationContext: QueryEvaluationContext, input: E): E {
-        return input
-    }
-
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
         throw RuntimeException("The flow for shared steps is expected to be created by the query")
     }

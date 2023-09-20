@@ -28,7 +28,6 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
-import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
@@ -39,10 +38,6 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ChildrenTraversalStep(val role: String?) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat { it.value.getChildrenAsFlow(it.value.resolveChildLinkOrFallback(role)) }.asStepFlow(this)
-    }
-
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<INode> {
-        return getProducer().createSequence(evaluationContext, queryInput).flatMap { it.getChildren(it.resolveChildLinkOrFallback(role)) }
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {

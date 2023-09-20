@@ -131,10 +131,6 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
 //            ZipNOutput(values.toList()) as Out
 //        }
     }
-
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
-        return CombiningSequence(producers.map { it.createSequence(evaluationContext, queryInput) }.toTypedArray()).map { it.upcast() }
-    }
 }
 
 class AllowEmptyStep<E>() : IdentityStep<E>() {

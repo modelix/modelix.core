@@ -43,18 +43,6 @@ class PerformanceTests {
     }
 
     @Test
-    fun sequenceBasedFilterPerformance() = runTest {
-        val query = buildMonoQuery<Int, Int> { it.filter { it.equalTo(0) } }
-        val intRange = 1..100000
-
-        compareBenchmark(100, 20.0, {
-            query.asSequence(QueryEvaluationContext.EMPTY, intRange.asSequence()).count()
-        }, {
-            intRange.asSequence().filter { it == 0 }.count()
-        })
-    }
-
-    @Test
     fun flowVsSequence() = runTest {
         compareBenchmark(100, 2.0, {
             (1..10000)

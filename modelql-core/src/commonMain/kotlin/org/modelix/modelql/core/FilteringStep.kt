@@ -43,15 +43,6 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
         // return input.filter { condition.evaluate(it.value).presentAndEqual(true) }
     }
 
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<E> {
-        return getProducer().createSequence(evaluationContext, queryInput).filter {
-            condition.evaluate(
-                evaluationContext,
-                it,
-            ).presentAndEqual(true)
-        }
-    }
-
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
         return getProducer().getOutputSerializer(serializersModule)
     }

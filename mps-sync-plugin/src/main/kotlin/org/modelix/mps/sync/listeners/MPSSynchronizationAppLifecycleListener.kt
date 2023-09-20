@@ -18,13 +18,14 @@ package org.modelix.mps.sync.listeners
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.service
-import com.intellij.openapi.project.Project
 import org.modelix.mps.sync.ModelSyncService
 
 class MPSSynchronizationAppLifecycleListener : AppLifecycleListener {
-    override fun appStarting(projectFromCommandLine: Project?) {
-        service<ModelSyncService>().ensureStarted()
-    }
+
+//    not supported in MPS >= 2022.3
+//    override fun appStarting(projectFromCommandLine: Project?) {
+//        service<ModelSyncService>().ensureStarted()
+//    }
 
     override fun appStarted() {
         service<ModelSyncService>().ensureStarted()

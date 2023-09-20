@@ -119,6 +119,10 @@ class MpsReplicatedRepository(
 
         override fun getAffectedDocuments(): Array<out DocumentReference>? = documents.ifEmpty { null }
 
-        override fun isGlobal(): Boolean = documents.isEmpty()
+        override fun isComplex(): Boolean {
+            TODO("Not yet implemented")
+        }
+
+//        override fun isGlobal(): Boolean = documents.isEmpty()
     }
 }

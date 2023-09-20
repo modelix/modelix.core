@@ -647,6 +647,15 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
             for (extended in concept.getDirectSuperConcepts()) {
                 addSuperinterface(extended.conceptWrapperInterfaceClass().parameterizedBy(nodeT))
             }
+
+            for (metaPropertyName in concept.language.languageSet.getMetaPropertyRoots(concept.fqName())) {
+                addProperty(
+                    PropertySpec.builder(metaPropertyName, String::class.asTypeName().copy(nullable = true))
+                        .getter(FunSpec.getterBuilder().addCode("return null").build())
+                        .build(),
+                )
+            }
+
             for (feature in concept.getOwnRoles()) {
                 when (feature) {
                     is ProcessedProperty -> addProperty(
@@ -694,6 +703,14 @@ class MetaModelGenerator(val outputDir: Path, val nameConfig: NameConfig = NameC
                             .addStatement("return %T", concept.conceptObjectType())
                             .build(),
                     )
+                    concept.metaProperties.forEach { (key, value) ->
+                        addProperty(
+                            PropertySpec.builder(key, String::class.asTypeName())
+                                .addModifiers(KModifier.OVERRIDE)
+                                .initializer("%S", value)
+                                .build(),
+                        )
+                    }
                 }.build(),
             )
         }.build()

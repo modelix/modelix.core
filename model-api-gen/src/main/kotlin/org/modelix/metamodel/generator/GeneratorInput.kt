@@ -36,6 +36,7 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
     private lateinit var uid2language: Map<String, ProcessedLanguage>
     private lateinit var fqName2concept: Map<String, ProcessedConcept>
     private lateinit var uid2concept: Map<String, ProcessedConcept>
+    private lateinit var conceptFqName2RootMetaProperties: MutableMap<String, MutableSet<String>>
 
     init {
         load(dataList)
@@ -62,6 +63,18 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
         initIndexes()
         resolveConceptReferences()
         fixRoleConflicts()
+        propagateMetaProperties()
+    }
+
+    private fun propagateMetaProperties() {
+        conceptFqName2RootMetaProperties = mutableMapOf()
+        val concepts = languages.flatMap { it.getConcepts() }
+        concepts.forEach { concept ->
+            val keys = concept.metaProperties.keys
+            // TODO the computation of rootConcept will visit some concepts multiple times across loop iterations; could potentially be optimized
+            val rootConcept = concept.getNonInterfaceRootConcept()
+            conceptFqName2RootMetaProperties.getOrPut(rootConcept.fqName()) { mutableSetOf() }.addAll(keys)
+        }
     }
 
     private fun initIndexes() {
@@ -137,6 +150,10 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
     fun getLanguages(): List<ProcessedLanguage> {
         return languages
     }
+
+    fun getMetaPropertyRoots(fqConceptName: String): Set<String> {
+        return conceptFqName2RootMetaProperties[fqConceptName] ?: emptySet()
+    }
 }
 
 internal class ProcessedLanguage(var name: String, var uid: String?) {
@@ -162,7 +179,14 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
     fun load(dataList: List<ConceptData>) {
         for (data in dataList) {
             addConcept(
-                ProcessedConcept(data.name, data.uid, data.abstract, data.extends.map { ProcessedConceptReference(it) }.toMutableList(), data.deprecationMessage).also { concept ->
+                ProcessedConcept(
+                    data.name,
+                    data.uid,
+                    data.abstract,
+                    data.extends.map { ProcessedConceptReference(it) }.toMutableList(),
+                    data.deprecationMessage,
+                    data.metaProperties,
+                ).also { concept ->
                     concept.loadRoles(data)
                 },
             )
@@ -220,6 +244,7 @@ internal class ProcessedConcept(
     var abstract: Boolean,
     val extends: MutableList<ProcessedConceptReference>,
     override var deprecationMessage: String?,
+    val metaProperties: MutableMap<String, String>,
 ) : IProcessedDeprecatable {
     lateinit var language: ProcessedLanguage
     private val roles: MutableList<ProcessedRole> = ArrayList()
@@ -253,6 +278,17 @@ internal class ProcessedConcept(
     fun getAllSuperConcepts(): Sequence<ProcessedConcept> = getAllSuperConcepts_().distinct()
     fun getAllSuperConceptsAndSelf(): Sequence<ProcessedConcept> = getAllSuperConceptsAndSelf_().distinct()
     fun getDuplicateSuperConcepts() = getAllSuperConcepts_().groupBy { it }.filter { it.value.size > 1 }.map { it.key }
+
+    fun getNonInterfaceSuperConcept() = getDirectSuperConcepts().firstOrNull()
+    fun getNonInterfaceRootConcept(): ProcessedConcept {
+        var current: ProcessedConcept? = this
+        var result = this
+        while (current != null) {
+            result = current
+            current = current.getNonInterfaceSuperConcept()
+        }
+        return result
+    }
 }
 
 internal sealed class ProcessedRole(

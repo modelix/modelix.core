@@ -21,7 +21,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import kotlin.jvm.JvmName
 
-class ToStringStep : MonoTransformingStep<Any?, String?>() {
+class ToStringStep : SimpleMonoTransformingStep<Any?, String?>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String?>> {
         return serializersModule.serializer<String>().nullable.stepOutputSerializer(this)
     }

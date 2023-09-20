@@ -75,10 +75,6 @@ class WhenStep<In, Out>(
         )
     }
 
-    override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {
-        throw UnsupportedOperationException()
-    }
-
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         return input.flatMapConcat {
             for ((index, case) in cases.withIndex()) {
@@ -90,24 +86,6 @@ class WhenStep<In, Out>(
             return@flatMapConcat elseCase?.asFlow(context.evaluationContext, it)?.map { MultiplexedOutput(elseCaseIndex, it) }
                 ?: emptyFlow<Out>().asStepFlow(this)
         }
-    }
-
-    override fun createTransformingSequence(evaluationContext: QueryEvaluationContext, input: Sequence<In>): Sequence<Out> {
-        return input.flatMap {
-            for (case in cases) {
-                if (case.first.evaluate(evaluationContext, it).presentAndEqual(true)) {
-                    return@flatMap case.second.asSequence(evaluationContext, sequenceOf(it))
-                }
-            }
-            return@flatMap elseCase?.asSequence(evaluationContext, sequenceOf(it)) ?: emptySequence()
-        }
-    }
-
-    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
-        return createSequence(evaluationContext, sequenceOf(queryInput))
-            .map { Optional.of(it) }
-            .ifEmpty { sequenceOf(Optional.empty<Out>()) }
-            .first()
     }
 }
 

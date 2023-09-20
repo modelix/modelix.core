@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-class StringToBooleanStep : MonoTransformingStep<String?, Boolean>() {
+class StringToBooleanStep : SimpleMonoTransformingStep<String?, Boolean>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
         return serializersModule.serializer<Boolean>().stepOutputSerializer(this)
     }

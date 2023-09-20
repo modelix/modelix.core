@@ -28,8 +28,6 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
         return input.take(1).map { false }.onEmpty { emit(true) }.single().asStepOutput(this)
     }
 
-    override fun aggregate(input: Sequence<IStepOutput<Any?>>): IStepOutput<Boolean> = input.none().asStepOutput(this)
-
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable

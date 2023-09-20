@@ -39,10 +39,6 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
         }
     }
 
-    override fun transform(evaluationContext: QueryEvaluationContext, input: E): E? {
-        return input
-    }
-
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = OrNullDescriptor()
 
     @Serializable

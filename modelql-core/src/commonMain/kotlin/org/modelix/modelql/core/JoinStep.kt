@@ -53,10 +53,6 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
             .asFlow().flattenConcat()
     }
 
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<E> {
-        return producers.asSequence().flatMap { it.createSequence(evaluationContext, queryInput) }
-    }
-
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
         return MultiplexedOutputSerializer(this, getProducers().map { it.getOutputSerializer(serializersModule).upcast() })
     }

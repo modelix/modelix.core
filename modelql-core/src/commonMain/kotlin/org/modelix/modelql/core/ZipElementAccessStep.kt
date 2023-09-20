@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,15 +26,8 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
         return zipSerializer.elementSerializers[index]
     }
 
-    override fun transform(
-        evaluationContext: QueryEvaluationContext,
-        input: IStepOutput<IZipOutput<Any?>>,
-    ): IStepOutput<Out> {
-        return (input as ZipStepOutput<*, *>).values[index] as IStepOutput<Out>
-    }
-
-    override fun transform(evaluationContext: QueryEvaluationContext, input: IZipOutput<Any?>): Out {
-        return input.values[index] as Out
+    override fun createFlow(input: StepFlow<IZipOutput<Any?>>, context: IFlowInstantiationContext): StepFlow<Out> {
+        return input.map { (it as ZipStepOutput<*, *>).values[index].upcast() }
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {

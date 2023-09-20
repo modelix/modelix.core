@@ -30,11 +30,6 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
         }
     }
 
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
-        return getProducer().createSequence(evaluationContext, queryInput)
-            .ifEmpty { alternative.outputStep.createSequence(evaluationContext, sequenceOf(Unit)) }
-    }
-
     override fun canBeEmpty(): Boolean = alternative.outputStep.canBeEmpty()
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple() || alternative.outputStep.canBeMultiple()

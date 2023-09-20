@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-class CollectionSizeStep : MonoTransformingStep<Collection<*>, Int>() {
+class CollectionSizeStep : SimpleMonoTransformingStep<Collection<*>, Int>() {
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
         return serializersModule.serializer<Int>().stepOutputSerializer(this)
     }

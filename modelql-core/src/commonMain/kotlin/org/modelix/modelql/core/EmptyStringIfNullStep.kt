@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,12 +21,26 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
+
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> {
-        return serializersModule.serializer<String>().stepOutputSerializer(this)
+        val inputSerializer: KSerializer<IStepOutput<String?>> = getProducer().getOutputSerializer(serializersModule).upcast()
+        return MultiplexedOutputSerializer<String>(
+            this,
+            listOf<KSerializer<IStepOutput<String>>>(
+                inputSerializer as KSerializer<IStepOutput<String>>,
+                serializersModule.serializer<String>().stepOutputSerializer(this).upcast(),
+            ),
+        )
     }
 
-    override fun transform(evaluationContext: QueryEvaluationContext, input: String?): String {
-        return input ?: ""
+    override fun createFlow(input: StepFlow<String?>, context: IFlowInstantiationContext): StepFlow<String> {
+        return input.map {
+            if (it.value == null) {
+                MultiplexedOutput(1, "".asStepOutput(this))
+            } else {
+                MultiplexedOutput(0, it.upcast())
+            }
+        }
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {

@@ -40,18 +40,6 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
         return query.asFlow(context.evaluationContext, input)
     }
 
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
-        return query.asSequence(evaluationContext, queryInput as Sequence<In>)
-    }
-
-    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<Out> {
-        return getProducer().evaluate(evaluationContext, queryInput).flatMap { query.evaluate(evaluationContext, it) }
-    }
-
-    override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {
-        return query.evaluate(evaluationContext, input).get()
-    }
-
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
         return query.getAggregationOutputSerializer(serializersModule)
     }

@@ -44,7 +44,6 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
-import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
@@ -185,10 +184,6 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
         return input.map { it.value.typed(nodeClass).asStepOutput(this) }
     }
 
-    override fun transform(evaluationContext: QueryEvaluationContext, input: INode): Typed {
-        return input.typed(nodeClass)
-    }
-
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
         return IdentityStep.IdentityStepDescriptor()
     }
@@ -229,10 +224,6 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
 
     override fun createFlow(input: StepFlow<ITypedNode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.map { it.value.unwrap().asStepOutput(this) }
-    }
-
-    override fun transform(evaluationContext: QueryEvaluationContext, input: ITypedNode): INode {
-        return input.unwrap()
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {

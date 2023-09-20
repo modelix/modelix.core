@@ -36,10 +36,6 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
         return input.flatMapConcat { query.asFlow(context.evaluationContext, it) }
     }
 
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
-        return query.asSequence(evaluationContext, getProducer().createSequence(evaluationContext, queryInput))
-    }
-
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
         return query.outputStep.getOutputSerializer(serializersModule)
     }

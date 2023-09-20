@@ -99,11 +99,6 @@ class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
         val outputList = inputList.map { it.value }
         return CollectorStepOutput(inputList, inputList, outputList)
     }
-    override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<List<E>> {
-        val inputList = input.toList()
-        val outputList = inputList.map { it.value }
-        return CollectorStepOutput(inputList, inputList, outputList)
-    }
 
     @Serializable
     @SerialName("toList")
@@ -132,12 +127,6 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
         input.collect { if (outputSet.add(it.value)) inputList.add(it) }
         return CollectorStepOutput(inputList, inputList, outputSet)
     }
-    override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<Set<E>> {
-        val inputList = ArrayList<IStepOutput<E>>()
-        val outputSet = HashSet<E>()
-        input.forEach { if (outputSet.add(it.value)) inputList.add(it) }
-        return CollectorStepOutput(inputList, inputList, outputSet)
-    }
 
     @Serializable
     @SerialName("toSet")
@@ -164,19 +153,6 @@ class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>
         val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
         val internalMap = HashMap<K, IStepOutput<V>>()
         input.collect {
-            val zipStepOutput = it as ZipStepOutput<IZip2Output<Any?, K, V>, Any?>
-            if (!internalMap.containsKey(it.value.first)) {
-                inputList.add(it)
-                internalMap.put(zipStepOutput.values[0].value as K, zipStepOutput.values[1] as IStepOutput<V>)
-            }
-        }
-        val outputMap: Map<K, V> = internalMap.mapValues { it.value.value }
-        return CollectorStepOutput(inputList, internalMap, outputMap)
-    }
-    override fun aggregate(input: Sequence<IStepOutput<IZip2Output<Any?, K, V>>>): IStepOutput<Map<K, V>> {
-        val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
-        val internalMap = HashMap<K, IStepOutput<V>>()
-        input.forEach {
             val zipStepOutput = it as ZipStepOutput<IZip2Output<Any?, K, V>, Any?>
             if (!internalMap.containsKey(it.value.first)) {
                 inputList.add(it)

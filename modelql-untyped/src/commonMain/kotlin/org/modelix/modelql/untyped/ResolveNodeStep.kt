@@ -29,7 +29,6 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
-import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
@@ -41,10 +40,6 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
         return input.map {
             it.value.resolveInCurrentContext() ?: throw IllegalArgumentException("Node not found: ${it.value}")
         }.asStepFlow(this)
-    }
-
-    override fun transform(evaluationContext: QueryEvaluationContext, input: INodeReference): INode {
-        return input.resolveInCurrentContext() ?: throw IllegalArgumentException("Node not found: $input")
     }
 
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {

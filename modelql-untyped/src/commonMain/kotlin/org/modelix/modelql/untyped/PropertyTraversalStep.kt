@@ -24,14 +24,14 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
-import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SimpleMonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 
-class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
+class PropertyTraversalStep(val role: String) : SimpleMonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun transform(evaluationContext: QueryEvaluationContext, input: INode): String? {
         return input.getPropertyValue(input.resolvePropertyOrFallback(role))
     }

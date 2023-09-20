@@ -56,14 +56,6 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     override fun requiresWriteAccess(): Boolean = false
     override fun needsCoroutineScope(): Boolean = false
 
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<E> {
-        return sequenceOf(element)
-    }
-
-    override fun evaluate(evaluationContext: QueryEvaluationContext, queryInput: Any?): Optional<E> {
-        return Optional.of(element)
-    }
-
     override fun evaluateStatically(): E {
         return element
     }
@@ -172,3 +164,5 @@ fun String?.asMono() = createConstantSourceStep(this)
 
 @JvmName("asMono_nullable")
 fun Set<String?>.asMono() = createConstantSourceStep(this)
+
+inline fun <reified T> nullMono(): IMonoStep<T?> = ConstantSourceStep<T?>(null, typeOf<T?>())

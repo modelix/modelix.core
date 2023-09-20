@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-class OrOperatorStep() : MonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
+class OrOperatorStep() : SimpleMonoTransformingStep<IZipOutput<Boolean>, Boolean>() {
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: IZipOutput<Boolean>): Boolean {
         return input.values.any { it == true }

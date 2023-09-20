@@ -38,14 +38,6 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
         }
     }
 
-    override fun transform(evaluationContext: QueryEvaluationContext, input: IStepOutput<In?>): IStepOutput<Out?> {
-        throw UnsupportedOperationException("use MapIfNotNullStep.createFlow")
-    }
-
-    override fun transform(evaluationContext: QueryEvaluationContext, input: In?): Out? {
-        return input?.let { query.outputStep.evaluate(evaluationContext, it).getOrElse(null) }
-    }
-
     override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out?>> {
         val inputSerializer: KSerializer<out IStepOutput<In?>> = getProducer().getOutputSerializer(serializersModule)
         val mappedSerializer: KSerializer<out IStepOutput<Out>> = query.getElementOutputSerializer(serializersModule)

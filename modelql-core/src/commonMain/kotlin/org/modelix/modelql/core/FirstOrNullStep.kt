@@ -26,10 +26,6 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
             ?: MultiplexedOutput(1, null.asStepOutput(this))
     }
 
-    override fun aggregate(input: Sequence<IStepOutput<E>>): IStepOutput<E?> {
-        return input.firstOrNull() ?: null.asStepOutput(this)
-    }
-
     override fun toString(): String {
         return "${getProducer()}.firstOrNull()"
     }

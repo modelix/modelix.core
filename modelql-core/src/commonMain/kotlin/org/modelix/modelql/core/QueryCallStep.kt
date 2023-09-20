@@ -43,11 +43,6 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
         return getQuery().asFlow(context.evaluationContext, input)
     }
 
-    override fun createSequence(evaluationContext: QueryEvaluationContext, queryInput: Sequence<Any?>): Sequence<Out> {
-        val query = getQuery()
-        return getProducer().createSequence(evaluationContext, queryInput).flatMap { query.asSequence(evaluationContext, sequenceOf(it)) }
-    }
-
     override fun requiresSingularQueryInput(): Boolean = true
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {

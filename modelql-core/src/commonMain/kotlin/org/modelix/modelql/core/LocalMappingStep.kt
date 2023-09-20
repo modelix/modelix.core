@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.core
 
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -25,8 +26,8 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
         return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializersModule)).stepOutputSerializer(this)
     }
 
-    override fun transform(evaluationContext: QueryEvaluationContext, input: In): Out {
-        return transformation(input)
+    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+        return input.map { transformation(it.value).asStepOutput(this) }
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {

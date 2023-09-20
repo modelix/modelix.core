@@ -86,7 +86,10 @@ data class NodeData(
     val references: Map<String, String> = emptyMap(),
 ) {
     companion object {
-        const val idPropertyKey = "#mpsNodeId#"
+        const val ID_PROPERTY_KEY = "#mpsNodeId#"
+
+        @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
+        const val idPropertyKey = ID_PROPERTY_KEY
     }
 }
 

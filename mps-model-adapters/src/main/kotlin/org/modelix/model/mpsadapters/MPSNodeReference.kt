@@ -51,7 +51,7 @@ object MPSNodeReferenceSerializer : INodeReferenceSerializerEx {
     override val supportedReferenceClasses: Set<KClass<out INodeReference>> = setOf(MPSNodeReference::class)
 
     override fun serialize(ref: INodeReference): String {
-        return (ref as MPSNodeReference).ref.nodeId.toString()
+        return SNodePointer.serialize((ref as MPSNodeReference).ref)
     }
 
     override fun deserialize(serialized: String): INodeReference {

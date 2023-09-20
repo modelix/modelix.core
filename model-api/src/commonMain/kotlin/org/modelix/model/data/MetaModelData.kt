@@ -43,7 +43,12 @@ data class ConceptData(
     val references: List<ReferenceLinkData> = emptyList(),
     val extends: List<String> = emptyList(),
     override val deprecationMessage: String? = null,
-) : IDeprecatable
+    val metaProperties: MutableMap<String, String> = mutableMapOf(),
+) : IDeprecatable {
+    companion object {
+        const val ALIAS_KEY = "alias"
+    }
+}
 
 @Serializable
 data class EnumData(

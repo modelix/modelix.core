@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.binding
 
-import jetbrains.mps.lang.migration.runtime.base.VersionFixer
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.project.ProjectManager
 import org.jetbrains.mps.openapi.model.SModel
@@ -105,7 +104,8 @@ open class ModelsSynchronizer(cloudParentId: Long, val module: SModule) :
         val result = super.syncToMPS(tree)
         val projects = ProjectManager.getInstance().openedProjects
         if (projects.isNotEmpty()) {
-            VersionFixer(projects.first(), module, true).updateImportVersions()
+            // TODO: VersionFixer is removed in MPS 2021.3. use ModuleDependencyVersions instead
+//            VersionFixer(projects.first(), module, true).updateImportVersions()
         }
         return result
     }

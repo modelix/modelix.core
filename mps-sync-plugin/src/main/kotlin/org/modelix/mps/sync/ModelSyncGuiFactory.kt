@@ -17,6 +17,7 @@
 package org.modelix.mps.sync
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
@@ -38,10 +39,16 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
     private var log: Logger = Logger.getInstance(this.javaClass)
     private lateinit var toolWindowContent: ModelSyncGui
-    lateinit var content: Content
+    private lateinit var content: Content
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         log.info("-------------------------------------------- createToolWindowContent")
+
+        // the actual intelliJ service handling the synchronization
+        val modelSyncService = service<ModelSyncService>()
+
+//        TODO set tool window icon, needs to be 13x13
+//        toolWindow.setIcon(IconLoader.getIcon("/pluginIcon.svg"))
 
         toolWindowContent = ModelSyncGui(toolWindow)
         content = ContentFactory.SERVICE.getInstance().createContent(toolWindowContent.contentPanel, "", false)

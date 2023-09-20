@@ -3,26 +3,34 @@ plugins {
     id("org.jetbrains.intellij") version "1.15.0"
 }
 
+group = "org.modelix.mps"
+
 val syncLib: Configuration by configurations.creating
 syncLib.resolutionStrategy {
     force("org.modelix:model-api:2.11.0")
     force("org.modelix:model-client:2.10.9")
 }
 
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2021.3.3"
-val ideaVersion = "213.7172.25"
-
-// TODO: map the version number to the correct idea platform number here and reuse below
-// MPS - IDEA VERSION - URL
-// 2022.3   - 223.8836.41 - https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties ???
-// 2022.2   - 222.4554.10 - https://github.com/JetBrains/MPS/blob/2022.2.1/build/version.properties
-// 2021.3.3 - 213.7172.25 - https://github.com/JetBrains/MPS/blob/2021.3.3/build/version.properties
-// 2021.2.6 - 212.5284.40 - https://github.com/JetBrains/MPS/blob/2021.2.5/build/version.properties ???
-// 2021.1.4 - 211.7628.21 - https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties
-// 2020.3.6 - 203.8084.24 - https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
+val mpsToIdeaMap = mapOf(
+    "2020.3.6" to "203.8084.24", // https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
+    "2021.1.4" to "211.7628.21", // https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties
+    "2021.2.6" to "212.5284.40", // https://github.com/JetBrains/MPS/blob/2021.2.5/build/version.properties (?)
+    "2021.3.3" to "213.7172.25", // https://github.com/JetBrains/MPS/blob/2021.3.3/build/version.properties
+    "2022.2" to "222.4554.10", // https://github.com/JetBrains/MPS/blob/2021.2.1/build/version.properties
+    "2022.3" to "223.8836.41", // https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties (?)
+)
+// use the given MPS version, or 2022.2 (last version with JAVA 11) as default
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2022.2"
+if (!mpsToIdeaMap.containsKey(mpsVersion)) {
+    throw GradleException("Build for the given MPS version '$mpsVersion' is not supported.")
+}
+// identify the corresponding intelliJ platform version used by the MPS version
+val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
+println("Building for MPS version $mpsVersion and IntlliJ version $ideaVersion")
 
 dependencies {
 //    implementation(project(":model-server-lib"))
+
     api(project(":model-api"))
 
     implementation(project(":mps-model-adapters"))
@@ -45,8 +53,21 @@ intellij {
 }
 
 tasks {
+
+    // This plugin in intended to be used by all 'supported' MPS versions, as a result we need to use the lowest
+    // common java version, which is JAVA 11 to ensure bytecode compatibility.
+    // However, when building with MPS >= 2022.3 to ensure compileOnly dependency compatibility, we need to build
+    // with JAVA 17 explicitly.
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "11"
+        if (mpsVersion == "2022.3") {
+            kotlinOptions.jvmTarget = "17"
+            java.sourceCompatibility = JavaVersion.VERSION_17
+            java.targetCompatibility = JavaVersion.VERSION_17
+        } else {
+            kotlinOptions.jvmTarget = "11"
+            java.sourceCompatibility = JavaVersion.VERSION_11
+            java.targetCompatibility = JavaVersion.VERSION_11
+        }
     }
 
     patchPluginXml {
@@ -67,7 +88,6 @@ tasks {
 //    publishPlugin {
 //        token.set(System.getenv("PUBLISH_TOKEN"))
 //    }
-
     runIde {
         autoReloadPlugins.set(true)
     }
@@ -82,7 +102,12 @@ tasks {
     }
 }
 
-group = "org.modelix.mps"
+// val buildMpsModules by tasks.registering() {
+//    dependsOn(
+//
+//    )
+//    description = "Build all MPS versions"
+// }
 
 publishing {
     publications {

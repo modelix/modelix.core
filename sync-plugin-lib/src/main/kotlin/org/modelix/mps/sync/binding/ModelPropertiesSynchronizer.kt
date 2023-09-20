@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.binding
 
 import jetbrains.mps.extapi.model.SModelDescriptorStub
-import jetbrains.mps.lang.migration.runtime.base.VersionFixer
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.ProjectManager
@@ -53,7 +52,8 @@ class ModelPropertiesSynchronizer(
             try {
                 val projects = ProjectManager.getInstance().openedProjects
                 if (projects.isNotEmpty()) {
-                    VersionFixer(projects.first(), model.module, true).updateImportVersions()
+                    // TODO: VersionFixer is removed in MPS 2021.3. use ModuleDependencyVersions instead
+//                    VersionFixer(projects.first(), model.module, true).updateImportVersions()
                 }
             } catch (ex: Exception) {
                 logger.error(ex) { "Failed to update language version after change in model ${model.name.value}" }

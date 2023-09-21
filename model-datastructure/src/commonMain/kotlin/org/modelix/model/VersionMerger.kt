@@ -53,7 +53,6 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
             collectLatestNonMerges(version.getMergedVersion2(), visited, result)
         } else {
             result.add(version.id)
-            collectLatestNonMerges(version.baseVersion, visited, result)
         }
     }
 

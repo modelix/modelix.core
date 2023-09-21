@@ -17,12 +17,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutput<Any?>, Out>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        val zipSerializer = getProducers().single().getOutputSerializer(serializersModule) as ZipOutputSerializer<Out, *>
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
+        val zipSerializer = getProducers().single().getOutputSerializer(serializationContext) as ZipOutputSerializer<Out, *>
         return zipSerializer.elementSerializers[index]
     }
 

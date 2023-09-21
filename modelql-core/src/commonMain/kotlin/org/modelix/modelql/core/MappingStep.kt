@@ -16,14 +16,14 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransformingStep<In, Out>() {
 
-    init {
-        query.inputStep.indirectConsumer = this
+    override fun validate() {
+        super.validate()
         check(query.outputStep != this)
     }
+
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty() || query.outputStep.canBeEmpty()
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple() || query.outputStep.canBeMultiple()
@@ -40,8 +40,8 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
         return query.asFlow(context.evaluationContext, input)
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return query.getAggregationOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
+        return query.getAggregationOutputSerializer(serializationContext + (query.inputStep to getProducer().getOutputSerializer(serializationContext)))
     }
 
     override fun toString(): String {

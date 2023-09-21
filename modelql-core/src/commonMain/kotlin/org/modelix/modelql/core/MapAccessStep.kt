@@ -16,7 +16,7 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.builtins.NothingSerializer
 
 class MapAccessStep<K, V>() : TransformingStepWithParameter<Map<K, V>, K, Any?, V?>() {
 
@@ -26,20 +26,21 @@ class MapAccessStep<K, V>() : TransformingStepWithParameter<Map<K, V>, K, Any?, 
             val collectorStepOutput = input as CollectorStepOutput<IZip2Output<Any?, K, V>, HashMap<K, IStepOutput<V>>, Map<K, V>>
             collectorStepOutput.internalCollection[parameter.value]?.let { return MultiplexedOutput<V?>(0, it) }
         } else {
-            input.value[parameter.value]?.let { return MultiplexedOutput<V?>(0, it.asStepOutput(this)) }
+            input.value[parameter.value]?.let { return MultiplexedOutput<V?>(2, it.asStepOutput(this)) }
         }
         return MultiplexedOutput<V?>(1, (null as V?).asStepOutput(this))
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<V?>> {
-        val mapSerializer = getInputProducer().getOutputSerializer(serializersModule) as MapCollectorStepOutputSerializer<K, V>
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<V?>> {
+        val mapSerializer = getInputProducer().getOutputSerializer(serializationContext) as MapCollectorStepOutputSerializer<K, V>
         val zipSerializer = mapSerializer.inputElementSerializer as ZipOutputSerializer<*, *>
         val valueSerializer = zipSerializer.elementSerializers[1] as KSerializer<IStepOutput<V>>
         return MultiplexedOutputSerializer<V?>(
             this,
-            listOf(
+            listOf<KSerializer<IStepOutput<V?>>>(
                 valueSerializer as KSerializer<IStepOutput<V?>>,
                 nullSerializer<V>().stepOutputSerializer(this) as KSerializer<IStepOutput<V?>>,
+                (NothingSerializer() as KSerializer<V?>).stepOutputSerializer(this).upcast(),
             ),
         )
     }

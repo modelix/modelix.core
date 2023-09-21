@@ -16,7 +16,6 @@ package org.modelix.modelql.untyped
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
@@ -29,6 +28,7 @@ import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.SimpleMonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
@@ -37,8 +37,8 @@ import org.modelix.modelql.core.stepOutputSerializer
 class AddNewChildNodeStep(val role: String?, val index: Int, val concept: ConceptReference?) :
     SimpleMonoTransformingStep<INode, INode>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
+        return serializationContext.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: INode): INode {

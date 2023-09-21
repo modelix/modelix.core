@@ -16,7 +16,6 @@ package org.modelix.modelql.untyped
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.key
@@ -26,6 +25,7 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.TransformingStepWithParameter
 import org.modelix.modelql.core.connect
@@ -33,8 +33,8 @@ import org.modelix.modelql.core.connect
 class SetReferenceStep(val role: String) :
     TransformingStepWithParameter<INode, INode?, INode?, INode>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return getInputProducer().getOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
+        return getInputProducer().getOutputSerializer(serializationContext)
     }
 
     override fun transformElement(input: IStepOutput<INode>, parameter: IStepOutput<INode?>?): IStepOutput<INode> {

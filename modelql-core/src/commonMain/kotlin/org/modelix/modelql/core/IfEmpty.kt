@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlin.jvm.JvmName
 
 class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {
@@ -35,12 +34,12 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple() || alternative.outputStep.canBeMultiple()
     override fun requiresSingularQueryInput(): Boolean = true
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
         return MultiplexedOutputSerializer(
             this,
             listOf(
-                getProducer().getOutputSerializer(serializersModule).upcast(),
-                alternative.getElementOutputSerializer(serializersModule).upcast(),
+                getProducer().getOutputSerializer(serializationContext).upcast(),
+                alternative.getElementOutputSerializer(serializationContext).upcast(),
             ),
         )
     }

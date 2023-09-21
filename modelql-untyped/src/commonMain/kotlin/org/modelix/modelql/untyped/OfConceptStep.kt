@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.getAllSubConcepts
@@ -29,6 +28,7 @@ import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 
@@ -40,8 +40,8 @@ class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?,
         } as StepFlow<INode>
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return getProducer().getOutputSerializer(serializersModule) as KSerializer<out IStepOutput<INode>>
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
+        return getProducer().getOutputSerializer(serializationContext) as KSerializer<out IStepOutput<INode>>
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(conceptUIDs)

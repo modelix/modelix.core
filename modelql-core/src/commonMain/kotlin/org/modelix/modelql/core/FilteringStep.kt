@@ -17,13 +17,8 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : TransformingStep<E, E>(), IMonoStep<E>, IFluxStep<E> {
-
-    init {
-        condition.inputStep.indirectConsumer = this
-    }
 
     override fun canBeEmpty(): Boolean = true
 
@@ -43,8 +38,8 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
         // return input.filter { condition.evaluate(it.value).presentAndEqual(true) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        return getProducer().getOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
+        return getProducer().getOutputSerializer(serializationContext)
     }
 
     override fun toString(): String {

@@ -17,13 +17,12 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import kotlin.jvm.JvmName
 
 class ToStringStep : SimpleMonoTransformingStep<Any?, String?>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String?>> {
-        return serializersModule.serializer<String>().nullable.stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<String?>> {
+        return serializationContext.serializer<String>().nullable.stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: Any?): String? {

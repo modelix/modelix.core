@@ -19,21 +19,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(
     val cases: List<Pair<IMonoUnboundQuery<In, Boolean?>, IMonoUnboundQuery<In, Out>>>,
     val elseCase: IMonoUnboundQuery<In, Out>?,
 ) : MonoTransformingStep<In, Out>() {
-
-    init {
-        cases.forEach {
-            it.first.castToInstance().inputStep.indirectConsumer = this
-            it.second.castToInstance().inputStep.indirectConsumer = this
-        }
-        elseCase?.let { it.castToInstance().inputStep.indirectConsumer = this }
-    }
 
     override fun toString(): String {
         return "when()" + cases.joinToString("") { ".if(${it.first}).then(${it.second})" } + ".else($elseCase)"
@@ -67,11 +58,18 @@ class WhenStep<In, Out>(
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
+        val inputSerializer = getProducer().getOutputSerializer(serializationContext).upcast()
         return MultiplexedOutputSerializer<Out>(
             this,
-            cases.map { it.second.getAggregationOutputSerializer(serializersModule).upcast() } +
-                listOfNotNull(elseCase?.getAggregationOutputSerializer(serializersModule)?.upcast()),
+            cases.map {
+                it.second.getElementOutputSerializer(serializationContext + (it.second.castToInstance().inputStep to inputSerializer)).upcast()
+            } +
+                listOfNotNull(
+                    elseCase?.let {
+                        it.getElementOutputSerializer(serializationContext + (it.castToInstance().inputStep to inputSerializer))
+                    }?.upcast(),
+                ),
         )
     }
 

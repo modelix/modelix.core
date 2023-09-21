@@ -16,7 +16,6 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>() {
@@ -25,8 +24,8 @@ class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>(
         return (input.value == parameter?.value).asStepOutput(this)
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
-        return serializersModule.serializer<Boolean>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Boolean>> {
+        return serializationContext.serializer<Boolean>().stepOutputSerializer(this)
     }
 
     override fun toString(): String {

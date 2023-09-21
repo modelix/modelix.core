@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.serializer
+import kotlin.reflect.KType
 
 interface IStep {
     val owner: QueryReference<*>
@@ -64,10 +66,25 @@ class FlowInstantiationContext(
     }
 }
 
+class SerializationContext(val serializersModule: SerializersModule, val queryInputSerializers: Map<QueryInput<*>, KSerializer<IStepOutput<*>>> = emptyMap()) {
+    operator fun <T> plus(queryInputSerializer: Pair<QueryInput<T>, KSerializer<out IStepOutput<T>>>): SerializationContext {
+        return SerializationContext(
+            serializersModule,
+            queryInputSerializers + (queryInputSerializer.first to queryInputSerializer.second.upcast()),
+        )
+    }
+
+    public inline fun <reified T> serializer(): KSerializer<T> {
+        return serializersModule.serializer<T>()
+    }
+
+    public fun serializer(type: KType): KSerializer<Any?> = serializersModule.serializer(type)
+}
+
 interface IProducingStep<out E> : IStep {
     fun addConsumer(consumer: IConsumingStep<E>)
     fun getConsumers(): List<IConsumingStep<*>>
-    fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>>
+    fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>>
     fun createFlow(context: IFlowInstantiationContext): StepFlow<E>
 
     fun outputIsConsumedMultipleTimes(): Boolean {

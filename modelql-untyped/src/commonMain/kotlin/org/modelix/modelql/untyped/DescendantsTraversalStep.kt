@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.modelql.core.FluxTransformingStep
@@ -28,6 +27,7 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
@@ -39,8 +39,8 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
         return input.flatMapConcat { it.value.getDescendantsAsFlow(includeSelf) }.asStepFlow(this)
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
+        return serializationContext.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = if (includeSelf) WithSelfDescriptor() else WithoutSelfDescriptor()

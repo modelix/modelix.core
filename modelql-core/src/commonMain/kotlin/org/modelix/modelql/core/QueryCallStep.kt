@@ -20,21 +20,11 @@ import kotlinx.serialization.builtins.NothingSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.modules.SerializersModule
 
 class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, *, Out>>) : TransformingStep<In, Out>(), IFluxStep<Out>, IMonoStep<Out> {
-    override fun validate() {
-        super<TransformingStep>.validate()
 
-        val queryInputStep = queryRef.query.castToInstance().inputStep
-        val existing = queryInputStep.indirectConsumer
-        if (existing == null || existing is QueryCallStep<*, *> && existing.owner.getId() == queryRef.getId()) {
-            queryInputStep.indirectConsumer = this
-        }
-    }
-
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return RecursiveQuerySerializer<Out>(getQuery(), this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
+        return RecursiveQuerySerializer<Out>(getQuery(), this, serializationContext)
     }
 
     fun getQuery(): IUnboundQuery<In, *, Out> = queryRef.query!!
@@ -62,21 +52,28 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
     }
 }
 
-class RecursiveQuerySerializer<Out>(val query: IUnboundQuery<*, *, Out>, val owner: IProducingStep<Out>) : KSerializer<IStepOutput<Out>> {
+class RecursiveQuerySerializer<Out>(
+    val query: IUnboundQuery<*, *, Out>,
+    val owner: QueryCallStep<*, Out>,
+    val serializationContext: SerializationContext,
+) : KSerializer<IStepOutput<Out>> {
     override fun deserialize(decoder: Decoder): IStepOutput<Out> {
-        val queryOutputSerializer = getQueryOutputSerializer(decoder.serializersModule)
+        val queryOutputSerializer = getQueryOutputSerializer()
         return queryOutputSerializer.deserialize(decoder)
     }
 
     override val descriptor: SerialDescriptor = NothingSerializer().descriptor
 
     override fun serialize(encoder: Encoder, value: IStepOutput<Out>) {
-        val queryOutputSerializer = getQueryOutputSerializer(encoder.serializersModule)
+        val queryOutputSerializer = getQueryOutputSerializer()
         queryOutputSerializer.serialize(encoder, value)
     }
 
-    private fun getQueryOutputSerializer(serializersModule: SerializersModule) =
-        query.getElementOutputSerializer(serializersModule).upcast()
+    private fun getQueryOutputSerializer(): KSerializer<IStepOutput<Out>> {
+        return query.getElementOutputSerializer(
+            serializationContext + (query.castToInstance().inputStep to owner.getProducer().getOutputSerializer(serializationContext) as KSerializer<out IStepOutput<Nothing>>),
+        ).upcast()
+    }
 }
 
 fun <In, Out> IMonoStep<In>.callQuery(ref: QueryReference<IMonoUnboundQuery<In, Out>>): IMonoStep<Out> {

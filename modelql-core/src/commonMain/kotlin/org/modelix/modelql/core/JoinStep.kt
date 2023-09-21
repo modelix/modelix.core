@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     override fun canBeEmpty(): Boolean = getProducers().all { it.canBeEmpty() }
@@ -53,8 +52,8 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
             .asFlow().flattenConcat()
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        return MultiplexedOutputSerializer(this, getProducers().map { it.getOutputSerializer(serializersModule).upcast() })
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
+        return MultiplexedOutputSerializer(this, getProducers().map { it.getOutputSerializer(serializationContext).upcast() })
     }
 
     override fun toString(): String {

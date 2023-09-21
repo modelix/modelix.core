@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class SingleStep<E>() : AggregationStep<E, E>() {
 
@@ -29,8 +28,8 @@ class SingleStep<E>() : AggregationStep<E, E>() {
         return "${getProducer()}.single()"
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        return getProducer().getOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
+        return getProducer().getOutputSerializer(serializationContext)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

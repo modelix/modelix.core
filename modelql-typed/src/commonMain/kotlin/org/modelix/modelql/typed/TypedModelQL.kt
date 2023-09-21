@@ -45,6 +45,7 @@ import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepOutput
@@ -175,8 +176,8 @@ fun IMonoStep<ITypedNode?>.untyped(): IMonoStep<INode?> = mapIfNotNull { it.unty
 fun IFluxStep<ITypedNode?>.untyped(): IFluxStep<INode?> = mapIfNotNull { it.untyped() }
 
 class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : MonoTransformingStep<INode, Typed>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Typed>> {
-        val inputSerializer = getProducer().getOutputSerializer(serializersModule).upcast()
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Typed>> {
+        val inputSerializer = getProducer().getOutputSerializer(serializationContext).upcast()
         return TypedNodeSerializer(nodeClass, inputSerializer).stepOutputSerializer(this)
     }
 
@@ -218,8 +219,8 @@ class UntypedNodeSerializer(val typedSerializer: KSerializer<IStepOutput<ITypedN
 }
 
 class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return UntypedNodeSerializer(getProducer().getOutputSerializer(serializersModule).upcast()).stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
+        return UntypedNodeSerializer(getProducer().getOutputSerializer(serializationContext).upcast()).stepOutputSerializer(this)
     }
 
     override fun createFlow(input: StepFlow<ITypedNode>, context: IFlowInstantiationContext): StepFlow<INode> {

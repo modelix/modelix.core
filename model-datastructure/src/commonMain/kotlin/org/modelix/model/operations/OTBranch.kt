@@ -31,7 +31,7 @@ class OTBranch(
     private val store: IDeserializingKeyValueStore,
 ) : IBranch {
     private var currentOperations: MutableList<IAppliedOperation> = ArrayList()
-    private val completedChanges: MutableList<Pair<List<IAppliedOperation>, ITree>> = ArrayList()
+    private val completedChanges: MutableList<OpsAndTree> = ArrayList()
     private val id: String = branch.getId()
 
     fun operationApplied(op: IAppliedOperation) {
@@ -52,10 +52,10 @@ class OTBranch(
     fun getPendingChanges(): Pair<List<IAppliedOperation>, ITree> {
         return runSynchronized(completedChanges) {
             val result = when (completedChanges.size) {
-                0 -> emptyList<IAppliedOperation>() to computeReadT { it.tree }
-                1 -> completedChanges[0]
-                else -> completedChanges.flatMap { it.first } to completedChanges.last().second
-            }
+                0 -> OpsAndTree(computeReadT { it.tree })
+                1 -> completedChanges.single()
+                else -> completedChanges.last().merge(completedChanges.dropLast(1))
+            }.asPair()
             completedChanges.clear()
             result
         }
@@ -91,7 +91,7 @@ class OTBranch(
                 try {
                     val result = computable()
                     runSynchronized(completedChanges) {
-                        completedChanges += currentOperations to t.tree
+                        completedChanges += OpsAndTree(currentOperations, t.tree)
                     }
                     result
                 } finally {
@@ -128,4 +128,12 @@ class OTBranch(
     }
 
     protected fun checkNotEDT() {}
+
+    private class OpsAndTree(val ops: List<IAppliedOperation>, val tree: ITree) {
+        constructor(tree: ITree) : this(emptyList(), tree)
+        fun asPair(): Pair<List<IAppliedOperation>, ITree> = ops to tree
+        fun merge(previous: List<OpsAndTree>): OpsAndTree {
+            return OpsAndTree((previous + this).flatMap { it.ops }.toList(), tree)
+        }
+    }
 }

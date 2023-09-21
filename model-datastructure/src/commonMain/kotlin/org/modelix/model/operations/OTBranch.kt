@@ -44,18 +44,7 @@ class OTBranch(
     }
 
     @Deprecated("renamed to getPendingChanges()", ReplaceWith("getPendingChanges()"))
-    val operationsAndTree: Pair<List<IAppliedOperation>, ITree>
-        get() {
-            return runSynchronized(completedChanges) {
-                val result = when (completedChanges.size) {
-                    0 -> emptyList<IAppliedOperation>() to computeReadT { it.tree }
-                    1 -> completedChanges[0]
-                    else -> completedChanges.flatMap { it.first } to completedChanges.last().second
-                }
-                completedChanges.clear()
-                result
-            }
-        }
+    val operationsAndTree: Pair<List<IAppliedOperation>, ITree> get() = getPendingChanges()
 
     /**
      * @return the operations applied to the branch since the last call of this function and the resulting ITree.

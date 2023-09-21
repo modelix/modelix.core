@@ -53,7 +53,7 @@ object ModelCloudImportUtils {
 
     fun checkoutAndSync(treeNode: CloudNodeTreeNode, mpsProject: Project) {
         val treeInRepository = treeNode.getTreeInRepository()
-        val cloudModuleNode = treeNode.getNode() as PNodeAdapter
+        val cloudModuleNode = treeNode.node as PNodeAdapter
         val solution = ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule(cloudModuleNode)
         // TODO How to translate this correctly?
         /*read action with mpsProject.getRepository() {

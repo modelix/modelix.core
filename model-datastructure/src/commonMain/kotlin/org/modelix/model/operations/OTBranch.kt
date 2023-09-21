@@ -85,6 +85,7 @@ class OTBranch(
     override fun <T> computeWrite(computable: () -> T): T {
         checkNotEDT()
         return if (canWrite()) {
+            // Already in a transaction. Just append changes to the active one.
             branch.computeWrite(computable)
         } else {
             branch.computeWriteT { t ->

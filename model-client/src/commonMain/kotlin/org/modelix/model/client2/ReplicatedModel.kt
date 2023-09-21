@@ -63,37 +63,11 @@ class ReplicatedModel(
             }
         }
 
-        // convergence watchdog
-//        scope.launch {
-//            var nextDelayMs: Long = 1000
-//            while (state != State.Disposed) {
-//                if (nextDelayMs > 0) delay(nextDelayMs)
-//                try {
-//                    val newRemoteVersion = remoteVersion.pull()
-//                    remoteVersionReceived(newRemoteVersion)
-//                    nextDelayMs = 1000
-//                } catch (ex: CancellationException) {
-//                    break
-//                } catch (ex: Throwable) {
-//                    LOG.error(ex) { "Failed to pull branch $branchRef" }
-//                    nextDelayMs = (nextDelayMs * 3 / 2).coerceIn(1000, 30000)
-//                }
-//            }
-//        }
-
         localModel.rawBranch.addListener(object : IBranchListener {
             override fun treeChanged(oldTree: ITree?, newTree: ITree) {
                 if (isDisposed()) return
                 scope.launch {
                     pushLocalChanges()
-//                    while (state != State.Disposed) {
-//                        if (remoteVersion.getNumberOfUnconfirmed() == 0) {
-//                            pushLocalChanges()
-//                            break
-//                        } else {
-//                            delay(100.milliseconds)
-//                        }
-//                    }
                 }
             }
         })

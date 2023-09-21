@@ -67,13 +67,17 @@ dependencies {
         },
     )
 
-    // TODO clarify it with Sascha, if we have to copy the ReflectionUtil to us simply, so we'll not have any dependency for MPS Extensions
-//    mpsExtensionsZip("de.itemis.mps:extensions:2021.1.+")
-//    implementation(
-//        zipTree({ mpsExtensionsZip.singleFile }).matching {
-//            include("de.itemis.mps.extensions/de.slisson.mps.hacks/languages/de.slisson.mps.hacks/de.slisson.mps.reflection.runtime.jar")
-//        },
-//    )
+    // TODO clarify it with Sascha:
+    //  - if we have to copy the ReflectionUtil to us simply, so we'll not have any dependency for MPS Extensions
+    //  - if there is a replacement for a subset of shadowmodels already
+    mpsExtensionsZip("de.itemis.mps:extensions:2021.1.+")
+    implementation(
+        zipTree({ mpsExtensionsZip.singleFile }).matching {
+            include("de.itemis.mps.extensions/de.slisson.mps.hacks/languages/de.slisson.mps.hacks/de.slisson.mps.reflection.runtime.jar")
+            include("de.itemis.mps.extensions/de.q60.shadowmodels/languages/de.q60.shadowmodels/de.q60.mps.incremental.runtime.jar")
+            include("de.itemis.mps.extensions/de.q60.shadowmodels/languages/de.q60.shadowmodels/de.q60.mps.shadowmodels.runtime.jar")
+        },
+    )
 }
 
 group = "org.modelix.mps"

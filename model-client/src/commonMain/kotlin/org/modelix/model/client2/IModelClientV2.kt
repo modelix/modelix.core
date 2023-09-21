@@ -17,7 +17,6 @@ import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.server.api.ModelQuery
 
 /**
  * This interface is meant exclusively for model client usage.
@@ -53,8 +52,6 @@ interface IModelClientV2 {
     suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion
 
     suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
-    suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion
 
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
-    suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion
 }

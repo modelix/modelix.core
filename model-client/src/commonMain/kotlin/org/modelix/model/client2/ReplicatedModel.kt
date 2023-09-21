@@ -20,14 +20,11 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.operations.OTBranch
-import org.modelix.model.server.api.ModelQuery
 
 class ReplicatedModel(
     val client: IModelClientV2,
     val branchRef: BranchReference,
     private val providedScope: CoroutineScope? = null,
-    @Deprecated("was never supported")
-    val query: ModelQuery? = null,
 ) {
     private val scope = providedScope ?: CoroutineScope(Dispatchers.Default)
     private var state = State.New
@@ -172,11 +169,6 @@ fun IModelClientV2.getReplicatedModel(branchRef: BranchReference): ReplicatedMod
 
 fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, scope: CoroutineScope): ReplicatedModel {
     return ReplicatedModel(this, branchRef, scope)
-}
-
-@Deprecated("ModelQuery is not supported and ignored", ReplaceWith("getReplicatedModel(branchRef)"))
-fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, query: ModelQuery?): ReplicatedModel {
-    return ReplicatedModel(this, branchRef, providedScope = null, query = query)
 }
 
 /**

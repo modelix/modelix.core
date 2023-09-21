@@ -43,7 +43,6 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
-import org.modelix.model.server.api.ModelQuery
 import org.modelix.model.server.api.v2.VersionDelta
 import kotlin.time.Duration.Companion.seconds
 
@@ -181,14 +180,6 @@ class ModelClientV2(
         val receivedVersion = createVersion(lastKnownVersion, response.body())
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
         return receivedVersion
-    }
-
-    override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion {
-        TODO("Not yet implemented")
     }
 
     override fun close() {

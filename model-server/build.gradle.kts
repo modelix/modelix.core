@@ -65,6 +65,10 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+tasks.test {
+    useJUnitPlatform()
+}
+
 val cucumberRuntime by configurations.creating {
     extendsFrom(configurations["testImplementation"])
 }

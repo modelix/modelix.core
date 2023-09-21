@@ -26,6 +26,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.RepetitionInfo
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.LinearHistory
 import org.modelix.model.ModelFacade
@@ -127,27 +129,8 @@ class ReplicatedRepositoryTest {
         }
     }
 
-    @Test fun `concurrent write 0`() = concurrentWrite(0)
-
-    @Test fun `concurrent write 1`() = concurrentWrite(1)
-
-    @Test fun `concurrent write 2`() = concurrentWrite(2)
-
-    @Test fun `concurrent write 3`() = concurrentWrite(3)
-
-    @Test fun `concurrent write 4`() = concurrentWrite(4)
-
-    @Test fun `concurrent write 5`() = concurrentWrite(5)
-
-    @Test fun `concurrent write 6`() = concurrentWrite(6)
-
-    @Test fun `concurrent write 7`() = concurrentWrite(7)
-
-    @Test fun `concurrent write 8`() = concurrentWrite(8)
-
-    @Test fun `concurrent write 9`() = concurrentWrite(9)
-
-    fun concurrentWrite(iteration: Int) = runTest { scope ->
+    @RepeatedTest(value = 10)
+    fun concurrentWrite(repetitionInfo: RepetitionInfo) = runTest { scope ->
         val url = "http://localhost/v2"
         val clients = (1..3).map {
             ModelClientV2.builder().url(url).client(client).build().also { it.init() }
@@ -175,7 +158,7 @@ class ReplicatedRepositoryTest {
                     }
                 }
                 models.forEachIndexed { index, model ->
-                    launchWriter(model, 56456 + index + iteration * 100000)
+                    launchWriter(model, 56456 + index + repetitionInfo.currentRepetition * 100000)
                     delay(200.milliseconds)
                 }
             }

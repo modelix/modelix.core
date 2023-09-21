@@ -195,4 +195,24 @@ class CloudNodeTreeNode(public val branch: IBranch, public val node: INode) : Te
         val repositoryId: RepositoryId = this.getAncestor(RepositoryTreeNode::class.java).getRepositoryId()
         return CloudRepository(modelServer, repositoryId)
     }
+
+    // TODO check this represent a repository/a tree root
+    fun createProject(moduleName: String): INode = (this.getNode() as PNodeAdapter).createProject(moduleName)
+
+    // TODO check this represent a repository/a tree root
+    fun createModule(moduleName: String): INode = (this.getNode() as PNodeAdapter).createModuleInRepository(moduleName)
+
+    fun createModel(modelName: String): INode = {
+        // TODO check this represent a module
+        return PArea(branch).executeWrite {
+            // TODO instead of "models" it must be link/Module : models/.getName()
+            // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
+            // this.getNode().addNewChild("models", -1, SConceptAdapter.wrap(concept/Model/))
+            val newModel: INode = null!!
+            // TODO instead of "name" it must be property/Model : name/.getName()
+            val nameProperty = PropertyForName("name")
+            newModel.setPropertyValue(nameProperty, modelName)
+            newModel
+        }
+    }
 }

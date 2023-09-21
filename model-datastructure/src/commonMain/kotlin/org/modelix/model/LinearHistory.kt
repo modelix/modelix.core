@@ -5,10 +5,6 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.CPVersion
 
-/**
- * When merging two branches there might be conflicts between operations that need to be resolved in a deterministic
- * way. This class puts them in an order that preserves the order of earlier merges.
- */
 class LinearHistory(val baseVersionHash: String?) {
 
     val version2descendants: MutableMap<Long, MutableSet<Long>> = HashMap()

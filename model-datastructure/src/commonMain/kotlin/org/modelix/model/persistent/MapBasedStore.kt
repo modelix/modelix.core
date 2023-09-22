@@ -18,7 +18,10 @@ package org.modelix.model.persistent
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 
-open class MapBaseStore : IKeyValueStore {
+@Deprecated("Use MapBasedStore, without a typo.", ReplaceWith("MapBasedStore"))
+open class MapBaseStore : MapBasedStore()
+
+open class MapBasedStore : IKeyValueStore {
     private val map: MutableMap<String?, String?> = HashMap()
     override fun get(key: String): String? {
         return map[key]

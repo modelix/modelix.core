@@ -42,8 +42,7 @@ import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.persistent.MapBaseStore
-import org.modelix.model.server.api.ModelQuery
+import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.VersionDelta
 import kotlin.time.Duration.Companion.seconds
 
@@ -54,7 +53,7 @@ class ModelClientV2(
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
     private var userId: String? = null
-    private val kvStore = MapBaseStore()
+    private val kvStore = MapBasedStore()
     val store = ObjectStoreCache(kvStore) // TODO the store will accumulate garbage
 
     suspend fun init() {
@@ -168,6 +167,7 @@ class ModelClientV2(
 
     override suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
         require(lastKnownVersion is CLVersion?)
+        LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion)" }
         val response = httpClient.get {
             url {
                 takeFrom(baseUrl)
@@ -180,14 +180,6 @@ class ModelClientV2(
         val receivedVersion = createVersion(lastKnownVersion, response.body())
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
         return receivedVersion
-    }
-
-    override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?, filter: ModelQuery): IVersion {
-        TODO("Not yet implemented")
     }
 
     override fun close() {

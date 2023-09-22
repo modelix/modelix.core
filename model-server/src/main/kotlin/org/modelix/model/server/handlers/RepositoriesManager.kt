@@ -14,12 +14,14 @@
 package org.modelix.model.server.handlers
 
 import kotlinx.datetime.Clock
+import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -147,10 +149,18 @@ class RepositoriesManager(val client: LocalModelClient) {
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
+    private val deltaCache = LRUMap<Pair<String, String?>, Lazy<Map<String, String>>>(10)
     fun computeDelta(versionHash: String, baseVersionHash: String?): Map<String, String> {
-        val version = CLVersion(versionHash, client.storeCache)
-        val baseVersion = baseVersionHash?.let { CLVersion(it, client.storeCache) }
-        return version.computeDelta(baseVersion)
+        return runSynchronized(deltaCache) {
+            deltaCache.getOrPut(versionHash to baseVersionHash) {
+                // lazy { ... } allows to run the computation without locking deltaCache
+                lazy {
+                    val version = CLVersion(versionHash, client.storeCache)
+                    val baseVersion = baseVersionHash?.let { CLVersion(it, client.storeCache) }
+                    version.computeDelta(baseVersion)
+                }
+            }
+        }.value
     }
 
     private fun branchKey(branch: BranchReference): String {

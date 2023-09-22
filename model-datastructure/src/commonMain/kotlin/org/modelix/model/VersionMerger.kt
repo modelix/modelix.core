@@ -45,14 +45,33 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
         }
     }
 
+    private fun collectLatestNonMerges(version: CLVersion?, visited: MutableSet<String>, result: MutableSet<Long>) {
+        if (version == null) return
+        if (!visited.add(version.getContentHash())) return
+        if (version.isMerge()) {
+            collectLatestNonMerges(version.getMergedVersion1(), visited, result)
+            collectLatestNonMerges(version.getMergedVersion2(), visited, result)
+        } else {
+            result.add(version.id)
+        }
+    }
+
     protected fun mergeHistory(leftVersion: CLVersion, rightVersion: CLVersion): CLVersion {
         if (leftVersion.hash == rightVersion.hash) return leftVersion
         val commonBase = Companion.commonBaseVersion(leftVersion, rightVersion)
         if (commonBase?.hash == leftVersion.hash) return rightVersion
         if (commonBase?.hash == rightVersion.hash) return leftVersion
+
+        val leftNonMerges = HashSet<Long>().also { collectLatestNonMerges(leftVersion, HashSet(), it) }
+        val rightNonMerges = HashSet<Long>().also { collectLatestNonMerges(rightVersion, HashSet(), it) }
+        if (leftNonMerges == rightNonMerges) {
+            // If there is no actual change on both sides, but they just did the same merge, we have to pick one
+            // of them, otherwise both sides will continue creating merges forever.
+            return if (leftVersion.id < rightVersion.id) leftVersion else rightVersion
+        }
+
         val versionsToApply = LinearHistory(commonBase?.hash).load(leftVersion, rightVersion)
 
-//        println("merge ${getVersion(leftVersionHash).id.toString(16)} ${LinearHistory(storeCache, commonBase).load(leftVersion).map { it.id.toString(16) }} and ${getVersion(rightVersionHash).id.toString(16)} ${LinearHistory(storeCache, commonBase).load(rightVersion).map { it.id.toString(16) }}: ${commonBase?.let{getVersion(it)}?.id?.toString(16)} + ${versionsToApply.map { it.id.toString(16) }}")
         val operationsToApply = versionsToApply.flatMap { captureIntend(it) }
         var mergedVersion: CLVersion? = null
         var baseTree = commonBase?.tree ?: CLTree(storeCache)
@@ -90,7 +109,6 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
                 appliedOps.map { it.getOriginalOp() }.toTypedArray(),
                 storeCache,
             )
-//            println("result ${mergedVersion?.id?.toString(16)}")
         }
         if (mergedVersion == null) {
             throw RuntimeException("Failed to merge ${leftVersion.hash} and ${rightVersion.hash}")

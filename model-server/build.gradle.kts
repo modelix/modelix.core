@@ -65,6 +65,10 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+tasks.test {
+    useJUnitPlatform()
+}
+
 val cucumberRuntime by configurations.creating {
     extendsFrom(configurations["testImplementation"])
 }
@@ -107,7 +111,7 @@ val cucumber = task("cucumber") {
     }
 }
 
-tasks.named("test") {
+tasks.named("build") {
     dependsOn("cucumber")
 }
 

@@ -26,14 +26,13 @@ import org.modelix.model.api.IWriteTransaction
 import org.modelix.mps.sync.synchronization.SyncDirection
 
 // status: migrated, but needs some bugfixes
-class ProjectBinding(
-    private val mpsProject: MPSProject,
-    private var projectNodeId: Long,
-    initialSyncDirection: SyncDirection,
-) : Binding(initialSyncDirection) {
+class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyncDirection: SyncDirection) :
+    Binding(initialSyncDirection) {
 
     private val logger = mu.KotlinLogging.logger {}
     private val repositoryListener = RepositoryListener()
+    var projectNodeId: Long = projectNodeId
+        private set
 
     init {
         logger.debug { "Project binding created: $this" }

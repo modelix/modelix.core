@@ -155,7 +155,7 @@ class ModelCloudExporter {
         }
 
         val url = repositoryInModelServer.modelServer.baseUrl
-        val client = RestWebModelClient(url.toString())
+        val client = RestWebModelClient(url)
         val repositoryId = repositoryInModelServer.getRepositoryId()
         val branchKey = repositoryId.getBranchReference(branchName).getKey()
         val versionHash = client[branchKey]

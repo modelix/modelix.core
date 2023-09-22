@@ -166,7 +166,7 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
         tr?.let { doSyncToCloud(it) }
     }
 
-    protected open fun getCloudRepository(): ICloudRepository? = owner?.getCloudRepository()
+    open fun getCloudRepository(): ICloudRepository? = owner?.getCloudRepository()
 
     private fun getOwners(): Iterable<IBinding> = owner?.let { mutableListOf(it).plus(it.getOwners()) } ?: emptyList()
 
@@ -180,7 +180,7 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
         return root
     }
 
-    protected fun getAllBindings(): Iterable<Binding> =
+    fun getAllBindings(): Iterable<Binding> =
         mutableListOf(this).plus(ownedBindings.flatMap { it.getAllBindings() })
 
     override fun activate(callback: Runnable?) {

@@ -40,7 +40,7 @@ class ModelServerConnections private constructor() {
 
     companion object {
         val instance = ModelServerConnections()
-        val localUiStateBranch = PBranch(SM_PTree.EMPTY, IdGenerator.Companion.getInstance(1))
+        private val localUiStateBranch = PBranch(SM_PTree.EMPTY, IdGenerator.Companion.getInstance(1))
 
         init {
             localUiStateBranch.addListener(object : IBranchListener {
@@ -91,7 +91,7 @@ class ModelServerConnections private constructor() {
         return if (!url.endsWith("/")) {
             getModelServer("$url/")
         } else {
-            this.modelServers.firstOrNull { URL(url) == it.baseUrl }
+            this.modelServers.firstOrNull { url == it.baseUrl }
         }
     }
 
@@ -163,5 +163,5 @@ class ModelServerConnections private constructor() {
 }
 
 interface IRepositoriesChangedListener {
-    fun repositoriesChanged(): Unit
+    fun repositoriesChanged()
 }

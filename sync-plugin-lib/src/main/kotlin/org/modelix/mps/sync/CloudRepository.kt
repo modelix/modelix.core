@@ -63,10 +63,10 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
     override fun getRepositoryId(): RepositoryId = repositoryId
 
     override fun completeId(): String {
-        return if (modelServer.baseUrl.toString().endsWith("/")) {
-            modelServer.baseUrl.toString() + repositoryId
+        return if (modelServer.baseUrl.endsWith("/")) {
+            modelServer.baseUrl + repositoryId
         } else {
-            modelServer.baseUrl.toString() + "/" + repositoryId
+            modelServer.baseUrl + "/" + repositoryId
         }
     }
 

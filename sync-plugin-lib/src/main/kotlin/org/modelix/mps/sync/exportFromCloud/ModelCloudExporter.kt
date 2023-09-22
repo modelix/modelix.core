@@ -96,7 +96,7 @@ class ModelCloudExporter {
         }
         val preparedRepositoryId = repositoryId.ifEmpty { DEFAULT_TREE_ID }
 
-        val modelServer = ModelServerConnections.getInstance().getModelServer(preparedUrl)
+        val modelServer = ModelServerConnections.instance.getModelServer(preparedUrl)
         check(modelServer != null) { "No ModelServer connection found for url $url" }
 
         init(CloudRepository(modelServer, RepositoryId(preparedRepositoryId)), branchName)

@@ -49,7 +49,7 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
             val lastSlash: Int = presentation.lastIndexOf("/")
             val url = presentation.substring(0, lastSlash)
             val repositoryId = RepositoryId(presentation.substring(lastSlash + 1))
-            val modelServer = ModelServerConnections.getInstance().ensureModelServerIsPresent(url)
+            val modelServer = ModelServerConnections.instance.ensureModelServerIsPresent(url)
             return CloudRepository(modelServer, repositoryId)
         }
     }

@@ -17,11 +17,14 @@
 package org.modelix.mps.sync.plugin.init
 
 // status: ready to test
-enum class EModelixExecutionMode {
-    DEFAULT,
-    INTEGRATION_TESTS,
-    MODEL_EXPORT,
-    MODEL_IMPORT,
-    CLUSTER,
-    PROJECTOR,
+object ModelixExportConfiguration {
+    private val PREFIX = "modelix.export."
+    val PATH = PREFIX + "path"
+    val STARTED = PREFIX + "started"
+    val DONE = PREFIX + "done"
+    val BRANCH_NAME = PREFIX + "branchName"
+    val REPOSITORY_ID = PREFIX + "repositoryId"
+    val SERVER_URL = PREFIX + "serverUrl"
+    val GRADLE_PLUGIN_SOCKET_PORT = PREFIX + "gradlePluginSocketPort"
+    val MAKE = PREFIX + "make"
 }

@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.connection
 
 // TODO: maybe there is a better way to do this?
+// status: ready to test
 object InstanceJwtToken {
     val token = System.getenv("INITIAL_JWT_TOKEN")
 }

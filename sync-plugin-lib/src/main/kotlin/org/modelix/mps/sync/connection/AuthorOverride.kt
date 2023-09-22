@@ -18,6 +18,7 @@ package org.modelix.mps.sync.connection
 
 import de.q60.mps.incremental.util.ContextValue
 
+// status: ready to test
 object AuthorOverride {
 
     private var AUTHOR: ContextValue<String> = ContextValue<String>()

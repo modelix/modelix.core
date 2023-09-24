@@ -22,14 +22,17 @@ import java.util.HashSet;
 import org.json.JSONArray;
 import org.junit.Test;
 import org.modelix.model.server.handlers.KeyValueLikeModelServer;
+import org.modelix.model.server.handlers.RepositoriesManager;
 import org.modelix.model.server.store.InMemoryStoreClient;
+import org.modelix.model.server.store.LocalModelClient;
 
 public class RestModelServerTest {
 
     @Test
     public void testCollectUnexistingKey() {
-        InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
+        KeyValueLikeModelServer rms =
+                new KeyValueLikeModelServer(
+                        new RepositoriesManager(new LocalModelClient(new InMemoryStoreClient())));
         JSONArray result = rms.collect("unexistingKey");
         assertEquals(1, result.length());
         assertEquals(new HashSet<>(Arrays.asList("key")), result.getJSONObject(0).keySet());
@@ -40,7 +43,9 @@ public class RestModelServerTest {
     public void testCollectExistingKeyNotHash() {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
         storeClient.put("existingKey", "foo", false);
-        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
+        KeyValueLikeModelServer rms =
+                new KeyValueLikeModelServer(
+                        new RepositoriesManager(new LocalModelClient(storeClient)));
         JSONArray result = rms.collect("existingKey");
         assertEquals(1, result.length());
         assertEquals(
@@ -54,7 +59,9 @@ public class RestModelServerTest {
         InMemoryStoreClient storeClient = new InMemoryStoreClient();
         storeClient.put("existingKey", "hash-*0123456789-0123456789-0123456789-00001", false);
         storeClient.put("hash-*0123456789-0123456789-0123456789-00001", "bar", false);
-        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
+        KeyValueLikeModelServer rms =
+                new KeyValueLikeModelServer(
+                        new RepositoriesManager(new LocalModelClient(storeClient)));
         JSONArray result = rms.collect("existingKey");
         assertEquals(2, result.length());
 
@@ -86,7 +93,9 @@ public class RestModelServerTest {
                 "hash-*0123456789-0123456789-0123456789-00004",
                 false);
         storeClient.put("hash-*0123456789-0123456789-0123456789-00004", "end", false);
-        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
+        KeyValueLikeModelServer rms =
+                new KeyValueLikeModelServer(
+                        new RepositoriesManager(new LocalModelClient(storeClient)));
         JSONArray result = rms.collect("root");
         assertEquals(5, result.length());
 
@@ -132,7 +141,9 @@ public class RestModelServerTest {
                 "hash-*0123456789-0123456789-0123456789-00003",
                 "hash-*0123456789-0123456789-0123456789-00001",
                 false);
-        KeyValueLikeModelServer rms = new KeyValueLikeModelServer(storeClient);
+        KeyValueLikeModelServer rms =
+                new KeyValueLikeModelServer(
+                        new RepositoriesManager(new LocalModelClient(storeClient)));
         JSONArray result = rms.collect("root");
         assertEquals(4, result.length());
 

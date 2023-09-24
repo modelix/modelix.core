@@ -23,7 +23,9 @@ import org.modelix.authorization.installAuthentication
 import org.modelix.model.IKeyListener
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.LocalModelClient
 import java.util.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,7 +37,7 @@ class ModelClientTest {
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
-            KeyValueLikeModelServer(InMemoryStoreClient()).init(this)
+            KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(InMemoryStoreClient()))).init(this)
         }
         block()
     }

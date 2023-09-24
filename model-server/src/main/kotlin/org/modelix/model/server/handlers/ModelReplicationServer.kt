@@ -75,7 +75,6 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
     private val storeClient: IStoreClient get() = modelClient.store
 
     fun init(application: Application) {
-        KeyValueLikeModelServer.initServerId(storeClient)
         application.apply {
             routing {
                 route("v2") {
@@ -90,7 +89,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondText(storeClient.generateId("clientId").toString())
         }
         get("server-id") {
-            call.respondText(KeyValueLikeModelServer.getServerId(storeClient))
+            call.respondText(repositoriesManager.getServerId())
         }
         get("user-id") {
             call.respondText(call.getUserName() ?: call.request.origin.remoteHost)

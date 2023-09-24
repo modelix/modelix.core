@@ -141,17 +141,16 @@ object Main {
                 storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
                 i += 2
             }
-            val modelServer = KeyValueLikeModelServer(storeClient)
             val localModelClient = LocalModelClient(storeClient)
+            val repositoriesManager = RepositoriesManager(localModelClient)
+            val modelServer = KeyValueLikeModelServer(repositoriesManager)
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {
                 modelServer.setSharedSecret(
                     FileUtils.readFileToString(sharedSecretFile, StandardCharsets.UTF_8),
                 )
             }
-
             val jsonModelServer = DeprecatedLightModelServer(localModelClient)
-            val repositoriesManager = RepositoriesManager(localModelClient)
             val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)

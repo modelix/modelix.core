@@ -63,8 +63,8 @@ Feature: Storing routes
 
   Scenario: Get recursively
     Given the server has been started with in-memory storage
-      And I PUT on "/put/hash-*0123456789-0123456789-0123456789-00001" the value "bar"
-      And I PUT on "/put/existingKey" the value "hash-*0123456789-0123456789-0123456789-00001"
+      And I PUT on "/put/_N4rL*tula_QIYB-3If6bXDONEO5CnqBPrlURto-_j7k" the value "bar"
+      And I PUT on "/put/existingKey" the value "_N4rL*tula_QIYB-3If6bXDONEO5CnqBPrlURto-_j7k"
      When I visit "/getRecursively/existingKey"
      Then I should get an OK response
-      And the text of the page should be this JSON "[{'value': 'hash-*0123456789-0123456789-0123456789-00001', 'key': 'existingKey'}, {'key': 'hash-*0123456789-0123456789-0123456789-00001', 'value': 'bar'}]"
+      And the text of the page should be this JSON "[{'value': '_N4rL*tula_QIYB-3If6bXDONEO5CnqBPrlURto-_j7k', 'key': 'existingKey'}, {'key': '_N4rL*tula_QIYB-3If6bXDONEO5CnqBPrlURto-_j7k', 'value': 'bar'}]"

@@ -39,6 +39,8 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
+import org.modelix.model.client.ReplicatedRepository
+import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
@@ -324,6 +326,101 @@ class ReplicatedRepositoryTest {
             assertEquals(createdNodes, getChildren(localVersions[client]!!))
         }
 
+        println("all successful")
+    }
+
+    @RepeatedTest(value = 10)
+    fun clientCompatibility(repetitionInfo: RepetitionInfo) = runTest { scope ->
+        val url = "http://localhost/v2"
+        val clients = (1..2).map {
+            ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        }
+        val v1clients = (1..2).map {
+            RestWebModelClient("http://localhost/", providedClient = client)
+        }
+
+        val repositoryId = RepositoryId("repo1")
+        val initialVersion = clients[0].initRepository(repositoryId)
+        val branchId = repositoryId.getBranchReference("my-branch")
+        clients[0].push(branchId, initialVersion, initialVersion)
+        val models = clients.map { client -> client.getReplicatedModel(branchId, scope).also { it.start() } }
+        val v1models = v1clients.map { ReplicatedRepository(it, repositoryId, branchId.branchName, { "user" }) }
+
+        try {
+            val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
+
+            coroutineScope {
+                suspend fun launchWriter(model: ReplicatedModel, seed: Int) {
+                    launch {
+                        val rand = Random(seed)
+                        for (i in 1..10) {
+                            delay(rand.nextLong(50, 100))
+                            model.getBranch().runWriteT { t ->
+                                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
+                            }
+                        }
+                    }
+                }
+                models.forEachIndexed { index, model ->
+                    launchWriter(model, 56456 + index + repetitionInfo.currentRepetition * 100000)
+                    delay(200.milliseconds)
+                }
+                suspend fun launchWriterv1(model: ReplicatedRepository, seed: Int) {
+                    launch {
+                        val rand = Random(seed)
+                        for (i in 1..10) {
+                            delay(rand.nextLong(50, 100))
+                            model.branch.runWriteT { t ->
+                                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
+                            }
+                        }
+                    }
+                }
+                v1models.forEachIndexed { index, model ->
+                    launchWriterv1(model, 56456 + index + repetitionInfo.currentRepetition * 100000)
+                    delay(200.milliseconds)
+                }
+            }
+
+            fun getChildren(model: ReplicatedModel): SortedSet<String> {
+                return getChildren(model.getBranch())
+            }
+            fun getChildren(model: ReplicatedRepository): SortedSet<String> {
+                return getChildren(model.branch)
+            }
+
+            assertEquals((clients.size + v1clients.size) * 10, createdNodes.size)
+
+            println("writing done. waiting for convergence.")
+            runCatching {
+                withTimeout(30.seconds) {
+                    models.forEach { model ->
+                        while (getChildren(model) != createdNodes) delay(100.milliseconds)
+                    }
+                    v1models.forEach { model ->
+                        while (getChildren(model) != createdNodes) delay(100.milliseconds)
+                    }
+                }
+            }
+
+            // models.forEach { it.resetToServerVersion() }
+
+            val serverVersion = clients[0].pull(branchId, null)
+            val childrenOnServer = getChildren(PBranch(serverVersion.getTree(), IdGeneratorDummy()))
+
+            assertEquals(createdNodes, childrenOnServer)
+
+            for (model in models) {
+                assertEquals(createdNodes, getChildren(model))
+            }
+            for (model in v1models) {
+                assertEquals(createdNodes, getChildren(model))
+            }
+        } finally {
+            models.forEach { it.dispose() }
+            v1models.forEach { it.dispose() }
+            v1clients.forEach { it.dispose() }
+        }
         println("all successful")
     }
 

@@ -127,6 +127,18 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                             }
                             call.respondDelta(versionHash, baseVersionHash)
                         }
+                        get("hash") {
+                            val branch = branchRef()
+                            val versionHash = repositoriesManager.getVersionHash(branch)
+                            if (versionHash == null) {
+                                call.respondText(
+                                    "Branch '${branch.branchName}' doesn't exist in repository '${branch.repositoryId.id}'",
+                                    status = HttpStatusCode.NotFound,
+                                )
+                                return@get
+                            }
+                            call.respondText(versionHash)
+                        }
                         post {
                             val deltaFromClient = call.receive<VersionDelta>()
                             deltaFromClient.checkObjectHashes()

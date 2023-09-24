@@ -165,6 +165,18 @@ class ModelClientV2(
         return receivedVersion
     }
 
+    override suspend fun pullHash(branch: BranchReference): String {
+        val response = httpClient.get {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "hash")
+            }
+        }
+        val receivedHash: String = response.body()
+//        LOG.debug { "${clientId.toString(16)}.pullHash($branch) -> $receivedHash" }
+        return receivedHash
+    }
+
     override suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
         require(lastKnownVersion is CLVersion?)
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion)" }

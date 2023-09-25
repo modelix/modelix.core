@@ -20,7 +20,8 @@
   ],
   "workspace-todos": [
     "// TODO Olekz",
-    "use acutall veresion in all package.json, probaly use copy and replace",
+    "clean up comitt history",
+    "test publishing...",
     "clean ts model api",
     "add prettier for npm",
     "add ts liniting for npm with eslint"

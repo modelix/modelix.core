@@ -9,6 +9,7 @@ import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import jetbrains.mps.lang.editor.C_FontStyleStyleClassItem
 import jetbrains.mps.lang.editor.L_jetbrains_mps_lang_editor
 import jetbrains.mps.lang.editor._FontStyle_Enum
+import org.modelix.apigen.test.IMetaConceptProperties
 import org.modelix.metamodel.IPropertyValueEnum
 import org.modelix.metamodel.TypedLanguagesRegistry
 import org.modelix.metamodel.typed
@@ -72,7 +73,7 @@ class GeneratedApiTest {
 
     @Test
     fun `metaProperty alias is generated`() {
-        val hasAlias = C_BaseConcept::class.members.any { it.name == ConceptData.ALIAS_KEY }
+        val hasAlias = IMetaConceptProperties::class.members.any { it.name == ConceptData.ALIAS_KEY }
         assertTrue(hasAlias)
         assertNull(C_BaseConcept.alias)
     }

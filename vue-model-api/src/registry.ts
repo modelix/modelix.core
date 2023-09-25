@@ -12,10 +12,10 @@ import { TypedVueNode } from "./TypedVueNode";
 //    Because registering and unregistering after construction are no a use case, this registry is kept simple.
 // * The registry has not global instance.
 // ** A global instance is not needed.
-// ** Relying on global instance complicates testing and reusibilty.
+// ** Relying on global instance complicates testing and reusability.
 
 /**
- * The registry takes care of wrapping {@link INodeJS} into objects consumable from Vue.js
+ * The registry wraps {@link INodeJS} into objects consumable from Vue.js
  *
  * @param wrap The function that wraps an untyped node to a type node usable by Vue.js
  *         The function should be pure

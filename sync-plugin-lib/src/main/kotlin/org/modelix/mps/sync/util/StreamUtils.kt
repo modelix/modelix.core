@@ -18,6 +18,8 @@ package org.modelix.mps.sync.util
 
 import java.util.stream.Stream
 
+// status: ready to test
+
 fun <T> Stream<out T>.concat(other: Stream<out T>): Stream<out T> = Stream.concat(this, other)
 
 fun <T> Stream<out T>.concat(other: Collection<T>): Stream<out T> = Stream.concat(this, other.stream())

@@ -18,6 +18,7 @@ package org.modelix.mps.sync.icons
 
 import com.intellij.ui.JBColor
 
+// status: ready to test
 /**
  * Perhaps we need an Icon for Project?
  */

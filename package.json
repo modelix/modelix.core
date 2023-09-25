@@ -4,6 +4,25 @@
     "@commitlint/config-conventional": "17.4.2",
     "@semantic-release/changelog": "6.0.2",
     "@semantic-release/git": "10.0.1",
-    "semantic-release": "20.1.0"
-  }
+    "@tsconfig/recommended": "^1.0.3",
+    "@types/jest": "^29.5.5",
+    "dukat": "^0.5.8-rc.4",
+    "jest": "^29.7.0",
+    "semantic-release": "20.1.0",
+    "shx": "^0.3.4",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "workspaces-comment": "The setup of NPM workspaces together with TypeScript is summarised here https://daveiscoding.com/nodejs-typescript-monorepo-via-npm-workspaces",
+  "workspaces": [
+    "ts-model-api",
+    "vue-model-api"
+  ],
+  "workspace-todos": [
+    "// TODO Olekz",
+    "use acutall veresion in all package.json, probaly use copy and replace",
+    "clean ts model api",
+    "add prettier for npm",
+    "add ts liniting for npm with eslint"
+  ]
 }

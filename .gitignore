@@ -1,6 +1,7 @@
 .gradle/
 /build/
 /*/build/
+/*/dist/
 .DS_Store
 .gradletasknamecache
 .idea/
@@ -10,3 +11,4 @@ kotlin_gen
 /node_modules
 **/.ideaconfig
 **/.mpsconfig
+**/*.tsbuildinfo

@@ -1,5 +1,6 @@
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.NodePlugin
+import com.github.gradle.node.npm.task.NpmTask
 import kotlinx.html.FlowContent
 import kotlinx.html.a
 import kotlinx.html.body
@@ -327,4 +328,15 @@ publishing {
             setMetadata()
         }
     }
+}
+
+tasks.register<NpmTask>("updateVersionForNpm") {
+    args.set(listOf("version", "$version"))
+}
+
+gradle.rootProject {
+    // Apply Node plugin to the gradle root project,
+    // because gradle root project folder is a npm workspace
+    // in which we need to install NPM things.
+    apply(plugin = libs.plugins.node.get().pluginId)
 }

@@ -1,21 +1,22 @@
 {
-  "name": "@modelix/ts-model-api",
+  "name": "@modelix/vue-model-bindings",
   "version": "1.0.0",
   "description": "API for model usage with JavaScript",
   "homepage": "https://modelix.org/",
   "repository": {
     "type": "git",
     "url": "https://github.com/modelix/modelix.core.git",
-    "directory": "ts-model-api"
+    "directory": "vue-model-bindings"
   },
-  "license": "Apache 2.0",
   "main": "dist/index.js",
+  "devDependencies": {
+  },
+  "peerDependencies": {
+    "@modelix/ts-model-api": "^1.0.0"
+  },
   "scripts": {
     "build": "tsc --build",
     "clean": "shx rm -rf dist/ tsconfig.tsbuildinfo",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "generateKotlin": "dukat -m \"@modelix/ts-model-api\" -d build/dukat dist/*.d.ts"
-  },
-  "devDependencies": {
+    "test": "jest"
   }
 }

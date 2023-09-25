@@ -34,7 +34,7 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
         private set
     private var lastTask: SyncTask? = null
     private val listeners = mutableListOf<IListener>()
-    protected val ownedBindings = mutableSetOf<Binding>()
+    val ownedBindings = mutableSetOf<Binding>()
     var owner: Binding? = null
         get() = this
         set(newOwner) {

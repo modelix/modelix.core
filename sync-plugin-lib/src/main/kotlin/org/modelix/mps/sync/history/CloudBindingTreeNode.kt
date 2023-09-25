@@ -19,19 +19,72 @@ package org.modelix.mps.sync.history
 import jetbrains.mps.ide.ui.tree.TextTreeNode
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.Binding
+import org.modelix.mps.sync.binding.IBinding
+import javax.swing.SwingUtilities
 
-class CloudBindingTreeNode : TextTreeNode {
+// status: ready to test
+class CloudBindingTreeNode(val binding: Binding, val cloudRepository: CloudRepository) :
+    TextTreeNode(binding.toString()) {
 
-    private val binding: Binding
-    private val cloudRepository: CloudRepository
+    val modelServer = cloudRepository.modelServer
+    val repositoryInModelServer = cloudRepository
 
-    constructor(binding: Binding, repositoryInModelServer: CloudRepository) : super(binding.toString()) {
-        this.binding = binding
-        this.cloudRepository = repositoryInModelServer
+    private val bindingListener = object : Binding.IListener {
+        override fun bindingAdded(binding: IBinding) {
+            updateBindingsLater()
+        }
+
+        override fun bindingRemoved(binding: IBinding) {
+            updateBindingsLater()
+        }
+
+        override fun ownerChanged(newOwner: IBinding) {
+            updateBindingsLater()
+        }
+
+        override fun bindingActivated() {
+            updateText()
+            updateBindingsLater()
+        }
+
+        override fun bindingDeactivated() {
+            updateText()
+            updateBindingsLater()
+        }
+    }
+
+    init {
         updateBindings()
     }
 
-    private fun updateBindings() {
-        TODO("Not yet implemented")
+    override fun onAdd() {
+        super.onAdd()
+        binding.addListener(bindingListener)
+    }
+
+    override fun onRemove() {
+        super.onRemove()
+        binding.removeListener(bindingListener)
+    }
+
+    fun updateBindingsLater() = SwingUtilities.invokeLater { updateBindings() }
+
+    fun updateText() {
+        text = binding.toString() + if (binding.isActive) "" else " [disabled]"
+    }
+
+    fun updateBindings() {
+        val existing = mutableMapOf<Binding, CloudBindingTreeNode>()
+        TreeModelUtil.getChildren(this).filterIsInstance<CloudBindingTreeNode>().forEach { existing[it.binding] = it }
+        TreeModelUtil.setChildren(
+            this,
+            binding.ownedBindings.map {
+                if (existing.containsKey(it)) {
+                    existing[it]!!
+                } else {
+                    CloudBindingTreeNode(it, cloudRepository)
+                }
+            },
+        )
     }
 }

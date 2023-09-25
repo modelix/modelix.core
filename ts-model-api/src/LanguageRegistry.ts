@@ -35,16 +35,16 @@ export class LanguageRegistry {
   public wrapNode(node: INodeJS): ITypedNode {
     if (this.nodeWrappers === undefined) {
       this.nodeWrappers = new Map();
-      for (let lang of this.languages.values()) {
-        for (let entry of lang.nodeWrappers.entries()) {
+      for (const lang of this.languages.values()) {
+        for (const entry of lang.nodeWrappers.entries()) {
           this.nodeWrappers.set(entry[0], entry[1]);
         }
       }
     }
-    let conceptUID = node.getConceptUID();
+    const conceptUID = node.getConceptUID();
     if (conceptUID === undefined) return new TypedNode(node);
-    let wrapper = this.nodeWrappers.get(conceptUID);
-    let wrapped =
+    const wrapper = this.nodeWrappers.get(conceptUID);
+    const wrapped =
       wrapper === undefined ? new UnknownTypedNode(node) : wrapper(node);
     return this.wrapperCache ? this.wrapperCache(wrapped) : wrapped;
   }
@@ -52,8 +52,8 @@ export class LanguageRegistry {
   public resolveConcept(uid: string): IConceptJS | undefined {
     if (this.concepts === undefined) {
       this.concepts = new Map();
-      for (let language of this.getAll()) {
-        for (let concept of language.getConcepts()) {
+      for (const language of this.getAll()) {
+        for (const concept of language.getConcepts()) {
           this.concepts.set(concept.getUID(), concept);
         }
       }

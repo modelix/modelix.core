@@ -49,11 +49,12 @@ tasks.named("npm_run_generateKotlin") {
 }
 
 tasks.named("clean") {
-    dependsOn("npm_run_lint")
+    dependsOn("npm_run_clean")
 }
 
 tasks.named("check") {
-    dependsOn("npm_run_check")
+    dependsOn("npm_run_prettier")
+    dependsOn("npm_run_lint")
 }
 
 tasks.named("npm_publish") {

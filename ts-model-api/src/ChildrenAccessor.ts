@@ -1,4 +1,4 @@
-import type { ITypedNode, TypedNode } from "./TypedNode.js";
+import type { ITypedNode } from "./TypedNode.js";
 import type { INodeJS } from "./INodeJS.js";
 import { LanguageRegistry } from "./LanguageRegistry.js";
 import type { IConceptJS } from "./IConceptJS.js";
@@ -53,12 +53,12 @@ export class SingleChildAccessor<
   }
 
   public get(): ChildT | undefined {
-    let children = this.asArray();
+    const children = this.asArray();
     return children.length === 0 ? undefined : children[0];
   }
 
   public setNew(): ChildT {
-    let existing = this.get();
+    const existing = this.get();
     if (existing !== undefined) {
       this.parentNode.removeChild(existing.unwrap());
     }

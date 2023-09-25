@@ -32,4 +32,6 @@ export interface INodeJS {
   setPropertyValue(role: string, value: string | undefined): void;
 }
 
+// Keep `any` here for backward compatibility
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type INodeReferenceJS = any;

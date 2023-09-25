@@ -17,7 +17,9 @@
     "build": "tsc --build",
     "clean": "shx rm -rf dist/ tsconfig.tsbuildinfo",
     "test": "jest",
-    "lint": "prettier --check .",
-    "format": "prettier --write ."
+    "lint": "eslint src",
+    "lint:fix": "npm run lint -- --fix",
+    "prettier": "prettier . --check",
+    "prettier:fix": "npm run prettier -- --write"
   }
 }

@@ -18,6 +18,7 @@ tasks.named("build") {
 }
 
 tasks.named("check") {
+    dependsOn("npm_run_prettier")
     dependsOn("npm_run_lint")
     dependsOn("npm_run_test")
 }

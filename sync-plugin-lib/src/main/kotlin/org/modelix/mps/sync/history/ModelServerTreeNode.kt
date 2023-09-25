@@ -16,20 +16,27 @@
 
 package org.modelix.mps.sync.history
 
+import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.ui.tree.TextTreeNode
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ITree
+import org.modelix.model.area.PArea
+import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.connection.IModelServerConnectionListener
 import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.history.TreeModelUtil.setTextAndRepaint
 import org.modelix.mps.sync.icons.CloudIcons
+import org.modelix.mps.sync.icons.LoadingIcon
+import org.modelix.mps.sync.util.ModelixNotifications
+import java.util.Collections
 import javax.swing.SwingUtilities
+import javax.swing.tree.TreeNode
 
-class ModelServerTreeNode(modelServer: ModelServerConnection) :
+// status: migrated, but needs some bugfixes
+class ModelServerTreeNode(val modelServer: ModelServerConnection) :
     TextTreeNode(CloudIcons.MODEL_SERVER_ICON, modelServer.baseUrl) {
 
-    var modelServer: ModelServerConnection? = modelServer
-        private set
     private var infoBranch: IBranch? = null
 
     private val branchListener = object : IBranchListener {
@@ -65,15 +72,84 @@ class ModelServerTreeNode(modelServer: ModelServerConnection) :
         updateChildren()
     }
 
-    private fun updateText() {
-        TODO("Not yet implemented")
+    fun updateText() {
+        var text = modelServer.baseUrl
+        text += if (modelServer.isConnected()) {
+            " (${modelServer.id})"
+        } else {
+            " (not connected)"
+        }
+        val email = modelServer.email
+        if (email?.isNotEmpty() == true) {
+            text += " $email"
+        }
+        setTextAndRepaint(text)
     }
 
-    fun getModelServer(): ModelServerConnection {
-        TODO()
-    }
+    fun setTextAndRepaint(text: String) = setTextAndRepaint(this, text)
 
     private fun updateChildren() {
-        TODO("Not yet implemented")
+        if (modelServer.isConnected()) {
+            // TODO fixme first parameter must be node<org.modelix.model.runtimelang.structure.RepositoryInfo>
+            val existing = mutableMapOf<RepositoryInfoPlaceholder, RepositoryTreeNode>()
+            ThreadUtils.runInUIThreadAndWait {
+                if (TreeModelUtil.getChildren(this).isEmpty()) {
+                    TreeModelUtil.setChildren(
+                        this,
+                        Collections.singleton(LoadingIcon.apply(TextTreeNode("loading ..."))),
+                    )
+                }
+                TreeModelUtil.getChildren(this).filterIsInstance<RepositoryTreeNode>().forEach {
+                    existing[it.repositoryInfo] = it
+                }
+            }
+
+            SharedExecutors.FIXED.execute {
+                val info = modelServer.getInfo()
+                val newChildren = PArea(modelServer.getInfoBranch()).executeRead {
+                    info.repositories.map {
+                        var tn: TreeNode? = null
+                        try {
+                            tn = if (existing.containsKey(it)) {
+                                existing[it]
+                            } else {
+                                RepositoryTreeNode(modelServer, it)
+                            }
+                        } catch (t: Throwable) {
+                            t.printStackTrace()
+                            ModelixNotifications.notifyError(
+                                "Repository in invalid state",
+                                "Repository ${it.id} cannot be loaded: ${t.message}",
+                            )
+                        }
+                        tn
+                    }.filterNotNull()
+                }
+
+                ThreadUtils.runInUIThreadNoWait {
+                    TreeModelUtil.setChildren(this, newChildren)
+                    TreeModelUtil.getChildren(this).filterIsInstance<RepositoryTreeNode>()
+                        .forEach { it.updateBranches() }
+                }
+            }
+        } else {
+            ThreadUtils.runInUIThreadNoWait {
+                TreeModelUtil.clearChildren(this)
+            }
+        }
+    }
+
+    override fun onAdd() {
+        super.onAdd()
+        if (infoBranch != null) {
+            infoBranch!!.addListener(branchListener)
+        }
+    }
+
+    override fun onRemove() {
+        super.onRemove()
+        if (infoBranch != null) {
+            modelServer.getInfoBranch().removeListener(branchListener)
+        }
     }
 }

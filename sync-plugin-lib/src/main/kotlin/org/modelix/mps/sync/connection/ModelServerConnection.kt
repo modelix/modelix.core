@@ -24,6 +24,7 @@ import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.RootBinding
+import org.modelix.mps.sync.history.RepositoryInfoPlaceholder
 import org.modelix.mps.sync.plugin.init.EModelixExecutionMode
 import org.modelix.mps.sync.plugin.init.ModelixConfigurationSystemProperties
 import org.modelix.mps.sync.util.ModelixNotifications.notifyError
@@ -271,7 +272,7 @@ class ModelServerConnection {
         PArea(branch).executeRead { producer.invoke() }
     }
 
-    private fun getInfo(): Any {
+    fun getInfo(): ModelServerInfoPlaceholder {
         // TODO should return org.modelix.model.runtimelang.structure.ModelServerInfo
 
         checkConnected()
@@ -304,7 +305,8 @@ class ModelServerConnection {
                 Any()
             }
         }
-        return result
+        // return result
+        return ModelServerInfoPlaceholder()
     }
 
     fun getActiveBranch(repositoryId: RepositoryId): ActiveBranch {
@@ -488,4 +490,9 @@ class InvalidationBranchListener(private val branch: ActiveBranch) : IBranchList
         newTree.visitChanges(oldTree, changesCollector)
         DependencyBroadcaster.INSTANCE.dependenciesChanged(changesCollector.changes)
     }
+}
+
+// TODO remove me and use org.modelix.model.runtimelang.structure.ModelServerInfo instead
+class ModelServerInfoPlaceholder {
+    val repositories = listOf<RepositoryInfoPlaceholder>()
 }

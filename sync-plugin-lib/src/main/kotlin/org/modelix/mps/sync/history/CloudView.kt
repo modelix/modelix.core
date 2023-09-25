@@ -43,7 +43,7 @@ class CloudView : JPanel(BorderLayout()) {
 
     class CloudViewTree : MPSTree(), DataProvider {
 
-        override fun runRebuildAction(rebuildAction: Runnable, saveExpansion: Boolean) {
+        public override fun runRebuildAction(rebuildAction: Runnable, saveExpansion: Boolean) {
             super.runRebuildAction(rebuildAction, saveExpansion)
         }
 

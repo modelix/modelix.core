@@ -17,21 +17,70 @@
 package org.modelix.mps.sync.plugin.config
 
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.State
 
+// status: migrated, but needs some bugfixes
+/**
+ * This component handles the storage of the cloud configuration.
+ * For information about component persistence refer to https://jetbrains.org/intellij/sdk/docs/basics/persisting_state_of_components.html
+ */
+@Service
+@State(
+    name = "CloudResources",
+    storages = [],
+    // TODO fixme: @Storage had different fields orginally in MPS, than here
+    // storages = arrayOf(Storage(file = "cloudResources.xml", value = "cloudResources.xml", roamingType = RoamingType.DISABLED)),
+    reloadable = true,
+)
 class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResourcesConfigurationComponent.State> {
+
+    private var state = State()
+
+    override fun getState(): State = state
+
+    override fun loadState(state: State) {
+        this.state = state
+    }
 
     class State {
         val modelServers = mutableSetOf<String>()
         val transientProjects = mutableSetOf<String>()
         val transientModules = mutableSetOf<String>()
         val mappedModules = mutableSetOf<String>()
-    }
 
-    override fun getState(): State {
-        TODO("Not yet implemented")
-    }
+        override fun hashCode(): Int {
+            var hc = 1
+            hc += 3 * modelServers.hashCode()
+            hc += 7 * transientProjects.hashCode()
+            hc += 11 * transientModules.hashCode()
+            hc += 13 * mappedModules.hashCode()
+            return hc
+        }
 
-    override fun loadState(p0: State?) {
-        TODO("Not yet implemented")
+        @Override
+        override fun equals(other: Any?): Boolean {
+            if (other is State) {
+                if (transientProjects != other.transientProjects) {
+                    return false
+                }
+                if (modelServers != other.modelServers) {
+                    return false
+                }
+                if (transientModules != other.transientModules) {
+                    return false
+                }
+                if (mappedModules != other.mappedModules) {
+                    return false
+                }
+                return true
+            } else {
+                return false
+            }
+        }
+
+        override fun toString(): String {
+            return "State(cloudRepositories: $modelServers, transientProjects: $transientProjects, transientModules: $transientModules, mappedModules: $mappedModules)"
+        }
     }
 }

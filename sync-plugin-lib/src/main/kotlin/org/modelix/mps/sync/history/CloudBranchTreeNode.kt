@@ -17,9 +17,11 @@
 package org.modelix.mps.sync.history
 
 import jetbrains.mps.ide.ui.tree.TextTreeNode
+import org.modelix.model.area.PArea
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.icons.CloudIcons
 
+// status: ready to test
 class CloudBranchTreeNode(
     private val modelServer: ModelServerConnection,
     val branchInfo: BranchInfoPlaceholder, // TODO fixme, last parameter must be node<org.modelix.model.runtimelang.structure.BranchInfo>
@@ -27,5 +29,17 @@ class CloudBranchTreeNode(
 
     init {
         setAllowsChildren(true)
+    }
+
+    override fun doubleClick() {
+        switchBranch()
+    }
+
+    fun switchBranch() {
+        val treeTreeNode = this.getAncestor(RepositoryTreeNode::class.java)
+        val repositoryId = treeTreeNode.repositoryId
+        val infoBranch = modelServer.getInfoBranch()
+        val branchName = PArea(infoBranch).executeRead { branchInfo.name }
+        modelServer.getActiveBranch(repositoryId).switchBranch(branchName)
     }
 }

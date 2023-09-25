@@ -16,12 +16,86 @@
 
 package org.modelix.mps.sync.history
 
+import com.intellij.ui.Gray
 import jetbrains.mps.ide.ui.tree.MPSTreeNode
+import java.awt.BasicStroke
+import java.awt.Component
+import java.awt.Graphics
+import java.awt.Graphics2D
+import java.awt.RenderingHints
+import java.awt.geom.Arc2D
+import javax.swing.Icon
+import javax.swing.Timer
 
-class LoadingIcon {
+// status: ready to test
+class LoadingIcon private constructor() : Icon {
     companion object {
-        fun apply(textTreeNode: MPSTreeNode): MPSTreeNode {
-            TODO("Not yet implemented")
+
+        private val instance = LoadingIcon()
+
+        fun apply(treeNode: MPSTreeNode): MPSTreeNode {
+            treeNode.icon = instance
+            instance.register(treeNode)
+            return treeNode
         }
     }
+
+    private val activeNodes = mutableSetOf<MPSTreeNode>()
+    private var angle: Double? = null
+    private var timer: Timer? = null
+    private var inactivity = 0
+
+    fun register(treeNode: MPSTreeNode) {
+        activeNodes.add(treeNode)
+        ensureTimerRunning()
+    }
+
+    private fun ensureTimerRunning() {
+        if (timer == null || timer?.isRunning == false) {
+            timer = Timer(1000 / 60) {
+                rotate()
+                if (activeNodes.isEmpty()) {
+                    if (inactivity > 5000 / 60) {
+                        activeNodes.clear()
+                        timer?.stop()
+                        timer = null
+                    } else {
+                        inactivity++
+                    }
+                }
+
+                activeNodes.mapNotNull { it.getTree() }.distinct().forEach {
+                    it.repaint()
+                }
+            }
+            timer?.start()
+        }
+    }
+
+    private fun rotate() {
+        angle = (angle!! - 360.0 / 120.0) % 360.0
+    }
+
+    override fun paintIcon(component: Component, graphics: Graphics, x: Int, y: Int) {
+        inactivity = 0
+        ensureTimerRunning()
+
+        val w = iconWidth.toDouble()
+        val h = iconHeight.toDouble()
+        val g = graphics.create() as Graphics2D
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+            g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
+            g.stroke = BasicStroke(3.0f)
+            g.color = Gray._80
+            g.draw(Arc2D.Double(2.0 + x, 2.0 + y, w - 4.0, h - 4.0, angle!!, 250.0, Arc2D.OPEN))
+        } finally {
+            g.dispose()
+        }
+    }
+
+    override fun getIconWidth() = 16
+
+    override fun getIconHeight() = 16
 }

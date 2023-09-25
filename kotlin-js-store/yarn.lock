@@ -109,7 +109,7 @@
   integrity sha512-PMqgJ0sw5B7FKb2d5bWYIoxjri+QlW/Pys7+Rw82jSH0QN3rB05jZ/VrrsUdh1w4+i2kw9JOejXGq/KhDOX7Kg==
 
 "@modelix/ts-model-api@file:../../ts-model-api":
-  version "1.3.2-kernelf.4.dirty-SNAPSHOT"
+  version "1.0.0"
 
 "@smithy/types@^2.2.2":
   version "2.2.2"

@@ -20,6 +20,7 @@
   ],
   "workspace-todos": [
     "// TODO Olekz",
+    "decide on unsupported es version",
     "clean up comitt history",
     "test publishing...",
     "clean ts model api",

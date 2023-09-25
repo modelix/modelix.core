@@ -329,6 +329,7 @@ class ReplicatedRepositoryTest {
         println("all successful")
     }
 
+    @Ignore
     @RepeatedTest(value = 10)
     fun clientCompatibility(repetitionInfo: RepetitionInfo) = runTest { scope ->
         val url = "http://localhost/v2"

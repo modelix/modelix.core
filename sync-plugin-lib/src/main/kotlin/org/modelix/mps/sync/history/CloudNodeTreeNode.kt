@@ -34,7 +34,10 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.icons.LoadingIcon
 import org.modelix.mps.sync.util.CommandHelper
+import org.modelix.mps.sync.util.createModuleInRepository
+import org.modelix.mps.sync.util.createProject
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import java.util.Collections
 import javax.swing.tree.TreeNode
@@ -43,7 +46,7 @@ import javax.swing.tree.TreeNode
 /**
  * This represents a single node inside the CloudView
  */
-class CloudNodeTreeNode(public val branch: IBranch, public val node: INode) : TextTreeNode("") {
+class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("") {
 
     var concept: IConcept? = null
         private set
@@ -88,7 +91,7 @@ class CloudNodeTreeNode(public val branch: IBranch, public val node: INode) : Te
         updateChildren()
     }
 
-    fun getModelServer() = getAncestor(RepositoryTreeNode::class.java)?.getModelServer()
+    fun getModelServer() = getAncestor(RepositoryTreeNode::class.java)?.modelServer
 
     fun setTextAndRepaint(text: String) = TreeModelUtil.setTextAndRepaint(this, text)
 
@@ -194,15 +197,15 @@ class CloudNodeTreeNode(public val branch: IBranch, public val node: INode) : Te
 
     fun getTreeInRepository(): CloudRepository {
         val modelServer: ModelServerConnection = this.getAncestor(ModelServerTreeNode::class.java).getModelServer()
-        val repositoryId: RepositoryId = this.getAncestor(RepositoryTreeNode::class.java).getRepositoryId()
+        val repositoryId: RepositoryId = this.getAncestor(RepositoryTreeNode::class.java).repositoryId
         return CloudRepository(modelServer, repositoryId)
     }
 
     // TODO check this represent a repository/a tree root
-    fun createProject(moduleName: String): INode = (this.getNode() as PNodeAdapter).createProject(moduleName)
+    fun createProject(moduleName: String) = (this.node as PNodeAdapter).createProject(moduleName)
 
     // TODO check this represent a repository/a tree root
-    fun createModule(moduleName: String): INode = (this.getNode() as PNodeAdapter).createModuleInRepository(moduleName)
+    fun createModule(moduleName: String) = (this.node as PNodeAdapter).createModuleInRepository(moduleName)
 
     fun createModel(modelName: String): INode {
         // TODO check this represent a module

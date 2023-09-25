@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.history
+package org.modelix.mps.sync.icons
 
 import com.intellij.ui.Gray
 import jetbrains.mps.ide.ui.tree.MPSTreeNode

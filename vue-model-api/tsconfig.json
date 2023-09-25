@@ -4,6 +4,8 @@
   "exclude": ["src/**/*.test.ts"],
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    // 2021 is needed for FinalizationRegistry
+    "target": "es2021"
   }
 }

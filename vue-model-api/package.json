@@ -9,14 +9,15 @@
     "directory": "vue-model-bindings"
   },
   "main": "dist/index.js",
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "peerDependencies": {
     "@modelix/ts-model-api": "^1.0.0"
   },
   "scripts": {
     "build": "tsc --build",
     "clean": "shx rm -rf dist/ tsconfig.tsbuildinfo",
-    "test": "jest"
+    "test": "jest",
+    "lint": "prettier --check .",
+    "format": "prettier --write ."
   }
 }

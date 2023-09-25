@@ -1,99 +1,115 @@
-import type {INodeJS} from "./INodeJS.js";
+import type { INodeJS } from "./INodeJS.js";
 
-export type NodeId = string
+export type NodeId = string;
 
 export interface IModelServerConnection {
-  sendUpdate(data: Array<NodeUpdateData>): void
+  sendUpdate(data: Array<NodeUpdateData>): void;
 
-  onModelUpdate(listener: (data: VersionData) => void): void
+  onModelUpdate(listener: (data: VersionData) => void): void;
 
-  onMessage(listener: (message: string) => void): void
+  onMessage(listener: (message: string) => void): void;
 
-  generateIds(quantity: number, callback: (data: IdRangeData) => void): IdGenerator
+  generateIds(
+    quantity: number,
+    callback: (data: IdRangeData) => void,
+  ): IdGenerator;
 }
 
 export class ModelService {
-  private nodes: Map<NodeId, NodeData> = new Map()
-  private versionHash: string | undefined
-  private idGenerator: IdGenerator = new IdGenerator(0n, 0n)
+  private nodes: Map<NodeId, NodeData> = new Map();
+  private versionHash: string | undefined;
+  private idGenerator: IdGenerator = new IdGenerator(0n, 0n);
 
   constructor(private server: IModelServerConnection) {
-    this.server.onModelUpdate(data => this.versionReceived(data));
-    this.server.generateIds(10000, data => {
-      this.idGenerator = new IdGenerator(BigInt(data.first), BigInt(data.last))
-    })
+    this.server.onModelUpdate((data) => this.versionReceived(data));
+    this.server.generateIds(10000, (data) => {
+      this.idGenerator = new IdGenerator(BigInt(data.first), BigInt(data.last));
+    });
   }
 
   public getNodeData(id: NodeId): NodeData | undefined {
-    return this.nodes.get(id)
+    return this.nodes.get(id);
   }
 
   private versionReceived(data: VersionData) {
-    this.versionHash = data.versionHash
-    if (data.root !== undefined) this.loadNode(data.root)
+    this.versionHash = data.versionHash;
+    if (data.root !== undefined) this.loadNode(data.root);
     if (data.nodes !== undefined) {
       for (let node of data.nodes) {
-        this.loadNode(node)
+        this.loadNode(node);
       }
     }
   }
 
   private loadNode(nodeData: NodeData): NodeId {
-    this.nodes.set(nodeData.nodeId, nodeData)
+    this.nodes.set(nodeData.nodeId, nodeData);
     for (let childRole of Object.entries(nodeData.children)) {
-      let children: Array<NodeId | NodeData> = childRole[1] as any
+      let children: Array<NodeId | NodeData> = childRole[1] as any;
       for (let i = 0; i < children.length; i++) {
         let child = children[i];
         if (typeof child === "object") {
-          children[i] = this.loadNode(child)
+          children[i] = this.loadNode(child);
         }
       }
     }
-    return nodeData.nodeId
+    return nodeData.nodeId;
   }
 
-  public addNewNode(parent: NodeId, role: string, index: number, concept: string) {
-    let body = [<NodeUpdateData>{
-      nodeId: this.idGenerator.generate(),
-      parent: parent,
-      role: role,
-      index: index,
-      concept: concept,
-    }]
-    this.server.sendUpdate(body)
+  public addNewNode(
+    parent: NodeId,
+    role: string,
+    index: number,
+    concept: string,
+  ) {
+    let body = [
+      <NodeUpdateData>{
+        nodeId: this.idGenerator.generate(),
+        parent: parent,
+        role: role,
+        index: index,
+        concept: concept,
+      },
+    ];
+    this.server.sendUpdate(body);
   }
 
   public getChildren(parentId: NodeId, role: string): NodeId[] {
-    let parentData = this.nodes.get(parentId)
-    if (parentData === undefined) return []
-    return parentData.children[role]
+    let parentData = this.nodes.get(parentId);
+    if (parentData === undefined) return [];
+    return parentData.children[role];
   }
 
   public containsNode(nodeId: NodeId): boolean {
-    return this.nodes.has(nodeId)
+    return this.nodes.has(nodeId);
   }
 
   public getProperty(nodeId: NodeId, role: string): string | undefined {
-    console.log("getProperty(" + nodeId + ", " + role + ")")
+    console.log("getProperty(" + nodeId + ", " + role + ")");
     let node = this.nodes.get(nodeId);
     if (node === undefined) return undefined;
     return node.properties[role];
   }
 
-  public setProperty(nodeId: NodeId, role: string, value: string | null | undefined) {
-    console.log(`setProperty(${nodeId}, ${role}, ${value})`)
+  public setProperty(
+    nodeId: NodeId,
+    role: string,
+    value: string | null | undefined,
+  ) {
+    console.log(`setProperty(${nodeId}, ${role}, ${value})`);
     let node = this.nodes.get(nodeId);
-    if (node === undefined) return
-    if (node.properties[role] === value) return
+    if (node === undefined) return;
+    if (node.properties[role] === value) return;
 
-    let body = [<NodeUpdateData>{
-      nodeId: nodeId,
-      properties: {
-        [role]: value === undefined ? null : value
-      }
-    }]
+    let body = [
+      <NodeUpdateData>{
+        nodeId: nodeId,
+        properties: {
+          [role]: value === undefined ? null : value,
+        },
+      },
+    ];
 
-    this.server.sendUpdate(body)
+    this.server.sendUpdate(body);
   }
 }
 /*
@@ -173,44 +189,45 @@ export class NodeFromService implements INode {
 }
 */
 interface VersionData {
-  repositoryId: string,
-  versionHash: string,
-  root: NodeData | undefined,
-  nodes: NodeData[] | undefined,
+  repositoryId: string;
+  versionHash: string;
+  root: NodeData | undefined;
+  nodes: NodeData[] | undefined;
 }
 
 interface NodeData {
-  nodeId: NodeId,
-  references: any,
-  properties: any,
-  children: any
+  nodeId: NodeId;
+  references: any;
+  properties: any;
+  children: any;
 }
 
 interface NodeUpdateData {
-  nodeId: NodeId,
-  parent: NodeId | undefined,
-  role: string | undefined,
-  index: number | undefined,
-  concept: string | undefined,
-  references: any,
-  properties: any,
-  children: any
+  nodeId: NodeId;
+  parent: NodeId | undefined;
+  role: string | undefined;
+  index: number | undefined;
+  concept: string | undefined;
+  references: any;
+  properties: any;
+  children: any;
 }
 
 interface IdRangeData {
-  first: NodeId,
-  last: NodeId
+  first: NodeId;
+  last: NodeId;
 }
 
 class IdGenerator {
-
-  constructor(private next: bigint, private last: bigint) {
-  }
+  constructor(
+    private next: bigint,
+    private last: bigint,
+  ) {}
 
   public generate(): NodeId {
     let id = this.next++;
-    if (id > this.last) throw Error("Out of IDs")
+    if (id > this.last) throw Error("Out of IDs");
     // TODO get new IDs from the server
-    return id.toString()
+    return id.toString();
   }
 }

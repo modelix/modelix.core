@@ -1,5 +1,5 @@
 import { INodeJS } from "@modelix/ts-model-api";
-import { Cache } from "./cache"
+import { Cache } from "./cache";
 
 /**
  * The registry takes care of wrapping {@link INodeJS} into objects consumable from Vue.js
@@ -7,8 +7,8 @@ import { Cache } from "./cache"
  * @template WrapperT The type of the produced wrapper.
  * @experimental
  */
- // TODO Olekz limit WrapperT to vue model objects
- // TODO Olekz Comment,that wrap must be pure.
+// TODO Olekz limit WrapperT to vue model objects
+// TODO Olekz Comment,that wrap must be pure.
 // It has quite the same function as `LanguageRegistry` from ts-model-api, but it differs in three aspects:
 //
 // * It prescribes and controls its own memoization and caching mechanisms.
@@ -22,13 +22,15 @@ import { Cache } from "./cache"
 // ** A global instance is not needed.
 // ** Relying on global instance complicates testing and reusibilty.
 export class Registry<WrapperT extends object> {
-    private cache: Cache<WrapperT>;
+  private cache: Cache<WrapperT>;
 
-    constructor(private wrapper: (wrap: Registry<WrapperT>, node: INodeJS) => WrapperT) {
-        this.cache = new Cache();
-    }
+  constructor(
+    private wrapper: (wrap: Registry<WrapperT>, node: INodeJS) => WrapperT,
+  ) {
+    this.cache = new Cache();
+  }
 
-    wrap(node: INodeJS): WrapperT {
-        return this.cache.memoize(node, () => this.wrapper(this, node));
-    }
+  wrap(node: INodeJS): WrapperT {
+    return this.cache.memoize(node, () => this.wrapper(this, node));
+  }
 }

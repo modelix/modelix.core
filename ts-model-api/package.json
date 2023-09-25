@@ -14,8 +14,9 @@
     "build": "tsc --build",
     "clean": "shx rm -rf dist/ tsconfig.tsbuildinfo",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "generateKotlin": "dukat -m \"@modelix/ts-model-api\" -d build/dukat dist/*.d.ts"
+    "generateKotlin": "dukat -m \"@modelix/ts-model-api\" -d build/dukat dist/*.d.ts",
+    "lint": "prettier --check .",
+    "format": "prettier --write ."
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }

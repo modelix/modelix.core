@@ -17,6 +17,11 @@ tasks.named("build") {
     dependsOn("npm_run_build")
 }
 
+tasks.named("check") {
+    dependsOn("npm_run_lint")
+    dependsOn("npm_run_test")
+}
+
 val cleanTypeScript = tasks.register<NpmTask>("cleanTypeScript") {
     dependsOn(":npmInstall")
     args.addAll("run", "clean")

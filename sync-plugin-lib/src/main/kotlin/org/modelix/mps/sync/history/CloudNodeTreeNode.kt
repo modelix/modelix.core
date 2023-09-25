@@ -30,10 +30,8 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.area.ContextArea
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
-import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.mps.sync.CloudRepository
-import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.icons.LoadingIcon
 import org.modelix.mps.sync.util.CommandHelper
 import org.modelix.mps.sync.util.createModuleInRepository
@@ -196,8 +194,8 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
     }
 
     fun getTreeInRepository(): CloudRepository {
-        val modelServer: ModelServerConnection = this.getAncestor(ModelServerTreeNode::class.java).getModelServer()
-        val repositoryId: RepositoryId = this.getAncestor(RepositoryTreeNode::class.java).repositoryId
+        val modelServer = this.getAncestor(ModelServerTreeNode::class.java).modelServer
+        val repositoryId = this.getAncestor(RepositoryTreeNode::class.java).repositoryId
         return CloudRepository(modelServer, repositoryId)
     }
 

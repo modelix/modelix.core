@@ -1,1 +1,2 @@
-export * from "./registry";
+export * from "./Registry";
+export * from "./TypedVueNode";

@@ -1,18 +1,10 @@
 import { INodeJS } from "@modelix/ts-model-api";
-import { Cache } from "./cache";
+import { Cache } from "./Cache";
+import { TypedVueNode } from "./TypedVueNode";
 
-/**
- * The registry takes care of wrapping {@link INodeJS} into objects consumable from Vue.js
- *
- * @template WrapperT The type of the produced wrapper.
- * @experimental
- */
-// TODO Olekz limit WrapperT to vue model objects
-// TODO Olekz Comment,that wrap must be pure.
-// It has quite the same function as `LanguageRegistry` from ts-model-api, but it differs in three aspects:
-//
+// It class has quite the same function as `LanguageRegistry` from ts-model-api, but it differs in three aspects:
 // * It prescribes and controls its own memoization and caching mechanisms.
-// ** Memoization is needed for the bindings to work properly.
+// ** Memoization is needed for the Vue.js bindings to work properly.
 // ** The a specific caching for memoization should be used, that does not leak memory.
 // * It does not handle adding languages in after construction.
 // ** Registering / unregistering languages after some node was wrapped and the result was memoized,
@@ -21,16 +13,25 @@ import { Cache } from "./cache";
 // * The registry has not global instance.
 // ** A global instance is not needed.
 // ** Relying on global instance complicates testing and reusibilty.
-export class Registry<WrapperT extends object> {
-  private cache: Cache<WrapperT>;
+
+/**
+ * The registry takes care of wrapping {@link INodeJS} into objects consumable from Vue.js
+ *
+ * @param wrap The function that wraps an untyped node to a type node usable by Vue.js
+ *         The function should be pure
+ * @template WrapperT The type of the produced wrapper.
+ * @experimental
+ */
+export class Registry {
+  private cache: Cache<TypedVueNode>;
 
   constructor(
-    private wrapper: (wrap: Registry<WrapperT>, node: INodeJS) => WrapperT,
+    private wrapper: (wrap: Registry, node: INodeJS) => TypedVueNode,
   ) {
     this.cache = new Cache();
   }
 
-  wrap(node: INodeJS): WrapperT {
+  wrap(node: INodeJS): TypedVueNode {
     return this.cache.memoize(node, () => this.wrapper(this, node));
   }
 }

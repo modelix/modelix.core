@@ -23,12 +23,27 @@ import jetbrains.mps.ide.ui.tree.MPSTree
 import jetbrains.mps.ide.ui.tree.MPSTreeNode
 import jetbrains.mps.ide.ui.tree.TextTreeNode
 import jetbrains.mps.workbench.action.ActionUtils
+import java.awt.BorderLayout
+import javax.swing.BorderFactory
+import javax.swing.JPanel
+import javax.swing.JScrollPane
 import javax.swing.tree.TreeNode
 
-class CloudView {
+// status: ready to test
+class CloudView : JPanel(BorderLayout()) {
+
+    private val tree = CloudViewTree()
+
+    init {
+        val scrollPane = JScrollPane(tree)
+        scrollPane.setBorder(BorderFactory.createEmptyBorder())
+        add(scrollPane, BorderLayout.CENTER)
+        tree.rebuildLater()
+    }
 
     class CloudViewTree : MPSTree(), DataProvider {
-        public override fun runRebuildAction(rebuildAction: Runnable, saveExpansion: Boolean) {
+
+        override fun runRebuildAction(rebuildAction: Runnable, saveExpansion: Boolean) {
             super.runRebuildAction(rebuildAction, saveExpansion)
         }
 

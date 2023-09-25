@@ -31,6 +31,8 @@ import org.jetbrains.mps.openapi.module.SModule
 import java.io.File
 import java.io.IOException
 
+// status: ready to test
+
 fun MPSProject.createModule(nameSpace: String, moduleId: ModuleId, requestor: Any): SModule {
     // A module may already exist in the global repository, but is just not part of the project yet.
     val existingModule = repository.getModule(moduleId)

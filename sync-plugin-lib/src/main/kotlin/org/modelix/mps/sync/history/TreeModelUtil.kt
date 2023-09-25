@@ -16,22 +16,85 @@
 
 package org.modelix.mps.sync.history
 
+import jetbrains.mps.ide.ThreadUtils
+import jetbrains.mps.ide.ui.tree.MPSTree
+import jetbrains.mps.ide.ui.tree.MPSTreeNode
+import jetbrains.mps.util.IterableUtil
+import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.MutableTreeNode
+import javax.swing.tree.TreeModel
 import javax.swing.tree.TreeNode
+import javax.swing.tree.TreePath
 
+// status: ready to test
 object TreeModelUtil {
-    fun clearChildren(cloudNodeTreeNode: CloudNodeTreeNode) {
-        TODO("Not yet implemented")
+
+    fun setChildren(parent: TreeNode, children: Iterable<TreeNode>) {
+        val childrenList = children.toList()
+        if (getChildren(parent).toList() == childrenList) {
+            return
+        }
+        val wasExpanded = isExpanded(parent)
+        clearChildren(parent)
+        val model = getModel(parent) as DefaultTreeModel?
+        if (model != null) {
+            ThreadUtils.assertEDT()
+            var i = 0
+            childrenList.forEach { child ->
+                model.insertNodeInto(child as MutableTreeNode, parent as MutableTreeNode, i)
+                i++
+            }
+        } else {
+            var i = 0
+            childrenList.forEach { child ->
+                (parent as MutableTreeNode).insert(child as MutableTreeNode, i)
+                i++
+            }
+        }
+        if (wasExpanded) {
+            getTree(parent)?.expandPath(getPath(parent))
+        }
     }
 
-    fun setTextAndRepaint(cloudNodeTreeNode: CloudNodeTreeNode, text: String) {
-        TODO("Not yet implemented")
+    fun getChildren(parent: TreeNode) =
+        IterableUtil.asIterable(parent.children().asIterator()).filterIsInstance<TreeNode>()
+
+    fun clearChildren(parent: TreeNode) {
+        val model = getModel(parent) as DefaultTreeModel?
+        if (model != null) {
+            ThreadUtils.assertEDT()
+            while (model.getChildCount(parent) > 0) {
+                model.removeNodeFromParent(model.getChild(parent, 0) as MutableTreeNode)
+            }
+        } else {
+            while (parent.childCount > 0) {
+                (parent as MutableTreeNode).remove(0)
+            }
+        }
     }
 
-    fun getChildren(cloudNodeTreeNode: CloudNodeTreeNode): Iterable<TreeNode> {
-        TODO()
+    fun getModel(node: TreeNode): TreeModel? = getTree(node)?.model
+
+    fun getTree(node: TreeNode): MPSTree? = if (node is MPSTreeNode) node.getTree() else null
+
+    fun repaint(node: TreeNode) {
+        ThreadUtils.runInUIThreadAndWait {
+            getTree(node)?.repaint()
+        }
     }
 
-    fun setChildren(cloudNodeTreeNode: CloudNodeTreeNode, children: Iterable<TreeNode>) {
-        TODO("Not yet implemented")
+    fun setTextAndRepaint(node: MPSTreeNode, text: String) {
+        node.text = text
+        repaint(node)
+    }
+
+    fun isExpanded(node: TreeNode): Boolean = TODO()
+
+    fun getPath(node: TreeNode): TreePath {
+        return if (node.parent == null) {
+            TreePath(node)
+        } else {
+            getPath(node.parent).pathByAddingChild(node)
+        }
     }
 }

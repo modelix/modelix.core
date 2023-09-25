@@ -36,6 +36,7 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
     private lateinit var uid2language: Map<String, ProcessedLanguage>
     private lateinit var fqName2concept: Map<String, ProcessedConcept>
     private lateinit var uid2concept: Map<String, ProcessedConcept>
+    private lateinit var conceptMetaProperties: MutableSet<String>
 
     init {
         load(dataList)
@@ -62,6 +63,14 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
         initIndexes()
         resolveConceptReferences()
         fixRoleConflicts()
+        collectConceptMetaProperties()
+    }
+
+    private fun collectConceptMetaProperties() {
+        conceptMetaProperties = mutableSetOf()
+        val concepts = languages.flatMap { it.getConcepts() }
+        val keys = concepts.flatMap { it.metaProperties.keys }.toSet()
+        conceptMetaProperties.addAll(keys)
     }
 
     private fun initIndexes() {
@@ -137,6 +146,8 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
     fun getLanguages(): List<ProcessedLanguage> {
         return languages
     }
+
+    fun getConceptMetaProperties() = conceptMetaProperties
 }
 
 internal class ProcessedLanguage(var name: String, var uid: String?) {
@@ -162,7 +173,14 @@ internal class ProcessedLanguage(var name: String, var uid: String?) {
     fun load(dataList: List<ConceptData>) {
         for (data in dataList) {
             addConcept(
-                ProcessedConcept(data.name, data.uid, data.abstract, data.extends.map { ProcessedConceptReference(it) }.toMutableList(), data.deprecationMessage).also { concept ->
+                ProcessedConcept(
+                    data.name,
+                    data.uid,
+                    data.abstract,
+                    data.extends.map { ProcessedConceptReference(it) }.toMutableList(),
+                    data.deprecationMessage,
+                    data.metaProperties,
+                ).also { concept ->
                     concept.loadRoles(data)
                 },
             )
@@ -220,6 +238,7 @@ internal class ProcessedConcept(
     var abstract: Boolean,
     val extends: MutableList<ProcessedConceptReference>,
     override var deprecationMessage: String?,
+    val metaProperties: MutableMap<String, String>,
 ) : IProcessedDeprecatable {
     lateinit var language: ProcessedLanguage
     private val roles: MutableList<ProcessedRole> = ArrayList()

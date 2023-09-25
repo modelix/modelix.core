@@ -100,7 +100,12 @@ Inside of the `metamodel` block the following settings can be configured.
 
 |`registrationHelperName`
 |String
-|Name of the registration helper
+|Fully qualified name of the generated language registration helper
+
+|`conceptPropertiesInterfaceName`
+|String
+|Fully qualified name of the generated interface, that contains the concept meta-properties of this language set.
+If `null` (default), neither the concept meta-properties nor the corresponding interface will be generated.
 
 |`taskDependencies`
 |List<Any>

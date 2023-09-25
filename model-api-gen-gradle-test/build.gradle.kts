@@ -104,6 +104,7 @@ metamodel {
         typedNodeImpl.suffix = "Impl"
     }
     registrationHelperName = "org.modelix.apigen.test.ApigenTestLanguages"
+    conceptPropertiesInterfaceName = "org.modelix.apigen.test.IMetaConceptProperties"
 }
 
 node {

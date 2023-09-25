@@ -52,6 +52,10 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
     @Optional
     val registrationHelperName: Property<String> = of.property(String::class.java)
 
+    @get:Input
+    @Optional
+    val conceptPropertiesInterfaceName: Property<String> = of.property(String::class.java)
+
     @get: Input
     val nameConfig: Property<NameConfig> = of.property(NameConfig::class.java)
 
@@ -100,6 +104,7 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
                 kotlinOutputDir.toPath(),
                 nameConfig.get(),
                 this.modelqlKotlinOutputDir.orNull?.asFile?.toPath(),
+                conceptPropertiesInterfaceName.orNull,
             )
             generator.generate(processedLanguages)
             registrationHelperName.orNull?.let {

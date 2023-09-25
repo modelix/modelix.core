@@ -102,6 +102,7 @@ class MetaModelGenerator(
     }
 
     internal fun generateRegistrationHelper(classFqName: String, languages: ProcessedLanguageSet) {
+        require(classFqName.contains(".")) { "The name of the registrationHelper does not contain a dot. Use a fully qualified name." }
         val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
         val cls = TypeSpec.objectBuilder(typeName)
             .addProperty(
@@ -124,6 +125,7 @@ class MetaModelGenerator(
 
     private fun generateConceptMetaPropertiesInterface(languages: IProcessedLanguageSet) {
         val fqName = checkNotNull(conceptPropertiesInterfaceName)
+        require(fqName.contains(".")) { "The name of the concept properties interface does not contain a dot. Use a fully qualified name." }
         val interfaceName = ClassName(fqName.substringBeforeLast("."), fqName.substringAfterLast("."))
         val metaPropertiesInterface = TypeSpec.interfaceBuilder(interfaceName)
             .generateMetaProperties(languages as ProcessedLanguageSet)

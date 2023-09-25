@@ -31,3 +31,15 @@ repos:
           # IMPORTANT: keep in sync with the version configured in build.gradle.kts
           - --ktlint-version=0.50.0
           - --autofix
+  - repo: local
+    hooks:
+      - id: check-npm-format
+        name: NPM Format check
+        entry: npm run prettier --workspaces
+        pass_filenames: false
+        language: node
+      - id: check-npm-lint
+        name: NPM Lint check
+        entry: npm run lint --workspaces
+        pass_filenames: false
+        language: node

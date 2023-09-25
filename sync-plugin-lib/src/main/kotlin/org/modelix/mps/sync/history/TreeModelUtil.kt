@@ -16,6 +16,8 @@
 
 package org.modelix.mps.sync.history
 
+import javax.swing.tree.TreeNode
+
 object TreeModelUtil {
     fun clearChildren(cloudNodeTreeNode: CloudNodeTreeNode) {
         TODO("Not yet implemented")

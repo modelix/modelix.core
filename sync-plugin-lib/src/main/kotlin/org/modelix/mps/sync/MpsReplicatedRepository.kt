@@ -33,7 +33,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.UndoOp
 import org.modelix.model.operations.applyOperation
 
-// status: ready to test
+// status: migrated, but needs some bugfixes
 class MpsReplicatedRepository(
     client: IModelClient,
     repositoryId: RepositoryId,
@@ -122,7 +122,5 @@ class MpsReplicatedRepository(
         override fun isComplex(): Boolean {
             TODO("Not yet implemented")
         }
-
-//        override fun isGlobal(): Boolean = documents.isEmpty()
     }
 }

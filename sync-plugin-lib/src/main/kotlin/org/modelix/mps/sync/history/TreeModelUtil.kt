@@ -88,7 +88,7 @@ object TreeModelUtil {
         repaint(node)
     }
 
-    fun isExpanded(node: TreeNode): Boolean = TODO()
+    fun isExpanded(node: TreeNode) = getTree(node)?.isExpanded(getPath(node)) == true
 
     fun getPath(node: TreeNode): TreePath {
         return if (node.parent == null) {

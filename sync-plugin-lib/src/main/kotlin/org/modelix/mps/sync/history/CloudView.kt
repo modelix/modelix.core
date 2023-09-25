@@ -29,7 +29,7 @@ import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.tree.TreeNode
 
-// status: ready to test
+// status: migrated, but needs some bugfixes
 class CloudView : JPanel(BorderLayout()) {
 
     private val tree = CloudViewTree()

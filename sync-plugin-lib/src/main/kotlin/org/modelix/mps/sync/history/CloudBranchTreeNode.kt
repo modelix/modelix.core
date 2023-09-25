@@ -21,7 +21,7 @@ import org.modelix.model.area.PArea
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.icons.CloudIcons
 
-// status: ready to test
+// status: migrated, but needs some bugfixes
 class CloudBranchTreeNode(
     private val modelServer: ModelServerConnection,
     val branchInfo: BranchInfoPlaceholder, // TODO fixme, last parameter must be node<org.modelix.model.runtimelang.structure.BranchInfo>

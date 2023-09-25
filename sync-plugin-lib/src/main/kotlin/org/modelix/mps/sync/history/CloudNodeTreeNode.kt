@@ -26,6 +26,7 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.PropertyFromName
 import org.modelix.model.area.ContextArea
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
@@ -36,6 +37,7 @@ import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.util.CommandHelper
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import java.util.Collections
+import javax.swing.tree.TreeNode
 
 // status: migrated, but needs some bugfixes
 /**
@@ -202,7 +204,7 @@ class CloudNodeTreeNode(public val branch: IBranch, public val node: INode) : Te
     // TODO check this represent a repository/a tree root
     fun createModule(moduleName: String): INode = (this.getNode() as PNodeAdapter).createModuleInRepository(moduleName)
 
-    fun createModel(modelName: String): INode = {
+    fun createModel(modelName: String): INode {
         // TODO check this represent a module
         return PArea(branch).executeWrite {
             // TODO instead of "models" it must be link/Module : models/.getName()
@@ -210,7 +212,7 @@ class CloudNodeTreeNode(public val branch: IBranch, public val node: INode) : Te
             // this.getNode().addNewChild("models", -1, SConceptAdapter.wrap(concept/Model/))
             val newModel: INode = null!!
             // TODO instead of "name" it must be property/Model : name/.getName()
-            val nameProperty = PropertyForName("name")
+            val nameProperty = PropertyFromName("name")
             newModel.setPropertyValue(nameProperty, modelName)
             newModel
         }

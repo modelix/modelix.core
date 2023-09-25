@@ -29,7 +29,7 @@ import com.intellij.openapi.components.State
 @State(
     name = "CloudResources",
     storages = [],
-    // TODO fixme: @Storage had different fields orginally in MPS, than here
+    // TODO fixme: @Storage had different fields originally in MPS, than here. It may be due to conflicting versions on the CP.
     // storages = arrayOf(Storage(file = "cloudResources.xml", value = "cloudResources.xml", roamingType = RoamingType.DISABLED)),
     reloadable = true,
 )

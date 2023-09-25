@@ -45,7 +45,7 @@ class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyn
         if (projectNodeId == 0L) {
             // TODO How to translate this correctly?
             /*
-            read action with mpsProject . getRepository () {
+            read action with mpsProject.getRepository () {
                 branch.runWriteT({
                     IWriteTransaction t =>
                     projectNodeId =

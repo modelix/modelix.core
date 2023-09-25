@@ -152,6 +152,7 @@ class RestWebModelClient @JvmOverloads constructor(
         }
     private var clientIdInternal: Int = 0
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    private var watchdogJob: Job? = null
     private val client = (providedClient ?: HttpClient(CIO)).config {
         this.followRedirects = false
         install(HttpTimeout) {
@@ -264,7 +265,7 @@ class RestWebModelClient @JvmOverloads constructor(
     private var connectionStatusListeners: Set<ConnectionStatusListener> = emptySet()
 
     private fun startConnectionWatchdog() {
-        coroutineScope.launch {
+        watchdogJob = coroutineScope.launch {
             while (isActive) {
                 try {
                     connectNow()
@@ -274,7 +275,7 @@ class RestWebModelClient @JvmOverloads constructor(
                         delay(3.seconds)
                     }
                 } catch (e: CancellationException) {
-                    break
+                    throw e
                 } catch (e: Exception) {
                     LOG.debug("", e)
                     if (connectionStatus == ConnectionStatus.CONNECTED) {
@@ -361,6 +362,7 @@ class RestWebModelClient @JvmOverloads constructor(
             listeners.clear()
         }
         coroutineScope.cancel("model client disposed")
+        watchdogJob?.cancel("model client disposed")
     }
 
     override fun getPendingSize(): Int = pendingWrites.get()

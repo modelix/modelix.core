@@ -17,10 +17,63 @@
 package org.modelix.mps.sync.history
 
 import jetbrains.mps.ide.ui.tree.TextTreeNode
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.ITree
+import org.modelix.mps.sync.connection.IModelServerConnectionListener
 import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.icons.CloudIcons
+import javax.swing.SwingUtilities
 
-class ModelServerTreeNode : TextTreeNode("") {
+class ModelServerTreeNode(modelServer: ModelServerConnection) :
+    TextTreeNode(CloudIcons.MODEL_SERVER_ICON, modelServer.baseUrl) {
+
+    var modelServer: ModelServerConnection? = modelServer
+        private set
+    private var infoBranch: IBranch? = null
+
+    private val branchListener = object : IBranchListener {
+        override fun treeChanged(oldTree: ITree?, newTree: ITree) {
+            SwingUtilities.invokeLater {
+                (getTree() as CloudView.CloudViewTree).runRebuildAction({
+                    updateChildren()
+                }, true)
+            }
+        }
+    }
+
+    private val repoListener = object : IModelServerConnectionListener {
+        override fun connectionStatusChanged(connected: Boolean) {
+            SwingUtilities.invokeLater {
+                if (connected) {
+                    infoBranch = modelServer.getInfoBranch()
+                    if (getTree() != null) {
+                        infoBranch?.addListener(branchListener)
+                    }
+                }
+                updateText()
+                updateChildren()
+            }
+        }
+    }
+
+    init {
+        setAllowsChildren(true)
+        nodeIdentifier = System.identityHashCode(modelServer).toString()
+        modelServer.addListener(repoListener)
+        updateText()
+        updateChildren()
+    }
+
+    private fun updateText() {
+        TODO("Not yet implemented")
+    }
+
     fun getModelServer(): ModelServerConnection {
         TODO()
+    }
+
+    private fun updateChildren() {
+        TODO("Not yet implemented")
     }
 }

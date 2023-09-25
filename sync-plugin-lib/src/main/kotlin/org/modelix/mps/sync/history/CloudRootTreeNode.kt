@@ -17,5 +17,49 @@
 package org.modelix.mps.sync.history
 
 import jetbrains.mps.ide.ui.tree.TextTreeNode
+import org.modelix.mps.sync.connection.IRepositoriesChangedListener
+import org.modelix.mps.sync.connection.ModelServerConnections
+import org.modelix.mps.sync.icons.CloudIcons
 
-class CloudRootTreeNode : TextTreeNode("")
+// status: ready to test
+class CloudRootTreeNode : TextTreeNode(CloudIcons.ROOT_ICON, "Cloud") {
+
+    private var myInitialized = false
+    private val repositoriesListener = object : IRepositoriesChangedListener {
+        override fun repositoriesChanged() {
+            update()
+            init()
+        }
+    }
+
+    init {
+        setAllowsChildren(true)
+        init()
+    }
+
+    override fun isInitialized() = myInitialized
+
+    override fun doInit() {
+        myInitialized = true
+        populate()
+    }
+
+    override fun doUpdate() {
+        removeAllChildren()
+        myInitialized = false
+    }
+
+    private fun populate() {
+        ModelServerConnections.instance.modelServers.forEach { add(ModelServerTreeNode(it)) }
+    }
+
+    override fun onAdd() {
+        super.onAdd()
+        ModelServerConnections.instance.addListener(repositoriesListener)
+    }
+
+    override fun onRemove() {
+        super.onRemove()
+        ModelServerConnections.instance.removeListener(repositoriesListener)
+    }
+}

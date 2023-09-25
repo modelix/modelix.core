@@ -21,5 +21,9 @@
     "lint:fix": "npm run lint -- --fix",
     "prettier": "prettier . --check",
     "prettier:fix": "npm run prettier -- --write"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://artifacts.itemis.cloud/repository/npm-open/"
   }
 }

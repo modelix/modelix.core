@@ -20,5 +20,9 @@
     "prettier": "prettier --check",
     "prettier:fix": "npm run prettier -- --write"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://artifacts.itemis.cloud/repository/npm-open/"
+  }
 }

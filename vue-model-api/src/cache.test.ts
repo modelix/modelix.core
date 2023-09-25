@@ -1,5 +1,5 @@
 import { INodeJS } from "@modelix/ts-model-api";
-import { Cache } from "./cache";
+import { Cache } from "./Cache";
 
 describe("test cache", () => {
   test("wrapper is added to cache", () => {
@@ -18,5 +18,4 @@ describe("test cache", () => {
     const wrapped2 = cache.memoize(node, wrap2);
     expect(wrapped2.id).toBe("aWrapper1");
   });
-  // TODO Olekz try to test GC behaviour somehow
 });

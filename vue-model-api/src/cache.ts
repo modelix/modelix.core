@@ -17,11 +17,14 @@ export class Cache<CachedT extends object> {
   constructor() {
     this.map = new Map();
     this.finalizationRegistry = new FinalizationRegistry((key) =>
-      this.remove(key),
+      this._remove(key),
     );
   }
 
-  private remove(key: string) {
+  /**
+   * This method is only public for test purposes.
+   */
+  public _remove(key: string) {
     const valueRef = this.map.get(key);
     if (valueRef === undefined) {
       // Value is already removed.

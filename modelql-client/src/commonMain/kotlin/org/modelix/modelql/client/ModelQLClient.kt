@@ -26,6 +26,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IUnboundQuery
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.UnboundQuery
 import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.castToInstance
@@ -61,7 +62,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
         return ModelQLArea(this).runWithAdditionalScope {
             VersionAndData.deserialize(
                 serializedJson,
-                query.getAggregationOutputSerializer(json.serializersModule),
+                query.getAggregationOutputSerializer(SerializationContext(json.serializersModule)),
                 json,
             ).data.value
         }

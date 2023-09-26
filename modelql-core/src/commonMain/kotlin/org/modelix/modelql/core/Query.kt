@@ -27,8 +27,8 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.NothingSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
@@ -115,8 +115,8 @@ interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     fun canBeEmpty(): Boolean
 
     fun bind(executor: IQueryExecutor<In>): IQuery<AggregationOut, ElementOut>
-    fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>>
-    fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<AggregationOut>>
+    fun getElementOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<ElementOut>>
+    fun getAggregationOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<AggregationOut>>
 
     companion object {
         fun <In, Out> buildMono(body: (IMonoStep<In>) -> IMonoStep<Out>) = buildMonoQuery { body(it) }
@@ -188,12 +188,12 @@ class MonoUnboundQuery<In, ElementOut>(
         return buildFluxQuery { it.map(this@MonoUnboundQuery).flatMap(query) }
     }
 
-    override fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<IStepOutput<ElementOut>> {
-        return outputStep.getOutputSerializer(serializersModule).upcast()
+    override fun getAggregationOutputSerializer(serializationContext: SerializationContext): KSerializer<IStepOutput<ElementOut>> {
+        return outputStep.getOutputSerializer(serializationContext).upcast()
     }
 
-    override fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>> {
-        return outputStep.getOutputSerializer(serializersModule).upcast()
+    override fun getElementOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<ElementOut>> {
+        return outputStep.getOutputSerializer(serializationContext).upcast()
     }
 }
 
@@ -227,12 +227,12 @@ class FluxUnboundQuery<In, ElementOut>(
         return buildFluxQuery { it.flatMap(this@FluxUnboundQuery).flatMap(body) }
     }
 
-    override fun getAggregationOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<List<IStepOutput<ElementOut>>>> {
-        return ListSerializer(outputStep.getOutputSerializer(serializersModule).upcast()).stepOutputSerializer(null)
+    override fun getAggregationOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<List<IStepOutput<ElementOut>>>> {
+        return ListSerializer(outputStep.getOutputSerializer(serializationContext).upcast()).stepOutputSerializer(null)
     }
 
-    override fun getElementOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<ElementOut>> {
-        return outputStep.getOutputSerializer(serializersModule).upcast()
+    override fun getElementOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<ElementOut>> {
+        return outputStep.getOutputSerializer(serializationContext).upcast()
     }
 }
 
@@ -478,13 +478,14 @@ private fun IStep.getDirectlyConnectedSteps(): Set<IStep> {
 }
 
 class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
-    @Transient
-    internal var indirectConsumer: IConsumingStep<E>? = null
+
     override fun toString(): String = "it<${owner.queryId}>"
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        val c = checkNotNull(indirectConsumer) { "Input of query unknown: $this" }
-        return (c.getProducers().single() as IProducingStep<E>).getOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
+        return (
+            serializationContext.queryInputSerializers[this]
+                ?: (NothingSerializer() as KSerializer<E>).stepOutputSerializer(this)
+            ) as KSerializer<out IStepOutput<E>>
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {

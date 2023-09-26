@@ -17,12 +17,8 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingStep<In, Out>(), IFluxStep<Out> {
-    init {
-        query.inputStep.indirectConsumer = this
-    }
 
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty() || query.outputStep.canBeEmpty()
 
@@ -36,8 +32,8 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
         return input.flatMapConcat { query.asFlow(context.evaluationContext, it) }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return query.outputStep.getOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
+        return query.outputStep.getOutputSerializer(serializationContext + (query.inputStep to getProducer().getOutputSerializer(serializationContext)))
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(context.load(query))

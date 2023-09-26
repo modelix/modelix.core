@@ -16,12 +16,11 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class CollectionSizeStep : SimpleMonoTransformingStep<Collection<*>, Int>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
-        return serializersModule.serializer<Int>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Int>> {
+        return serializationContext.serializer<Int>().stepOutputSerializer(this)
     }
 
     override fun transform(evaluationContext: QueryEvaluationContext, input: Collection<*>): Int {

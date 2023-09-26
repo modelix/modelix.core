@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
 
@@ -30,11 +29,11 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
         return "${getProducer()}.firstOrNull()"
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E?>> {
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E?>> {
         return MultiplexedOutputSerializer<E?>(
             this,
             listOf(
-                getProducer().getOutputSerializer(serializersModule).upcast(),
+                getProducer().getOutputSerializer(serializationContext).upcast(),
                 nullSerializer<E>().stepOutputSerializer(this) as KSerializer<IStepOutput<E?>>,
             ),
         )

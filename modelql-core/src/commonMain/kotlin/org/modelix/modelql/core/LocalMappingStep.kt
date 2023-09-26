@@ -18,12 +18,11 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.modules.SerializersModule
 import kotlin.experimental.ExperimentalTypeInference
 
 open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTransformingStep<In, Out>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
-        return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializersModule)).stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
+        return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializationContext)).stepOutputSerializer(this)
     }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {

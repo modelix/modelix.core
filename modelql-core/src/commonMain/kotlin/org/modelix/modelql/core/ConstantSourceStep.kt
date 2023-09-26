@@ -27,7 +27,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import kotlin.jvm.JvmName
 import kotlin.reflect.KType
@@ -68,8 +67,8 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
         return """Mono($element)"""
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        return (serializersModule.serializer(type) as KSerializer<E>).stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
+        return (serializationContext.serializer(type) as KSerializer<E>).stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor = Descriptor(element, type.toString())

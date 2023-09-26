@@ -17,7 +17,6 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.SerializedNodeReference
@@ -27,14 +26,15 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
 import kotlin.jvm.JvmName
 import kotlin.reflect.typeOf
 
 class NodeReferenceSourceStep(element: INodeReference?) : ConstantSourceStep<INodeReference?>(element, typeOf<INodeReference?>()) {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INodeReference?>> {
-        return serializersModule.serializer<INodeReference>().nullable.stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INodeReference?>> {
+        return serializationContext.serializer<INodeReference>().nullable.stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(element)

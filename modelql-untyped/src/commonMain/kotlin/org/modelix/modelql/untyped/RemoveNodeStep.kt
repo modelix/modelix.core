@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.remove
@@ -29,6 +28,7 @@ import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepOutput
@@ -37,8 +37,8 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class RemoveNodeStep() : AggregationStep<INode, Int>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
-        return serializersModule.serializer<Int>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Int>> {
+        return serializationContext.serializer<Int>().stepOutputSerializer(this)
     }
 
     override suspend fun aggregate(input: StepFlow<INode>): IStepOutput<Int> {

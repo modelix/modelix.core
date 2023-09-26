@@ -19,17 +19,16 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.modules.SerializersModule
 
 class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
     override fun requiresSingularQueryInput(): Boolean {
         return true
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<IZip2Output<Any?, E, Int>>> {
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<IZip2Output<Any?, E, Int>>> {
         return ZipOutputSerializer(
             arrayOf(
-                getProducer().getOutputSerializer(serializersModule).upcast(),
+                getProducer().getOutputSerializer(serializationContext).upcast(),
                 Int.serializer().stepOutputSerializer(null).upcast(),
             ),
         )

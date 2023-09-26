@@ -18,15 +18,14 @@ import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E?>> {
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E?>> {
         return MultiplexedOutputSerializer(
             this,
             listOf(
-                getProducer().getOutputSerializer(serializersModule).upcast(),
+                getProducer().getOutputSerializer(serializationContext).upcast(),
                 nullSerializer<E?>().stepOutputSerializer(this).upcast(),
             ),
         )

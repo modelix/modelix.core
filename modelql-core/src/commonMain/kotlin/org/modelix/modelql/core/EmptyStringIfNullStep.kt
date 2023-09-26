@@ -17,18 +17,17 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<String>> {
-        val inputSerializer: KSerializer<IStepOutput<String?>> = getProducer().getOutputSerializer(serializersModule).upcast()
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<String>> {
+        val inputSerializer: KSerializer<IStepOutput<String?>> = getProducer().getOutputSerializer(serializationContext).upcast()
         return MultiplexedOutputSerializer<String>(
             this,
             listOf<KSerializer<IStepOutput<String>>>(
                 inputSerializer as KSerializer<IStepOutput<String>>,
-                serializersModule.serializer<String>().stepOutputSerializer(this).upcast(),
+                serializationContext.serializer<String>().stepOutputSerializer(this).upcast(),
             ),
         )
     }

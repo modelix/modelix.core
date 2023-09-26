@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
     override fun canBeMultiple(): Boolean = false
@@ -32,8 +31,8 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
         return getProducer().toString() + ".first()"
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        return getProducer().getOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
+        return getProducer().getOutputSerializer(serializationContext)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = FirstElementDescriptor()

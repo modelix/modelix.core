@@ -30,7 +30,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeCollection
-import kotlinx.serialization.modules.SerializersModule
 
 open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IMonoStep<Out>, IFluxStep<Out> {
     private val producers = ArrayList<IProducingStep<CommonIn>>()
@@ -78,9 +77,9 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out>> {
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
         val elementSerializers: Array<KSerializer<IStepOutput<CommonIn>>> = producers.map {
-            it.getOutputSerializer(serializersModule).upcast()
+            it.getOutputSerializer(serializationContext).upcast()
         }.toTypedArray()
         return ZipOutputSerializer(elementSerializers)
     }

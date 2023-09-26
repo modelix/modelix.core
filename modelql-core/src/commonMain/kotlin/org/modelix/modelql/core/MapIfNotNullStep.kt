@@ -19,13 +19,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransformingStep<In?, Out?>() {
-
-    init {
-        query.inputStep.indirectConsumer = this
-    }
 
     override fun requiresWriteAccess(): Boolean {
         return query.requiresWriteAccess()
@@ -38,9 +33,11 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Out?>> {
-        val inputSerializer: KSerializer<out IStepOutput<In?>> = getProducer().getOutputSerializer(serializersModule)
-        val mappedSerializer: KSerializer<out IStepOutput<Out>> = query.getElementOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out?>> {
+        val inputSerializer: KSerializer<IStepOutput<In?>> = getProducer().getOutputSerializer(serializationContext).upcast()
+        val mappedSerializer: KSerializer<out IStepOutput<Out>> = query.getElementOutputSerializer(
+            serializationContext + (query.inputStep to inputSerializer as KSerializer<out IStepOutput<In>>),
+        )
         val multiplexedSerializer: MultiplexedOutputSerializer<Out?> = MultiplexedOutputSerializer(
             this,
             listOf(

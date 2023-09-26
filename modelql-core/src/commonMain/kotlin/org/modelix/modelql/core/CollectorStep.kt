@@ -20,11 +20,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.modules.SerializersModule
 
 abstract class CollectorStep<E, CollectionT>() : AggregationStep<E, CollectionT>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<CollectionT>> {
-        val element = getProducers().first().getOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<CollectionT>> {
+        val element = getProducers().first().getOutputSerializer(serializationContext)
         return getOutputSerializer(element.upcast())
     }
 

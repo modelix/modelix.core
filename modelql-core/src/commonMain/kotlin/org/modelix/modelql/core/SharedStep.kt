@@ -16,11 +16,10 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 
 class SharedStep<E>() : MonoTransformingStep<E, E>() {
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<E>> {
-        return getProducer().getOutputSerializer(serializersModule)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
+        return getProducer().getOutputSerializer(serializationContext)
     }
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {

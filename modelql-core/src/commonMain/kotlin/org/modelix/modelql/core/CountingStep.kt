@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.count
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class CountingStep() : AggregationStep<Any?, Int>() {
@@ -35,8 +34,8 @@ class CountingStep() : AggregationStep<Any?, Int>() {
         }
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Int>> {
-        return serializersModule.serializer<Int>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Int>> {
+        return serializationContext.serializer<Int>().stepOutputSerializer(this)
     }
 
     override fun toString(): String {

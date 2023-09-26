@@ -16,7 +16,6 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 class StringContainsPredicate(val substring: String) : SimpleMonoTransformingStep<String?, Boolean>() {
@@ -25,8 +24,8 @@ class StringContainsPredicate(val substring: String) : SimpleMonoTransformingSte
         return input?.contains(substring) ?: false
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<Boolean>> {
-        return serializersModule.serializer<Boolean>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Boolean>> {
+        return serializationContext.serializer<Boolean>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = StringContainsDescriptor(substring)

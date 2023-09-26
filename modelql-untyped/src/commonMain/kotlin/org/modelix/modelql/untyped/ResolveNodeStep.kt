@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
@@ -30,6 +29,7 @@ import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
+import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
@@ -42,8 +42,8 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
         }.asStepFlow(this)
     }
 
-    override fun getOutputSerializer(serializersModule: SerializersModule): KSerializer<out IStepOutput<INode>> {
-        return serializersModule.serializer<INode>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
+        return serializationContext.serializer<INode>().stepOutputSerializer(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

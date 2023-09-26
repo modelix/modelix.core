@@ -18,8 +18,6 @@ package org.modelix.mps.sync.plugin.config
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import com.intellij.serviceContainer.ComponentManagerImpl
-import de.slisson.mps.reflection.runtime.ReflectionUtil
 import jetbrains.mps.ide.project.ProjectHelper
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.model.api.IBranch
@@ -37,7 +35,6 @@ import org.modelix.mps.sync.history.CloudNodeTreeNode
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.transient.TransientModuleBinding
 import org.modelix.mps.sync.util.nodeIdAsLong
-import java.util.concurrent.ConcurrentMap
 import java.util.function.Consumer
 
 // status: migrated, but needs some bugfixes
@@ -114,12 +111,13 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
     private val logger = mu.KotlinLogging.logger {}
 
     fun dispose() {
-        val lightServices = ReflectionUtil.readField(
+        // TODO fixme
+        /*val lightServices = ReflectionUtil.readField(
             ComponentManagerImpl::class.java,
             project as ComponentManagerImpl,
             "lightServices",
         ) as ConcurrentMap<*, *>
-        lightServices.remove(CloudResourcesConfigurationComponent::class.java)
+        lightServices.remove(CloudResourcesConfigurationComponent::class.java)*/
     }
 
     fun describeState(): String = readState().toString()
@@ -264,12 +262,8 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
         addTransientBoundModule(repositoryInModelServer, branch, PNodeAdapter(cloudNodeId, branch))
     }
 
-    /**
-     * TODO we need node<org.modelix.model.repositoryconcepts.Project> as parameter
-
-     fun addTransientBoundProject(epositoryInModelServer: CloudRepository, node<Project> cloudProject) =
-     modifyState{state -> repositoryInModelServer.runRead{ state.transientProjects.add(repositoryInModelServer.completeId()) } }
-     */
+    fun addTransientBoundProject(repositoryInModelServer: CloudRepository) =
+        modifyState { state -> repositoryInModelServer.runRead { -> state.transientProjects.add(repositoryInModelServer.completeId()) } }
 
     fun addTransientBoundModule(repositoryInModelServer: CloudRepository, nodeTreeNode: PNodeAdapter) =
         modifyState { state ->

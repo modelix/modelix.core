@@ -3,7 +3,7 @@ package org.modelix.mps.sync.binding
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.module.SModule
-import org.jetbrains.mps.openapi.module.SModuleListener
+import org.jetbrains.mps.openapi.module.SModuleListenerBase
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
@@ -18,7 +18,7 @@ abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncD
 
     private val logger = mu.KotlinLogging.logger {}
 
-    private val moduleListener = object : SModuleListener {
+    private val moduleListener = object : SModuleListenerBase() {
 
         override fun modelAdded(module: SModule, model: SModel) {
             try {

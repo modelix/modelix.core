@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.util
 
 import com.intellij.openapi.vfs.LocalFileSystem
-import de.slisson.mps.reflection.runtime.ReflectionUtil
 import jetbrains.mps.ide.newSolutionDialog.NewModuleUtil
 import jetbrains.mps.lang.migration.runtime.base.VersionFixer
 import jetbrains.mps.project.MPSExtentions
@@ -55,12 +54,12 @@ fun MPSProject.createModule(nameSpace: String, moduleId: ModuleId, requestor: An
     val descriptorFile = ReflectionUtil.callStaticMethod(
         NewModuleUtil::class.java,
         "getModuleFile",
-        arrayOf<Class<*>>(
+        arrayOf(
             String::class.java,
             String::class.java,
             String::class.java,
         ),
-        arrayOf<Any>(nameSpace, moduleFolder.absolutePath, MPSExtentions.DOT_SOLUTION),
+        arrayOf(nameSpace, moduleFolder.absolutePath, MPSExtentions.DOT_SOLUTION),
     ) as IFile?
     check(descriptorFile != null) { "descriptor file should not be null" }
 

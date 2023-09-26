@@ -16,12 +16,12 @@
 
 package org.modelix.mps.sync.connection
 
-import de.q60.mps.incremental.util.ContextValue
+import org.modelix.model.api.ContextValue
 
 // status: ready to test
 object AuthorOverride {
 
-    private var AUTHOR: ContextValue<String> = ContextValue<String>()
+    private var AUTHOR = ContextValue<String>()
     private var instanceOwner: String? = null
 
     fun setInstanceOwner(owner: String?) {
@@ -29,8 +29,8 @@ object AuthorOverride {
     }
 
     fun apply(author: String?): String? {
-        val override = AUTHOR.value
-        if (override.isNotEmpty()) {
+        val override = AUTHOR.getValue()
+        if (override?.isNotEmpty() == true) {
             return override
         }
         return if (author.isNullOrEmpty() && (instanceOwner?.isNotEmpty() == true)) {

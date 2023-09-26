@@ -16,16 +16,10 @@
 
 package org.modelix.mps.sync.connection
 
-import de.q60.mps.incremental.runtime.DependencyBroadcaster
-import de.q60.mps.shadowmodels.runtime.model.persistent.SM_PTree
 import org.jetbrains.mps.openapi.module.SRepository
-import org.modelix.model.api.IBranchListener
-import org.modelix.model.api.ITree
-import org.modelix.model.api.PBranch
 import org.modelix.model.area.CompositeArea
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
-import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.mps.sync.util.CommandHelper.getSRepository
@@ -40,20 +34,6 @@ class ModelServerConnections private constructor() {
 
     companion object {
         val instance = ModelServerConnections()
-        private val localUiStateBranch = PBranch(SM_PTree.EMPTY, IdGenerator.Companion.getInstance(1))
-
-        init {
-            localUiStateBranch.addListener(object : IBranchListener {
-                override fun treeChanged(oldTree: ITree?, newTree: ITree) {
-                    if (oldTree == null) {
-                        return
-                    }
-                    val changesCollector = TreeChangesCollector(localUiStateBranch)
-                    newTree.visitChanges(oldTree, changesCollector)
-                    DependencyBroadcaster.INSTANCE.dependenciesChanged(changesCollector.changes)
-                }
-            })
-        }
     }
 
     private val logger = mu.KotlinLogging.logger {}
@@ -71,13 +51,7 @@ class ModelServerConnections private constructor() {
             PArea(branch)
         }
         return CompositeArea(
-            Stream.of(MPSArea(mpsRepository)).concat(cloudAreas).concat(
-                Stream.of(
-                    PArea(
-                        localUiStateBranch,
-                    ),
-                ),
-            ).toList(),
+            Stream.of(MPSArea(mpsRepository)).concat(cloudAreas).toList(),
         )
     }
 

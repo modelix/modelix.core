@@ -66,6 +66,10 @@ class FlowInstantiationContext(
     }
 }
 
+/**
+ * The output serializer of a query is context dependent when used by multiple `QueryCallStep`s.
+ * This class carries the correct serializer for the input of a query depending on from where it is called.
+ */
 class SerializationContext(val serializersModule: SerializersModule, val queryInputSerializers: Map<QueryInput<*>, KSerializer<IStepOutput<*>>> = emptyMap()) {
     operator fun <T> plus(queryInputSerializer: Pair<QueryInput<T>, KSerializer<out IStepOutput<T>>>): SerializationContext {
         return SerializationContext(

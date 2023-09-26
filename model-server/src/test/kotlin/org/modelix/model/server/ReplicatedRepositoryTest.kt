@@ -174,7 +174,6 @@ class ReplicatedRepositoryTest {
 
             assertEquals(clients.size * 10, createdNodes.size)
 
-            println("writing done. waiting for convergence.")
             runCatching {
                 withTimeout(30.seconds) {
                     models.forEach { model ->
@@ -196,7 +195,6 @@ class ReplicatedRepositoryTest {
         } finally {
             models.forEach { it.dispose() }
         }
-        println("all successful")
     }
 
     private interface IRandomOperation {
@@ -302,14 +300,11 @@ class ReplicatedRepositoryTest {
             },
         )
 
-        var iterations = 0
         while (true) {
             val applicableOps = clients.flatMap { createOpsForClient(it) }.filter { it.isApplicable() }
             if (applicableOps.isEmpty()) break
             applicableOps.random(rand).apply()
-            iterations++
         }
-        println("Iterations: $iterations")
 
         fun getChildren(model: CLVersion): SortedSet<String> {
             return getChildren(PBranch(model.getTree(), IdGeneratorDummy()))
@@ -325,8 +320,6 @@ class ReplicatedRepositoryTest {
         for (client in clients) {
             assertEquals(createdNodes, getChildren(localVersions[client]!!))
         }
-
-        println("all successful")
     }
 
     @Ignore
@@ -392,7 +385,6 @@ class ReplicatedRepositoryTest {
 
             assertEquals((clients.size + v1clients.size) * 10, createdNodes.size)
 
-            println("writing done. waiting for convergence.")
             runCatching {
                 withTimeout(30.seconds) {
                     models.forEach { model ->
@@ -422,7 +414,6 @@ class ReplicatedRepositoryTest {
             v1models.forEach { it.dispose() }
             v1clients.forEach { it.dispose() }
         }
-        println("all successful")
     }
 
     @Ignore

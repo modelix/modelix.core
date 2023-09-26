@@ -285,7 +285,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         // Now we use the RepositoriesManager to merge changes instead of just overwriting a branch.
 
         val hashedObjects = LinkedHashMap<String, String>()
-        val branchChanges = LinkedHashMap<BranchReference, String>()
+        val branchChanges = LinkedHashMap<BranchReference, String?>()
         val userDefinedEntries = LinkedHashMap<String, String?>()
 
         for ((key, value) in newEntries) {
@@ -294,7 +294,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     hashedObjects[key] = value ?: throw IllegalArgumentException("No value provided for $key")
                 }
                 BranchReference.tryParseBranch(key) != null -> {
-                    branchChanges[BranchReference.tryParseBranch(key)!!] = value ?: throw IllegalArgumentException("Deleting branch $key not allowed")
+                    branchChanges[BranchReference.tryParseBranch(key)!!] = value
                 }
                 key.startsWith(PROTECTED_PREFIX) -> {
                     throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
@@ -317,7 +317,11 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
             storeClient.putAll(hashedObjects)
             storeClient.putAll(userDefinedEntries)
             for ((branch, value) in branchChanges) {
-                repositoriesManager.mergeChanges(branch, value)
+                if (value == null) {
+                    repositoriesManager.removeBranches(branch.repositoryId, setOf(branch.branchName))
+                } else {
+                    repositoriesManager.mergeChanges(branch, value)
+                }
             }
         }
     }

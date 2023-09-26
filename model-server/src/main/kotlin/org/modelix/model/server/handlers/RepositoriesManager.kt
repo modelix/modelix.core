@@ -121,6 +121,31 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
+    fun removeRepository(repository: RepositoryId) {
+        store.runTransaction {
+            for (branchName in getBranchNames(repository)) {
+                putVersionHash(repository.getBranchReference(branchName), null)
+            }
+            store.put(branchListKey(repository), null)
+            val existingRepositories = getRepositories()
+            val remainingRepositories = existingRepositories - repository
+            store.put(REPOSITORIES_LIST_KEY, remainingRepositories.joinToString("\n") { it.id })
+        }
+    }
+
+    fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
+        if (branchNames.isEmpty()) return
+        store.runTransaction {
+            val key = branchListKey(repository)
+            val existingBranches = store[key]?.lines()?.toSet() ?: emptySet()
+            val remainingBranches = existingBranches - branchNames
+            store.put(key, remainingBranches.joinToString("\n"))
+            for (branchName in branchNames) {
+                putVersionHash(repository.getBranchReference(branchName), null)
+            }
+        }
+    }
+
     fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
         var result: String? = null
         store.runTransaction {
@@ -155,7 +180,7 @@ class RepositoriesManager(val client: LocalModelClient) {
             ?: store[legacyBranchKey(branch)]?.also { store.put(branchKey(branch), it, true) }
     }
 
-    private fun putVersionHash(branch: BranchReference, hash: String) {
+    private fun putVersionHash(branch: BranchReference, hash: String?) {
         store.put(branchKey(branch), hash, false)
         store.put(legacyBranchKey(branch), hash, false)
     }

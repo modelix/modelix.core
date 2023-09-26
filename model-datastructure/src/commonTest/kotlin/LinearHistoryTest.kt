@@ -28,7 +28,7 @@ class LinearHistoryTest {
     val initialTree = CLTree.builder(ObjectStoreCache(MapBaseStore())).repositoryId("LinearHistoryTest").build()
 
     @Test
-    fun simpleTest1() {
+    fun noCommonHistory() {
         val v20 = version(20, null)
         val v21 = version(21, null)
 
@@ -36,7 +36,7 @@ class LinearHistoryTest {
     }
 
     @Test
-    fun simpleTest2() {
+    fun divergedByTwoCommits() {
         val v10 = version(10, null)
         val v20 = version(20, v10)
         val v21 = version(21, v10)
@@ -45,7 +45,9 @@ class LinearHistoryTest {
     }
 
     @Test
-    fun linearHistoryPerformance() {
+    fun knownPerformanceIssue() {
+        // This test was dumped from actual case discovered during a profiling session.
+
         val v30000003a = version(12884901946, null)
         val v1000004d1 = version(4294968529, v30000003a)
         val v1000004d3 = version(4294968531, v1000004d1)

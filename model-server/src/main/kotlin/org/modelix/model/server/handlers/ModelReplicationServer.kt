@@ -150,6 +150,11 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                             val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
                             call.respondDelta(newVersionHash, lastKnownVersionHash)
                         }
+                        get("pollHash") {
+                            val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
+                            val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
+                            call.respondText(newVersionHash)
+                        }
                         webSocket("listen") {
                             var lastVersionHash = call.request.queryParameters["lastKnown"]
                             while (coroutineContext[Job]?.isCancelled == false) {

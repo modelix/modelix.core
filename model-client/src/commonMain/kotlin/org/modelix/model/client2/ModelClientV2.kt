@@ -173,7 +173,20 @@ class ModelClientV2(
             }
         }
         val receivedHash: String = response.body()
-//        LOG.debug { "${clientId.toString(16)}.pullHash($branch) -> $receivedHash" }
+        return receivedHash
+    }
+
+    override suspend fun pollHash(branch: BranchReference, lastKnownVersion: IVersion?): String {
+        val response = httpClient.get {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "pollHash")
+                if (lastKnownVersion != null) {
+                    parameters["lastKnown"] = lastKnownVersion.getContentHash()
+                }
+            }
+        }
+        val receivedHash: String = response.body()
         return receivedHash
     }
 

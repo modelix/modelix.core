@@ -1,0 +1,12 @@
+style:
+  # handled by ktlint
+  MaxLineLength:
+    active: false
+  ModifierOrder:
+    active: false
+
+  # No need for this
+  ReturnCount:
+    active: false
+  ThrowsCount:
+    active: false

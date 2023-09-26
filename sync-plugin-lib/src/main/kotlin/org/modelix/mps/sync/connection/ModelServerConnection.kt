@@ -5,10 +5,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.util.messages.MessageBusConnection
 import com.intellij.util.messages.Topic
-import de.q60.mps.incremental.runtime.DependencyBroadcaster
 import jetbrains.mps.ide.project.ProjectHelper
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ITree
 import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
@@ -55,7 +53,6 @@ class ModelServerConnection {
         private set
     var email: String? = null
         private set
-    private val invalidationListeners = mutableMapOf<ActiveBranch, IBranchListener>()
     private val messageBusConnection: MessageBusConnection
     private val bindings = mutableMapOf<RepositoryId, RootBinding>()
 
@@ -69,18 +66,18 @@ class ModelServerConnection {
             topic,
             object : ProjectManagerListener {
 
-                override fun projectClosing(closingProject: Project?) {
+                override fun projectClosing(closingProject: Project) {
                     bindings.values.flatMap { it.getAllBindings() }.filterIsInstance<ProjectBinding>()
                         .filter { ProjectHelper.toIdeaProject(it.mpsProject) == closingProject }.forEach {
                             removeBinding(it)
                         }
                 }
 
-                override fun projectOpened(p0: Project?) {}
+                override fun projectOpened(p0: Project) {}
 
-                override fun canCloseProject(p0: Project?): Boolean = true
+                override fun canCloseProject(p0: Project): Boolean = true
 
-                override fun projectClosed(p0: Project?) {}
+                override fun projectClosed(p0: Project) {}
             },
         )
 
@@ -323,9 +320,6 @@ class ModelServerConnection {
                     ): ReplicatedRepository =
                         MpsReplicatedRepository(client, repositoryId, branchName) { user.invoke() }
                 }
-                val invalidationListener = InvalidationBranchListener(activeBranch)
-                invalidationListeners[activeBranch] = invalidationListener
-                activeBranch.addListener(invalidationListener)
                 activeBranches[repositoryId] = activeBranch
             }
             return activeBranch
@@ -360,10 +354,6 @@ class ModelServerConnection {
             synchronized(activeBranches) {
                 activeBranches.values.forEach {
                     try {
-                        val invalidationListener = invalidationListeners.remove(it)
-                        if (invalidationListener != null) {
-                            it.removeListener(invalidationListener)
-                        }
                         it.dispose()
                     } catch (ex: Exception) {
                         logger.error(ex) { ex.message }
@@ -478,17 +468,6 @@ private class ConnectionListenerForForbiddenMessage(private val baseUrl: String)
         } else {
             false
         }
-    }
-}
-
-class InvalidationBranchListener(private val branch: ActiveBranch) : IBranchListener {
-    override fun treeChanged(oldTree: ITree?, newTree: ITree) {
-        if (oldTree == null) {
-            return
-        }
-        val changesCollector = TreeChangesCollector(branch.branch)
-        newTree.visitChanges(oldTree, changesCollector)
-        DependencyBroadcaster.INSTANCE.dependenciesChanged(changesCollector.changes)
     }
 }
 

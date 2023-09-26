@@ -16,8 +16,6 @@
 
 package org.modelix.mps.sync.plugin.init
 
-import java.util.Locale
-
 // status: ready to test
 object ModelixConfigurationSystemProperties {
 
@@ -41,7 +39,7 @@ object ModelixConfigurationSystemProperties {
         var executionMode = EModelixExecutionMode.DEFAULT
         if (executionModeString?.isEmpty() == true) {
             val value = PropertyOrEnv["disable.autobinding"]
-            if (value != null && (value.lowercase(Locale.getDefault()) == "true")) {
+            if (value != null && (value.toLowerCase() == "true")) {
                 executionMode = EModelixExecutionMode.INTEGRATION_TESTS
             }
 

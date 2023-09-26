@@ -20,13 +20,13 @@ val mpsToIdeaMap = mapOf(
     "2022.3" to "223.8836.41", // https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties (?)
 )
 // use the given MPS version, or 2022.2 (last version with JAVA 11) as default
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2022.2"
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
 if (!mpsToIdeaMap.containsKey(mpsVersion)) {
     throw GradleException("Build for the given MPS version '$mpsVersion' is not supported.")
 }
 // identify the corresponding intelliJ platform version used by the MPS version
 val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
-println("Building for MPS version $mpsVersion and IntlliJ version $ideaVersion")
+println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion")
 
 dependencies {
 //    implementation(project(":model-server-lib"))

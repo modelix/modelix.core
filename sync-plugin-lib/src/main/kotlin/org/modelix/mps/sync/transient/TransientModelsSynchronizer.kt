@@ -24,7 +24,7 @@ import org.modelix.mps.sync.binding.ModelsSynchronizer
 class TransientModelsSynchronizer(cloudParentId: Long, module: CloudTransientModule) :
     ModelsSynchronizer(cloudParentId, module) {
 
-    override fun getModule(): CloudTransientModule = super.module as CloudTransientModule
+    override fun getModule(): CloudTransientModule = super.getModule() as CloudTransientModule
 
     override fun createModel(name: String, id: SModelId, modelNodeId: Long): SModel {
         val model = CloudTransientModel(getModule(), name, id)

@@ -112,15 +112,13 @@ class MpsReplicatedRepository(
             }
         }
 
+        override fun isGlobal(): Boolean = TODO()
+
         @Throws(UnexpectedUndoException::class)
         override fun redo() {
             throw UnexpectedUndoException("Not supported yet")
         }
 
         override fun getAffectedDocuments(): Array<out DocumentReference>? = documents.ifEmpty { null }
-
-        override fun isComplex(): Boolean {
-            TODO("Not yet implemented")
-        }
     }
 }

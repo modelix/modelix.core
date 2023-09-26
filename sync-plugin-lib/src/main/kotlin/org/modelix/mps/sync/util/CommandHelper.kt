@@ -21,7 +21,7 @@ import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.project.IProject
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.MPSModuleRepository
-import okhttp3.internal.toImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.mps.openapi.module.SRepository
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
@@ -105,7 +105,7 @@ object CommandHelper {
 
     fun getSRepository(): SRepository {
         val openedProjects = ProjectManager.getInstance().openedProjects
-        val projectRepo = openedProjects.firstNotNullOfOrNull { it.repository }
+        val projectRepo = openedProjects.map { it.repository }.firstOrNull()
         return projectRepo ?: MPSModuleRepository.getInstance()
     }
 }

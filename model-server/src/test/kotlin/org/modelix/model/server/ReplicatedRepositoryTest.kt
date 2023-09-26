@@ -322,7 +322,7 @@ class ReplicatedRepositoryTest {
         }
     }
 
-    @Ignore
+    @Ignore("Not stable yet. See https://issues.modelix.org/issue/MODELIX-554/Unstable-ModelClient-v1")
     @RepeatedTest(value = 10)
     fun clientCompatibility(repetitionInfo: RepetitionInfo) = runTest { scope ->
         val url = "http://localhost/v2"

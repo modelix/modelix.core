@@ -42,6 +42,7 @@ import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.authorization.toKeycloakScope
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
@@ -50,6 +51,7 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.*
 import java.util.regex.Pattern
+import kotlin.collections.LinkedHashMap
 
 val PERMISSION_MODEL_SERVER = "model-server".asResource()
 val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
@@ -62,37 +64,17 @@ private class NotFoundException(description: String?) : RuntimeException(descrip
 
 typealias CallContext = PipelineContext<Unit, ApplicationCall>
 
-class KeyValueLikeModelServer(val storeClient: IStoreClient) {
+class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
     companion object {
         private val LOG = LoggerFactory.getLogger(KeyValueLikeModelServer::class.java)
         val HASH_PATTERN = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
         const val PROTECTED_PREFIX = "$$$"
         val HEALTH_KEY = PROTECTED_PREFIX + "health2"
-        private const val LEGACY_SERVER_ID_KEY = "repositoryId"
-        private const val SERVER_ID_KEY = "server-id"
-
-        private fun randomUUID(): String {
-            return UUID.randomUUID().toString().replace("[^a-zA-Z0-9]".toRegex(), "")
-        }
-
-        fun initServerId(storeClient: IStoreClient) {
-            storeClient.runTransaction {
-                var serverId = storeClient[SERVER_ID_KEY]
-                if (serverId == null) {
-                    serverId = storeClient[LEGACY_SERVER_ID_KEY] ?: randomUUID()
-                    storeClient.put(SERVER_ID_KEY, serverId)
-                    storeClient.put(LEGACY_SERVER_ID_KEY, serverId)
-                }
-            }
-        }
-
-        fun getServerId(storeClient: IStoreClient): String {
-            return storeClient[SERVER_ID_KEY]!!
-        }
     }
 
+    val storeClient: IStoreClient get() = repositoriesManager.client.store
+
     fun init(application: Application) {
-        initServerId(storeClient)
         application.apply {
             modelServerModule()
         }
@@ -298,7 +280,50 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
                 throw NotFoundException("Referenced key $key not found")
             }
         }
-        storeClient.putAll(newEntries)
+
+        // Entries were previously written directly to the store.
+        // Now we use the RepositoriesManager to merge changes instead of just overwriting a branch.
+
+        val hashedObjects = LinkedHashMap<String, String>()
+        val branchChanges = LinkedHashMap<BranchReference, String?>()
+        val userDefinedEntries = LinkedHashMap<String, String?>()
+
+        for ((key, value) in newEntries) {
+            when {
+                HashUtil.isSha256(key) -> {
+                    hashedObjects[key] = value ?: throw IllegalArgumentException("No value provided for $key")
+                }
+                BranchReference.tryParseBranch(key) != null -> {
+                    branchChanges[BranchReference.tryParseBranch(key)!!] = value
+                }
+                key.startsWith(PROTECTED_PREFIX) -> {
+                    throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
+                }
+                key.startsWith(RepositoriesManager.KEY_PREFIX) -> {
+                    throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
+                }
+                key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2 -> {
+                    throw NoPermissionException("'$key' is read-only.")
+                }
+                else -> {
+                    userDefinedEntries[key] = value
+                }
+            }
+        }
+
+        HashUtil.checkObjectHashes(hashedObjects)
+
+        repositoriesManager.client.store.runTransaction {
+            storeClient.putAll(hashedObjects)
+            storeClient.putAll(userDefinedEntries)
+            for ((branch, value) in branchChanges) {
+                if (value == null) {
+                    repositoriesManager.removeBranches(branch.repositoryId, setOf(branch.branchName))
+                } else {
+                    repositoriesManager.mergeChanges(branch, value)
+                }
+            }
+        }
     }
 
     private suspend fun CallContext.respondValue(key: String, value: String?) {
@@ -317,7 +342,7 @@ class KeyValueLikeModelServer(val storeClient: IStoreClient) {
         if (key.startsWith(RepositoriesManager.KEY_PREFIX)) {
             throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
         }
-        if ((key == SERVER_ID_KEY || key == LEGACY_SERVER_ID_KEY) && type.includes(EPermissionType.WRITE)) {
+        if ((key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2) && type.includes(EPermissionType.WRITE)) {
             throw NoPermissionException("'$key' is read-only.")
         }
         if (HashUtil.isSha256(key)) {

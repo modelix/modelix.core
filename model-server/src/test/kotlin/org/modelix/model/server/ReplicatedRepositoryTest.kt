@@ -29,7 +29,6 @@ import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.RepetitionInfo
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.LinearHistory
 import org.modelix.model.ModelFacade
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
@@ -40,6 +39,8 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
+import org.modelix.model.client.ReplicatedRepository
+import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
@@ -47,10 +48,12 @@ import org.modelix.model.data.asData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import java.util.Collections
 import java.util.SortedSet
@@ -72,7 +75,9 @@ class ReplicatedRepositoryTest {
                 json()
             }
             install(WebSockets)
-            ModelReplicationServer(InMemoryStoreClient()).init(this)
+            val repositoriesManager = RepositoriesManager(LocalModelClient(InMemoryStoreClient()))
+            ModelReplicationServer(repositoriesManager).init(this)
+            KeyValueLikeModelServer(repositoriesManager).init(this)
         }
 
         coroutineScope {
@@ -169,7 +174,6 @@ class ReplicatedRepositoryTest {
 
             assertEquals(clients.size * 10, createdNodes.size)
 
-            println("writing done. waiting for convergence.")
             runCatching {
                 withTimeout(30.seconds) {
                     models.forEach { model ->
@@ -191,7 +195,225 @@ class ReplicatedRepositoryTest {
         } finally {
             models.forEach { it.dispose() }
         }
-        println("all successful")
+    }
+
+    private interface IRandomOperation {
+        suspend fun isApplicable(): Boolean
+        suspend fun apply()
+    }
+
+    /**
+     * Similar to the concurrentWrite test, but without race conditions.
+     * Doesn't use the ReplicatedModel which allows to narrow down the cause of issues.
+     * Makes it easier to test and fix performance issues.
+     */
+    @RepeatedTest(value = 10)
+    fun deterministicConcurrentWrite(repetitionInfo: RepetitionInfo) = runTest { scope ->
+        val url = "http://localhost/v2"
+        val clients = (1..3).map {
+            ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        }
+
+        val repositoryId = RepositoryId("repo1")
+        val initialVersion = clients[0].initRepository(repositoryId)
+        val branchId = repositoryId.getBranchReference("my-branch")
+        clients[0].push(branchId, initialVersion, initialVersion)
+        val localVersions: MutableMap<ModelClientV2, CLVersion> = clients.associateWith { it.pull(branchId, null) as CLVersion }.toMutableMap()
+        val remoteVersions: MutableMap<ModelClientV2, CLVersion> = localVersions.toMutableMap()
+        val lastKnownRemoteVersion: MutableMap<ModelClientV2, CLVersion> = localVersions.toMutableMap()
+
+        val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
+        val rand = Random(repetitionInfo.currentRepetition + 8745000)
+        val nodesToCreate = clients.size * 10
+
+        fun createOpsForClient(client: ModelClientV2) = listOf<IRandomOperation>(
+            object : IRandomOperation {
+                override suspend fun isApplicable(): Boolean {
+                    return createdNodes.size < nodesToCreate
+                }
+
+                override suspend fun apply() {
+                    // Change local version
+                    val baseVersion = localVersions[client]!!
+                    val branch = OTBranch(PBranch(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), client.store)
+                    branch.runWriteT { t ->
+                        createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
+                    }
+                    val (ops, tree) = branch.getPendingChanges()
+                    val newVersion = CLVersion.createRegularVersion(
+                        id = client.getIdGenerator().generate(),
+                        author = client.getUserId(),
+                        tree = tree as CLTree,
+                        baseVersion = baseVersion,
+                        operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+                    )
+                    localVersions[client] = newVersion
+                }
+            },
+            object : IRandomOperation {
+                override suspend fun isApplicable(): Boolean {
+                    return remoteVersions[client]!!.getContentHash() != localVersions[client]!!.getContentHash()
+                }
+
+                override suspend fun apply() {
+                    // Merge local into remote
+                    remoteVersions[client] = VersionMerger(client.store, client.getIdGenerator())
+                        .mergeChange(remoteVersions[client]!!, localVersions[client]!!)
+                }
+            },
+            object : IRandomOperation {
+                override suspend fun isApplicable(): Boolean {
+                    return remoteVersions[client]!!.getContentHash() != localVersions[client]!!.getContentHash()
+                }
+
+                override suspend fun apply() {
+                    // Merge remote into local
+                    localVersions[client] = VersionMerger(client.store, client.getIdGenerator())
+                        .mergeChange(localVersions[client]!!, remoteVersions[client]!!)
+                }
+            },
+            object : IRandomOperation {
+                override suspend fun isApplicable(): Boolean {
+                    return remoteVersions[client]!!.getContentHash() != lastKnownRemoteVersion[client]!!.getContentHash()
+                }
+
+                override suspend fun apply() {
+                    // Push to server
+                    val receivedVersion = client.push(branchId, remoteVersions[client]!!, lastKnownRemoteVersion[client]!!) as CLVersion
+                    lastKnownRemoteVersion[client] = receivedVersion
+                    remoteVersions[client] = VersionMerger(client.store, client.getIdGenerator())
+                        .mergeChange(remoteVersions[client]!!, receivedVersion)
+                }
+            },
+            object : IRandomOperation {
+                override suspend fun isApplicable(): Boolean {
+                    return client.pullHash(branchId) != remoteVersions[client]!!.getContentHash()
+                }
+
+                override suspend fun apply() {
+                    // Pull from server
+                    val receivedVersion = client.pull(branchId, lastKnownRemoteVersion[client]!!) as CLVersion
+                    lastKnownRemoteVersion[client] = receivedVersion
+                    remoteVersions[client] = VersionMerger(client.store, client.getIdGenerator())
+                        .mergeChange(remoteVersions[client]!!, receivedVersion)
+                }
+            },
+        )
+
+        while (true) {
+            val applicableOps = clients.flatMap { createOpsForClient(it) }.filter { it.isApplicable() }
+            if (applicableOps.isEmpty()) break
+            applicableOps.random(rand).apply()
+        }
+
+        fun getChildren(model: CLVersion): SortedSet<String> {
+            return getChildren(PBranch(model.getTree(), IdGeneratorDummy()))
+        }
+
+        assertEquals(nodesToCreate, createdNodes.size)
+
+        val serverVersion = clients[0].pull(branchId, null)
+        val childrenOnServer = getChildren(PBranch(serverVersion.getTree(), IdGeneratorDummy()))
+
+        assertEquals(createdNodes, childrenOnServer)
+
+        for (client in clients) {
+            assertEquals(createdNodes, getChildren(localVersions[client]!!))
+        }
+    }
+
+    @Ignore("Not stable yet. See https://issues.modelix.org/issue/MODELIX-554/Unstable-ModelClient-v1")
+    @RepeatedTest(value = 10)
+    fun clientCompatibility(repetitionInfo: RepetitionInfo) = runTest { scope ->
+        val url = "http://localhost/v2"
+        val clients = (1..2).map {
+            ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        }
+        val v1clients = (1..2).map {
+            RestWebModelClient("http://localhost/", providedClient = client)
+        }
+
+        val repositoryId = RepositoryId("repo1")
+        val initialVersion = clients[0].initRepository(repositoryId)
+        val branchId = repositoryId.getBranchReference("my-branch")
+        clients[0].push(branchId, initialVersion, initialVersion)
+        val models = clients.map { client -> client.getReplicatedModel(branchId, scope).also { it.start() } }
+        val v1models = v1clients.map { ReplicatedRepository(it, repositoryId, branchId.branchName, { "user" }) }
+
+        try {
+            val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
+
+            coroutineScope {
+                suspend fun launchWriter(model: ReplicatedModel, seed: Int) {
+                    launch {
+                        val rand = Random(seed)
+                        for (i in 1..10) {
+                            delay(rand.nextLong(50, 100))
+                            model.getBranch().runWriteT { t ->
+                                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
+                            }
+                        }
+                    }
+                }
+                models.forEachIndexed { index, model ->
+                    launchWriter(model, 56456 + index + repetitionInfo.currentRepetition * 100000)
+                    delay(200.milliseconds)
+                }
+                suspend fun launchWriterv1(model: ReplicatedRepository, seed: Int) {
+                    launch {
+                        val rand = Random(seed)
+                        for (i in 1..10) {
+                            delay(rand.nextLong(50, 100))
+                            model.branch.runWriteT { t ->
+                                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
+                            }
+                        }
+                    }
+                }
+                v1models.forEachIndexed { index, model ->
+                    launchWriterv1(model, 56456 + index + repetitionInfo.currentRepetition * 100000)
+                    delay(200.milliseconds)
+                }
+            }
+
+            fun getChildren(model: ReplicatedModel): SortedSet<String> {
+                return getChildren(model.getBranch())
+            }
+            fun getChildren(model: ReplicatedRepository): SortedSet<String> {
+                return getChildren(model.branch)
+            }
+
+            assertEquals((clients.size + v1clients.size) * 10, createdNodes.size)
+
+            runCatching {
+                withTimeout(30.seconds) {
+                    models.forEach { model ->
+                        while (getChildren(model) != createdNodes) delay(100.milliseconds)
+                    }
+                    v1models.forEach { model ->
+                        while (getChildren(model) != createdNodes) delay(100.milliseconds)
+                    }
+                }
+            }
+
+            // models.forEach { it.resetToServerVersion() }
+
+            val serverVersion = clients[0].pull(branchId, null)
+            val childrenOnServer = getChildren(PBranch(serverVersion.getTree(), IdGeneratorDummy()))
+
+            assertEquals(createdNodes, childrenOnServer)
+
+            for (model in models) {
+                assertEquals(createdNodes, getChildren(model))
+            }
+            for (model in v1models) {
+                assertEquals(createdNodes, getChildren(model))
+            }
+        } finally {
+            models.forEach { it.dispose() }
+            v1models.forEach { it.dispose() }
+            v1clients.forEach { it.dispose() }
+        }
     }
 
     @Ignore
@@ -249,135 +471,6 @@ class ReplicatedRepositoryTest {
         val headChildren = getChildren(PBranch(headVersion.getTree(), IdGeneratorDummy()))
 
         assertEquals(createdNodes, headChildren)
-    }
-
-    @Ignore
-    @Test
-    fun linearHistoryPerformance() {
-        val idGenerator = IdGenerator.getInstance(100)
-        val initialTree = ModelFacade.newLocalTree() as CLTree
-        fun version(id: Long, base: CLVersion?): CLVersion {
-            return CLVersion.createRegularVersion(
-                id,
-                null,
-                null,
-                initialTree,
-                base,
-                emptyArray(),
-            )
-        }
-
-        fun merge(id: Long, base: CLVersion, v1: CLVersion, v2: CLVersion): CLVersion {
-            return CLVersion.createAutoMerge(
-                id,
-                initialTree,
-                base,
-                v1,
-                v2,
-                emptyArray<IOperation>(),
-                initialTree.store,
-            )
-        }
-
-        val v30000003a = version(12884901946, null)
-        val v1000004d1 = version(4294968529, v30000003a)
-        val v1000004d3 = version(4294968531, v1000004d1)
-        val v200000353 = version(8589935443, v1000004d3)
-        val v1000004d5 = version(4294968533, v1000004d3)
-        val v30000003c = merge(12884901948, v1000004d3, v200000353, v1000004d5)
-        val v1000004d6 = merge(4294968534, v1000004d3, v1000004d5, v200000353)
-        val v30000003d = merge(12884901949, v1000004d3, v30000003c, v1000004d6)
-        val v30000003e = merge(12884901950, v1000004d3, v30000003d, v1000004d6)
-        val v200000354 = merge(8589935444, v1000004d3, v200000353, v30000003d)
-        val v30000003f = merge(12884901951, v1000004d3, v30000003e, v200000354)
-        val v300000040 = merge(12884901952, v1000004d3, v30000003f, v200000354)
-        val v200000356 = version(8589935446, v200000354)
-        val v300000041 = merge(12884901953, v1000004d3, v300000040, v200000356)
-        val v1000004d8 = version(4294968536, v1000004d6)
-        val v300000042 = merge(12884901954, v1000004d3, v300000041, v1000004d8)
-        val v1000004d9 = merge(4294968537, v1000004d3, v1000004d8, v300000041)
-        val v300000043 = merge(12884901955, v1000004d3, v300000042, v1000004d9)
-        val v300000044 = merge(12884901956, v1000004d3, v300000043, v1000004d9)
-        val v200000357 = merge(8589935447, v1000004d3, v200000356, v300000041)
-        val v300000045 = merge(12884901957, v1000004d3, v300000044, v200000357)
-        val v300000046 = merge(12884901958, v1000004d3, v300000045, v200000357)
-        val v1000004da = merge(4294968538, v1000004d3, v1000004d9, v300000046)
-        val v300000047 = merge(12884901959, v1000004d3, v300000046, v1000004da)
-        val v300000048 = merge(12884901960, v1000004d3, v300000047, v1000004da)
-        val v200000359 = version(8589935449, v200000357)
-        val v300000049 = merge(12884901961, v1000004d3, v300000048, v200000359)
-        val v1000004dc = version(4294968540, v1000004da)
-        val v30000004a = merge(12884901962, v1000004d3, v300000049, v1000004dc)
-        val v20000035a = merge(8589935450, v1000004d3, v200000359, v300000046)
-        val v30000004b = merge(12884901963, v1000004d3, v30000004a, v20000035a)
-        val v30000004c = merge(12884901964, v1000004d3, v30000004b, v20000035a)
-        val v1000004dd = merge(4294968541, v1000004d3, v1000004dc, v30000004c)
-        val v30000004d = merge(12884901965, v1000004d3, v30000004c, v1000004dd)
-        val v30000004e = merge(12884901966, v1000004d3, v30000004d, v1000004dd)
-        val v20000035b = merge(8589935451, v1000004d3, v20000035a, v30000004c)
-        val v30000004f = merge(12884901967, v1000004d3, v30000004e, v20000035b)
-        val v300000050 = merge(12884901968, v1000004d3, v30000004f, v20000035b)
-        val v1000004df = version(4294968543, v1000004dd)
-        val v300000051 = merge(12884901969, v1000004d3, v300000050, v1000004df)
-        val v20000035d = version(8589935453, v20000035b)
-        val v300000052 = merge(12884901970, v1000004d3, v300000051, v20000035d)
-        val v1000004e0 = merge(4294968544, v1000004d3, v1000004df, v300000051)
-        val v300000053 = merge(12884901971, v1000004d3, v300000052, v1000004e0)
-        val v300000054 = merge(12884901972, v1000004d3, v300000053, v1000004e0)
-        val v20000035f = version(8589935455, v20000035d)
-        val v300000055 = merge(12884901973, v1000004d3, v300000054, v20000035f)
-        val v200000360 = merge(8589935456, v1000004d3, v20000035f, v300000052)
-        val v300000056 = merge(12884901974, v1000004d3, v300000055, v200000360)
-        val v300000057 = merge(12884901975, v1000004d3, v300000056, v200000360)
-        val v1000004e2 = version(4294968546, v1000004e0)
-        val v300000058 = merge(12884901976, v1000004d3, v300000057, v1000004e2)
-        val v200000362 = version(8589935458, v200000360)
-        val v300000059 = merge(12884901977, v1000004d3, v300000058, v200000362)
-        val v1000004e3 = merge(4294968547, v1000004d3, v1000004e2, v300000058)
-        val v30000005a = merge(12884901978, v1000004d3, v300000059, v1000004e3)
-        val v30000005b = merge(12884901979, v1000004d3, v30000005a, v1000004e3)
-        val v1000004e5 = version(4294968549, v1000004e3)
-        val v30000005c = merge(12884901980, v1000004d3, v30000005b, v1000004e5)
-        val v200000363 = merge(8589935459, v1000004d3, v200000362, v300000058)
-        val v30000005d = merge(12884901981, v1000004d3, v30000005c, v200000363)
-        val v30000005e = merge(12884901982, v1000004d3, v30000005d, v200000363)
-        val v200000365 = version(8589935461, v200000363)
-        val v30000005f = merge(12884901983, v1000004d3, v30000005e, v200000365)
-        val v1000004e7 = version(4294968551, v1000004e5)
-        val v300000060 = merge(12884901984, v1000004d3, v30000005f, v1000004e7)
-        val v200000367 = version(8589935463, v200000365)
-        val v300000061 = merge(12884901985, v1000004d3, v300000060, v200000367)
-        val v1000004e9 = version(4294968553, v1000004e7)
-        val v300000062 = merge(12884901986, v1000004d3, v300000061, v1000004e9)
-        val v1000004ea = merge(4294968554, v1000004d3, v1000004e9, v300000060)
-        val v300000063 = merge(12884901987, v1000004d3, v300000062, v1000004ea)
-        val v300000064 = merge(12884901988, v1000004d3, v300000063, v1000004ea)
-        val v200000369 = version(8589935465, v200000367)
-        val v300000065 = merge(12884901989, v1000004d3, v300000064, v200000369)
-        val v20000036a = merge(8589935466, v1000004d3, v200000369, v300000060)
-        val v300000066 = merge(12884901990, v1000004d3, v300000065, v20000036a)
-        val v1000004eb = merge(4294968555, v1000004d3, v1000004ea, v300000061)
-        val v300000067 = merge(12884901991, v1000004d3, v300000066, v1000004eb)
-        val v20000036c = version(8589935468, v20000036a)
-        val v300000068 = merge(12884901992, v1000004d3, v300000067, v20000036c)
-        val v300000069 = merge(12884901993, v1000004d3, v300000068, v20000036a)
-        val v30000006b = merge(12884901995, v1000004d3, v300000069, v1000004eb)
-        val v20000036d = merge(8589935469, v1000004d3, v20000036c, v300000063)
-        val v30000006c = merge(12884901996, v1000004d3, v30000006b, v20000036d)
-        val v30000006d = merge(12884901997, v1000004d3, v30000006c, v20000036d)
-        val v1000004ec = merge(4294968556, v1000004d3, v1000004eb, v30000006c)
-        val v30000006e = merge(12884901998, v1000004d3, v30000006d, v1000004ec)
-        val v300000070 = merge(12884902000, v1000004d3, v30000006e, v1000004ec)
-        val v20000036e = merge(8589935470, v1000004d3, v20000036d, v30000006e)
-        val v300000071 = merge(12884902001, v1000004d3, v300000070, v20000036e)
-        val v1000004ed = merge(4294968557, v1000004d3, v1000004ec, v30000006e)
-        val v300000072 = merge(12884902002, v1000004d3, v300000071, v1000004ed)
-        val v20000036f = merge(8589935471, v1000004d3, v20000036e, v30000006e)
-        val v300000073 = merge(12884902003, v1000004d3, v300000072, v20000036f)
-        val v300000074 = merge(12884902004, v1000004d3, v300000073, v20000036f)
-        val v300000075 = merge(12884902005, v1000004d3, v300000074, v20000036e)
-        val v1000004ee = merge(4294968558, v1000004d3, v30000006e, v300000075)
-        LinearHistory(v1000004d3.getContentHash()).load(v300000075, v1000004ee)
     }
 
     private fun getChildren(branch: IBranch): SortedSet<String> {

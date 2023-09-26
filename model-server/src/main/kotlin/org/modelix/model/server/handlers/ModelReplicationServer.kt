@@ -75,7 +75,6 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
     private val storeClient: IStoreClient get() = modelClient.store
 
     fun init(application: Application) {
-        KeyValueLikeModelServer.initServerId(storeClient)
         application.apply {
             routing {
                 route("v2") {
@@ -90,7 +89,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondText(storeClient.generateId("clientId").toString())
         }
         get("server-id") {
-            call.respondText(KeyValueLikeModelServer.getServerId(storeClient))
+            call.respondText(repositoriesManager.getServerId())
         }
         get("user-id") {
             call.respondText(call.getUserName() ?: call.request.origin.remoteHost)
@@ -127,6 +126,18 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                             }
                             call.respondDelta(versionHash, baseVersionHash)
                         }
+                        get("hash") {
+                            val branch = branchRef()
+                            val versionHash = repositoriesManager.getVersionHash(branch)
+                            if (versionHash == null) {
+                                call.respondText(
+                                    "Branch '${branch.branchName}' doesn't exist in repository '${branch.repositoryId.id}'",
+                                    status = HttpStatusCode.NotFound,
+                                )
+                                return@get
+                            }
+                            call.respondText(versionHash)
+                        }
                         post {
                             val deltaFromClient = call.receive<VersionDelta>()
                             deltaFromClient.checkObjectHashes()
@@ -138,6 +149,11 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                             val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
                             val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
                             call.respondDelta(newVersionHash, lastKnownVersionHash)
+                        }
+                        get("pollHash") {
+                            val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
+                            val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
+                            call.respondText(newVersionHash)
                         }
                         webSocket("listen") {
                             var lastVersionHash = call.request.queryParameters["lastKnown"]

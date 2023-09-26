@@ -57,7 +57,7 @@ interface IModelClientV2 {
 
     /**
      * While `pull` returns immediately `poll` returns as soon as a new version, that is different from the given
-     * `lastKnownVersion`, is pushed to the server or after some timout specified by the server (usually ~30 seconds).
+     * `lastKnownVersion`, is pushed to the server or after some timeout specified by the server (usually ~30 seconds).
      */
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
 

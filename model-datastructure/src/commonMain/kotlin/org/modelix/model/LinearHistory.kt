@@ -30,7 +30,7 @@ class LinearHistory(val baseVersionHash: String?) {
             collect(fromVersion)
         }
 
-        var result: List<Long> = ArrayList()
+        var result: List<Long> = emptyList()
 
         for (version in versions.values.filter { !it.isMerge() }.sortedBy { it.id }) {
             val descendantIds = collectAllDescendants(version.id).filter { !versions[it]!!.isMerge() }.sorted().toSet()

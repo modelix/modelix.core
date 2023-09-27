@@ -19,10 +19,14 @@ package org.modelix.mps.sync
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
+import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
+import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import java.net.URL
 
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable {
@@ -30,8 +34,20 @@ class ModelSyncService : Disposable {
     private var log: Logger = Logger.getInstance(this.javaClass)
 
     init {
-        println("============================================  init")
-        log.info("modelix sync plugin initialized")
+        println("============================================ ModelSyncService init")
+
+        val syncService = SyncServiceImpl().bindRepository(
+            URL("http://127.0.0.1"),
+            BranchReference(RepositoryId("0"), "name"),
+            "JWT",
+            ProjectHelper.fromIdeaProject(com.intellij.openapi.project.ProjectManager.getInstance().openProjects.first())!!,
+            this::afterActivate,
+        )
+
+        log.info("modelix sync plugin initialized $syncService")
+    }
+    fun afterActivate() {
+        println("afterActivate")
     }
 
     private var server: String? = null

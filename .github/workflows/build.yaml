@@ -28,6 +28,7 @@ jobs:
           arguments: |
             --build-cache
             build
+            detekt
             -PciBuild=true
       - name: Archive test report
         uses: actions/upload-artifact@v3
@@ -37,6 +38,17 @@ jobs:
           path: |
             */build/test-results
             */build/reports
+      # In theory, the upload action should take care of stripping the GitHub
+      # runner workspace path from the file paths. But somehow that doesn't
+      # work. So do it manually.
+      - name: relativize SARIF file paths
+        run: |
+          sed -i 's#${{ github.workspace }}/##' build/reports/detekt/*.sarif
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'build/reports/detekt/'
+          category: detekt
 
   test-model-api-gen-gradle:
     runs-on: ubuntu-latest

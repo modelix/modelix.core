@@ -20,6 +20,7 @@ import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
@@ -49,26 +50,32 @@ class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyn
                 branch.runWriteT({
                     IWriteTransaction t =>
                     projectNodeId =
-                        t.addNewChild(ITree.ROOT_ID, "projects", -1, SConceptAdapter.wrap(concept / Project /));
-                    t.setProperty(projectNodeId, property / Project : name/.getName(), mpsProject.getName());
+                        t.addNewChild(ITree.ROOT_ID, BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept / Project /));
+                    t.setProperty(projectNodeId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name mpsProject.getName());
                     return Unit.INSTANCE;
                 });
                 enqueueSync(SyncDirection.TO_CLOUD, true, null);
             }*/
+
             branch.runWriteT {
                 projectNodeId =
                     // TODO fixme. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-                    // it.addNewChild(ITree.ROOT_ID, "projects", -1, SConceptAdapter.wrap(concept/Project/));
+                    // it.addNewChild(ITree.ROOT_ID, BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept/Project/));
                     0
 
-                // TODO instead of "name" it must be property/Project: name/.getName()
-                it.setProperty(projectNodeId, "name", mpsProject.name)
+                it.setProperty(
+                    projectNodeId,
+                    BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(),
+                    mpsProject.name,
+                )
             }
             enqueueSync(SyncDirection.TO_CLOUD, true, null)
         } else {
             val cloudProjectIsEmpty = branch.computeReadT {
-                // TODO instead of "modules" it must be link/Project: modules/.getName()
-                val children = it.getChildren(projectNodeId, "modules")
+                val children = it.getChildren(
+                    projectNodeId,
+                    BuiltinLanguages.MPSRepositoryConcepts.Project.modules.getSimpleName(),
+                )
                 !children.any()
             }
             if (cloudProjectIsEmpty) {
@@ -90,8 +97,7 @@ class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyn
 
             override fun childrenChanged(nodeId: Long, role: String?) {
                 assertSyncThread()
-                // TODO instead of "modules" it must be link/Project : modules/.getName()
-                if (nodeId == projectNodeId && role == "modules") {
+                if (nodeId == projectNodeId && role == BuiltinLanguages.MPSRepositoryConcepts.Project.modules.getSimpleName()) {
                     enqueueSync(SyncDirection.TO_MPS, false, null)
                 }
             }
@@ -136,7 +142,6 @@ class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyn
 
     override fun toString() = "Project: ${java.lang.Long.toHexString(projectNodeId)} -> ${mpsProject.name}"
 
-    @Suppress("removal")
     inner class RepositoryListener : SRepositoryListenerBase() {
         override fun moduleAdded(p1: SModule) = enqueueSyncToCloud()
 

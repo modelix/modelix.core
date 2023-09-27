@@ -20,7 +20,7 @@ import kotlin.reflect.KProperty
 
 object BuiltinLanguages {
     @Suppress("ClassName")
-    object jetbrains_mps_lang_core : SimpleLanguage(name = "jetbrains.mps.lang.core", uid = "ceab5195-25ea-4f22-9b92-103b95ca8c0c") {
+    object jetbrains_mps_lang_core : SimpleLanguage(name = "jetbrains.mps.lang.core", uid = "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c") {
         object BaseConcept : SimpleConcept(conceptName = "BaseConcept", is_abstract = true, uid = "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626") {
             init { addConcept(this) }
             val virtualPackage by property("ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626/1193676396447")
@@ -61,12 +61,29 @@ object BuiltinLanguages {
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept, jetbrains_mps_lang_core.INamedConcept),
         ) {
             init { addConcept(this) }
+
+            val id by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/2615330535972958738")
+
             val rootNodes = SimpleChildLink(
                 simpleName = "rootNodes",
                 isMultiple = true,
                 isOptional = true,
                 targetConcept = jetbrains_mps_lang_core.BaseConcept,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900",
+            )
+            val modelImports = SimpleChildLink(
+                simpleName = "modelImports",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = ModelReference,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/6402965165736931000",
+            )
+            val usedLanguages = SimpleChildLink(
+                simpleName = "usedLanguages",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = SingleLanguageDependency,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/5381564949800872334",
             )
         }
 
@@ -76,12 +93,38 @@ object BuiltinLanguages {
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept, jetbrains_mps_lang_core.INamedConcept),
         ) {
             init { addConcept(this) }
+
+            val id by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/4225291329823310560")
+            val moduleVersion by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242370")
+            val compileInMPS by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242373")
+
             val models = SimpleChildLink(
                 simpleName = "models",
                 isMultiple = true,
                 isOptional = true,
                 targetConcept = Model,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898",
+            )
+            val facets = SimpleChildLink(
+                simpleName = "facets",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = ModuleFacet,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242412",
+            )
+            val dependencies = SimpleChildLink(
+                simpleName = "dependencies",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = ModuleDependency,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242425",
+            )
+            val languageDependencies = SimpleChildLink(
+                simpleName = "languageDependencies",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = LanguageDependency,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242439",
             )
         }
 
@@ -91,6 +134,7 @@ object BuiltinLanguages {
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
         ) {
             init { addConcept(this) }
+
             val modules = SimpleChildLink(
                 simpleName = "modules",
                 isMultiple = true,
@@ -98,6 +142,131 @@ object BuiltinLanguages {
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903",
             )
+            val projects = SimpleChildLink(
+                simpleName = "projects",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = Project,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/7064605579395546636",
+            )
+        }
+
+        object Project : SimpleConcept(
+            conceptName = "Project",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept, jetbrains_mps_lang_core.INamedConcept),
+        ) {
+            init { addConcept(this) }
+
+            val modules = SimpleChildLink(
+                simpleName = "modules",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = Module,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4008363636171860450",
+            )
+        }
+
+        object ModelReference : SimpleConcept(
+            conceptName = "ModelReference",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/6402965165736932003",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init { addConcept(this) }
+
+            val model = SimpleReferenceLink(
+                simpleName = "model",
+                isOptional = false,
+                targetConcept = Model,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/6402965165736932003/6402965165736932004",
+            )
+        }
+
+        object LanguageDependency : SimpleConcept(
+            conceptName = "LanguageDependency",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init { addConcept(this) }
+
+            val uuid by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575314")
+            val name by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575315")
+        }
+
+        object SingleLanguageDependency : SimpleConcept(
+            conceptName = "SingleLanguageDependency",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429",
+            directSuperConcepts = listOf(LanguageDependency),
+        ) {
+            init { addConcept(this) }
+
+            val version by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429/2206727074858242435")
+        }
+
+        object DevkitDependency : SimpleConcept(
+            conceptName = "DevkitDependency",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575318",
+            directSuperConcepts = listOf(LanguageDependency),
+        ) {
+            init { addConcept(this) }
+        }
+
+        object ModuleFacet : SimpleConcept(
+            conceptName = "ModuleFacet",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242403",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init { addConcept(this) }
+        }
+
+        object ModuleDependency : SimpleConcept(
+            conceptName = "ModuleDependency",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init { addConcept(this) }
+        }
+    }
+
+    object ModelixRuntimelang : SimpleLanguage("org.modelix.model.runtimelang", uid = "mps:b6980ebd-f01d-459d-a952-38740f6313b4") {
+        object ModelServerInfo : SimpleConcept(
+            conceptName = "ModelServerInfo",
+            uid = "mps:b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348863",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init { addConcept(this) }
+
+            val repositories = SimpleChildLink(
+                simpleName = "repositories",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = RepositoryInfo,
+                uid = "b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348863/7113393488488348866",
+            )
+        }
+
+        object RepositoryInfo : SimpleConcept(
+            conceptName = "RepositoryInfo",
+            uid = "mps:b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348864",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init { addConcept(this) }
+
+            val branches = SimpleChildLink(
+                simpleName = "branches",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = BranchInfo,
+                uid = "b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348864/7113393488488348868",
+            )
+        }
+
+        object BranchInfo : SimpleConcept(
+            conceptName = "BranchInfo",
+            uid = "mps:b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348865",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init { addConcept(this) }
         }
     }
 

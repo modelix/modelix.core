@@ -22,10 +22,12 @@ import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.Project
 import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.mps.openapi.language.SConcept
+import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.util.ProgressMonitor
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
@@ -198,21 +200,14 @@ object ModelCloudImportUtils {
         val sModuleAsNode: INode = null!!
 
         treeInRepository.runWrite {
-            // TODO instead of "name" it must be property/Module: name/.getName()
-            cloudModule.copyProperty(sModuleAsNode, PropertyFromName("name"))
-            // TODO instead of "id" it must be property/Module: id/.getName()
-            cloudModule.copyProperty(sModuleAsNode, PropertyFromName("id"))
-            // TODO instead of "moduleVersion" it must be property/Module: moduleVersion/.getName()
-            cloudModule.copyProperty(sModuleAsNode, PropertyFromName("moduleVersion"))
-            // TODO instead of "compileInMPS" it must be property/Module: compileInMPS/.getName()
-            cloudModule.copyProperty(sModuleAsNode, PropertyFromName("compileInMPS"))
+            cloudModule.copyProperty(sModuleAsNode, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+            cloudModule.copyProperty(sModuleAsNode, BuiltinLanguages.MPSRepositoryConcepts.Module.id)
+            cloudModule.copyProperty(sModuleAsNode, BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion)
+            cloudModule.copyProperty(sModuleAsNode, BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS)
 
-            // TODO instead of "facets" it must be link/Module: facets/.getName()
-            cloudModule.cloneChildren(sModuleAsNode, "facets")
-            // TODO instead of "dependencies" it must be link/Module: dependencies/.getName()
-            cloudModule.cloneChildren(sModuleAsNode, "dependencies")
-            // TODO instead of "languageDependencies" it must be link/Module: languageDependencies/.getName()
-            cloudModule.cloneChildren(sModuleAsNode, "languageDependencies")
+            cloudModule.cloneChildren(sModuleAsNode, BuiltinLanguages.MPSRepositoryConcepts.Module.facets)
+            cloudModule.cloneChildren(sModuleAsNode, BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
+            cloudModule.cloneChildren(sModuleAsNode, BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies)
         }
 
         var models: List<SModel>
@@ -258,24 +253,18 @@ object ModelCloudImportUtils {
         // SModelAsNode.wrap(physicalModel);
         val originalModel: INode = null!!
 
-        // TODO instead of null it must be an SContainmentLink that was created from link/Module: models/.getName()
-        // TODO we need org.modelix.model.repositoryconcepts.Model concept class instead of null
-        val modelConcept: SConcept = null!!
-        return treeInRepository.createNode(cloudModule, null!!, modelConcept) { cloudModel: INode ->
-            // TODO instead of "name" it must be property/Model: name/.getName()
-            cloudModel.copyProperty(originalModel, PropertyFromName("name"))
-            // TODO instead of "id" it must be property/Model: id/.getName()
-            cloudModel.copyProperty(originalModel, PropertyFromName("id"))
+        val modelConcept: SConcept = null!! // TODO convert BuiltinLanguages.MPSRepositoryConcepts.Model to SConcept
+        val containmentLink: SContainmentLink = null!! // TODO convert BuiltinLanguages.MPSRepositoryConcepts.Module.models to SContainmentLink
+        return treeInRepository.createNode(cloudModule, containmentLink, modelConcept) { cloudModel: INode ->
+            cloudModel.copyProperty(originalModel, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+            cloudModel.copyProperty(originalModel, BuiltinLanguages.MPSRepositoryConcepts.Model.id)
 
-            // TODO instead of "modelImports" it must be link/Model: modelImports/.getName()
-            cloudModel.cloneChildren(originalModel, "modelImports")
-            // TODO instead of "usedLanguages" it must be link/Model: usedLanguages/.getName()
-            cloudModel.cloneChildren(originalModel, "usedLanguages")
+            cloudModel.cloneChildren(originalModel, BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
+            cloudModel.cloneChildren(originalModel, BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)
 
             physicalModel.rootNodes.forEach { physicalRoot ->
-                // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
                 // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-                // cloudModel.addNewChild("rootNodes", -1, SConceptAdapter.wrap(physicalRoot.getConcept()));
+                // cloudModel.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes, -1, SConceptAdapter.wrap(physicalRoot.getConcept()));
                 val cloudRoot: INode = null!!
                 replicatePhysicalNode(cloudRoot, physicalRoot)
             }

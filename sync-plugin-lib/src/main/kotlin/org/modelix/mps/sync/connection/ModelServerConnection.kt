@@ -7,6 +7,7 @@ import com.intellij.util.messages.MessageBusConnection
 import com.intellij.util.messages.Topic
 import jetbrains.mps.ide.project.ProjectHelper
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
@@ -195,24 +196,18 @@ class ModelServerConnection {
         return repositoryInfo
     }
 
-    fun addRepository(id: String): Any {
+    fun addRepository(id: String): INode {
         // TODO should return org.modelix.model.runtimelang.structure.RepositoryInfo
         return PArea(getInfoBranch()).executeWrite {
-            val modelServerInfo = getInfo()
+            /*val modelServerInfo = getInfo()
 
-            /**
-             * TODO fixme:
-             * 1. SNodeAPI does not exist
-             * 2. link/ModelServerInfo : repositories/ and link/RepositoryInfo : branches/ should be migrated correctly
-             * 3. org.modelix.model.runtimelang.structure.RepositoryInfo does not exist
-
-             val repositoryInfo = SNodeAPI.addNewChild(modelServerInfo, link/ModelServerInfo : repositories/):RepositoryInfo;
+             TODO fixme SNodeAPI...
+             val repositoryInfo = SNodeAPI.addNewChild(modelServerInfo, BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
              repositoryInfo.id = id;
-             node<BranchInfo> branchInfo = SNodeAPI.addNewChild(repositoryInfo, link/RepositoryInfo : branches/):BranchInfo;
+             node<BranchInfo> branchInfo = SNodeAPI.addNewChild(repositoryInfo, BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.branches):BranchInfo;
              branchInfo.name = ActiveBranch.DEFAULT_BRANCH_NAME;
-             return repositoryInfo;
-             */
-            Any()
+             return repositoryInfo;*/
+            Any() as INode
         }
     }
 

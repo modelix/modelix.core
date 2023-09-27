@@ -17,8 +17,8 @@
 package org.modelix.mps.sync.transient
 
 import jetbrains.mps.project.ModuleId
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PropertyFromName
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.binding.ModuleBinding
@@ -38,14 +38,10 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
     override fun doActivate() {
         val branch = getBranch()!!
         var moduleName = PArea(branch).executeRead {
-            // TODO instead of "name" it must be property/Module: name/.getName()
-            val nameProperty = PropertyFromName("name")
-            PNodeAdapter(moduleNodeId, branch).getPropertyValue(nameProperty)
+            PNodeAdapter(moduleNodeId, branch).getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         }
         val moduleIdStr = PArea(branch).executeRead {
-            // TODO instead of "id" it must be property/Module: id/.getName()
-            val idProperty = PropertyFromName("id")
-            PNodeAdapter(moduleNodeId, branch).getPropertyValue(idProperty)
+            PNodeAdapter(moduleNodeId, branch).getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id)
         }
         if (moduleName?.isEmpty() == true) {
             moduleName = "cloud.module ${NAME_SEQUENCE.incrementAndGet()}"

@@ -23,6 +23,7 @@ import jetbrains.mps.project.Solution
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
@@ -32,9 +33,8 @@ import org.modelix.mps.sync.util.createModule
 import java.util.Collections
 
 // status: migrated, but needs some bugfixes
-// TODO instead of "modules" it must be link/Project : modules/.getName()
 class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSProject) :
-    Synchronizer<SModule>(cloudParentId, "modules") {
+    Synchronizer<SModule>(cloudParentId, BuiltinLanguages.MPSRepositoryConcepts.Project.modules.getSimpleName()) {
 
     override fun getMPSChildren(): Iterable<SModule> = project.projectModules.filterIsInstance<Solution>()
 
@@ -49,8 +49,8 @@ class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSPr
 
     override fun createMPSChild(tree: ITree, cloudChildId: Long): SModule? {
         val id = getModuleId(tree, cloudChildId) ?: ModuleId.foreign("cloud-$cloudChildId")
-        // TODO instead of "name" it must be property/Module : name/.getName()
-        val name = tree.getProperty(cloudChildId, "name")
+        val name =
+            tree.getProperty(cloudChildId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())
         val concept = tree.getConcept(cloudChildId)
         // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
         // createModule(name, id, SConceptAdapter.unwrap(concept))
@@ -59,8 +59,9 @@ class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSPr
     }
 
     private fun getModuleId(tree: ITree, cloudModuleId: Long): SModuleId? {
-        // TODO instead of "id" it must be property/Module : id/.getName()
-        val serializedId = tree.getProperty(cloudModuleId, "id") ?: return null
+        val serializedId =
+            tree.getProperty(cloudModuleId, BuiltinLanguages.MPSRepositoryConcepts.Module.id.getSimpleName())
+                ?: return null
         return if (serializedId.isEmpty()) {
             null
         } else {
@@ -96,8 +97,10 @@ class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSPr
 
         cloudChildren.forEach { cloudModuleId ->
             val id = getModuleId(tree, cloudModuleId)
-            // TODO instead of "name" it must be property/Module : name/.getName()
-            val name = tree.getProperty(cloudModuleId, "name")
+            val name = tree.getProperty(
+                cloudModuleId,
+                BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(),
+            )
 
             // There can be modules with duplicate names. That's why we can't just search in a map.
             val iterator = availableModules.iterator()
@@ -115,14 +118,19 @@ class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSPr
     }
 
     override fun createCloudChild(transaction: IWriteTransaction, mpsChild: SModule): Long {
-        // TODO instead of "modules" it must be link/Project : modules/.getName()
         // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-        // transaction.addNewChild(cloudParentId, "modules", -1, SConceptAdapter.wrap(concept/Module/))
+        // transaction.addNewChild(cloudParentId, BuiltinLanguages.MPSRepositoryConcepts.Project.modules, -1, SConceptAdapter.wrap(concept/Module/))
         val modelNodeId = 0L
-        // TODO instead of "id" it must be property/Module : id/.getName()
-        transaction.setProperty(modelNodeId, "id", mpsChild.moduleId.toString())
-        // TODO instead of "name" it must be property/Module : name/.getName()
-        transaction.setProperty(modelNodeId, "name", mpsChild.moduleName)
+        transaction.setProperty(
+            modelNodeId,
+            BuiltinLanguages.MPSRepositoryConcepts.Module.id.getSimpleName(),
+            mpsChild.moduleId.toString(),
+        )
+        transaction.setProperty(
+            modelNodeId,
+            BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(),
+            mpsChild.moduleName,
+        )
         return modelNodeId
     }
 }

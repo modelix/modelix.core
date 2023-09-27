@@ -20,12 +20,12 @@ import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PropertyFromName
 import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.lazy.RepositoryId
@@ -182,15 +182,12 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
 
     fun createProject(name: String): INode {
         return computeWrite { rootNode ->
-            // TODO instead of "projects" it must be link/Repository : projects/.getName()
             // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
             // TODO  Project must be org.modelix.model.repositoryconcepts.Project
-            // rootNode.addNewChild("projects", -1, SConceptAdapter.wrap(concept/Project/));
+            // rootNode.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept/Project/));
             val newProject: INode? = null!!
 
-            // TODO instead of "name" it must be property/Project : name/.getName()
-            val nameProperty = PropertyFromName("name")
-            newProject!!.setPropertyValue(nameProperty, name)
+            newProject!!.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, name)
             newProject
         }
     }
@@ -201,11 +198,8 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
             val activeBranch = modelServer.getActiveBranch(repositoryId)
             val branch = activeBranch.branch
             val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
-            // TODO instead of "projects" it must be link/Repository : projects/.getName()
-            rootNode.getChildren("projects").forEach { child ->
-                // TODO instead of "name" it must be property/Project : name/.getName()
-                val nameProperty = PropertyFromName("name")
-                val projectName = child.getPropertyValue(nameProperty)
+            rootNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects).forEach { child ->
+                val projectName = child.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
                 if (projectName == name) {
                     project = child
                 }
@@ -221,10 +215,8 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
             val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
             val projectNode = PNodeAdapter(projectNodeId, rootNode.branch)
 
-            // TODO instead of "id" it must be property/Module : id/.getName()
-            val idProperty = PropertyFromName("id")
-            // TODO instead of "modules" it must be link/Project : modules/.getName()
-            projectNode.getChildren("modules").any { it.getPropertyValue(idProperty) == moduleId }
+            projectNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.modules)
+                .any { it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId }
         }
     }
 
@@ -234,26 +226,19 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
             val branch = activeBranch.branch
             val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
 
-            // TODO instead of "id" it must be property/Module : id/.getName()
-            val idProperty = PropertyFromName("id")
-            // TODO instead of "modules" it must be link/Repository : modules/.getName()
-            rootNode.getChildren("modules").any { it.getPropertyValue(idProperty) == moduleId }
+            rootNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.modules)
+                .any { it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId }
         }
     }
 
     fun createModuleUnderProject(projectNodeId: Long, moduleId: String, moduleName: String): INode {
         return computeWrite { rootNode ->
             val projectNode = PNodeAdapter(projectNodeId, rootNode.branch)
-            // TODO instead of "modules" it must be link/Project : modules/.getName()
             // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-            // projectNode.addNewChild("modules", -1, SConceptAdapter.wrap(concept/Module/));
+            // projectNode.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Project.modules, -1, SConceptAdapter.wrap(concept/Module/));
             val newModule: INode? = null!!
-            // TODO instead of "id" it must be property/Module : id/.getName()
-            val idProperty = PropertyFromName("id")
-            newModule!!.setPropertyValue(idProperty, moduleId)
-            // TODO instead of "name" it must be property/Module : name/.getName()
-            val nameProperty = PropertyFromName("name")
-            newModule.setPropertyValue(nameProperty, moduleName)
+            newModule!!.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id, moduleId)
+            newModule.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, moduleName)
             newModule
         }
     }

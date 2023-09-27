@@ -359,6 +359,14 @@ class ModelQLTest {
         assertEquals(testDatabase.products.map { it.title to it.title }, result.map { it.first to it.second })
     }
 
+    @Test
+    fun paginationTest() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            db.products.drop(3).take(5).map { it.title }.toList()
+        }
+        assertEquals(testDatabase.products.drop(3).take(5).map { it.title }, result)
+    }
+
 //    @Test
 //    fun testIndexLookup() {
 //        val result = remoteProductDatabaseQuery { db ->

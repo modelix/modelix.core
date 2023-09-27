@@ -24,11 +24,11 @@ import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PropertyFromName
 import org.modelix.model.area.PArea
 import org.modelix.mps.sync.ICloudRepository
 import org.modelix.mps.sync.util.copyPropertyIfNecessary
@@ -74,29 +74,28 @@ class ModelPropertiesSynchronizer(
                     // SModelAsNode.wrap(model);
                     val mpsModelNode: INode = null!!
 
-                    // TODO instead of "usedLanguages" it must be link/Model: usedLanguages/.getName()
-                    val dependenciesInMPS: List<INode> = mpsModelNode.getChildren("usedLanguages").toList()
+                    val dependenciesInMPS: List<INode> =
+                        mpsModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages).toList()
 
                     // Then get the dependencies in the cloud
                     val branch = cloudRepository.getBranch()
                     val cloudModelNode = PNodeAdapter(modelNodeId, branch)
-                    // TODO instead of "usedLanguages" it must be link/Model: usedLanguages/.getName()
-                    val dependenciesInCloud = cloudModelNode.getChildren("usedLanguages")
+                    val dependenciesInCloud =
+                        cloudModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)
 
                     // For each import in the cloud add it if not present in MPS or otherwise ensure all properties are the same
                     dependenciesInCloud.forEach { dependencyInCloud ->
                         val matchingDependencyInMPS = dependenciesInMPS.firstOrNull { dependencyInMPS ->
-                            // TODO instead of "uuid" it must be property/SingleLanguageDependency : uuid/.getName()
-                            val uuidProperty = PropertyFromName("uuid")
-                            dependencyInCloud.getPropertyValue(uuidProperty) == dependencyInMPS.getPropertyValue(uuidProperty)
+                            val uuidProperty = BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid
+                            dependencyInCloud.getPropertyValue(uuidProperty) == dependencyInMPS.getPropertyValue(
+                                uuidProperty,
+                            )
                         }
                         if (matchingDependencyInMPS == null) {
                             // TODO fixme. We need the Concept class of DevkitDependency to do: concept/DevkitDependency/.getLanguage().getQualifiedName() and  concept/DevkitDependency/.getName()
                             if (dependencyInCloud.concept?.getLongName() == "fixme DevkitDependencyLanguageQualifiedName.fixme DevkitDependency.name") {
                                 val repo = model.repository
-                                // TODO instead of "uuid" it must be property/DevkitDependency : uuid/.getName()
-                                val uuidProperty = PropertyFromName("uuid")
-                                val devKitUUID = dependencyInCloud.getPropertyValue(uuidProperty)
+                                val devKitUUID = dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
                                 val devKit = repo.getModule(ModuleId.regular(UUID.fromString(devKitUUID))) as DevKit
                                 val devKitModuleReference = devKit.moduleReference
                                 // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
@@ -104,35 +103,30 @@ class ModelPropertiesSynchronizer(
                                 // mpsModelNode.getElement().addDevKit(devKitModuleReference)
 
                                 // TODO fixme. We need the Concept class of SingleLanguageDependency to do: concept/SingleLanguageDependency/.getLanguage().getQualifiedName() and  concept/SingleLanguageDependency/.getName()
-                            } else if (dependencyInCloud.concept?.getLongName() == "fixme SingleLanguageDependency.fixme SingleLanguageDependency.name") {
+                            } else if (dependencyInCloud.concept?.getLongName() == "TODO test if BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getLongName() is the same as concept/SingleLanguageDependency/.getLanguage().getQualifiedName().concept/SingleLanguageDependency/.getName()") {
                                 val repo = model.repository
-                                // TODO instead of "uuid" it must be property/SingleLanguageDependency : uuid/.getName()
-                                val uuidProperty = PropertyFromName("uuid")
-                                val languageUUID = dependencyInCloud.getPropertyValue(uuidProperty)
+                                val languageUUID =
+                                    dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
                                 val language =
                                     repo.getModule(ModuleId.regular(UUID.fromString(languageUUID))) as Language
                                 val sLanguage = MetaAdapterFactory.getLanguage(language.moduleReference)
 
-                                // TODO instead of "version" it must be property/SingleLanguageDependency : version/.getName()
-                                val versionProperty = PropertyFromName("version")
-                                dependencyInCloud.getPropertyValue(versionProperty)
-
                                 // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
                                 // getElement() is supposed to return an SModel
-                                // mpsModelNode.getElement().addLanguageImport(sLanguage, Integer.parseInt(versionProperty))
+                                // mpsModelNode.getElement().addLanguageImport(sLanguage, Integer.parseInt(dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)))
                             } else {
                                 throw UnsupportedOperationException("Unknown dependency with concept ${dependencyInCloud.concept?.getLongName()}")
                             }
                         } else {
                             // We use this method to avoid using set, if it is not strictly necessary, which may be not supported
-
-                            // TODO instead of "name" it must be property/SingleLanguageDependency : name/.getName()
-                            val nameProperty = PropertyFromName("name")
-                            matchingDependencyInMPS.copyPropertyIfNecessary(dependencyInCloud, nameProperty)
-
-                            // TODO instead of "version" it must be property/SingleLanguageDependency : version/.getName()
-                            val versionProperty = PropertyFromName("version")
-                            matchingDependencyInMPS.copyPropertyIfNecessary(dependencyInCloud, versionProperty)
+                            matchingDependencyInMPS.copyPropertyIfNecessary(
+                                dependencyInCloud,
+                                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                            )
+                            matchingDependencyInMPS.copyPropertyIfNecessary(
+                                dependencyInCloud,
+                                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                            )
                         }
                     }
 
@@ -144,7 +138,7 @@ class ModelPropertiesSynchronizer(
                         /*if (dependencyInMPS is DevKitDependencyAsNode) {
                             INode matchingDependencyInCloud = null;
                             foreach dependencyInCloud in dependenciesInCloud {
-                                if (dependencyInMPS.getPropertyValue(property/DevkitDependency : uuid/.getName()) :eq: dependencyInCloud.getPropertyValue(property/DevkitDependency : uuid/.getName())) {
+                                if (dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)) {
                                 matchingDependencyInCloud = dependencyInCloud;
                             }
                             }
@@ -158,7 +152,7 @@ class ModelPropertiesSynchronizer(
                         } else if (dependencyInMPS is SingleLanguageDependencyAsNode) {
                             INode matchingDependencyInCloud = null;
                             foreach dependencyInCloud in dependenciesInCloud {
-                                if (dependencyInMPS.getPropertyValue(property/SingleLanguageDependency : uuid/.getName()) :eq: dependencyInCloud.getPropertyValue(property/SingleLanguageDependency : uuid/.getName())) {
+                                if (dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)) {
                                 matchingDependencyInCloud = dependencyInCloud;
                             }
                             }
@@ -190,26 +184,25 @@ class ModelPropertiesSynchronizer(
                     // TODO it should be SModelAsNode instead of INode
                     // SModelAsNode.wrap(model);
                     val mpsModelNode: INode = null!!
-                    // TODO instead of "modelImports" it must be link/Model: modelImports/.getName()
-                    val dependenciesInMPS = mpsModelNode.getChildren("modelImports")
+                    val dependenciesInMPS =
+                        mpsModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
 
                     // Then get the dependencies in the cloud
                     val branch = cloudRepository.getBranch()
                     val cloudModelNode = PNodeAdapter(modelNodeId, branch)
-                    // TODO instead of "modelImports" it must be link/Model: modelImports/.getName()
-                    val dependenciesInCloud = cloudModelNode.getChildren("modelImports")
+                    val dependenciesInCloud =
+                        cloudModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
 
                     // For each import in Cloud add it if not present in MPS or otherwise ensure all properties are the same
                     dependenciesInCloud.forEach { dependencyInCloud ->
-                        // TODO instead of "model" it must be link/ModelReference: model/.getName()
-                        val modelImportedInCloud = dependencyInCloud.getReferenceTarget("model")
+                        val modelImportedInCloud =
+                            dependencyInCloud.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
                         if (modelImportedInCloud != null) {
-                            // TODO instead of "id" it must be property/Model: id/.getName()
-                            val idProperty = PropertyFromName("id")
+                            val idProperty = BuiltinLanguages.MPSRepositoryConcepts.Model.id
                             val modelIDimportedInCloud = modelImportedInCloud.getPropertyValue(idProperty)
                             val matchingDependencyInMps = dependenciesInMPS.firstOrNull { dependencyInMPS ->
-                                // TODO instead of "model" it must be link/ModelReference: model/.getName()
-                                val modelImportedInMPS = dependencyInMPS.getReferenceTarget("model")
+                                val modelImportedInMPS =
+                                    dependencyInMPS.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
                                 if (modelImportedInMPS == null) {
                                     false
                                 } else {
@@ -218,8 +211,10 @@ class ModelPropertiesSynchronizer(
                                 }
                             }
                             if (matchingDependencyInMps == null) {
-                                // TODO instead of "modelImports" it must be link/Model: modelImports/.getName()
-                                mpsModelNode.replicateChild("modelImports", dependencyInCloud)
+                                mpsModelNode.replicateChild(
+                                    BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports,
+                                    dependencyInCloud,
+                                )
                             } else {
                                 // no properties to set here
                             }
@@ -228,15 +223,14 @@ class ModelPropertiesSynchronizer(
 
                     // For each import not in Cloud remove it
                     dependenciesInMPS.forEach { dependencyInMPS ->
-                        // TODO instead of "model" it must be link/ModelReference: model/.getName()
-                        val modelImportedInMPS = dependencyInMPS.getReferenceTarget("model")
+                        val modelImportedInMPS =
+                            dependencyInMPS.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
                         if (modelImportedInMPS != null) {
-                            // TODO instead of "id" it must be property/Model: id/.getName()
-                            val idProperty = PropertyFromName("id")
+                            val idProperty = BuiltinLanguages.MPSRepositoryConcepts.Model.id
                             val modelIDimportedInMPS = modelImportedInMPS.getPropertyValue(idProperty)
                             val matchingDependencyInCloud = dependenciesInCloud.firstOrNull { dependencyInCloud ->
-                                // TODO instead of "model" it must be link/ModelReference: model/.getName()
-                                val modelImportedInCloud = dependencyInCloud.getReferenceTarget("model")
+                                val modelImportedInCloud =
+                                    dependencyInCloud.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
                                 if (modelImportedInCloud == null) {
                                     false
                                 } else {
@@ -281,14 +275,13 @@ class ModelPropertiesSynchronizer(
             // First get the dependencies in MPS
             // TODO fixme. Problem SModelAsNode.wrap does not exist anymore in modelix...
             val mpsModelNode: INode = null!! // SModelAsNode.wrap(model);
-
-            // TODO instead of "usedLanguages" it must be link/Model: usedLanguages/.getName()
-            val dependenciesInMPS: List<INode> = mpsModelNode.getChildren("usedLanguages").toList()
+            val dependenciesInMPS: List<INode> =
+                mpsModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages).toList()
 
             // Then get the dependencies in the cloud
             val cloudModelNode = PNodeAdapter(modelNodeId, branch)
-            // TODO instead of "usedLanguages" it must be link/Model: usedLanguages/.getName()
-            val dependenciesInCloud = cloudModelNode.getChildren("usedLanguages")
+            val dependenciesInCloud =
+                cloudModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)
 
             // For each import in MPS, add it if not present in the cloud, or otherwise ensure all properties are the same
             dependenciesInMPS.forEach { dependencyInMPS ->
@@ -296,30 +289,29 @@ class ModelPropertiesSynchronizer(
                 // TODO fixme. org.modelix.mpsadapters.mps.SingleLanguageDependencyAsNode does not exist in modelix
 
                 /*if (dependencyInMPS is DevKitDependencyAsNode) {
-                    INode matchingDependencyInCloud = dependenciesInCloud . findFirst ({ ~dependencyInCloud => dependencyInMPS.getPropertyValue(property/DevkitDependency : uuid/.getName()) :eq: dependencyInCloud.getPropertyValue(property/DevkitDependency : uuid/.getName()); });
+                    INode matchingDependencyInCloud = dependenciesInCloud . findFirst ({ ~dependencyInCloud => dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) })
                     if (matchingDependencyInCloud == null) {
-                        cloudModelNode.replicateChildx(link / Model : usedLanguages/.getName(), dependencyInMPS);
+                        cloudModelNode.replicateChild(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages, dependencyInMPS);
                     } else {
-                        cloudModelNode.copyPropertyx(dependencyInMPS, property / DevkitDependency : name/);
+                        cloudModelNode.copyProperty(dependencyInMPS, BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name);
                     }
                 } else if (dependencyInMPS is SingleLanguageDependencyAsNode) {
-                    INode matchingDependencyInCloud = dependenciesInCloud . findFirst ({ ~dependencyInCloud => dependencyInMPS.getPropertyValue(property/SingleLanguageDependency : uuid/.getName()) :eq: dependencyInCloud.getPropertyValue(property/SingleLanguageDependency : uuid/.getName()); });
+                    INode matchingDependencyInCloud = dependenciesInCloud . findFirst ({ ~dependencyInCloud => dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) })
                     if (matchingDependencyInCloud == null) {
-                        cloudModelNode.replicateChildx(link / Model : usedLanguages/.getName(), dependencyInMPS);
+                        cloudModelNode.replicateChild(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages, dependencyInMPS);
                     } else {
-                        cloudModelNode.copyPropertyx(dependencyInMPS, property / SingleLanguageDependency : name/);
-                        cloudModelNode.copyPropertyx(dependencyInMPS, property / SingleLanguageDependency : version/);
+                        cloudModelNode.copyProperty(dependencyInMPS, BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name);
+                        cloudModelNode.copyProperty(dependencyInMPS, BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version);
                     }
                 } else {
-                    throw new RuntimeException ("Unknown dependency type: " + dependencyInMPS.getClass().getName());
+                    throw RuntimeException ("Unknown dependency type: ${dependencyInMPS.getClass().getName()}");
                 }*/
             }
 
             // For each import not in MPS, remove it
             dependenciesInCloud.forEach { dependencyInCloud ->
                 val matchingDependencyInMPS = dependenciesInCloud.firstOrNull { dependencyInMPS ->
-                    // TODO instead of "uuid" it must be property/SingleLanguageDependency : uuid/.getName()
-                    val uuidProperty = PropertyFromName("uuid")
+                    val uuidProperty = BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid
                     dependencyInCloud.getPropertyValue(uuidProperty) == dependencyInMPS.getPropertyValue(uuidProperty)
                 }
                 if (matchingDependencyInMPS == null) {
@@ -336,25 +328,23 @@ class ModelPropertiesSynchronizer(
             // TODO fixme. Problem SModelAsNode.wrap does not exist anymore in modelix...
             // TODO it should be SModelAsNode instead of INode
             val mpsModelNode: INode = null!! // SModelAsNode.wrap(model);
-            // TODO instead of "modelImports" it must be link/Model: modelImports/.getName()
-            val dependenciesInMPS = mpsModelNode.getChildren("modelImports")
+            val dependenciesInMPS = mpsModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
 
             // Then get the dependencies in the cloud
             val cloudModelNode = PNodeAdapter(modelNodeId, branch)
-            // TODO instead of "modelImports" it must be link/Model: modelImports/.getName()
-            val dependenciesInCloud = cloudModelNode.getChildren("modelImports")
+            val dependenciesInCloud =
+                cloudModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
 
             // For each import in MPS, add it if not present in the cloud, or otherwise ensure all properties are the same
             dependenciesInMPS.forEach { dependencyInMPS ->
-                // TODO instead of "model" it must be link/ModelReference: model/.getName()
-                val modelImportedInMps = dependencyInMPS.getReferenceTarget("model")
+                val modelImportedInMps =
+                    dependencyInMPS.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
                 if (modelImportedInMps != null) {
-                    // TODO instead of "id" it must be property/Model: id/.getName()
-                    val idProperty = PropertyFromName("id")
+                    val idProperty = BuiltinLanguages.MPSRepositoryConcepts.Model.id
                     val modelIDimportedInMPS = modelImportedInMps.getPropertyValue(idProperty)
                     val matchingDependencyInCloud = dependenciesInCloud.firstOrNull { dependencyInCloud ->
-                        // TODO instead of "model" it must be link/ModelReference: model/.getName()
-                        val modelImportedInCloud = dependencyInCloud.getReferenceTarget("model")
+                        val modelImportedInCloud =
+                            dependencyInCloud.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
                         if (modelImportedInCloud == null) {
                             false
                         } else {
@@ -363,8 +353,10 @@ class ModelPropertiesSynchronizer(
                         }
                     }
                     if (matchingDependencyInCloud == null) {
-                        // TODO instead of "modelImports" it must be link/Model: modelImports/.getName()
-                        cloudModelNode.replicateChild("modelImports", dependencyInMPS)
+                        cloudModelNode.replicateChild(
+                            BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports,
+                            dependencyInMPS,
+                        )
                     } else {
                         // no properties to set here
                     }
@@ -373,15 +365,14 @@ class ModelPropertiesSynchronizer(
 
             // For each import not in MPS, remove it
             dependenciesInCloud.forEach { dependencyInCloud ->
-                // TODO instead of "model" it must be link/ModelReference: model/.getName()
-                val modelImportedInCloud = dependencyInCloud.getReferenceTarget("model")
+                val modelImportedInCloud =
+                    dependencyInCloud.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
                 if (modelImportedInCloud != null) {
-                    // TODO instead of "id" it must be property/Model: id/.getName()
-                    val idProperty = PropertyFromName("id")
+                    val idProperty = BuiltinLanguages.MPSRepositoryConcepts.Model.id
                     val modelIDimportedInCloud = modelImportedInCloud.getPropertyValue(idProperty)
                     val matchingDependencyInMPS = dependenciesInCloud.firstOrNull { dependencyInMPS ->
-                        // TODO instead of "model" it must be link/ModelReference: model/.getName()
-                        val modelImportedInMPS = dependencyInMPS.getReferenceTarget("model")
+                        val modelImportedInMPS =
+                            dependencyInMPS.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
                         if (modelImportedInMPS == null) {
                             false
                         } else {

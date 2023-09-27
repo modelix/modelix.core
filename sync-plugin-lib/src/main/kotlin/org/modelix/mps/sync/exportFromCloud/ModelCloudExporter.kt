@@ -51,6 +51,7 @@ import org.jetbrains.mps.openapi.persistence.ModelSaveException
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.jetbrains.mps.openapi.persistence.StreamDataSource
 import org.jetbrains.mps.openapi.persistence.UnsupportedDataSourceException
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IdGeneratorDummy
@@ -167,8 +168,7 @@ class ModelCloudExporter {
             PArea(branch).executeRead {
                 PrefetchCache.Companion.with(tree) {
                     val transaction = branch.transaction
-                    // TODO instead of "modules" it must be link/Repository : modules/.getName()
-                    var moduleIds = transaction.getChildren(ITree.ROOT_ID, "modules")
+                    var moduleIds = transaction.getChildren(ITree.ROOT_ID, BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.getSimpleName())
                     if (selectedModuleIds != null) {
                         moduleIds = moduleIds.intersect(selectedModuleIds)
                     }

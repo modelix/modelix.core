@@ -16,9 +16,9 @@
 
 package org.modelix.mps.sync.util
 
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PropertyFromName
 import org.modelix.model.area.PArea
 import java.util.UUID
 
@@ -27,16 +27,11 @@ import java.util.UUID
 fun PNodeAdapter.createModuleInRepository(name: String): INode {
     // TODO check the concept of this node is Repository
     return PArea(this.branch).executeWrite {
-        // TODO instead of "modules" it must be link/Repository : modules/.getName()
         // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-        // this.addNewChild("modules", -1, SConceptAdapter.wrap(concept/Module/));
+        // this.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules, -1, SConceptAdapter.wrap(concept/Module/));
         val newModule: INode? = null!!
-        // TODO instead of "name" it must be property/Module : name/.getName()
-        val nameProperty = PropertyFromName("name")
-        newModule!!.setPropertyValue(nameProperty, name)
-        // TODO instead of "id" it must be property/Module : id/.getName()
-        val idProperty = PropertyFromName("id")
-        newModule.setPropertyValue(idProperty, UUID.randomUUID().toString())
+        newModule!!.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, name)
+        newModule.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id, UUID.randomUUID().toString())
         newModule
     }
 }
@@ -44,13 +39,10 @@ fun PNodeAdapter.createModuleInRepository(name: String): INode {
 fun PNodeAdapter.createProject(name: String): INode {
     // TODO check the concept of this node is Repository
     return PArea(this.branch).executeWrite {
-        // TODO instead of "projects" it must be link/Repository : projects/.getName()
         // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-        // this.addNewChild("projects", -1, SConceptAdapter.wrap(concept/Project/));
+        // this.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept/Project/));
         val newModule: INode? = null!!
-        // TODO instead of "name" it must be property/Module : name/.getName()
-        val nameProperty = PropertyFromName("name")
-        newModule!!.setPropertyValue(nameProperty, name)
+        newModule!!.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, name)
         newModule
     }
 }

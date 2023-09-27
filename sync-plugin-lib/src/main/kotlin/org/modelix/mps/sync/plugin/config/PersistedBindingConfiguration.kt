@@ -20,6 +20,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import jetbrains.mps.ide.project.ProjectHelper
 import org.jetbrains.mps.openapi.module.SModule
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
@@ -276,8 +277,7 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
     fun addMappedBoundModule(repositoryInModelServer: CloudRepository, nodeTreeNode: PNodeAdapter) =
         modifyState { state ->
             PArea(nodeTreeNode.branch).executeRead {
-                // TODO instead of "name" it must be property/Module : name/.getName()
-                val moduleName = nodeTreeNode.getPropertyValue("name")
+                val moduleName = nodeTreeNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())
                 check(moduleName != null) { "module should not have null name" }
                 state.mappedModules.add(repositoryInModelServer.completeId() + "#" + moduleName)
             }

@@ -22,6 +22,7 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.mps.sync.synchronization.SyncDirection
@@ -30,10 +31,8 @@ import org.modelix.mps.sync.util.createModel
 import org.modelix.mps.sync.util.getModelsWithoutDescriptor
 
 // status: migrated, but needs some bugfixes
-// TODO concepts in this class are from the org.modelix.modelix.repositoryconcepts language
-// TODO instead of "models" it must be link/Module: models/.getName() --> i.e. get the name of the module.models reference
 open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) :
-    Synchronizer<SModel>(cloudParentId, "models") {
+    Synchronizer<SModel>(cloudParentId, BuiltinLanguages.MPSRepositoryConcepts.Module.models.getSimpleName()) {
 
     open fun getModule() = module
 
@@ -41,8 +40,7 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
 
     override fun createMPSChild(tree: ITree, cloudChildId: Long): SModel? {
         val id = getModelId(tree, cloudChildId) ?: jetbrains.mps.smodel.SModelId.foreign("cloud-$cloudChildId")
-        // TODO instead of "name" it must be property/Model: name/.getName()
-        val name = tree.getProperty(cloudChildId, "name")!!
+        val name = tree.getProperty(cloudChildId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())!!
         return createModel(name, id, cloudChildId)
     }
 
@@ -61,8 +59,7 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
 
         cloudChildren.forEach { cloudModelId ->
             val id = getModelId(tree, cloudModelId)
-            // TODO instead of "name" it must be property/Model: name/.getName()
-            val name = tree.getProperty(cloudModelId, "name")
+            val name = tree.getProperty(cloudModelId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())
 
             // There can be models with duplicate names. That's why we can't just search in a map
             val iterator = availableModels.iterator()
@@ -80,8 +77,7 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
     }
 
     private fun getModelId(tree: ITree, cloudModelId: Long): SModelId? {
-        // TODO instead of "id" it must be property/Model: id/.getName()
-        val serializedId = tree.getProperty(cloudModelId, "id")
+        val serializedId = tree.getProperty(cloudModelId, BuiltinLanguages.MPSRepositoryConcepts.Model.id.getSimpleName())
         return if (serializedId.isNullOrEmpty()) {
             return null
         } else {
@@ -93,10 +89,8 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
         // TODO fix last parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
         // transaction.addNewChild(cloudParentId, "models", -1, SConceptAdapter.wrap(Model));
         val modelNodeId = 0L
-        // TODO instead of "id" it must be property/Model: id/.getName()
-        transaction.setProperty(modelNodeId, "id", mpsChild.modelId.toString())
-        // TODO instead of "name" it must be property/Model: name/.getName()
-        transaction.setProperty(modelNodeId, "name", mpsChild.name.value)
+        transaction.setProperty(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.id.getSimpleName(), mpsChild.modelId.toString())
+        transaction.setProperty(modelNodeId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(), mpsChild.name.value)
         return modelNodeId
     }
 

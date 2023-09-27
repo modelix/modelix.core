@@ -34,6 +34,7 @@ import org.jetbrains.mps.openapi.event.SPropertyChangeEvent
 import org.jetbrains.mps.openapi.event.SReferenceChangeEvent
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNodeChangeListener
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.ITreeChangeVisitorEx
@@ -245,8 +246,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
     override fun doSyncToMPS(tree: ITree) {
         if (runningTask?.isInitialSync == true) {
             val mpsRootNodes = model.rootNodes
-            // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
-            val cloudRootNodes = tree.getChildren(modelNodeId, "rootNodes")
+            val cloudRootNodes = tree.getChildren(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName())
             val mpsRootNodesIsNotEmpty = mpsRootNodes.firstOrNull() != null
             val cloudRootNodesIsEmpty = cloudRootNodes.firstOrNull() == null
             if (mpsRootNodesIsNotEmpty && cloudRootNodesIsEmpty) {
@@ -322,9 +322,8 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                 if (parent == 0L) {
                     return false
                 }
-                // TODO instead of "rootNodes" it must be link/Model : rootNodes/.getName()
                 if (parent == modelNodeId) {
-                    return newTree.getRole(nodeId) == "rootNodes"
+                    return newTree.getRole(nodeId) == BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()
                 }
                 return isInsideModel(parent)
             }
@@ -344,9 +343,8 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                 if (parent == 0L) {
                     return false
                 }
-                // TODO instead of "rootNodes" it must be link/Model : rootNodes/.getName()
                 if (parent == modelNodeId) {
-                    return newTree.getRole(nodeId) != "rootNodes"
+                    return newTree.getRole(nodeId) != BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()
                 }
                 return isModelProperties(parent)
             }
@@ -356,8 +354,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
             override fun childrenChanged(nodeId: Long, role: String?) {
                 assertSyncThread()
                 if (modelNodeId == nodeId) {
-                    // TODO instead of "rootNodes" it must be link/Model : rootNodes/.getName()
-                    if (role == "rootNodes") {
+                    if (role == BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()) {
                         childrenSyncToMPSRequired.add(RoleInNode(nodeId, role))
                     } else {
                         modelPropertiesSyncToMPSRequired = true

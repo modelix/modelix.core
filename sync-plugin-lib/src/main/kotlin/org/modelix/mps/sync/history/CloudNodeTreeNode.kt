@@ -21,12 +21,12 @@ import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.icons.GlobalIconManager
 import jetbrains.mps.ide.ui.tree.TextTreeNode
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PropertyFromName
 import org.modelix.model.area.ContextArea
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
@@ -208,13 +208,10 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
     fun createModel(modelName: String): INode {
         // TODO check this represent a module
         return PArea(branch).executeWrite {
-            // TODO instead of "models" it must be link/Module : models/.getName()
             // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-            // this.getNode().addNewChild("models", -1, SConceptAdapter.wrap(concept/Model/))
+            // this.getNode().addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Module.models, -1, SConceptAdapter.wrap(concept/Model/))
             val newModel: INode = null!!
-            // TODO instead of "name" it must be property/Model : name/.getName()
-            val nameProperty = PropertyFromName("name")
-            newModel.setPropertyValue(nameProperty, modelName)
+            newModel.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, modelName)
             newModel
         }
     }

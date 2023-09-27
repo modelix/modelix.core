@@ -28,6 +28,7 @@ import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
@@ -111,8 +112,7 @@ class ModelSynchronizer(
 
     private fun syncRootNodesFromMPS() {
         val transaction = branch.writeTransaction
-        // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
-        val syncedNodes = createChildrenSynchronizer(modelNodeId, "rootNodes").syncToCloud(transaction)
+        val syncedNodes = createChildrenSynchronizer(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()).syncToCloud(transaction)
         syncedNodes.forEach {
             syncNodeFromMPS(it.value, true)
         }
@@ -120,8 +120,7 @@ class ModelSynchronizer(
 
     private fun syncRootNodesToMPS() {
         val transaction = branch.transaction
-        // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
-        val syncedNodes = createChildrenSynchronizer(modelNodeId, "rootNodes").syncToMPS(transaction.tree)
+        val syncedNodes = createChildrenSynchronizer(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()).syncToMPS(transaction.tree)
         syncedNodes.forEach {
             syncNodeToMPS(it.key, transaction.tree, true)
         }
@@ -244,8 +243,7 @@ class ModelSynchronizer(
         val syncedNodes = createChildrenSynchronizer(parentId, role).syncToMPS(tree)
 
         // order
-        // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
-        val isRootNodes = parentId == modelNodeId && role == "rootNodes"
+        val isRootNodes = parentId == modelNodeId && role == BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()
         if (!isRootNodes) {
             val parentNode = nodeMap.getNode(parentId)!!
             val link = findContainmentLink(parentNode.concept, role)
@@ -341,8 +339,7 @@ class ModelSynchronizer(
             }
 
             private fun isRootNodes(): Boolean {
-                // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
-                return parentId == modelNodeId && role == "rootNodes"
+                return parentId == modelNodeId && role == BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()
             }
 
             override fun removeMPSChild(mpsChild: SNode) {
@@ -485,8 +482,7 @@ class ModelSynchronizer(
                 val role: String?
                 if (event.isRoot) {
                     parentId = modelNodeId
-                    // TODO instead of "rootNodes" it must be link/Model: rootNodes/.getName()
-                    role = "rootNodes"
+                    role = BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()
                 } else {
                     parentId = nodeMap.getId(event.parent)
                     role = event.aggregationLink!!.name

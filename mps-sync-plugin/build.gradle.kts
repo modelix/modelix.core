@@ -4,12 +4,7 @@ plugins {
 }
 
 group = "org.modelix.mps"
-
-val syncLib: Configuration by configurations.creating
-syncLib.resolutionStrategy {
-    force("org.modelix:model-api:2.11.0")
-    force("org.modelix:model-client:2.10.9")
-}
+val mpsZip by configurations.creating
 
 val mpsToIdeaMap = mapOf(
     "2020.3.6" to "203.8084.24", // https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
@@ -34,13 +29,22 @@ dependencies {
     api(project(":model-api"))
 
     implementation(project(":mps-model-adapters"))
+    implementation(project(":sync-plugin-lib"))
+    implementation(project(":model-datastructure", configuration = "jvmRuntimeElements"))
+//    compileOnly("com.jetbrains:mps-openapi:$mpsVersion")
+//    compileOnly("com.jetbrains:mps-core:$mpsVersion")
+//    compileOnly("com.jetbrains:mps-environment:$mpsVersion")
+//    compileOnly("com.jetbrains:mps-platform:$mpsVersion")
 
-    syncLib("org.modelix:mps-sync-lib:2.11.0-SECURE-SNAPSHOT")
+    implementation(libs.kotlin.reflect)
 
-    compileOnly("com.jetbrains:mps-openapi:$mpsVersion")
-    compileOnly("com.jetbrains:mps-core:$mpsVersion")
-    compileOnly("com.jetbrains:mps-environment:$mpsVersion")
-    compileOnly("com.jetbrains:mps-platform:$mpsVersion")
+    // extracting jars from zipped products
+    mpsZip("com.jetbrains:mps:$mpsVersion")
+    compileOnly(
+        zipTree({ mpsZip.singleFile }).matching {
+            include("lib/**/*.jar")
+        },
+    )
 }
 
 // Configure Gradle IntelliJ Plugin

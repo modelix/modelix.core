@@ -56,6 +56,9 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
     @Input
     val includedModules: ListProperty<String> = of.listProperty(String::class.java)
 
+    @Input
+    val includedModulePrefixes: ListProperty<String> = of.listProperty(String::class.java)
+
     @TaskAction
     fun generate() {
         val isExport = exportFlag.get()
@@ -99,6 +102,7 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
                     <jvmargs>
                         <arg value="-Dmodelix.mps.model.sync.bulk.${if (isExport) "output" else "input"}.path=${jsonDirPath.get()}" />
                         <arg value="-Dmodelix.mps.model.sync.bulk.${if (isExport) "output" else "input"}.modules=${includedModules.get().joinToString(",")}" />
+                        <arg value="-Dmodelix.mps.model.sync.bulk.${if (isExport) "output" else "input"}.modules.prefixes=${includedModulePrefixes.get().joinToString(",")}" />
                         <arg value="-Dmodelix.mps.model.sync.bulk.repo.path=${repositoryPath.get()}" />
                         <arg value="-Didea.config.path=${"$"}{build.mps.config.path}" />
                         <arg value="-Didea.system.path=${"$"}{build.mps.system.path}" />

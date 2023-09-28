@@ -44,32 +44,21 @@ class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyn
         val branch = getBranch() ?: return
 
         if (projectNodeId == 0L) {
-            // TODO How to translate this correctly?
-            /*
-            read action with mpsProject.getRepository () {
-                branch.runWriteT({
-                    IWriteTransaction t =>
+            mpsProject.repository.modelAccess.runReadAction {
+                branch.runWriteT {
                     projectNodeId =
-                        t.addNewChild(ITree.ROOT_ID, BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept / Project /));
-                    t.setProperty(projectNodeId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name mpsProject.getName());
-                    return Unit.INSTANCE;
-                });
-                enqueueSync(SyncDirection.TO_CLOUD, true, null);
-            }*/
+                        // TODO fixme. Problem SConceptAdapter.wrap does not exist anymore in modelix...
+                        // it.addNewChild(ITree.ROOT_ID, BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept/Project/));
+                        0
 
-            branch.runWriteT {
-                projectNodeId =
-                    // TODO fixme. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-                    // it.addNewChild(ITree.ROOT_ID, BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept/Project/));
-                    0
-
-                it.setProperty(
-                    projectNodeId,
-                    BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(),
-                    mpsProject.name,
-                )
+                    it.setProperty(
+                        projectNodeId,
+                        BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(),
+                        mpsProject.name,
+                    )
+                }
+                enqueueSync(SyncDirection.TO_CLOUD, true, null)
             }
-            enqueueSync(SyncDirection.TO_CLOUD, true, null)
         } else {
             val cloudProjectIsEmpty = branch.computeReadT {
                 val children = it.getChildren(

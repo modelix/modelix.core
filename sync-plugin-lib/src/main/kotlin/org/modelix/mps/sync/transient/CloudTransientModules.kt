@@ -37,43 +37,29 @@ class CloudTransientModules private constructor(private val mpsRepository: SRepo
     private val moduleOwner = MPSModuleOwner { false }
 
     fun isModuleIdUsed(moduleId: SModuleId): Boolean {
-        // TODO How to translate this correctly?
-        /**
-         read action with mpsRepository {
-         result = this.mpsRepository.getModule(moduleId) != null;
-         }
-         */
-        return this.mpsRepository.getModule(moduleId) != null
+        var result: Boolean? = null
+        mpsRepository.modelAccess.runReadAction {
+            result = this.mpsRepository.getModule(moduleId) != null
+        }
+        return result!!
     }
 
     fun createModule(name: String, id: ModuleId): CloudTransientModule {
-        // TODO How to translate this correctly?
-        /**
-         write action with mpsRepository {
-         module = new CloudTransientModule (name, id);
-         modules.add(module);
-         log debug "Register module " + id, <no throwable>;
-         mpsRepository.registerModule(module, moduleOwner);
-         }
-         */
-
-        val module = CloudTransientModule(name, id)
-        modules.add(module)
-        logger.debug { "Register module $id" }
-        mpsRepository.registerModule(module, moduleOwner)
-        return module
+        var module: CloudTransientModule? = null
+        mpsRepository.modelAccess.runWriteAction {
+            module = CloudTransientModule(name, id)
+            modules.add(module!!)
+            logger.debug { "Register module $id" }
+            mpsRepository.registerModule(module!!, moduleOwner)
+        }
+        return module!!
     }
 
     fun disposeModule(module: CloudTransientModule) {
-        // TODO How to translate this correctly?
-        /**
-         write action with mpsRepository {
-         doDisposeModule(module);
-         modules.remove(module);
-         }
-         */
-        doDisposeModule(module)
-        modules.remove(module)
+        mpsRepository.modelAccess.runWriteAction {
+            doDisposeModule(module)
+            modules.remove(module)
+        }
     }
 
     private fun doDisposeModule(module: CloudTransientModule) {

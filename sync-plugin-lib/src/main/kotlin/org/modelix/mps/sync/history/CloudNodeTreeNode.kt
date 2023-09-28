@@ -111,37 +111,21 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
                         // NodeToSNodeAdapter.wrap(node)
                         val snode: SNode = null!!
                         val mpsRepo = CommandHelper.getSRepository()
-                        // TODO How to translate this correctly?
-                        /*
-                        read action with mpsRepo {
-                            ContextArea.INSTANCE.withAdditionalContext(new MPSArea(mpsRepo), { =>
-                                try {
-                                    newText = snode.getPresentation() + " [" + concept.getLongName() + "]   #" + Long.toHexString(nodeId);
-                                } catch (Exception ex) {
-                                    log error "Failed to update the text", ex;
-                                    newText = "!!!" + ex.getMessage();
+                        mpsRepo.modelAccess.runReadAction {
+                            ContextArea.withAdditionalContext(MPSArea(mpsRepo)) {
+                                newText = try {
+                                    "${snode.presentation} [${concept.getLongName()}]   #${
+                                        java.lang.Long.toHexString(nodeId)
+                                    }"
+                                } catch (ex: Exception) {
+                                    logger.error(ex) { "Failed to update the text" }
+                                    "!!!${ex.message}"
                                 }
                                 try {
-                                    setIcon(GlobalIconManager.getInstance().getIconFor(snode));
-                                } catch (Exception ex) {
-                                    log error "Failed to update the icon", ex;
+                                    icon = GlobalIconManager.getInstance().getIconFor(snode)
+                                } catch (ex: Exception) {
+                                    logger.error(ex) { "Failed to update the icon" }
                                 }
-                                return Unit.INSTANCE;
-                            });
-                        }*/
-                        ContextArea.withAdditionalContext(MPSArea(mpsRepo)) {
-                            newText = try {
-                                "${snode.presentation} [${concept.getLongName()}]   #${
-                                    java.lang.Long.toHexString(nodeId)
-                                }"
-                            } catch (ex: Exception) {
-                                logger.error(ex) { "Failed to update the text" }
-                                "!!!${ex.message}"
-                            }
-                            try {
-                                icon = GlobalIconManager.getInstance().getIconFor(snode)
-                            } catch (ex: Exception) {
-                                logger.error(ex) { "Failed to update the icon" }
                             }
                         }
                     } else {

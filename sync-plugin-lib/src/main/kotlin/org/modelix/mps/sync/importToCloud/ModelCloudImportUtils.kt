@@ -57,16 +57,14 @@ object ModelCloudImportUtils {
         val treeInRepository = treeNode.getTreeInRepository()
         val cloudModuleNode = treeNode.node as PNodeAdapter
         val solution = ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule(cloudModuleNode)
-        // TODO How to translate this correctly?
-        /*read action with mpsProject.getRepository() {
-            syncInModelixAsIndependentModule(treeInRepository, solution, ProjectHelper.toIdeaProject(mpsProject), cloudModuleNode);
-        }*/
-        syncInModelixAsIndependentModule(
-            treeInRepository,
-            solution,
-            ProjectHelper.toIdeaProject(mpsProject),
-            cloudModuleNode,
-        )
+        mpsProject.repository.modelAccess.runReadAction {
+            syncInModelixAsIndependentModule(
+                treeInRepository,
+                solution,
+                ProjectHelper.toIdeaProject(mpsProject),
+                cloudModuleNode,
+            )
+        }
         PersistedBindingConfiguration.getInstance(ProjectHelper.toIdeaProject(mpsProject))
             .addMappedBoundModule(treeInRepository, cloudModuleNode)
     }
@@ -74,16 +72,14 @@ object ModelCloudImportUtils {
     fun checkoutAndSync(treeInRepository: CloudRepository, mpsProject: Project, cloudModuleNodeId: Long) {
         val cloudModuleNode = PNodeAdapter(cloudModuleNodeId, treeInRepository.getActiveBranch().branch)
         val solution = ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule(cloudModuleNode)
-        // TODO How to translate this correctly?
-        /* read action with mpsProject.getRepository() {
-            syncInModelixAsIndependentModule(treeInRepository, solution, ProjectHelper.toIdeaProject(mpsProject), cloudModuleNode);
-        }*/
-        syncInModelixAsIndependentModule(
-            treeInRepository,
-            solution,
-            ProjectHelper.toIdeaProject(mpsProject),
-            cloudModuleNode,
-        )
+        mpsProject.repository.modelAccess.runReadAction {
+            syncInModelixAsIndependentModule(
+                treeInRepository,
+                solution,
+                ProjectHelper.toIdeaProject(mpsProject),
+                cloudModuleNode,
+            )
+        }
         PersistedBindingConfiguration.getInstance(ProjectHelper.toIdeaProject(mpsProject))
             .addMappedBoundModule(treeInRepository, cloudModuleNode)
     }
@@ -209,14 +205,10 @@ object ModelCloudImportUtils {
             cloudModule.cloneChildren(sModuleAsNode, BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies)
         }
 
-        var models: List<SModel>
-        // TODO How to translate this correctly?
-        /*
-        read action with physicalModule . getRepository () {
-            models = new arraylist < SModel >(copy: physicalModule. getModelsWithoutDescriptorx ());
+        var models = listOf<SModel>()
+        physicalModule.repository?.modelAccess?.runReadAction {
+            models = physicalModule.getModelsWithoutDescriptor().toImmutableList()
         }
-         */
-        models = physicalModule.getModelsWithoutDescriptor().toImmutableList()
 
         monitor.start("Module ${physicalModule.moduleName}", models.size)
         for (model in models) {
@@ -224,21 +216,13 @@ object ModelCloudImportUtils {
                 break
             }
 
-            // TODO How to translate this correctly?
-            /*read action with physicalModule . getRepository () {
-                ProgressMonitor modelProgress = progress . subTask (1);
-                modelProgress.start("Model " + model.getName(), 1);
-                INode cloudModel = copyPhysicalModel (treeInRepository, cloudModule, model);
-                if (modelMappingConsumer != null) {
-                    modelMappingConsumer.accept(new PhysicalToCloudModelMapping (model, cloudModel));
-                }
-                modelProgress.done();
-            }*/
-            val modelProgress = monitor.subTask(1)
-            modelProgress.start("Model ${model.name}", 1)
-            val cloudModel = copyPhysicalModel(treeInRepository, cloudModule, model)
-            modelMappingConsumer?.accept(PhysicalToCloudModelMapping(model, cloudModel))
-            modelProgress.done()
+            physicalModule.repository?.modelAccess?.runReadAction {
+                val modelProgress = monitor.subTask(1)
+                modelProgress.start("Model ${model.name}", 1)
+                val cloudModel = copyPhysicalModel(treeInRepository, cloudModule, model)
+                modelMappingConsumer?.accept(PhysicalToCloudModelMapping(model, cloudModel))
+                modelProgress.done()
+            }
         }
         monitor.done()
     }

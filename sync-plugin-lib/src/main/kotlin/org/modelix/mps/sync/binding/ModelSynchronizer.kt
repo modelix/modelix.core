@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.binding
 
+import jetbrains.mps.internal.collections.runtime.ListSequence
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.project.ModelImporter
 import kotlinx.collections.immutable.toImmutableSet
@@ -258,11 +259,8 @@ class ModelSynchronizer(
                 val actualNode = parentNode.getChildren(link).toList()[index]
                 if (actualNode != expectedNode) {
                     SNodeOperations.deleteNode(expectedNode)
-
-                    // TODO how to insert a child at a position?
-                    // parentNode.children.insert(index, expectedNode);
-                    // does mutable list reflect the changes back to the original collection (that backs the Iterable?)
-                    parentNode.getChildren(link).toMutableList().add(index, expectedNode)
+                    ListSequence.fromList(SNodeOperations.getChildren(parentNode, link))
+                        .insertElement(index, expectedNode)
                 }
                 index++
             }

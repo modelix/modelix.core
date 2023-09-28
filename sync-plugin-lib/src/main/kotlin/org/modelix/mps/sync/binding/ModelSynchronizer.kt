@@ -43,6 +43,7 @@ import org.modelix.model.lazy.IBulkTree
 import org.modelix.model.lazy.PrefetchCache
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.mps.sync.ICloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.Synchronizer
@@ -395,13 +396,12 @@ class ModelSynchronizer(
                 } else {
                     val targetId = nodeMap.getId(targetSNode)
                     val targetNode = if (targetId == 0L || !transaction.containsNode(targetId)) {
-                        // TODO fix SNode -> INode transformation. Problem SNodeToNodeAdapter.wrap does not exist anymore in modelix...
-                        null!! // SNodeToNodeAdapter.wrap(targetSNode);
+                        MPSNode.wrap(targetSNode)
                     } else {
                         PNodeAdapter(targetId, branch)
                     }
-                    if (currentTarget != targetNode.reference) {
-                        transaction.setReferenceTarget(parentNodeId, link.name, targetNode.reference)
+                    if (currentTarget != targetNode?.reference) {
+                        transaction.setReferenceTarget(parentNodeId, link.name, targetNode?.reference)
                     }
                 }
                 null
@@ -522,11 +522,11 @@ class ModelSynchronizer(
             } else {
                 val targetId = nodeMap.getId(targetSNode)
                 val targetNode = if (targetId == 0L || !transaction.containsNode(targetId)) {
-                    null!! // SNodeToNodeAdapter.wrap(targetSNode);
+                    MPSNode.wrap(targetSNode)
                 } else {
                     PNodeAdapter(targetId, branch)
                 }
-                transaction.setReferenceTarget(sourceId, event.associationLink.name, targetNode.reference)
+                transaction.setReferenceTarget(sourceId, event.associationLink.name, targetNode?.reference)
             }
         }
     }

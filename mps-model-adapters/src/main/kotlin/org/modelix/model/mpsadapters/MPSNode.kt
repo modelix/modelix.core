@@ -31,6 +31,22 @@ import org.modelix.model.area.IArea
 import org.modelix.model.data.NodeData
 
 data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
+
+    companion object {
+        fun wrap(nodeToWrap: SNode?): INode? {
+            return if (nodeToWrap == null) {
+                null
+            }
+            // TODO fixme NodeToSNodeAdapter
+            /*  else if (nodeToWrap is NodeToSNodeAdapter) {
+                return (nodeToWrap as NodeToSNodeAdapter).getWrapped()
+            }*/
+            else {
+                MPSNode(nodeToWrap)
+            }
+        }
+    }
+
     override fun getArea(): IArea {
         return MPSArea(node.model?.repository ?: MPSModuleRepository.getInstance())
     }

@@ -32,6 +32,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.ProjectModuleBinding
@@ -271,9 +272,7 @@ object ModelCloudImportUtils {
         }
 
         physicalNode.references.forEach { ref ->
-            // TODO fix parameter. Problem SNodeToNodeAdapter.wrap does not exist anymore in modelix...
-            // SNodeToNodeAdapter.wrap(ref.targetNode)
-            val target: INode = null!!
+            val target = MPSNode.wrap(ref.targetNode)
             cloudNode.setReferenceTarget(ref.role, target)
         }
 

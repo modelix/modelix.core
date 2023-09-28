@@ -168,7 +168,10 @@ class ModelCloudExporter {
             PArea(branch).executeRead {
                 PrefetchCache.Companion.with(tree) {
                     val transaction = branch.transaction
-                    var moduleIds = transaction.getChildren(ITree.ROOT_ID, BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.getSimpleName())
+                    var moduleIds = transaction.getChildren(
+                        ITree.ROOT_ID,
+                        BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.getSimpleName(),
+                    )
                     if (selectedModuleIds != null) {
                         moduleIds = moduleIds.intersect(selectedModuleIds)
                     }
@@ -331,7 +334,7 @@ class ModelCloudExporter {
         }
 
         // We create models asynchronously, similarly to what is done in mpsutil.smodule
-        // this helps avoiding issues with VFS and physical FS being out of sync
+        // this helps avoid issues with VFS and physical FS being out of sync
         VirtualFileManager.getInstance().syncRefresh()
         val res = AsyncPromise<EditableSModel>()
         ThreadUtils.runInUIThreadNoWait {
@@ -353,13 +356,10 @@ class ModelCloudExporter {
                 smodel,
                 repositoryInModelServer,
             ).syncModelToMPS(model.branch.transaction.tree, true)
-            // TODO How to translate this correctly?
-            /*write action with module.getRepository() {
-                smodel.save();
-                print ( "  model "+ sModelName+ " saved" ) ;
-            }*/
-            smodel.save()
-            logger.info { "  model $sModelName saved" }
+            module.repository?.modelAccess?.runWriteAction {
+                smodel.save()
+                logger.info { "  model $sModelName saved" }
+            }
         }
     }
 

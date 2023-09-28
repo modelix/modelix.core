@@ -53,12 +53,6 @@ fun SModel.runInWriteActionIfNeeded(runnable: Runnable) {
     if (repo == null) {
         runnable.run()
     } else {
-        // TODO How to translate this correctly?
-        /*
-        write action with repo {
-            runnable.run();
-        }
-         */
-        runnable.run()
+        repo?.modelAccess?.runWriteAction(runnable)
     }
 }

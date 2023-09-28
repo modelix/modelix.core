@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.synchronization
 
+import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
 import org.modelix.model.api.ITree
@@ -159,13 +160,7 @@ class SyncQueue(val owner: RootBinding) {
                     }
 
                 ELockType.MPS_READ ->
-                    // TODO How to translate this correctly?
-                    /*
-                        read action with MPSModuleRepository.getInstance() {
-                            body.run();
-                        }
-                     */
-                    body.run()
+                    MPSModuleRepository.getInstance().modelAccess.runReadAction { body.run() }
 
                 ELockType.CLOUD_WRITE -> {
                     val branch = owner.getBranch()

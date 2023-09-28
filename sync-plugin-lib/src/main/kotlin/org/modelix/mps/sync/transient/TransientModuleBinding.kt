@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.transient
 
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.smodel.MPSModuleRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.PArea
@@ -38,7 +39,10 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
     override fun doActivate() {
         val branch = getBranch()!!
         var moduleName = PArea(branch).executeRead {
-            PNodeAdapter(moduleNodeId, branch).getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+            PNodeAdapter(
+                moduleNodeId,
+                branch,
+            ).getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         }
         val moduleIdStr = PArea(branch).executeRead {
             PNodeAdapter(moduleNodeId, branch).getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id)
@@ -70,14 +74,9 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
         super.doDeactivate()
         SharedExecutors.FIXED.execute {
             synchronized(this) {
-                // TODO How to translate this correctly?
-                /**
-                 write action with MPSModuleRepository.getInstance() {
-                 CloudTransientModules.getInstance().disposeModule(getModule());
-                 }
-                 */
-
-                CloudTransientModules.instance.disposeModule(module)
+                MPSModuleRepository.getInstance().modelAccess.runWriteAction {
+                    CloudTransientModules.instance.disposeModule(module)
+                }
             }
         }
     }

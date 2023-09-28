@@ -390,47 +390,47 @@ class ModelServerConnection {
             CloudRepository(this, repositoryId)
         }
     }
+}
 
-    interface IModelServerConnectionListener {
-        fun connectionStatusChanged(connected: Boolean) {}
-        fun bindingAdded(binding: Binding) {}
-        fun bindingRemoved(binding: Binding) {}
-        fun bindingActivated(binding: Binding) {}
-        fun bindingDeactivated(binding: Binding) {}
+interface IModelServerConnectionListener {
+    fun connectionStatusChanged(connected: Boolean) {}
+    fun bindingAdded(binding: Binding) {}
+    fun bindingRemoved(binding: Binding) {}
+    fun bindingActivated(binding: Binding) {}
+    fun bindingDeactivated(binding: Binding) {}
+}
+
+/**
+ * It seems that several connections are open at the same time: we do not want to show
+ * error messages multiple times, so we use a shared state of the connection
+ */
+private class ConnectionListenerForForbiddenMessage(private val baseUrl: String) : ConnectionListener {
+
+    companion object {
+        private val inForbiddenStateByURL = mutableMapOf<String, Boolean>()
     }
 
-    /**
-     * It seems that several connections are open at the same time: we do not want to show
-     * error messages multiple times, so we use a shared state of the connection
-     */
-    private class ConnectionListenerForForbiddenMessage(private val baseUrl: String) : ConnectionListener {
-
-        companion object {
-            private val inForbiddenStateByURL = mutableMapOf<String, Boolean>()
-        }
-
-        override fun receivedForbiddenResponse() {
-            if (!inForbiddenState()) {
-                inForbiddenStateByURL[baseUrl] = true
-                SwingUtilities.invokeLater {
-                    notifyError(
-                        "Forbidden Access",
-                        "Unauthorized to connect to Model Server $baseUrl. Check you are logged in and have the right to access that Model Server",
-                    )
-                }
+    override fun receivedForbiddenResponse() {
+        if (!inForbiddenState()) {
+            inForbiddenStateByURL[baseUrl] = true
+            SwingUtilities.invokeLater {
+                notifyError(
+                    "Forbidden Access",
+                    "Unauthorized to connect to Model Server $baseUrl. Check you are logged in and have the right to access that Model Server",
+                )
             }
         }
+    }
 
-        override fun receivedSuccessfulResponse() {
-            inForbiddenStateByURL[baseUrl] = false
-        }
+    override fun receivedSuccessfulResponse() {
+        inForbiddenStateByURL[baseUrl] = false
+    }
 
-        private fun inForbiddenState(): Boolean {
-            return if (inForbiddenStateByURL.containsKey(baseUrl)) {
-                inForbiddenStateByURL[baseUrl]!!
-            } else {
-                false
-            }
+    private fun inForbiddenState(): Boolean {
+        return if (inForbiddenStateByURL.containsKey(baseUrl)) {
+            inForbiddenStateByURL[baseUrl]!!
+        } else {
+            false
         }
     }
 }

@@ -44,7 +44,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
     private val branchListener = object : IBranchListener {
         override fun treeChanged(oldTree: ITree?, newTree: ITree) {
             SwingUtilities.invokeLater {
-                (getTree() as CloudView.CloudViewTree).runRebuildAction({
+                (tree as CloudView.CloudViewTree).runRebuildAction({
                     updateChildren()
                 }, true)
             }
@@ -56,7 +56,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
             SwingUtilities.invokeLater {
                 if (connected) {
                     infoBranch = modelServer.getInfoBranch()
-                    if (getTree() != null) {
+                    if (tree != null) {
                         infoBranch?.addListener(branchListener)
                     }
                 }

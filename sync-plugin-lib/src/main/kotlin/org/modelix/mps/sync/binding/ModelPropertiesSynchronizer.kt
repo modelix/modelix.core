@@ -92,8 +92,7 @@ class ModelPropertiesSynchronizer(
                             )
                         }
                         if (matchingDependencyInMPS == null) {
-                            // TODO fixme. We need the Concept class of DevkitDependency to do: concept/DevkitDependency/.getLanguage().getQualifiedName() and  concept/DevkitDependency/.getName()
-                            if (dependencyInCloud.concept?.getLongName() == "fixme DevkitDependencyLanguageQualifiedName.fixme DevkitDependency.name") {
+                            if (dependencyInCloud.concept?.getLongName() == BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getLongName()) {
                                 val repo = model.repository
                                 val devKitUUID = dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
                                 val devKit = repo.getModule(ModuleId.regular(UUID.fromString(devKitUUID))) as DevKit
@@ -101,9 +100,7 @@ class ModelPropertiesSynchronizer(
                                 // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
                                 // getElement() is supposed to return an SModel
                                 // mpsModelNode.getElement().addDevKit(devKitModuleReference)
-
-                                // TODO fixme. We need the Concept class of SingleLanguageDependency to do: concept/SingleLanguageDependency/.getLanguage().getQualifiedName() and  concept/SingleLanguageDependency/.getName()
-                            } else if (dependencyInCloud.concept?.getLongName() == "TODO test if BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getLongName() is the same as concept/SingleLanguageDependency/.getLanguage().getQualifiedName().concept/SingleLanguageDependency/.getName()") {
+                            } else if (dependencyInCloud.concept?.getLongName() == BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getLongName()) {
                                 val repo = model.repository
                                 val languageUUID =
                                     dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)

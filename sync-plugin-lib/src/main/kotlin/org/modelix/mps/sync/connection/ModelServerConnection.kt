@@ -191,12 +191,11 @@ class ModelServerConnection {
         // TODO should return org.modelix.model.runtimelang.structure.RepositoryInfo
         return PArea(getInfoBranch()).executeWrite {
             /*val modelServerInfo = getInfo()
-
-             TODO fixme SNodeAPI...
-             val repositoryInfo = SNodeAPI.addNewChild(modelServerInfo, BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
+             TODO we need val sModelServerInfo = NodeToSNodeAdapter.wrap(modelServerInfo), because modelServerInfo is INode and notSNode
+             val repositoryInfo = sModelServerInfo.addNewChild( BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
              repositoryInfo.id = id;
-             node<BranchInfo> branchInfo = SNodeAPI.addNewChild(repositoryInfo, BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.branches):BranchInfo;
-             branchInfo.name = ActiveBranch.DEFAULT_BRANCH_NAME;
+             val branchInfo = sModelServerInfo.addNewChild(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.branches)
+             branchInfo.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, ActiveBranch.DEFAULT_BRANCH_NAME)
              return repositoryInfo;*/
             Any() as INode
         }

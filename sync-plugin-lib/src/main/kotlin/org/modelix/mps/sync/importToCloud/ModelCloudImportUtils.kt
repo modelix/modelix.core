@@ -144,8 +144,7 @@ object ModelCloudImportUtils {
     fun copyAndSyncInModelixAsEntireProject(
         treeInRepository: CloudRepository,
         mpsProject: MPSProject?,
-        // TODO How to translate this correctly?
-        cloudProject: INode?, // originally it was: node<Project>
+        cloudProject: INode?,
     ): ProjectBinding {
         val binding: ProjectBinding
         if (cloudProject == null) {

@@ -203,12 +203,10 @@ class ModelServerConnection {
     fun removeRepository(id: String) {
         PArea(getInfoBranch()).executeWrite {
             val info = getInfo()
-            /**
-             * TODO fixme:
-             * 1. org.modelix.model.runtimelang.structure.RepositoryInfo does not exist
-             * 2. detach() does not exist
-             */
-            // info.repositories.findFirst{ it.id == id }.detach()
+            // TODO fix detach()
+            info.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
+                .firstOrNull { it.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id) == id }
+            // .detach()
         }
     }
 
@@ -379,65 +377,57 @@ class ModelServerConnection {
         }
     }
 
-    fun trees(): Iterable<CloudRepository> {
+    fun trees() = PArea(this.getInfoBranch()).executeRead {
+        // We want to obtain a list within the transaction.
+        // A sequence (which is lazy) would not work
         val info = this.getInfo()
-        return PArea(this.getInfoBranch()).executeRead {
-            // We want to obtain a list within the transaction.
-            // A sequence (which is lazy) would not work
-
-            // TODO migrate if org.modelix.model.runtimelang.structure.ModelServerInfo is on the CP
-            /*
-            info.repositories.select({~it =>
-                RepositoryId repositoryId = new RepositoryId(it.id);
-                new CloudRepository(this, repositoryId);
-            }).toList;
-             */
-
-            val result: Iterable<CloudRepository> = null!!
-            result
+        info.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories).map {
+            val repositoryId =
+                RepositoryId(it.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id)!!)
+            CloudRepository(this, repositoryId)
         }
     }
-}
 
-interface IModelServerConnectionListener {
-    fun connectionStatusChanged(connected: Boolean) {}
-    fun bindingAdded(binding: Binding) {}
-    fun bindingRemoved(binding: Binding) {}
-    fun bindingActivated(binding: Binding) {}
-    fun bindingDeactivated(binding: Binding) {}
-}
-
-/**
- * It seems that several connections are open at the same time: we do not want to show
- * error messages multiple times, so we use a shared state of the connection
- */
-private class ConnectionListenerForForbiddenMessage(private val baseUrl: String) : ConnectionListener {
-
-    companion object {
-        private val inForbiddenStateByURL = mutableMapOf<String, Boolean>()
+    interface IModelServerConnectionListener {
+        fun connectionStatusChanged(connected: Boolean) {}
+        fun bindingAdded(binding: Binding) {}
+        fun bindingRemoved(binding: Binding) {}
+        fun bindingActivated(binding: Binding) {}
+        fun bindingDeactivated(binding: Binding) {}
     }
 
-    override fun receivedForbiddenResponse() {
-        if (!inForbiddenState()) {
-            inForbiddenStateByURL[baseUrl] = true
-            SwingUtilities.invokeLater {
-                notifyError(
-                    "Forbidden Access",
-                    "Unauthorized to connect to Model Server $baseUrl. Check you are logged in and have the right to access that Model Server",
-                )
+    /**
+     * It seems that several connections are open at the same time: we do not want to show
+     * error messages multiple times, so we use a shared state of the connection
+     */
+    private class ConnectionListenerForForbiddenMessage(private val baseUrl: String) : ConnectionListener {
+
+        companion object {
+            private val inForbiddenStateByURL = mutableMapOf<String, Boolean>()
+        }
+
+        override fun receivedForbiddenResponse() {
+            if (!inForbiddenState()) {
+                inForbiddenStateByURL[baseUrl] = true
+                SwingUtilities.invokeLater {
+                    notifyError(
+                        "Forbidden Access",
+                        "Unauthorized to connect to Model Server $baseUrl. Check you are logged in and have the right to access that Model Server",
+                    )
+                }
             }
         }
-    }
 
-    override fun receivedSuccessfulResponse() {
-        inForbiddenStateByURL[baseUrl] = false
-    }
+        override fun receivedSuccessfulResponse() {
+            inForbiddenStateByURL[baseUrl] = false
+        }
 
-    private fun inForbiddenState(): Boolean {
-        return if (inForbiddenStateByURL.containsKey(baseUrl)) {
-            inForbiddenStateByURL[baseUrl]!!
-        } else {
-            false
+        private fun inForbiddenState(): Boolean {
+            return if (inForbiddenStateByURL.containsKey(baseUrl)) {
+                inForbiddenStateByURL[baseUrl]!!
+            } else {
+                false
+            }
         }
     }
 }

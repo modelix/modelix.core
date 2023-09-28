@@ -78,10 +78,8 @@ class ModelSynchronizer(
         PrefetchCache.Companion.with(tree) {
             logger.trace { "syncModel initialRemoval=$withInitialRemoval on model ${model.name.longName}" }
             if (withInitialRemoval) {
-                // TODO originally it was: foreach root in new arraylist<SNode>(copy: model.getRootNodes()).ofType<node<>>
-                // TODO how to get the node<> type in kotlin?
                 // TODO detach() method does not exist
-                // model.rootNodes.toList().forEach { root -> root.children.forEach { it.detach } }
+                model.rootNodes.toList().forEach { root -> root.children.forEach { /* it.detach */ } }
             }
             pendingReferences.runAndFlush {
                 prefetchModelContent(tree)

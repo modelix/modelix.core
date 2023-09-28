@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.binding
 
+import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.project.ModelImporter
 import kotlinx.collections.immutable.toImmutableSet
 import org.jetbrains.mps.openapi.event.SNodeAddEvent
@@ -78,8 +79,7 @@ class ModelSynchronizer(
         PrefetchCache.Companion.with(tree) {
             logger.trace { "syncModel initialRemoval=$withInitialRemoval on model ${model.name.longName}" }
             if (withInitialRemoval) {
-                // TODO detach() method does not exist
-                model.rootNodes.toList().forEach { root -> root.children.forEach { /* it.detach */ } }
+                model.rootNodes.toList().forEach { root -> root.children.forEach { SNodeOperations.deleteNode(it) } }
             }
             pendingReferences.runAndFlush {
                 prefetchModelContent(tree)
@@ -110,7 +110,10 @@ class ModelSynchronizer(
 
     private fun syncRootNodesFromMPS() {
         val transaction = branch.writeTransaction
-        val syncedNodes = createChildrenSynchronizer(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()).syncToCloud(transaction)
+        val syncedNodes = createChildrenSynchronizer(
+            modelNodeId,
+            BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName(),
+        ).syncToCloud(transaction)
         syncedNodes.forEach {
             syncNodeFromMPS(it.value, true)
         }
@@ -118,7 +121,10 @@ class ModelSynchronizer(
 
     private fun syncRootNodesToMPS() {
         val transaction = branch.transaction
-        val syncedNodes = createChildrenSynchronizer(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()).syncToMPS(transaction.tree)
+        val syncedNodes = createChildrenSynchronizer(
+            modelNodeId,
+            BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName(),
+        ).syncToMPS(transaction.tree)
         syncedNodes.forEach {
             syncNodeToMPS(it.key, transaction.tree, true)
         }
@@ -241,7 +247,8 @@ class ModelSynchronizer(
         val syncedNodes = createChildrenSynchronizer(parentId, role).syncToMPS(tree)
 
         // order
-        val isRootNodes = parentId == modelNodeId && role == BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()
+        val isRootNodes =
+            parentId == modelNodeId && role == BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName()
         if (!isRootNodes) {
             val parentNode = nodeMap.getNode(parentId)!!
             val link = findContainmentLink(parentNode.concept, role)
@@ -250,8 +257,7 @@ class ModelSynchronizer(
                 val expectedNode = nodeMap.getNode(expectedId)
                 val actualNode = parentNode.getChildren(link).toList()[index]
                 if (actualNode != expectedNode) {
-                    // TODO detach() method does not exist
-                    //  expectedNode.detach
+                    SNodeOperations.deleteNode(expectedNode)
 
                     // TODO how to insert a child at a position?
                     // parentNode.children.insert(index, expectedNode);
@@ -341,8 +347,7 @@ class ModelSynchronizer(
             }
 
             override fun removeMPSChild(mpsChild: SNode) {
-                // TODO detach() method does not exist
-                // mpsChild.detach
+                SNodeOperations.deleteNode(mpsChild)
             }
         }
     }

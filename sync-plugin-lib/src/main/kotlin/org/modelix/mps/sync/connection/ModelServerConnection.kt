@@ -6,6 +6,8 @@ import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.util.messages.MessageBusConnection
 import com.intellij.util.messages.Topic
 import jetbrains.mps.ide.project.ProjectHelper
+import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
+import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
@@ -203,10 +205,11 @@ class ModelServerConnection {
     fun removeRepository(id: String) {
         PArea(getInfoBranch()).executeWrite {
             val info = getInfo()
-            // TODO fix detach()
-            info.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
+            val node = info.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
                 .firstOrNull { it.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id) == id }
-            // .detach()
+            // TODO NodeToSNodeAdapter.getWrapped() is missing
+            val snode: SNode = null!!
+            SNodeOperations.deleteNode(snode)
         }
     }
 

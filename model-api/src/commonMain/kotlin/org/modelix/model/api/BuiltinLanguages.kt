@@ -252,6 +252,8 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
+            val id by property("b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348864/7113393488488348870")
+
             val branches = SimpleChildLink(
                 simpleName = "branches",
                 isMultiple = true,
@@ -264,7 +266,7 @@ object BuiltinLanguages {
         object BranchInfo : SimpleConcept(
             conceptName = "BranchInfo",
             uid = "mps:b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348865",
-            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept, jetbrains_mps_lang_core.INamedConcept),
         ) {
             init { addConcept(this) }
         }

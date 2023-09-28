@@ -6,6 +6,7 @@ import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.util.messages.MessageBusConnection
 import com.intellij.util.messages.Topic
 import jetbrains.mps.ide.project.ProjectHelper
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
@@ -23,12 +24,10 @@ import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.RootBinding
-import org.modelix.mps.sync.history.RepositoryInfoPlaceholder
 import org.modelix.mps.sync.plugin.init.EModelixExecutionMode
 import org.modelix.mps.sync.plugin.init.ModelixConfigurationSystemProperties
 import org.modelix.mps.sync.util.ModelixNotifications.notifyError
 import java.net.URL
-import java.util.Collections
 import java.util.function.Consumer
 import javax.swing.SwingUtilities
 
@@ -163,32 +162,22 @@ class ModelServerConnection {
         check(isConnected()) { "Not connected. Client is in status $connectionStatus" }
     }
 
-    fun getAllRepositories(): List<Any> {
-        // TODO should return List<org.modelix.model.runtimelang.structure.RepositoryInfo>
-        // return PArea(getInfoBranch()).executeWrite{ getInfo().repositories }
-        return Collections.emptyList()
-    }
+    fun getAllRepositories(): Iterable<INode> =
+        PArea(getInfoBranch()).executeWrite { getInfo().getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories) }
 
-    fun getAllRepositoriesCount(): Int {
-        // TODO uncomment if this.getAllRepositories() is migrated
-        // return PArea(getInfoBranch()).executeWrite{ getInfo().repositories.size }
-        return 0
-    }
+    fun getAllRepositoriesCount(): Int = getAllRepositories().count()
 
-    fun getRepositoryInfoById(repositoryId: String): Any {
-        // TODO should return org.modelix.model.runtimelang.structure.RepositoryInfo
-
+    fun getRepositoryInfoById(repositoryId: String): INode {
         val repositoryInfo = PArea(getInfoBranch()).executeRead {
             val modelServerInfo = getInfo()
-            // TODO should return org.modelix.model.runtimelang.structure.RepositoryInfo
-            // modelServerInfo.repositories.findFirst{ it.id == repositoryId }
+            modelServerInfo.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
+                .firstOrNull { it.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id) == repositoryId }
         }
         if (repositoryInfo == null) {
-            val knownRepositoryIds: List<String> = PArea(getInfoBranch()).executeRead {
+            val knownRepositoryIds = PArea(getInfoBranch()).executeRead {
                 val modelServerInfo = getInfo()
-                // TODO uncomment if org.modelix.model.runtimelang.structure.RepositoryInfo is used correctly in this class
-                // modelServerInfo.repositories.select{ it.id }).toList
-                Collections.emptyList()
+                modelServerInfo.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
+                    .map { it.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id) }
             }
 
             throw IllegalArgumentException("RepositoryInfo with ID $repositoryId not found. Known repository ids: $knownRepositoryIds")
@@ -264,7 +253,7 @@ class ModelServerConnection {
         PArea(branch).executeRead { producer.invoke() }
     }
 
-    fun getInfo(): ModelServerInfoPlaceholder {
+    fun getInfo(): INode {
         // TODO should return org.modelix.model.runtimelang.structure.ModelServerInfo
 
         checkConnected()
@@ -298,7 +287,7 @@ class ModelServerConnection {
             }
         }
         // return result
-        return ModelServerInfoPlaceholder()
+        return null!! as INode
     }
 
     fun getActiveBranch(repositoryId: RepositoryId): ActiveBranch {
@@ -408,19 +397,6 @@ class ModelServerConnection {
             result
         }
     }
-
-//    init {
-//          println("lolz")
-//        // todo: get the com.intellij.openapi.application.ApplicationManager and connect to the messageBus
-//        messageBusConnection = ApplicationManager.getApplication().getMessageBus().connect();
-//        messageBusConnection.subscribe(ProjectManager.TOPIC, new ProjectManagerListener() {
-//            @Override
-//            public void projectClosing(@NotNull() Project closingProject) {
-//                foreach closingProjectBinding in bindings.values.selectMany({~it => it.getAllBindings(); }).ofType<ProjectBinding>.where({~it => ProjectHelper.toIdeaProject(it.getProject()) :eq: closingProject; }).toList {
-//                    removeBinding(closingProjectBinding);
-//                }
-//            }
-//        });
 }
 
 interface IModelServerConnectionListener {
@@ -464,9 +440,4 @@ private class ConnectionListenerForForbiddenMessage(private val baseUrl: String)
             false
         }
     }
-}
-
-// TODO remove me and use org.modelix.model.runtimelang.structure.ModelServerInfo instead
-class ModelServerInfoPlaceholder {
-    val repositories = listOf<RepositoryInfoPlaceholder>()
 }

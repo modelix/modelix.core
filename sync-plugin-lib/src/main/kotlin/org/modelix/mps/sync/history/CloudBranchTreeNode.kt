@@ -17,6 +17,8 @@
 package org.modelix.mps.sync.history
 
 import jetbrains.mps.ide.ui.tree.TextTreeNode
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.INode
 import org.modelix.model.area.PArea
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.icons.CloudIcons
@@ -24,8 +26,11 @@ import org.modelix.mps.sync.icons.CloudIcons
 // status: migrated, but needs some bugfixes
 class CloudBranchTreeNode(
     private val modelServer: ModelServerConnection,
-    val branchInfo: BranchInfoPlaceholder, // TODO fixme, last parameter must be node<org.modelix.model.runtimelang.structure.BranchInfo>
-) : TextTreeNode(CloudIcons.BRANCH_ICON, branchInfo.name) {
+    val branchInfo: INode,
+) : TextTreeNode(
+    CloudIcons.BRANCH_ICON,
+    branchInfo.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name),
+) {
 
     init {
         setAllowsChildren(true)
@@ -39,7 +44,8 @@ class CloudBranchTreeNode(
         val treeTreeNode = this.getAncestor(RepositoryTreeNode::class.java)
         val repositoryId = treeTreeNode.repositoryId
         val infoBranch = modelServer.getInfoBranch()
-        val branchName = PArea(infoBranch).executeRead { branchInfo.name }
+        val branchName =
+            PArea(infoBranch).executeRead { branchInfo.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)!! }
         modelServer.getActiveBranch(repositoryId).switchBranch(branchName)
     }
 }

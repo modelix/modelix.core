@@ -20,6 +20,7 @@ import jetbrains.mps.extapi.model.SModelDescriptorStub
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.ProjectManager
+import jetbrains.mps.smodel.DefaultSModelDescriptor
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.SModel
@@ -30,7 +31,10 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.PArea
+import org.modelix.model.mpsadapters.DevKitDependencyAsNode
+import org.modelix.model.mpsadapters.SingleLanguageDependencyAsNode
 import org.modelix.mps.sync.ICloudRepository
+import org.modelix.mps.sync.util.copyProperty
 import org.modelix.mps.sync.util.copyPropertyIfNecessary
 import org.modelix.mps.sync.util.replicateChild
 import org.modelix.mps.sync.util.runInWriteActionIfNeeded
@@ -94,7 +98,8 @@ class ModelPropertiesSynchronizer(
                         if (matchingDependencyInMPS == null) {
                             if (dependencyInCloud.concept?.getLongName() == BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getLongName()) {
                                 val repo = model.repository
-                                val devKitUUID = dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
+                                val devKitUUID =
+                                    dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
                                 val devKit = repo.getModule(ModuleId.regular(UUID.fromString(devKitUUID))) as DevKit
                                 val devKitModuleReference = devKit.moduleReference
                                 // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
@@ -129,40 +134,44 @@ class ModelPropertiesSynchronizer(
 
                     // For each import not in Cloud remove it
                     dependenciesInMPS.forEach { dependencyInMPS ->
-                        // TODO fixme. org.modelix.mpsadapters.mps.DevKitDependencyAsNode does not exist in modelix
-                        // TODO fixme. org.modelix.mpsadapters.mps.SingleLanguageDependencyAsNode does not exist in modelix
-
-                        /*if (dependencyInMPS is DevKitDependencyAsNode) {
-                            INode matchingDependencyInCloud = null;
-                            foreach dependencyInCloud in dependenciesInCloud {
-                                if (dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)) {
-                                matchingDependencyInCloud = dependencyInCloud;
-                            }
+                        if (dependencyInMPS is DevKitDependencyAsNode) {
+                            var matchingDependencyInCloud: INode? = null
+                            dependenciesInCloud.forEach { dependencyInCloud ->
+                                if (dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(
+                                        BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                                    )
+                                ) {
+                                    matchingDependencyInCloud = dependencyInCloud
+                                }
                             }
                             if (matchingDependencyInCloud == null) {
-                                DefaultSModelDescriptor dsmd = ((DefaultSModelDescriptor) mpsModelNode.getElement());
-                                DevKitDependencyAsNode depToRemove = (DevKitDependencyAsNode) dependencyInMPS;
-                                SModuleReference moduleReference = ((SModuleReference) ReflectionUtil.readField(SingleLanguageDependencyAsNode.class, depToRemove, "moduleReference"));
-                                SLanguage languageToRemove = MetaAdapterFactory.getLanguage(moduleReference);
-                                dsmd.deleteLanguageId(languageToRemove);
+                                // TODO fixme mpsModelNode.getElement() does not exist
+                                val dsmd: DefaultSModelDescriptor =
+                                    null!! // mpsModelNode.getElement() as DefaultSModelDescriptor
+                                val moduleReference = dependencyInMPS.moduleReference!!
+                                val languageToRemove = MetaAdapterFactory.getLanguage(moduleReference)
+                                dsmd.deleteLanguageId(languageToRemove)
                             }
                         } else if (dependencyInMPS is SingleLanguageDependencyAsNode) {
-                            INode matchingDependencyInCloud = null;
-                            foreach dependencyInCloud in dependenciesInCloud {
-                                if (dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)) {
-                                matchingDependencyInCloud = dependencyInCloud;
-                            }
+                            var matchingDependencyInCloud: INode? = null
+                            dependenciesInCloud.forEach { dependencyInCloud ->
+                                if (dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(
+                                        BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                                    )
+                                ) {
+                                    matchingDependencyInCloud = dependencyInCloud
+                                }
                             }
                             if (matchingDependencyInCloud == null) {
-                                DefaultSModelDescriptor dsmd = ((DefaultSModelDescriptor) mpsModelNode.getElement());
-                                SingleLanguageDependencyAsNode depToRemove = (SingleLanguageDependencyAsNode) dependencyInMPS;
-                                SModuleReference moduleReference = depToRemove.getModuleReference();
-                                SLanguage languageToRemove = MetaAdapterFactory.getLanguage(moduleReference);
-                                dsmd.deleteLanguageId(languageToRemove);
+                                val dsmd: DefaultSModelDescriptor =
+                                    null!! // mpsModelNode.getElement() as DefaultSModelDescriptor
+                                val moduleReference = dependencyInMPS.moduleReference!!
+                                val languageToRemove = MetaAdapterFactory.getLanguage(moduleReference)
+                                dsmd.deleteLanguageId(languageToRemove)
                             }
                         } else {
-                            throw new RuntimeException("Unknown dependency type: " + dependencyInMPS.getClass().getName());
-                        }*/
+                            throw RuntimeException("Unknown dependency type: ${dependencyInMPS.javaClass.name}")
+                        }
                     }
                 }
             }
@@ -282,27 +291,47 @@ class ModelPropertiesSynchronizer(
 
             // For each import in MPS, add it if not present in the cloud, or otherwise ensure all properties are the same
             dependenciesInMPS.forEach { dependencyInMPS ->
-                // TODO fixme. org.modelix.mpsadapters.mps.DevKitDependencyAsNode does not exist in modelix
-                // TODO fixme. org.modelix.mpsadapters.mps.SingleLanguageDependencyAsNode does not exist in modelix
-
-                /*if (dependencyInMPS is DevKitDependencyAsNode) {
-                    INode matchingDependencyInCloud = dependenciesInCloud . findFirst ({ ~dependencyInCloud => dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) })
+                if (dependencyInMPS is DevKitDependencyAsNode) {
+                    val matchingDependencyInCloud = dependenciesInCloud.firstOrNull { dependencyInCloud ->
+                        dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(
+                            BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                        )
+                    }
                     if (matchingDependencyInCloud == null) {
-                        cloudModelNode.replicateChild(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages, dependencyInMPS);
+                        cloudModelNode.replicateChild(
+                            BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages,
+                            dependencyInMPS,
+                        )
                     } else {
-                        cloudModelNode.copyProperty(dependencyInMPS, BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name);
+                        cloudModelNode.copyProperty(
+                            dependencyInMPS,
+                            BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                        )
                     }
                 } else if (dependencyInMPS is SingleLanguageDependencyAsNode) {
-                    INode matchingDependencyInCloud = dependenciesInCloud . findFirst ({ ~dependencyInCloud => dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) })
+                    val matchingDependencyInCloud = dependenciesInCloud.firstOrNull { dependencyInCloud ->
+                        dependencyInMPS.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) == dependencyInCloud.getPropertyValue(
+                            BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                        )
+                    }
                     if (matchingDependencyInCloud == null) {
-                        cloudModelNode.replicateChild(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages, dependencyInMPS);
+                        cloudModelNode.replicateChild(
+                            BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages,
+                            dependencyInMPS,
+                        )
                     } else {
-                        cloudModelNode.copyProperty(dependencyInMPS, BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name);
-                        cloudModelNode.copyProperty(dependencyInMPS, BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version);
+                        cloudModelNode.copyProperty(
+                            dependencyInMPS,
+                            BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                        )
+                        cloudModelNode.copyProperty(
+                            dependencyInMPS,
+                            BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                        )
                     }
                 } else {
-                    throw RuntimeException ("Unknown dependency type: ${dependencyInMPS.getClass().getName()}");
-                }*/
+                    throw RuntimeException("Unknown dependency type: ${dependencyInMPS.javaClass.name}")
+                }
             }
 
             // For each import not in MPS, remove it

@@ -32,6 +32,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSModelAsNode
+import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.ProjectBinding
@@ -191,10 +193,7 @@ object ModelCloudImportUtils {
         progress: ProgressMonitor?,
     ) {
         val monitor = progress ?: EmptyProgressMonitor()
-
-        // TODO fixme. Problem SModuleAsNode.wrap does not exist anymore in modelix...
-        // SModuleAsNode.wrap(physicalModule);
-        val sModuleAsNode: INode = null!!
+        val sModuleAsNode = MPSModuleAsNode.wrap(physicalModule)!!
 
         treeInRepository.runWrite {
             cloudModule.copyProperty(sModuleAsNode, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
@@ -234,13 +233,11 @@ object ModelCloudImportUtils {
      * @return the created cloud model
      */
     private fun copyPhysicalModel(treeInRepository: CloudRepository, cloudModule: INode, physicalModel: SModel): INode {
-        // TODO fixme. Problem SModelAsNode.wrap does not exist anymore in modelix...
-        // SModelAsNode.wrap(physicalModel);
-        val originalModel: INode = null!!
-
-        val modelConcept: SConcept = null!! // TODO convert BuiltinLanguages.MPSRepositoryConcepts.Model to SConcept
+        val originalModel = MPSModelAsNode.wrap(physicalModel)!!
+        val modelConcept: SConcept =
+            null!! // TODO fixme convert BuiltinLanguages.MPSRepositoryConcepts.Model to SConcept
         val containmentLink: SContainmentLink =
-            null!! // TODO convert BuiltinLanguages.MPSRepositoryConcepts.Module.models to SContainmentLink
+            null!! // TODO fixme convert BuiltinLanguages.MPSRepositoryConcepts.Module.models to SContainmentLink
         return treeInRepository.createNode(cloudModule, containmentLink, modelConcept) { cloudModel: INode ->
             cloudModel.copyProperty(originalModel, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
             cloudModel.copyProperty(originalModel, BuiltinLanguages.MPSRepositoryConcepts.Model.id)

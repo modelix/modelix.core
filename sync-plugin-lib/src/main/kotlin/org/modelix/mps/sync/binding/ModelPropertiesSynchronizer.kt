@@ -20,7 +20,6 @@ import jetbrains.mps.extapi.model.SModelDescriptorStub
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.ProjectManager
-import jetbrains.mps.smodel.DefaultSModelDescriptor
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.SModel
@@ -32,8 +31,11 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.PArea
 import org.modelix.model.mpsadapters.DevKitDependencyAsNode
+import org.modelix.model.mpsadapters.MPSModelAsNode
 import org.modelix.model.mpsadapters.SingleLanguageDependencyAsNode
 import org.modelix.mps.sync.ICloudRepository
+import org.modelix.mps.sync.util.addDevKit
+import org.modelix.mps.sync.util.addLanguageImport
 import org.modelix.mps.sync.util.copyProperty
 import org.modelix.mps.sync.util.copyPropertyIfNecessary
 import org.modelix.mps.sync.util.replicateChild
@@ -73,11 +75,7 @@ class ModelPropertiesSynchronizer(
             PArea(cloudRepository.getBranch()).executeRead {
                 model.runInWriteActionIfNeeded {
                     // First get the dependencies in MPS
-                    // TODO fixme. Problem SModelAsNode.wrap does not exist anymore in modelix...
-                    // TODO it should be SModelAsNode instead of INode
-                    // SModelAsNode.wrap(model);
-                    val mpsModelNode: INode = null!!
-
+                    val mpsModelNode = MPSModelAsNode.wrap(model)!!
                     val dependenciesInMPS: List<INode> =
                         mpsModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages).toList()
 
@@ -102,9 +100,7 @@ class ModelPropertiesSynchronizer(
                                     dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
                                 val devKit = repo.getModule(ModuleId.regular(UUID.fromString(devKitUUID))) as DevKit
                                 val devKitModuleReference = devKit.moduleReference
-                                // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
-                                // getElement() is supposed to return an SModel
-                                // mpsModelNode.getElement().addDevKit(devKitModuleReference)
+                                mpsModelNode.model.addDevKit(devKitModuleReference)
                             } else if (dependencyInCloud.concept?.getLongName() == BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getLongName()) {
                                 val repo = model.repository
                                 val languageUUID =
@@ -112,10 +108,10 @@ class ModelPropertiesSynchronizer(
                                 val language =
                                     repo.getModule(ModuleId.regular(UUID.fromString(languageUUID))) as Language
                                 val sLanguage = MetaAdapterFactory.getLanguage(language.moduleReference)
-
-                                // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
-                                // getElement() is supposed to return an SModel
-                                // mpsModelNode.getElement().addLanguageImport(sLanguage, Integer.parseInt(dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)))
+                                mpsModelNode.model.addLanguageImport(
+                                    sLanguage,
+                                    Integer.parseInt(dependencyInCloud.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)),
+                                )
                             } else {
                                 throw UnsupportedOperationException("Unknown dependency with concept ${dependencyInCloud.concept?.getLongName()}")
                             }
@@ -145,12 +141,11 @@ class ModelPropertiesSynchronizer(
                                 }
                             }
                             if (matchingDependencyInCloud == null) {
-                                // TODO fixme mpsModelNode.getElement() does not exist
-                                val dsmd: DefaultSModelDescriptor =
-                                    null!! // mpsModelNode.getElement() as DefaultSModelDescriptor
                                 val moduleReference = dependencyInMPS.moduleReference!!
                                 val languageToRemove = MetaAdapterFactory.getLanguage(moduleReference)
-                                dsmd.deleteLanguageId(languageToRemove)
+                                if (mpsModelNode.model is SModelDescriptorStub) {
+                                    (mpsModelNode.model as SModelDescriptorStub).deleteLanguageId(languageToRemove)
+                                }
                             }
                         } else if (dependencyInMPS is SingleLanguageDependencyAsNode) {
                             var matchingDependencyInCloud: INode? = null
@@ -163,11 +158,11 @@ class ModelPropertiesSynchronizer(
                                 }
                             }
                             if (matchingDependencyInCloud == null) {
-                                val dsmd: DefaultSModelDescriptor =
-                                    null!! // mpsModelNode.getElement() as DefaultSModelDescriptor
                                 val moduleReference = dependencyInMPS.moduleReference!!
                                 val languageToRemove = MetaAdapterFactory.getLanguage(moduleReference)
-                                dsmd.deleteLanguageId(languageToRemove)
+                                if (mpsModelNode.model is SModelDescriptorStub) {
+                                    (mpsModelNode.model as SModelDescriptorStub).deleteLanguageId(languageToRemove)
+                                }
                             }
                         } else {
                             throw RuntimeException("Unknown dependency type: ${dependencyInMPS.javaClass.name}")
@@ -186,10 +181,7 @@ class ModelPropertiesSynchronizer(
             PArea(cloudRepository.getBranch()).executeRead {
                 model.runInWriteActionIfNeeded {
                     // First get the dependencies in MPS
-                    // TODO fixme. Problem SModelAsNode.wrap does not exist anymore in modelix...
-                    // TODO it should be SModelAsNode instead of INode
-                    // SModelAsNode.wrap(model);
-                    val mpsModelNode: INode = null!!
+                    val mpsModelNode = MPSModelAsNode.wrap(model)!!
                     val dependenciesInMPS =
                         mpsModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
 
@@ -247,14 +239,12 @@ class ModelPropertiesSynchronizer(
                             if (matchingDependencyInCloud == null) {
                                 // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
                                 // getElement() is supposed to return an SModel
-                                // mpsModelNode.getElement() as SModelDescriptorStub
-                                val dsmd: SModelDescriptorStub = null!!
-
-                                // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
-                                // getElement() is supposed to return an SModel
                                 // dependencyInMPS.getElement().getReference();
                                 val modelReferenceToRemove: SModelReference = null!!
-                                dsmd.deleteModelImport(modelReferenceToRemove)
+                                if (mpsModelNode.model is SModelDescriptorStub) {
+                                    val descriptorStub = mpsModelNode.model as SModelDescriptorStub
+                                    descriptorStub.deleteModelImport(modelReferenceToRemove)
+                                }
                             }
                         }
                     }
@@ -279,8 +269,7 @@ class ModelPropertiesSynchronizer(
     fun syncUsedLanguagesAndDevKitsFromMPS() {
         PArea(branch).executeWrite {
             // First get the dependencies in MPS
-            // TODO fixme. Problem SModelAsNode.wrap does not exist anymore in modelix...
-            val mpsModelNode: INode = null!! // SModelAsNode.wrap(model);
+            val mpsModelNode = MPSModelAsNode.wrap(model)!!
             val dependenciesInMPS: List<INode> =
                 mpsModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages).toList()
 
@@ -349,11 +338,8 @@ class ModelPropertiesSynchronizer(
 
     fun syncModelImportsFromMPS() {
         PArea(branch).executeWrite {
-            // First get the dependencies in MPS. Model imports do not include implicit ones
-
-            // TODO fixme. Problem SModelAsNode.wrap does not exist anymore in modelix...
-            // TODO it should be SModelAsNode instead of INode
-            val mpsModelNode: INode = null!! // SModelAsNode.wrap(model);
+            // First get the dependencies in MPS. Model imports do not include implicit ones e
+            val mpsModelNode = MPSModelAsNode.wrap(model)!!
             val dependenciesInMPS = mpsModelNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
 
             // Then get the dependencies in the cloud

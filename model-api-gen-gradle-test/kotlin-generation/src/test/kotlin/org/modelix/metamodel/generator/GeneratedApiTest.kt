@@ -36,7 +36,7 @@ class GeneratedApiTest {
         val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
         TypedLanguagesRegistry.register(L_jetbrains_mps_lang_editor)
         TypedLanguagesRegistry.register(L_jetbrains_mps_lang_core)
-        val data = ModelData.fromJson(File("build/metamodel/exported-modules/jetbrains.mps.baseLanguage.blTypes.json").readText())
+        val data = ModelData.fromJson(File("../metamodel-export/build/metamodel/exported-modules/jetbrains.mps.baseLanguage.blTypes.json").readText())
         branch.runWrite {
             data.load(branch)
             val node = findNodeWithStyleAttribute(branch.getRootNode())!!.typed(C_FontStyleStyleClassItem.getInstanceInterface())

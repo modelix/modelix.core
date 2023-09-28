@@ -1,3 +1,4 @@
-node_modules/
-dist/
-typescript_src/
+**/build/
+**/dist/
+**/node_modules/
+**/typescript_src/

@@ -18,7 +18,9 @@ package org.modelix.mps.sync.history
 
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.ui.tree.TextTreeNode
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.PArea
@@ -35,14 +37,14 @@ import javax.swing.SwingUtilities
 // status: migrated, but needs some bugfixes
 class RepositoryTreeNode(
     modelServer: ModelServerConnection,
-    repositoryInfo: RepositoryInfoPlaceholder, // TODO fixme, second parameters should be node<org.modelix.model.runtimelang.structure.RepositoryInfo>
+    repositoryInfo: INode,
 ) : TextTreeNode(
     CloudIcons.REPOSITORY_ICON,
-    repositoryInfo.id,
+    repositoryInfo.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id),
 ) {
 
     val modelServer: ModelServerConnection
-    val repositoryInfo: RepositoryInfoPlaceholder // TODO fixme, this should be node<org.modelix.model.runtimelang.structure.RepositoryInfo>
+    val repositoryInfo: INode
     val repositoryId: RepositoryId
     private val activeBranch: ActiveBranch
     private val dataTreeNode = TextTreeNode("data")
@@ -59,11 +61,13 @@ class RepositoryTreeNode(
     }
 
     init {
+        val repositoryInfoId = repositoryInfo.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id)!!
+
         try {
             this.modelServer = modelServer
             this.repositoryInfo = repositoryInfo
-            this.repositoryId = RepositoryId(repositoryInfo.id)
-            this.activeBranch = modelServer.getActiveBranch(RepositoryId(repositoryInfo.id))
+            this.repositoryId = RepositoryId(repositoryInfoId)
+            this.activeBranch = modelServer.getActiveBranch(repositoryId)
             val cloudRepository = CloudRepository(modelServer, repositoryId)
             bindingsTreeNode = CloudBindingTreeNode(cloudRepository.getRootBinding(), cloudRepository)
             setAllowsChildren(true)
@@ -75,7 +79,7 @@ class RepositoryTreeNode(
             updateData()
         } catch (ex: RuntimeException) {
             throw RuntimeException(
-                "Unable to initialize RepositoryTreeNode for repository with id ${repositoryInfo.id}",
+                "Unable to initialize RepositoryTreeNode for repository with id $repositoryInfoId",
                 ex,
             )
         }
@@ -87,8 +91,7 @@ class RepositoryTreeNode(
     }
 
     fun updateBranches() {
-        // TODO fixme first parameter must be node<org.modelix.model.runtimelang.structure.BranchInfo>
-        val existing = mutableMapOf<BranchInfoPlaceholder, CloudBranchTreeNode>()
+        val existing = mutableMapOf<INode, CloudBranchTreeNode>()
         ThreadUtils.runInUIThreadAndWait {
             if (TreeModelUtil.getChildren(this).isEmpty()) {
                 TreeModelUtil.setChildren(this, Collections.singleton(LoadingIcon.apply(TextTreeNode("loading ..."))))
@@ -100,7 +103,7 @@ class RepositoryTreeNode(
 
         SharedExecutors.FIXED.execute {
             val newChildren = PArea(modelServer.getInfoBranch()).executeRead {
-                repositoryInfo.branches.map {
+                repositoryInfo.getChildren(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.branches).map {
                     if (existing.containsKey(it)) {
                         existing[it]!!
                     } else {
@@ -125,15 +128,4 @@ class RepositoryTreeNode(
         }
         TreeModelUtil.getChildren(dataTreeNode).filterIsInstance<CloudNodeTreeNode>().forEach { it.update() }
     }
-}
-
-// TODO remove me and use node<org.modelix.model.runtimelang.structure.RepositoryInfo> instead
-interface RepositoryInfoPlaceholder {
-    val branches: Iterable<BranchInfoPlaceholder>
-    val id: String
-}
-
-// TODO remove me and use node<org.modelix.model.runtimelang.structure.BranchInfo> instead
-interface BranchInfoPlaceholder {
-    val name: String
 }

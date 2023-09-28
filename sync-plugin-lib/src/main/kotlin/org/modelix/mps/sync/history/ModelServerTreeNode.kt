@@ -18,8 +18,10 @@ package org.modelix.mps.sync.history
 
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.ui.tree.TextTreeNode
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
@@ -90,8 +92,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
 
     private fun updateChildren() {
         if (modelServer.isConnected()) {
-            // TODO fixme first parameter must be node<org.modelix.model.runtimelang.structure.RepositoryInfo>
-            val existing = mutableMapOf<RepositoryInfoPlaceholder, RepositoryTreeNode>()
+            val existing = mutableMapOf<INode, RepositoryTreeNode>()
             ThreadUtils.runInUIThreadAndWait {
                 if (TreeModelUtil.getChildren(this).isEmpty()) {
                     TreeModelUtil.setChildren(
@@ -107,7 +108,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
             SharedExecutors.FIXED.execute {
                 val info = modelServer.getInfo()
                 val newChildren = PArea(modelServer.getInfoBranch()).executeRead {
-                    info.repositories.map {
+                    info.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories).mapNotNull {
                         var tn: TreeNode? = null
                         try {
                             tn = if (existing.containsKey(it)) {
@@ -117,13 +118,14 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
                             }
                         } catch (t: Throwable) {
                             t.printStackTrace()
+                            val id = it.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id)
                             ModelixNotifications.notifyError(
                                 "Repository in invalid state",
-                                "Repository ${it.id} cannot be loaded: ${t.message}",
+                                "Repository $id cannot be loaded: ${t.message}",
                             )
                         }
                         tn
-                    }.filterNotNull()
+                    }
                 }
 
                 ThreadUtils.runInUIThreadNoWait {

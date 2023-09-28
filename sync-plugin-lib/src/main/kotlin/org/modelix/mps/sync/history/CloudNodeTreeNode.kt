@@ -189,14 +189,14 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
     // TODO check this represent a repository/a tree root
     fun createModule(moduleName: String) = (this.node as PNodeAdapter).createModuleInRepository(moduleName)
 
-    fun createModel(modelName: String): INode {
-        // TODO check this represent a module
-        return PArea(branch).executeWrite {
-            // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-            // this.getNode().addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Module.models, -1, SConceptAdapter.wrap(concept/Model/))
-            val newModel: INode = null!!
+    fun createModel(modelName: String): INode =
+        PArea(branch).executeWrite {
+            val newModel = this.node.addNewChild(
+                BuiltinLanguages.MPSRepositoryConcepts.Module.models,
+                -1,
+                BuiltinLanguages.MPSRepositoryConcepts.Model,
+            )
             newModel.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, modelName)
             newModel
         }
-    }
 }

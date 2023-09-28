@@ -65,8 +65,8 @@ class SingleLanguageDependencyAsNode : INode {
             }
             throw IllegalStateException()
         }
-    override val concept: IConcept?
-        get() = null!! // TODO fixme SConceptAdapter: SConceptAdapter.wrap(concept/SingleLanguageDependency/);
+    override val concept: IConcept
+        get() = BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency
 
     @Deprecated("use getContainmentLink()")
     override val roleInParent: String?
@@ -77,6 +77,7 @@ class SingleLanguageDependencyAsNode : INode {
         } else {
             null
         }
+
     override val parent: INode?
         get() = if (moduleImporter != null) {
             // TODO fixme SModelAsNode

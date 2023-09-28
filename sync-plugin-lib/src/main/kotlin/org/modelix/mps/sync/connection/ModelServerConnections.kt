@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.connection
 
 import org.jetbrains.mps.openapi.module.SRepository
+import org.modelix.model.api.INode
 import org.modelix.model.area.CompositeArea
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
@@ -104,7 +105,7 @@ class ModelServerConnections private constructor() {
 
     fun getConnectedTreesInRepositories() = getConnectedModelServers().flatMap { it.trees() }
 
-    fun resolveCloudModel(repositoryId: String): Any {
+    fun resolveCloudModel(repositoryId: String): INode {
         // should return org.modelix.model.repositoryconcepts.structure.Repository
 
         val repo = getConnectedModelServers().first()
@@ -113,14 +114,11 @@ class ModelServerConnections private constructor() {
         // TODO fixme. org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found...
         /*
         NodeToSNodeAdapter.wrap(new PNodeAdapter(ITree.ROOT_ID, activeBranch.getBranch()) {
-            @Override
-            public IConcept getConcept() {
-                SConceptAdapter.wrap(concept/Repository/);
-            }
+            override fun getConcept() = BuiltinLanguages.MPSRepositoryConcepts.Repository
         }, MPSModuleRepository.getInstance()):Repository;
          */
 
-        return Any()
+        return null!!
     }
 
     fun dispose() {

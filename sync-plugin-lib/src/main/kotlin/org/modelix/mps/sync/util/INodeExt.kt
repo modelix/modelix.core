@@ -17,8 +17,8 @@
 package org.modelix.mps.sync.util
 
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
-import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
@@ -130,18 +130,12 @@ fun INode.containingModel(): INode? {
 
 fun INode.isModule(): Boolean {
     val concept = this.concept ?: return false
-    // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-    // SConceptAdapter.wrap(concept/Module/)
-    val parentConcept: IConcept? = null
-    return concept.isSubConceptOf(parentConcept)
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Module)
 }
 
 fun INode.isModel(): Boolean {
     val concept = this.concept ?: return false
-    // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-    // SConceptAdapter.wrap(concept/Model/)
-    val parentConcept: IConcept? = null
-    return concept.isSubConceptOf(parentConcept)
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Model)
 }
 
 fun INode.removeAllChildrenWithRole(role: IChildLink) {

@@ -31,6 +31,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
+import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.ProjectModuleBinding
@@ -237,7 +238,8 @@ object ModelCloudImportUtils {
         val originalModel: INode = null!!
 
         val modelConcept: SConcept = null!! // TODO convert BuiltinLanguages.MPSRepositoryConcepts.Model to SConcept
-        val containmentLink: SContainmentLink = null!! // TODO convert BuiltinLanguages.MPSRepositoryConcepts.Module.models to SContainmentLink
+        val containmentLink: SContainmentLink =
+            null!! // TODO convert BuiltinLanguages.MPSRepositoryConcepts.Module.models to SContainmentLink
         return treeInRepository.createNode(cloudModule, containmentLink, modelConcept) { cloudModel: INode ->
             cloudModel.copyProperty(originalModel, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
             cloudModel.copyProperty(originalModel, BuiltinLanguages.MPSRepositoryConcepts.Model.id)
@@ -246,9 +248,11 @@ object ModelCloudImportUtils {
             cloudModel.cloneChildren(originalModel, BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)
 
             physicalModel.rootNodes.forEach { physicalRoot ->
-                // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-                // cloudModel.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes, -1, SConceptAdapter.wrap(physicalRoot.getConcept()));
-                val cloudRoot: INode = null!!
+                val cloudRoot = cloudModel.addNewChild(
+                    BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes,
+                    -1,
+                    MPSConcept.wrap(physicalRoot.concept),
+                )
                 replicatePhysicalNode(cloudRoot, physicalRoot)
             }
         }
@@ -274,9 +278,8 @@ object ModelCloudImportUtils {
         }
 
         physicalNode.children.forEach { physicalChild ->
-            // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-            // cloudNode.addNewChild(physicalChild.containmentLink?.name, -1, SConceptAdapter.wrap(physicalChild.getConcept()));
-            val cloudChild: INode = null!!
+            val cloudChild =
+                cloudNode.addNewChild(physicalChild.containmentLink?.name, -1, MPSConcept.wrap(physicalChild.concept))
             replicatePhysicalNode(cloudChild, physicalChild)
         }
     }

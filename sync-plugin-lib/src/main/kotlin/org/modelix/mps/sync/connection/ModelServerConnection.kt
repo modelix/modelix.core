@@ -270,9 +270,12 @@ class ModelServerConnection {
         if (result == null) {
             result = PArea(infoTree!!.branch).executeWrite {
                 val transaction = infoTree!!.branch.writeTransaction
-                // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-                // transaction.addNewChild(ITree.ROOT_ID, "info", -1, SConceptAdapter.wrap(concept/ModelServerInfo/))
-                val id = 0L
+                val id = transaction.addNewChild(
+                    ITree.ROOT_ID,
+                    "info",
+                    -1,
+                    BuiltinLanguages.ModelixRuntimelang.ModelServerInfo,
+                )
 
                 /**
                  * TODO fixme:

@@ -29,6 +29,7 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.RootBinding
@@ -180,20 +181,19 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
         }
     }
 
-    fun createProject(name: String): INode {
-        return computeWrite { rootNode ->
-            // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-            // TODO  Project must be org.modelix.model.repositoryconcepts.Project
-            // rootNode.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept/Project/));
-            val newProject: INode? = null!!
-
-            newProject!!.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, name)
+    fun createProject(name: String) =
+        computeWrite { rootNode ->
+            val newProject = rootNode.addNewChild(
+                BuiltinLanguages.MPSRepositoryConcepts.Repository.projects,
+                -1,
+                BuiltinLanguages.MPSRepositoryConcepts.Project,
+            )
+            newProject.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, name)
             newProject
         }
-    }
 
-    fun getProject(name: String): INode? {
-        return computeRead {
+    fun getProject(name: String) =
+        computeRead {
             var project: INode? = null
             val activeBranch = modelServer.getActiveBranch(repositoryId)
             val branch = activeBranch.branch
@@ -206,10 +206,9 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
             }
             project
         }
-    }
 
-    fun hasModuleUnderProject(projectNodeId: Long, moduleId: String): Boolean {
-        return computeRead {
+    fun hasModuleUnderProject(projectNodeId: Long, moduleId: String) =
+        computeRead {
             val activeBranch = modelServer.getActiveBranch(repositoryId)
             val branch = activeBranch.branch
             val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
@@ -218,10 +217,9 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
             projectNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.modules)
                 .any { it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId }
         }
-    }
 
-    fun hasModuleInRepository(moduleId: String): Boolean {
-        return computeRead {
+    fun hasModuleInRepository(moduleId: String) =
+        computeRead {
             val activeBranch = modelServer.getActiveBranch(repositoryId)
             val branch = activeBranch.branch
             val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
@@ -229,19 +227,19 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
             rootNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.modules)
                 .any { it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId }
         }
-    }
 
-    fun createModuleUnderProject(projectNodeId: Long, moduleId: String, moduleName: String): INode {
-        return computeWrite { rootNode ->
+    fun createModuleUnderProject(projectNodeId: Long, moduleId: String, moduleName: String) =
+        computeWrite { rootNode ->
             val projectNode = PNodeAdapter(projectNodeId, rootNode.branch)
-            // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-            // projectNode.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Project.modules, -1, SConceptAdapter.wrap(concept/Module/));
-            val newModule: INode? = null!!
-            newModule!!.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id, moduleId)
+            val newModule = projectNode.addNewChild(
+                BuiltinLanguages.MPSRepositoryConcepts.Project.modules,
+                -1,
+                BuiltinLanguages.MPSRepositoryConcepts.Module,
+            )
+            newModule.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id, moduleId)
             newModule.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, moduleName)
             newModule
         }
-    }
 
     fun createModuleUnderProject(cloudModule: INode, moduleId: String, moduleName: String) =
         createModuleUnderProject(cloudModule.nodeIdAsLong(), moduleId, moduleName)
@@ -251,12 +249,10 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
         containmentLink: SContainmentLink,
         concept: IConcept,
         initializer: Consumer<INode>,
-    ): INode {
-        return computeWrite {
-            val newNode = parent.addNewChild(containmentLink.name, -1, concept)
-            initializer.accept(newNode)
-            newNode
-        }
+    ) = computeWrite {
+        val newNode = parent.addNewChild(containmentLink.name, -1, concept)
+        initializer.accept(newNode)
+        newNode
     }
 
     fun createNode(
@@ -264,22 +260,17 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
         containmentLink: SContainmentLink,
         concept: SConcept,
         initializer: Consumer<INode>,
-    ): INode {
-        // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-        // return createNode(parent, containmentLink, SConceptAdapter.wrap(concept), initializer)
-        return null!!
-    }
+    ) = createNode(parent, containmentLink, MPSConcept.wrap(concept)!!, initializer)
 
     fun createModule(moduleName: String) =
         this.computeWrite { rootNode -> rootNode.createModuleInRepository(moduleName) }
 
-    override fun hashCode(): Int = modelServer.hashCode() + 7 * repositoryId.hashCode()
+    override fun hashCode() = modelServer.hashCode() + 7 * repositoryId.hashCode()
 
-    override fun equals(other: Any?): Boolean {
-        return if (other is CloudRepository) {
+    override fun equals(other: Any?) =
+        if (other is CloudRepository) {
             this.modelServer == other.modelServer && this.repositoryId == other.repositoryId
         } else {
             false
         }
-    }
 }

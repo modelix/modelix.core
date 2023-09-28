@@ -61,8 +61,8 @@ class DevKitDependencyAsNode : INode {
             }
             throw IllegalStateException()
         }
-    override val concept: IConcept?
-        get() = null!! // TODO fixme SConceptAdapter: SConceptAdapter.wrap(concept/DevkitDependency/);
+    override val concept: IConcept
+        get() = BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency
 
     @Deprecated("use getContainmentLink()")
     override val roleInParent: String?

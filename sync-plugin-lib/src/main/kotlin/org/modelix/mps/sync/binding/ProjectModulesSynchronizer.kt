@@ -41,9 +41,11 @@ class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSPr
     override fun getCloudChildren(tree: ITree): Iterable<Long> {
         return super.getCloudChildren(tree).filter { childId ->
             val concept = tree.getConcept(childId)
-            // TODO fixme. SConceptAdapter.wrap does not exist anymore in modelix...
-            // concept.isExactly(SConceptAdapter.wrap(concept/Module/)) || concept.isSubConceptOf(SConceptAdapter.wrap(concept/Solution/))
-            concept?.let { it.isExactly(concept) || it.isSubConceptOf(concept) } ?: false
+            concept?.let {
+                it.isExactly(BuiltinLanguages.MPSRepositoryConcepts.Module) || it.isSubConceptOf(
+                    BuiltinLanguages.MPSRepositoryConcepts.Solution,
+                )
+            } ?: false
         }
     }
 
@@ -52,10 +54,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSPr
         val name =
             tree.getProperty(cloudChildId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())
         val concept = tree.getConcept(cloudChildId)
-        // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
-        // createModule(name, id, SConceptAdapter.unwrap(concept))
-        val module: SModule? = null
-        return module
+        return createModule(name!!, id, concept!!)
     }
 
     private fun getModuleId(tree: ITree, cloudModuleId: Long): SModuleId? {
@@ -69,17 +68,14 @@ class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSPr
         }
     }
 
-    private fun createModule(name: String, id: SModuleId, type: IConcept): SModule? {
-        // TODO fixme, we need org.modelix.model.repositoryconcepts.Language concept here
-        return if (type.isSubConceptOf(null)) {
+    private fun createModule(name: String, id: SModuleId, type: IConcept): SModule? =
+        if (type.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Language)) {
             null
-            // TODO fixme, we need org.modelix.model.repositoryconcepts.DevKit concept here
-        } else if (type.isSubConceptOf(null)) {
+        } else if (type.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.DevKit)) {
             null
         } else {
-            return project.createModule(name, id as ModuleId, this)
+            project.createModule(name, id as ModuleId, this)
         }
-    }
 
     override fun removeMPSChild(mpsChild: SModule) {
         ModuleDeleteHelper(project).deleteModules(Collections.singletonList(mpsChild), false, true)
@@ -118,9 +114,12 @@ class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSPr
     }
 
     override fun createCloudChild(transaction: IWriteTransaction, mpsChild: SModule): Long {
-        // TODO fix parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-        // transaction.addNewChild(cloudParentId, BuiltinLanguages.MPSRepositoryConcepts.Project.modules, -1, SConceptAdapter.wrap(concept/Module/))
-        val modelNodeId = 0L
+        val modelNodeId = transaction.addNewChild(
+            cloudParentId,
+            BuiltinLanguages.MPSRepositoryConcepts.Project.modules.getSimpleName(),
+            -1,
+            BuiltinLanguages.MPSRepositoryConcepts.Module,
+        )
         transaction.setProperty(
             modelNodeId,
             BuiltinLanguages.MPSRepositoryConcepts.Module.id.getSimpleName(),

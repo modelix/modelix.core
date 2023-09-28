@@ -42,6 +42,7 @@ import org.modelix.model.area.PArea
 import org.modelix.model.lazy.IBulkTree
 import org.modelix.model.lazy.PrefetchCache
 import org.modelix.model.mpsadapters.MPSArea
+import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.mps.sync.ICloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.Synchronizer
@@ -146,9 +147,7 @@ class ModelSynchronizer(
         return nodeMap.getOrCreateNode(nodeId) {
             val concept = tree.getConcept(nodeId)
             check(concept != null) { "Node has no concept: $nodeId" }
-            // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
-            // SConceptAdapter.unwrap(concept)
-            val sconcept: SNode? = null
+            val sconcept = MPSConcept.unwrap(concept)
             check(sconcept != null) { "Node has no MPS concept: $nodeId, $concept" }
             sconcept
         }
@@ -157,10 +156,7 @@ class ModelSynchronizer(
     fun syncNodeToMPS(nodeId: Long, tree: ITree, includeDescendants: Boolean) {
         logger.trace { "syncNode nodeId: $nodeId" }
         try {
-            // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
-            // SConceptAdapter.unwrap(tree.getConcept(nodeId))
-            val concept: SAbstractConcept? = null
-
+            val concept = MPSConcept.unwrap(tree.getConcept(nodeId))
             check(concept != null) {
                 "Node has no concept: ${java.lang.Long.toHexString(nodeId)}. Role: ${
                     tree.getRole(
@@ -169,7 +165,7 @@ class ModelSynchronizer(
                 }, Concept: ${tree.getConcept(nodeId)}"
             }
             val node = nodeMap.getOrCreateNode(nodeId) { concept }
-            concept!!.properties.forEach { property ->
+            concept.properties.forEach { property ->
                 node.setProperty(property, tree.getProperty(nodeId, property.name))
             }
 
@@ -184,8 +180,7 @@ class ModelSynchronizer(
     }
 
     fun syncPropertyToMPS(nodeId: Long, role: String, tree: ITree) {
-        // TODO fixme. Problem SConceptAdapter.unwrap does not exist anymore in modelix...
-        val concept: SAbstractConcept? = null // SConceptAdapter.unwrap(tree.getConcept(nodeId))
+        val concept = MPSConcept.unwrap(tree.getConcept(nodeId))
         val mpsNode = getOrCreateMPSNode(nodeId, tree)
         val mpsProperty: SProperty = findProperty(concept!!, role)
         mpsNode.setProperty(mpsProperty, tree.getProperty(nodeId, role))
@@ -450,8 +445,7 @@ class ModelSynchronizer(
         var nodeId = nodeMap.getId(node)
         val transaction = branch.writeTransaction
         if (nodeId == 0L || !transaction.containsNode(nodeId)) {
-            // TODO fix last parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-            nodeId = 0L // t.addNewChild(parentIfCreate, roleIfCreate, -1, SConceptAdapter.wrap(node.concept))
+            nodeId = transaction.addNewChild(parentIfCreate, roleIfCreate, -1, MPSConcept.wrap(node.concept))
             nodeMap.put(nodeId, node)
         }
         return nodeId
@@ -495,9 +489,7 @@ class ModelSynchronizer(
                 if (event.isRoot) {
                     var childId = nodeMap.getId(child)
                     if (childId == 0L || !transaction.containsNode(childId)) {
-                        // TODO fix last parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-                        childId =
-                            0L // transaction.addNewChild(parentId, role, -1, SConceptAdapter.wrap(child.concept));
+                        childId = transaction.addNewChild(parentId, role, -1, MPSConcept.wrap(child.concept))
                         nodeMap.put(childId, child)
                     } else {
                         transaction.moveChild(parentId, role, -1, childId)

@@ -28,7 +28,20 @@ import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 
 data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
+
+    companion object {
+        fun wrap(concept: SAbstractConcept?): IConcept? = concept?.let { MPSConcept(it) }
+
+        fun unwrap(concept: IConcept?): SAbstractConcept? =
+            if (concept is MPSConcept) {
+                concept.concept
+            } else {
+                null
+            }
+    }
+
     constructor(concept: SAbstractConcept) : this(concept as SAbstractConceptAdapter)
+
     override fun getReference(): ConceptReference {
         return ConceptReference(getUID())
     }
@@ -66,6 +79,7 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
         return when (concept) {
             is SConcept -> listOfNotNull<SAbstractConcept>(ConceptWorkaround(concept).superConcept) +
                 ConceptWorkaround(concept).superInterfaces
+
             is SInterfaceConcept -> ConceptWorkaround(concept).superInterfaces
             else -> emptyList<SAbstractConcept>()
         }.map { MPSConcept(it) }

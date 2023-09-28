@@ -86,9 +86,7 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
     }
 
     override fun createCloudChild(transaction: IWriteTransaction, mpsChild: SModel): Long {
-        // TODO fix last parameter. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-        // transaction.addNewChild(cloudParentId, "models", -1, SConceptAdapter.wrap(Model));
-        val modelNodeId = 0L
+        val modelNodeId = transaction.addNewChild(cloudParentId, "models", -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
         transaction.setProperty(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.id.getSimpleName(), mpsChild.modelId.toString())
         transaction.setProperty(modelNodeId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(), mpsChild.name.value)
         return modelNodeId

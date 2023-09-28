@@ -46,10 +46,12 @@ class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyn
         if (projectNodeId == 0L) {
             mpsProject.repository.modelAccess.runReadAction {
                 branch.runWriteT {
-                    projectNodeId =
-                        // TODO fixme. Problem SConceptAdapter.wrap does not exist anymore in modelix...
-                        // it.addNewChild(ITree.ROOT_ID, BuiltinLanguages.MPSRepositoryConcepts.Repository.projects, -1, SConceptAdapter.wrap(concept/Project/));
-                        0
+                    projectNodeId = it.addNewChild(
+                        ITree.ROOT_ID,
+                        BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.getSimpleName(),
+                        -1,
+                        BuiltinLanguages.MPSRepositoryConcepts.Project,
+                    )
 
                     it.setProperty(
                         projectNodeId,

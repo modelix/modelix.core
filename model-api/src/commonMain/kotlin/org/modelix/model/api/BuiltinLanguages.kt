@@ -128,6 +128,30 @@ object BuiltinLanguages {
             )
         }
 
+        object Solution : SimpleConcept(
+            conceptName = "Solution",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598211",
+            directSuperConcepts = listOf(Module),
+        ) {
+            init { addConcept(this) }
+        }
+
+        object Language : SimpleConcept(
+            conceptName = "Language",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598212",
+            directSuperConcepts = listOf(Module),
+        ) {
+            init { addConcept(this) }
+        }
+
+        object DevKit : SimpleConcept(
+            conceptName = "DevKit",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598213",
+            directSuperConcepts = listOf(Module),
+        ) {
+            init { addConcept(this) }
+        }
+
         object Repository : SimpleConcept(
             conceptName = "Repository",
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902",

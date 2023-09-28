@@ -13,10 +13,12 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SModuleId
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -30,6 +32,11 @@ import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 
 data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
+
+    companion object {
+        fun wrap(module: SModule?): MPSModuleAsNode? = module?.let { MPSModuleAsNode(it) }
+    }
+
     override fun getArea(): IArea {
         return MPSArea(module.repository ?: MPSModuleRepository.getInstance())
     }
@@ -59,7 +66,8 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898") ||
+        return if (link.getUID()
+                .endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898") ||
             link.getUID().contains("models") ||
             link.getSimpleName() == "models"
         ) {
@@ -103,7 +111,8 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
             property.getSimpleName() == "name"
         ) {
             module.moduleName
-        } else if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.getUID()) ||
+        } else if (property.getUID()
+                .endsWith(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.getUID()) ||
             property.getUID().contains("virtualPackage") ||
             property.getSimpleName() == "virtualPackage"
         ) {
@@ -127,5 +136,29 @@ data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
 
     override fun getReferenceLinks(): List<IReferenceLink> {
         return concept.getAllReferenceLinks()
+    }
+
+    fun findSingleLanguageDependency(dependencyId: SModuleId): SingleLanguageDependencyAsNode? {
+        if (module !is AbstractModule) {
+            return null
+        }
+        module.moduleDescriptor?.dependencyVersions?.forEach { entry ->
+            if (entry.key.moduleId == dependencyId) {
+                return SingleLanguageDependencyAsNode(entry.key, entry.value, module)
+            }
+        }
+        return null
+    }
+
+    fun findDevKitDependency(dependencyId: SModuleId): DevKitDependencyAsNode? {
+        if (module !is AbstractModule) {
+            return null
+        }
+        module.moduleDescriptor?.usedDevkits?.forEach { devKit ->
+            if (devKit.moduleId == dependencyId) {
+                return DevKitDependencyAsNode(devKit, module)
+            }
+        }
+        return null
     }
 }

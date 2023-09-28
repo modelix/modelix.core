@@ -49,39 +49,34 @@ class DevKitDependencyAsNode : INode {
 
     override fun getArea() = MPSArea(MPSModuleRepository.getInstance())
 
-    override val isValid: Boolean
-        get() = true
-    override val reference: INodeReference
-        get() {
-            if (moduleImporter != null) {
-                return NodeReference(moduleImporter!!.moduleReference, moduleReference!!.moduleId)
-            }
-            if (modelImporter != null) {
-                return NodeReference(modelImporter!!.reference, moduleReference!!.moduleId)
-            }
+    override val isValid = true
+
+    override val reference =
+        if (moduleImporter != null) {
+            NodeReference(moduleImporter!!.moduleReference, moduleReference!!.moduleId)
+        } else if (modelImporter != null) {
+            NodeReference(modelImporter!!.reference, moduleReference!!.moduleId)
+        } else {
             throw IllegalStateException()
         }
-    override val concept: IConcept
-        get() = BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency
+
+    override val concept = BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency
 
     @Deprecated("use getContainmentLink()")
-    override val roleInParent: String?
-        get() = if (this.moduleImporter != null) {
+    override val roleInParent =
+        if (this.moduleImporter != null) {
             BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.getSimpleName()
         } else if (this.modelImporter != null) {
             BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages.getSimpleName()
         } else {
             null
         }
-    override val parent: INode?
-        get() = if (moduleImporter != null) {
-            // TODO fixme SModelAsNode
-            // SModuleAsNode.wrap(moduleImporter)
-            null
+
+    override val parent =
+        if (moduleImporter != null) {
+            MPSModuleAsNode.wrap(moduleImporter)
         } else if (modelImporter != null) {
-            // TODO fixme SModelAsNode
-            // SModelAsNode.wrap(modelImporter)
-            null
+            MPSModelAsNode.wrap(modelImporter)
         } else {
             null
         }
@@ -89,13 +84,11 @@ class DevKitDependencyAsNode : INode {
     @Deprecated("use IChildLink instead of String")
     override fun getChildren(role: String?): MutableList<INode> = Collections.emptyList()
 
-    override val allChildren: Iterable<INode>
-        get() {
-            return if (concept == null) {
-                Collections.emptyList()
-            } else {
-                concept!!.getAllChildLinks().map { getChildren(it.name) }.flatten()
-            }
+    override val allChildren: Iterable<INode> =
+        if (concept == null) {
+            Collections.emptyList()
+        } else {
+            concept!!.getAllChildLinks().map { getChildren(it.name) }.flatten()
         }
 
     @Deprecated("use IChildLink instead of String")
@@ -113,38 +106,41 @@ class DevKitDependencyAsNode : INode {
     override fun setReferenceTarget(role: String, target: INode?) = throw UnsupportedOperationException()
 
     @Deprecated("use getPropertyValue(IProperty)")
-    override fun getPropertyValue(role: String) = when (role) {
-        BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.getSimpleName() -> {
-            this.moduleReference?.moduleName
-        }
+    override fun getPropertyValue(role: String) =
+        when (role) {
+            BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.getSimpleName() -> {
+                this.moduleReference?.moduleName
+            }
 
-        BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.getSimpleName() -> {
-            this.moduleReference?.moduleId.toString()
-        }
+            BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.getSimpleName() -> {
+                this.moduleReference?.moduleId.toString()
+            }
 
-        else -> {
-            null
+            else -> {
+                null
+            }
         }
-    }
 
     @Deprecated("use setPropertyValue(IProperty, String?)")
     override fun setPropertyValue(role: String, value: String?) = throw UnsupportedOperationException()
 
     @Deprecated("use getPropertyLinks()")
-    override fun getPropertyRoles(): List<String> = if (concept == null) {
-        Collections.emptyList()
-    } else {
-        concept!!.getAllProperties().map { it.name }
-    }
+    override fun getPropertyRoles(): List<String> =
+        if (concept == null) {
+            Collections.emptyList()
+        } else {
+            concept!!.getAllProperties().map { it.name }
+        }
 
     @Deprecated("use getReferenceLinks()")
-    override fun getReferenceRoles(): List<String> = if (concept == null) {
-        Collections.emptyList()
-    } else {
-        concept!!.getAllReferenceLinks().map { it.name }
-    }
+    override fun getReferenceRoles(): List<String> =
+        if (concept == null) {
+            Collections.emptyList()
+        } else {
+            concept!!.getAllReferenceLinks().map { it.name }
+        }
 
-    override fun getConceptReference() = concept?.getReference()
+    override fun getConceptReference() = concept.getReference()
 
     inner class NodeReference : INodeReference {
         private var userModuleReference: SModuleReference? = null
@@ -174,14 +170,10 @@ class DevKitDependencyAsNode : INode {
 
             return if (this.userModuleReference != null) {
                 val user = userModuleReference!!.resolve(repo!!) ?: return null
-
-                // TODO migrate SModuleAsNode
-                // return SModuleAsNode(user).findDevKitDependency(this.usedModuleId)
-                null
+                MPSModuleAsNode(user).findDevKitDependency(this.usedModuleId!!)
             } else if (this.userModel != null) {
-                val model = userModel?.resolve(repo)
-                // TODO migrate SModuleAsNode
-                // return SModelAsNode(model).findDevKitDependency(this.usedModuleId)
+                val model = userModel?.resolve(repo)!!
+                MPSModelAsNode(model).findDevKitDependency(this.usedModuleId!!)
                 null
             } else {
                 null

@@ -13,7 +13,9 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.extapi.model.SModelDescriptorStub
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.SModuleId
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -29,6 +31,11 @@ import org.modelix.model.area.IArea
 import org.modelix.model.data.NodeData
 
 data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
+
+    companion object {
+        fun wrap(model: SModel?): MPSModelAsNode? = model?.let { MPSModelAsNode(it) }
+    }
+
     override fun getArea(): IArea {
         return MPSArea(model.repository)
     }
@@ -123,5 +130,31 @@ data class MPSModelAsNode(val model: SModel) : IDeprecatedNodeDefaults {
 
     override fun getReferenceLinks(): List<IReferenceLink> {
         return concept.getAllReferenceLinks()
+    }
+
+    fun findSingleLanguageDependency(dependencyId: SModuleId): SingleLanguageDependencyAsNode? {
+        if (model is SModelDescriptorStub) {
+            model.importedLanguageIds().forEach { entry ->
+                if (entry.sourceModule?.moduleId == dependencyId) {
+                    return SingleLanguageDependencyAsNode(
+                        entry.sourceModuleReference,
+                        model.getLanguageImportVersion(entry),
+                        model,
+                    )
+                }
+            }
+        }
+        return null
+    }
+
+    fun findDevKitDependency(dependencyId: SModuleId): DevKitDependencyAsNode? {
+        if (model is SModelDescriptorStub) {
+            model.importedDevkits().forEach { devKit ->
+                if (devKit.moduleId == dependencyId) {
+                    return DevKitDependencyAsNode(devKit, model)
+                }
+            }
+        }
+        return null
     }
 }

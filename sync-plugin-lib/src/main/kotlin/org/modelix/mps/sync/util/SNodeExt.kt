@@ -16,11 +16,23 @@
 
 package org.modelix.mps.sync.util
 
+import org.jetbrains.mps.openapi.language.SAbstractConcept
+import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.index
+import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSNode
 
-// status: ready to test
+// status: migrated, but needs some bugfixes
 
-// based on INode.index()
-fun SNode.index(): Int {
-    return (parent ?: return 0).getChildren(roleInParent).indexOf(this)
+fun SNode.index() = MPSNode(this).index()
+
+fun SNode.addNewChild(role: SContainmentLink) = this.addNewChild(role, -1, role.targetConcept)
+
+fun SNode.addNewChild(role: SContainmentLink, index: Int, childConcept: SAbstractConcept?): SNode {
+    val newChild = MPSNode.wrap(this)?.addNewChild(role.name, index, MPSConcept.wrap(childConcept))
+        ?: throw RuntimeException("addNewChild has to return the created child node")
+    // TODO fixme NodeToSNodeAdapter
+    // return NodeToSNodeAdapter.wrap(newChild)
+    return null!!
 }

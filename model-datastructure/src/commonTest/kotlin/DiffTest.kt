@@ -71,6 +71,41 @@ class DiffTest {
     }
 
     @Test
+    fun moveChildOutsideNode() {
+        runTest(
+            setOf(
+                TreeChangeCollector.ChildrenChangedEvent(ITree.ROOT_ID, "children1"),
+                TreeChangeCollector.ChildrenChangedEvent(200, "children1"),
+                TreeChangeCollector.ContainmentChangedEvent(100),
+            ),
+            {
+                it.addNewChild(ITree.ROOT_ID, "children1", -1, 100, null as ConceptReference?)
+                    .addNewChild(ITree.ROOT_ID, "children2", -1, 200, null as ConceptReference?)
+            },
+            {
+                it.moveChild(200, "children1", -1, 100)
+            },
+        )
+    }
+
+    @Test
+    fun moveChildInsideNode() {
+        runTest(
+            setOf(
+                TreeChangeCollector.ChildrenChangedEvent(ITree.ROOT_ID, "children1"),
+                TreeChangeCollector.ChildrenChangedEvent(ITree.ROOT_ID, "children2"),
+                TreeChangeCollector.ContainmentChangedEvent(100),
+            ),
+            {
+                it.addNewChild(ITree.ROOT_ID, "children1", -1, 100, null as ConceptReference?)
+            },
+            {
+                it.moveChild(ITree.ROOT_ID, "children2", -1, 100)
+            },
+        )
+    }
+
+    @Test
     fun removeChild() {
         runTest(
             setOf(
@@ -90,7 +125,11 @@ class DiffTest {
         runTest(expectedEvents, { it }, mutator)
     }
 
-    private fun runTest(expectedEvents: Set<TreeChangeCollector.ChangeEvent>, initialMutator: (ITree) -> ITree, mutator: (ITree) -> ITree) {
+    private fun runTest(
+        expectedEvents: Set<TreeChangeCollector.ChangeEvent>,
+        initialMutator: (ITree) -> ITree,
+        mutator: (ITree) -> ITree,
+    ) {
         val tree1 = initialMutator(CLTree.builder(ObjectStoreCache(MapBaseStore())).build())
         val tree2 = mutator(tree1)
         val collector = TreeChangeCollector()

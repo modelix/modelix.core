@@ -19,8 +19,12 @@ package org.modelix.mps.sync
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
-import jetbrains.mps.ide.project.ProjectHelper
+import com.intellij.openapi.diagnostic.logger
+import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.MPSModuleRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
@@ -31,22 +35,39 @@ import java.net.URL
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable {
 
-    private var log: Logger = Logger.getInstance(this.javaClass)
+    private var log: Logger = logger<ModelSyncService>()
+    private var openedProject: MPSProject? = null
+    private var syncService: SyncServiceImpl
+    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 
     init {
         println("============================================ ModelSyncService init")
-
-        val syncService = SyncServiceImpl().bindRepository(
-            URL("http://127.0.0.1"),
-            BranchReference(RepositoryId("0"), "name"),
-            "JWT",
-            ProjectHelper.fromIdeaProject(com.intellij.openapi.project.ProjectManager.getInstance().openProjects.first())!!,
-            this::afterActivate,
-        )
-
-        log.info("modelix sync plugin initialized $syncService")
+        syncService = SyncServiceImpl()
+        log.info("modelix sync plugin initialized: $syncService")
     }
-    fun afterActivate() {
+
+    fun bindProject(theProject: MPSProject) {
+        log.info("Binding project: " + theProject)
+
+        coroutineScope.launch {
+            val unused = syncService.bindRepository(
+                URL("http://127.0.0.1"),
+                BranchReference(RepositoryId("0"), "name"),
+                "JWT",
+                theProject,
+                { afterActivate() },
+            )
+        }
+    }
+
+    fun unbindProject(theProject: MPSProject) {
+        log.info("Unbinding project: " + theProject)
+        coroutineScope.launch {
+            syncService.unbindRepository(URL("http://127.0.0.1"))
+        }
+    }
+
+    private fun afterActivate() {
         println("afterActivate")
     }
 

@@ -37,4 +37,12 @@
                     icon="AllIcons.Toolwindows.WebToolWindow" anchor="right"
                     factoryClass="org.modelix.mps.sync.ModelSyncGuiFactory"/>
     </extensions>
+    <actions>
+        <group id="org.modelix.mps.sync.actions.ModelixDynamicActionGroup"
+               class="org.modelix.mps.sync.actions.ModelixDynamicActionGroup"
+               popup="true" text="Dynamically Grouped Actions" description="SDK dynamically grouped action example"
+               icon="AllIcons.Toolwindows.WebToolWindow">
+            <add-to-group group-id="ToolsMenu" anchor="first"/>
+        </group>
+    </actions>
 </idea-plugin>

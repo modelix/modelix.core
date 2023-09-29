@@ -19,36 +19,37 @@ package org.modelix.mps.sync
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
-import org.apache.commons.lang3.StringUtils
+import jetbrains.mps.ide.project.ProjectHelper
+import org.modelix.mps.sync.icons.CloudIcons
 import java.awt.BorderLayout
+import java.awt.Component
 import java.awt.event.ActionEvent
-import java.util.Calendar
 import java.util.Objects
 import javax.swing.BorderFactory
+import javax.swing.DefaultComboBoxModel
+import javax.swing.DefaultListCellRenderer
 import javax.swing.ImageIcon
 import javax.swing.JButton
 import javax.swing.JLabel
+import javax.swing.JList
 import javax.swing.JPanel
 
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
-    private var log: Logger = Logger.getInstance(this.javaClass)
+    private var log: Logger = logger<ModelSyncGuiFactory>()
     private lateinit var toolWindowContent: ModelSyncGui
     private lateinit var content: Content
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         log.info("-------------------------------------------- createToolWindowContent")
-
-        // the actual intelliJ service handling the synchronization
-        val modelSyncService = service<ModelSyncService>()
-
-//        TODO set tool window icon, needs to be 13x13
-//        toolWindow.setIcon(IconLoader.getIcon("/pluginIcon.svg"))
 
         toolWindowContent = ModelSyncGui(toolWindow)
         content = ContentFactory.SERVICE.getInstance().createContent(toolWindowContent.contentPanel, "", false)
@@ -56,23 +57,30 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     }
 
     override fun dispose() {
+        log.info("-------------------------------------------- disposing ModelSyncGuiFactory")
         content.dispose()
     }
 
     private class ModelSyncGui(toolWindow: ToolWindow) {
 
-        private var log: Logger = Logger.getInstance(this.javaClass)
+        private var log: Logger = logger<ModelSyncGui>()
         val contentPanel = JPanel()
         private val status = JLabel()
         private val connection = JLabel()
         private val info = JLabel()
+
+        // the actual intelliJ service handling the synchronization
+        val modelSyncService = service<ModelSyncService>()
+        var openProjectModel: DefaultComboBoxModel<Project> = DefaultComboBoxModel<Project>()
 
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
             contentPanel.setLayout(BorderLayout(0, 20))
             contentPanel.setBorder(BorderFactory.createEmptyBorder(40, 0, 0, 0))
             contentPanel.add(createSynchronizationPanel(), BorderLayout.PAGE_START)
-            contentPanel.add(createControlsPanel(toolWindow), BorderLayout.CENTER)
+            contentPanel.add(createControlsPanel(toolWindow), BorderLayout.PAGE_END)
+            contentPanel.add(createConnectionPanel(toolWindow), BorderLayout.CENTER)
+            toolWindow.setIcon(CloudIcons.ROOT_ICON)
             triggerRefresh()
         }
 
@@ -107,35 +115,54 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             return controlsPanel
         }
 
-        private fun triggerRefresh() {
-            // todo
-            val calendar = Calendar.getInstance()
-            status.setText(getCurrentDate(calendar))
-            connection.setText(getTimeZone(calendar))
-            info.setText(getCurrentTime(calendar))
+        private fun createConnectionPanel(toolWindow: ToolWindow): JPanel {
+            val controlsPanel = JPanel()
+
+            val cb: ComboBox<Project> = ComboBox<Project>()
+            cb.model = openProjectModel
+            cb.renderer = ProjectRenderer()
+            controlsPanel.add(cb)
+
+            val connectProjectButton = JButton("Connect")
+            connectProjectButton.addActionListener { e: ActionEvent? ->
+                modelSyncService.bindProject(ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!)
+            }
+            controlsPanel.add(connectProjectButton)
+
+            val disConnectProjectButton = JButton("DisConnect")
+            disConnectProjectButton.addActionListener { e: ActionEvent? ->
+                modelSyncService.unbindProject(ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!)
+            }
+            controlsPanel.add(disConnectProjectButton)
+
+            return controlsPanel
         }
 
-        private fun getCurrentDate(calendar: Calendar): String {
-            return (
-                calendar[Calendar.DAY_OF_MONTH].toString() + "/" +
-                    (calendar[Calendar.MONTH] + 1) + "/" +
-                    calendar[Calendar.YEAR]
-                )
+        private fun triggerRefresh() {
+            populateCB()
         }
-        private fun getTimeZone(calendar: Calendar): String {
-            val gmtOffset = calendar[Calendar.ZONE_OFFSET].toLong() // offset from GMT in milliseconds
-            val gmtOffsetString = (gmtOffset / 3600000).toString()
-            return if (gmtOffset > 0) "GMT + $gmtOffsetString" else "GMT - $gmtOffsetString"
+
+        fun populateCB() {
+            openProjectModel.removeAllElements()
+            openProjectModel.addAll(ProjectManager.getInstance().openProjects.toMutableList())
         }
-        private fun getCurrentTime(calendar: Calendar): String {
-            return getFormattedValue(calendar, Calendar.HOUR_OF_DAY) + ":" + getFormattedValue(
-                calendar,
-                Calendar.MINUTE,
-            )
+    }
+}
+
+class ProjectRenderer : DefaultListCellRenderer() {
+    override fun getListCellRendererComponent(
+        list: JList<*>?,
+        value: Any?,
+        index: Int,
+        isSelected: Boolean,
+        cellHasFocus: Boolean,
+    ): Component {
+        var item = value ?: return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+
+        // if the item to be rendered is Project then display the name only
+        if (item is Project) {
+            item = (item as Project).name
         }
-        private fun getFormattedValue(calendar: Calendar, calendarField: Int): String {
-            val value = calendar[calendarField]
-            return StringUtils.leftPad(value.toString(), 2, "0")
-        }
+        return super.getListCellRendererComponent(list, item, index, isSelected, cellHasFocus)
     }
 }

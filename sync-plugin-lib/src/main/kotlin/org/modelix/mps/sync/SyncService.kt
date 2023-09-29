@@ -6,7 +6,7 @@ import org.modelix.mps.sync.binding.IBinding
 import java.net.URL
 
 interface SyncService {
-    fun bindRepository(
+    suspend fun bindRepository(
         serverURL: URL,
         branchReference: BranchReference,
         jwt: String,

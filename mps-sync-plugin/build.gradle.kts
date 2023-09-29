@@ -24,17 +24,13 @@ val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
 println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion")
 
 dependencies {
-//    implementation(project(":model-server-lib"))
+    implementation(kotlin("stdlib-jdk8"))
 
     api(project(":model-api"))
 
     implementation(project(":mps-model-adapters"))
     implementation(project(":sync-plugin-lib"))
     implementation(project(":model-datastructure", configuration = "jvmRuntimeElements"))
-//    compileOnly("com.jetbrains:mps-openapi:$mpsVersion")
-//    compileOnly("com.jetbrains:mps-core:$mpsVersion")
-//    compileOnly("com.jetbrains:mps-environment:$mpsVersion")
-//    compileOnly("com.jetbrains:mps-platform:$mpsVersion")
 
     implementation(libs.kotlin.reflect)
 

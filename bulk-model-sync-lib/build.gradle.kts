@@ -22,6 +22,7 @@ kotlin {
             dependencies {
                 implementation(project(":model-api"))
                 implementation(libs.kotlin.serialization.json)
+                implementation(libs.kotlin.logging)
             }
         }
 

@@ -16,6 +16,7 @@
 
 package org.modelix.model.sync.bulk
 
+import mu.KotlinLogging
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
@@ -41,6 +42,9 @@ class ModelImporter(private val root: INode) {
     private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
     private val postponedReferences = ArrayList<() -> Unit>()
     private val nodesToRemove = HashSet<INode>()
+    private var numExpectedNodes = 0
+    private var currentNodeProgress = 0
+    private val logger = KotlinLogging.logger {}
 
     /**
      * Incrementally updates this importers root based on the provided [ModelData] specification.
@@ -49,17 +53,34 @@ class ModelImporter(private val root: INode) {
      */
     @JvmName("importData")
     fun import(data: ModelData) {
+        logger.info { "Building indices for import..." }
         originalIdToExisting.clear()
         postponedReferences.clear()
         nodesToRemove.clear()
+        numExpectedNodes = countExpectedNodes(data.root)
+        currentNodeProgress = 0
         buildExistingIndex(root)
+
+        logger.info { "Importing nodes..." }
         data.root.originalId()?.let { originalIdToExisting[it] = root }
         syncNode(root, data.root)
+
+        logger.info { "Synchronizing references..." }
         postponedReferences.forEach { it.invoke() }
+
+        logger.info { "Removing extra nodes..." }
         nodesToRemove.forEach { it.remove() }
+
+        logger.info { "Synchronization finished." }
     }
 
+    private fun countExpectedNodes(data: NodeData): Int =
+        1 + data.children.sumOf { countExpectedNodes(it) }
+
     private fun syncNode(node: INode, data: NodeData) {
+        currentNodeProgress += 1
+        // print instead of log, so that the progress line can be overwritten by the carriage return
+        print("\r($currentNodeProgress / $numExpectedNodes) Synchronizing nodes...                    ")
         syncProperties(node, data)
         syncChildren(node, data)
         syncReferences(node, data)

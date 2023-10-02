@@ -424,6 +424,12 @@ class CLTree : ITree, IBulkTree {
         nodesMap!!.visitChanges(
             oldVersion.nodesMap,
             object : CPHamtNode.IChangeVisitor {
+                private val childrenChangeEvents = HashSet<Pair<Long, String?>>()
+
+                private fun notifyChildrenChange(parent: Long, role: String?) {
+                    if (childrenChangeEvents.add(parent to role)) visitor.childrenChanged(parent, role)
+                }
+
                 override fun visitChangesOnly(): Boolean {
                     return changesOnly
                 }
@@ -450,8 +456,12 @@ class CLTree : ITree, IBulkTree {
                             if (oldElement!!::class != newElement!!::class) {
                                 throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
                             }
-                            if (oldElement.parentId != newElement.parentId || oldElement.roleInParent != newElement.roleInParent) {
+                            if (oldElement.parentId != newElement.parentId) {
                                 visitor.containmentChanged(key)
+                            } else if (oldElement.roleInParent != newElement.roleInParent) {
+                                visitor.containmentChanged(key)
+                                notifyChildrenChange(oldElement.parentId, oldElement.roleInParent)
+                                notifyChildrenChange(newElement.parentId, newElement.roleInParent)
                             }
                             oldElement.propertyRoles.asSequence()
                                 .plus(newElement.propertyRoles.asSequence())
@@ -486,7 +496,7 @@ class CLTree : ITree, IBulkTree {
                                     val oldValues = oldChildrenInRole?.map { it.id }
                                     val newValues = newChildrenInRole?.map { it.id }
                                     if (oldValues != newValues) {
-                                        visitor.childrenChanged(newElement.id, role)
+                                        notifyChildrenChange(newElement.id, role)
                                     }
                                 }
                             }

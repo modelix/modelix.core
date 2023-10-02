@@ -23,6 +23,9 @@ import org.modelix.model.persistent.SerializationUtil.intFromHex
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import kotlin.jvm.JvmStatic
 
+/**
+ * Implementation of a hash array mapped trie.
+ */
 abstract class CPHamtNode : IKVValue {
     override var isWritten: Boolean = false
 

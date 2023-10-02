@@ -13,7 +13,6 @@
  */
 package org.modelix.model.server.mps
 
-import com.intellij.ide.AppLifecycleListener
 import com.intellij.ide.plugins.DynamicPluginListener
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.Disposable
@@ -21,6 +20,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.startup.StartupActivity
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
@@ -127,12 +127,8 @@ class MPSModelServerDynamicPluginListener : DynamicPluginListener {
     }
 }
 
-class MPSModelServerAppLifecycleListener : AppLifecycleListener {
-    override fun appStarting(projectFromCommandLine: Project?) {
-        service<MPSModelServer>().ensureStarted()
-    }
-
-    override fun appStarted() {
+class MPSModelServerStartupActivity : StartupActivity {
+    override fun runActivity(project: Project) {
         service<MPSModelServer>().ensureStarted()
     }
 }

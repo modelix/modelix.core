@@ -25,14 +25,11 @@
         <listener
                 class="org.modelix.model.server.mps.MPSModelServerDynamicPluginListener"
                 topic="com.intellij.ide.plugins.DynamicPluginListener"/>
-        <listener
-                class="org.modelix.model.server.mps.MPSModelServerAppLifecycleListener"
-                topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-
+        <postStartupActivity implementation="org.modelix.model.server.mps.MPSModelServerStartupActivity" />
     </extensions>
 </idea-plugin>

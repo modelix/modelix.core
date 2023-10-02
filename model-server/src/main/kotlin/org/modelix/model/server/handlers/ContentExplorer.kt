@@ -34,6 +34,7 @@ import kotlinx.html.tr
 import kotlinx.html.ul
 import kotlinx.html.unsafe
 import org.modelix.model.ModelFacade
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
@@ -135,7 +136,11 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
             div("nameField") {
                 attributes["data-nodeid"] = node.nodeId.toString()
                 b {
-                    if (node.getPropertyRoles().contains("name")) {
+                    val namePropertyUID = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()
+                    val namedConceptName = node.getPropertyValue(namePropertyUID)
+                    if (namedConceptName != null) {
+                        +namedConceptName
+                    } else if (node.getPropertyRoles().contains("name")) {
                         +"${node.getPropertyValue("name")}"
                     } else {
                         +"Unnamed Node"

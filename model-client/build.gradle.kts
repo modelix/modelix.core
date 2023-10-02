@@ -4,6 +4,7 @@ plugins {
     id("com.diffplug.spotless")
     `java-library`
     jacoco
+    alias(libs.plugins.npm.publish)
 }
 
 java {
@@ -34,6 +35,8 @@ kotlin {
                 }
             }
         }
+        binaries.library()
+        generateTypeScriptDefinitions()
         useCommonJs()
     }
     @Suppress("UNUSED_VARIABLE", "KotlinRedundantDiagnosticSuppress")
@@ -84,6 +87,7 @@ kotlin {
             }
         }
         val jsMain by getting {
+            languageSettings.optIn("kotlin.js.ExperimentalJsExport")
             dependencies {
                 implementation(kotlin("stdlib-js"))
                 implementation(npm("uuid", "^8.3.0"))
@@ -124,5 +128,83 @@ spotless {
                 " */\n" +
                 "\n",
         )
+    }
+}
+
+val productionLibraryByKotlinOutputDirectory = layout.buildDirectory.dir("compileSync/js/main/productionLibrary/kotlin")
+val preparedProductionLibraryOutputDirectory = layout.buildDirectory.dir("npmPublication")
+
+val patchTypesScriptInProductionLibrary = tasks.register("patchTypesScriptInProductionLibrary") {
+    dependsOn("compileProductionLibraryKotlinJs")
+    inputs.dir(productionLibraryByKotlinOutputDirectory)
+    outputs.dir(preparedProductionLibraryOutputDirectory)
+    doLast {
+        // Delete old data
+        delete {
+            delete(preparedProductionLibraryOutputDirectory)
+        }
+
+        // Copy over library create by Kotlin
+        copy {
+            from(productionLibraryByKotlinOutputDirectory)
+            into(preparedProductionLibraryOutputDirectory)
+        }
+
+        // Add correct TypeScript imports and mark exports as experimental.
+        val typescriptDeclaration =
+            preparedProductionLibraryOutputDirectory.get().file("modelix.core-model-client.d.ts").asFile
+        val originalTypescriptDeclarationContent = typescriptDeclaration.readLines()
+        val experimentalDeclaration = """
+
+        /**
+         * @experimental This feature is expected to be finalized with https://issues.modelix.org/issue/MODELIX-500.
+         */
+        """.trimIndent()
+        typescriptDeclaration.writer().use {
+            it.appendLine("""import { INodeJS } from "@modelix/ts-model-api";""")
+                .appendLine()
+            for (line in originalTypescriptDeclarationContent) {
+                // Only mark the parts of the client (`org.modelix.model.client2`) experimental.
+                // Reported declarations from `org.modelix.model.api` should not be annotated as experimental.
+                if (line.startsWith("export declare namespace org.modelix.model.client2")) {
+                    it.appendLine(experimentalDeclaration)
+                }
+                it.appendLine(line)
+            }
+        }
+    }
+}
+
+npmPublish {
+    registries {
+        register("itemis-npm-open") {
+            uri.set("https://artifacts.itemis.cloud/repository/npm-open")
+            System.getenv("NODE_AUTH_TOKEN").takeIf { !it.isNullOrBlank() }?.let {
+                authToken.set(it)
+            }
+        }
+    }
+    packages {
+        named("js") {
+            files {
+                // The files need to be set manually because we patch
+                // the JS/TS produces by `compileProductionLibraryKotlinJs`
+                // with the `patchTypesScriptInProductionLibrary` task
+                setFrom(patchTypesScriptInProductionLibrary)
+            }
+            packageJson {
+                name.set("@modelix/model-client")
+                homepage.set("https://modelix.org/")
+                repository {
+                    type.set("git")
+                    url.set("https://github.com/modelix/modelix.core.git")
+                    directory.set(project.name)
+                }
+            }
+            dependencies {
+                // The model client NPM package uses the types from this @modelix/ts-model-api
+                normal("@modelix/ts-model-api", rootProject.version.toString())
+            }
+        }
     }
 }

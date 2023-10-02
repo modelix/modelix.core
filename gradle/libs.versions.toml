@@ -18,6 +18,7 @@ modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.1.0"
 dokka = {id = "org.jetbrains.dokka", version = "1.9.0"}
 node = {id = "com.github.node-gradle.node", version = "7.0.1"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.1" }
+npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.1" }
 
 [versions]
 kotlin = "1.9.10"

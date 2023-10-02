@@ -34,17 +34,14 @@ import kotlinx.html.tr
 import kotlinx.html.ul
 import kotlinx.html.unsafe
 import org.modelix.model.ModelFacade
+import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
 import org.modelix.model.client.IModelClient
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.server.templates.PageWithMenuBar
-import kotlin.collections.List
-import kotlin.collections.isNotEmpty
-import kotlin.collections.mutableListOf
 import kotlin.collections.set
-import kotlin.collections.toList
 
 class ContentExplorer(private val client: IModelClient, private val repoManager: RepositoriesManager) {
 
@@ -187,7 +184,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 for (propertyRole in node.getPropertyRoles()) {
                     tr {
                         td { +propertyRole }
-                        td { +(node.getPropertyValue(propertyRole) ?: "null") }
+                        td { +"${node.getPropertyValue(propertyRole)}" }
                     }
                 }
             }
@@ -202,12 +199,13 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                         th { +"Value" }
                     }
                 }
-                for (referenceRole in node.getReferenceRoles()) {
-                    tr {
-                        td { +referenceRole }
-                        td {
-                            // TODO MODELIX-387
-                            // +"${node.getReferenceTarget(referenceRole)}"
+                INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
+                    for (referenceRole in node.getReferenceRoles()) {
+                        tr {
+                            td { +referenceRole }
+                            td {
+                                +"${node.getReferenceTarget(referenceRole)}"
+                            }
                         }
                     }
                 }

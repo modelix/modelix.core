@@ -267,17 +267,21 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
         for (frame in incoming) {
             when (frame) {
                 is Frame.Text -> {
-                    val json = frame.readText()
-                    LOG.trace { "incoming message: ${json.take(5000)}" }
-                    val message = MessageFromClient.fromJson(json)
-                    message.query?.let { session.replaceQuery(it) }
-                    val ops = message.operations ?: emptyList()
-                    val response = if (ops.isNotEmpty()) {
-                        withContext(Dispatchers.Main) { // write access in MPS is only allowed from EDT
-                            getArea().executeWrite { session.applyUpdate(ops, message.changeSetId) }
+                    val response = try {
+                        val json = frame.readText()
+                        LOG.trace { "incoming message: ${json.take(5000)}" }
+                        val message = MessageFromClient.fromJson(json)
+                        message.query?.let { session.replaceQuery(it) }
+                        val ops = message.operations ?: emptyList()
+                        if (ops.isNotEmpty()) {
+                            withContext(Dispatchers.Main) { // write access in MPS is only allowed from EDT
+                                getArea().executeWrite { session.applyUpdate(ops, message.changeSetId) }
+                            }
+                        } else {
+                            getArea().executeRead { session.applyUpdate(ops, message.changeSetId) }
                         }
-                    } else {
-                        getArea().executeRead { session.applyUpdate(ops, message.changeSetId) }
+                    } catch (ex: Throwable) {
+                        MessageFromServer(exception = ExceptionData(ex))
                     }
                     send(response.toJson())
                 }
@@ -340,17 +344,13 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
 
         @Synchronized
         fun applyUpdate(operations: List<OperationData>, changeSetId: ChangeSetId?): MessageFromServer {
-            try {
-                val updateSession = UpdateSession()
-                operations.forEach { updateSession.applyOperation(it) }
-                return MessageFromServer(
-                    version = createUpdate(),
-                    replacedIds = updateSession.replacedIds,
-                    appliedChangeSet = changeSetId,
-                )
-            } catch (ex: Exception) {
-                return MessageFromServer(exception = ExceptionData(ex))
-            }
+            val updateSession = UpdateSession()
+            operations.forEach { updateSession.applyOperation(it) }
+            return MessageFromServer(
+                version = createUpdate(),
+                replacedIds = updateSession.replacedIds,
+                appliedChangeSet = changeSetId,
+            )
         }
 
         private inner class UpdateSession() {

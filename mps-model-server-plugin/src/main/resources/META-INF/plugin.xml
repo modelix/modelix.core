@@ -22,15 +22,9 @@
     <depends>com.intellij.modules.mps</depends>
     <depends>jetbrains.mps.core</depends>
 
-    <applicationListeners>
-        <listener
-                class="org.modelix.model.server.mps.MPSModelServerDynamicPluginListener"
-                topic="com.intellij.ide.plugins.DynamicPluginListener"/>
-    </applicationListeners>
-
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="org.modelix.model.server.mps.MPSModelServerStartupActivity" />
+        <backgroundPostStartupActivity implementation="org.modelix.model.server.mps.MPSModelServerStartupActivity" />
     </extensions>
 </idea-plugin>

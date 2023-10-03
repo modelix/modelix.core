@@ -13,8 +13,6 @@
  */
 package org.modelix.model.server.mps
 
-import com.intellij.ide.plugins.DynamicPluginListener
-import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -22,21 +20,53 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import jetbrains.mps.ide.project.ProjectHelper
+import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
-import jetbrains.mps.smodel.MPSModuleRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.server.light.LightModelServer
+import java.util.Collections
+
+@Service(Service.Level.PROJECT)
+class MPSModelServerForProject(private val project: Project) : Disposable {
+
+    init {
+        service<MPSModelServer>().registerProject(project)
+    }
+
+    override fun dispose() {
+        service<MPSModelServer>().unregisterProject(project)
+    }
+}
 
 @Service(Service.Level.APP)
 class MPSModelServer : Disposable {
-    init {
-        println("modelix server created")
-    }
 
     private var server: LightModelServer? = null
+    private val projects: MutableSet<Project> = Collections.synchronizedSet(HashSet())
+
+    fun registerProject(project: Project) {
+        projects.add(project)
+        ensureStarted()
+    }
+
+    fun unregisterProject(project: Project) {
+        projects.remove(project)
+    }
+
+    private fun getRootNode(): INode? {
+        return runSynchronized(projects) {
+            projects.removeIf { it.isDisposed }
+            projects.asSequence().mapNotNull {
+                it
+                    .getComponent(MPSProject::class.java)
+                    ?.repository
+                    ?.let { MPSRepositoryAsNode(it) }
+            }.firstOrNull()
+        }
+    }
 
     fun ensureStarted() {
         runSynchronized(this) {
@@ -44,10 +74,9 @@ class MPSModelServer : Disposable {
 
             println("starting modelix server")
 
-            val rootNodeProvider: () -> INode? = { MPSModuleRepository.getInstance()?.let { MPSRepositoryAsNode(it) } }
             server = LightModelServer.builder()
                 .port(48305)
-                .rootNode(rootNodeProvider)
+                .rootNode(::getRootNode)
                 .healthCheck(object : LightModelServer.IHealthCheck {
                     override val id: String
                         get() = "indexer"
@@ -121,14 +150,8 @@ class MPSModelServer : Disposable {
     }
 }
 
-class MPSModelServerDynamicPluginListener : DynamicPluginListener {
-    override fun pluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        service<MPSModelServer>().ensureStarted()
-    }
-}
-
-class MPSModelServerStartupActivity : StartupActivity {
+class MPSModelServerStartupActivity : StartupActivity.Background {
     override fun runActivity(project: Project) {
-        service<MPSModelServer>().ensureStarted()
+        project.service<MPSModelServerForProject>() // just ensure it's initialized
     }
 }

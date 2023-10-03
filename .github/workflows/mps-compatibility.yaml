@@ -15,11 +15,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
       - name: Build with MPS 2020.3.6
         run: ./gradlew :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=2020.3.6
       - name: Build with MPS 2021.1.4

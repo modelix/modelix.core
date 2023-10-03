@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.intellij") version "1.15.0"
@@ -18,7 +20,8 @@ if (!mpsToIdeaMap.containsKey(mpsVersion)) {
 }
 // identify the corresponding intelliJ platform version used by the MPS version
 val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
-println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion")
+val mpsJavaVersion = if (mpsVersion >= "2022.3") 17 else 11
+println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion and Java $mpsJavaVersion")
 
 dependencies {
     implementation(project(":model-server-lib"))
@@ -41,9 +44,20 @@ intellij {
     // plugins.set(listOf("jetbrains.mps.core", "com.intellij.modules.mps"))
 }
 
+java {
+    sourceCompatibility = JavaVersion.toVersion(mpsJavaVersion)
+    targetCompatibility = JavaVersion.toVersion(mpsJavaVersion)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.fromTarget(mpsJavaVersion.toString()))
+    }
+}
+
 tasks {
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.jvmTarget = mpsJavaVersion.toString()
     }
 
     patchPluginXml {

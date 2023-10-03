@@ -19,8 +19,11 @@ import kotlinx.html.unsafe
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
 import org.semver.Version
 
 buildscript {
@@ -63,6 +66,7 @@ dependencies {
 }
 
 subprojects {
+    val subproject = this
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
@@ -82,9 +86,18 @@ subprojects {
     }
 
     val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
+    subproject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         if (!name.lowercase().contains("test")) {
-            kotlinOptions {
+            this.kotlinOptions {
+                jvmTarget = "11"
+                freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+                apiVersion = kotlinApiVersion.version
+            }
+        }
+    }
+    subproject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
+        if (!name.lowercase().contains("test")) {
+            this.kotlinOptions {
                 jvmTarget = "11"
                 freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
                 apiVersion = kotlinApiVersion.version
@@ -92,8 +105,23 @@ subprojects {
         }
     }
 
-    plugins.withType<KotlinMultiplatformPluginWrapper> {
-        project.extensions.configure<KotlinMultiplatformExtension> {
+    subproject.plugins.withType<JavaPlugin> {
+        subproject.extensions.configure<JavaPluginExtension> {
+            sourceCompatibility = JavaVersion.VERSION_11
+            targetCompatibility = JavaVersion.VERSION_11
+        }
+    }
+
+    subproject.plugins.withType<KotlinPlatformJvmPlugin> {
+        subproject.extensions.configure<KotlinJvmProjectExtension> {
+            compilerOptions {
+                jvmTarget.set(JvmTarget.JVM_11)
+            }
+        }
+    }
+
+    subproject.plugins.withType<KotlinMultiplatformPluginWrapper> {
+        subproject.extensions.configure<KotlinMultiplatformExtension> {
             sourceSets.all {
                 if (!name.lowercase().contains("test")) {
                     languageSettings {
@@ -104,8 +132,8 @@ subprojects {
         }
     }
 
-    plugins.withType<NodePlugin> {
-        project.extensions.configure<NodeExtension> {
+    subproject.plugins.withType<NodePlugin> {
+        subproject.extensions.configure<NodeExtension> {
             version.set(libs.versions.node)
             download.set(true)
         }

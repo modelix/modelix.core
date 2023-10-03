@@ -62,7 +62,7 @@ class MPSModelServer : Disposable {
                                 val indexerDone =
                                     !DumbService.getInstance(ProjectHelper.toIdeaProject(project)).isDumb
                                 if (!indexerDone) {
-                                    output.append("  indexer running on project ").append(project.name)
+                                    output.append("  indexer running on project ").append(project.toString())
                                     allSmart = false
                                 }
                             }
@@ -79,7 +79,7 @@ class MPSModelServer : Disposable {
                     override fun run(output: StringBuilder): Boolean {
                         val projects = ProjectManager.getInstance().openedProjects
                         output.append("${projects.size} projects found")
-                        projects.forEach { output.append("  ${it.name}") }
+                        projects.forEach { output.append("  ${it.toString()}") }
                         return ProjectManager.getInstance().openedProjects.isNotEmpty()
                     }
                 })
@@ -96,7 +96,7 @@ class MPSModelServer : Disposable {
                             val virtualFolders = modules
                                 .mapNotNull { project.getPath(it)?.virtualFolder }
                                 .filter { it.isNotEmpty() }
-                            output.append("project ${project.name} contains ${modules.size} modules with ${virtualFolders.size} virtual folders")
+                            output.append("project ${project.toString()} contains ${modules.size} modules with ${virtualFolders.size} virtual folders")
                             if (virtualFolders.isNotEmpty()) return true
                         }
                         return false

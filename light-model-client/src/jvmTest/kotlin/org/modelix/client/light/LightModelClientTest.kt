@@ -23,6 +23,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
+import org.modelix.incremental.IncrementalEngine
+import org.modelix.incremental.incrementalFunction
+import org.modelix.model.api.IProperty
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
@@ -114,6 +117,62 @@ class LightModelClientTest {
         assertEquals("xyz", client2.runRead { child2.getPropertyValue("name") })
         wait { client1.runRead { child1.getPropertyValue("name") == "xyz" } }
         assertEquals("xyz", client1.runRead { child1.getPropertyValue("name") })
+    }
+
+    @Test
+    fun incrementalComputationTest() = runClientTest { createClient ->
+        val client1 = createClient("1")
+        val client2 = createClient("2")
+
+        val rootNode1 = client1.runRead { client1.getRootNode()!! }
+        val rootNode2 = client2.runRead { client2.getRootNode()!! }
+        assertEquals(0, client2.runRead { rootNode2.getChildren("role1").toList().size })
+        val child1 = client1.runWrite { rootNode1.addNewChild("role1") }
+        assertEquals(1, client1.runRead { rootNode1.getChildren("role1").toList().size })
+        wait {
+            client1.checkException()
+            client2.checkException()
+            client2.runRead { rootNode2.getChildren("role1").toList().size == 1 }
+        }
+        assertEquals(1, client2.runRead { rootNode2.getChildren("role1").toList().size })
+
+        client1.runWrite { rootNode1.setPropertyValue(IProperty.fromName("name"), "abc") }
+        val engine = IncrementalEngine()
+        try {
+            var callCount1 = 0
+            var callCount2 = 0
+            val nameWithSuffix1 = engine.incrementalFunction("nameWithSuffix1") { _ ->
+                callCount1++
+                val name = rootNode1.getPropertyValue(IProperty.fromName("name"))
+                name + "Suffix1"
+            }
+            val nameWithSuffix2 = engine.incrementalFunction("nameWithSuffix2") { _ ->
+                callCount2++
+                val name = rootNode2.getPropertyValue(IProperty.fromName("name"))
+                name + "Suffix2"
+            }
+            assertEquals(callCount1, 0)
+            assertEquals(callCount2, 0)
+            assertEquals("abcSuffix1", client1.runRead { nameWithSuffix1() })
+            wait { "abcSuffix2" == client2.runRead { nameWithSuffix2() } }
+            assertEquals("abcSuffix2", client2.runRead { nameWithSuffix2() })
+            assertEquals(callCount1, 1)
+            assertEquals(callCount2, 1)
+            assertEquals("abcSuffix1", client1.runRead { nameWithSuffix1() })
+            assertEquals("abcSuffix2", client2.runRead { nameWithSuffix2() })
+            assertEquals(callCount1, 1)
+            assertEquals(callCount2, 1)
+            client1.runWrite { rootNode1.setPropertyValue(IProperty.fromName("name"), "xxx") }
+            assertEquals(callCount1, 1)
+            assertEquals(callCount2, 1)
+            assertEquals("xxxSuffix1", client1.runRead { nameWithSuffix1() })
+            wait { "xxxSuffix2" == client2.runRead { nameWithSuffix2() } }
+            assertEquals("xxxSuffix2", client2.runRead { nameWithSuffix2() })
+            assertEquals(callCount1, 2)
+            assertEquals(callCount2, 2)
+        } finally {
+            engine.dispose()
+        }
     }
 
     @Test

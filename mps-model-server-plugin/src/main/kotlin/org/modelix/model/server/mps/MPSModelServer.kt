@@ -21,8 +21,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
-import jetbrains.mps.project.ProjectBase
-import jetbrains.mps.project.ProjectManager
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
@@ -56,16 +54,16 @@ class MPSModelServer : Disposable {
         projects.remove(project)
     }
 
-    private fun getRootNode(): INode? {
+    private fun getMPSProjects(): List<MPSProject> {
         return runSynchronized(projects) {
-            projects.removeIf { it.isDisposed }
-            projects.asSequence().mapNotNull {
-                it
-                    .getComponent(MPSProject::class.java)
-                    ?.repository
-                    ?.let { MPSRepositoryAsNode(it) }
-            }.firstOrNull()
+            projects.mapNotNull { it.getComponent(MPSProject::class.java) }
         }
+    }
+
+    private fun getRootNode(): INode? {
+        return getMPSProjects().asSequence().map {
+            MPSRepositoryAsNode(it.repository)
+        }.firstOrNull()
     }
 
     fun ensureStarted() {
@@ -85,8 +83,7 @@ class MPSModelServer : Disposable {
 
                     override fun run(output: java.lang.StringBuilder): Boolean {
                         var allSmart = true
-                        val projects = ProjectManager.getInstance().openedProjects
-                        for (project in projects) {
+                        for (project in getMPSProjects()) {
                             project.repository.modelAccess.runReadAction {
                                 val indexerDone =
                                     !DumbService.getInstance(ProjectHelper.toIdeaProject(project)).isDumb
@@ -106,10 +103,10 @@ class MPSModelServer : Disposable {
                         get() = false
 
                     override fun run(output: StringBuilder): Boolean {
-                        val projects = ProjectManager.getInstance().openedProjects
+                        val projects = getMPSProjects()
                         output.append("${projects.size} projects found")
-                        projects.forEach { output.append("  ${it.toString()}") }
-                        return ProjectManager.getInstance().openedProjects.isNotEmpty()
+                        projects.forEach { output.append("  $it") }
+                        return projects.isNotEmpty()
                     }
                 })
                 .healthCheck(object : LightModelServer.IHealthCheck {
@@ -119,13 +116,13 @@ class MPSModelServer : Disposable {
                         get() = false
 
                     override fun run(output: StringBuilder): Boolean {
-                        val projects = ProjectManager.getInstance().openedProjects.filterIsInstance<ProjectBase>()
+                        val projects = getMPSProjects()
                         for (project in projects) {
                             val modules = project.projectModules
                             val virtualFolders = modules
                                 .mapNotNull { project.getPath(it)?.virtualFolder }
                                 .filter { it.isNotEmpty() }
-                            output.append("project ${project.toString()} contains ${modules.size} modules with ${virtualFolders.size} virtual folders")
+                            output.append("project $project contains ${modules.size} modules with ${virtualFolders.size} virtual folders")
                             if (virtualFolders.isNotEmpty()) return true
                         }
                         return false

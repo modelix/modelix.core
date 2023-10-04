@@ -16,9 +16,49 @@
 
 package org.modelix.model.sync.bulk
 
+import mu.KLogger
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.SimpleConcept
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 
 fun mergeModelData(vararg models: ModelData): ModelData {
     return ModelData(root = NodeData(children = models.map { it.root }))
+}
+
+internal fun logImportSize(nodeData: NodeData, logger: KLogger) {
+    logger.debug { "Number of modules: ${countMpsModules(nodeData)}" }
+    logger.debug { "Number of models: ${countMpsModels(nodeData)}" }
+    logger.debug { "Number of concepts: ${countConcepts(nodeData)}" }
+    logger.debug { "Number of properties: ${countProperties(nodeData)}" }
+    logger.debug { "Number of references: ${countReferences(nodeData)}" }
+}
+
+private fun countProperties(data: NodeData): Int =
+    data.properties.size + data.children.sumOf { countProperties(it) }
+
+private fun countReferences(data: NodeData): Int =
+    data.references.size + data.children.sumOf { countReferences(it) }
+
+private fun countConcepts(data: NodeData): Int {
+    val set = mutableSetOf<String>()
+    countConceptsRec(data, set)
+    return set.size
+}
+
+private fun countConceptsRec(data: NodeData, set: MutableSet<String>) {
+    data.concept?.let { set.add(it) }
+    data.children.forEach { countConceptsRec(it, set) }
+}
+
+private fun countMpsModels(data: NodeData) =
+    countSpecificConcept(data, BuiltinLanguages.MPSRepositoryConcepts.Model)
+
+private fun countMpsModules(data: NodeData) =
+    countSpecificConcept(data, BuiltinLanguages.MPSRepositoryConcepts.Module)
+
+private fun countSpecificConcept(data: NodeData, concept: SimpleConcept): Int {
+    var count = if (data.concept == concept.getUID()) 1 else 0
+    count += data.children.sumOf { countSpecificConcept(it, concept) }
+    return count
 }

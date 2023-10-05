@@ -10,10 +10,10 @@ import org.modelix.metamodel.TypedLanguagesRegistry
 import org.modelix.metamodel.typed
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.ConceptReference
-import org.modelix.model.api.IBranch
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
+import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
@@ -40,21 +40,21 @@ class PushTest {
         val repoId = RepositoryId("ci-test")
         val branchName = "master"
         val url = "http://0.0.0.0:${Main.DEFAULT_PORT}/v2"
-        val branchRef = ModelFacade.createBranchReference(repoId, branchName)
-        val client = ModelClientV2PlatformSpecificBuilder().url(url).build()
 
-        val branch = runBlocking {
-            client.init()
-            client.getReplicatedModel(branchRef).start()
-        }
+        val branchRef = ModelFacade.createBranchReference(repoId, branchName)
+        val client = ModelClientV2PlatformSpecificBuilder().url(url).build().apply { runBlocking { init() } }
+        val replicatedModel = client.getReplicatedModel(branchRef)
+        val branch = runBlocking { replicatedModel.start() }
+
         branch.runRead {
             assertContentEquals(inputModel.root.children, branch.getRootNode().allChildren.map { it.asExported() })
         }
 
-        applyChangesForPullTest(branch)
+        applyChangesForPullTest(replicatedModel)
     }
 
-    private fun applyChangesForPullTest(branch: IBranch) {
+    private fun applyChangesForPullTest(replicatedModel: ReplicatedModel) {
+        val branch = replicatedModel.getBranch()
         branch.runWrite {
             val graphNodes = branch.getRootNode()
                 .getDescendants(false)
@@ -67,5 +67,6 @@ class PushTest {
             graphNodes[2].name = "Z"
         }
         sleep(5000) // changes are pushed asynchronously to the server. wait for the propagation
+        replicatedModel.dispose()
     }
 }

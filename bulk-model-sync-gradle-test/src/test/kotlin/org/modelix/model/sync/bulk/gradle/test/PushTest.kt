@@ -12,14 +12,15 @@ import org.modelix.model.ModelFacade
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
+import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
-import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
+import org.modelix.model.client2.runWrite
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.Main
-import org.modelix.model.sleep
 import org.modelix.model.sync.bulk.asExported
 import java.io.File
 import kotlin.test.assertContentEquals
@@ -49,24 +50,24 @@ class PushTest {
         branch.runRead {
             assertContentEquals(inputModel.root.children, branch.getRootNode().allChildren.map { it.asExported() })
         }
+        replicatedModel.dispose()
 
-        applyChangesForPullTest(replicatedModel)
+        applyChangesForPullTest(client, branchRef)
     }
 
-    private fun applyChangesForPullTest(replicatedModel: ReplicatedModel) {
-        val branch = replicatedModel.getBranch()
-        branch.runWrite {
-            val graphNodes = branch.getRootNode()
-                .getDescendants(false)
-                .filter { it.getConceptReference() == ConceptReference(_C_UntypedImpl_Node.getUID()) }
-                .map { it.typed<N_Node>() }
-                .toList()
+    private fun applyChangesForPullTest(client: IModelClientV2, branchRef: BranchReference) {
+        runBlocking {
+            client.runWrite(branchRef) { rootNode ->
+                val graphNodes = rootNode
+                    .getDescendants(false)
+                    .filter { it.getConceptReference() == ConceptReference(_C_UntypedImpl_Node.getUID()) }
+                    .map { it.typed<N_Node>() }
+                    .toList()
 
-            graphNodes[0].name = "X"
-            graphNodes[1].name = "Y"
-            graphNodes[2].name = "Z"
+                graphNodes[0].name = "X"
+                graphNodes[1].name = "Y"
+                graphNodes[2].name = "Z"
+            }
         }
-        sleep(5000) // changes are pushed asynchronously to the server. wait for the propagation
-        replicatedModel.dispose()
     }
 }

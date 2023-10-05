@@ -21,7 +21,7 @@ node = {id = "com.github.node-gradle.node", version = "7.0.0"}
 [versions]
 kotlin = "1.9.10"
 kotlinCoroutines="1.7.3"
-ktor="2.3.4"
+ktor="2.3.5"
 kotlinHtml="0.8.0"
 kotlinSerialization="1.6.0"
 ignite="2.15.0"

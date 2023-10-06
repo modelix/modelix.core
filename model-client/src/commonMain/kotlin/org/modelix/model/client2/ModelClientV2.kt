@@ -211,6 +211,10 @@ class ModelClientV2(
         httpClient.close()
     }
 
+    fun getStatus() {
+        httpClient
+    }
+
     private fun createVersion(baseVersion: CLVersion?, delta: VersionDelta): CLVersion {
         return if (baseVersion == null) {
             CLVersion(

@@ -46,9 +46,13 @@ class ProjectSettingsComponent {
 
     var addServerText: String
         get() = addServerInput.text
-        set(newText) { addServerInput.text = newText }
+        set(newText) {
+            addServerInput.text = newText
+        }
 
     var status: Boolean
         get() = statusCheckBox.isSelected
-        set(newStatus) { statusCheckBox.setSelected(newStatus) }
+        set(newStatus) {
+            statusCheckBox.setSelected(newStatus)
+        }
 }

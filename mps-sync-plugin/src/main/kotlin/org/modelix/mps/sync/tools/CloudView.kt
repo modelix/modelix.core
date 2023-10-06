@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.tools
 
 import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DataProvider
 import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import jetbrains.mps.ide.ui.tree.MPSTree
@@ -61,9 +62,12 @@ class CloudView : JPanel(BorderLayout()) {
         }
 
         override fun createPopupActionGroup(node: MPSTreeNode): ActionGroup? {
-            // TODO fixme, this method relies on the ActionGroups. We have to migrate those Groups as well and set thhe correct ID here!
+            // TODO fixme, this method relies on the ActionGroups. We have to migrate those Groups as well and set the correct ID here!
+            // alternative: use the actual SDK way to do these things? the groups are
             if (node is CloudRootTreeNode) {
-                return ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.CloudRootGroup_ActionGroup")
+                return ActionUtils.groupFromActions(
+                    ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.AddModelServerAction"),
+                )
             }
             if (node is ModelServerTreeNode) {
                 return ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.ModelServerGroup_ActionGroup")

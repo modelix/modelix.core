@@ -25,19 +25,19 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import jetbrains.mps.ide.project.ProjectHelper
 import org.modelix.mps.sync.ModelSyncService
+import org.modelix.mps.sync.binding.IBinding
 import org.modelix.mps.sync.icons.CloudIcons
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.event.ActionEvent
-import java.util.Objects
 import javax.swing.BorderFactory
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
-import javax.swing.ImageIcon
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JList
@@ -66,13 +66,17 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         private var log: Logger = logger<ModelSyncGui>()
         val contentPanel = JPanel()
-        private val status = JLabel()
-        private val connection = JLabel()
-        private val info = JLabel()
+        private val iconLabel = JLabel()
 
         // the actual intelliJ service handling the synchronization
         val modelSyncService = service<ModelSyncService>()
+        var serverURL: JBTextField = JBTextField()
+        var repositoryName: JBTextField = JBTextField()
+        var branchName: JBTextField = JBTextField()
+        var jwt: JBTextField = JBTextField()
+
         var openProjectModel: DefaultComboBoxModel<Project> = DefaultComboBoxModel<Project>()
+        var existingBindingModel: DefaultComboBoxModel<IBinding> = DefaultComboBoxModel<IBinding>()
 
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
@@ -85,32 +89,22 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             triggerRefresh()
         }
 
-        companion object {
-            private const val SOME_ICON_PATH = "/icon.png"
-        }
-
         private fun createSynchronizationPanel(): JPanel {
             val synchronizationPanel = JPanel()
-            setIconLabel(status, SOME_ICON_PATH)
-            synchronizationPanel.add(status)
-            synchronizationPanel.add(connection)
-            synchronizationPanel.add(info)
+            iconLabel.icon = CloudIcons.PLUGIN_ICON
+            synchronizationPanel.add(iconLabel)
             return synchronizationPanel
-        }
-
-        private fun setIconLabel(label: JLabel, imagePath: String) {
-            label.setIcon(ImageIcon(Objects.requireNonNull(javaClass.getResource(imagePath))))
         }
 
         private fun createControlsPanel(toolWindow: ToolWindow): JPanel {
             val controlsPanel = JPanel()
 
             val refreshButton = JButton("Refresh")
-            refreshButton.addActionListener { e: ActionEvent? -> triggerRefresh() }
+            refreshButton.addActionListener { triggerRefresh() }
             controlsPanel.add(refreshButton)
 
             val hideToolWindowButton = JButton("Hide")
-            hideToolWindowButton.addActionListener { e: ActionEvent? -> toolWindow.hide(null) }
+            hideToolWindowButton.addActionListener { toolWindow.hide(null) }
             controlsPanel.add(hideToolWindowButton)
 
             return controlsPanel
@@ -119,33 +113,74 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private fun createConnectionPanel(toolWindow: ToolWindow): JPanel {
             val controlsPanel = JPanel()
 
-            val cb: ComboBox<Project> = ComboBox<Project>()
-            cb.model = openProjectModel
-            cb.renderer = ProjectRenderer()
-            controlsPanel.add(cb)
+            controlsPanel.add(serverURL)
+            controlsPanel.add(repositoryName)
+            controlsPanel.add(branchName)
+            controlsPanel.add(jwt)
+
+            val projectCB: ComboBox<Project> = ComboBox<Project>()
+            projectCB.model = openProjectModel
+            projectCB.renderer = ProjectRenderer()
+            controlsPanel.add(projectCB)
 
             val connectProjectButton = JButton("Connect")
-            connectProjectButton.addActionListener { e: ActionEvent? ->
-                modelSyncService.bindProject(ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!)
+            connectProjectButton.addActionListener { _: ActionEvent ->
+                modelSyncService.bindProject(
+                    ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!,
+                    serverURL.text,
+                    repositoryName.text,
+                    branchName.text,
+                    jwt.text,
+                    { afterBind() },
+                )
             }
             controlsPanel.add(connectProjectButton)
 
-            val disConnectProjectButton = JButton("DisConnect")
-            disConnectProjectButton.addActionListener { e: ActionEvent? ->
-                modelSyncService.unbindProject(ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!)
+            val existingBindingCB: ComboBox<IBinding> = ComboBox<IBinding>()
+            existingBindingCB.model = existingBindingModel
+            existingBindingCB.renderer = ProjectRenderer()
+            controlsPanel.add(existingBindingCB)
+
+            val disConnectProjectButton = JButton("Disconnect")
+            disConnectProjectButton.addActionListener { _: ActionEvent? ->
+                if (existingBindingModel.size > 0) {
+                    modelSyncService.deactivateBinding(existingBindingModel.selectedItem as IBinding)
+                    populateBindingCB()
+                }
             }
             controlsPanel.add(disConnectProjectButton)
 
             return controlsPanel
         }
 
+        private fun afterBind() {
+            log.info("-------------------------------------------- ModelSyncGui afterBind")
+            populateBindingCB()
+        }
+
         private fun triggerRefresh() {
             populateCB()
+            populateBindingCB()
+            serverURL.text = "http://127.0.0.1:28101/v2"
+            repositoryName.text = "courses"
+            branchName.text = "master"
+            jwt.text = ""
         }
 
         fun populateCB() {
             openProjectModel.removeAllElements()
             openProjectModel.addAll(ProjectManager.getInstance().openProjects.toMutableList())
+            if (openProjectModel.size > 0) {
+                openProjectModel.selectedItem = openProjectModel.getElementAt(0)
+            }
+        }
+
+        fun populateBindingCB() {
+            existingBindingModel.removeAllElements()
+            existingBindingModel.addAll(modelSyncService.getBindingList())
+            if (existingBindingModel.size > 0) {
+                existingBindingModel.selectedItem = existingBindingModel.getElementAt(0)
+            }
         }
     }
 
@@ -161,7 +196,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
             // if the item to be rendered is Project then display the name only
             if (item is Project) {
-                item = (item as Project).name
+                item = item.name
+            } else if (item is IBinding) {
+                item = "${item.javaClass.name} ..."
             }
             return super.getListCellRendererComponent(list, item, index, isSelected, cellHasFocus)
         }

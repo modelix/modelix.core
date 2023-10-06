@@ -1,5 +1,4 @@
 package org.modelix.mps.sync
-
 /*
  * Copyright (c) 2023.
  *
@@ -20,6 +19,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
+import io.ktor.client.plugins.ClientRequestException
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
@@ -30,15 +30,21 @@ import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.mps.sync.binding.IBinding
+import java.net.ConnectException
 import java.net.URL
 
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable {
 
     private var log: Logger = logger<ModelSyncService>()
-    private var openedProject: MPSProject? = null
-    private var syncService: SyncServiceImpl
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+    private var syncService: SyncServiceImpl
+    private var existingBindings: MutableList<IBinding> = mutableListOf<IBinding>()
+
+    fun getBindingList(): List<IBinding> {
+        return existingBindings.toMutableList()
+    }
 
     init {
         println("============================================ ModelSyncService init")
@@ -46,32 +52,43 @@ class ModelSyncService : Disposable {
         log.info("modelix sync plugin initialized: $syncService")
     }
 
-    fun bindProject(theProject: MPSProject) {
-        log.info("Binding project: " + theProject)
-
+    fun bindProject(
+        theProject: MPSProject,
+        url: String,
+        repositoryID: String,
+        branchName: String,
+        jwt: String,
+        afterActivate: () -> Unit,
+    ) {
         coroutineScope.launch {
-            val unused = syncService.bindRepository(
-                URL("http://127.0.0.1"),
-                BranchReference(RepositoryId("0"), "name"),
-                "JWT",
-                theProject,
-                { afterActivate() },
-            )
+            log.info("Binding project: $theProject from $url")
+            try {
+                val newBinding = syncService.bindRepository(
+                    URL(url),
+                    BranchReference(RepositoryId(repositoryID), branchName),
+                    jwt,
+                    theProject,
+                    afterActivate,
+                )
+                existingBindings.add(newBinding)
+            } catch (e: ConnectException) {
+                log.warn("Unable to connect2: ${e.message} / ${e.cause}")
+            } catch (e: ClientRequestException) {
+                log.warn("Illegal request: ${e.message} / ${e.cause}")
+            } catch (e: Exception) {
+                log.warn("Pokemon Exception Catching: ${e.message} / ${e.cause}")
+            }
+            // actual correct place to call after activate
+            afterActivate()
         }
-    }
-
-    fun unbindProject(theProject: MPSProject) {
-        log.info("Unbinding project: " + theProject)
-        coroutineScope.launch {
-            syncService.unbindRepository(URL("http://127.0.0.1"))
-        }
-    }
-
-    private fun afterActivate() {
-        println("afterActivate")
     }
 
     private var server: String? = null
+
+    fun deactivateBinding(binding: IBinding) {
+        binding.deactivate()
+        existingBindings.remove(binding)
+    }
 
     fun ensureStarted() {
         println("============================================  ensureStarted")
@@ -85,18 +102,18 @@ class ModelSyncService : Disposable {
         }
     }
 
-    fun ensureStopped() {
+    override fun dispose() {
+        println("============================================  dispose")
+        syncService.dispose()
+        ensureStopped()
+    }
+
+    private fun ensureStopped() {
         println("============================================  ensureStopped")
         runSynchronized(this) {
             if (server == null) return
             println("stopping modelix server")
             server = null
         }
-    }
-
-    override fun dispose() {
-        println("============================================  dispose")
-
-        ensureStopped()
     }
 }

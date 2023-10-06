@@ -246,7 +246,8 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
     override fun doSyncToMPS(tree: ITree) {
         if (runningTask?.isInitialSync == true) {
             val mpsRootNodes = model.rootNodes
-            val cloudRootNodes = tree.getChildren(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName())
+            val cloudRootNodes =
+                tree.getChildren(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.getSimpleName())
             val mpsRootNodesIsNotEmpty = mpsRootNodes.firstOrNull() != null
             val cloudRootNodesIsEmpty = cloudRootNodes.firstOrNull() == null
             if (mpsRootNodesIsNotEmpty && cloudRootNodesIsEmpty) {

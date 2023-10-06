@@ -35,7 +35,7 @@
     <extensions defaultExtensionNs="com.intellij">
 
         <toolWindow id="Modelix Model Synchronization" secondary="true"
-                    icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="right"
+                    icon="org.modelix.mps.sync.icons.CloudIcons.PLUGIN_ICON" anchor="right"
                     factoryClass="org.modelix.mps.sync.tools.ModelSyncGuiFactory"/>
         <toolWindow id="Cloud Tool" secondary="true"
                     icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"
@@ -44,18 +44,32 @@
                     icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"
                     factoryClass="org.modelix.mps.sync.tools.HistoryToolFactory"/>
 
-        <projectConfigurable parentId="tools" instance="org.modelix.mps.sync.config.settings.ProjectSettingsServiceConfigurable"
-                                 id="org.intellij.sdk.settings.PAppSettingsConfigurable"
-                                 displayName="SDK: Application Settings Example"
-                                 nonDefaultProject="true"/>
+        <projectConfigurable parentId="tools"
+                             instance="org.modelix.mps.sync.config.settings.ProjectSettingsServiceConfigurable"
+                             id="org.intellij.sdk.settings.PAppSettingsConfigurable"
+                             displayName="SDK: Application Settings Example"
+                             nonDefaultProject="true"/>
         <projectService serviceImplementation="org.modelix.mps.sync.config.settings.ProjectSettingsService"/>
 
 
     </extensions>
     <actions>
+        <action
+                id="org.modelix.mps.sync.actions.AddModelServerAction"
+                class="org.modelix.mps.sync.actions.AddModelServerAction"
+                text="Add Model-Server"
+                description="Adds a new model-server from/to which models can be exchanged">
+        </action>
+
+        <group id="org.intellij.sdk.action.GroupedActions"
+               text="Static Grouped Actions"
+               popup="true"/>
+
         <group id="org.modelix.mps.sync.actions.ModelixDynamicActionGroup"
                class="org.modelix.mps.sync.actions.ModelixDynamicActionGroup"
-               popup="true" text="Dynamically Grouped Actions" description="SDK dynamically grouped action example"
+               popup="true"
+               text="Dynamically Grouped Actions"
+               description="SDK dynamically grouped action example"
                icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON">
             <add-to-group group-id="ToolsMenu" anchor="first"/>
         </group>

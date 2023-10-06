@@ -44,7 +44,8 @@ import java.io.IOException
  * Uses the provided model ID instead of SModelId.generate().
  * Everything else is just copied from DefaultModelPersistence.
  */
-open class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val modelId: SModelId) : DefaultModelPersistence() {
+open class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val modelId: SModelId) :
+    DefaultModelPersistence() {
 
     @Throws(UnsupportedDataSourceException::class)
     override fun create(

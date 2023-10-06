@@ -3,9 +3,7 @@ package org.modelix.mps.sync
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.project.MPSProject
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ITree
@@ -21,17 +19,14 @@ class SyncServiceImpl : SyncService {
 
     private var log: Logger = logger<SyncServiceImpl>()
 
-    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
-
-    public var state: STATE = STATE.DISCONNECTED
-    private var bindingList: MutableList<SyncServiceImpl> = mutableListOf<SyncServiceImpl>()
+    //    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
     private var clientBindingMap: MutableMap<ModelClientV2, BindingImpl> = mutableMapOf()
 
     override suspend fun bindRepository(
         serverURL: URL,
         branchReference: BranchReference,
         jwt: String,
-        mpsPproject: MPSProject,
+        project: MPSProject,
         afterActivate: () -> Unit,
     ): IBinding {
         log.info("Connecting to $serverURL")
@@ -39,20 +34,24 @@ class SyncServiceImpl : SyncService {
         lateinit var bindingImpl: BindingImpl
 
         // set up a client, a replicated model and an implementation of a binding (to MPS)
-        val modelClientV2: ModelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
-        try {
-            modelClientV2.init()
+        // TODO: use JWT here
+        val modelClientV2: ModelClientV2 = ModelClientV2.builder().url(serverURL.toString()).build()
+        runBlocking {
+            try {
+                modelClientV2.init()
 
-            val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
-            bindingImpl = BindingImpl(replicatedModel, mpsPproject)
-            replicatedModel.start()
-            log.info("Connection successful")
-            state = STATE.CONNECTED
-        } catch (e: ConnectException) {
-            log.warn("Unable to connect: ${e.cause}")
-            throw e
+                val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
+                replicatedModel.start()
+
+                bindingImpl = BindingImpl(replicatedModel, project)
+
+                log.info("Connection successful")
+            } catch (e: ConnectException) {
+                log.warn("Unable to connect: ${e.message} / ${e.cause}")
+                throw e
+            }
         }
-
+        afterActivate()
         // TODO: Re-implement features here which are currently available in the mps sync plugin
 
         // this includes setting up of syncing
@@ -67,7 +66,12 @@ class SyncServiceImpl : SyncService {
     }
 
     fun dispose() {
-        coroutineScope.cancel()
+        // cancel all running coroutines
+//        coroutineScope.cancel()
+        // dispose the bindings
+        clientBindingMap.values.forEach { it: IBinding -> it.deactivate() }
+        // dispose the clients
+        clientBindingMap.keys.forEach { it: ModelClientV2 -> it.close() }
     }
 
     suspend fun unbindRepository(serverURL: URL) {
@@ -77,7 +81,7 @@ class SyncServiceImpl : SyncService {
     }
 }
 
-class BindingImpl(replicatedModel: ReplicatedModel, mpsPproject: MPSProject) : IBinding {
+class BindingImpl(val replicatedModel: ReplicatedModel, mpsPproject: MPSProject) : IBinding {
 
     val branch: IBranch
 
@@ -99,14 +103,10 @@ class BindingImpl(replicatedModel: ReplicatedModel, mpsPproject: MPSProject) : I
     }
 
     override fun deactivate(callback: Runnable?) {
-//        this.replicatedModel.dispose()
+        replicatedModel.dispose()
     }
 
     override fun activate(callback: Runnable?) {
         TODO("Not yet implemented")
     }
-}
-
-enum class STATE {
-    CONNECTING, CONNECTED, DISCONNECTED, UNKNOWN
 }

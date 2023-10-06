@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.icons
 
+import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.JBColor
 
 // status: ready to test
@@ -30,4 +31,5 @@ object CloudIcons {
     val BRANCH_ICON = LetterInSquareIcon("B", 14, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
     val MODULE_ICON = LetterInSquareIcon("M", 14, 2.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
     val MODEL_ICON = LetterInSquareIcon("m", 14, 2.0f, 12.0f, JBColor.YELLOW, JBColor.BLACK)
+    val PLUGIN_ICON = IconLoader.getIcon("/META-INF/pluginIcon.svg", javaClass)
 }

@@ -40,7 +40,10 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
 
     override fun createMPSChild(tree: ITree, cloudChildId: Long): SModel? {
         val id = getModelId(tree, cloudChildId) ?: jetbrains.mps.smodel.SModelId.foreign("cloud-$cloudChildId")
-        val name = tree.getProperty(cloudChildId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())!!
+        val name = tree.getProperty(
+            cloudChildId,
+            BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(),
+        )!!
         return createModel(name, id, cloudChildId)
     }
 
@@ -59,7 +62,10 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
 
         cloudChildren.forEach { cloudModelId ->
             val id = getModelId(tree, cloudModelId)
-            val name = tree.getProperty(cloudModelId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())
+            val name = tree.getProperty(
+                cloudModelId,
+                BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(),
+            )
 
             // There can be models with duplicate names. That's why we can't just search in a map
             val iterator = availableModels.iterator()
@@ -77,7 +83,8 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
     }
 
     private fun getModelId(tree: ITree, cloudModelId: Long): SModelId? {
-        val serializedId = tree.getProperty(cloudModelId, BuiltinLanguages.MPSRepositoryConcepts.Model.id.getSimpleName())
+        val serializedId =
+            tree.getProperty(cloudModelId, BuiltinLanguages.MPSRepositoryConcepts.Model.id.getSimpleName())
         return if (serializedId.isNullOrEmpty()) {
             return null
         } else {
@@ -86,9 +93,18 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
     }
 
     override fun createCloudChild(transaction: IWriteTransaction, mpsChild: SModel): Long {
-        val modelNodeId = transaction.addNewChild(cloudParentId, "models", -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
-        transaction.setProperty(modelNodeId, BuiltinLanguages.MPSRepositoryConcepts.Model.id.getSimpleName(), mpsChild.modelId.toString())
-        transaction.setProperty(modelNodeId, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(), mpsChild.name.value)
+        val modelNodeId =
+            transaction.addNewChild(cloudParentId, "models", -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
+        transaction.setProperty(
+            modelNodeId,
+            BuiltinLanguages.MPSRepositoryConcepts.Model.id.getSimpleName(),
+            mpsChild.modelId.toString(),
+        )
+        transaction.setProperty(
+            modelNodeId,
+            BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName(),
+            mpsChild.name.value,
+        )
         return modelNodeId
     }
 

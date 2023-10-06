@@ -77,7 +77,10 @@ fun INode.replicateChild(role: IChildLink, original: INode): INode {
         }
         return result
     } catch (ex: Exception) {
-        throw RuntimeException("Unable to replicate child in role ${role.getSimpleName()}. Original: $original, This: $this", ex)
+        throw RuntimeException(
+            "Unable to replicate child in role ${role.getSimpleName()}. Original: $original, This: $this",
+            ex,
+        )
     }
 }
 
@@ -92,7 +95,10 @@ fun INode.replicateChildHelper(
     try {
         copy = this.addNewChild(role, -1, concept)
     } catch (ex: Exception) {
-        throw RuntimeException("Unable to add child to $this with role ${role.getSimpleName()} and concept $concept", ex)
+        throw RuntimeException(
+            "Unable to add child to $this with role ${role.getSimpleName()} and concept $concept",
+            ex,
+        )
     }
 
     concept?.getAllProperties()?.forEach { property ->

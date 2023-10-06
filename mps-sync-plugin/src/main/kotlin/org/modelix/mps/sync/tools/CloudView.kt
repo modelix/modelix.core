@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.history
+package org.modelix.mps.sync.tools
 
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.DataProvider
@@ -23,6 +23,12 @@ import jetbrains.mps.ide.ui.tree.MPSTree
 import jetbrains.mps.ide.ui.tree.MPSTreeNode
 import jetbrains.mps.ide.ui.tree.TextTreeNode
 import jetbrains.mps.workbench.action.ActionUtils
+import org.modelix.mps.sync.tools.history.CloudBindingTreeNode
+import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
+import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.history.CloudRootTreeNode
+import org.modelix.mps.sync.tools.history.ModelServerTreeNode
+import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 import java.awt.BorderLayout
 import javax.swing.BorderFactory
 import javax.swing.JPanel

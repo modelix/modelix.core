@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.plugin.config
+package org.modelix.mps.sync.config
 
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service

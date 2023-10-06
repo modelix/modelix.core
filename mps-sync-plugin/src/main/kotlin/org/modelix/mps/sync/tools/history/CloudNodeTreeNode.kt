@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.history
+package org.modelix.mps.sync.tools.history
 
 import com.intellij.icons.AllIcons
 import jetbrains.mps.ide.ThreadUtils

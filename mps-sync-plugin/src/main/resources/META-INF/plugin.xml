@@ -33,15 +33,30 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
+
         <toolWindow id="Modelix Model Synchronization" secondary="true"
-                    icon="AllIcons.Toolwindows.WebToolWindow" anchor="right"
-                    factoryClass="org.modelix.mps.sync.ModelSyncGuiFactory"/>
+                    icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="right"
+                    factoryClass="org.modelix.mps.sync.tools.ModelSyncGuiFactory"/>
+        <toolWindow id="Cloud Tool" secondary="true"
+                    icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"
+                    factoryClass="org.modelix.mps.sync.tools.CloudToolFactory"/>
+        <toolWindow id="History Tool" secondary="true"
+                    icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"
+                    factoryClass="org.modelix.mps.sync.tools.HistoryToolFactory"/>
+
+        <projectConfigurable parentId="tools" instance="org.modelix.mps.sync.config.settings.ProjectSettingsServiceConfigurable"
+                                 id="org.intellij.sdk.settings.PAppSettingsConfigurable"
+                                 displayName="SDK: Application Settings Example"
+                                 nonDefaultProject="true"/>
+        <projectService serviceImplementation="org.modelix.mps.sync.config.settings.ProjectSettingsService"/>
+
+
     </extensions>
     <actions>
         <group id="org.modelix.mps.sync.actions.ModelixDynamicActionGroup"
                class="org.modelix.mps.sync.actions.ModelixDynamicActionGroup"
                popup="true" text="Dynamically Grouped Actions" description="SDK dynamically grouped action example"
-               icon="AllIcons.Toolwindows.WebToolWindow">
+               icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON">
             <add-to-group group-id="ToolsMenu" anchor="first"/>
         </group>
     </actions>

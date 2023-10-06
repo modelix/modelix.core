@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.plugin.config
+package org.modelix.mps.sync.config
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -32,8 +32,8 @@ import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.binding.ProjectModuleBinding
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.connection.ModelServerConnections
-import org.modelix.mps.sync.history.CloudNodeTreeNode
 import org.modelix.mps.sync.synchronization.SyncDirection
+import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import org.modelix.mps.sync.transient.TransientModuleBinding
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.function.Consumer
@@ -277,7 +277,8 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
     fun addMappedBoundModule(repositoryInModelServer: CloudRepository, nodeTreeNode: PNodeAdapter) =
         modifyState { state ->
             PArea(nodeTreeNode.branch).executeRead {
-                val moduleName = nodeTreeNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())
+                val moduleName =
+                    nodeTreeNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())
                 check(moduleName != null) { "module should not have null name" }
                 state.mappedModules.add(repositoryInModelServer.completeId() + "#" + moduleName)
             }

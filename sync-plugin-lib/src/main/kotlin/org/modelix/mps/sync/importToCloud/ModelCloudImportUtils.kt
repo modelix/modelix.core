@@ -16,10 +16,8 @@
 
 package org.modelix.mps.sync.importToCloud
 
-import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.progress.EmptyProgressMonitor
 import jetbrains.mps.project.MPSProject
-import jetbrains.mps.project.Project
 import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SContainmentLink
@@ -29,7 +27,6 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.util.ProgressMonitor
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
-import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSModelAsNode
@@ -37,18 +34,12 @@ import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.ProjectBinding
-import org.modelix.mps.sync.binding.ProjectModuleBinding
-import org.modelix.mps.sync.exportFromCloud.ModuleCheckout
-import org.modelix.mps.sync.history.CloudNodeTreeNode
-import org.modelix.mps.sync.plugin.config.PersistedBindingConfiguration
 import org.modelix.mps.sync.synchronization.PhysicalToCloudModelMapping
 import org.modelix.mps.sync.synchronization.SyncDirection
-import org.modelix.mps.sync.transient.TransientModuleBinding
 import org.modelix.mps.sync.util.cloneChildren
 import org.modelix.mps.sync.util.copyProperty
 import org.modelix.mps.sync.util.getModelsWithoutDescriptor
 import org.modelix.mps.sync.util.mapToMpsNode
-import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.function.Consumer
 
 // status: migrated, but needs some bugfixes
@@ -57,60 +48,12 @@ import java.util.function.Consumer
  */
 object ModelCloudImportUtils {
 
-    fun checkoutAndSync(treeNode: CloudNodeTreeNode, mpsProject: Project) {
-        val treeInRepository = treeNode.getTreeInRepository()
-        val cloudModuleNode = treeNode.node as PNodeAdapter
-        val solution = ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule(cloudModuleNode)
-        mpsProject.repository.modelAccess.runReadAction {
-            syncInModelixAsIndependentModule(
-                treeInRepository,
-                solution,
-                ProjectHelper.toIdeaProject(mpsProject),
-                cloudModuleNode,
-            )
-        }
-        PersistedBindingConfiguration.getInstance(ProjectHelper.toIdeaProject(mpsProject))
-            .addMappedBoundModule(treeInRepository, cloudModuleNode)
-    }
-
-    fun checkoutAndSync(treeInRepository: CloudRepository, mpsProject: Project, cloudModuleNodeId: Long) {
-        val cloudModuleNode = PNodeAdapter(cloudModuleNodeId, treeInRepository.getActiveBranch().branch)
-        val solution = ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule(cloudModuleNode)
-        mpsProject.repository.modelAccess.runReadAction {
-            syncInModelixAsIndependentModule(
-                treeInRepository,
-                solution,
-                ProjectHelper.toIdeaProject(mpsProject),
-                cloudModuleNode,
-            )
-        }
-        PersistedBindingConfiguration.getInstance(ProjectHelper.toIdeaProject(mpsProject))
-            .addMappedBoundModule(treeInRepository, cloudModuleNode)
-    }
-
     fun bindCloudProjectToMpsProject(
         repositoryInModelServer: CloudRepository,
         cloudProjectId: Long,
         mpsProject: MPSProject,
         initialSyncDirection: SyncDirection,
     ) = repositoryInModelServer.addBinding(ProjectBinding(mpsProject, cloudProjectId, initialSyncDirection))
-
-    fun addTransientModuleBinding(
-        mpsProject: com.intellij.openapi.project.Project,
-        repositoryInModelServer: CloudRepository,
-        cloudNodeId: Long,
-    ): TransientModuleBinding {
-        val modelServerConnection = repositoryInModelServer.modelServer
-        val repositoryId = repositoryInModelServer.getRepositoryId()
-        val transientModuleBinding = TransientModuleBinding(cloudNodeId)
-        modelServerConnection.addBinding(repositoryId, transientModuleBinding)
-        PersistedBindingConfiguration.getInstance(mpsProject).addTransientBoundModule(
-            repositoryInModelServer,
-            repositoryInModelServer.getActiveBranch().branch,
-            cloudNodeId,
-        )
-        return transientModuleBinding
-    }
 
     fun containsModule(treeInRepository: CloudRepository, module: SModule) =
         treeInRepository.hasModuleInRepository(module.moduleId.toString())
@@ -128,57 +71,6 @@ object ModelCloudImportUtils {
         val cloudModuleNode = treeInRepository.createModule(module.moduleName!!)
         replicatePhysicalModule(treeInRepository, cloudModuleNode, module, null, progress)
         return cloudModuleNode
-    }
-
-    fun copyAndSyncInModelixAsIndependentModule(
-        treeInRepository: CloudRepository,
-        module: SModule,
-        mpsProject: com.intellij.openapi.project.Project,
-        progress: ProgressMonitor,
-    ) {
-        // 1. Copy the module in the cloud repo
-        val cloudModuleNode = copyInModelixAsIndependentModule(treeInRepository, module, progress)
-        syncInModelixAsIndependentModule(treeInRepository, module, mpsProject, cloudModuleNode)
-    }
-
-    fun copyAndSyncInModelixAsEntireProject(
-        treeInRepository: CloudRepository,
-        mpsProject: MPSProject?,
-        cloudProject: INode?,
-    ): ProjectBinding {
-        val binding: ProjectBinding
-        if (cloudProject == null) {
-            binding = treeInRepository.addProjectBinding(0L, mpsProject!!, SyncDirection.TO_CLOUD)
-            PersistedBindingConfiguration.getInstance(ProjectHelper.toIdeaProject(mpsProject))
-                .addTransientBoundProject(treeInRepository)
-        } else {
-            // TODO How to translate this correctly?
-            /*
-            val cloudProjectAsNodeToSNodeAdapter: NodeToSNodeAdapter = cloudProject as Any as NodeToSNodeAdapter
-            val cloudProjectAsINode: INode = cloudProjectAsNodeToSNodeAdapter.getWrapped()
-             */
-            val cloudProjectAsINode = cloudProject
-
-            val nodeId: Long = cloudProjectAsINode.nodeIdAsLong()
-            binding = treeInRepository.addProjectBinding(nodeId, mpsProject!!, SyncDirection.TO_MPS)
-            PersistedBindingConfiguration.getInstance(ProjectHelper.toIdeaProject(mpsProject))
-                .addTransientBoundProject(treeInRepository)
-        }
-        return binding
-    }
-
-    fun syncInModelixAsIndependentModule(
-        treeInRepository: CloudRepository,
-        module: SModule,
-        mpsProject: com.intellij.openapi.project.Project,
-        cloudModuleNode: INode,
-    ) {
-        val msc = treeInRepository.modelServer
-        msc.addBinding(
-            treeInRepository.getRepositoryId(),
-            ProjectModuleBinding((cloudModuleNode as PNodeAdapter).nodeId, module, SyncDirection.TO_MPS),
-        )
-        PersistedBindingConfiguration.getInstance(mpsProject).addMappedBoundModule(treeInRepository, cloudModuleNode)
     }
 
     /**

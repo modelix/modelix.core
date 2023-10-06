@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.history
+package org.modelix.mps.sync.tools.history
 
 import jetbrains.mps.ide.ui.tree.TextTreeNode
 import org.modelix.mps.sync.connection.IRepositoriesChangedListener

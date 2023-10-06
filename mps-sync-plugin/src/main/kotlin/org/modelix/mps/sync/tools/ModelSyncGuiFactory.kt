@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync
+package org.modelix.mps.sync.tools
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
@@ -28,6 +28,7 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import jetbrains.mps.ide.project.ProjectHelper
+import org.modelix.mps.sync.ModelSyncService
 import org.modelix.mps.sync.icons.CloudIcons
 import java.awt.BorderLayout
 import java.awt.Component
@@ -147,22 +148,22 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             openProjectModel.addAll(ProjectManager.getInstance().openProjects.toMutableList())
         }
     }
-}
 
-class ProjectRenderer : DefaultListCellRenderer() {
-    override fun getListCellRendererComponent(
-        list: JList<*>?,
-        value: Any?,
-        index: Int,
-        isSelected: Boolean,
-        cellHasFocus: Boolean,
-    ): Component {
-        var item = value ?: return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+    class ProjectRenderer : DefaultListCellRenderer() {
+        override fun getListCellRendererComponent(
+            list: JList<*>?,
+            value: Any?,
+            index: Int,
+            isSelected: Boolean,
+            cellHasFocus: Boolean,
+        ): Component {
+            var item = value ?: return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
 
-        // if the item to be rendered is Project then display the name only
-        if (item is Project) {
-            item = (item as Project).name
+            // if the item to be rendered is Project then display the name only
+            if (item is Project) {
+                item = (item as Project).name
+            }
+            return super.getListCellRendererComponent(list, item, index, isSelected, cellHasFocus)
         }
-        return super.getListCellRendererComponent(list, item, index, isSelected, cellHasFocus)
     }
 }

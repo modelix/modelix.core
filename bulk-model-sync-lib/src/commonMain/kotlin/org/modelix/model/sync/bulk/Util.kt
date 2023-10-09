@@ -18,7 +18,6 @@ package org.modelix.model.sync.bulk
 
 import mu.KLogger
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.SimpleConcept
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 
@@ -27,38 +26,39 @@ fun mergeModelData(vararg models: ModelData): ModelData {
 }
 
 internal fun logImportSize(nodeData: NodeData, logger: KLogger) {
-    logger.debug { "Number of modules: ${countMpsModules(nodeData)}" }
-    logger.debug { "Number of models: ${countMpsModels(nodeData)}" }
-    logger.debug { "Number of concepts: ${countConcepts(nodeData)}" }
-    logger.debug { "Number of properties: ${countProperties(nodeData)}" }
-    logger.debug { "Number of references: ${countReferences(nodeData)}" }
+    logger.debug { measureImportSize(nodeData).toString() }
 }
 
-private fun countProperties(data: NodeData): Int =
-    data.properties.size + data.children.sumOf { countProperties(it) }
-
-private fun countReferences(data: NodeData): Int =
-    data.references.size + data.children.sumOf { countReferences(it) }
-
-private fun countConcepts(data: NodeData): Int {
-    val set = mutableSetOf<String>()
-    countConceptsRec(data, set)
-    return set.size
+private data class ImportSizeMetrics(
+    var numModules: Int = 0,
+    var numModels: Int = 0,
+    val concepts: MutableSet<String> = mutableSetOf(),
+    var numProperties: Int = 0,
+    var numReferences: Int = 0,
+) {
+    override fun toString(): String {
+        return """
+            [Bulk Model Sync Import Size]
+            number of modules: $numModules
+            number of models: $numModels
+            number of concepts: ${concepts.size}
+            number of properties: $numProperties
+            number of references: $numReferences
+        """.trimIndent()
+    }
 }
 
-private fun countConceptsRec(data: NodeData, set: MutableSet<String>) {
-    data.concept?.let { set.add(it) }
-    data.children.forEach { countConceptsRec(it, set) }
-}
+private fun measureImportSize(data: NodeData, metrics: ImportSizeMetrics = ImportSizeMetrics()): ImportSizeMetrics {
+    data.concept?.let { metrics.concepts.add(it) }
 
-private fun countMpsModels(data: NodeData) =
-    countSpecificConcept(data, BuiltinLanguages.MPSRepositoryConcepts.Model)
+    when (data.concept) {
+        BuiltinLanguages.MPSRepositoryConcepts.Module.getUID() -> metrics.numModules++
+        BuiltinLanguages.MPSRepositoryConcepts.Model.getUID() -> metrics.numModels++
+    }
 
-private fun countMpsModules(data: NodeData) =
-    countSpecificConcept(data, BuiltinLanguages.MPSRepositoryConcepts.Module)
+    metrics.numProperties += data.properties.size
+    metrics.numReferences += data.references.size
 
-private fun countSpecificConcept(data: NodeData, concept: SimpleConcept): Int {
-    var count = if (data.concept == concept.getUID()) 1 else 0
-    count += data.children.sumOf { countSpecificConcept(it, concept) }
-    return count
+    data.children.forEach { measureImportSize(it, metrics) }
+    return metrics
 }

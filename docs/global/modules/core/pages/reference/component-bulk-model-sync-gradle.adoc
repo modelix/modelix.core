@@ -70,6 +70,10 @@ This means that only a minimal amount of write operations is used to update the 
 |`includeModule`
 |String
 |Includes the module specified by the given fully qualified name in the synchronisation process.
+
+|`includeModulesByPrefix`
+|String
+|Includes all modules, whose fully qualified name starts with the given prefix, in the synchronisation process.
 |===
 
 === LocalSource/-Target configuration

@@ -74,7 +74,7 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
             client.runWrite(branchRef) { rootNode ->
                 logger.info("Got root node: {}", rootNode)
                 logger.info("Importing...")
-                ModelImporter(rootNode).importFilesAsRootChildren(*files.toTypedArray())
+                ModelImporter(rootNode).importFilesAsRootChildren(files)
                 logger.info("Import finished")
             }
         }

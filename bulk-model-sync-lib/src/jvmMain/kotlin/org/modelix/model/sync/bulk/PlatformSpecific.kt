@@ -35,6 +35,12 @@ fun ModelImporter.import(jsonFile: File) {
     import(data)
 }
 
+fun ModelImporter.importFilesAsRootChildren(files: Collection<File>) {
+    val models = files.map { ModelData.fromJson(it.readText()) }
+    import(mergeModelData(models))
+}
+
+@Deprecated("use collection parameter for better performance")
 fun ModelImporter.importFilesAsRootChildren(vararg files: File) {
     val models = files.map { ModelData.fromJson(it.readText()) }
     import(mergeModelData(*models.toTypedArray()))

@@ -21,6 +21,11 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 
+fun mergeModelData(models: Collection<ModelData>): ModelData {
+    return ModelData(root = NodeData(children = models.map { it.root }))
+}
+
+@Deprecated("use collection parameter for better performance")
 fun mergeModelData(vararg models: ModelData): ModelData {
     return ModelData(root = NodeData(children = models.map { it.root }))
 }

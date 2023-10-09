@@ -17,6 +17,7 @@ tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.1.0" }
 dokka = {id = "org.jetbrains.dokka", version = "1.9.0"}
 node = {id = "com.github.node-gradle.node", version = "7.0.1"}
+detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.1" }
 
 [versions]
 kotlin = "1.9.10"

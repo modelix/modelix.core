@@ -1,5 +1,6 @@
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.NodePlugin
+import io.gitlab.arturbosch.detekt.Detekt
 import kotlinx.html.FlowContent
 import kotlinx.html.a
 import kotlinx.html.body
@@ -44,6 +45,7 @@ plugins {
     alias(libs.plugins.tasktree)
     alias(libs.plugins.dokka)
     alias(libs.plugins.node) apply false
+    alias(libs.plugins.detekt) apply false
 }
 
 group = "org.modelix"
@@ -65,11 +67,14 @@ dependencies {
     dokkaPlugin(libs.dokka.versioning)
 }
 
+val parentProject = project
+
 subprojects {
     val subproject = this
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "io.gitlab.arturbosch.detekt")
 
     version = rootProject.version
     group = rootProject.group
@@ -83,6 +88,22 @@ subprojects {
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         // IMPORTANT: keep in sync with the version in .pre-commit-config.yaml
         version.set("0.50.0")
+    }
+
+    tasks.withType<Detekt> {
+        parallel = true
+        // For now, we only use the results here as hints
+        ignoreFailures = true
+
+        buildUponDefaultConfig = true
+        config.setFrom(parentProject.projectDir.resolve(".detekt.yml"))
+
+        reports {
+            sarif.required.set(true)
+            // This is required for the GitHub upload action to easily find all sarif files in a single directory.
+            sarif.outputLocation.set(parentProject.buildDir.resolve("reports/detekt/${project.name}.sarif"))
+            html.required.set(true)
+        }
     }
 
     val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6

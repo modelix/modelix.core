@@ -1,0 +1,23 @@
+{
+  "name": "vue-integration",
+  "scripts": {
+    "test": "jest",
+    "prettier": "prettier . --check",
+    "prettier:fix": "npm run prettier -- --write"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "prettier": "3.0.3",
+    "ts-jest": "^29.1.1"
+  },
+  "overrides": {
+    "@modelix/model-client": "file:../../model-client/build/npmDevPackage/model-client.tgz",
+    "@modelix/ts-model-api": "file:../../ts-model-api"
+  },
+  "dependencies": {
+    "@modelix/model-client": "file:../../model-client/build/npmDevPackage/model-client.tgz",
+    "@modelix/ts-model-api": "file:../../ts-model-api",
+    "@modelix/vue-model-api": "file:../../vue-model-api/build/npmDevPackage/vue-model-api.tgz",
+    "typescript-generation": "file:../typescript-generation/build/typescript-generation-0.0.0.tgz"
+  }
+}

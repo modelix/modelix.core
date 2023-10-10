@@ -31,3 +31,21 @@ repos:
           # IMPORTANT: keep in sync with the version configured in build.gradle.kts
           - --ktlint-version=0.50.0
           - --autofix
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    # IMPORTANT: keep in sync with the version configured in `vue-model-api/package.json`
+    rev: v3.0.3
+    hooks:
+      - id: prettier
+        files: ^(vue-model-api)|(model-api-gen-gradle-test/vue-integration)/
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    # IMPORTANT: keep versions of hook and additional dependencies in sync with the versions configured in `vue-model-api/package.json`
+    rev: v8.50.0
+    hooks:
+      - id: eslint
+        additional_dependencies:
+          - "eslint@8.5.0"
+          - "eslint-config-prettier@9.0.0"
+          - "@typescript-eslint/eslint-plugin@6.7.2"
+          - "@typescript-eslint/parser@6.7.2"
+        files: ^vue-model-api/src/
+        'types': [ts]

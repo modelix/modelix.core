@@ -30,3 +30,4 @@ rootProject.name = "model-api-gen-gradle-test"
 include("metamodel-export")
 include("typescript-generation")
 include("kotlin-generation")
+include("vue-integration")

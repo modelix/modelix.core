@@ -57,15 +57,17 @@ class ModelSyncService : Disposable {
         url: String,
         repositoryID: String,
         branchName: String,
+        modelName: String,
         jwt: String,
         afterActivate: () -> Unit,
     ) {
         coroutineScope.launch {
             log.info("Binding project: $theProject from $url")
             try {
-                val newBinding = syncService.bindRepository(
+                val newBinding = syncService.bindModel(
                     URL(url),
                     BranchReference(RepositoryId(repositoryID), branchName),
+                    modelName,
                     jwt,
                     theProject,
                     afterActivate,

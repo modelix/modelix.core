@@ -73,6 +73,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         var serverURL: JBTextField = JBTextField()
         var repositoryName: JBTextField = JBTextField()
         var branchName: JBTextField = JBTextField()
+        var modelName: JBTextField = JBTextField()
         var jwt: JBTextField = JBTextField()
 
         var openProjectModel: DefaultComboBoxModel<Project> = DefaultComboBoxModel<Project>()
@@ -116,6 +117,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             controlsPanel.add(serverURL)
             controlsPanel.add(repositoryName)
             controlsPanel.add(branchName)
+            controlsPanel.add(modelName)
             controlsPanel.add(jwt)
 
             val projectCB: ComboBox<Project> = ComboBox<Project>()
@@ -130,6 +132,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     serverURL.text,
                     repositoryName.text,
                     branchName.text,
+                    modelName.text,
                     jwt.text,
                     { afterBind() },
                 )
@@ -164,6 +167,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             serverURL.text = "http://127.0.0.1:28101/v2"
             repositoryName.text = "courses"
             branchName.text = "master"
+            modelName.text = "modelname"
             jwt.text = ""
         }
 

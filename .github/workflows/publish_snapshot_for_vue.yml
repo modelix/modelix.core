@@ -1,0 +1,25 @@
+name: Publish Snapshots for Vue development
+
+on:
+  push:
+    branches:
+      - 'feature/vue-model-api-snapshot-publishing'
+  pull_request: { }
+  workflow_dispatch:
+
+jobs:
+  newRelease:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: Build and Publish NPM Snapshot Artifacts
+        run: ./gradlew model-client:publishJsPackageToItemisNpmOpenRegistry ts-model-api:publish vue-model-api:publish -PciBuild=true -Partifacts.itemis.cloud.user=${{secrets.ARTIFACTS_ITEMIS_CLOUD_USER}} -Partifacts.itemis.cloud.pw=${{secrets.ARTIFACTS_ITEMIS_CLOUD_PW}} -Pgpr.user=${{ github.actor }} -Pgpr.key=${{ secrets.GITHUB_TOKEN }} -Pgpr.universalkey=${{ secrets.GHP_UNIVERSAL_PUBLISH_TOKEN }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTS_ITEMIS_CLOUD_NPM_TOKEN }}

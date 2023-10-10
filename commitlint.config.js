@@ -23,6 +23,7 @@ module.exports = {
         "mps-model-server",
         "mps-model-server-plugin",
         "ts-model-api",
+        "vue-model-api",
       ],
     ],
     "subject-case": [0, 'never']

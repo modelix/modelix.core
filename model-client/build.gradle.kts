@@ -1,3 +1,5 @@
+import dev.petuska.npm.publish.task.NpmPackTask
+
 plugins {
     `maven-publish`
     id("org.jetbrains.kotlin.multiplatform")
@@ -174,6 +176,12 @@ val patchTypesScriptInProductionLibrary = tasks.register("patchTypesScriptInProd
             }
         }
     }
+}
+
+tasks.named<NpmPackTask>("packJsPackage") {
+    dependsOn("assembleJsPackage")
+    packageDir.set(layout.buildDirectory.dir("packages/js"))
+    outputFile.set(layout.buildDirectory.file("npmDevPackage/${project.name}.tgz"))
 }
 
 npmPublish {

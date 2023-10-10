@@ -1,5 +1,5 @@
 {
-  "name": "@modelix/model-api-gen-gradle-test",
+  "name": "typescript-generation",
   "version": "0.0.0",
   "description": "",
   "keywords": [
@@ -14,10 +14,7 @@
   },
   "license": "Apache 2.0",
   "files": [
-    "dist/*.*js.map",
-    "dist/*.*js",
-    "dist/*.d.ts.map",
-    "dist/*.d.ts"
+    "dist/"
   ],
   "type": "commonjs",
   "main": "dist/index",

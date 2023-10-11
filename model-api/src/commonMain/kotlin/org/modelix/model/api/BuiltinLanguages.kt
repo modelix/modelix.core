@@ -63,6 +63,7 @@ object BuiltinLanguages {
             init { addConcept(this) }
 
             val id by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/2615330535972958738")
+            val stereotype by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/3832696962605996173")
 
             val rootNodes = SimpleChildLink(
                 simpleName = "rootNodes",

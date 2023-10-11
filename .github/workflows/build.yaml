@@ -20,16 +20,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '11'
-      - name: Build
+      - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
+      - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          arguments: |
-            --build-cache
-            build
-            detekt
-            -PciBuild=true
+        run: ./gradlew --build-cache build detekt -PciBuild=true
       - name: Archive test report
         uses: actions/upload-artifact@v3
         if: always()
@@ -59,16 +55,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '11'
-      - name: Assemble
+      - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
+      - name: Assemble
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          arguments: |
-            --build-cache
-            assemble
-            publishToMavenLocal
-            -PciBuild=true
+        run: ./gradlew --build-cache assemble publishToMavenLocal -PciBuild=true
       - name: Test Model API Generator Gradle Plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -83,17 +75,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '11'
-      - name: Assemble
+      - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
+      - name: Assemble
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          arguments: |
-            --build-cache
-            assemble
-            publishToMavenLocal
-            -PciBuild=true
-
+        run: ./gradlew --build-cache assemble publishToMavenLocal -PciBuild=true
       - name: Test Bulk Model Sync Gradle Plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

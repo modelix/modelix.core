@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.tools
+package org.modelix.mps.sync.tools.history
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
@@ -30,6 +30,7 @@ import jetbrains.mps.ide.tools.BaseTool
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.tools.ModelSyncGuiFactory
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.KeyStroke

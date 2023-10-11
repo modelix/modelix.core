@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.config
+package org.modelix.mps.sync.configuration
 
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
+import com.intellij.openapi.components.Storage
 
 // status: migrated, but needs some bugfixes
 /**
  * This component handles the storage of the cloud configuration.
  * For information about component persistence refer to https://jetbrains.org/intellij/sdk/docs/basics/persisting_state_of_components.html
  */
-@Service
+@Service(Service.Level.PROJECT)
 @State(
     name = "CloudResources",
-    storages = [],
-    // TODO fixme: @Storage had different fields originally in MPS, than here. It may be due to conflicting versions on the CP.
-    // storages = arrayOf(Storage(file = "cloudResources.xml", value = "cloudResources.xml", roamingType = RoamingType.DISABLED)),
     reloadable = true,
+    storages = [Storage("cloudSettings.xml", roamingType = RoamingType.DISABLED)],
 )
 class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResourcesConfigurationComponent.State> {
 

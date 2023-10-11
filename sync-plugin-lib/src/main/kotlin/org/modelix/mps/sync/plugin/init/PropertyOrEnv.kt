@@ -20,13 +20,13 @@ package org.modelix.mps.sync.plugin.init
 object PropertyOrEnv {
     operator fun get(name: String): String? {
         var value = System.getProperty(name)
-        if (value.isEmpty()) {
+        if (value.isNullOrEmpty()) {
             value = System.getenv(name)
         }
-        if (value.isEmpty() && name.contains(".")) {
+        if (value.isNullOrEmpty() && name.contains(".")) {
             val withoutDots = name.replace('.', '_')
             value = System.getProperty(withoutDots)
-            if (value.isEmpty()) {
+            if (value.isNullOrEmpty()) {
                 value = System.getenv(withoutDots)
             }
         }

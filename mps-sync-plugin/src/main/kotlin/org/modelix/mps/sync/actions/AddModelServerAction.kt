@@ -20,12 +20,14 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
-import org.modelix.mps.sync.config.PersistedBindingConfiguration
+import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.connection.ModelServerConnections
 import javax.swing.Icon
 
 class AddModelServerAction : AnAction {
+
+    private val logger = mu.KotlinLogging.logger {}
 
     constructor() : super()
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
@@ -64,6 +66,8 @@ class AddModelServerAction : AnAction {
 
         val token: String? = null
         val finalUrl: String = url
+
+        logger.debug("Trigger model-server add $url")
 
         // TODO: migrate Authentication classes
 //        if (AuthenticationManager.getAuthenticationProcess(finalUrl).areWeUsingAuthentication(event.getData(CommonDataKeys.PROJECT))) {

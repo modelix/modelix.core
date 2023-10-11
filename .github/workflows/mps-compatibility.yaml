@@ -13,6 +13,16 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        version:
+          - "2020.3.6"
+          - "2021.1.4"
+          - "2021.2.6"
+          - "2021.3.3"
+          - "2022.2"
+          - "2022.3"
+
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 17
@@ -20,15 +30,5 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Build with MPS 2020.3.6
-        run: ./gradlew :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=2020.3.6
-      - name: Build with MPS 2021.1.4
-        run: ./gradlew :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=2021.1.4
-      - name: Build with MPS 2021.2.6
-        run: ./gradlew :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=2021.2.6
-      - name: Build with MPS 2021.3.3
-        run: ./gradlew :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=2021.3.3
-      - name: Build with MPS 2022.2
-        run: ./gradlew :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=2022.2
-      - name: Build with MPS 2022.3
-        run: ./gradlew :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=2022.3
+      - name: Build with ${{ matrix.version }}
+        run: ./gradlew :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=${{ matrix.version }}

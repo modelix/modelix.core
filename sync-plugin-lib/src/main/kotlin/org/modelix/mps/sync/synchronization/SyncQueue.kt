@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.synchronization
 
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
@@ -35,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 // status: migrated, but needs some bugfixes
 class SyncQueue(val owner: RootBinding) {
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<SyncQueue>()
 
     @Volatile
     var isSynchronizing = false
@@ -112,7 +113,7 @@ class SyncQueue(val owner: RootBinding) {
                                     try {
                                         task.run()
                                     } catch (ex: Exception) {
-                                        logger.error(ex) { "Failed: $task" }
+                                        logger.error("Failed: $task", ex)
                                     }
                                 }
                                 loadFromQueue(locks2task)
@@ -129,7 +130,7 @@ class SyncQueue(val owner: RootBinding) {
             try {
                 task.invokeCallbacks()
             } catch (ex: Exception) {
-                logger.error(ex) { "Exception in binding callback" }
+                logger.error("Exception in binding callback", ex)
             }
         }
     }

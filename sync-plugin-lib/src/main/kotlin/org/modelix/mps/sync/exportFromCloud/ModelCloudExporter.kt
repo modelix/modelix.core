@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.exportFromCloud
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.vfs.VirtualFileManager
 import jetbrains.mps.extapi.model.SModelData
 import jetbrains.mps.ide.MPSCoreComponents
@@ -84,7 +85,7 @@ class ModelCloudExporter {
         private val DEFAULT_TREE_ID = "default"
     }
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<ModelCloudExporter>()
     private var branchName = DEFAULT_BRANCH_NAME
     private var inCheckoutMode = false
 
@@ -148,8 +149,8 @@ class ModelCloudExporter {
      * @param selectedModuleIds null indicates all modules
      */
     fun export(outputFolder: IFile, selectedModuleIds: Set<Long>?, mpsProject: Project): List<Solution> {
-        logger.info { "exporting to ${outputFolder.path}" }
-        logger.info { "the output folder exists? ${outputFolder.exists()}" }
+        logger.info("exporting to ${outputFolder.path}")
+        logger.info("the output folder exists? ${outputFolder.exists()}")
 
         if (!inCheckoutMode) {
             outputFolder.deleteIfExists()
@@ -339,9 +340,9 @@ class ModelCloudExporter {
         val res = AsyncPromise<EditableSModel>()
         ThreadUtils.runInUIThreadNoWait {
             try {
-                logger.info { "creating model $sModelName" }
+                logger.info("creating model $sModelName")
                 val smodel = defaultModelRoot.createModel(sModelName, null, null, modelFactory) as EditableSModel
-                logger.info { "  model $sModelName created" }
+                logger.info("  model $sModelName created")
                 res.setResult(smodel)
             } catch (ex: ModelCannotBeCreatedException) {
                 res.setResult(null)
@@ -358,7 +359,7 @@ class ModelCloudExporter {
             ).syncModelToMPS(model.branch.transaction.tree, true)
             module.repository?.modelAccess?.runWriteAction {
                 smodel.save()
-                logger.info { "  model $sModelName saved" }
+                logger.info("  model $sModelName saved")
             }
         }
     }

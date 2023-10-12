@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.util
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.project.IProject
 import jetbrains.mps.project.ProjectManager
@@ -30,7 +31,7 @@ import javax.swing.Timer
 // status: ready to test
 object CommandHelper {
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<CommandHelper>()
 
     private val queue = mutableListOf<Pair<Runnable, Boolean>>()
 
@@ -46,7 +47,7 @@ object CommandHelper {
                 try {
                     executeCommand(project!!.repository, entry.second, entry.first)
                 } catch (ex: Exception) {
-                    logger.error(ex) { ex.message }
+                    logger.error(ex.message, ex)
                 }
             }
         }

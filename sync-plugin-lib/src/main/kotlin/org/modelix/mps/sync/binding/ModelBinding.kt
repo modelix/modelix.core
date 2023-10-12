@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.binding
 
+import com.intellij.openapi.diagnostic.logger
 import gnu.trove.set.hash.TLongHashSet
 import jetbrains.mps.smodel.SModelInternal
 import jetbrains.mps.smodel.event.SModelChildEvent
@@ -47,7 +48,7 @@ import org.modelix.mps.sync.synchronization.SyncDirection
 class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSyncDirection: SyncDirection) :
     Binding(initialSyncDirection) {
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<ModelBinding>()
 
     private val childrenSyncToMPSRequired: MutableSet<RoleInNode> = mutableSetOf()
     private val referenceSyncToMPSRequired: MutableSet<RoleInNode> = mutableSetOf()
@@ -57,7 +58,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
     private var synchronizer: ModelSynchronizer? = null
 
     private val nodeChangeListener = object : SNodeChangeListener {
-        private val logger = mu.KotlinLogging.logger {}
+        private val logger = logger<SNodeChangeListener>()
 
         override fun propertyChanged(event: SPropertyChangeEvent) {
             try {
@@ -77,7 +78,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     }
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -90,7 +91,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.handleReferenceChanged(event)
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -103,7 +104,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.handleMPSNodeAdded(event)
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -116,13 +117,13 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.handleMPSNodeRemoved(event)
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
     }
 
     private val modelListener = object : SModelListener {
-        private val logger = mu.KotlinLogging.logger {}
+        private val logger = logger<SModelListener>()
 
         override fun languageAdded(event: SModelLanguageEvent?) {
             try {
@@ -133,7 +134,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.syncUsedLanguagesAndDevKitsFromMPS()
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -146,7 +147,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.syncUsedLanguagesAndDevKitsFromMPS()
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -159,7 +160,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.syncUsedLanguagesAndDevKitsFromMPS()
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -172,7 +173,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.syncUsedLanguagesAndDevKitsFromMPS()
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -194,7 +195,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.syncModelImportsFromMPS()
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -207,7 +208,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     synchronizer?.syncModelImportsFromMPS()
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -264,7 +265,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                             synchronizer?.syncChildrenToMPS(roleInNode.nodeId, roleInNode.role!!, tree, false)
                         }
                     } catch (ex: Exception) {
-                        logger.error(ex) { ex.message }
+                        logger.error(ex.message, ex)
                     }
                 }
                 childrenSyncToMPSRequired.clear()
@@ -275,7 +276,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                             synchronizer?.syncReferenceToMPS(roleInNode.nodeId, roleInNode.role!!, tree)
                         }
                     } catch (ex: Exception) {
-                        logger.error(ex) { ex.message }
+                        logger.error(ex.message, ex)
                     }
                 }
                 referenceSyncToMPSRequired.clear()
@@ -286,7 +287,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                             synchronizer?.syncPropertyToMPS(roleInNode.nodeId, roleInNode.role!!, tree)
                         }
                     } catch (ex: Exception) {
-                        logger.error(ex) { ex.message }
+                        logger.error(ex.message, ex)
                     }
                 }
                 propertySyncToMPSRequired.clear()
@@ -297,7 +298,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                             synchronizer?.syncNodeToMPS(nodeId, tree, true)
                         }
                     } catch (ex: Exception) {
-                        logger.error(ex) { ex.message }
+                        logger.error(ex.message, ex)
                     }
                     true
                 }
@@ -307,7 +308,7 @@ class ModelBinding(val modelNodeId: Long, private val model: SModel, initialSync
                     try {
                         synchronizer?.syncModelPropertiesToMPS(tree)
                     } catch (ex: Exception) {
-                        logger.error(ex) { ex.message }
+                        logger.error(ex.message, ex)
                     }
                 }
             }

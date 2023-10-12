@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.connection
 
+import com.intellij.openapi.diagnostic.logger
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IConcept
@@ -41,7 +42,7 @@ class ModelServerConnections private constructor() {
         val instance = ModelServerConnections()
     }
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<ModelServerConnections>()
     val modelServers = mutableListOf<ModelServerConnection>()
     private val listeners = mutableSetOf<IRepositoriesChangedListener>()
 
@@ -92,7 +93,7 @@ class ModelServerConnections private constructor() {
                 it.repositoriesChanged()
             }
         } catch (ex: Exception) {
-            logger.error(ex) { ex.message }
+            logger.error(ex.message, ex)
             ModelixNotifications.notifyError("Failure while adding model server $url", ex.message ?: "")
         }
         return newRepo

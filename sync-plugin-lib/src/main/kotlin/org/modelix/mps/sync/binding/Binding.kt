@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.binding
 
+import com.intellij.openapi.diagnostic.logger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
@@ -28,7 +29,7 @@ import java.util.Collections
 // status: ready to test
 abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<Binding>()
 
     var isActive = false
         private set
@@ -193,7 +194,7 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
         if (this !is RootBinding && owner?.isActive != true) {
             throw IllegalStateException("Activate $owner first, before activating $this")
         }
-        logger.debug { "Activate $this" }
+        logger.debug("Activate $this")
         isActive = true
         doActivate()
         if (getRootBinding().syncQueue.getTask(this) == null) {
@@ -209,7 +210,7 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
     override fun deactivate(callback: Runnable?) {
         if (!isActive) return
 
-        logger.debug { "Deactivate: $this" }
+        logger.debug("Deactivate: $this")
         isActive = false
         ownedBindings.forEach { it.deactivate() }
         doDeactivate()
@@ -226,7 +227,7 @@ abstract class Binding(val initialSyncDirection: SyncDirection?) : IBinding {
             try {
                 notifier.invoke(it)
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
     }

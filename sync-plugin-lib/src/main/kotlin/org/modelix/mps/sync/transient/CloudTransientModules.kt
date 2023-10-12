@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.transient
 
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.module.SRepositoryExt
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.smodel.MPSModuleOwner
@@ -30,7 +31,7 @@ class CloudTransientModules private constructor(private val mpsRepository: SRepo
         val instance = CloudTransientModules(MPSModuleRepository.getInstance())
     }
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<CloudTransientModules>()
 
     private val modules = mutableListOf<CloudTransientModule>()
 
@@ -49,7 +50,7 @@ class CloudTransientModules private constructor(private val mpsRepository: SRepo
         mpsRepository.modelAccess.runWriteAction {
             module = CloudTransientModule(name, id)
             modules.add(module!!)
-            logger.debug { "Register module $id" }
+            logger.debug("Register module $id")
             mpsRepository.registerModule(module!!, moduleOwner)
         }
         return module!!
@@ -64,7 +65,7 @@ class CloudTransientModules private constructor(private val mpsRepository: SRepo
 
     private fun doDisposeModule(module: CloudTransientModule) {
         if (module.repository != null) {
-            logger.debug { "Unregister module ${module.moduleId}" }
+            logger.debug("Unregister module ${module.moduleId}")
             mpsRepository.unregisterModule(module, moduleOwner)
         }
     }
@@ -77,7 +78,7 @@ class CloudTransientModules private constructor(private val mpsRepository: SRepo
                 }
                 modules.clear()
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
     }

@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.synchronization
 
+import com.intellij.openapi.diagnostic.logger
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ELockType
 import java.util.Collections
@@ -29,7 +30,7 @@ class SyncTask(
     private val implementation: Runnable,
 ) : Runnable {
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<SyncTask>()
     private val callbacks: MutableList<Runnable> = mutableListOf()
     val isInitialSync: Boolean = initialSync
     val requiredLocks: Set<ELockType>
@@ -47,7 +48,7 @@ class SyncTask(
                 binding.runningTask = this
                 implementation.run()
             } else {
-                logger.warn { "Skipped $this, because the binding is inactive" }
+                logger.warn("Skipped $this, because the binding is inactive")
                 return
             }
         } finally {
@@ -61,7 +62,7 @@ class SyncTask(
             try {
                 callback.run()
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
     }

@@ -16,10 +16,12 @@
 
 package org.modelix.mps.sync.plugin.init
 
+import com.intellij.openapi.diagnostic.logger
+
 // status: ready to test
 object ModelixConfigurationSystemProperties {
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<ModelixConfigurationSystemProperties>()
 
     val EXECUTION_MODE_SYSPROP = "modelix.executionMode"
     private val LOAD_PERSISTENT_BINDIND_SYSPROP = "modelix.loadPersistentBinding"
@@ -53,7 +55,7 @@ object ModelixConfigurationSystemProperties {
                 }
                 executionMode = EModelixExecutionMode.valueOf(executionModeString)
             } catch (ex: IllegalArgumentException) {
-                logger.error(ex) { "Unknown execution mode: $executionModeString" }
+                logger.error("Unknown execution mode: $executionModeString", ex)
             }
         }
         System.setProperty(EXECUTION_MODE_SYSPROP, executionMode.name)

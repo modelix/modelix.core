@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.binding
 
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
@@ -30,17 +31,17 @@ import org.modelix.mps.sync.synchronization.SyncDirection
 class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyncDirection: SyncDirection) :
     Binding(initialSyncDirection) {
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<ProjectBinding>()
     private val repositoryListener = RepositoryListener()
     var projectNodeId: Long = projectNodeId
         private set
 
     init {
-        logger.debug { "Project binding created: $this" }
+        logger.debug("Project binding created: $this")
     }
 
     override fun doActivate() {
-        logger.debug { "Activating: $this" }
+        logger.debug("Activating: $this")
         val branch = getBranch() ?: return
 
         if (projectNodeId == 0L) {
@@ -76,7 +77,7 @@ class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyn
             }
         }
         mpsProject.repository.addRepositoryListener(repositoryListener)
-        logger.debug { "Activated: $this" }
+        logger.debug("Activated: $this")
     }
 
     override fun doDeactivate() = mpsProject.repository.removeRepositoryListener(repositoryListener)

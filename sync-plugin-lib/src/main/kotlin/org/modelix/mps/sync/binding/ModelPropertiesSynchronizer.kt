@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.binding
 
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelDescriptorStub
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
@@ -49,7 +50,7 @@ class ModelPropertiesSynchronizer(
     private val cloudRepository: ICloudRepository,
 ) {
     companion object {
-        private val logger = mu.KotlinLogging.logger {}
+        private val logger = logger<ModelPropertiesSynchronizer>()
 
         fun syncModelPropertiesToMPS(tree: ITree, model: SModel, modelNodeId: Long, cloudRepository: ICloudRepository) {
             syncUsedLanguagesAndDevKitsToMPS(tree, model, modelNodeId, cloudRepository)
@@ -62,7 +63,7 @@ class ModelPropertiesSynchronizer(
 //                    VersionFixer(projects.first(), model.module, true).updateImportVersions()
                 }
             } catch (ex: Exception) {
-                logger.error(ex) { "Failed to update language version after change in model ${model.name.value}" }
+                logger.error("Failed to update language version after change in model ${model.name.value}", ex)
             }
         }
 

@@ -1,5 +1,6 @@
 package org.modelix.mps.sync.binding
 
+import com.intellij.openapi.diagnostic.logger
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.module.SModule
@@ -16,7 +17,7 @@ abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncD
 
     abstract val module: SModule
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<ModuleBinding>()
 
     private val moduleListener = object : SModuleListenerBase() {
 
@@ -24,7 +25,7 @@ abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncD
             try {
                 enqueueSync(SyncDirection.TO_CLOUD, false, null)
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -32,7 +33,7 @@ abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncD
             try {
                 enqueueSync(SyncDirection.TO_CLOUD, false, null)
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
 
@@ -40,7 +41,7 @@ abstract class ModuleBinding(val moduleNodeId: Long, initialSyncDirection: SyncD
             try {
                 enqueueSync(SyncDirection.TO_CLOUD, false, null)
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
         }
     }

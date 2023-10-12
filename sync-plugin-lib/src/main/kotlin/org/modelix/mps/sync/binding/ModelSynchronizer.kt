@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.binding
 
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.internal.collections.runtime.ListSequence
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.project.ModelImporter
@@ -62,7 +63,7 @@ class ModelSynchronizer(
         val MPS_NODE_ID_PROPERTY_NAME = "#mpsNodeId#"
     }
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<ModelSynchronizer>()
 
     private val pendingReferences: PendingReferences = PendingReferences()
 
@@ -81,7 +82,7 @@ class ModelSynchronizer(
 
     fun syncModelToMPS(tree: ITree, withInitialRemoval: Boolean) {
         PrefetchCache.Companion.with(tree) {
-            logger.trace { "syncModel initialRemoval=$withInitialRemoval on model ${model.name.longName}" }
+            logger.trace("syncModel initialRemoval=$withInitialRemoval on model ${model.name.longName}")
             if (withInitialRemoval) {
                 model.rootNodes.toList().forEach { root -> root.children.forEach { SNodeOperations.deleteNode(it) } }
             }
@@ -99,7 +100,7 @@ class ModelSynchronizer(
     fun fullSyncFromMPS() {
         val tree = branch.transaction.tree
         if (!tree.containsNode(modelNodeId)) {
-            logger.warn { "Skipping sync for $this, because the model node ${java.lang.Long.toHexString(modelNodeId)} doesn't exist in the cloud model" }
+            logger.warn("Skipping sync for $this, because the model node ${java.lang.Long.toHexString(modelNodeId)} doesn't exist in the cloud model")
             return
         }
         PrefetchCache.Companion.with(tree) {
@@ -156,7 +157,7 @@ class ModelSynchronizer(
     }
 
     fun syncNodeToMPS(nodeId: Long, tree: ITree, includeDescendants: Boolean) {
-        logger.trace { "syncNode nodeId: $nodeId" }
+        logger.trace("syncNode nodeId: $nodeId")
         try {
             val concept = MPSConcept.unwrap(tree.getConcept(nodeId))
             check(concept != null) {
@@ -175,7 +176,7 @@ class ModelSynchronizer(
                 syncReferenceToMPS(nodeId, link.name, tree)
             }
         } catch (ex: Exception) {
-            logger.error(ex) { "Failed to snyc node $nodeId" }
+            logger.error("Failed to snyc node $nodeId", ex)
         }
 
         syncChildrenToMPS(nodeId, tree, includeDescendants)
@@ -238,7 +239,7 @@ class ModelSynchronizer(
     }
 
     fun syncChildrenToMPS(parentId: Long, role: String, tree: ITree, includeDescendants: Boolean) {
-        logger.trace { "syncChildren nodeId: $parentId, role: $role, descendants? $includeDescendants" }
+        logger.trace("syncChildren nodeId: $parentId, role: $role, descendants? $includeDescendants")
 
         val syncedNodes = createChildrenSynchronizer(parentId, role).syncToMPS(tree)
 
@@ -531,7 +532,7 @@ class ModelSynchronizer(
     }
 
     inner class PendingReferences {
-        private val logger = mu.KotlinLogging.logger {}
+        private val logger = logger<PendingReferences>()
 
         private var currentReferences: MutableList<() -> SNode?>? = null
 
@@ -549,7 +550,7 @@ class ModelSynchronizer(
                     try {
                         processPendingReferences()
                     } catch (ex: Exception) {
-                        logger.error(ex) { "Failed to process pending reference" }
+                        logger.error("Failed to process pending reference", ex)
                     }
                     currentReferences = null
                 }
@@ -570,7 +571,7 @@ class ModelSynchronizer(
                     val targetNode = producer.invoke()
                     targetNode?.let { targetModels.add(it.model) }
                 } catch (ex: Exception) {
-                    logger.error(ex) { ex.message }
+                    logger.error(ex.message, ex)
                 }
             }
 

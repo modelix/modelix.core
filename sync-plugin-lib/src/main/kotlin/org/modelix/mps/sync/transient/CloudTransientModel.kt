@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.transient
 
 import com.intellij.openapi.command.CommandProcessor
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.TransientSModel
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.ide.undo.MPSUndoUtil
@@ -56,7 +57,7 @@ class CloudTransientModel(module: CloudTransientModule, name: String, modelId: S
             PersistenceFacade.getInstance().createModelReference(moduleReference, modelId, modelName)
     }
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<CloudTransientModel>()
 
     private var userObjects: CustomPMap<Any, Any> = empty()
 
@@ -81,7 +82,7 @@ class CloudTransientModel(module: CloudTransientModule, name: String, modelId: S
                     val doc = MPSUndoUtil.getDoc(repository, rootNode.reference)
                     MpsReplicatedRepository.documentChanged(MPSUndoUtil.getRefForDoc(doc))
                 } catch (ex: Exception) {
-                    logger.error(ex) { ex.message }
+                    logger.error(ex.message, ex)
                 }
             }
         }

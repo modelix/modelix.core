@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.util
 
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.persistence.DefaultModelRoot
 import jetbrains.mps.persistence.ModelCannotBeCreatedException
 import jetbrains.mps.smodel.SModelStereotype
@@ -35,8 +36,7 @@ fun SModule.createModel(name: String, id: SModelId): SModel? {
     try {
         return modelRoot?.createModel(modelName, null, null, ModelPersistenceWithFixedId(this.moduleReference, id))
     } catch (e: ModelCannotBeCreatedException) {
-        val logger = mu.KotlinLogging.logger {}
-        logger.error("Failed to create model $modelName", e)
+        logger<SModule>().error("Failed to create model $modelName", e)
     }
     return null
 }

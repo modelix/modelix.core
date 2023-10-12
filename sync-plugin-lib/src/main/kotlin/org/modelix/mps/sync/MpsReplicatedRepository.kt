@@ -21,6 +21,7 @@ import com.intellij.openapi.command.undo.DocumentReference
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.command.undo.UndoableAction
 import com.intellij.openapi.command.undo.UnexpectedUndoException
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.mps.openapi.repository.CommandListener
@@ -46,7 +47,7 @@ class MpsReplicatedRepository(
 
         private val affectedDocuments = mutableSetOf<DocumentReference>()
 
-        private val logger = mu.KotlinLogging.logger {}
+        private val logger = logger<MpsReplicatedRepository>()
 
         fun disposeAll() {
             val list: List<MpsReplicatedRepository>
@@ -57,7 +58,7 @@ class MpsReplicatedRepository(
                 try {
                     instance.dispose()
                 } catch (ex: Exception) {
-                    logger.error(ex) { ex.message }
+                    logger.error(ex.message, ex)
                 }
             }
         }

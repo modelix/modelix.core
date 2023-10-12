@@ -28,16 +28,21 @@ import org.modelix.model.api.NullChildLink
 import org.modelix.model.area.IArea
 
 data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDefaults {
+
+    companion object {
+        private val builtinRepository = BuiltinLanguages.MPSRepositoryConcepts.Repository
+    }
+
     override fun getArea(): IArea {
         return MPSArea(repository)
     }
 
     override val isValid: Boolean
-        get() = TODO("Not yet implemented")
+        get() = true
     override val reference: INodeReference
         get() = NodeReference("mps-repository")
     override val concept: IConcept
-        get() = BuiltinLanguages.MPSRepositoryConcepts.Repository
+        get() = builtinRepository
     override val parent: INode?
         get() = null
 
@@ -59,11 +64,10 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     override fun getChildren(link: IChildLink): Iterable<INode> {
         return if (link is NullChildLink) {
             return emptyList()
-        } else if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903") ||
-            link.getUID().contains("modules") ||
-            link.getSimpleName() == "modules"
-        ) {
+        } else if (link.conformsTo(builtinRepository.modules)) {
             repository.modules.map { MPSModuleAsNode(it) }
+        } else if (link.conformsTo(builtinRepository.projects)) {
+            TODO()
         } else {
             emptyList()
         }
@@ -82,7 +86,7 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun getReferenceTarget(link: IReferenceLink): INode? {
-        return null
+        throw UnsupportedOperationException("Concept $concept does not have references")
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
@@ -98,11 +102,11 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDeprecatedNodeDef
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {
-        return null
+        throw UnsupportedOperationException("Concept $concept does not have references")
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return null
+        throw UnsupportedOperationException("Concept $concept does not have properties")
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {

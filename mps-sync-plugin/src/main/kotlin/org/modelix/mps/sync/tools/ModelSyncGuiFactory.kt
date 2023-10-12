@@ -167,7 +167,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             serverURL.text = "http://127.0.0.1:28101/v2"
             repositoryName.text = "courses"
             branchName.text = "master"
-            modelName.text = "modelname"
+            modelName.text = "University.Schedule.modelserver.backend.sandbox"
             jwt.text = ""
         }
 

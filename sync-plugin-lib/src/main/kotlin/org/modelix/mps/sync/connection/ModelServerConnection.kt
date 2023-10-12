@@ -1,11 +1,11 @@
 package org.modelix.mps.sync.connection
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.util.messages.MessageBusConnection
-import com.intellij.util.messages.Topic
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import org.modelix.model.api.BuiltinLanguages
@@ -46,7 +46,7 @@ class ModelServerConnection {
         private val settingsKeyPrefix = ModelServerConnection::class.java.getName() + ".token/"
     }
 
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = logger<ModelServerConnection>()
 
     val baseUrl: String
     private val client: RestWebModelClient
@@ -61,12 +61,11 @@ class ModelServerConnection {
     private val bindings = mutableMapOf<RepositoryId, RootBinding>()
 
     constructor(baseUrl: String) {
-        logger.debug { "ModelServerConnection.init($baseUrl)" }
+        logger.debug("ModelServerConnection.init($baseUrl)")
+        logger.info("ModelServerConnection.init($baseUrl)")
         messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
-        ProjectManager.TOPIC
-        val topic: Topic<ProjectManagerListener> = null!!
         messageBusConnection.subscribe(
-            topic,
+            ProjectManager.TOPIC,
             object : ProjectManagerListener {
 
                 override fun projectClosing(closingProject: Project) {
@@ -76,10 +75,9 @@ class ModelServerConnection {
                         }
                 }
 
+                // todo: should we do implementations of these?
                 override fun projectOpened(p0: Project) {}
-
                 override fun canCloseProject(p0: Project): Boolean = true
-
                 override fun projectClosed(p0: Project) {}
             },
         )
@@ -139,9 +137,9 @@ class ModelServerConnection {
         try {
             email = client.getEmail()
         } catch (ex: Exception) {
-            logger.error(ex) { "Failed to read the users e-mail address" }
+            logger.error("Failed to read the users e-mail address", ex)
         }
-        logger.debug { "connected to $baseUrl" }
+        logger.debug("connected to $baseUrl")
     }
 
     private fun getAuthor(): String {
@@ -321,17 +319,17 @@ class ModelServerConnection {
             try {
                 messageBusConnection.disconnect()
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
             try {
                 client.dispose()
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
             try {
                 infoTree?.dispose()
             } catch (ex: Exception) {
-                logger.error(ex) { ex.message }
+                logger.error(ex.message, ex)
             }
 
             bindings.values.forEach { it.deactivate(null) }
@@ -340,7 +338,7 @@ class ModelServerConnection {
                     try {
                         it.dispose()
                     } catch (ex: Exception) {
-                        logger.error(ex) { ex.message }
+                        logger.error(ex.message, ex)
                     }
                 }
                 activeBranches.clear()

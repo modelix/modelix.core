@@ -29,7 +29,7 @@ import org.modelix.mps.sync.connection.IModelServerConnectionListener
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.icons.CloudIcons
 import org.modelix.mps.sync.icons.LoadingIcon
-import org.modelix.mps.sync.tools.CloudView
+import org.modelix.mps.sync.tools.cloud.CloudView
 import org.modelix.mps.sync.tools.history.TreeModelUtil.setTextAndRepaint
 import org.modelix.mps.sync.util.ModelixNotifications
 import java.util.Collections

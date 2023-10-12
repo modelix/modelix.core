@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.config
+package org.modelix.mps.sync.configuration
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import jetbrains.mps.ide.project.ProjectHelper
@@ -165,16 +166,12 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
     }
 
     private fun readState(): CloudResourcesConfigurationComponent.State {
-        // TODO project.getService(Class) is not found, however the CTRL+click navigation can go to the method definition...
-        // project.getService(CloudResourcesConfigurationComponent::class.java)
-        val cloudResourcesConfigurationComponent: CloudResourcesConfigurationComponent = null!!
+        val cloudResourcesConfigurationComponent: CloudResourcesConfigurationComponent = project.service<CloudResourcesConfigurationComponent>()
         return cloudResourcesConfigurationComponent.state
     }
 
     private fun modifyState(modifier: Consumer<CloudResourcesConfigurationComponent.State>) {
-        // TODO project.getService(Class) is not found, however the CTRL+click navigation can go to the method definition...
-        // project.getService(CloudResourcesConfigurationComponent::class.java)
-        val cloudResourcesConfigurationComponent: CloudResourcesConfigurationComponent = null!!
+        val cloudResourcesConfigurationComponent: CloudResourcesConfigurationComponent = project.service<CloudResourcesConfigurationComponent>()
         val state = readState()
         modifier.accept(state)
         cloudResourcesConfigurationComponent.loadState(state)

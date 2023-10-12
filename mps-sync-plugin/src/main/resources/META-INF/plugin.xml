@@ -39,18 +39,27 @@
                     factoryClass="org.modelix.mps.sync.tools.ModelSyncGuiFactory"/>
         <toolWindow id="Cloud Tool" secondary="true"
                     icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"
-                    factoryClass="org.modelix.mps.sync.tools.CloudToolFactory"/>
+                    factoryClass="org.modelix.mps.sync.tools.cloud.CloudToolFactory"/>
         <toolWindow id="History Tool" secondary="true"
                     icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"
-                    factoryClass="org.modelix.mps.sync.tools.HistoryToolFactory"/>
+                    factoryClass="org.modelix.mps.sync.tools.history.HistoryToolFactory"/>
 
-        <projectConfigurable parentId="tools"
-                             instance="org.modelix.mps.sync.config.settings.ProjectSettingsServiceConfigurable"
-                             id="org.intellij.sdk.settings.PAppSettingsConfigurable"
-                             displayName="SDK: Application Settings Example"
-                             nonDefaultProject="true"/>
-        <projectService serviceImplementation="org.modelix.mps.sync.config.settings.ProjectSettingsService"/>
+        <!-- allows to 'edit modelix settings' in the settings dialog -->
+<!--        <projectConfigurable parentId="tools"-->
+<!--                             instance="org.modelix.mps.sync.configuration.settings.ProjectSettingsServiceConfigurable"-->
+<!--                             id="org.intellij.sdk.settings.PAppSettingsConfigurable"-->
+<!--                             displayName="SDK: Application Settings Example"-->
+<!--                             nonDefaultProject="true"/>-->
 
+        <!-- service to handle storage of cloud details via project settings, aka .mps/modelix.xml -->
+        <projectService serviceImplementation="org.modelix.mps.sync.configuration.CloudResourcesConfigurationComponent"/>
+
+        <!-- the actual service in charge of connecting and binding -->
+        <applicationService serviceImplementation="org.modelix.mps.sync.ModelSyncService"/>
+
+        <!-- shows an indicator in the status bar to know the current connection state -->
+        <statusBarWidgetFactory id="CloudStatus"
+                                implementation="org.modelix.mps.sync.indicator.CloudIndicator"/>
 
     </extensions>
     <actions>
@@ -73,5 +82,6 @@
                icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON">
             <add-to-group group-id="ToolsMenu" anchor="first"/>
         </group>
+
     </actions>
 </idea-plugin>

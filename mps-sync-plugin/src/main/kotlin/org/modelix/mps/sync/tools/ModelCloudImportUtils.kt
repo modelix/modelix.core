@@ -26,7 +26,7 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.ProjectModuleBinding
-import org.modelix.mps.sync.config.PersistedBindingConfiguration
+import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.exportFromCloud.ModuleCheckout
 import org.modelix.mps.sync.importToCloud.ModelCloudImportUtils
 import org.modelix.mps.sync.synchronization.SyncDirection

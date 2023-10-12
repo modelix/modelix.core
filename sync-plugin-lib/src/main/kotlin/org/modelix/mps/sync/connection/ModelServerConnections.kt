@@ -83,6 +83,7 @@ class ModelServerConnections private constructor() {
     }
 
     private fun doAddModelServer(url: URL): ModelServerConnection {
+        logger.debug("Adding model-server {}", url)
         val newRepo = ModelServerConnection(url)
         modelServers.add(newRepo)
         try {

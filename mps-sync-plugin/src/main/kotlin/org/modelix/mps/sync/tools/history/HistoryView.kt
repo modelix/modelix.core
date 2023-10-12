@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.tools
+package org.modelix.mps.sync.tools.history
 
 import com.intellij.openapi.application.ApplicationManager
 import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes

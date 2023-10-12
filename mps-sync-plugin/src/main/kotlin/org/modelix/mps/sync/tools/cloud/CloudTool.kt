@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.tools
+package org.modelix.mps.sync.tools.cloud
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
@@ -26,6 +26,7 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import jetbrains.mps.ide.tools.BaseTool
+import org.modelix.mps.sync.tools.ModelSyncGuiFactory
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.KeyStroke

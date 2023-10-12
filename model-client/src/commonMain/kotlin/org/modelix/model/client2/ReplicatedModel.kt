@@ -21,6 +21,9 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.operations.OTBranch
 
+/**
+ * Dispose should be called on this, as otherwise a regular polling will go on.
+ */
 class ReplicatedModel(
     val client: IModelClientV2,
     val branchRef: BranchReference,

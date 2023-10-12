@@ -53,6 +53,7 @@ class ModelImporter(private val root: INode) {
      */
     @JvmName("importData")
     fun import(data: ModelData) {
+        logImportSize(data.root, logger)
         logger.info { "Building indices for import..." }
         originalIdToExisting.clear()
         postponedReferences.clear()

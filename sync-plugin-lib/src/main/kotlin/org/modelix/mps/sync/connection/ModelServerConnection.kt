@@ -2,16 +2,17 @@ package org.modelix.mps.sync.connection
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.util.messages.MessageBusConnection
 import com.intellij.util.messages.Topic
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
-import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
+import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.client.ConnectionListener
@@ -20,6 +21,7 @@ import org.modelix.model.client.IModelClient
 import org.modelix.model.client.ReplicatedRepository
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.MpsReplicatedRepository
 import org.modelix.mps.sync.binding.Binding
@@ -33,7 +35,7 @@ import java.net.URL
 import java.util.function.Consumer
 import javax.swing.SwingUtilities
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class ModelServerConnection {
 
     companion object {
@@ -61,8 +63,7 @@ class ModelServerConnection {
     constructor(baseUrl: String) {
         logger.debug { "ModelServerConnection.init($baseUrl)" }
         messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
-        // TODO fixme: ProjectManager.TOPIC does not exist. Maybe we use the wrong jar?
-        // ProjectManager.TOPIC
+        ProjectManager.TOPIC
         val topic: Topic<ProjectManagerListener> = null!!
         messageBusConnection.subscribe(
             topic,
@@ -187,28 +188,41 @@ class ModelServerConnection {
         return repositoryInfo
     }
 
-    fun addRepository(id: String): INode {
-        // TODO should return org.modelix.model.runtimelang.structure.RepositoryInfo
-        return PArea(getInfoBranch()).executeWrite {
-            /*val modelServerInfo = getInfo()
-             TODO we need val sModelServerInfo = NodeToSNodeAdapter.wrap(modelServerInfo), because modelServerInfo is INode and notSNode
-             val repositoryInfo = sModelServerInfo.addNewChild( BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
-             repositoryInfo.id = id;
-             val branchInfo = sModelServerInfo.addNewChild(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.branches)
-             branchInfo.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, ActiveBranch.DEFAULT_BRANCH_NAME)
-             return repositoryInfo;*/
-            Any() as INode
+    fun addRepository(id: String) =
+        PArea(getInfoBranch()).executeWrite {
+            // here they originally used the SNode API, but since getInfo() is an INode in our case, it might make sense to use that API instead...
+            val modelServerInfo = getInfo()
+            val repositoriesIndex =
+                modelServerInfo.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories).count()
+            val repositoryInfo = modelServerInfo.addNewChild(
+                BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories,
+                repositoriesIndex,
+                BuiltinLanguages.ModelixRuntimelang.RepositoryInfo,
+            )
+            repositoryInfo.setPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id, id)
+
+            val branchesIndex =
+                repositoryInfo.getChildren(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.branches).count()
+            val branchInfo = repositoryInfo.addNewChild(
+                BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.branches,
+                branchesIndex,
+                BuiltinLanguages.ModelixRuntimelang.BranchInfo,
+            )
+            branchInfo.setPropertyValue(
+                BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
+                ActiveBranch.DEFAULT_BRANCH_NAME,
+            )
+
+            repositoryInfo
         }
-    }
 
     fun removeRepository(id: String) {
         PArea(getInfoBranch()).executeWrite {
             val info = getInfo()
             val node = info.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
                 .firstOrNull { it.getPropertyValue(BuiltinLanguages.ModelixRuntimelang.RepositoryInfo.id) == id }
-            // TODO NodeToSNodeAdapter.getWrapped() is missing
-            val snode: SNode = null!!
-            SNodeOperations.deleteNode(snode)
+            val sNode = NodeAsMPSNode.wrap(node)!!
+            SNodeOperations.deleteNode(sNode)
         }
     }
 
@@ -254,17 +268,11 @@ class ModelServerConnection {
     }
 
     fun getInfo(): INode {
-        // TODO should return org.modelix.model.runtimelang.structure.ModelServerInfo
-
         checkConnected()
-        var result = PArea(infoTree!!.branch).executeRead {
+        var result: INode? = PArea(infoTree!!.branch).executeRead {
             val transaction = infoTree!!.branch.transaction
-            val allChildren_ = transaction.getAllChildren(ITree.ROOT_ID)
-            // TODO fixme. org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found...
-            // val allChildren = allChildren_.map{NodeToSNodeAdapter.wrap(new PNodeAdapter(it, infoTree.getBranch())) }
-            // TODO should return org.modelix.model.runtimelang.structure.ModelServerInfo
-            // return allChildren.filterIsInstance<ModelServerInfo().first()
-            Any()
+            val allChildren = transaction.getAllChildren(ITree.ROOT_ID).map { PNodeAdapter(it, infoTree!!.branch) }
+            allChildren.firstOrNull { it.concept == BuiltinLanguages.ModelixRuntimelang.ModelServerInfo }
         }
         if (result == null) {
             result = PArea(infoTree!!.branch).executeWrite {
@@ -275,22 +283,11 @@ class ModelServerConnection {
                     -1,
                     BuiltinLanguages.ModelixRuntimelang.ModelServerInfo,
                 )
-
-                /**
-                 * TODO fixme:
-                 * 1. org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found
-                 * 2. repoInfo must be org.modelix.model.runtimelang.structure.ModelServerInfo
-                 */
-                // val repoInfo = NodeToSNodeAdapter.wrap(new PNodeAdapter(id, infoTree.getBranch())): ModelServerInfo
-
                 addRepository(DEFAULT_REPOSITORY_ID)
-
-                // repoInfo
-                Any()
+                PNodeAdapter(id, infoTree!!.branch)
             }
         }
-        // return result
-        return null!! as INode
+        return result
     }
 
     fun getActiveBranch(repositoryId: RepositoryId): ActiveBranch {

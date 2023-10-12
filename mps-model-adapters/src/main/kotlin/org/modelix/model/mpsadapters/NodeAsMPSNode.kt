@@ -16,13 +16,14 @@
 
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.util.IterableUtil
+import jetbrains.mps.util.containers.EmptyIterable
 import org.jetbrains.mps.openapi.language.SAbstractConcept
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.ResolveInfo
-import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeId
@@ -36,6 +37,7 @@ import org.modelix.model.api.getAncestor
 class NodeAsMPSNode(private val node: INode, private val repository: SRepository?) : SNode {
 
     companion object {
+
         fun wrap(nodeToWrap: INode?) = wrap(nodeToWrap, null)
 
         fun wrap(nodeToWrap: INode?, repository: SRepository?) =
@@ -55,8 +57,12 @@ class NodeAsMPSNode(private val node: INode, private val repository: SRepository
     }
 
     var modelMode: EModelMode = EModelMode.NULL
+    val wrapped: INode = node
+
+    private val logger = mu.KotlinLogging.logger {}
     private var nodeId: NodeId = NodeId()
     private var nodeReference: NodeReference = NodeReference()
+    private var userObjects: MutableMap<Any, Any?> = mutableMapOf()
 
     init {
         if (node.concept == null) {
@@ -64,207 +70,270 @@ class NodeAsMPSNode(private val node: INode, private val repository: SRepository
         }
     }
 
-    fun getWrapped() = node
+    private fun wrap(nodeToWrap: INode?): SNode? {
+        val wrapped = wrap(nodeToWrap, repository)
+        if (wrapped is NodeAsMPSNode) {
+            wrapped.modelMode = modelMode
+        }
+        return wrapped
+    }
 
-    override fun getModel(): SModel? {
-        return when (modelMode) {
+    override fun getModel() =
+        when (modelMode) {
             EModelMode.NULL -> null
             EModelMode.ADAPTER -> {
                 val modelNode =
-                    this.node.getAncestor(BuiltinLanguages.MPSRepositoryConcepts.Model, false) ?: return null
-                return NodeAsMPSModel.wrap(modelNode, repository)
+                    this.node.getAncestor(BuiltinLanguages.MPSRepositoryConcepts.Model, false)
+                if (modelNode == null) {
+                    null
+                } else {
+                    NodeAsMPSModel.wrap(modelNode, repository)
+                }
             }
         }
-    }
 
     override fun getNodeId() = nodeId
 
     override fun getReference() = nodeReference
 
-    override fun getReference(role: SReferenceLink) = Reference(role)
-
-    @Deprecated("Deprecated in Java")
-    override fun getReference(role: String?) = getReference(findReferenceLink(role))
-    private fun findReferenceLink(role: String?) = concept.referenceLinks.firstOrNull { it.name == name }
-        ?: throw RuntimeException("${concept.name} doesn't have a reference link '$name'")
-
     override fun getConcept(): SConcept {
-        TODO("Not yet implemented")
+        val concept = node.concept
+        if (concept is MPSConcept && concept.concept is SConcept) {
+            return concept.concept
+        }
+        val unwrapped = MPSConcept.unwrap(concept)
+        if (unwrapped is SConcept) {
+            return unwrapped
+        }
+        return MPSConcept.unwrap(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept) as SConcept
     }
 
-    override fun isInstanceOfConcept(c: SAbstractConcept): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun isInstanceOfConcept(concept: SAbstractConcept) = this.concept.isSubConceptOf(concept)
 
     override fun getPresentation(): String {
-        TODO("Not yet implemented")
+        var result: String? = null
+        try {
+            val sINamedConcept =
+                MPSConcept.unwrap(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept) as SAbstractConcept
+            if (this.isInstanceOfConcept(sINamedConcept)) {
+                result = getProperty(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName())
+            }
+        } catch (ex: Exception) {
+            logger.debug(ex.message, ex)
+        }
+        if (result == null) {
+            result = toString()
+        }
+        return result
     }
 
-    override fun getName(): String? {
-        TODO("Not yet implemented")
-    }
+    override fun getName() = node.getPropertyValue("name")
 
-    override fun addChild(role: SContainmentLink, child: SNode) {
-        TODO("Not yet implemented")
-    }
-
-    override fun addChild(role: String?, child: SNode?) {
-        TODO("Not yet implemented")
-    }
+    override fun addChild(role: SContainmentLink, child: SNode) =
+        node.moveChild(MPSChildLink(role), -1, MPSNode.wrap(child)!!)
 
     override fun insertChildBefore(role: SContainmentLink, child: SNode, anchor: SNode?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun insertChildBefore(role: String?, child: SNode?, anchor: SNode?) {
-        TODO("Not yet implemented")
+        if (anchor == null) {
+            addChild(role, child)
+            return
+        }
+        val children = getChildren(role)
+        val index = children.indexOf(anchor)
+        node.moveChild(MPSChildLink(role), index, MPSNode.wrap(child)!!)
     }
 
     override fun insertChildAfter(role: SContainmentLink, child: SNode, anchor: SNode?) {
-        TODO("Not yet implemented")
+        if (anchor == null) {
+            addChild(role, child)
+            return
+        }
+        val children = getChildren(role)
+        val index = children.indexOf(anchor)
+        node.moveChild(MPSChildLink(role), index + 1, MPSNode.wrap(child)!!)
     }
 
-    override fun removeChild(child: SNode) {
-        TODO("Not yet implemented")
-    }
+    override fun removeChild(child: SNode) = this.node.removeChild(MPSNode.wrap(child)!!)
 
     override fun delete() {
-        TODO("Not yet implemented")
+        node.parent?.removeChild(node)
     }
 
     override fun getParent(): SNode? {
-        TODO("Not yet implemented")
+        val parent = node.parent ?: return null
+        if (parent.concept == null) {
+            return null
+        }
+        return wrap(parent)
     }
 
     override fun getContainingRoot(): SNode {
-        TODO("Not yet implemented")
+        var n1: INode?
+        var n2: INode? = node
+        do {
+            n1 = n2
+            n2 = n1!!.parent
+        } while (n2 != null)
+        return wrap(n1)!!
     }
 
-    override fun getContainmentLink(): SContainmentLink? {
-        TODO("Not yet implemented")
-    }
+    override fun getContainmentLink() = (this.node.getContainmentLink() as? MPSChildLink)?.link
 
     override fun getFirstChild(): SNode? {
-        TODO("Not yet implemented")
+        val first = node.allChildren.first()
+        return wrap(first)
     }
 
     override fun getLastChild(): SNode? {
-        TODO("Not yet implemented")
+        val last = node.allChildren.last()
+        return wrap(last)
     }
 
     override fun getPrevSibling(): SNode? {
-        TODO("Not yet implemented")
+        val parent = node.parent ?: return null
+        var sibling1: INode?
+        var sibling2: INode? = null
+        parent.allChildren.forEach { sibling ->
+            sibling1 = sibling2
+            sibling2 = sibling
+            if (node == sibling2) {
+                return wrap(sibling1)
+            }
+        }
+        return null
     }
 
     override fun getNextSibling(): SNode? {
-        TODO("Not yet implemented")
+        val parent = node.parent ?: return null
+        var sibling1: INode?
+        var sibling2: INode? = null
+        parent.allChildren.forEach { sibling ->
+            sibling1 = sibling2
+            sibling2 = sibling
+            if (node == sibling1) {
+                return wrap(sibling2)
+            }
+        }
+        return null
     }
 
-    override fun getChildren(role: SContainmentLink?): MutableIterable<SNode> {
-        TODO("Not yet implemented")
+    override fun getChildren(role: SContainmentLink) = this.node.getChildren(MPSChildLink(role)).map { wrap(it) }
+
+    override fun getChildren() = this.node.allChildren.map { wrap(it) }
+
+    override fun setReferenceTarget(role: SReferenceLink, target: SNode?) =
+        this.node.setReferenceTarget(MPSReferenceLink(role), MPSNode.wrap(target))
+
+    override fun getReferenceTarget(role: SReferenceLink) = wrap(this.node.getReferenceTarget(MPSReferenceLink(role)))
+
+    override fun getReference(role: SReferenceLink) = Reference(role)
+
+    override fun setReference(role: SReferenceLink, resolveInfo: ResolveInfo?) =
+        throw UnsupportedOperationException("Not implemented")
+
+    override fun setReference(role: SReferenceLink, reference: SReference?) =
+        throw UnsupportedOperationException("Not implemented")
+
+    override fun setReference(role: SReferenceLink, target: SNodeReference) =
+        throw UnsupportedOperationException("Not implemented")
+
+    override fun dropReference(role: SReferenceLink) = throw UnsupportedOperationException("Not implemented")
+
+    override fun getReferences() =
+        MPSConcept.unwrap(node.concept)?.referenceLinks?.filter { getReferenceTarget(it) != null }
+            ?.map { Reference(it) } ?: EmptyIterable()
+
+    override fun getProperties() =
+        MPSConcept.unwrap(node.concept)?.properties?.filter { getProperty(it) != null } ?: EmptyIterable()
+
+    override fun hasProperty(property: SProperty) = getProperty(property) != null
+
+    override fun getProperty(property: SProperty): String? = this.node.getPropertyValue(MPSProperty(property))
+
+    override fun setProperty(property: SProperty, propertyValue: String?) =
+        this.node.setPropertyValue(MPSProperty(property), propertyValue)
+
+    override fun getUserObject(key: Any) = userObjects[key]
+
+    override fun putUserObject(key: Any, value: Any?) {
+        userObjects[key] = value
     }
 
-    override fun getChildren(): MutableIterable<SNode> {
-        TODO("Not yet implemented")
+    override fun getUserObjectKeys() = userObjects.keys
+
+    @Deprecated("Deprecated in Java")
+    override fun getRoleInParent() = containmentLink?.name
+
+    @Deprecated("Deprecated in Java")
+    override fun hasProperty(propertyName: String) = getProperty(propertyName) != null
+
+    @Deprecated("Deprecated in Java")
+    override fun getProperty(propertyName: String): String? = getProperty(findProperty(propertyName))
+
+    @Deprecated("Deprecated in Java")
+    override fun setProperty(propertyName: String, propertyValue: String?) =
+        setProperty(findProperty(propertyName), propertyValue)
+
+    @Deprecated("Deprecated in Java")
+    override fun getPropertyNames() = properties.map { it.name }
+
+    @Deprecated("Deprecated in Java")
+    override fun setReferenceTarget(role: String?, target: SNode?) = setReferenceTarget(findReferenceLink(role), target)
+
+    @Deprecated("Deprecated in Java")
+    override fun getReferenceTarget(role: String?) = getReferenceTarget(findReferenceLink(role))
+
+    private fun findReferenceLink(name: String?) = concept.referenceLinks.firstOrNull { it.name == name }
+        ?: throw RuntimeException("${concept.name} doesn't have a reference link '$name'")
+
+    private fun findChildLink(name: String?) = concept.containmentLinks.firstOrNull { it.name == name }
+        ?: throw RuntimeException("${concept.name} doesn't have a reference link '$name'")
+
+    private fun findProperty(name: String): SProperty {
+        val properties = getConcept().properties
+        return properties.firstOrNull { it.name == name }
+            ?: throw RuntimeException("${getConcept().name} doesn't have a property '$name'")
     }
 
-    override fun getChildren(role: String?): MutableIterable<SNode> {
-        TODO("Not yet implemented")
+    @Deprecated("Deprecated in Java")
+    override fun getReference(role: String?) = getReference(findReferenceLink(role))
+
+    @Deprecated("Deprecated in Java")
+    override fun setReference(role: String?, reference: SReference?) =
+        setReference(findReferenceLink(role), reference)
+
+    @Deprecated("Deprecated in Java")
+    override fun insertChildBefore(role: String?, child: SNode, anchor: SNode?) {
+        val link = findChildLink(role)
+        val children = IterableUtil.asIterable(node.getChildren(role).iterator())
+        var index = -1
+        if (anchor != null) {
+            index = children.indexOf(MPSNode.wrap(anchor))
+            if (index == -1) {
+                throw RuntimeException("$anchor is not a child of $node")
+            }
+        }
+        node.addNewChild(MPSChildLink(link), index, MPSConcept.wrap(child.concept))
     }
 
-    override fun setReferenceTarget(role: SReferenceLink, target: SNode?) {
-        TODO("Not yet implemented")
+    @Deprecated("Deprecated in Java")
+    override fun addChild(role: String?, child: SNode) = addChild(findChildLink(role), child)
+
+    @Deprecated("Deprecated in Java")
+    override fun getChildren(role: String?) = getChildren(findChildLink(role))
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        if (other == null || other !is NodeAsMPSNode) {
+            return false
+        }
+        return node == other.node
     }
 
-    override fun setReferenceTarget(role: String?, target: SNode?) {
-        TODO("Not yet implemented")
-    }
+    override fun hashCode() = 31 + node.hashCode()
 
-    override fun setReference(role: SReferenceLink, resolveInfo: ResolveInfo?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setReference(role: SReferenceLink, target: SNodeReference) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setReference(role: SReferenceLink, reference: SReference?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setReference(role: String?, reference: SReference?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getReferenceTarget(role: SReferenceLink): SNode? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getReferenceTarget(role: String?): SNode {
-        TODO("Not yet implemented")
-    }
-
-    override fun dropReference(role: SReferenceLink) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getReferences(): MutableIterable<SReference> {
-        TODO("Not yet implemented")
-    }
-
-    override fun getProperties(): MutableIterable<SProperty> {
-        TODO("Not yet implemented")
-    }
-
-    override fun hasProperty(property: SProperty): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun hasProperty(propertyName: String?): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun getProperty(property: SProperty): String? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getProperty(propertyName: String?): String {
-        TODO("Not yet implemented")
-    }
-
-    override fun setProperty(property: SProperty, propertyValue: String?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setProperty(propertyName: String?, propertyValue: String?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getUserObject(key: Any?): Any {
-        TODO("Not yet implemented")
-    }
-
-    override fun putUserObject(key: Any?, value: Any?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getUserObjectKeys(): MutableIterable<Any> {
-        TODO("Not yet implemented")
-    }
-
-    override fun getRoleInParent(): String {
-        TODO("Not yet implemented")
-    }
-
-    override fun getPropertyNames(): MutableIterable<String> {
-        TODO("Not yet implemented")
-    }
-
-    inner class NodeId : SNodeId {
-        override fun getType() = "shadowmodelsAdapter"
-
-        override fun toString() = ":${node.reference}"
-    }
+    override fun toString() = "NodeToSNodeAdapter[$node]"
 
     inner class NodeReference : SNodeReference {
         override fun resolve(repository: SRepository) = this@NodeAsMPSNode
@@ -285,6 +354,12 @@ class NodeAsMPSNode(private val node: INode, private val repository: SRepository
             }
 
         fun getNode(): NodeAsMPSNode = this@NodeAsMPSNode
+    }
+
+    inner class NodeId : SNodeId {
+        override fun getType() = "shadowmodelsAdapter"
+
+        override fun toString() = ":${node.reference}"
     }
 
     inner class Reference(private val link: SReferenceLink) : SReference {

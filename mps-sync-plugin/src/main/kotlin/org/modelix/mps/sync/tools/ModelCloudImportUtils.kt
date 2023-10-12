@@ -34,7 +34,7 @@ import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import org.modelix.mps.sync.transient.TransientModuleBinding
 import org.modelix.mps.sync.util.nodeIdAsLong
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 /**
  * This class is responsible for importing local MPS modules into the Modelix server
  */
@@ -99,14 +99,7 @@ object ModelCloudImportUtils {
             PersistedBindingConfiguration.getInstance(ProjectHelper.toIdeaProject(mpsProject))
                 .addTransientBoundProject(treeInRepository)
         } else {
-            // TODO How to translate this correctly?
-            /*
-            val cloudProjectAsNodeToSNodeAdapter: NodeToSNodeAdapter = cloudProject as Any as NodeToSNodeAdapter
-            val cloudProjectAsINode: INode = cloudProjectAsNodeToSNodeAdapter.getWrapped()
-             */
-            val cloudProjectAsINode = cloudProject
-
-            val nodeId: Long = cloudProjectAsINode.nodeIdAsLong()
+            val nodeId: Long = cloudProject.nodeIdAsLong()
             binding = treeInRepository.addProjectBinding(nodeId, mpsProject!!, SyncDirection.TO_MPS)
             PersistedBindingConfiguration.getInstance(ProjectHelper.toIdeaProject(mpsProject))
                 .addTransientBoundProject(treeInRepository)

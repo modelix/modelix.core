@@ -44,13 +44,14 @@ import org.modelix.model.lazy.PrefetchCache
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSNode
+import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.mps.sync.ICloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.Synchronizer
 import org.modelix.mps.sync.util.index
 import org.modelix.mps.sync.util.mapToMpsNode
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class ModelSynchronizer(
     private val modelNodeId: Long,
     private val model: SModel,
@@ -210,13 +211,11 @@ class ModelSynchronizer(
                 if (targetNode is PNodeAdapter) {
                     targetAsPNodeAdapter = targetNode
                 }
-                if (targetAsPNodeAdapter == null) {
-                    // TODO org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found...
-                    // NodeToSNodeAdapter.wrap(targetNode, repo);
-                    targetSNode = null
+                targetSNode = if (targetAsPNodeAdapter == null) {
+                    NodeAsMPSNode.wrap(targetNode, repo)
                 } else {
                     val targetId = targetAsPNodeAdapter.nodeId
-                    targetSNode = if (targetId == 0L) {
+                    if (targetId == 0L) {
                         null
                     } else {
                         getOrCreateMPSNode(targetId, tree)

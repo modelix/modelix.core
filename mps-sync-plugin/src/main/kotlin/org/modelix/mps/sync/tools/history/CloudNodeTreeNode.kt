@@ -20,7 +20,6 @@ import com.intellij.icons.AllIcons
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.icons.GlobalIconManager
 import jetbrains.mps.ide.ui.tree.TextTreeNode
-import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
@@ -31,6 +30,7 @@ import org.modelix.model.area.ContextArea
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
 import org.modelix.model.mpsadapters.MPSArea
+import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.icons.LoadingIcon
 import org.modelix.mps.sync.util.CommandHelper
@@ -107,9 +107,7 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
                     val concept = node.concept
                     if (concept != null) {
                         mappedMPSNodeID = node.mappedMpsNodeID()
-                        // TODO fixme. org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found...
-                        // NodeToSNodeAdapter.wrap(node)
-                        val snode: SNode = null!!
+                        val snode = NodeAsMPSNode.wrap(node)!!
                         val mpsRepo = CommandHelper.getSRepository()
                         mpsRepo.modelAccess.runReadAction {
                             ContextArea.withAdditionalContext(MPSArea(mpsRepo)) {

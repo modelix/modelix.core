@@ -17,7 +17,11 @@
 package org.modelix.mps.sync.connection
 
 import org.jetbrains.mps.openapi.module.SRepository
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
+import org.modelix.model.api.ITree
+import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.CompositeArea
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
@@ -30,7 +34,7 @@ import java.net.URL
 import java.util.stream.Stream
 import kotlin.streams.toList
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class ModelServerConnections private constructor() {
 
     companion object {
@@ -106,19 +110,12 @@ class ModelServerConnections private constructor() {
     fun getConnectedTreesInRepositories() = getConnectedModelServers().flatMap { it.trees() }
 
     fun resolveCloudModel(repositoryId: String): INode {
-        // should return org.modelix.model.repositoryconcepts.structure.Repository
-
         val repo = getConnectedModelServers().first()
         val activeBranch = repo.getActiveBranch(RepositoryId(repositoryId))
 
-        // TODO fixme. org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found...
-        /*
-        NodeToSNodeAdapter.wrap(new PNodeAdapter(ITree.ROOT_ID, activeBranch.getBranch()) {
-            override fun getConcept() = BuiltinLanguages.MPSRepositoryConcepts.Repository
-        }, MPSModuleRepository.getInstance()):Repository;
-         */
-
-        return null!!
+        return object : PNodeAdapter(ITree.ROOT_ID, activeBranch.branch) {
+            override val concept: IConcept = BuiltinLanguages.MPSRepositoryConcepts.Repository
+        }
     }
 
     fun dispose() {

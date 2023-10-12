@@ -33,18 +33,20 @@ import org.modelix.model.data.NodeData
 data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
 
     companion object {
-        fun wrap(nodeToWrap: SNode?): INode? {
-            return if (nodeToWrap == null) {
-                null
+        fun wrap(nodeToWrap: SNode?) =
+            when (nodeToWrap) {
+                null -> {
+                    null
+                }
+
+                is NodeAsMPSNode -> {
+                    nodeToWrap.wrapped
+                }
+
+                else -> {
+                    MPSNode(nodeToWrap)
+                }
             }
-            // TODO fixme NodeToSNodeAdapter
-            /*  else if (nodeToWrap is NodeToSNodeAdapter) {
-                return (nodeToWrap as NodeToSNodeAdapter).getWrapped()
-            }*/
-            else {
-                MPSNode(nodeToWrap)
-            }
-        }
     }
 
     override fun getArea(): IArea {

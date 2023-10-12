@@ -19,17 +19,18 @@ package org.modelix.mps.sync
 import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SContainmentLink
-import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.getConcept
 import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.RootBinding
@@ -123,15 +124,10 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
         }
     }
 
-    // TODO fixme. Consumer's generics type must be org.modelix.model.repositoryconcepts.Project instead of Any
     fun processProjects(consumer: Consumer<Any>) {
         processRepoRoots { iNode ->
-            // TODO fixme. org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter is not found...
-            // NodeToSNodeAdapter.wrap(iNode)
-            val sNode: SNode = null!!
-
-            // TODO fixme. org.modelix.model.repositoryconcepts.Project must be used instead of Any
-            if (sNode is Any) {
+            val sNode = NodeAsMPSNode.wrap(iNode)!!
+            if (iNode.getConcept() is BuiltinLanguages.MPSRepositoryConcepts.Project) {
                 consumer.accept(sNode)
             }
         }

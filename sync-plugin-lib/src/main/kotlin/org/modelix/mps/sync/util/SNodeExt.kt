@@ -22,8 +22,9 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.index
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSNode
+import org.modelix.model.mpsadapters.NodeAsMPSNode
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 
 fun SNode.index() = MPSNode(this).index()
 
@@ -32,7 +33,5 @@ fun SNode.addNewChild(role: SContainmentLink) = this.addNewChild(role, -1, role.
 fun SNode.addNewChild(role: SContainmentLink, index: Int, childConcept: SAbstractConcept?): SNode {
     val newChild = MPSNode.wrap(this)?.addNewChild(role.name, index, MPSConcept.wrap(childConcept))
         ?: throw RuntimeException("addNewChild has to return the created child node")
-    // TODO fixme NodeToSNodeAdapter
-    // return NodeToSNodeAdapter.wrap(newChild)
-    return null!!
+    return NodeAsMPSNode.wrap(newChild)!!
 }

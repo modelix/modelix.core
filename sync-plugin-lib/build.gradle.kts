@@ -14,6 +14,7 @@ kotlin {
 }
 
 // use the given MPS version, or 2022.2 (last version with JAVA 11) as default
+// fix TODOs use ModuleDependencyVersions when switching for MPS 2021.3
 val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
 
 val mpsZip by configurations.creating

@@ -18,13 +18,12 @@ package org.modelix.mps.sync.binding
 
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelDescriptorStub
+import jetbrains.mps.lang.migration.runtime.base.VersionFixer
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.Language
-import jetbrains.mps.smodel.ModuleDependencyVersions
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
-import jetbrains.mps.smodel.language.LanguageRegistry
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.modelix.model.api.BuiltinLanguages
@@ -62,10 +61,13 @@ class ModelPropertiesSynchronizer(
             try {
                 val projects = ProjectManager.getInstance().openedProjects
                 if (projects.isNotEmpty()) {
-                    val repository = model.module.repository!!
+                    VersionFixer(projects.first(), model.module, true).updateImportVersions()
+
+                    // TODO use ModuleDependencyVersions when switching for MPS 2021.3
+                    /*val repository = model.module.repository!!
                     val updater = ModuleDependencyVersions(LanguageRegistry.getInstance(repository), repository)
                     updater.resetVersions()
-                    updater.update(model.module)
+                    updater.update(model.module)*/
                 }
             } catch (ex: Exception) {
                 logger.error("Failed to update language version after change in model ${model.name.value}", ex)

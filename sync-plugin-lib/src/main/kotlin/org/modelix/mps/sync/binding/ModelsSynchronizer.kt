@@ -16,10 +16,9 @@
 
 package org.modelix.mps.sync.binding
 
+import jetbrains.mps.lang.migration.runtime.base.VersionFixer
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.project.ProjectManager
-import jetbrains.mps.smodel.ModuleDependencyVersions
-import jetbrains.mps.smodel.language.LanguageRegistry
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
@@ -114,10 +113,13 @@ open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) 
         val result = super.syncToMPS(tree)
         val projects = ProjectManager.getInstance().openedProjects
         if (projects.isNotEmpty()) {
-            val repository = module.repository!!
+            VersionFixer(projects.first(), module, true).updateImportVersions()
+
+            // TODO use ModuleDependencyVersions when switching for MPS 2021.3
+            /*val repository = module.repository!!
             val updater = ModuleDependencyVersions(LanguageRegistry.getInstance(repository), repository)
             updater.resetVersions()
-            updater.update(module)
+            updater.update(module)*/
         }
         return result
     }

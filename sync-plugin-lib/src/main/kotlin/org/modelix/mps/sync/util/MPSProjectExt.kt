@@ -18,14 +18,13 @@ package org.modelix.mps.sync.util
 
 import com.intellij.openapi.vfs.LocalFileSystem
 import jetbrains.mps.ide.newSolutionDialog.NewModuleUtil
+import jetbrains.mps.lang.migration.runtime.base.VersionFixer
 import jetbrains.mps.project.MPSExtentions
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.structure.modules.SolutionDescriptor
 import jetbrains.mps.smodel.GeneralModuleFactory
-import jetbrains.mps.smodel.ModuleDependencyVersions
-import jetbrains.mps.smodel.language.LanguageRegistry
 import jetbrains.mps.vfs.IFile
 import org.jetbrains.mps.openapi.module.SModule
 import java.io.File
@@ -78,7 +77,10 @@ fun MPSProject.createModule(nameSpace: String, moduleId: ModuleId, requestor: An
 
     val module = GeneralModuleFactory().instantiate(descriptor, descriptorFile) as Solution
     this.addModule(module)
-    ModuleDependencyVersions(LanguageRegistry.getInstance(repository), repository).update(module)
+    VersionFixer(this, module, false).updateImportVersions()
+
+    // TODO use ModuleDependencyVersions when switching for MPS 2021.3
+    // ModuleDependencyVersions(LanguageRegistry.getInstance(repository), repository).update(module)
     module.save()
     return module
 }

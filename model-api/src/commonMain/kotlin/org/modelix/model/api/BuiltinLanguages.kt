@@ -190,6 +190,40 @@ object BuiltinLanguages {
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4008363636171860450",
             )
+
+            val projectModules = SimpleChildLink(
+                simpleName = "projectModules",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = ProjectModule,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4201834143491306088",
+            )
+        }
+
+        object ProjectModule : SimpleConcept(
+            conceptName = "ProjectModule",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/4201834143491306084",
+            directSuperConcepts = listOf(ModuleReference),
+        ) {
+            init { addConcept(this) }
+
+            val virtualFolder by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/4201834143491306084/4201834143491306085")
+        }
+
+        object ModuleReference : SimpleConcept(
+            conceptName = "ModuleReference",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/5782622473578468308",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+
+            init { addConcept(this) }
+
+            val module = SimpleReferenceLink(
+                simpleName = "module",
+                isOptional = false,
+                targetConcept = Module,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/5782622473578468308/5782622473578468333",
+            )
         }
 
         object ModelReference : SimpleConcept(

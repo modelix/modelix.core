@@ -30,11 +30,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Build with ${{ matrix.version }}
+      - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
-        with:
-          arguments: |
-            --build-cache
-            :mps-model-adapters:build
-            :mps-model-server-plugin:build
-            -Pmps.version=${{ matrix.version }}
+      - name: Build with ${{ matrix.version }}
+        run: ./gradlew --build-cache :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=${{ matrix.version }}

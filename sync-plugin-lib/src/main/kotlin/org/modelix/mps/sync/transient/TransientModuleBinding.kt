@@ -27,7 +27,7 @@ import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.util.ModelixNotifications
 import java.util.concurrent.atomic.AtomicInteger
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, SyncDirection.TO_MPS) {
 
     companion object {

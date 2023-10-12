@@ -34,12 +34,8 @@ class ModuleCheckout(private val mpsProject: Project, private val treeInReposito
         val moduleIds = hashSetOf(cloudModule.nodeId)
         var solutions = listOf<Solution>()
 
-        val runnable = Runnable() {
-            fun run() {
-                // TODO How to translate this correctly?
-                /* command with mpsProject.getRepository() {
-                    solutions = modelCloudExporter.export(exportPath, moduleIds, mpsProject);
-                }*/
+        val runnable = Runnable {
+            mpsProject.repository.modelAccess.executeCommand {
                 solutions = modelCloudExporter.export(exportPath, moduleIds, mpsProject)
             }
         }

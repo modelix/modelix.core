@@ -24,7 +24,7 @@ import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.modelix.mps.sync.util.WriteAccessUtil
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class CloudTransientModules private constructor(private val mpsRepository: SRepositoryExt) {
 
     companion object {

@@ -35,6 +35,7 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.PArea
 import org.modelix.model.mpsadapters.DevKitDependencyAsNode
 import org.modelix.model.mpsadapters.MPSModelAsNode
+import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.model.mpsadapters.SingleLanguageDependencyAsNode
 import org.modelix.mps.sync.ICloudRepository
 import org.modelix.mps.sync.util.addDevKit
@@ -45,7 +46,7 @@ import org.modelix.mps.sync.util.replicateChild
 import org.modelix.mps.sync.util.runInWriteActionIfNeeded
 import java.util.UUID
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class ModelPropertiesSynchronizer(
     private val modelNodeId: Long,
     private val model: SModel,
@@ -242,13 +243,10 @@ class ModelPropertiesSynchronizer(
                                 }
                             }
                             if (matchingDependencyInCloud == null) {
-                                // TODO fixme. getElement() does not exist, because mpsModelNode should be SModelAsNode...
-                                // getElement() is supposed to return an SModel
-                                // dependencyInMPS.getElement().getReference();
-                                val modelReferenceToRemove: SModelReference = null!!
-                                if (mpsModelNode.model is SModelDescriptorStub) {
-                                    val descriptorStub = mpsModelNode.model as SModelDescriptorStub
-                                    descriptorStub.deleteModelImport(modelReferenceToRemove)
+                                val modelReferenceToRemove: SModelReference =
+                                    NodeAsMPSNode.wrap(dependencyInMPS, model.repository)?.model?.reference!!
+                                if (model is SModelDescriptorStub) {
+                                    model.deleteModelImport(modelReferenceToRemove)
                                 }
                             }
                         }

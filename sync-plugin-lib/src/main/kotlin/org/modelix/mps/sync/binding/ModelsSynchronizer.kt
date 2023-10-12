@@ -32,7 +32,7 @@ import org.modelix.mps.sync.synchronization.Synchronizer
 import org.modelix.mps.sync.util.createModel
 import org.modelix.mps.sync.util.getModelsWithoutDescriptor
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 open class ModelsSynchronizer(cloudParentId: Long, private val module: SModule) :
     Synchronizer<SModel>(cloudParentId, BuiltinLanguages.MPSRepositoryConcepts.Module.models.getSimpleName()) {
 

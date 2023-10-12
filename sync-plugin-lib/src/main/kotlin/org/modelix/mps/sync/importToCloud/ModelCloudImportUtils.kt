@@ -19,8 +19,6 @@ package org.modelix.mps.sync.importToCloud
 import jetbrains.mps.progress.EmptyProgressMonitor
 import jetbrains.mps.project.MPSProject
 import kotlinx.collections.immutable.toImmutableList
-import org.jetbrains.mps.openapi.language.SConcept
-import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
@@ -42,7 +40,7 @@ import org.modelix.mps.sync.util.getModelsWithoutDescriptor
 import org.modelix.mps.sync.util.mapToMpsNode
 import java.util.function.Consumer
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 /**
  * This class is responsible for importing local MPS modules into the Modelix server
  */
@@ -126,11 +124,11 @@ object ModelCloudImportUtils {
      */
     private fun copyPhysicalModel(treeInRepository: CloudRepository, cloudModule: INode, physicalModel: SModel): INode {
         val originalModel = MPSModelAsNode.wrap(physicalModel)!!
-        val modelConcept: SConcept =
-            null!! // TODO fixme convert BuiltinLanguages.MPSRepositoryConcepts.Model to SConcept
-        val containmentLink: SContainmentLink =
-            null!! // TODO fixme convert BuiltinLanguages.MPSRepositoryConcepts.Module.models to SContainmentLink
-        return treeInRepository.createNode(cloudModule, containmentLink, modelConcept) { cloudModel: INode ->
+        return treeInRepository.createNode(
+            cloudModule,
+            BuiltinLanguages.MPSRepositoryConcepts.Module.models,
+            BuiltinLanguages.MPSRepositoryConcepts.Model,
+        ) { cloudModel: INode ->
             cloudModel.copyProperty(originalModel, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
             cloudModel.copyProperty(originalModel, BuiltinLanguages.MPSRepositoryConcepts.Model.id)
 

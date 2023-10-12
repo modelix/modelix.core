@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 
-// status: migrated, but needs some bugfixes
-class SyncQueue(val owner: RootBinding) {
+// status: ready to test
+class SyncQueue(private val owner: RootBinding) {
 
     private val logger = logger<SyncQueue>()
 

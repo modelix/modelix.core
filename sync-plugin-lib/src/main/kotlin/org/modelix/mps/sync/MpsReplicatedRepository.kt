@@ -34,7 +34,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.UndoOp
 import org.modelix.model.operations.applyOperation
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class MpsReplicatedRepository(
     client: IModelClient,
     repositoryId: RepositoryId,
@@ -113,7 +113,7 @@ class MpsReplicatedRepository(
             }
         }
 
-        override fun isGlobal(): Boolean = TODO()
+        override fun isGlobal(): Boolean = false
 
         @Throws(UnexpectedUndoException::class)
         override fun redo() {

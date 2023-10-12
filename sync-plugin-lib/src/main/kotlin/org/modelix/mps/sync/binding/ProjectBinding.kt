@@ -27,7 +27,7 @@ import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.mps.sync.synchronization.SyncDirection
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class ProjectBinding(val mpsProject: MPSProject, projectNodeId: Long, initialSyncDirection: SyncDirection) :
     Binding(initialSyncDirection) {
 

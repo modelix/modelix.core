@@ -17,9 +17,8 @@
 package org.modelix.mps.sync
 
 import jetbrains.mps.project.MPSProject
-import org.jetbrains.mps.openapi.language.SConcept
-import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReadTransaction
@@ -29,7 +28,6 @@ import org.modelix.model.api.getConcept
 import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ProjectBinding
@@ -42,7 +40,7 @@ import org.modelix.mps.sync.util.createModuleInRepository
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.function.Consumer
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class CloudRepository(public val modelServer: ModelServerConnection, private val repositoryId: RepositoryId) :
     ICloudRepository {
 
@@ -242,21 +240,14 @@ class CloudRepository(public val modelServer: ModelServerConnection, private val
 
     fun createNode(
         parent: INode,
-        containmentLink: SContainmentLink,
+        containmentLink: IChildLink,
         concept: IConcept,
         initializer: Consumer<INode>,
     ) = computeWrite {
-        val newNode = parent.addNewChild(containmentLink.name, -1, concept)
+        val newNode = parent.addNewChild(containmentLink, -1, concept)
         initializer.accept(newNode)
         newNode
     }
-
-    fun createNode(
-        parent: INode,
-        containmentLink: SContainmentLink,
-        concept: SConcept,
-        initializer: Consumer<INode>,
-    ) = createNode(parent, containmentLink, MPSConcept.wrap(concept)!!, initializer)
 
     fun createModule(moduleName: String) =
         this.computeWrite { rootNode -> rootNode.createModuleInRepository(moduleName) }

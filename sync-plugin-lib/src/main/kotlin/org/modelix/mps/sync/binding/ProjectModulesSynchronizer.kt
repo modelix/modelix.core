@@ -32,7 +32,7 @@ import org.modelix.mps.sync.synchronization.Synchronizer
 import org.modelix.mps.sync.util.createModule
 import java.util.Collections
 
-// status: migrated, but needs some bugfixes
+// status: ready to test
 class ProjectModulesSynchronizer(cloudParentId: Long, private val project: MPSProject) :
     Synchronizer<SModule>(cloudParentId, BuiltinLanguages.MPSRepositoryConcepts.Project.modules.getSimpleName()) {
 

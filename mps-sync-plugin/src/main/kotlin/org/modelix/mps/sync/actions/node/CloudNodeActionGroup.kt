@@ -24,6 +24,9 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 class CloudNodeActionGroup : ActionGroup() {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
-        return arrayOf(ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddProjectNode"))
+        return arrayOf(
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddProjectNode"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddModuleNode"),
+        )
     }
 }

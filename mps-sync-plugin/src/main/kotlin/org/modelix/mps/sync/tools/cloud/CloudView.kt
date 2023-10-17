@@ -91,6 +91,8 @@ class CloudView : JPanel(BorderLayout()) {
                         ActionManager.getInstance()
                             .getAction("org.modelix.mps.sync.actions.repository.LoadHistoryForRepository"),
                         ActionManager.getInstance()
+                            .getAction("org.modelix.mps.sync.actions.repository.RemoveRepository"),
+                        ActionManager.getInstance()
                             .getAction("org.modelix.mps.sync.actions.repository.GetCloudRepositorySize"),
                     )
                 }

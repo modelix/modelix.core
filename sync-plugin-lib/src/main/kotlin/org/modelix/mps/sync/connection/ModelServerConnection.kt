@@ -142,7 +142,7 @@ class ModelServerConnection {
         logger.debug("connected to $baseUrl")
     }
 
-    private fun getAuthor(): String {
+    fun getAuthor(): String {
         var email = this.email
         if (email == "<no email>") {
             email = null

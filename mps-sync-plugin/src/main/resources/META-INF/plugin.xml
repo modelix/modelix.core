@@ -113,5 +113,10 @@
                 class="org.modelix.mps.sync.actions.modelServer.RemoveModelServer"
                 text="Remove Model Server"
                 description="Remove model server"/>
+
+        <action id="org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfo"
+                class="org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfo"
+                text="Show Authentication Info"
+                description="Show authentication info"/>
     </actions>
 </idea-plugin>

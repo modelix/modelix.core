@@ -78,6 +78,7 @@ class CloudView : JPanel(BorderLayout()) {
                         ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.modelServer.AddRepository"),
                         ActionManager.getInstance()
                             .getAction("org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfo"),
+                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.modelServer.Reconnect"),
                     )
                 }
 

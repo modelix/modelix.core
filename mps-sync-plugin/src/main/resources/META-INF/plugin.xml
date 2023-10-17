@@ -118,5 +118,10 @@
                 class="org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfo"
                 text="Show Authentication Info"
                 description="Show authentication info"/>
+
+        <action id="org.modelix.mps.sync.actions.modelServer.Reconnect"
+                class="org.modelix.mps.sync.actions.modelServer.Reconnect"
+                text="Reconnect"
+                description="Reconnect to model server"/>
     </actions>
 </idea-plugin>

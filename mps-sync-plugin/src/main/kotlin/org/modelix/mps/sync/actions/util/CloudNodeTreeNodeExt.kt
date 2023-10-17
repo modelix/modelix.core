@@ -20,7 +20,10 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.mps.sync.CloudRepository
+import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.history.ModelServerTreeNode
 import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 import org.modelix.mps.sync.transient.TransientModuleBinding
 
@@ -64,4 +67,10 @@ fun CloudNodeTreeNode.getTransientModuleBinding(): TransientModuleBinding? {
     } else {
         throw IllegalStateException("Multiple transient bindings for the same module are not expected")
     }
+}
+
+fun CloudNodeTreeNode.getTreeInRepository(): CloudRepository {
+    val modelServer: ModelServerConnection = getAncestor(ModelServerTreeNode::class.java).modelServer
+    val repositoryId: RepositoryId = getAncestor(RepositoryTreeNode::class.java).repositoryId
+    return CloudRepository(modelServer, repositoryId)
 }

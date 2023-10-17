@@ -19,7 +19,6 @@ package org.modelix.mps.sync.actions.util
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.area.PArea
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
-import org.modelix.mps.sync.transient.TransientModuleBinding
 import javax.swing.tree.TreeNode
 
 fun TreeNode.isRootNode(): Boolean {
@@ -37,6 +36,8 @@ fun TreeNode.isProjectNode(): Boolean {
     return nodeTreeNode?.isCloudNodeAProjectNode() ?: false
 }
 
+fun TreeNode.isProperNode(): Boolean = this is CloudNodeTreeNode
+
 /**
  * This does not consider if this is a module, and it is bound indirectly because the whole project is bound.
  */
@@ -44,9 +45,6 @@ fun TreeNode.isBoundAsModule(): Boolean {
     val nodeTreeNode = this as? CloudNodeTreeNode
     return nodeTreeNode?.isBoundAsAModule() ?: false
 }
-
-fun TreeNode.getTransientModuleBinding(): TransientModuleBinding? =
-    (this as? CloudNodeTreeNode)?.getTransientModuleBinding()
 
 fun TreeNode.getName(): String? {
     val nodeTreeNode = this as? CloudNodeTreeNode ?: return null

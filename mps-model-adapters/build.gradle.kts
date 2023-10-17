@@ -4,6 +4,7 @@ plugins {
 }
 
 val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2021.1.4"
+println("Building for MPS version $mpsVersion")
 
 dependencies {
     api(project(":model-api"))

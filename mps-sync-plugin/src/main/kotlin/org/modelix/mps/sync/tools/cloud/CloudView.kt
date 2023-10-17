@@ -82,7 +82,9 @@ class CloudView : JPanel(BorderLayout()) {
                 return ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.CloudBranchGroup_ActionGroup")
             }
             return if (node is CloudBindingTreeNode) {
-                ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.CloudBindingGroup_ActionGroup")
+                ActionUtils.groupFromActions(
+                    ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.unbind.Unbind"),
+                )
             } else {
                 null
             }

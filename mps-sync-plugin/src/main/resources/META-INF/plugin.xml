@@ -83,5 +83,9 @@
             <add-to-group group-id="ToolsMenu" anchor="first"/>
         </group>
 
+        <action id="org.modelix.mps.sync.actions.unbind.Unbind"
+                class="org.modelix.mps.sync.actions.unbind.Unbind"
+                text="Unbind"
+                description="Unbinds a binding attached to a Tree Node."/>
     </actions>
 </idea-plugin>

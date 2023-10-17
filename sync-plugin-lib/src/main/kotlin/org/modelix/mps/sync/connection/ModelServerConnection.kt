@@ -239,7 +239,7 @@ class ModelServerConnection {
         addBinding(repositoryId, binding, null)
     }
 
-    private fun removeBinding(binding: Binding) {
+    fun removeBinding(binding: Binding) {
         binding.deactivate(null)
         binding.owner = null
     }

@@ -173,5 +173,10 @@
                 class="org.modelix.mps.sync.actions.node.DeleteProject"
                 text="Delete Project"
                 description="Delete project"/>
+
+        <action id="org.modelix.mps.sync.actions.node.DeleteModule"
+                class="org.modelix.mps.sync.actions.node.DeleteModule"
+                text="Delete Module"
+                description="Delete module"/>
     </actions>
 </idea-plugin>

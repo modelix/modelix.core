@@ -28,3 +28,8 @@ fun TreeNode.isModuleNode(): Boolean {
     val nodeTreeNode = this as? CloudNodeTreeNode
     return nodeTreeNode?.isCloudNodeModuleNode() ?: false
 }
+
+fun TreeNode.isProjectNode(): Boolean {
+    val nodeTreeNode = this as? CloudNodeTreeNode
+    return nodeTreeNode?.isCloudNodeAProjectNode() ?: false
+}

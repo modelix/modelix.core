@@ -28,6 +28,7 @@ class CloudNodeActionGroup : ActionGroup() {
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddProjectNode"),
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddModuleNode"),
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddModelNode"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddProjectBinding"),
         )
     }
 }

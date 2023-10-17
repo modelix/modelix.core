@@ -34,3 +34,8 @@ fun CloudNodeTreeNode.isCloudNodeModuleNode(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Module)
 }
+
+fun CloudNodeTreeNode.isCloudNodeAProjectNode(): Boolean {
+    val concept = this.concept ?: return false
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Project)
+}

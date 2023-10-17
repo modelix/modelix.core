@@ -158,5 +158,10 @@
                 class="org.modelix.mps.sync.actions.node.AddModelNode"
                 text="Add Model"
                 description="Add model"/>
+
+        <action id="org.modelix.mps.sync.actions.node.AddProjectBinding"
+                class="org.modelix.mps.sync.actions.node.AddProjectBinding"
+                text="Bind to Current Project"
+                description="Bind to current project"/>
     </actions>
 </idea-plugin>

@@ -138,5 +138,15 @@
                 class="org.modelix.mps.sync.actions.repository.RemoveRepository"
                 text="Remove Repository"
                 description="Remove repository"/>
+
+        <group id="org.modelix.mps.sync.actions.node.CloudNodeActionGroup"
+               class="org.modelix.mps.sync.actions.node.CloudNodeActionGroup"
+               text="Cloud Node Group"
+               description="Cloud node action group"/>
+
+        <action id="org.modelix.mps.sync.actions.node.AddProjectNode"
+                class="org.modelix.mps.sync.actions.node.AddProjectNode"
+                text="Add Project"
+                description="Add project"/>
     </actions>
 </idea-plugin>

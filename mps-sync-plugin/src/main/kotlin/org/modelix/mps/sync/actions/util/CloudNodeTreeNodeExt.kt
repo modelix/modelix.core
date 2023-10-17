@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.actions.util
 
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
@@ -27,4 +28,9 @@ fun CloudNodeTreeNode.isCloudNodeRootNode(): Boolean {
     } else {
         node.nodeId == ITree.ROOT_ID
     }
+}
+
+fun CloudNodeTreeNode.isCloudNodeModuleNode(): Boolean {
+    val concept = this.concept ?: return false
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Module)
 }

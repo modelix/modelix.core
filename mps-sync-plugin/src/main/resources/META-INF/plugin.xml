@@ -153,5 +153,10 @@
                 class="org.modelix.mps.sync.actions.node.AddModuleNode"
                 text="Add Module"
                 description="Add module"/>
+
+        <action id="org.modelix.mps.sync.actions.node.AddModelNode"
+                class="org.modelix.mps.sync.actions.node.AddModelNode"
+                text="Add Model"
+                description="Add model"/>
     </actions>
 </idea-plugin>

@@ -18,6 +18,7 @@ package org.modelix.mps.sync.actions.branch
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
 import javax.swing.Icon
 
@@ -28,8 +29,7 @@ class SwitchBranch : AnAction {
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
     override fun actionPerformed(event: AnActionEvent) {
-        // TODO testme how to get the tree node (possible workaround is to pass it via a setter method?)
-        val treeNode = event.dataContext.getData("treeNode") as CloudBranchTreeNode
+        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudBranchTreeNode
         treeNode.switchBranch()
     }
 }

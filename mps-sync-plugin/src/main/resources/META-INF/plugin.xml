@@ -92,5 +92,10 @@
                 class="org.modelix.mps.sync.actions.branch.SwitchBranch"
                 text="Switch Branch"
                 description="Switch to this Branch"/>
+
+        <action id="org.modelix.mps.sync.actions.branch.LoadHistoryForBranch"
+                class="org.modelix.mps.sync.actions.branch.LoadHistoryForBranch"
+                text="Show History"
+                description="Show history"/>
     </actions>
 </idea-plugin>

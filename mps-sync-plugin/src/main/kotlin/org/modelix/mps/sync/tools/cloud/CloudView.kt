@@ -86,6 +86,8 @@ class CloudView : JPanel(BorderLayout()) {
                 is CloudBranchTreeNode -> {
                     ActionUtils.groupFromActions(
                         ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.branch.SwitchBranch"),
+                        ActionManager.getInstance()
+                            .getAction("org.modelix.mps.sync.actions.branch.LoadHistoryForBranch"),
                     )
                 }
 

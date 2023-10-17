@@ -18,7 +18,9 @@ package org.modelix.mps.sync.actions.unbind
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.Project
+import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.tools.history.CloudBindingTreeNode
@@ -31,8 +33,7 @@ class Unbind : AnAction {
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
     override fun update(event: AnActionEvent) {
-        // TODO testme how to get the tree node (possible workaround is to pass it via a setter method?)
-        val treeNode = event.dataContext.getData("treeNode")
+        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
         val binding = (treeNode as CloudBindingTreeNode).binding
         val isApplicable = binding is ModuleBinding
 
@@ -41,16 +42,14 @@ class Unbind : AnAction {
     }
 
     override fun actionPerformed(event: AnActionEvent) {
-        // TODO testme how to get the tree node (possible workaround is to pass it via a setter method?)
-        val treeNode = event.dataContext.getData("treeNode")
+        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
         // Project binding cannot currently be removed
         val binding = (treeNode as CloudBindingTreeNode).binding as ModuleBinding
         val modelServer = treeNode.modelServer
         modelServer.removeBinding(binding)
         val repositoryInModelServer = treeNode.repositoryInModelServer
 
-        // TODO testme how to get the project
-        val project = event.dataContext.getData("project") as Project
+        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
         PersistedBindingConfiguration.getInstance(project).removeBoundModule(repositoryInModelServer, binding)
     }
 }

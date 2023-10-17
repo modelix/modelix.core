@@ -123,5 +123,10 @@
                 class="org.modelix.mps.sync.actions.modelServer.Reconnect"
                 text="Reconnect"
                 description="Reconnect to model server"/>
+
+        <action id="org.modelix.mps.sync.actions.repository.LoadHistoryForRepository"
+                class="org.modelix.mps.sync.actions.repository.LoadHistoryForRepository"
+                text="Show History"
+                description="Show history"/>
     </actions>
 </idea-plugin>

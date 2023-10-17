@@ -188,5 +188,10 @@
                 class="org.modelix.mps.sync.actions.node.RemoveTransientModuleBinding"
                 text="Unbind from Transient Module"
                 description="Unbind from transient module"/>
+
+        <action id="org.modelix.mps.sync.actions.node.CheckoutModule"
+                class="org.modelix.mps.sync.actions.node.CheckoutModule"
+                text="Checkout"
+                description="Checkout module"/>
     </actions>
 </idea-plugin>

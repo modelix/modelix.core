@@ -75,7 +75,7 @@ object ModelCloudImportUtils {
      * Take an INode already created and make sure it is exactly the same as the physical module given.
      * The modelMappingConsumer may be used to attach a model synchronizer, for example. It is optional.
      */
-    private fun replicatePhysicalModule(
+    fun replicatePhysicalModule(
         treeInRepository: CloudRepository,
         cloudModule: INode,
         physicalModule: SModule,

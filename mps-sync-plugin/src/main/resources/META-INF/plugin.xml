@@ -163,5 +163,10 @@
                 class="org.modelix.mps.sync.actions.node.AddProjectBinding"
                 text="Bind to Current Project"
                 description="Bind to current project"/>
+
+        <action id="org.modelix.mps.sync.actions.node.StoreAllModules"
+                class="org.modelix.mps.sync.actions.node.StoreAllModules"
+                text="Store Entire MPS Module Repository"
+                description="Store entire MPS module repository"/>
     </actions>
 </idea-plugin>

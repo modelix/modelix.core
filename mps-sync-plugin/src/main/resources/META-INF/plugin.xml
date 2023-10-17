@@ -45,14 +45,15 @@
                     factoryClass="org.modelix.mps.sync.tools.history.HistoryToolFactory"/>
 
         <!-- allows to 'edit modelix settings' in the settings dialog -->
-<!--        <projectConfigurable parentId="tools"-->
-<!--                             instance="org.modelix.mps.sync.configuration.settings.ProjectSettingsServiceConfigurable"-->
-<!--                             id="org.intellij.sdk.settings.PAppSettingsConfigurable"-->
-<!--                             displayName="SDK: Application Settings Example"-->
-<!--                             nonDefaultProject="true"/>-->
+        <!--        <projectConfigurable parentId="tools"-->
+        <!--                             instance="org.modelix.mps.sync.configuration.settings.ProjectSettingsServiceConfigurable"-->
+        <!--                             id="org.intellij.sdk.settings.PAppSettingsConfigurable"-->
+        <!--                             displayName="SDK: Application Settings Example"-->
+        <!--                             nonDefaultProject="true"/>-->
 
         <!-- service to handle storage of cloud details via project settings, aka .mps/modelix.xml -->
-        <projectService serviceImplementation="org.modelix.mps.sync.configuration.CloudResourcesConfigurationComponent"/>
+        <projectService
+                serviceImplementation="org.modelix.mps.sync.configuration.CloudResourcesConfigurationComponent"/>
 
         <!-- the actual service in charge of connecting and binding -->
         <applicationService serviceImplementation="org.modelix.mps.sync.ModelSyncService"/>
@@ -102,5 +103,10 @@
                 class="org.modelix.mps.sync.actions.branch.AddBranch"
                 text="New Branch"
                 description="Add new branch"/>
+
+        <action id="org.modelix.mps.sync.actions.modelServer.AddRepository"
+                class="org.modelix.mps.sync.actions.modelServer.AddRepository"
+                text="Add Repository"
+                description="Add repository"/>
     </actions>
 </idea-plugin>

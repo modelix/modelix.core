@@ -72,7 +72,9 @@ class CloudView : JPanel(BorderLayout()) {
                 }
 
                 is ModelServerTreeNode -> {
-                    ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.ModelServerGroup_ActionGroup")
+                    ActionUtils.groupFromActions(
+                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.modelServer.AddRepository"),
+                    )
                 }
 
                 is CloudNodeTreeNode -> {

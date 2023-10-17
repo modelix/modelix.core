@@ -108,5 +108,10 @@
                 class="org.modelix.mps.sync.actions.modelServer.AddRepository"
                 text="Add Repository"
                 description="Add repository"/>
+
+        <action id="org.modelix.mps.sync.actions.modelServer.RemoveModelServer"
+                class="org.modelix.mps.sync.actions.modelServer.RemoveModelServer"
+                text="Remove Model Server"
+                description="Remove model server"/>
     </actions>
 </idea-plugin>

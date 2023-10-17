@@ -87,5 +87,10 @@
                 class="org.modelix.mps.sync.actions.unbind.Unbind"
                 text="Unbind"
                 description="Unbinds a binding attached to a Tree Node."/>
+
+        <action id="org.modelix.mps.sync.actions.branch.SwitchBranch"
+                class="org.modelix.mps.sync.actions.branch.SwitchBranch"
+                text="Switch Branch"
+                description="Switch to this Branch"/>
     </actions>
 </idea-plugin>

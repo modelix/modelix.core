@@ -64,29 +64,40 @@ class CloudView : JPanel(BorderLayout()) {
         override fun createPopupActionGroup(node: MPSTreeNode): ActionGroup? {
             // TODO fixme, this method relies on the ActionGroups. We have to migrate those Groups as well and set the correct ID here!
             // alternative: use the actual SDK way to do these things? the groups are
-            if (node is CloudRootTreeNode) {
-                return ActionUtils.groupFromActions(
-                    ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.AddModelServerAction"),
-                )
-            }
-            if (node is ModelServerTreeNode) {
-                return ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.ModelServerGroup_ActionGroup")
-            }
-            if (node is CloudNodeTreeNode) {
-                return ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.CloudNodeGroup_ActionGroup")
-            }
-            if (node is RepositoryTreeNode) {
-                return ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.RepositoryGroup_ActionGroup")
-            }
-            if (node is CloudBranchTreeNode) {
-                return ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.CloudBranchGroup_ActionGroup")
-            }
-            return if (node is CloudBindingTreeNode) {
-                ActionUtils.groupFromActions(
-                    ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.unbind.Unbind"),
-                )
-            } else {
-                null
+            return when (node) {
+                is CloudRootTreeNode -> {
+                    ActionUtils.groupFromActions(
+                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.AddModelServerAction"),
+                    )
+                }
+
+                is ModelServerTreeNode -> {
+                    ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.ModelServerGroup_ActionGroup")
+                }
+
+                is CloudNodeTreeNode -> {
+                    ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.CloudNodeGroup_ActionGroup")
+                }
+
+                is RepositoryTreeNode -> {
+                    ActionUtils.getGroup("org.modelix.model.mpsplugin.plugin.RepositoryGroup_ActionGroup")
+                }
+
+                is CloudBranchTreeNode -> {
+                    ActionUtils.groupFromActions(
+                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.branch.SwitchBranch"),
+                    )
+                }
+
+                is CloudBindingTreeNode -> {
+                    ActionUtils.groupFromActions(
+                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.unbind.Unbind"),
+                    )
+                }
+
+                else -> {
+                    null
+                }
             }
         }
 

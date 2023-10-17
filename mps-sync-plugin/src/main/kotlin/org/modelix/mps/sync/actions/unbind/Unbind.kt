@@ -22,13 +22,18 @@ import com.intellij.openapi.project.Project
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.tools.history.CloudBindingTreeNode
+import javax.swing.Icon
 
-class Unbind : AnAction() {
+class Unbind : AnAction {
+
+    constructor() : super()
+
+    constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
     override fun update(event: AnActionEvent) {
         // TODO testme how to get the tree node (possible workaround is to pass it via a setter method?)
         val treeNode = event.dataContext.getData("treeNode")
-        val binding = (treeNode as? CloudBindingTreeNode)?.binding
+        val binding = (treeNode as CloudBindingTreeNode).binding
         val isApplicable = binding is ModuleBinding
 
         // Project binding cannot currently be removed

@@ -16,6 +16,8 @@
 
 package org.modelix.mps.sync.actions.util
 
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.area.PArea
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import javax.swing.tree.TreeNode
 
@@ -32,4 +34,41 @@ fun TreeNode.isModuleNode(): Boolean {
 fun TreeNode.isProjectNode(): Boolean {
     val nodeTreeNode = this as? CloudNodeTreeNode
     return nodeTreeNode?.isCloudNodeAProjectNode() ?: false
+}
+
+fun TreeNode.getName(): String? {
+    val nodeTreeNode = this as CloudNodeTreeNode
+    return PArea(nodeTreeNode.branch).executeRead { nodeTreeNode.node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) }
+}
+
+fun TreeNode.delete() {
+    val nodeTreeNode = this as CloudNodeTreeNode
+    val parent = nodeTreeNode.parent
+    PArea(nodeTreeNode.branch).executeWrite {
+        val nodeIN = nodeTreeNode.node
+        val parentIN = nodeIN.parent
+        if (parentIN == null) {
+            var found = false
+            nodeTreeNode.getModelServer()?.trees()?.forEach { tree ->
+                if (tree.repoRoots().contains(nodeIN)) {
+                    tree.deleteRoot(nodeIN)
+                    found = true
+                }
+            }
+            if (found) {
+                return@executeWrite
+            } else {
+                throw RuntimeException("Unable to remove node without parent, not found as root of any tree")
+            }
+        }
+        parentIN.removeChild(nodeIN)
+    }
+
+    check(parent != null) { "Cannot remove node without parent" }
+
+    if (parent is CloudNodeTreeNode) {
+        parent.remove(nodeTreeNode)
+    } else {
+        throw RuntimeException("Unable to remove child from parent $parent (${parent::class.java})")
+    }
 }

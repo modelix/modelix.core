@@ -168,5 +168,10 @@
                 class="org.modelix.mps.sync.actions.node.StoreAllModules"
                 text="Store Entire MPS Module Repository"
                 description="Store entire MPS module repository"/>
+
+        <action id="org.modelix.mps.sync.actions.node.DeleteProject"
+                class="org.modelix.mps.sync.actions.node.DeleteProject"
+                text="Delete Project"
+                description="Delete project"/>
     </actions>
 </idea-plugin>

@@ -128,5 +128,9 @@
                 class="org.modelix.mps.sync.actions.repository.LoadHistoryForRepository"
                 text="Show History"
                 description="Show history"/>
+
+        <action id="org.modelix.mps.sync.actions.repository.GetCloudRepositorySize"
+                class="org.modelix.mps.sync.actions.repository.GetCloudRepositorySize" text="Get Number of Nodes"
+                description="Get number of nodes in repository"/>
     </actions>
 </idea-plugin>

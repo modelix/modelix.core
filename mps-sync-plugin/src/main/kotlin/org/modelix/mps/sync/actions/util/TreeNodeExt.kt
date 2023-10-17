@@ -36,6 +36,14 @@ fun TreeNode.isProjectNode(): Boolean {
     return nodeTreeNode?.isCloudNodeAProjectNode() ?: false
 }
 
+/**
+ * This does not consider if this is a module, and it is bound indirectly because the whole project is bound.
+ */
+fun TreeNode.isBoundAsModule(): Boolean {
+    val nodeTreeNode = this as? CloudNodeTreeNode
+    return nodeTreeNode?.isBoundAsAModule() ?: false
+}
+
 fun TreeNode.getName(): String? {
     val nodeTreeNode = this as CloudNodeTreeNode
     return PArea(nodeTreeNode.branch).executeRead { nodeTreeNode.node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) }

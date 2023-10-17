@@ -19,7 +19,9 @@ package org.modelix.mps.sync.actions.util
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 
 fun CloudNodeTreeNode.isCloudNodeRootNode(): Boolean {
     val node = this.node
@@ -38,4 +40,13 @@ fun CloudNodeTreeNode.isCloudNodeModuleNode(): Boolean {
 fun CloudNodeTreeNode.isCloudNodeAProjectNode(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Project)
+}
+
+/**
+ * This does not consider if this is a module, and it is bound indirectly because the whole project is bound.
+ */
+fun CloudNodeTreeNode.isBoundAsAModule(): Boolean {
+    val nodeId = (this.node as PNodeAdapter).nodeId
+    val repositoryId: RepositoryId = getAncestor(RepositoryTreeNode::class.java).repositoryId
+    return getModelServer()!!.hasModuleBinding(repositoryId, nodeId)
 }

@@ -32,6 +32,7 @@ class CloudNodeActionGroup : ActionGroup() {
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.StoreAllModules"),
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.DeleteProject"),
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.DeleteModule"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddTransientModuleBinding"),
         )
     }
 }

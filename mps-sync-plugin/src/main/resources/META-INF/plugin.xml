@@ -178,5 +178,10 @@
                 class="org.modelix.mps.sync.actions.node.DeleteModule"
                 text="Delete Module"
                 description="Delete module"/>
+
+        <action id="org.modelix.mps.sync.actions.node.AddTransientModuleBinding"
+                class="org.modelix.mps.sync.actions.node.AddTransientModuleBinding"
+                text="Bind to Transient Module"
+                description="Bind to transient module"/>
     </actions>
 </idea-plugin>

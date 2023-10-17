@@ -97,5 +97,10 @@
                 class="org.modelix.mps.sync.actions.branch.LoadHistoryForBranch"
                 text="Show History"
                 description="Show history"/>
+
+        <action id="org.modelix.mps.sync.actions.branch.AddBranch"
+                class="org.modelix.mps.sync.actions.branch.AddBranch"
+                text="New Branch"
+                description="Add new branch"/>
     </actions>
 </idea-plugin>

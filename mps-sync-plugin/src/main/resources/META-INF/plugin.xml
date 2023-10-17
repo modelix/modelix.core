@@ -203,5 +203,10 @@
                 class="org.modelix.mps.sync.actions.node.ShowProperties"
                 text="Show Properties"
                 description="Show properties"/>
+
+        <action id="org.modelix.mps.sync.actions.node.ShowReferences"
+                class="org.modelix.mps.sync.actions.node.ShowReferences"
+                text="Show References"
+                description="Show references"/>
     </actions>
 </idea-plugin>

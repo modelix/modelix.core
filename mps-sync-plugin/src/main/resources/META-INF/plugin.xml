@@ -208,5 +208,10 @@
                 class="org.modelix.mps.sync.actions.node.ShowReferences"
                 text="Show References"
                 description="Show references"/>
+
+        <action id="org.modelix.mps.sync.actions.node.NavigateToMpsNode"
+                class="org.modelix.mps.sync.actions.node.NavigateToMpsNode"
+                text="Navigate to Corresponding MPS Node"
+                description="Navigate to corresponding MPS node"/>
     </actions>
 </idea-plugin>

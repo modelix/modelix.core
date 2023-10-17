@@ -38,6 +38,7 @@ class CloudNodeActionGroup : ActionGroup() {
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.CheckoutAndSyncModule"),
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.ShowProperties"),
             ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.ShowReferences"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.NavigateToMpsNode"),
         )
     }
 }

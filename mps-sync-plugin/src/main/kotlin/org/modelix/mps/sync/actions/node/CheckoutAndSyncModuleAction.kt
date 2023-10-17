@@ -16,36 +16,27 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import org.modelix.mps.sync.actions.util.isRootNode
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getMpsProject
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
+import org.modelix.mps.sync.actions.util.isModuleNode
+import org.modelix.mps.sync.tools.ModelCloudImportUtils
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import javax.swing.Icon
 
-class AddProjectNode : AnAction {
+class CheckoutAndSyncModuleAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode?.isRootNode() == true
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    override fun isApplicable(event: AnActionEvent) = event.getTreeNode()?.isModuleNode() == true
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
-
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
-        val name = Messages.showInputDialog(project, "Name", "Add Project", null)
-        if (name.isNullOrEmpty()) {
-            return
-        }
-        treeNode.createProject(name)
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
+        val project = event.getMpsProject()!!
+        ModelCloudImportUtils.checkoutAndSync(treeNode, project)
     }
 }

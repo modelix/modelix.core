@@ -16,32 +16,27 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isProperNode
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import javax.swing.Icon
 
-class ShowReferences : AnAction {
+class ShowReferencesAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode?.isProperNode() == true
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    override fun isApplicable(event: AnActionEvent): Boolean = event.getTreeNode()?.isProperNode() == true
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
         val treeInRepository = treeNode.getTreeInRepository()
         // I need to know in which module to look for this node
 
@@ -71,7 +66,7 @@ class ShowReferences : AnAction {
             }
         }
 
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
+        val project = event.project
         Messages.showMessageDialog(project, sb.toString(), "References", null)
     }
 }

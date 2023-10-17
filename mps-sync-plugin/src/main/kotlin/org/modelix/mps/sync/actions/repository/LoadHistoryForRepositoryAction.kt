@@ -16,37 +16,22 @@
 
 package org.modelix.mps.sync.actions.repository
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.unwrap
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNodeAs
+import org.modelix.mps.sync.tools.history.HistoryToolFactory
 import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 import javax.swing.Icon
 
-class GetCloudRepositorySize : AnAction {
+class LoadHistoryForRepositoryAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as RepositoryTreeNode
+        val treeNode = event.getTreeNodeAs<RepositoryTreeNode>()
         val activeBranch = treeNode.modelServer.getActiveBranch(treeNode.repositoryId)
-        val branch = activeBranch.branch
-        val size = branch.computeRead {
-            val tree = branch.transaction.tree.unwrap()
-            if (tree is CLTree) {
-                tree.getSize()
-            } else {
-                0L
-            }
-        }
-
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
-        Messages.showInfoMessage(project, "Size is $size", "Size of Repository")
+        HistoryToolFactory().load(treeNode.modelServer, treeNode.repositoryId) { activeBranch.version }
     }
 }

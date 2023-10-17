@@ -16,43 +16,40 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import org.modelix.model.api.PNodeAdapter
 import org.modelix.mps.sync.CloudRepository
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
+import org.modelix.mps.sync.actions.util.getTransientModuleBinding
 import org.modelix.mps.sync.actions.util.isBoundAsModule
 import org.modelix.mps.sync.actions.util.isModuleNode
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import org.modelix.mps.sync.tools.history.ModelServerTreeNode
 import org.modelix.mps.sync.tools.history.RepositoryTreeNode
-import org.modelix.mps.sync.transient.TransientModuleBinding
 import javax.swing.Icon
 
-class AddTransientModuleBinding : AnAction {
+class RemoveTransientModuleBindingAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode?.isModuleNode() == true && !treeNode.isBoundAsModule()
-        this.templatePresentation.isEnabled = isApplicable
+    override fun isApplicable(event: AnActionEvent): Boolean {
+        val treeNode = event.getTreeNode()
+        return treeNode?.isModuleNode() == true && treeNode.isBoundAsModule()
     }
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
         val modelServerConnection = treeNode.getAncestor(ModelServerTreeNode::class.java).modelServer
         val repositoryId = treeNode.getAncestor(RepositoryTreeNode::class.java).repositoryId
-        val transientModuleBinding = TransientModuleBinding((treeNode.node as PNodeAdapter).nodeId)
-        modelServerConnection.addBinding(repositoryId, transientModuleBinding)
+        val transientModuleBinding = treeNode.getTransientModuleBinding()!!
+        modelServerConnection.removeBinding(transientModuleBinding)
 
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
+        val project = event.project!!
         val treeInRepository = CloudRepository(modelServerConnection, repositoryId)
-        PersistedBindingConfiguration.getInstance(project).addTransientBoundModule(treeInRepository, treeNode)
+        PersistedBindingConfiguration.getInstance(project).removeTransientBoundModule(treeInRepository, treeNode)
     }
 }

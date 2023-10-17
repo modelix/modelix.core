@@ -16,31 +16,29 @@
 
 package org.modelix.mps.sync.actions.branch
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.area.PArea
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
 import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 import javax.swing.Icon
 
-class AddBranch : AnAction {
+class AddBranchAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
     override fun actionPerformed(event: AnActionEvent) {
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
+        val project = event.project
         val name = Messages.showInputDialog(project, "Name", "Add Branch", null)
         if (name.isNullOrEmpty()) {
             return
         }
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudBranchTreeNode
+        val treeNode = event.getTreeNodeAs<CloudBranchTreeNode>()
         val treeTreeNode = treeNode.getAncestor(RepositoryTreeNode::class.java)
         val repositoryId = treeTreeNode.repositoryId
         val modelServer = treeTreeNode.modelServer

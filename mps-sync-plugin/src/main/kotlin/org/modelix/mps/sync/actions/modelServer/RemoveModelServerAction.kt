@@ -16,35 +16,29 @@
 
 package org.modelix.mps.sync.actions.modelServer
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.connection.ModelServerConnections
 import org.modelix.mps.sync.icons.CloudIcons
 import org.modelix.mps.sync.tools.history.ModelServerTreeNode
 import javax.swing.Icon
 
-class RemoveModelServer : AnAction {
+class RemoveModelServerAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode is ModelServerTreeNode
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    override fun isApplicable(event: AnActionEvent) = event.getTreeNode() is ModelServerTreeNode
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val modelServer = (treeNode as ModelServerTreeNode).modelServer
+        val modelServer = event.getTreeNodeAs<ModelServerTreeNode>().modelServer
 
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
+        val project = event.project!!
         val answer: Int = Messages.showOkCancelDialog(
             project,
             "Remove ${modelServer.baseUrl}?",

@@ -16,37 +16,32 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
+import org.modelix.model.api.PNodeAdapter
+import org.modelix.mps.sync.CloudRepository
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getMpsProject
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isModuleNode
+import org.modelix.mps.sync.exportFromCloud.ModuleCheckout
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import javax.swing.Icon
 
-class AddModelNode : AnAction {
+class CheckoutModuleAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode?.isModuleNode() == true
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    // TODO verify it does not exist a module with such name
+    override fun isApplicable(event: AnActionEvent) = event.getTreeNode()?.isModuleNode() == true
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
+        val treeInRepository: CloudRepository = treeNode.getTreeInRepository()
 
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
-        val name = Messages.showInputDialog(project, "Name", "Add Model", null)
-        if (name.isNullOrEmpty()) {
-            return
-        }
-
-        treeNode.createModel(name)
+        val project = event.getMpsProject()!!
+        ModuleCheckout(project, treeInRepository).checkoutCloudModule((treeNode.node as PNodeAdapter))
     }
 }

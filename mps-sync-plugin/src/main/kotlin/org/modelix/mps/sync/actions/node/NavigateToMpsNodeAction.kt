@@ -16,17 +16,16 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import jetbrains.mps.openapi.navigation.NavigationSupport
-import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getMpsProject
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isProperNode
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import org.modelix.mps.sync.util.containingModel
@@ -35,27 +34,27 @@ import org.modelix.mps.sync.util.isMappedToMpsNode
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import javax.swing.Icon
 
-class NavigateToMpsNode : AnAction {
+class NavigateToMpsNodeAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
+    override fun isApplicable(event: AnActionEvent): Boolean {
+        val treeNode = event.getTreeNode()
         var isApplicable = treeNode?.isProperNode() == true
         if (isApplicable) {
             val nodeTreeNode = treeNode as CloudNodeTreeNode
             val treeInRepository = nodeTreeNode.getTreeInRepository()
             isApplicable = treeInRepository.computeRead { nodeTreeNode.node.isMappedToMpsNode() }
         }
-        this.templatePresentation.isEnabled = isApplicable
+        return isApplicable
     }
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
-        val mpsProject = event.dataContext.getData(MPSCommonDataKeys.MPS_PROJECT) as MPSProject
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
+        val project = event.project
+        val mpsProject = event.getMpsProject()!!
 
         val treeInRepository = treeNode.getTreeInRepository()
         // I need to know in which module to look for this node

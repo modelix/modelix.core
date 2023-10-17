@@ -75,10 +75,12 @@ class CloudView : JPanel(BorderLayout()) {
                     ActionUtils.groupFromActions(
                         ActionManager.getInstance()
                             .getAction("org.modelix.mps.sync.actions.modelServer.RemoveModelServer"),
-                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.modelServer.AddRepository"),
                         ActionManager.getInstance()
-                            .getAction("org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfo"),
-                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.modelServer.Reconnect"),
+                            .getAction("org.modelix.mps.sync.actions.modelServer.AddRepositoryAction"),
+                        ActionManager.getInstance()
+                            .getAction("org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfoAction"),
+                        ActionManager.getInstance()
+                            .getAction("org.modelix.mps.sync.actions.modelServer.ReconnectAction"),
                     )
                 }
 
@@ -89,26 +91,26 @@ class CloudView : JPanel(BorderLayout()) {
                 is RepositoryTreeNode -> {
                     ActionUtils.groupFromActions(
                         ActionManager.getInstance()
-                            .getAction("org.modelix.mps.sync.actions.repository.LoadHistoryForRepository"),
+                            .getAction("org.modelix.mps.sync.actions.repository.LoadHistoryForRepositoryAction"),
                         ActionManager.getInstance()
-                            .getAction("org.modelix.mps.sync.actions.repository.RemoveRepository"),
+                            .getAction("org.modelix.mps.sync.actions.repository.RemoveRepositoryAction"),
                         ActionManager.getInstance()
-                            .getAction("org.modelix.mps.sync.actions.repository.GetCloudRepositorySize"),
+                            .getAction("org.modelix.mps.sync.actions.repository.GetCloudRepositorySizeAction"),
                     )
                 }
 
                 is CloudBranchTreeNode -> {
                     ActionUtils.groupFromActions(
-                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.branch.AddBranch"),
-                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.branch.SwitchBranch"),
+                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.branch.AddBranchAction"),
+                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.branch.SwitchBranchAction"),
                         ActionManager.getInstance()
-                            .getAction("org.modelix.mps.sync.actions.branch.LoadHistoryForBranch"),
+                            .getAction("org.modelix.mps.sync.actions.branch.LoadHistoryForBranchAction"),
                     )
                 }
 
                 is CloudBindingTreeNode -> {
                     ActionUtils.groupFromActions(
-                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.unbind.Unbind"),
+                        ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.unbind.UnbindAction"),
                     )
                 }
 

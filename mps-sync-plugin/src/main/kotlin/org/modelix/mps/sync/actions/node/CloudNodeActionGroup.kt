@@ -25,20 +25,21 @@ class CloudNodeActionGroup : ActionGroup() {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
         return arrayOf(
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddProjectNode"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddModuleNode"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddModelNode"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddProjectBinding"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.StoreAllModules"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.DeleteProject"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.DeleteModule"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddTransientModuleBinding"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.RemoveTransientModuleBinding"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.CheckoutModule"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.CheckoutAndSyncModule"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.ShowProperties"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.ShowReferences"),
-            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.NavigateToMpsNode"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddProjectNodeAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddModuleNodeAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddModelNodeAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddProjectBindingAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.StoreAllModulesAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.DeleteProjectAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.DeleteModuleAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.AddTransientModuleBindingAction"),
+            ActionManager.getInstance()
+                .getAction("org.modelix.mps.sync.actions.node.RemoveTransientModuleBindingAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.CheckoutModuleAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.CheckoutAndSyncModuleAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.ShowPropertiesAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.ShowReferencesAction"),
+            ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.node.NavigateToMpsNodeAction"),
         )
     }
 }

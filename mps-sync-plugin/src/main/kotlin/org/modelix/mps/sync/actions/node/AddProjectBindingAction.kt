@@ -16,14 +16,15 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.ui.Messages
 import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import jetbrains.mps.project.MPSProject
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.area.PArea
 import org.modelix.mps.sync.CloudRepository
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getMpsProject
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isProjectNode
 import org.modelix.mps.sync.importToCloud.ModelCloudImportUtils
 import org.modelix.mps.sync.synchronization.SyncDirection
@@ -33,37 +34,31 @@ import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 import org.modelix.mps.sync.util.nodeIdAsLong
 import javax.swing.Icon
 
-class AddProjectBinding : AnAction {
+class AddProjectBindingAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
+    override fun isApplicable(event: AnActionEvent): Boolean {
         val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
-        var isApplicable = true
-
-        if (!treeNode.isProjectNode()) {
-            isApplicable = false
+        return if (!treeNode.isProjectNode()) {
+            false
         } else {
             val nodeId = treeNode.node.nodeIdAsLong()
             val repositoryId = treeNode.getAncestor(RepositoryTreeNode::class.java).repositoryId
-            if (treeNode.getModelServer()?.hasProjectBinding(repositoryId, nodeId) == true) {
-                isApplicable = false
-            }
+            return treeNode.getModelServer()?.hasProjectBinding(repositoryId, nodeId) == false
         }
-
-        this.templatePresentation.isEnabled = isApplicable
     }
 
     override fun actionPerformed(event: AnActionEvent) {
         val namedProperty = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
 
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
         val expectedProjectName =
             PArea(treeNode.branch).executeRead { treeNode.node.getPropertyValue(namedProperty) }
 
-        val project = event.dataContext.getData(MPSCommonDataKeys.MPS_PROJECT) as MPSProject
+        val project = event.getMpsProject()!!
         if (expectedProjectName != project.name) {
             val dialogResult = Messages.showOkCancelDialog(
                 project.project,

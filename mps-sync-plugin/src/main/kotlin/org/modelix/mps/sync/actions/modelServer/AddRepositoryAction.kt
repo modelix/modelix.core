@@ -16,34 +16,29 @@
 
 package org.modelix.mps.sync.actions.modelServer
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
+import jetbrains.mps.util.NameUtil
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNodeAs
+import org.modelix.mps.sync.icons.CloudIcons
 import org.modelix.mps.sync.tools.history.ModelServerTreeNode
 import javax.swing.Icon
 
-class ShowAuthenticationInfo : AnAction {
+class AddRepositoryAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode is ModelServerTreeNode
-        this.templatePresentation.isEnabled = isApplicable
-    }
-
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val modelServer = (treeNode as ModelServerTreeNode).modelServer
-        val author = modelServer.getAuthor()
-        val email = modelServer.email
+        val modelServer = event.getTreeNodeAs<ModelServerTreeNode>().modelServer
 
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
-        Messages.showInfoMessage(project, "Author: $author\nEmail: $email", "Authentication Info")
+        val project = event.project
+        val id = Messages.showInputDialog(project, "ID", "Add Repository", CloudIcons.REPOSITORY_ICON)
+        if (id.isNullOrEmpty()) {
+            return
+        }
+        modelServer.addRepository(NameUtil.toValidIdentifier(id))
     }
 }

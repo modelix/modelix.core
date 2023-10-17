@@ -14,24 +14,32 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.actions.repository
+package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import org.modelix.mps.sync.tools.history.HistoryToolFactory
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import com.intellij.openapi.ui.Messages
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
+import org.modelix.mps.sync.actions.util.isRootNode
+import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import javax.swing.Icon
 
-class LoadHistoryForRepository : AnAction {
+class AddModuleNodeAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
+    override fun isApplicable(event: AnActionEvent) = event.getTreeNode()?.isRootNode() == true
+
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as RepositoryTreeNode
-        val activeBranch = treeNode.modelServer.getActiveBranch(treeNode.repositoryId)
-        HistoryToolFactory().load(treeNode.modelServer, treeNode.repositoryId) { activeBranch.version }
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
+        val project = event.project
+        val name = Messages.showInputDialog(project, "Name", "Add Module", null)
+        if (name.isNullOrEmpty()) {
+            return
+        }
+        treeNode.createModule(name)
     }
 }

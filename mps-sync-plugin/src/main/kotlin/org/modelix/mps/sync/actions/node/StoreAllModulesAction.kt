@@ -16,20 +16,21 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.progress.ProgressMonitorAdapter
-import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.mps.sync.CloudRepository
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getMpsProject
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isProjectNode
 import org.modelix.mps.sync.importToCloud.ModelCloudImportUtils
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
@@ -37,27 +38,23 @@ import org.modelix.mps.sync.tools.history.ModelServerTreeNode
 import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 import javax.swing.Icon
 
-class StoreAllModules : AnAction {
+class StoreAllModulesAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode?.isProjectNode() == true
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    override fun isApplicable(event: AnActionEvent) = event.getTreeNode()?.isProjectNode() == true
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
         val modelServer = treeNode.getAncestor(ModelServerTreeNode::class.java).modelServer
         val repositoryId = treeNode.getAncestor(RepositoryTreeNode::class.java).repositoryId
         val treeInRepository = CloudRepository(modelServer, repositoryId)
         val cloudProjectId = (treeNode.node as PNodeAdapter).nodeId
         val branch = treeInRepository.getActiveBranch().branch
 
-        val project = event.dataContext.getData(MPSCommonDataKeys.MPS_PROJECT) as MPSProject
+        val project = event.getMpsProject()
         val projectHelper = ProjectHelper.toIdeaProject(project)
         val task = object : Task.Backgroundable(projectHelper, "Import MPS Repository", true) {
 

@@ -14,22 +14,30 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.actions.branch
+package org.modelix.mps.sync.actions.modelServer
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
+import com.intellij.openapi.ui.Messages
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
+import org.modelix.mps.sync.tools.history.ModelServerTreeNode
 import javax.swing.Icon
 
-class SwitchBranch : AnAction {
+class ShowAuthenticationInfoAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
+    override fun isApplicable(event: AnActionEvent) = event.getTreeNode() is ModelServerTreeNode
+
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudBranchTreeNode
-        treeNode.switchBranch()
+        val modelServer = event.getTreeNodeAs<ModelServerTreeNode>().modelServer
+        val author = modelServer.getAuthor()
+        val email = modelServer.email
+
+        val project = event.project
+        Messages.showInfoMessage(project, "Author: $author\nEmail: $email", "Authentication Info")
     }
 }

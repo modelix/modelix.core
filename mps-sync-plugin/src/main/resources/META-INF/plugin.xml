@@ -84,58 +84,58 @@
             <add-to-group group-id="ToolsMenu" anchor="first"/>
         </group>
 
-        <action id="org.modelix.mps.sync.actions.unbind.Unbind"
-                class="org.modelix.mps.sync.actions.unbind.Unbind"
+        <action id="org.modelix.mps.sync.actions.unbind.UnbindAction"
+                class="org.modelix.mps.sync.actions.unbind.UnbindAction"
                 text="Unbind"
                 description="Unbinds a binding attached to a Tree Node."/>
 
-        <action id="org.modelix.mps.sync.actions.branch.SwitchBranch"
-                class="org.modelix.mps.sync.actions.branch.SwitchBranch"
+        <action id="org.modelix.mps.sync.actions.branch.SwitchBranchAction"
+                class="org.modelix.mps.sync.actions.branch.SwitchBranchAction"
                 text="Switch Branch"
                 description="Switch to this Branch"/>
 
-        <action id="org.modelix.mps.sync.actions.branch.LoadHistoryForBranch"
-                class="org.modelix.mps.sync.actions.branch.LoadHistoryForBranch"
+        <action id="org.modelix.mps.sync.actions.branch.LoadHistoryForBranchAction"
+                class="org.modelix.mps.sync.actions.branch.LoadHistoryForBranchAction"
                 text="Show History"
                 description="Show history"/>
 
-        <action id="org.modelix.mps.sync.actions.branch.AddBranch"
-                class="org.modelix.mps.sync.actions.branch.AddBranch"
+        <action id="org.modelix.mps.sync.actions.branch.AddBranchAction"
+                class="org.modelix.mps.sync.actions.branch.AddBranchAction"
                 text="New Branch"
                 description="Add new branch"/>
 
-        <action id="org.modelix.mps.sync.actions.modelServer.AddRepository"
-                class="org.modelix.mps.sync.actions.modelServer.AddRepository"
+        <action id="org.modelix.mps.sync.actions.modelServer.AddRepositoryAction"
+                class="org.modelix.mps.sync.actions.modelServer.AddRepositoryAction"
                 text="Add Repository"
                 description="Add repository"/>
 
-        <action id="org.modelix.mps.sync.actions.modelServer.RemoveModelServer"
-                class="org.modelix.mps.sync.actions.modelServer.RemoveModelServer"
+        <action id="org.modelix.mps.sync.actions.modelServer.RemoveModelServerAction"
+                class="org.modelix.mps.sync.actions.modelServer.RemoveModelServerAction"
                 text="Remove Model Server"
                 description="Remove model server"/>
 
-        <action id="org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfo"
-                class="org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfo"
+        <action id="org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfoAction"
+                class="org.modelix.mps.sync.actions.modelServer.ShowAuthenticationInfoAction"
                 text="Show Authentication Info"
                 description="Show authentication info"/>
 
-        <action id="org.modelix.mps.sync.actions.modelServer.Reconnect"
-                class="org.modelix.mps.sync.actions.modelServer.Reconnect"
+        <action id="org.modelix.mps.sync.actions.modelServer.ReconnectAction"
+                class="org.modelix.mps.sync.actions.modelServer.ReconnectAction"
                 text="Reconnect"
                 description="Reconnect to model server"/>
 
-        <action id="org.modelix.mps.sync.actions.repository.LoadHistoryForRepository"
-                class="org.modelix.mps.sync.actions.repository.LoadHistoryForRepository"
+        <action id="org.modelix.mps.sync.actions.repository.LoadHistoryForRepositoryAction"
+                class="org.modelix.mps.sync.actions.repository.LoadHistoryForRepositoryAction"
                 text="Show History"
                 description="Show history"/>
 
-        <action id="org.modelix.mps.sync.actions.repository.GetCloudRepositorySize"
-                class="org.modelix.mps.sync.actions.repository.GetCloudRepositorySize"
+        <action id="org.modelix.mps.sync.actions.repository.GetCloudRepositorySizeAction"
+                class="org.modelix.mps.sync.actions.repository.GetCloudRepositorySizeAction"
                 text="Get Number of Nodes"
                 description="Get number of nodes in repository"/>
 
-        <action id="org.modelix.mps.sync.actions.repository.RemoveRepository"
-                class="org.modelix.mps.sync.actions.repository.RemoveRepository"
+        <action id="org.modelix.mps.sync.actions.repository.RemoveRepositoryAction"
+                class="org.modelix.mps.sync.actions.repository.RemoveRepositoryAction"
                 text="Remove Repository"
                 description="Remove repository"/>
 
@@ -144,73 +144,73 @@
                text="Cloud Node Group"
                description="Cloud node action group"/>
 
-        <action id="org.modelix.mps.sync.actions.node.AddProjectNode"
-                class="org.modelix.mps.sync.actions.node.AddProjectNode"
+        <action id="org.modelix.mps.sync.actions.node.AddProjectNodeAction"
+                class="org.modelix.mps.sync.actions.node.AddProjectNodeAction"
                 text="Add Project"
                 description="Add project"/>
 
-        <action id="org.modelix.mps.sync.actions.node.AddModuleNode"
-                class="org.modelix.mps.sync.actions.node.AddModuleNode"
+        <action id="org.modelix.mps.sync.actions.node.AddModuleNodeAction"
+                class="org.modelix.mps.sync.actions.node.AddModuleNodeAction"
                 text="Add Module"
                 description="Add module"/>
 
-        <action id="org.modelix.mps.sync.actions.node.AddModelNode"
-                class="org.modelix.mps.sync.actions.node.AddModelNode"
+        <action id="org.modelix.mps.sync.actions.node.AddModelNodeAction"
+                class="org.modelix.mps.sync.actions.node.AddModelNodeAction"
                 text="Add Model"
                 description="Add model"/>
 
-        <action id="org.modelix.mps.sync.actions.node.AddProjectBinding"
-                class="org.modelix.mps.sync.actions.node.AddProjectBinding"
+        <action id="org.modelix.mps.sync.actions.node.AddProjectBindingAction"
+                class="org.modelix.mps.sync.actions.node.AddProjectBindingAction"
                 text="Bind to Current Project"
                 description="Bind to current project"/>
 
-        <action id="org.modelix.mps.sync.actions.node.StoreAllModules"
-                class="org.modelix.mps.sync.actions.node.StoreAllModules"
+        <action id="org.modelix.mps.sync.actions.node.StoreAllModulesAction"
+                class="org.modelix.mps.sync.actions.node.StoreAllModulesAction"
                 text="Store Entire MPS Module Repository"
                 description="Store entire MPS module repository"/>
 
-        <action id="org.modelix.mps.sync.actions.node.DeleteProject"
-                class="org.modelix.mps.sync.actions.node.DeleteProject"
+        <action id="org.modelix.mps.sync.actions.node.DeleteProjectAction"
+                class="org.modelix.mps.sync.actions.node.DeleteProjectAction"
                 text="Delete Project"
                 description="Delete project"/>
 
-        <action id="org.modelix.mps.sync.actions.node.DeleteModule"
-                class="org.modelix.mps.sync.actions.node.DeleteModule"
+        <action id="org.modelix.mps.sync.actions.node.DeleteModuleAction"
+                class="org.modelix.mps.sync.actions.node.DeleteModuleAction"
                 text="Delete Module"
                 description="Delete module"/>
 
-        <action id="org.modelix.mps.sync.actions.node.AddTransientModuleBinding"
-                class="org.modelix.mps.sync.actions.node.AddTransientModuleBinding"
+        <action id="org.modelix.mps.sync.actions.node.AddTransientModuleBindingAction"
+                class="org.modelix.mps.sync.actions.node.AddTransientModuleBindingAction"
                 text="Bind to Transient Module"
                 description="Bind to transient module"/>
 
-        <action id="org.modelix.mps.sync.actions.node.RemoveTransientModuleBinding"
-                class="org.modelix.mps.sync.actions.node.RemoveTransientModuleBinding"
+        <action id="org.modelix.mps.sync.actions.node.RemoveTransientModuleBindingAction"
+                class="org.modelix.mps.sync.actions.node.RemoveTransientModuleBindingAction"
                 text="Unbind from Transient Module"
                 description="Unbind from transient module"/>
 
-        <action id="org.modelix.mps.sync.actions.node.CheckoutModule"
-                class="org.modelix.mps.sync.actions.node.CheckoutModule"
+        <action id="org.modelix.mps.sync.actions.node.CheckoutModuleAction"
+                class="org.modelix.mps.sync.actions.node.CheckoutModuleAction"
                 text="Checkout"
                 description="Checkout module"/>
 
-        <action id="org.modelix.mps.sync.actions.node.CheckoutAndSyncModule"
-                class="org.modelix.mps.sync.actions.node.CheckoutAndSyncModule"
+        <action id="org.modelix.mps.sync.actions.node.CheckoutAndSyncModuleAction"
+                class="org.modelix.mps.sync.actions.node.CheckoutAndSyncModuleAction"
                 text="Checkout and Sync"
                 description="Checkout and sync module"/>
 
-        <action id="org.modelix.mps.sync.actions.node.ShowProperties"
-                class="org.modelix.mps.sync.actions.node.ShowProperties"
+        <action id="org.modelix.mps.sync.actions.node.ShowPropertiesAction"
+                class="org.modelix.mps.sync.actions.node.ShowPropertiesAction"
                 text="Show Properties"
                 description="Show properties"/>
 
-        <action id="org.modelix.mps.sync.actions.node.ShowReferences"
-                class="org.modelix.mps.sync.actions.node.ShowReferences"
+        <action id="org.modelix.mps.sync.actions.node.ShowReferencesAction"
+                class="org.modelix.mps.sync.actions.node.ShowReferencesAction"
                 text="Show References"
                 description="Show references"/>
 
-        <action id="org.modelix.mps.sync.actions.node.NavigateToMpsNode"
-                class="org.modelix.mps.sync.actions.node.NavigateToMpsNode"
+        <action id="org.modelix.mps.sync.actions.node.NavigateToMpsNodeAction"
+                class="org.modelix.mps.sync.actions.node.NavigateToMpsNodeAction"
                 text="Navigate to Corresponding MPS Node"
                 description="Navigate to corresponding MPS node"/>
     </actions>

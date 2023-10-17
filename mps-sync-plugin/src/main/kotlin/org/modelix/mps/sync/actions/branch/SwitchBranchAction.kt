@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.actions.repository
+package org.modelix.mps.sync.actions.branch
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNodeAs
+import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
 import javax.swing.Icon
 
-class RemoveRepository : AnAction {
+class SwitchBranchAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as RepositoryTreeNode
-        val modelServer = treeNode.modelServer
-        modelServer.removeRepository(treeNode.repositoryId.id)
-    }
+    override fun actionPerformed(event: AnActionEvent) = event.getTreeNodeAs<CloudBranchTreeNode>().switchBranch()
 }

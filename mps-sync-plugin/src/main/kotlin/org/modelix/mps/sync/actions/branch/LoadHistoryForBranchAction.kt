@@ -16,27 +16,27 @@
 
 package org.modelix.mps.sync.actions.branch
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
 import org.modelix.model.lazy.CLVersion
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
 import org.modelix.mps.sync.tools.history.HistoryToolFactory
 import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 import javax.swing.Icon
 import javax.swing.SwingUtilities
 
-class LoadHistoryForBranch : AnAction {
+class LoadHistoryForBranchAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudBranchTreeNode
+        val treeNode = event.getTreeNodeAs<CloudBranchTreeNode>()
         val treeTNode = treeNode.getAncestor(RepositoryTreeNode::class.java)
         val infoBranch = treeTNode.modelServer.getInfoBranch()
         val branchName =

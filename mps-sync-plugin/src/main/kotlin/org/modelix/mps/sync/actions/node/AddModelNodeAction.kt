@@ -16,35 +16,32 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import jetbrains.mps.project.MPSProject
-import org.modelix.model.api.PNodeAdapter
-import org.modelix.mps.sync.CloudRepository
+import com.intellij.openapi.ui.Messages
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isModuleNode
-import org.modelix.mps.sync.exportFromCloud.ModuleCheckout
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import javax.swing.Icon
 
-class CheckoutModule : AnAction {
+class AddModelNodeAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        // TODO verify it does not exist a module with such name
-        val isApplicable = treeNode?.isModuleNode() == true
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    override fun isApplicable(event: AnActionEvent) = event.getTreeNode()?.isModuleNode() == true
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
-        val treeInRepository: CloudRepository = treeNode.getTreeInRepository()
+        val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
 
-        val project = event.dataContext.getData(MPSCommonDataKeys.MPS_PROJECT) as MPSProject
-        ModuleCheckout(project, treeInRepository).checkoutCloudModule((treeNode.node as PNodeAdapter))
+        val project = event.project
+        val name = Messages.showInputDialog(project, "Name", "Add Model", null)
+        if (name.isNullOrEmpty()) {
+            return
+        }
+
+        treeNode.createModel(name)
     }
 }

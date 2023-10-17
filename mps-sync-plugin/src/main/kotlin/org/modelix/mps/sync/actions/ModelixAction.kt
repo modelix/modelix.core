@@ -14,32 +14,31 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.actions.node
+package org.modelix.mps.sync.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import jetbrains.mps.project.MPSProject
-import org.modelix.mps.sync.actions.util.isModuleNode
-import org.modelix.mps.sync.tools.ModelCloudImportUtils
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import javax.swing.Icon
+import javax.swing.tree.TreeNode
 
-class CheckoutAndSyncModule : AnAction {
+abstract class ModelixAction : AnAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode?.isModuleNode() == true
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    open fun isApplicable(event: AnActionEvent): Boolean = true
 
-    override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
-        val project = event.dataContext.getData(MPSCommonDataKeys.MPS_PROJECT) as MPSProject
-        ModelCloudImportUtils.checkoutAndSync(treeNode, project)
+    override fun update(event: AnActionEvent) {
+        this.templatePresentation.isEnabled = isApplicable(event)
     }
 }
+
+fun AnActionEvent.getTreeNode(): TreeNode? = this.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
+
+@Suppress("UNCHECKED_CAST")
+fun <T> AnActionEvent.getTreeNodeAs(): T = getTreeNode() as T
+
+fun AnActionEvent.getMpsProject(): MPSProject? = this.dataContext.getData(MPSCommonDataKeys.MPS_PROJECT)

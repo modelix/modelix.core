@@ -16,35 +16,29 @@
 
 package org.modelix.mps.sync.actions.unbind
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.Project
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.tools.history.CloudBindingTreeNode
 import javax.swing.Icon
 
-class Unbind : AnAction {
+class UnbindAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val binding = (treeNode as CloudBindingTreeNode).binding
-        val isApplicable = binding is ModuleBinding
-
-        // Project binding cannot currently be removed
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    override fun isApplicable(event: AnActionEvent) =
+        event.getTreeNodeAs<CloudBindingTreeNode>().binding is ModuleBinding
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
+        val treeNode = event.getTreeNodeAs<CloudBindingTreeNode>()
         // Project binding cannot currently be removed
-        val binding = (treeNode as CloudBindingTreeNode).binding as ModuleBinding
+        val binding = treeNode.binding as ModuleBinding
         val modelServer = treeNode.modelServer
         modelServer.removeBinding(binding)
         val repositoryInModelServer = treeNode.repositoryInModelServer

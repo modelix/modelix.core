@@ -16,36 +16,36 @@
 
 package org.modelix.mps.sync.actions.node
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import jetbrains.mps.ide.actions.MPSCommonDataKeys
-import org.modelix.mps.sync.actions.util.isRootNode
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.actions.ModelixAction
+import org.modelix.mps.sync.actions.getMpsProject
+import org.modelix.mps.sync.actions.getTreeNode
+import org.modelix.mps.sync.actions.util.delete
+import org.modelix.mps.sync.actions.util.getName
+import org.modelix.mps.sync.actions.util.isProjectNode
 import javax.swing.Icon
 
-class AddModuleNode : AnAction {
+class DeleteProjectAction : ModelixAction {
 
     constructor() : super()
 
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    override fun update(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE)
-        val isApplicable = treeNode?.isRootNode() == true
-        this.templatePresentation.isEnabled = isApplicable
-    }
+    override fun isApplicable(event: AnActionEvent) = event.getTreeNode()?.isProjectNode() == true
 
     override fun actionPerformed(event: AnActionEvent) {
-        val treeNode = event.dataContext.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode
-
-        val project = event.dataContext.getData(CommonDataKeys.PROJECT) as Project
-        val name = Messages.showInputDialog(project, "Name", "Add Module", null)
-        if (name.isNullOrEmpty()) {
+        val treeNode = event.getTreeNode()
+        val project = event.getMpsProject()!!
+        val dialogResult: Int = Messages.showOkCancelDialog(
+            project.project,
+            "Are you sure you want to delete project '${treeNode?.getName()}' ?",
+            "Delete Project",
+            null,
+        )
+        if (dialogResult != Messages.OK) {
             return
         }
-        treeNode.createModule(name)
+        treeNode?.delete()
     }
 }

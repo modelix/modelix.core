@@ -16,25 +16,24 @@
 
 package org.modelix.mps.sync.actions
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.connection.ModelServerConnections
 import javax.swing.Icon
 
-class AddModelServerAction : AnAction {
+class AddModelServerAction : ModelixAction {
 
     private val logger = mu.KotlinLogging.logger {}
 
     constructor() : super()
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    private fun getURL(event: AnActionEvent): String {
+    private fun getURL(event: AnActionEvent, project: Project): String {
         return Messages.showInputDialog(
-            event.getData(CommonDataKeys.PROJECT),
+            project,
             "URL",
             "Add Model Server",
             null,
@@ -44,13 +43,14 @@ class AddModelServerAction : AnAction {
     }
 
     override fun actionPerformed(event: AnActionEvent) {
-        var url = getURL(event)
+        val project = event.project!!
+        var url = getURL(event, project)
 
         if (url.isEmpty() || !(url.startsWith("http://") || url.startsWith("https://"))) {
             Messages.showErrorDialog(
-                event.getData(CommonDataKeys.PROJECT),
+                project,
                 "The provided URL '$url' is not valid. (model-server URLs have to start with 'http://' or 'https://'",
-                "Invalid model-server URL",
+                "Invalid Model Server URL",
             )
             return
         }
@@ -60,7 +60,7 @@ class AddModelServerAction : AnAction {
         }
 
         if (ModelServerConnections.instance.existModelServer(url)) {
-            Messages.showErrorDialog(event.getData(CommonDataKeys.PROJECT), "Already present!", "Add Model Server")
+            Messages.showErrorDialog(project, "Already present!", "Add Model Server")
             return
         }
 
@@ -79,8 +79,7 @@ class AddModelServerAction : AnAction {
 //                })
 //        } else {
         val modelServer: ModelServerConnection = ModelServerConnections.instance.ensureModelServerIsPresent(finalUrl)
-        PersistedBindingConfiguration.getInstance(event.getData(CommonDataKeys.PROJECT)!!)
-            .ensureModelServerIsPresent(modelServer)
+        PersistedBindingConfiguration.getInstance(project).ensureModelServerIsPresent(modelServer)
 //        }
     }
 }

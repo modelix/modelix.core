@@ -183,5 +183,10 @@
                 class="org.modelix.mps.sync.actions.node.AddTransientModuleBinding"
                 text="Bind to Transient Module"
                 description="Bind to transient module"/>
+
+        <action id="org.modelix.mps.sync.actions.node.RemoveTransientModuleBinding"
+                class="org.modelix.mps.sync.actions.node.RemoveTransientModuleBinding"
+                text="Unbind from Transient Module"
+                description="Unbind from transient module"/>
     </actions>
 </idea-plugin>

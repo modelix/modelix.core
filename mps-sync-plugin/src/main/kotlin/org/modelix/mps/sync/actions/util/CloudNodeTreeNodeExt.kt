@@ -22,6 +22,7 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
 import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import org.modelix.mps.sync.transient.TransientModuleBinding
 
 fun CloudNodeTreeNode.isCloudNodeRootNode(): Boolean {
     val node = this.node
@@ -49,4 +50,18 @@ fun CloudNodeTreeNode.isBoundAsAModule(): Boolean {
     val nodeId = (this.node as PNodeAdapter).nodeId
     val repositoryId: RepositoryId = getAncestor(RepositoryTreeNode::class.java).repositoryId
     return getModelServer()!!.hasModuleBinding(repositoryId, nodeId)
+}
+
+fun CloudNodeTreeNode.getTransientModuleBinding(): TransientModuleBinding? {
+    val nodeId = (this.node as PNodeAdapter).nodeId
+    val repositoryId = this.getAncestor(RepositoryTreeNode::class.java).repositoryId
+    val bindings =
+        this.getModelServer()?.getModuleBinding(repositoryId, nodeId)?.filterIsInstance<TransientModuleBinding>()
+    return if (bindings.isNullOrEmpty()) {
+        null
+    } else if (bindings.size == 1) {
+        bindings[0]
+    } else {
+        throw IllegalStateException("Multiple transient bindings for the same module are not expected")
+    }
 }

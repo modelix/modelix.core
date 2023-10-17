@@ -295,6 +295,13 @@ object BuiltinLanguages {
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
         ) {
             init { addConcept(this) }
+
+            val reexport by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242416")
+            val uuid by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242418")
+            val name by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242421")
+            val explicit by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750565")
+            val version by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750570")
+            val scope by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/8438396892798826745")
         }
     }
 

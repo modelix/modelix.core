@@ -193,5 +193,10 @@
                 class="org.modelix.mps.sync.actions.node.CheckoutModule"
                 text="Checkout"
                 description="Checkout module"/>
+
+        <action id="org.modelix.mps.sync.actions.node.CheckoutAndSyncModule"
+                class="org.modelix.mps.sync.actions.node.CheckoutAndSyncModule"
+                text="Checkout and Sync"
+                description="Checkout and sync module"/>
     </actions>
 </idea-plugin>

@@ -213,5 +213,15 @@
                 class="org.modelix.mps.sync.actions.node.NavigateToMpsNodeAction"
                 text="Navigate to Corresponding MPS Node"
                 description="Navigate to corresponding MPS node"/>
+
+        <group id="org.modelix.mps.sync.actions.node.SetPropertyActionGroup"
+               class="org.modelix.mps.sync.actions.node.SetPropertyActionGroup"
+               text="Set Node Property Action Group"
+               description="Set node property action group"/>
+
+        <action id="org.modelix.mps.sync.actions.node.SetPropertyAction"
+                class="org.modelix.mps.sync.actions.node.SetPropertyAction"
+                text="Set Property"
+                description="Set property"/>
     </actions>
 </idea-plugin>

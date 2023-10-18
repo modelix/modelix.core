@@ -15,11 +15,13 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
+import jetbrains.mps.smodel.tempmodel.TempModule
+import jetbrains.mps.smodel.tempmodel.TempModule2
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
-import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.NodeReference
@@ -28,10 +30,6 @@ import org.modelix.model.area.IArea
 
 data class MPSRepositoryAsNode(val repository: SRepository) : IDefaultNodeAdapter {
 
-    companion object {
-        private val builtinRepository = BuiltinLanguages.MPSRepositoryConcepts.Repository
-    }
-
     override fun getArea(): IArea {
         return MPSArea(repository)
     }
@@ -39,13 +37,9 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDefaultNodeAdapte
     override val reference: INodeReference
         get() = NodeReference("mps-repository")
     override val concept: IConcept
-        get() = builtinRepository
+        get() = BuiltinLanguages.MPSRepositoryConcepts.Repository
     override val parent: INode?
         get() = null
-
-    override fun getConceptReference(): IConceptReference? {
-        return concept.getReference()
-    }
 
     override val allChildren: Iterable<INode>
         get() = repository.modules.map { MPSModuleAsNode(it) }
@@ -57,14 +51,18 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDefaultNodeAdapte
     override fun getChildren(link: IChildLink): Iterable<INode> {
         return if (link is NullChildLink) {
             return emptyList()
-        } else if (link.conformsTo(builtinRepository.modules)) {
-            repository.modules.map { MPSModuleAsNode(it) }
-        } else if (link.conformsTo(builtinRepository.projects)) {
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)) {
+            repository.modules.filter { !it.isTempModule() }.map { MPSModuleAsNode(it) }
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects)) {
             ProjectManager.getInstance().openedProjects
                 .filterIsInstance<ProjectBase>()
                 .map { MPSProjectAsNode(it) }
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules)) {
+            repository.modules.filter { it.isTempModule() }.map { MPSModuleAsNode(it) }
         } else {
             emptyList()
         }
     }
 }
+
+private fun SModule.isTempModule(): Boolean = this is TempModule || this is TempModule2

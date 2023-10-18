@@ -167,12 +167,21 @@ object BuiltinLanguages {
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903",
             )
+
             val projects = SimpleChildLink(
                 simpleName = "projects",
                 isMultiple = true,
                 isOptional = true,
                 targetConcept = Project,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/7064605579395546636",
+            )
+
+            val tempModules = SimpleChildLink(
+                simpleName = "tempModules",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = Module,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/8226136427470548682",
             )
         }
 

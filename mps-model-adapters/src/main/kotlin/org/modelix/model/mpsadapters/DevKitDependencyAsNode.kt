@@ -31,6 +31,7 @@ import org.modelix.model.area.IArea
 import java.util.Collections
 
 // status: migrated, but needs some bugfixes
+@Deprecated("use MPSDevKitDependencyAsNode", replaceWith = ReplaceWith("MPSDevKitDependencyAsNode"))
 class DevKitDependencyAsNode : INode {
     var moduleReference: SModuleReference? = null
         private set

@@ -101,7 +101,7 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
         }
 
         for (devKit in moduleDescriptor.usedDevkits) {
-            dependencies.add(DevKitDependencyAsNode(devKit, module))
+            dependencies.add(MPSDevKitDependencyAsNode(devKit, module))
         }
 
         return dependencies
@@ -171,13 +171,13 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
         return null
     }
 
-    fun findDevKitDependency(dependencyId: SModuleId): DevKitDependencyAsNode? {
+    fun findDevKitDependency(dependencyId: SModuleId): MPSDevKitDependencyAsNode? {
         if (module !is AbstractModule) {
             return null
         }
         module.moduleDescriptor?.usedDevkits?.forEach { devKit ->
             if (devKit.moduleId == dependencyId) {
-                return DevKitDependencyAsNode(devKit, module)
+                return MPSDevKitDependencyAsNode(devKit, module)
             }
         }
         return null

@@ -103,7 +103,7 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
             },
         )
         importedLanguagesAndDevKits.addAll(
-            model.importedDevkits().map { DevKitDependencyAsNode(it, model) },
+            model.importedDevkits().map { MPSDevKitDependencyAsNode(it, modelImporter = model) },
         )
         return importedLanguagesAndDevKits
     }
@@ -137,11 +137,11 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
         return null
     }
 
-    fun findDevKitDependency(dependencyId: SModuleId): DevKitDependencyAsNode? {
+    fun findDevKitDependency(dependencyId: SModuleId): MPSDevKitDependencyAsNode? {
         if (model is SModelDescriptorStub) {
             model.importedDevkits().forEach { devKit ->
                 if (devKit.moduleId == dependencyId) {
-                    return DevKitDependencyAsNode(devKit, model)
+                    return MPSDevKitDependencyAsNode(devKit, modelImporter = model)
                 }
             }
         }

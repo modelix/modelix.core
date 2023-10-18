@@ -38,8 +38,17 @@ object ModelixConfigurationSystemProperties {
 
     fun getExecutionMode(): EModelixExecutionMode {
         val executionModeString = PropertyOrEnv[EXECUTION_MODE_SYSPROP]
+
         var executionMode = EModelixExecutionMode.DEFAULT
-        if (executionModeString?.isEmpty() == true) {
+
+        // quick exit if there is no string, assumes default
+        if (executionModeString == null) {
+            System.setProperty(EXECUTION_MODE_SYSPROP, executionMode.name)
+            return executionMode
+        }
+
+        // this smells like a bad hack? todo: investigate
+        if (executionModeString.isEmpty()) {
             val value = PropertyOrEnv["disable.autobinding"]
             if (value != null && (value.toLowerCase() == "true")) {
                 executionMode = EModelixExecutionMode.INTEGRATION_TESTS
@@ -49,15 +58,9 @@ object ModelixConfigurationSystemProperties {
                 executionMode = EModelixExecutionMode.MODEL_EXPORT
             }
         } else {
-            try {
-                if (executionModeString == null) {
-                    throw IllegalArgumentException()
-                }
-                executionMode = EModelixExecutionMode.valueOf(executionModeString)
-            } catch (ex: IllegalArgumentException) {
-                logger.error("Unknown execution mode: $executionModeString", ex)
-            }
+            executionMode = EModelixExecutionMode.valueOf(executionModeString)
         }
+
         System.setProperty(EXECUTION_MODE_SYSPROP, executionMode.name)
         return executionMode
     }

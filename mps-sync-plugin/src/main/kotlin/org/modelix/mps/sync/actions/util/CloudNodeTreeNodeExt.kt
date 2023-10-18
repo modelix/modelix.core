@@ -22,9 +22,9 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.connection.ModelServerConnection
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
-import org.modelix.mps.sync.tools.history.ModelServerTreeNode
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode
 import org.modelix.mps.sync.transient.TransientModuleBinding
 
 fun CloudNodeTreeNode.isCloudNodeRootNode(): Boolean {

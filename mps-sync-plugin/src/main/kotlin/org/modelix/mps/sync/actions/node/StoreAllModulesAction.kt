@@ -33,9 +33,9 @@ import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isProjectNode
 import org.modelix.mps.sync.importToCloud.ModelCloudImportUtils
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
-import org.modelix.mps.sync.tools.history.ModelServerTreeNode
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode
 import javax.swing.Icon
 
 class StoreAllModulesAction : ModelixAction {

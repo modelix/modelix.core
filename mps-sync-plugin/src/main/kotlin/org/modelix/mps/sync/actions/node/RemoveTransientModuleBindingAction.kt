@@ -25,9 +25,9 @@ import org.modelix.mps.sync.actions.util.getTransientModuleBinding
 import org.modelix.mps.sync.actions.util.isBoundAsModule
 import org.modelix.mps.sync.actions.util.isModuleNode
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
-import org.modelix.mps.sync.tools.history.ModelServerTreeNode
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode
 import javax.swing.Icon
 
 class RemoveTransientModuleBindingAction : ModelixAction {

@@ -20,6 +20,7 @@ import com.intellij.openapi.diagnostic.logger
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IConcept
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
@@ -40,6 +41,13 @@ class ModelServerConnections private constructor() {
 
     companion object {
         val instance = ModelServerConnections()
+    }
+
+    init {
+        // todo: do we _really_ need to load these here? investigate and delete eventually
+        ILanguageRepository.default.registerLanguage(BuiltinLanguages.jetbrains_mps_lang_core)
+        ILanguageRepository.default.registerLanguage(BuiltinLanguages.MPSRepositoryConcepts)
+        ILanguageRepository.default.registerLanguage(BuiltinLanguages.ModelixRuntimelang)
     }
 
     private val logger = logger<ModelServerConnections>()

@@ -22,7 +22,7 @@ import jetbrains.mps.util.NameUtil
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.icons.CloudIcons
-import org.modelix.mps.sync.tools.history.ModelServerTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode
 import javax.swing.Icon
 
 class AddRepositoryAction : ModelixAction {

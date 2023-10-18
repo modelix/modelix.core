@@ -18,7 +18,7 @@ package org.modelix.mps.sync.actions.util
 
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.area.PArea
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import javax.swing.tree.TreeNode
 
 fun TreeNode.isRootNode(): Boolean {

@@ -20,7 +20,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs
-import org.modelix.mps.sync.tools.history.ModelServerTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode
 import javax.swing.Icon
 
 class ReconnectAction : ModelixAction {

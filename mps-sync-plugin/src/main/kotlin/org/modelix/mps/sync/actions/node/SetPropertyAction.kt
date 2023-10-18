@@ -24,7 +24,7 @@ import org.modelix.model.api.IProperty
 import org.modelix.model.area.PArea
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNodeAs
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import javax.swing.Icon
 
 class SetPropertyAction : ModelixAction {

@@ -23,7 +23,7 @@ import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
-import org.modelix.mps.sync.tools.history.CloudBindingTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudBindingTreeNode
 import javax.swing.Icon
 
 class UnbindAction : ModelixAction {

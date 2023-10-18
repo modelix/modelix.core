@@ -23,9 +23,9 @@ import org.modelix.model.client.SharedExecutors
 import org.modelix.model.lazy.CLVersion
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNodeAs
-import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudBranchTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode
 import org.modelix.mps.sync.tools.history.HistoryToolFactory
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
 import javax.swing.Icon
 import javax.swing.SwingUtilities
 

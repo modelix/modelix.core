@@ -22,8 +22,8 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.area.PArea
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNodeAs
-import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudBranchTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode
 import javax.swing.Icon
 
 class AddBranchAction : ModelixAction {

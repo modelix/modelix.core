@@ -27,7 +27,7 @@ import org.modelix.mps.sync.actions.getMpsProject
 import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isProperNode
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import org.modelix.mps.sync.util.containingModel
 import org.modelix.mps.sync.util.containingModule
 import org.modelix.mps.sync.util.isMappedToMpsNode

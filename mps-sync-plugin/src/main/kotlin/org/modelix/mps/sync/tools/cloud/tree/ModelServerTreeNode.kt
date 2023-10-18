@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.tools.history
+package org.modelix.mps.sync.tools.cloud.tree
 
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.ui.tree.TextTreeNode
@@ -30,7 +30,7 @@ import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.icons.CloudIcons
 import org.modelix.mps.sync.icons.LoadingIcon
 import org.modelix.mps.sync.tools.cloud.CloudView
-import org.modelix.mps.sync.tools.history.TreeModelUtil.setTextAndRepaint
+import org.modelix.mps.sync.tools.cloud.tree.TreeModelUtil.setTextAndRepaint
 import org.modelix.mps.sync.util.ModelixNotifications
 import java.util.Collections
 import javax.swing.SwingUtilities

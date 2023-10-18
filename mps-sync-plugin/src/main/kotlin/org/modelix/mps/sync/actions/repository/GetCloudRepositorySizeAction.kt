@@ -22,7 +22,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.unwrap
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNodeAs
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode
 import javax.swing.Icon
 
 class GetCloudRepositorySizeAction : ModelixAction {

@@ -22,7 +22,7 @@ import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isModuleNode
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import javax.swing.Icon
 
 class AddModelNodeAction : ModelixAction {

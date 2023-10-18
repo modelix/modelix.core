@@ -19,7 +19,7 @@ package org.modelix.mps.sync.actions.branch
 import com.intellij.openapi.actionSystem.AnActionEvent
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNodeAs
-import org.modelix.mps.sync.tools.history.CloudBranchTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudBranchTreeNode
 import javax.swing.Icon
 
 class SwitchBranchAction : ModelixAction {

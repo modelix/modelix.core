@@ -30,7 +30,7 @@ import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
 import org.modelix.mps.sync.exportFromCloud.ModuleCheckout
 import org.modelix.mps.sync.importToCloud.ModelCloudImportUtils
 import org.modelix.mps.sync.synchronization.SyncDirection
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import org.modelix.mps.sync.transient.TransientModuleBinding
 import org.modelix.mps.sync.util.nodeIdAsLong
 

@@ -34,7 +34,7 @@ import org.modelix.mps.sync.binding.ProjectModuleBinding
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.connection.ModelServerConnections
 import org.modelix.mps.sync.synchronization.SyncDirection
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import org.modelix.mps.sync.transient.TransientModuleBinding
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.function.Consumer

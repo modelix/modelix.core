@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.tools.history
+package org.modelix.mps.sync.tools.cloud.tree
 
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.ui.tree.MPSTree

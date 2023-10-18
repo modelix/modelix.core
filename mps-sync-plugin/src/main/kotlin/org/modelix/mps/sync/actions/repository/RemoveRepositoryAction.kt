@@ -19,7 +19,7 @@ package org.modelix.mps.sync.actions.repository
 import com.intellij.openapi.actionSystem.AnActionEvent
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNodeAs
-import org.modelix.mps.sync.tools.history.RepositoryTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode
 import javax.swing.Icon
 
 class RemoveRepositoryAction : ModelixAction {

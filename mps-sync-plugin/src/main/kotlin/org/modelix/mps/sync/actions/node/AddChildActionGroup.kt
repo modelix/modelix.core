@@ -28,7 +28,7 @@ import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.mps.sync.actions.getMpsProject
 import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs
-import org.modelix.mps.sync.tools.history.CloudNodeTreeNode
+import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 
 class AddChildActionGroup : ActionGroup() {
 

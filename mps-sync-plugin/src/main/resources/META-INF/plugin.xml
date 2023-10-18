@@ -214,6 +214,16 @@
                 text="Navigate to Corresponding MPS Node"
                 description="Navigate to corresponding MPS node"/>
 
+        <group id="org.modelix.mps.sync.actions.node.AddChildActionGroup"
+               class="org.modelix.mps.sync.actions.node.AddChildActionGroup"
+               text="Add Child Node Action Group"
+               description="Add child node action group"/>
+
+        <action id="org.modelix.mps.sync.actions.node.AddChildNodeAction"
+                class="org.modelix.mps.sync.actions.node.AddChildNodeAction"
+                text="Add Child Node Action"
+                description="Add new child of concept in role"/>
+
         <group id="org.modelix.mps.sync.actions.node.SetPropertyActionGroup"
                class="org.modelix.mps.sync.actions.node.SetPropertyActionGroup"
                text="Set Node Property Action Group"

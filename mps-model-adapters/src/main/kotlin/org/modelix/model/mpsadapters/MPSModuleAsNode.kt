@@ -96,7 +96,7 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
 
         for ((language, version) in moduleDescriptor.languageVersions) {
             dependencies.add(
-                SingleLanguageDependencyAsNode(language.sourceModuleReference, version, module),
+                MPSSingleLanguageDependencyAsNode(language.sourceModuleReference, version, moduleImporter = module),
             )
         }
 
@@ -159,13 +159,13 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
         }
     }
 
-    fun findSingleLanguageDependency(dependencyId: SModuleId): SingleLanguageDependencyAsNode? {
+    fun findSingleLanguageDependency(dependencyId: SModuleId): MPSSingleLanguageDependencyAsNode? {
         if (module !is AbstractModule) {
             return null
         }
         module.moduleDescriptor?.dependencyVersions?.forEach { entry ->
             if (entry.key.moduleId == dependencyId) {
-                return SingleLanguageDependencyAsNode(entry.key, entry.value, module)
+                return MPSSingleLanguageDependencyAsNode(entry.key, entry.value, moduleImporter = module)
             }
         }
         return null

@@ -62,7 +62,7 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
 
     private fun removeUsedLanguage(languageNode: INode) {
         check(model is SModelDescriptorStub) { "Model '$model' is not a SModelDescriptor." }
-        check(languageNode is SingleLanguageDependencyAsNode) { "Node $languageNode to be removed is not a single language dependency." }
+        check(languageNode is MPSSingleLanguageDependencyAsNode) { "Node $languageNode to be removed is not a single language dependency." }
 
         val languageToRemove = languageNode.moduleReference?.let { MetaAdapterFactory.getLanguage(it) }
         checkNotNull(languageToRemove) { "Language to be removed could not be found." }
@@ -95,10 +95,10 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
         val importedLanguagesAndDevKits = mutableListOf<INode>()
         importedLanguagesAndDevKits.addAll(
             model.importedLanguageIds().filter { it.sourceModuleReference != null }.map {
-                SingleLanguageDependencyAsNode(
+                MPSSingleLanguageDependencyAsNode(
                     it.sourceModuleReference,
                     model.getLanguageImportVersion(it),
-                    model,
+                    modelImporter = model,
                 )
             },
         )
@@ -122,14 +122,14 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
         }
     }
 
-    fun findSingleLanguageDependency(dependencyId: SModuleId): SingleLanguageDependencyAsNode? {
+    fun findSingleLanguageDependency(dependencyId: SModuleId): MPSSingleLanguageDependencyAsNode? {
         if (model is SModelDescriptorStub) {
             model.importedLanguageIds().forEach { entry ->
                 if (entry.sourceModule?.moduleId == dependencyId) {
-                    return SingleLanguageDependencyAsNode(
+                    return MPSSingleLanguageDependencyAsNode(
                         entry.sourceModuleReference,
                         model.getLanguageImportVersion(entry),
-                        model,
+                        modelImporter = model,
                     )
                 }
             }

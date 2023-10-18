@@ -19,9 +19,12 @@ package org.modelix.mps.sync.actions.node
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import jetbrains.mps.lang.smodel.generator.smodelAdapter.SConceptOperations
+import jetbrains.mps.smodel.language.LanguageRegistry
+import org.jetbrains.mps.openapi.language.SConcept
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.getAllSubConcepts
+import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.mps.sync.actions.getMpsProject
 import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs
@@ -36,23 +39,27 @@ class AddChildActionGroup : ActionGroup() {
 
         val treeNode = event.getTreeNodeAs<CloudNodeTreeNode>()
         val node = treeNode.node
-        if (node !is PNodeAdapter) {
-            return emptyArray()
-        }
         val concept = node.concept ?: return emptyArray()
 
+        val snode = NodeAsMPSNode.wrap(node) ?: return emptyArray()
+        val sconcept = snode.concept
+
+        val project = event.getMpsProject() ?: return emptyArray()
+        val allLanguages = LanguageRegistry.getInstance(project.repository).allLanguages.toMutableSet()
+
         val actions = mutableListOf<AnAction>()
+
         for (role in concept.getAllChildLinks()) {
             if (role == BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.smodelAttribute) {
                 continue
             }
-
-            var subConcepts = role.targetConcept.getAllSubConcepts(true).filter { !it.isAbstract() }
+            var subConcepts = SConceptOperations.getAllSubConcepts(sconcept, allLanguages).filter { !it.isAbstract }
+                .filterIsInstance(SConcept::class.java)
             if (role == BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes) {
-                // TODO filter it.isRootable()
-                subConcepts = subConcepts.filter { true }
+                subConcepts = subConcepts.filter { it.isRootable }
             }
-            subConcepts.sortedBy { it.getLongName() }.forEach { actions.add(AddChildNodeAction(node, it, role)) }
+            subConcepts.map { MPSConcept(it) }.sortedBy { it.getLongName() }
+                .forEach { actions.add(AddChildNodeAction(node, it, role)) }
         }
 
         return actions.toTypedArray()

@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.tools.cloud
 
-import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DataProvider
 import jetbrains.mps.ide.actions.MPSCommonDataKeys
@@ -61,10 +60,8 @@ class CloudView : JPanel(BorderLayout()) {
             return root
         }
 
-        override fun createPopupActionGroup(node: MPSTreeNode): ActionGroup? {
-            // TODO fixme, this method relies on the ActionGroups. We have to migrate those Groups as well and set the correct ID here!
-            // alternative: use the actual SDK way to do these things? the groups are
-            return when (node) {
+        override fun createPopupActionGroup(node: MPSTreeNode) =
+            when (node) {
                 is CloudRootTreeNode -> {
                     ActionUtils.groupFromActions(
                         ActionManager.getInstance().getAction("org.modelix.mps.sync.actions.AddModelServerAction"),
@@ -118,7 +115,6 @@ class CloudView : JPanel(BorderLayout()) {
                     null
                 }
             }
-        }
 
         private fun <T : TreeNode?> getSelectedTreeNode(nodeClass: Class<T>): T? {
             val selectionPath = selectionPath ?: return null

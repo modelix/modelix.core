@@ -41,7 +41,7 @@ class LoadingIcon private constructor() : Icon {
     }
 
     private val activeNodes = mutableSetOf<MPSTreeNode>()
-    private var angle: Double? = null
+    private var angle: Double = 0.0
     private var timer: Timer? = null
     private var inactivity = 0
 
@@ -73,7 +73,7 @@ class LoadingIcon private constructor() : Icon {
     }
 
     private fun rotate() {
-        angle = (angle!! - 360.0 / 120.0) % 360.0
+        angle = (angle - 360.0 / 120.0) % 360.0
     }
 
     override fun paintIcon(component: Component, graphics: Graphics, x: Int, y: Int) {
@@ -89,7 +89,7 @@ class LoadingIcon private constructor() : Icon {
             g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
             g.stroke = BasicStroke(3.0f)
             g.color = Gray._80
-            g.draw(Arc2D.Double(2.0 + x, 2.0 + y, w - 4.0, h - 4.0, angle!!, 250.0, Arc2D.OPEN))
+            g.draw(Arc2D.Double(2.0 + x, 2.0 + y, w - 4.0, h - 4.0, angle, 250.0, Arc2D.OPEN))
         } finally {
             g.dispose()
         }

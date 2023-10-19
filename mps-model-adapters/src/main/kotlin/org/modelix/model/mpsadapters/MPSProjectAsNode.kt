@@ -28,25 +28,21 @@ import org.modelix.model.area.IArea
 
 data class MPSProjectAsNode(val project: ProjectBase) : IDefaultNodeAdapter {
 
-    companion object {
-        private val builtinProject = BuiltinLanguages.MPSRepositoryConcepts.Project
-    }
-
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
     override val concept: IConcept
-        get() = builtinProject
+        get() = BuiltinLanguages.MPSRepositoryConcepts.Project
     override val parent: INode
         get() = MPSRepositoryAsNode(MPSModuleRepository.getInstance())
 
     override val allChildren: Iterable<INode>
-        get() = getChildren(builtinProject.projectModules)
+        get() = getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules)
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        if (link.conformsTo(builtinProject.projectModules)) {
+        if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules)) {
             return project.projectModules.map { MPSProjectModuleAsNode(project, it) }
         }
-        if (link.conformsTo(builtinProject.modules)) {
+        if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Project.modules)) {
             return emptyList() // modules child link is deprecated
         }
         throw IllegalArgumentException("Unknown link $link")

@@ -29,14 +29,10 @@ import org.modelix.model.area.IArea
 
 data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule) : IDefaultNodeAdapter {
 
-    companion object {
-        private val builtinProjectModule = BuiltinLanguages.MPSRepositoryConcepts.ProjectModule
-    }
-
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
     override val concept: IConcept
-        get() = builtinProjectModule
+        get() = BuiltinLanguages.MPSRepositoryConcepts.ProjectModule
     override val parent: INode
         get() = MPSProjectAsNode(project)
 
@@ -55,14 +51,14 @@ data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule)
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        if (property.conformsTo(builtinProjectModule.virtualFolder)) {
+        if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.virtualFolder)) {
             return project.getPath(module)?.virtualFolder
         }
         return null
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        if (property.conformsTo(builtinProjectModule.virtualFolder)) {
+        if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.virtualFolder)) {
             project.setVirtualFolder(module, value)
         }
     }

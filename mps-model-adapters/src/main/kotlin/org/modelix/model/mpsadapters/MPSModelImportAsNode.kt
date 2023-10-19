@@ -31,7 +31,7 @@ class MPSModelImportAsNode(val importedModel: SModel, val importingModel: SModel
         MPSArea(importingModel.repository)
 
     override val reference: INodeReference
-        get() = TODO()
+        get() = TODO("Not yet implemented")
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
     override val parent: INode

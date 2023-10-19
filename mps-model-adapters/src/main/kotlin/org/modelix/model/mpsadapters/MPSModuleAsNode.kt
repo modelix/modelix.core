@@ -35,7 +35,6 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
 
     companion object {
         fun wrap(module: SModule?): MPSModuleAsNode? = module?.let { MPSModuleAsNode(it) }
-        private val builtinModule = BuiltinLanguages.MPSRepositoryConcepts.Module
     }
 
     override fun getArea(): IArea {
@@ -45,7 +44,7 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
     override val reference: INodeReference
         get() = MPSModuleReference(module.moduleReference)
     override val concept: IConcept
-        get() = builtinModule
+        get() = BuiltinLanguages.MPSRepositoryConcepts.Module
     override val parent: INode?
         get() = module.repository?.let { MPSRepositoryAsNode(it) }
 
@@ -57,13 +56,13 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.conformsTo(builtinModule.models)) {
+        return if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.models)) {
             module.models.map { MPSModelAsNode(it) }
-        } else if (link.conformsTo(builtinModule.facets)) {
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.facets)) {
             module.facets.filterIsInstance<JavaModuleFacet>().map { MPSJavaModuleFacetAsNode(it) }
-        } else if (link.conformsTo(builtinModule.dependencies)) {
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)) {
             getDependencies()
-        } else if (link.conformsTo(builtinModule.languageDependencies)) {
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies)) {
             getLanguageDependencies()
         } else {
             emptyList()
@@ -135,12 +134,12 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
                 .mapNotNull { it.getPath(module) }
                 .firstOrNull()
                 ?.virtualFolder
-        } else if (property.conformsTo(builtinModule.id)) {
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.id)) {
             module.moduleId.toString()
-        } else if (property.conformsTo(builtinModule.moduleVersion)) {
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion)) {
             val version = (module as? AbstractModule)?.moduleDescriptor?.moduleVersion ?: 0
             version.toString()
-        } else if (property.conformsTo(builtinModule.compileInMPS)) {
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS)) {
             getCompileInMPS().toString()
         } else {
             null

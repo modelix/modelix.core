@@ -32,7 +32,6 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
 
     companion object {
         fun wrap(model: SModel?): MPSModelAsNode? = model?.let { MPSModelAsNode(it) }
-        private val builtinModel = BuiltinLanguages.MPSRepositoryConcepts.Model
     }
 
     override fun getArea(): IArea {
@@ -42,19 +41,23 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
     override val reference: INodeReference
         get() = NodeReference("mps-model:" + model.reference.toString())
     override val concept: IConcept
-        get() = builtinModel
+        get() = BuiltinLanguages.MPSRepositoryConcepts.Model
     override val parent: INode
         get() = MPSModuleAsNode(model.module)
 
     override val allChildren: Iterable<INode>
         get() {
-            val childLinks = listOf(builtinModel.rootNodes, builtinModel.modelImports, builtinModel.usedLanguages)
+            val childLinks = listOf(
+                BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes,
+                BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports,
+                BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages,
+            )
             return childLinks.flatMap { getChildren(it) }
         }
 
     override fun removeChild(child: INode) {
         val link = child.getContainmentLink() ?: throw RuntimeException("ContainmentLink not found for node $child")
-        if (link.conformsTo(builtinModel.usedLanguages)) {
+        if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)) {
             removeUsedLanguage(child)
         }
         super.removeChild(child)
@@ -64,8 +67,7 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
         check(model is SModelDescriptorStub) { "Model '$model' is not a SModelDescriptor." }
         check(languageNode is MPSSingleLanguageDependencyAsNode) { "Node $languageNode to be removed is not a single language dependency." }
 
-        val languageToRemove = languageNode.moduleReference?.let { MetaAdapterFactory.getLanguage(it) }
-        checkNotNull(languageToRemove) { "Language to be removed could not be found." }
+        val languageToRemove = MetaAdapterFactory.getLanguage(languageNode.moduleReference)
         model.deleteLanguageId(languageToRemove)
     }
 
@@ -76,13 +78,13 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
     override fun getChildren(link: IChildLink): Iterable<INode> {
         return if (link is NullChildLink) {
             emptyList()
-        } else if (link.conformsTo(builtinModel.rootNodes)) {
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes)) {
             model.rootNodes.map { MPSNode(it) }
-        } else if (link.conformsTo(builtinModel.modelImports)) {
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)) {
             ModelImports(model).importedModels.mapNotNull {
                 MPSModelImportAsNode(it.resolve(model.repository), model)
             }
-        } else if (link.conformsTo(builtinModel.usedLanguages)) {
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)) {
             getImportedLanguagesAndDevKits()
         } else {
             emptyList()
@@ -111,11 +113,11 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
     override fun getPropertyValue(property: IProperty): String? {
         return if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)) {
             model.name.value
-        } else if (property.conformsTo(builtinModel.id)) {
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.id)) {
             model.modelId.toString()
         } else if (property.isIdProperty()) {
             reference.serialize()
-        } else if (property.conformsTo(builtinModel.stereotype)) {
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype)) {
             model.name.stereotype
         } else {
             null

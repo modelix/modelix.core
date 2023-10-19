@@ -69,7 +69,7 @@ kotlin {
                 implementation(libs.apache.commons.lang)
                 implementation(libs.guava)
                 implementation(libs.apache.commons.io)
-                implementation("org.json:json:20230618")
+                implementation("org.json:json:20231013")
                 implementation(libs.trove4j)
                 implementation(libs.apache.commons.collections)
 

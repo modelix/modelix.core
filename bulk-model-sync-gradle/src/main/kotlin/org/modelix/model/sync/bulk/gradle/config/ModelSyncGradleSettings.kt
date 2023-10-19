@@ -41,6 +41,7 @@ data class SyncDirection(
     internal var target: SyncEndpoint? = null,
     internal val includedModules: Set<String> = mutableSetOf(),
     internal val registeredLanguages: Set<ILanguage> = mutableSetOf(),
+    internal val includedModulePrefixes: Set<String> = mutableSetOf(),
 ) {
     fun fromModelServer(action: Action<ServerSource>) {
         val endpoint = ServerSource()
@@ -68,6 +69,10 @@ data class SyncDirection(
 
     fun includeModule(module: String) {
         (includedModules as MutableSet).add(module)
+    }
+
+    fun includeModulesByPrefix(prefix: String) {
+        (includedModulePrefixes as MutableSet).add(prefix)
     }
 
     fun registerLanguage(language: ILanguage) {

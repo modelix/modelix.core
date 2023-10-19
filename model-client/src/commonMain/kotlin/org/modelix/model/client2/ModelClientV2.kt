@@ -34,13 +34,18 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
+import org.modelix.model.api.INode
 import org.modelix.model.api.IdGeneratorDummy
+import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
+import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.VersionDelta
@@ -311,3 +316,25 @@ private fun URLBuilder.appendPathSegmentsEncodingSlash(vararg components: String
 }
 
 fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.associateBy { HashUtil.sha256(it) }
+
+/**
+ * Performs a write transaction on the root node of the given branch.
+ */
+suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode) -> T): T {
+    val client = this
+    val baseVersion = client.pull(branchRef, null)
+    val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (client as ModelClientV2).store)
+    val result = branch.computeWrite {
+        body(branch.getRootNode())
+    }
+    val (ops, newTree) = branch.getPendingChanges()
+    val newVersion = CLVersion.createRegularVersion(
+        id = client.getIdGenerator().generate(),
+        author = client.getUserId(),
+        tree = newTree as CLTree,
+        baseVersion = baseVersion as CLVersion?,
+        operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+    )
+    client.push(branchRef, newVersion, baseVersion)
+    return result
+}

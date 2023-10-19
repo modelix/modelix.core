@@ -30,9 +30,8 @@ import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.ILanguage
 import org.modelix.model.api.ILanguageRepository
-import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
-import org.modelix.model.client2.getReplicatedModel
+import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.importFilesAsRootChildren
@@ -67,20 +66,17 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
 
         val branchRef = ModelFacade.createBranchReference(repoId, branchName.get())
         val client = ModelClientV2PlatformSpecificBuilder().url(url.get()).build()
-        val branch = runBlocking {
-            client.init()
-            client.getReplicatedModel(branchRef).start()
-        }
-
         val files = inputDir.listFiles()?.filter { it.extension == "json" }
         if (files.isNullOrEmpty()) error("no json files found")
 
-        branch.runWrite {
-            val rootNode = branch.getRootNode()
-            logger.info("Got root node: {}", rootNode)
-            logger.info("Importing...")
-            ModelImporter(branch.getRootNode()).importFilesAsRootChildren(*files.toTypedArray())
-            logger.info("Import finished")
+        runBlocking {
+            client.init()
+            client.runWrite(branchRef) { rootNode ->
+                logger.info("Got root node: {}", rootNode)
+                logger.info("Importing...")
+                ModelImporter(rootNode).importFilesAsRootChildren(files)
+                logger.info("Import finished")
+            }
         }
     }
 }

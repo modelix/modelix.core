@@ -40,7 +40,7 @@ data class MPSDevKitDependencyAsNode(
     }
 
     override val reference: INodeReference
-        get() = TODO("Not yet implemented")
+        get() = MPSModuleReference(moduleReference)
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency
     override val parent: INode

@@ -29,7 +29,6 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
-import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 
 data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
@@ -44,7 +43,7 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
     }
 
     override val reference: INodeReference
-        get() = NodeReference("mps-module:" + module.moduleReference.toString())
+        get() = MPSModuleReference(module.moduleReference)
     override val concept: IConcept
         get() = builtinModule
     override val parent: INode?

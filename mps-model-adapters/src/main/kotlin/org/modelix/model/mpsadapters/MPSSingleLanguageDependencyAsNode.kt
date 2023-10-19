@@ -63,7 +63,7 @@ data class MPSSingleLanguageDependencyAsNode(
     }
 
     override val reference: INodeReference
-        get() = TODO("Not yet implemented")
+        get() = MPSModuleReference(moduleReference)
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency
     override val parent: INode

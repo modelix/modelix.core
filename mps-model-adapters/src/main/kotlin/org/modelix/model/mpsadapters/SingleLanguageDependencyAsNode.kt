@@ -88,12 +88,7 @@ class SingleLanguageDependencyAsNode : INode {
     @Deprecated("use IChildLink instead of String")
     override fun getChildren(role: String?): MutableList<INode> = Collections.emptyList()
 
-    override val allChildren: Iterable<INode> =
-        if (concept == null) {
-            Collections.emptyList()
-        } else {
-            concept!!.getAllChildLinks().map { getChildren(it.name) }.flatten()
-        }
+    override val allChildren = concept.getAllChildLinks().map { getChildren(it.name) }.flatten()
 
     @Deprecated("use IChildLink instead of String")
     override fun moveChild(role: String?, index: Int, child: INode) = throw UnsupportedOperationException()
@@ -133,20 +128,10 @@ class SingleLanguageDependencyAsNode : INode {
     override fun setPropertyValue(role: String, value: String?) = throw UnsupportedOperationException()
 
     @Deprecated("use getPropertyLinks()")
-    override fun getPropertyRoles(): List<String> =
-        if (concept == null) {
-            Collections.emptyList()
-        } else {
-            concept!!.getAllProperties().map { it.name }
-        }
+    override fun getPropertyRoles() = concept.getAllProperties().map { it.name }
 
     @Deprecated("use getReferenceLinks()")
-    override fun getReferenceRoles(): List<String> =
-        if (concept == null) {
-            Collections.emptyList()
-        } else {
-            concept!!.getAllReferenceLinks().map { it.name }
-        }
+    override fun getReferenceRoles() = concept.getAllReferenceLinks().map { it.name }
 
     override fun getConceptReference() = concept.getReference()
 

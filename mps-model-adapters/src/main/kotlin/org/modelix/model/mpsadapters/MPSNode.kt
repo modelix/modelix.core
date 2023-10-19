@@ -17,6 +17,7 @@ import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -83,7 +84,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun getContainmentLink(): IChildLink {
-        return node.containmentLink?.let { MPSChildLink(it) } ?: RepositoryLanguage.Model.rootNodes
+        return node.containmentLink?.let { MPSChildLink(it) } ?: BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {

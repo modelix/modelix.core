@@ -129,16 +129,20 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         }
     }
 
-    private fun collectExpandableChildNodes(node: PNodeAdapter, expandedNodeIds: Set<String>): Set<String> {
-        if (expandedNodeIds.contains(node.nodeId.toString())) {
-            val newIds = mutableSetOf<String>()
-            for (child in node.allChildren) {
-                newIds.addAll(collectExpandableChildNodes(child as PNodeAdapter, expandedNodeIds))
+    // The method traverses the expanded tree based on the alreadyExpandedNodeIds and
+    // collects the expandable (not empty) nodes which are not expanded yet
+    private fun collectExpandableChildNodes(under: PNodeAdapter, alreadyExpandedNodeIds: Set<String>): Set<String> {
+        if (alreadyExpandedNodeIds.contains(under.nodeId.toString())) {
+            val expandableIds = mutableSetOf<String>()
+            for (child in under.allChildren) {
+                expandableIds.addAll(collectExpandableChildNodes(child as PNodeAdapter, alreadyExpandedNodeIds))
             }
-            return newIds
+            return expandableIds
         }
-        if (node.allChildren.toList().isNotEmpty()) {
-            return setOf(node.nodeId.toString())
+
+        if (under.allChildren.toList().isNotEmpty()) {
+            // Node is collected if it is expandable
+            return setOf(under.nodeId.toString())
         }
         return emptySet()
     }

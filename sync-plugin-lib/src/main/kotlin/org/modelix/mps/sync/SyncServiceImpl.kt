@@ -52,6 +52,7 @@ class SyncServiceImpl : SyncService {
             try {
                 log.info("Connecting to $serverURL")
                 modelClientV2.init()
+//                modelClientV2.initRepository(RepositoryId("lolwat"+(0..10).random().toString()))
             } catch (e: ConnectException) {
                 log.warn("Unable to connect: ${e.message} / ${e.cause}")
                 throw e

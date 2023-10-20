@@ -17,9 +17,9 @@
 package org.modelix.mps.sync.tools.cloud.tree
 
 import jetbrains.mps.ide.ui.tree.TextTreeNode
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.IBinding
+import org.modelix.mps.sync.replication.CloudRepository
 import javax.swing.SwingUtilities
 
 // status: ready to test

@@ -26,13 +26,13 @@ import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getMpsProject
 import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isProjectNode
 import org.modelix.mps.sync.importToCloud.ModelCloudImportUtils
+import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode
 import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode

@@ -21,9 +21,9 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.mps.sync.CloudRepository
-import org.modelix.mps.sync.ICloudRepository
-import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.connection.ModelServerConnectionInterface
+import org.modelix.mps.sync.replication.CloudRepository
+import org.modelix.mps.sync.replication.ICloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.SyncQueue
 
@@ -40,7 +40,7 @@ class RootBinding(private val cloudRepository: ICloudRepository) : Binding(null)
         activate()
     }
 
-    constructor(connection: ModelServerConnection, cloudRepositoryId: RepositoryId) : this(
+    constructor(connection: ModelServerConnectionInterface, cloudRepositoryId: RepositoryId) : this(
         CloudRepository(
             connection,
             cloudRepositoryId,

@@ -36,7 +36,7 @@ import org.modelix.model.mpsadapters.DevKitDependencyAsNode
 import org.modelix.model.mpsadapters.MPSModelAsNode
 import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.model.mpsadapters.SingleLanguageDependencyAsNode
-import org.modelix.mps.sync.ICloudRepository
+import org.modelix.mps.sync.replication.ICloudRepository
 import org.modelix.mps.sync.util.addDevKit
 import org.modelix.mps.sync.util.addLanguageImport
 import org.modelix.mps.sync.util.copyProperty

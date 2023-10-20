@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.actions.node
 
 import com.intellij.openapi.actionSystem.AnActionEvent
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs
@@ -25,6 +24,7 @@ import org.modelix.mps.sync.actions.util.getTransientModuleBinding
 import org.modelix.mps.sync.actions.util.isBoundAsModule
 import org.modelix.mps.sync.actions.util.isModuleNode
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
+import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode
 import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode

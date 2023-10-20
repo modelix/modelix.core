@@ -20,8 +20,8 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode
 import org.modelix.mps.sync.tools.cloud.tree.RepositoryTreeNode

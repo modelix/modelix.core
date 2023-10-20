@@ -18,6 +18,7 @@ package org.modelix.mps.sync.tools.cloud.tree
 
 import jetbrains.mps.ide.ui.tree.TextTreeNode
 import org.modelix.mps.sync.connection.IRepositoriesChangedListener
+import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.connection.ModelServerConnections
 import org.modelix.mps.sync.icons.CloudIcons
 
@@ -50,7 +51,7 @@ class CloudRootTreeNode : TextTreeNode(CloudIcons.ROOT_ICON, "Cloud") {
     }
 
     private fun populate() {
-        ModelServerConnections.instance.modelServers.forEach { add(ModelServerTreeNode(it)) }
+        ModelServerConnections.instance.modelServers.forEach { add(ModelServerTreeNode(it as ModelServerConnection)) }
     }
 
     override fun onAdd() {

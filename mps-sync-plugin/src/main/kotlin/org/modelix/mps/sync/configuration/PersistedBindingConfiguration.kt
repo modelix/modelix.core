@@ -28,11 +28,12 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.binding.ProjectModuleBinding
 import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.connection.ModelServerConnectionInterface
 import org.modelix.mps.sync.connection.ModelServerConnections
+import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import org.modelix.mps.sync.transient.TransientModuleBinding
@@ -62,8 +63,8 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
             ModelServerConnections.instance.ensureModelServerIsPresent(url)
 
         private fun withConnectedCloudRepoHelper(
-            modelServer: ModelServerConnection,
-            consumer: Consumer<ModelServerConnection>,
+            modelServer: ModelServerConnectionInterface,
+            consumer: Consumer<ModelServerConnectionInterface>,
             nAttempts: Int,
         ) {
             if (modelServer.isConnected()) {
@@ -74,7 +75,8 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
                     logger.error { "Unable to connect to Modelix server. Modelix configuration aborted" }
                     return
                 }
-                modelServer.reconnect()
+                // todo fix or remove entire function?
+//                modelServer.reconnect()
                 Thread {
                     try {
                         Thread.sleep(250)
@@ -89,8 +91,8 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
          * Sometimes we need to wait for the repository to be connected. This is the case for example on starting the plugin.
          */
         private fun withConnectedCloudRepo(
-            modelServer: ModelServerConnection,
-            consumer: Consumer<ModelServerConnection>,
+            modelServer: ModelServerConnectionInterface,
+            consumer: Consumer<ModelServerConnectionInterface>,
         ) = withConnectedCloudRepoHelper(modelServer, consumer, 20)
 
         /**
@@ -166,11 +168,13 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
     }
 
     private fun readState(): CloudResourcesConfigurationComponent.State {
+        println("--- read xml state ...")
         val cloudResourcesConfigurationComponent: CloudResourcesConfigurationComponent = project.service<CloudResourcesConfigurationComponent>()
         return cloudResourcesConfigurationComponent.state
     }
 
     private fun modifyState(modifier: Consumer<CloudResourcesConfigurationComponent.State>) {
+        println("--- modifying xml state ...")
         val cloudResourcesConfigurationComponent: CloudResourcesConfigurationComponent = project.service<CloudResourcesConfigurationComponent>()
         val state = readState()
         modifier.accept(state)
@@ -182,7 +186,7 @@ class PersistedBindingConfiguration private constructor(val project: Project) {
 
     fun isModelServerPresent(url: String) = readState().modelServers.contains(url)
 
-    fun ensureModelServerIsPresent(modelServer: ModelServerConnection) {
+    fun ensureModelServerIsPresent(modelServer: ModelServerConnectionInterface) {
         if (!isModelServerPresent(modelServer.baseUrl)) {
             modifyState { state -> state.modelServers.add(modelServer.baseUrl) }
         }

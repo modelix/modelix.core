@@ -46,7 +46,7 @@ import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.model.mpsadapters.NodeAsMPSNode
-import org.modelix.mps.sync.ICloudRepository
+import org.modelix.mps.sync.replication.ICloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.Synchronizer
 import org.modelix.mps.sync.util.index

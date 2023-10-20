@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync
+package org.modelix.mps.sync.replication
 
 import jetbrains.mps.project.MPSProject
 import org.modelix.model.api.BuiltinLanguages
@@ -32,7 +32,7 @@ import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.RootBinding
-import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.connection.ModelServerConnectionInterface
 import org.modelix.mps.sync.connection.ModelServerConnections
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.transient.TransientModuleBinding
@@ -41,7 +41,7 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.function.Consumer
 
 // status: ready to test
-class CloudRepository(public val modelServer: ModelServerConnection, private val repositoryId: RepositoryId) :
+class CloudRepository(public val modelServer: ModelServerConnectionInterface, private val repositoryId: RepositoryId) :
     ICloudRepository {
 
     companion object {

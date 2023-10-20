@@ -20,7 +20,8 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import org.modelix.mps.sync.configuration.PersistedBindingConfiguration
-import org.modelix.mps.sync.connection.ModelServerConnection
+import org.modelix.mps.sync.connection.ModelServerConnectionInterface
+import org.modelix.mps.sync.connection.ModelServerConnectionV2
 import org.modelix.mps.sync.connection.ModelServerConnections
 import javax.swing.Icon
 
@@ -78,8 +79,14 @@ class AddModelServerAction : ModelixAction {
 //                    }
 //                })
 //        } else {
-        val modelServer: ModelServerConnection = ModelServerConnections.instance.ensureModelServerIsPresent(finalUrl)
+        val modelServer: ModelServerConnectionInterface
+        if (url.contains("/v2/")) {
+            // todo: new way. make it work
+            modelServer = ModelServerConnectionV2(url)
+        } else {
+            // todo: the old way. broken and to be removed
+            modelServer = ModelServerConnections.instance.ensureModelServerIsPresent(finalUrl)
+        }
         PersistedBindingConfiguration.getInstance(project).ensureModelServerIsPresent(modelServer)
-//        }
     }
 }

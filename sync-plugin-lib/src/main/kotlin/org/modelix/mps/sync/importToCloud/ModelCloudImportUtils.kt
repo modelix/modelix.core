@@ -30,8 +30,8 @@ import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSModelAsNode
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSNode
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.binding.ProjectBinding
+import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.synchronization.PhysicalToCloudModelMapping
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.util.cloneChildren

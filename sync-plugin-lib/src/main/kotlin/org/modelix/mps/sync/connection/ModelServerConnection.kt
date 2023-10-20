@@ -1,6 +1,7 @@
 package org.modelix.mps.sync.connection
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -8,6 +9,8 @@ import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.util.messages.MessageBusConnection
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
@@ -22,21 +25,23 @@ import org.modelix.model.client.ReplicatedRepository
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.NodeAsMPSNode
-import org.modelix.mps.sync.CloudRepository
-import org.modelix.mps.sync.MpsReplicatedRepository
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.binding.ProjectBinding
 import org.modelix.mps.sync.binding.RootBinding
 import org.modelix.mps.sync.plugin.init.EModelixExecutionMode
 import org.modelix.mps.sync.plugin.init.ModelixConfigurationSystemProperties
+import org.modelix.mps.sync.replication.CloudRepository
+import org.modelix.mps.sync.replication.MpsReplicatedRepository
 import org.modelix.mps.sync.util.ModelixNotifications.notifyError
 import java.net.URL
 import java.util.function.Consumer
 import javax.swing.SwingUtilities
 
 // status: ready to test
-class ModelServerConnection {
+class ModelServerConnection : ModelServerConnectionInterface {
+    private var log: Logger = logger<ModelServerConnection>()
+    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 
     companion object {
         val uiStateRepositoryId = RepositoryId("uistate")
@@ -48,7 +53,7 @@ class ModelServerConnection {
 
     private val logger = logger<ModelServerConnection>()
 
-    val baseUrl: String
+    override val baseUrl: String
     private val client: RestWebModelClient
     private var infoTree: MpsReplicatedRepository? = null
     private val activeBranches = mutableMapOf<RepositoryId, ActiveBranch>()
@@ -111,7 +116,7 @@ class ModelServerConnection {
 
     constructor(baseUrl: URL) : this(baseUrl.toString())
 
-    fun getRootBinding(repositoryId: RepositoryId): RootBinding {
+    override fun getRootBinding(repositoryId: RepositoryId): RootBinding {
         var rootBinding = bindings[repositoryId]
         if (rootBinding == null) {
             rootBinding = RootBinding(this, repositoryId)
@@ -142,7 +147,7 @@ class ModelServerConnection {
         logger.debug("connected to $baseUrl")
     }
 
-    fun getAuthor(): String {
+    override fun getAuthor(): String {
         var email = this.email
         if (email == "<no email>") {
             email = null
@@ -150,7 +155,7 @@ class ModelServerConnection {
         return AuthorOverride.apply(email) ?: "null"
     }
 
-    fun isConnected(): Boolean {
+    override fun isConnected(): Boolean {
         val status = client.connectionStatus
         return status != RestWebModelClient.ConnectionStatus.NEW && status != RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
     }
@@ -186,7 +191,7 @@ class ModelServerConnection {
         return repositoryInfo
     }
 
-    fun addRepository(id: String) =
+    override fun addRepository(id: String) {
         PArea(getInfoBranch()).executeWrite {
             // here they originally used the SNode API, but since getInfo() is an INode in our case, it might make sense to use that API instead...
             val modelServerInfo = getInfo()
@@ -213,8 +218,9 @@ class ModelServerConnection {
 
             repositoryInfo
         }
+    }
 
-    fun removeRepository(id: String) {
+    override fun removeRepository(id: String) {
         PArea(getInfoBranch()).executeWrite {
             val info = getInfo()
             val node = info.getChildren(BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.repositories)
@@ -230,16 +236,16 @@ class ModelServerConnection {
 
     fun getProjectBindings() = bindings.values.flatMap { it.getAllBindings() }.filterIsInstance<ProjectBinding>()
 
-    fun addBinding(repositoryId: RepositoryId, binding: Binding, callback: Runnable?) {
+    override fun addBinding(repositoryId: RepositoryId, binding: Binding, callback: Runnable?) {
         binding.owner = getRootBinding(repositoryId)
         binding.activate(callback)
     }
 
-    fun addBinding(repositoryId: RepositoryId, binding: Binding) {
+    override fun addBinding(repositoryId: RepositoryId, binding: Binding) {
         addBinding(repositoryId, binding, null)
     }
 
-    fun removeBinding(binding: Binding) {
+    override fun removeBinding(binding: Binding) {
         binding.deactivate(null)
         binding.owner = null
     }
@@ -254,7 +260,7 @@ class ModelServerConnection {
 
     fun getModuleBindings() = bindings.values.flatMap { it.getAllBindings() }.filterIsInstance<ModuleBinding>()
 
-    fun getInfoBranch(): IBranch {
+    override fun getInfoBranch(): IBranch {
         checkConnected()
         return infoTree?.branch!!
     }
@@ -288,7 +294,7 @@ class ModelServerConnection {
         return result
     }
 
-    fun getActiveBranch(repositoryId: RepositoryId): ActiveBranch {
+    override fun getActiveBranch(repositoryId: RepositoryId): ActiveBranch {
         checkConnected()
         synchronized(activeBranches) {
             var activeBranch = activeBranches[repositoryId]
@@ -308,13 +314,13 @@ class ModelServerConnection {
         }
     }
 
-    fun getActiveBranches(): Iterable<ActiveBranch> {
+    override fun getActiveBranches(): Iterable<ActiveBranch> {
         synchronized(activeBranches) {
             return activeBranches.values
         }
     }
 
-    fun dispose() {
+    override fun dispose() {
         synchronized(this) {
             try {
                 messageBusConnection.disconnect()
@@ -377,7 +383,7 @@ class ModelServerConnection {
         }
     }
 
-    fun trees() = PArea(this.getInfoBranch()).executeRead {
+    override fun trees(): List<CloudRepository> = PArea(this.getInfoBranch()).executeRead {
         // We want to obtain a list within the transaction.
         // A sequence (which is lazy) would not work
         val info = this.getInfo()

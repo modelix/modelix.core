@@ -21,7 +21,7 @@ import com.intellij.openapi.application.ModalityState
 import jetbrains.mps.project.Project
 import jetbrains.mps.project.Solution
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.mps.sync.CloudRepository
+import org.modelix.mps.sync.replication.CloudRepository
 import javax.swing.SwingUtilities
 
 // status: ready to test

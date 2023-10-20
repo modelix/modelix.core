@@ -71,7 +71,7 @@ class CloudView : JPanel(BorderLayout()) {
                 is ModelServerTreeNode -> {
                     ActionUtils.groupFromActions(
                         ActionManager.getInstance()
-                            .getAction("org.modelix.mps.sync.actions.modelServer.RemoveModelServer"),
+                            .getAction("org.modelix.mps.sync.actions.modelServer.RemoveModelServerAction"),
                         ActionManager.getInstance()
                             .getAction("org.modelix.mps.sync.actions.modelServer.AddRepositoryAction"),
                         ActionManager.getInstance()

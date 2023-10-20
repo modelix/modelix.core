@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync
+package org.modelix.mps.sync.replication
 
 import org.modelix.model.api.IBranch
 import org.modelix.model.client.IIndirectBranch

@@ -34,7 +34,7 @@ import org.jetbrains.mps.openapi.persistence.NullDataSource
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.util.pmap.CustomPMap
 import org.modelix.model.util.pmap.SmallPMap.Companion.empty
-import org.modelix.mps.sync.MpsReplicatedRepository
+import org.modelix.mps.sync.replication.MpsReplicatedRepository
 import org.modelix.mps.sync.userobject.IUserObjectContainer
 import org.modelix.mps.sync.userobject.UserObjectKey
 

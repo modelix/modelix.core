@@ -20,7 +20,6 @@ import com.intellij.openapi.diagnostic.logger
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IConcept
-import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
@@ -45,13 +44,11 @@ class ModelServerConnections private constructor() {
 
     init {
         // todo: do we _really_ need to load these here? investigate and delete eventually
-        ILanguageRepository.default.registerLanguage(BuiltinLanguages.jetbrains_mps_lang_core)
-        ILanguageRepository.default.registerLanguage(BuiltinLanguages.MPSRepositoryConcepts)
-        ILanguageRepository.default.registerLanguage(BuiltinLanguages.ModelixRuntimelang)
+        BuiltinLanguages.getAllLanguages().forEach { it.register() }
     }
 
     private val logger = logger<ModelServerConnections>()
-    val modelServers = mutableListOf<ModelServerConnection>()
+    val modelServers = mutableListOf<ModelServerConnectionInterface>()
     private val listeners = mutableSetOf<IRepositoriesChangedListener>()
 
     fun getArea(): IArea = getArea(getSRepository())
@@ -75,7 +72,7 @@ class ModelServerConnections private constructor() {
 
     fun existModelServer(url: String) = getModelServer(url) != null
 
-    fun getModelServer(url: String): ModelServerConnection? {
+    fun getModelServer(url: String): ModelServerConnectionInterface? {
         return if (!url.endsWith("/")) {
             getModelServer("$url/")
         } else {
@@ -83,7 +80,7 @@ class ModelServerConnections private constructor() {
         }
     }
 
-    fun addModelServer(url: String): ModelServerConnection {
+    fun addModelServer(url: String): ModelServerConnectionInterface {
         if (!url.endsWith("/")) {
             return addModelServer("$url/")
         }
@@ -91,9 +88,33 @@ class ModelServerConnections private constructor() {
         return doAddModelServer(URL(url))
     }
 
-    private fun doAddModelServer(url: URL): ModelServerConnection {
+    private fun doAddModelServer(url: URL): ModelServerConnectionInterface {
         logger.debug("Adding model-server {}", url)
         val newRepo = ModelServerConnection(url)
+        modelServers.add(newRepo)
+        try {
+            // we do not automatically change the persisted configuration, to avoid cycles
+            listeners.forEach {
+                it.repositoriesChanged()
+            }
+        } catch (ex: Exception) {
+            logger.error(ex.message, ex)
+            ModelixNotifications.notifyError("Failure while adding model server $url", ex.message ?: "")
+        }
+        return newRepo
+    }
+
+    fun addModelServerV2(url: String): ModelServerConnectionInterface {
+        if (!url.endsWith("/")) {
+            return addModelServerV2("$url/")
+        }
+        check(!existModelServer(url)) { "The repository with url $url is already present" }
+        return doAddModelServerV2(URL(url))
+    }
+
+    private fun doAddModelServerV2(url: URL): ModelServerConnectionInterface {
+        logger.debug("Adding model-server V2 {}", url)
+        val newRepo = ModelServerConnectionV2(url)
         modelServers.add(newRepo)
         try {
             // we do not automatically change the persisted configuration, to avoid cycles
@@ -135,9 +156,11 @@ class ModelServerConnections private constructor() {
         modelServers.clear()
     }
 
-    fun ensureModelServerIsPresent(url: String): ModelServerConnection {
-        val modelServerConnection = getModelServer(url)
-        return modelServerConnection ?: instance.addModelServer(url)
+    fun ensureModelServerIsPresent(url: String): ModelServerConnectionInterface {
+        return getModelServer(url) ?: instance.addModelServer(url)
+    }
+    fun ensureModelServerIsPresentV2(url: String): ModelServerConnectionInterface {
+        return getModelServer(url) ?: instance.addModelServerV2(url)
     }
 }
 

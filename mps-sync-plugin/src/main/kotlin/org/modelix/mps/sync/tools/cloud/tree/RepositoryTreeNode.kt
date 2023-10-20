@@ -27,10 +27,10 @@ import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.client.SharedExecutors
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.connection.ModelServerConnection
 import org.modelix.mps.sync.icons.CloudIcons
 import org.modelix.mps.sync.icons.LoadingIcon
+import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.tools.cloud.CloudView
 import java.util.Collections
 import javax.swing.SwingUtilities

@@ -65,12 +65,12 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.PrefetchCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.metameta.MetaModelBranch
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.ModelPersistenceFacility
 import org.modelix.mps.sync.ModelPersistenceWithFixedId
 import org.modelix.mps.sync.binding.ModelSynchronizer
 import org.modelix.mps.sync.connection.ModelServerConnections
 import org.modelix.mps.sync.exportFromCloud.ModelCloudExporter.PersistenceFacility
+import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.util.ModelixNotifications.notifyError
 import java.io.File
 import java.io.IOException

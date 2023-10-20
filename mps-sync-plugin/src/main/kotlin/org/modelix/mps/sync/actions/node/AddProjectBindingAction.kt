@@ -21,12 +21,12 @@ import com.intellij.openapi.ui.Messages
 import jetbrains.mps.ide.actions.MPSCommonDataKeys
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.area.PArea
-import org.modelix.mps.sync.CloudRepository
 import org.modelix.mps.sync.actions.ModelixAction
 import org.modelix.mps.sync.actions.getMpsProject
 import org.modelix.mps.sync.actions.getTreeNodeAs
 import org.modelix.mps.sync.actions.util.isProjectNode
 import org.modelix.mps.sync.importToCloud.ModelCloudImportUtils
+import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.tools.cloud.tree.CloudNodeTreeNode
 import org.modelix.mps.sync.tools.cloud.tree.ModelServerTreeNode

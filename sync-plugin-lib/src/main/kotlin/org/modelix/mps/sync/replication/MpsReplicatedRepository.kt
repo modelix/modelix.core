@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync
+package org.modelix.mps.sync.replication
 
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.command.undo.DocumentReference

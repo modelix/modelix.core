@@ -21,7 +21,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.mps.sync.ICloudRepository
+import org.modelix.mps.sync.replication.ICloudRepository
 import org.modelix.mps.sync.synchronization.SyncDirection
 import org.modelix.mps.sync.synchronization.SyncTask
 import java.util.Collections

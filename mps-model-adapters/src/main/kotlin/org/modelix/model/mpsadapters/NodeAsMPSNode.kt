@@ -233,6 +233,8 @@ class NodeAsMPSNode(private val node: INode, private val repository: SRepository
     override fun setReference(role: SReferenceLink, reference: SReference?) =
         throw UnsupportedOperationException("Not implemented")
 
+    // super-method does not exist in MPS 2020.3.6, for compatibility we need to suppress this error
+    @Suppress("NOTHING_TO_OVERRIDE")
     override fun setReference(role: SReferenceLink, target: SNodeReference) =
         throw UnsupportedOperationException("Not implemented")
 

@@ -4,54 +4,73 @@ async function createInspectorDetails(nodeId) {
     nodeInspector.innerHTML = await response.text();
     nodeInspector.style.display = 'block';
 }
-document.addEventListener('DOMContentLoaded', () => {
-    var expander = document.getElementsByClassName('expander');
-    var nameField = document.getElementsByClassName('nameField');
-    var expandAllBtn = document.getElementById('expandAllBtn');
-    var collapseAllBtn = document.getElementById('collapseAllBtn');
 
+function getExpandedNodeIds() {
+    const expandedElements = document.getElementsByClassName('expander-expanded');
+    return Array.from(expandedElements).map(
+        element => element.nextElementSibling?.getAttribute('data-nodeid'));
+}
+
+function sendExpandNodeRequest(expandAll) {
+    const xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = () => {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            document.getElementById('treeWrapper').innerHTML = xhr.response;
+            addContentExplorerClickListeners();
+        }
+    }
+    xhr.open("POST", window.location.href, true);
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.send(JSON.stringify({"expandedNodeIds": getExpandedNodeIds(), "expandAll" : expandAll}));
+}
+
+function addContentExplorerClickListeners() {
+
+    const nameField = document.getElementsByClassName('nameField');
     for (let i = 0; i < nameField.length; i++) {
-        nameField[i].addEventListener('click', function() {
-             let isSelected = this.classList.contains('selectedNameField');
-             if (isSelected) {
+        nameField[i].addEventListener('click', function () {
+            let isSelected = this.classList.contains('selectedNameField');
+            if (isSelected) {
                 document.getElementById('nodeInspector').style.display = 'none';
-             } else {
+            } else {
                 createInspectorDetails(this.dataset.nodeid);
-             }
-             let selected = document.getElementsByClassName('selectedNameField');
-             for (let j = 0; j < selected.length; j++) {
+            }
+            let selected = document.getElementsByClassName('selectedNameField');
+            for (let j = 0; j < selected.length; j++) {
                 selected[j].classList.remove('selectedNameField');
-             }
-             if (!isSelected) {
+            }
+            if (!isSelected) {
                 this.classList.add('selectedNameField');
-             }
+            }
         });
     }
 
+    const expander = document.getElementsByClassName('expander');
     for (let i = 0; i < expander.length; i++) {
-        expander[i].addEventListener('click', function() {
-            this.parentElement.querySelector(".nested").classList.toggle('active');
+        expander[i].addEventListener('click', function () {
+            this.parentElement.querySelector('.nested').classList.toggle('active');
             this.classList.toggle('expander-expanded');
+            localStorage.setItem('scrollY', String(window.scrollY));
+            sendExpandNodeRequest(false);
         });
     }
+}
 
-    expandAllBtn.addEventListener('click', function () {
-        var nested = document.getElementsByClassName("nested")
-        for (let i=0; i < nested.length; i++) {
-            nested[i].classList.add('active');
-        }
-        for (let i = 0; i < expander.length; i++) {
-            expander[i].classList.add('expander-expanded')
-        }
+document.addEventListener('DOMContentLoaded', () => {
+
+    const scrollY = localStorage.getItem('scrollY');
+    if (scrollY) {
+        window.scrollTo(0, Number(scrollY));
+        localStorage.removeItem('scrollY');
+    }
+
+    addContentExplorerClickListeners();
+
+    document.getElementById('expandAllBtn').addEventListener('click', function () {
+        sendExpandNodeRequest(true);
     });
 
-    collapseAllBtn.addEventListener('click', function () {
-        var nested = document.getElementsByClassName('nested')
-        for (let i=0; i < nested.length; i++) {
-            nested[i].classList.remove('active');
-        }
-        for (let i = 0; i < expander.length; i++) {
-            expander[i].classList.remove('expander-expanded')
-        }
+    document.getElementById('collapseAllBtn').addEventListener('click', function () {
+        window.location.href = window.location.pathname
     });
 });

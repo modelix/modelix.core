@@ -29,7 +29,6 @@ import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.resolveIn
 import org.modelix.model.area.IArea
-import org.modelix.model.data.NodeData
 
 data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
 
@@ -166,7 +165,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        if (property.getSimpleName() == NodeData.idPropertyKey) {
+        if (property.isIdProperty()) {
             return node.nodeId.toString()
         }
         val mpsProperty = node.properties.firstOrNull { MPSProperty(it).getUID() == property.getUID() } ?: return null

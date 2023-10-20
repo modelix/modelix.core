@@ -24,6 +24,7 @@ import org.jetbrains.mps.openapi.module.SDependencyScope
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
@@ -141,6 +142,8 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
             version.toString()
         } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS)) {
             getCompileInMPS().toString()
+        } else if (property.isIdProperty()) {
+            reference.serialize()
         } else {
             null
         }

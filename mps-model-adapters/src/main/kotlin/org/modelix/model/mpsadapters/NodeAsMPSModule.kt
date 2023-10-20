@@ -25,7 +25,7 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 
-class NodeAsMPSModule private constructor(val node: INode, val repository: SRepository?) : SModule {
+class NodeAsMPSModule private constructor(val node: INode, val sRepository: SRepository?) : SModule {
 
     companion object {
         fun wrap(modelNode: INode, repository: SRepository?): SModule = NodeAsMPSModule(modelNode, repository)

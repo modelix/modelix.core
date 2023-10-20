@@ -37,7 +37,7 @@ class AddModelServerAction : ModelixAction {
             "URL",
             "Add Model Server",
             null,
-            "http://127.0.0.1:28101",
+            "http://127.0.0.1:28101/v2",
             null,
         ).toString()
     }

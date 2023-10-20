@@ -299,6 +299,7 @@ object BuiltinLanguages {
     fun getAllLanguages() = listOf(
         jetbrains_mps_lang_core,
         MPSRepositoryConcepts,
+        ModelixRuntimelang,
     )
 }
 

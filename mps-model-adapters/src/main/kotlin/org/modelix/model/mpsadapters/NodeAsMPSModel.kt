@@ -29,7 +29,7 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 
-class NodeAsMPSModel private constructor(val node: INode, val repository: SRepository?) : SModel {
+class NodeAsMPSModel private constructor(private val node: INode, private val sRepository: SRepository?) : SModel {
     companion object {
         fun wrap(modelNode: INode, repository: SRepository?): SModel = NodeAsMPSModel(modelNode, repository)
     }
@@ -58,12 +58,12 @@ class NodeAsMPSModel private constructor(val node: INode, val repository: SRepos
 
     override fun getModelRoot() = throw UnsupportedOperationException("Not implemented")
 
-    override fun getModule() = node.parent?.let { NodeAsMPSModule.wrap(it, repository) }
+    override fun getModule() = node.parent?.let { NodeAsMPSModule.wrap(it, sRepository) }
 
     override fun getName() =
         SModelName(node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)!!)
 
-    override fun getRepository(): SRepository = repository ?: MPSModuleRepository.getInstance()
+    override fun getRepository(): SRepository = sRepository ?: MPSModuleRepository.getInstance()
 
     override fun getRootNodes() = node.getChildren(Model.rootNodes).map {
         val adapter = NodeAsMPSNode.wrap(it) as NodeAsMPSNode

@@ -17,6 +17,7 @@ import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -28,7 +29,6 @@ import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.resolveIn
 import org.modelix.model.area.IArea
-import org.modelix.model.data.NodeData
 
 data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     override fun getArea(): IArea {
@@ -65,7 +65,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun getContainmentLink(): IChildLink {
-        return node.containmentLink?.let { MPSChildLink(it) } ?: RepositoryLanguage.Model.rootNodes
+        return node.containmentLink?.let { MPSChildLink(it) } ?: BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
@@ -147,7 +147,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        if (property.getSimpleName() == NodeData.idPropertyKey) {
+        if (property.isIdProperty()) {
             return node.nodeId.toString()
         }
         val mpsProperty = node.properties.firstOrNull { MPSProperty(it).getUID() == property.getUID() } ?: return null

@@ -15,8 +15,10 @@ package org.modelix.model.client2
 
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
+import org.modelix.model.api.INode
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.modelql.core.IMonoStep
 
 /**
  * This interface is meant exclusively for model client usage.
@@ -62,4 +64,8 @@ interface IModelClientV2 {
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
 
     suspend fun pollHash(branch: BranchReference, lastKnownVersion: IVersion?): String
+
+    suspend fun <R> query(branch: BranchReference, body: (IMonoStep<INode>) -> IMonoStep<R>): R
+
+    suspend fun <R> query(repositoryId: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R
 }

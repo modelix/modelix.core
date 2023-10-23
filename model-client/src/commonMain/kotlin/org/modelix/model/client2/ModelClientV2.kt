@@ -49,6 +49,8 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.VersionDelta
+import org.modelix.modelql.client.ModelQLClient
+import org.modelix.modelql.core.IMonoStep
 import kotlin.time.Duration.Companion.seconds
 
 class ModelClientV2(
@@ -210,6 +212,22 @@ class ModelClientV2(
         val receivedVersion = createVersion(lastKnownVersion, response.body())
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
         return receivedVersion
+    }
+
+    override suspend fun <R> query(branch: BranchReference, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+        val url = URLBuilder().apply {
+            takeFrom(baseUrl)
+            appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "query")
+        }
+        return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
+    }
+
+    override suspend fun <R> query(repository: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+        val url = URLBuilder().apply {
+            takeFrom(baseUrl)
+            appendPathSegmentsEncodingSlash("repositories", repository.id, "versions", versionHash, "query")
+        }
+        return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
     }
 
     override fun close() {

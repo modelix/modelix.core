@@ -25,6 +25,7 @@ import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
@@ -49,7 +50,12 @@ class ModelSyncService : Disposable {
     init {
         println("============================================ ModelSyncService init")
         syncService = SyncServiceImpl()
-        log.info("modelix sync plugin initialized: $syncService")
+
+        println("============================================ Registering builtin languages")
+        BuiltinLanguages.getAllLanguages().forEach { it.register() }
+        println("============================================ Registration finished")
+
+        println("============================================ Sync Service initialized $syncService")
     }
 
     fun bindProject(

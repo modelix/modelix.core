@@ -25,7 +25,7 @@ import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
@@ -52,7 +52,8 @@ class ModelSyncService : Disposable {
         syncService = SyncServiceImpl()
 
         println("============================================ Registering builtin languages")
-        BuiltinLanguages.getAllLanguages().forEach { it.register() }
+        // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
+        ILanguageRepository.default.javaClass
         println("============================================ Registration finished")
 
         println("============================================ Sync Service initialized $syncService")

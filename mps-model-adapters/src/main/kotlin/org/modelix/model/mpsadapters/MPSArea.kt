@@ -35,6 +35,10 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     override fun resolveNode(ref: INodeReference): INode? {
+        when (ref) {
+            is MPSModuleReference -> return ref.moduleReference.resolve(repository)?.let { MPSModuleAsNode(it) }
+        }
+
         return MPSNodeReference.tryConvert(ref)?.ref?.resolve(repository)?.let { MPSNode(it) }
     }
 

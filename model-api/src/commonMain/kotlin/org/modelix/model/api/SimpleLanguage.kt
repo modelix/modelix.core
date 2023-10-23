@@ -44,4 +44,7 @@ open class SimpleLanguage(private val name: String, private val uid: String? = n
     }
 
     override fun getName() = name
+
+    // just a dummy field to make sure that the (lazy) concepts are registered automatically
+    protected open var includedConcepts: Array<SimpleConcept> = arrayOf()
 }

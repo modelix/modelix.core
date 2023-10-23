@@ -215,6 +215,10 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         }
         route("versions") {
             get("{versionHash}") {
+                // TODO versions should be stored inside a repository with permission checks.
+                //      Knowing a version hash should not give you access to the content.
+                //      This handler was already moved to the 'repositories' route. Removing it here would be a breaking
+                //      change, but should be done in some future version.
                 val baseVersionHash = call.request.queryParameters["lastKnown"]
                 val versionHash = call.parameters["versionHash"]!!
                 if (storeClient[versionHash] == null) {
@@ -228,47 +232,6 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             }
             get("{versionHash}/history/{oldestVersionHash}") {
                 TODO()
-            }
-        }
-        route("objects") {
-            post {
-                val values = call.receive<List<String>>()
-                storeClient.putAll(values.associateBy { HashUtil.sha256(it) }, true)
-                call.respondText("OK")
-            }
-            get("{hash}") {
-                val key = call.parameters["hash"]!!
-                val value = storeClient[key]
-                if (value == null) {
-                    call.respondText("object '$key' not found", status = HttpStatusCode.NotFound)
-                } else {
-                    call.respondText(value)
-                }
-            }
-        }
-        route("modelql") {
-            put {
-                val params = call.receiveParameters()
-                val queryFromClient = params["query"]
-                if (queryFromClient == null) {
-                    call.respondText(text = "'query' is missing", status = HttpStatusCode.BadRequest)
-                    return@put
-                }
-                val query = ModelQuery.fromJson(queryFromClient)
-                val json = query.toJson()
-                val hash = HashUtil.sha256(json)
-                storeClient.put(hash, json)
-                call.respondText(text = hash)
-            }
-            get("{hash}") {
-                val hash = call.parameters["hash"]!!
-                val json = storeClient[hash]
-                if (json == null) {
-                    call.respondText(status = HttpStatusCode.NotFound, text = "ModelQL with hash '$hash' doesn't exist")
-                    return@get
-                }
-                ModelQuery.fromJson(json) // ensure it's a valid ModelQuery
-                call.respondText(json, ContentType.Application.Json)
             }
         }
     }

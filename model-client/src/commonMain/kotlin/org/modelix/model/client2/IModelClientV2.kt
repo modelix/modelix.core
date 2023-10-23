@@ -43,7 +43,10 @@ interface IModelClientV2 {
 
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>
 
+    @Deprecated("repository ID is required for permission checks")
     suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion
+
+    suspend fun loadVersion(repositoryId: RepositoryId, versionHash: String, baseVersion: IVersion?): IVersion
 
     /**
      * The pushed version is merged automatically by the server with the current head.

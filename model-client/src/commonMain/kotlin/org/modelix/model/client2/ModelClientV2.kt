@@ -122,6 +122,7 @@ class ModelClientV2(
         }.bodyAsText().lines().map { repository.getBranchReference(it) }
     }
 
+    @Deprecated("repository ID is required for permission checks")
     override suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion {
         val response = httpClient.post {
             url {
@@ -133,7 +134,25 @@ class ModelClientV2(
             }
         }
         val delta = Json.decodeFromString<VersionDelta>(response.bodyAsText())
-        return createVersion(null, delta)
+        return createVersion(baseVersion as CLVersion?, delta)
+    }
+
+    override suspend fun loadVersion(
+        repositoryId: RepositoryId,
+        versionHash: String,
+        baseVersion: IVersion?,
+    ): IVersion {
+        val response = httpClient.post {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegments("repositories", repositoryId.id, "versions", versionHash)
+                if (baseVersion != null) {
+                    parameters["lastKnown"] = (baseVersion as CLVersion).getContentHash()
+                }
+            }
+        }
+        val delta = Json.decodeFromString<VersionDelta>(response.bodyAsText())
+        return createVersion(baseVersion as CLVersion?, delta)
     }
 
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {

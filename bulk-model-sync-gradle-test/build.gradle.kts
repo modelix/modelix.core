@@ -42,8 +42,8 @@ repositories {
 }
 
 val mps by configurations.creating
-val mpsDir = buildDir.resolve("mps").apply { mkdirs() }
-val kotlinGenDir = buildDir.resolve("metamodel/kotlin").apply { mkdirs() }
+val mpsDir = project.layout.buildDirectory.dir("mps").get().asFile.apply { mkdirs() }
+val kotlinGenDir = project.layout.buildDirectory.dir("metamodel/kotlin").get().asFile.apply { mkdirs() }
 
 dependencies {
     mps("com.jetbrains:mps:2021.2.5")
@@ -82,7 +82,7 @@ val resolveMps by tasks.registering(Copy::class) {
     into(mpsDir)
 }
 
-val repoDir = buildDir.resolve("test-repo")
+val repoDir = project.layout.buildDirectory.dir("test-repo").get().asFile
 
 val copyTestRepo by tasks.registering(Sync::class) {
     from(projectDir.resolve("test-repo"))

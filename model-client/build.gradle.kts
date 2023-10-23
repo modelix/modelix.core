@@ -95,9 +95,9 @@ kotlin {
 }
 
 tasks.jacocoTestReport {
-    classDirectories.setFrom("$buildDir/classes/kotlin/jvm/")
+    classDirectories.setFrom(project.layout.buildDirectory.dir("classes/kotlin/jvm/"))
     sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
-    executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
+    executionData.setFrom(project.layout.buildDirectory.file("jacoco/jvmTest.exec"))
 
     reports {
         xml.required.set(true)

@@ -42,7 +42,7 @@ kotlin {
                 implementation(libs.kotlin.serialization.json)
                 api(libs.kotlin.coroutines.core)
             }
-            kotlin.srcDir(buildDir.resolve("version_gen"))
+            kotlin.srcDir(project.layout.buildDirectory.dir("version_gen"))
         }
         val commonTest by getting {
             dependencies {
@@ -71,7 +71,7 @@ kotlin {
 
 val generateVersionVariable by tasks.creating {
     doLast {
-        val outputDir = buildDir.resolve("version_gen/org/modelix/modelql/core")
+        val outputDir = project.layout.buildDirectory.dir("version_gen/org/modelix/modelql/core").get().asFile
         outputDir.mkdirs()
         outputDir.resolve("Version.kt").writeText(
             """

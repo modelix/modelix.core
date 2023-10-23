@@ -92,7 +92,7 @@ tasks.named<ShadowJar>("shadowJar") {
     }
 }
 
-val fatJarFile = file("$buildDir/libs/model-server-latest-fatJar.jar")
+val fatJarFile = project.layout.buildDirectory.file("libs/model-server-latest-fatJar.jar")
 val fatJarArtifact = artifacts.add("archives", fatJarFile) {
     type = "jar"
     builtBy("shadowJar")
@@ -116,7 +116,7 @@ tasks.named("build") {
 }
 
 task("copyLibs", Sync::class) {
-    into("$buildDir/dependency-libs")
+    into(project.layout.buildDirectory.dir("dependency-libs"))
     from(configurations.runtimeClasspath)
 }
 

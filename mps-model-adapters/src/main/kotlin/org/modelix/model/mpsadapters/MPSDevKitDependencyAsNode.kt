@@ -40,7 +40,11 @@ data class MPSDevKitDependencyAsNode(
     }
 
     override val reference: INodeReference
-        get() = MPSModuleReference(moduleReference)
+        get() = MPSDevKitDependencyReference(
+            moduleReference.moduleId,
+            userModule = moduleImporter?.moduleReference,
+            userModel = modelImporter?.reference,
+        )
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency
     override val parent: INode

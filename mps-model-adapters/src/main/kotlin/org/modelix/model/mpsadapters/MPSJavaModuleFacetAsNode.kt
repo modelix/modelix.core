@@ -34,7 +34,10 @@ data class MPSJavaModuleFacetAsNode(val facet: JavaModuleFacet) : IDefaultNodeAd
     }
 
     override val reference: INodeReference
-        get() = TODO("Not yet implemented")
+        get() {
+            val module = checkNotNull(facet.module) { "Module of facet $facet not found" }
+            return MPSJavaModuleFacetReference(module.moduleReference)
+        }
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.JavaModuleFacet
     override val parent: INode?

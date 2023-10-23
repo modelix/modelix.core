@@ -23,7 +23,6 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
-import org.modelix.model.api.NodeReference
 import org.modelix.model.api.NullChildLink
 import org.modelix.model.area.IArea
 
@@ -34,7 +33,7 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
     }
 
     override val reference: INodeReference
-        get() = NodeReference("mps-model:" + model.reference.toString())
+        get() = MPSModelReference(model.reference)
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.Model
     override val parent: INode

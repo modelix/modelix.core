@@ -46,7 +46,10 @@ data class MPSModuleDependencyAsNode(
     }
 
     override val reference: INodeReference
-        get() = TODO("Not yet implemented")
+        get() = MPSModuleDependencyReference(
+            usedModuleId = moduleReference.moduleId,
+            userModuleReference = importer.moduleReference,
+        )
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency
     override val parent: INode

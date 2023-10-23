@@ -30,7 +30,10 @@ import org.modelix.model.area.IArea
 data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule) : IDefaultNodeAdapter {
 
     override val reference: INodeReference
-        get() = TODO("Not yet implemented")
+        get() = MPSProjectModuleReference(
+            projectRef = parent.reference as MPSProjectReference,
+            moduleRef = module.moduleReference,
+        )
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.ProjectModule
     override val parent: INode

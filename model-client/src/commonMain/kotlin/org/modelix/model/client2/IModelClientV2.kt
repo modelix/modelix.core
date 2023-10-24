@@ -13,6 +13,7 @@
  */
 package org.modelix.model.client2
 
+import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
@@ -44,6 +45,7 @@ interface IModelClientV2 {
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>
 
     @Deprecated("repository ID is required for permission checks")
+    @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion
 
     suspend fun loadVersion(repositoryId: RepositoryId, versionHash: String, baseVersion: IVersion?): IVersion

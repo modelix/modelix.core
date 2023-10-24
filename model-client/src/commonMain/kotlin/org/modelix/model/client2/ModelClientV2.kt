@@ -32,6 +32,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
@@ -123,6 +124,7 @@ class ModelClientV2(
     }
 
     @Deprecated("repository ID is required for permission checks")
+    @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     override suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion {
         val response = httpClient.post {
             url {

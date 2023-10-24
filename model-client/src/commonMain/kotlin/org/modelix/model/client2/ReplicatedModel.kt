@@ -35,6 +35,14 @@ class ReplicatedModel(
     private val remoteVersion = RemoteVersion(client, branchRef)
     private var pollingJob: Job? = null
 
+//    private var changeListeners = mutableListOf<ReplicatedModelChangeListener>()
+//    fun addReplicatedModelChangeListener(listener : ReplicatedModelChangeListener){
+//        this.changeListeners.add(listener)
+//    }
+//    fun removeReplicatedModelChangeListener(listener: ReplicatedModelChangeListener){
+//        this.changeListeners.remove(listener)
+//    }
+
     fun getBranch(): IBranch {
         if (state != State.Started) throw IllegalStateException("state is $state")
         return localModel.otBranch
@@ -284,3 +292,7 @@ private class RemoteVersion(val client: IModelClientV2, val branchRef: BranchRef
 }
 
 private fun IVersion.upcast(): CLVersion = this as CLVersion
+
+interface ReplicatedModelChangeListener {
+    fun onUpdate()
+}

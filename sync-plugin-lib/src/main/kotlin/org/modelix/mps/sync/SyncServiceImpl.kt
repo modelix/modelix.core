@@ -24,27 +24,19 @@ class SyncServiceImpl : SyncService {
     private var log: Logger = logger<SyncServiceImpl>()
 
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
-    private var clientBindingMap: MutableMap<ModelClientV2, MutableList<BindingImpl>> = mutableMapOf()
+    public var clientBindingMap: MutableMap<ModelClientV2, MutableList<BindingImpl>> = mutableMapOf()
 
-    override suspend fun bindModel(
-        serverURL: URL,
-        branchReference: BranchReference,
-        modelName: String,
-        jwt: String,
-        targetProject: MPSProject,
-        afterActivate: () -> Unit,
-    ): IBinding {
-        val modelClientV2: ModelClientV2 = connectToModelServer(serverURL, jwt)
-        return bindModel(modelClientV2, branchReference, modelName, targetProject, afterActivate)
-    }
-
-    private suspend fun connectToModelServer(
+    // todo add afterActivate to allow async refresh
+    suspend fun connectToModelServer(
         serverURL: URL,
         jwt: String,
     ): ModelClientV2 {
         // avoid reconnect to existing server
         val client = clientBindingMap.keys.find { it.baseUrl == serverURL.toString() }
-        client?.let { return it }
+        client?.let {
+            log.info("Using already existing connection to $serverURL")
+            return it
+        }
 
         // TODO: use JWT here
         val modelClientV2: ModelClientV2 = ModelClientV2.builder().url(serverURL.toString()).build()
@@ -64,12 +56,18 @@ class SyncServiceImpl : SyncService {
         return modelClientV2
     }
 
-    private suspend fun bindModel(
+    fun disconnectModelServer(client: ModelClientV2) {
+        clientBindingMap[client]?.forEach { it.deactivate() }
+        clientBindingMap.remove(client)
+        client.close()
+    }
+
+    public override suspend fun bindModel(
         modelClientV2: ModelClientV2,
         branchReference: BranchReference,
         modelName: String,
         project: MPSProject,
-        afterActivate: () -> Unit,
+        afterActivate: (() -> Unit)?,
     ): IBinding {
         lateinit var bindingImpl: BindingImpl
 
@@ -90,7 +88,7 @@ class SyncServiceImpl : SyncService {
             }
         }
         // trigger callback after activation
-        afterActivate()
+        afterActivate?.invoke()
 
         // remember the new binding
         clientBindingMap[modelClientV2]!!.add(bindingImpl)

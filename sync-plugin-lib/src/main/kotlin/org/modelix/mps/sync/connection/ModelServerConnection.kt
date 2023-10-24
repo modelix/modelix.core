@@ -276,7 +276,7 @@ class ModelServerConnection : ModelServerConnectionInterface {
         var result: INode? = PArea(infoTree!!.branch).executeRead {
             val transaction = infoTree!!.branch.transaction
             val allChildren = transaction.getAllChildren(ITree.ROOT_ID).map { PNodeAdapter(it, infoTree!!.branch) }
-            allChildren.firstOrNull { it.concept == BuiltinLanguages.ModelixRuntimelang.ModelServerInfo }
+            allChildren.firstOrNull { it.getConceptReference() == BuiltinLanguages.ModelixRuntimelang.ModelServerInfo.getReference() }
         }
         if (result == null) {
             result = PArea(infoTree!!.branch).executeWrite {

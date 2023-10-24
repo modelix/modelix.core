@@ -37,12 +37,12 @@
         <toolWindow id="Modelix Model Synchronization" secondary="true"
                     icon="org.modelix.mps.sync.icons.CloudIcons.PLUGIN_ICON" anchor="right"
                     factoryClass="org.modelix.mps.sync.tools.ModelSyncGuiFactory"/>
-        <toolWindow id="Cloud Tool" secondary="true"
-                    icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"
-                    factoryClass="org.modelix.mps.sync.tools.cloud.CloudToolFactory"/>
-        <toolWindow id="History Tool" secondary="true"
-                    icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"
-                    factoryClass="org.modelix.mps.sync.tools.history.HistoryToolFactory"/>
+<!--        <toolWindow id="Cloud Tool" secondary="true"-->
+<!--                    icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"-->
+<!--                    factoryClass="org.modelix.mps.sync.tools.cloud.CloudToolFactory"/>-->
+<!--        <toolWindow id="History Tool" secondary="true"-->
+<!--                    icon="org.modelix.mps.sync.icons.CloudIcons.MODULE_ICON" anchor="bottom"-->
+<!--                    factoryClass="org.modelix.mps.sync.tools.history.HistoryToolFactory"/>-->
 
         <!-- allows to 'edit modelix settings' in the settings dialog -->
         <!--        <projectConfigurable parentId="tools"-->

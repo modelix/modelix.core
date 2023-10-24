@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
+import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
@@ -40,7 +41,7 @@ class ModelSyncService : Disposable {
 
     private var log: Logger = logger<ModelSyncService>()
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
-    private var syncService: SyncServiceImpl
+    public var syncService: SyncServiceImpl
     private var existingBindings: MutableList<IBinding> = mutableListOf<IBinding>()
 
     fun getBindingList(): List<IBinding> {
@@ -59,23 +60,46 @@ class ModelSyncService : Disposable {
         println("============================================ Sync Service initialized $syncService")
     }
 
-    fun bindProject(
-        theProject: MPSProject,
+    fun connectModelServer(
         url: String,
-        repositoryID: String,
-        branchName: String,
-        modelName: String,
         jwt: String,
-        afterActivate: () -> Unit,
+        afterActivate: (() -> Unit)?,
     ) {
         coroutineScope.launch {
-            log.info("Binding project: $theProject from $url")
+            log.info("Connection to server: $url with JWT $jwt")
+            syncService.connectToModelServer(URL(url), jwt)
+            log.info("Connected to server: $url with JWT $jwt")
+            afterActivate?.invoke()
+        }
+    }
+
+    fun disconnectServer(
+        modelClient: ModelClientV2,
+        afterActivate: (() -> Unit)?,
+    ) {
+        coroutineScope.launch {
+            log.info("disconnecting to server: ${modelClient.baseUrl}")
+            syncService.disconnectModelServer(modelClient)
+            log.info("disconnected server: ${modelClient.baseUrl}")
+            afterActivate?.invoke()
+        }
+    }
+
+    fun bindProject(
+        client: ModelClientV2,
+        theProject: MPSProject,
+        branchName: String,
+        modelName: String,
+        repositoryID: String,
+        afterActivate: (() -> Unit)?,
+    ) {
+        coroutineScope.launch {
+            log.info("Binding to project: $theProject")
             try {
                 val newBinding = syncService.bindModel(
-                    URL(url),
+                    client,
                     BranchReference(RepositoryId(repositoryID), branchName),
                     modelName,
-                    jwt,
                     theProject,
                     afterActivate,
                 )
@@ -88,7 +112,7 @@ class ModelSyncService : Disposable {
                 log.warn("Pokemon Exception Catching: ${e.message} / ${e.cause}")
             }
             // actual correct place to call after activate
-            afterActivate()
+            afterActivate?.invoke()
         }
     }
 

@@ -29,19 +29,31 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import jetbrains.mps.ide.project.ProjectHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
+import org.modelix.model.api.getRootNode
+import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.getReplicatedModel
+import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.RepositoryId
+import org.modelix.mps.sync.BindingImpl
 import org.modelix.mps.sync.ModelSyncService
 import org.modelix.mps.sync.binding.IBinding
 import org.modelix.mps.sync.icons.CloudIcons
-import java.awt.BorderLayout
 import java.awt.Component
+import java.awt.FlowLayout
 import java.awt.event.ActionEvent
-import javax.swing.BorderFactory
+import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JList
 import javax.swing.JPanel
+import javax.swing.JSeparator
 
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
@@ -70,90 +82,143 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         // the actual intelliJ service handling the synchronization
         val modelSyncService = service<ModelSyncService>()
-        var serverURL: JBTextField = JBTextField()
-        var repositoryName: JBTextField = JBTextField()
-        var branchName: JBTextField = JBTextField()
-        var modelName: JBTextField = JBTextField()
-        var jwt: JBTextField = JBTextField()
+        var serverURL: JBTextField = JBTextField(20)
+        var repositoryName: JBTextField = JBTextField(20)
+        var branchName: JBTextField = JBTextField(20)
+        var modelName: JBTextField = JBTextField(20)
+        var jwt: JBTextField = JBTextField(20)
 
         var openProjectModel: DefaultComboBoxModel<Project> = DefaultComboBoxModel<Project>()
+        var existingConnectionsModel: DefaultComboBoxModel<ModelClientV2> = DefaultComboBoxModel<ModelClientV2>()
         var existingBindingModel: DefaultComboBoxModel<IBinding> = DefaultComboBoxModel<IBinding>()
+        var repoModel: DefaultComboBoxModel<RepositoryId> = DefaultComboBoxModel<RepositoryId>()
+        var branchModel: DefaultComboBoxModel<BranchReference> = DefaultComboBoxModel<BranchReference>()
+        var modelModel: DefaultComboBoxModel<INode> = DefaultComboBoxModel<INode>()
 
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
-            contentPanel.setLayout(BorderLayout(0, 20))
-            contentPanel.setBorder(BorderFactory.createEmptyBorder(40, 0, 0, 0))
-            contentPanel.add(createSynchronizationPanel(), BorderLayout.PAGE_START)
-            contentPanel.add(createControlsPanel(toolWindow), BorderLayout.PAGE_END)
-            contentPanel.add(createConnectionPanel(toolWindow), BorderLayout.CENTER)
             toolWindow.setIcon(CloudIcons.ROOT_ICON)
+            contentPanel.setLayout(FlowLayout())
+            contentPanel.add(getInputBox(toolWindow))
             triggerRefresh()
         }
 
-        private fun createSynchronizationPanel(): JPanel {
-            val synchronizationPanel = JPanel()
-            iconLabel.icon = CloudIcons.PLUGIN_ICON
-            synchronizationPanel.add(iconLabel)
-            return synchronizationPanel
-        }
+        private fun getInputBox(toolWindow: ToolWindow): Box {
+            // todo: yes i know this is bad code. its for debugging only...
 
-        private fun createControlsPanel(toolWindow: ToolWindow): JPanel {
-            val controlsPanel = JPanel()
+            val inputBox = Box.createVerticalBox()
 
-            val refreshButton = JButton("Refresh")
+            val urlPanel = JPanel()
+            urlPanel.add(JLabel("Server URL:    "))
+            urlPanel.add(serverURL)
+
+            val refreshButton = JButton("Refresh All")
             refreshButton.addActionListener { triggerRefresh() }
-            controlsPanel.add(refreshButton)
+            urlPanel.add(refreshButton)
+            inputBox.add(urlPanel)
 
-            val hideToolWindowButton = JButton("Hide")
-            hideToolWindowButton.addActionListener { toolWindow.hide(null) }
-            controlsPanel.add(hideToolWindowButton)
-
-            return controlsPanel
-        }
-
-        private fun createConnectionPanel(toolWindow: ToolWindow): JPanel {
-            val controlsPanel = JPanel()
-
-            controlsPanel.add(serverURL)
-            controlsPanel.add(repositoryName)
-            controlsPanel.add(branchName)
-            controlsPanel.add(modelName)
-            controlsPanel.add(jwt)
-
-            val projectCB: ComboBox<Project> = ComboBox<Project>()
-            projectCB.model = openProjectModel
-            projectCB.renderer = ProjectRenderer()
-            controlsPanel.add(projectCB)
+            val jwtPanel = JPanel()
+            jwtPanel.add(JLabel("JWT:           "))
+            jwtPanel.add(jwt)
 
             val connectProjectButton = JButton("Connect")
             connectProjectButton.addActionListener { _: ActionEvent ->
-                modelSyncService.bindProject(
-                    ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!,
+                modelSyncService.connectModelServer(
                     serverURL.text,
-                    repositoryName.text,
-                    branchName.text,
-                    modelName.text,
                     jwt.text,
-                    { afterBind() },
+                    ::triggerRefresh,
                 )
             }
-            controlsPanel.add(connectProjectButton)
+            jwtPanel.add(connectProjectButton)
+            inputBox.add(jwtPanel)
 
-            val existingBindingCB: ComboBox<IBinding> = ComboBox<IBinding>()
-            existingBindingCB.model = existingBindingModel
-            existingBindingCB.renderer = ProjectRenderer()
-            controlsPanel.add(existingBindingCB)
+            inputBox.add(JSeparator())
+
+            val connectionsPanel = JPanel()
+            val existingConnectionsCB: ComboBox<ModelClientV2> = ComboBox<ModelClientV2>()
+            existingConnectionsCB.model = existingConnectionsModel
+            existingConnectionsCB.renderer = CustomCellRenderer()
+            connectionsPanel.add(JLabel("Existing Conn.:"))
+            connectionsPanel.add(existingConnectionsCB)
 
             val disConnectProjectButton = JButton("Disconnect")
             disConnectProjectButton.addActionListener { _: ActionEvent? ->
-                if (existingBindingModel.size > 0) {
-                    modelSyncService.deactivateBinding(existingBindingModel.selectedItem as IBinding)
-                    populateBindingCB()
+                if (existingConnectionsModel.size > 0) {
+                    modelSyncService.disconnectServer(
+                        existingConnectionsModel.selectedItem as ModelClientV2,
+                        ::triggerRefresh,
+                    )
                 }
             }
-            controlsPanel.add(disConnectProjectButton)
+            connectionsPanel.add(disConnectProjectButton)
+            inputBox.add(connectionsPanel)
 
-            return controlsPanel
+            inputBox.add(JSeparator())
+
+            val targetPanel = JPanel()
+            val projectCB: ComboBox<Project> = ComboBox<Project>()
+            projectCB.model = openProjectModel
+            projectCB.renderer = CustomCellRenderer()
+            targetPanel.add(JLabel("Target Project:"))
+            targetPanel.add(projectCB)
+            inputBox.add(targetPanel)
+
+            val repoPanel = JPanel()
+            val repoCB: ComboBox<RepositoryId> = ComboBox<RepositoryId>()
+            repoCB.model = repoModel
+            repoCB.renderer = CustomCellRenderer()
+            repoPanel.add(JLabel("Remote Repo:   "))
+            repoPanel.add(repoCB)
+            inputBox.add(repoPanel)
+
+            val branchPanel = JPanel()
+            val branchCB: ComboBox<BranchReference> = ComboBox<BranchReference>()
+            branchCB.model = branchModel
+            branchCB.renderer = CustomCellRenderer()
+            branchPanel.add(JLabel("Remote Branch: "))
+            branchPanel.add(branchCB)
+            inputBox.add(branchPanel)
+
+            val modelPanel = JPanel()
+            val modelCB: ComboBox<INode> = ComboBox<INode>()
+            modelCB.model = modelModel
+            modelCB.renderer = CustomCellRenderer()
+            modelPanel.add(JLabel("Remote Model:  "))
+            modelPanel.add(modelCB)
+
+            val bindButton = JButton("Bind Selected")
+            bindButton.addActionListener { _: ActionEvent? ->
+                if (existingConnectionsModel.size > 0) {
+                    modelSyncService.bindProject(
+                        existingConnectionsModel.selectedItem as ModelClientV2,
+                        ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!,
+                        branchName.text,
+                        modelName.text,
+                        repositoryName.text,
+                        ::triggerRefresh,
+                    )
+                }
+            }
+            modelPanel.add(bindButton)
+            inputBox.add(modelPanel)
+
+            inputBox.add(JSeparator())
+
+            val bindingsPanel = JPanel()
+            val existingBindingCB: ComboBox<IBinding> = ComboBox<IBinding>()
+            existingBindingCB.model = existingBindingModel
+            existingBindingCB.renderer = CustomCellRenderer()
+            bindingsPanel.add(JLabel("Bindings:      "))
+            bindingsPanel.add(existingBindingCB)
+
+            val unbindButton = JButton("Unbind Selected")
+            unbindButton.addActionListener { _: ActionEvent? ->
+                // todo
+            }
+            bindingsPanel.add(unbindButton)
+            inputBox.add(bindingsPanel)
+
+            return inputBox
         }
 
         private fun afterBind() {
@@ -162,7 +227,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun triggerRefresh() {
-            populateCB()
+            populateProjectsCB()
+            populateConnectionsCB()
+            populateRepoCB()
             populateBindingCB()
             serverURL.text = "http://127.0.0.1:28101/v2"
             repositoryName.text = "courses"
@@ -171,11 +238,62 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwt.text = ""
         }
 
-        fun populateCB() {
+        fun populateProjectsCB() {
             openProjectModel.removeAllElements()
             openProjectModel.addAll(ProjectManager.getInstance().openProjects.toMutableList())
             if (openProjectModel.size > 0) {
                 openProjectModel.selectedItem = openProjectModel.getElementAt(0)
+            }
+        }
+
+        fun populateConnectionsCB() {
+            existingConnectionsModel.removeAllElements()
+            existingConnectionsModel.addAll(modelSyncService.syncService.clientBindingMap.keys)
+            if (existingConnectionsModel.size > 0) {
+                existingConnectionsModel.selectedItem = existingConnectionsModel.getElementAt(0)
+            }
+        }
+
+        fun populateRepoCB() {
+            repoModel.removeAllElements()
+            if (existingConnectionsModel.size != 0) {
+                val item = existingConnectionsModel.selectedItem as ModelClientV2
+                CoroutineScope(Dispatchers.Default).launch {
+                    repoModel.addAll(item.listRepositories())
+                    if (repoModel.size > 0) {
+                        repoModel.selectedItem = repoModel.getElementAt(0)
+                        populateBranchCB()
+                    }
+                }
+            }
+        }
+
+        fun populateBranchCB() {
+            branchModel.removeAllElements()
+            if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
+                CoroutineScope(Dispatchers.Default).launch {
+                    branchModel.addAll((existingConnectionsModel.selectedItem as ModelClientV2).listBranches(repoModel.selectedItem as RepositoryId))
+                    if (branchModel.size > 0) {
+                        branchModel.selectedItem = branchModel.getElementAt(0)
+                        populateModelCB()
+                    }
+                }
+            }
+        }
+
+        fun populateModelCB() {
+            modelModel.removeAllElements()
+            if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
+                CoroutineScope(Dispatchers.Default).launch {
+                    val qq: IBranch = (existingConnectionsModel.selectedItem as ModelClientV2).getReplicatedModel(branchModel.selectedItem as BranchReference).start()
+                    qq.runRead {
+                        val aa: Iterable<INode> = qq.getRootNode().allChildren
+                        modelModel.addAll(aa.toList())
+                    }
+                    if (modelModel.size > 0) {
+                        modelModel.selectedItem = modelModel.getElementAt(0)
+                    }
+                }
             }
         }
 
@@ -188,7 +306,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
     }
 
-    class ProjectRenderer : DefaultListCellRenderer() {
+    class CustomCellRenderer : DefaultListCellRenderer() {
         override fun getListCellRendererComponent(
             list: JList<*>?,
             value: Any?,
@@ -197,12 +315,13 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             cellHasFocus: Boolean,
         ): Component {
             var item = value ?: return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-
-            // if the item to be rendered is Project then display the name only
-            if (item is Project) {
-                item = item.name
-            } else if (item is IBinding) {
-                item = "${item.javaClass.name} ..."
+            when (item) {
+                is Project -> item = item.name
+                is BindingImpl -> item = "Repo: ? | Branch: ${item.replicatedModel.branchRef}"
+                is ModelClientV2 -> item = item.baseUrl
+                is RepositoryId -> item = item.toString()
+                is BranchReference -> item = item.branchName
+                is INode -> item = "$item" // (${item.concept.toString()})
             }
             return super.getListCellRendererComponent(list, item, index, isSelected, cellHasFocus)
         }

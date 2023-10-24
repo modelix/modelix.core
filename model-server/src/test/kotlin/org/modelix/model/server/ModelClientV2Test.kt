@@ -90,7 +90,7 @@ class ModelClientV2Test {
     }
 
     @Test
-    fun testModelQLEndpoint() = runTest {
+    fun modelqlSmokeTest() = runTest {
         val url = "http://localhost/v2"
         val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
 

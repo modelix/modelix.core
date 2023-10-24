@@ -41,16 +41,23 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel) {
                     val newTree = NodeAsMPSNode.wrap(iNode)!!
                     newTreeHolder.set(newTree)
 
-                    println("New SNode name: ${newTree.name}")
-                    println("New SNode model: ${newTree.model}")
+                    println()
+                    println("New SNode's name: ${newTree.name}")
+                    println("New SNode's SModel: ${newTree.model}")
+                    // println("New SNode's concept: ${newTree.concept}")
+                    println()
+
                     println("Properties:")
                     newTree.properties.forEach { println("${it.name}: $it") }
+                    println()
 
                     println("References:")
                     newTree.references.forEach { println("${it.link.name}: ${it.targetNodeId}") }
+                    println()
 
                     println("Children:")
                     newTree.children.forEach { println("${it.name}: ${it.nodeId}") }
+                    println("-----------------")
                 }
             }
         } catch (ex: Exception) {

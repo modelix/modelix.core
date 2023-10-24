@@ -118,7 +118,7 @@ The body of `mapLocal` is executed on the client after receiving the result from
 That's why you only have access to the output of the `zip` operation
 and still have to use `first`, `second` and `third` inside the query.
 
-To make this even more readable there is a `mapLocal2` operation,
+To make this even more readable there is a `buildLocalMapping` operation,
 which provides a different syntax for the `zip`-`mapLocal` chain.
 
 [source,kotlin]
@@ -127,6 +127,7 @@ data class MyProduct(val id: Int, val title: String, val images: List<MyImage>)
 data class MyImage(val url: String)
 
 val result: List<MyProduct> = query { db ->
+    db.products.buildLocalMapping {
         val id = it.id.request()
         val title = it.title.request()
         val images = it.images.mapLocal { MyImage(it) }.toList().request()
@@ -138,7 +139,7 @@ val result: List<MyProduct> = query { db ->
 result.forEach { println("ID: ${it.id}, Title: ${it.title}, Images: ${it.images}") }
 --
 
-At the beginning of the `mapLocal2` body you invoke `request()` on all the values you need to assemble your object.
+At the beginning of the `buildLocalMapping` body you invoke `request()` on all the values you need to assemble your object.
 This basically ads the operand to the internal `zip` operation and returns an object that gives you access to the value
 after receiving it from the server.
 Inside the `onSuccess` block you assemble the local object using the previously requested values.
@@ -185,5 +186,5 @@ val html = query {
 }
 --
 
-`buildHtmlQuery` and the `requestFragment` operation are similar to the `mapLocal2` operation,
+`buildHtmlQuery` and the `requestFragment` operation are similar to the `buildLocalMapping` operation,
 but inside the `onSuccess` block you use the Kotlin HTML DSL.

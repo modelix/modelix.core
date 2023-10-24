@@ -250,7 +250,7 @@ class ModelQLTest {
     @Test
     fun testMapLocal2_unusedInput() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
-            db.products.mapLocal2 {
+            db.products.buildLocalMapping {
                 val title = "xxx".asMono().getLater()
                 onSuccess {
                     "Title: " + title.get()
@@ -262,9 +262,9 @@ class ModelQLTest {
     }
 
     @Test
-    fun testMapLocal2() = runTestWithTimeout {
+    fun testLocalMappingBuilder() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
-            db.products.mapLocal2 {
+            db.products.buildLocalMapping {
                 val title = it.title.getLater()
                 onSuccess {
                     "Title: " + title.get()
@@ -278,7 +278,7 @@ class ModelQLTest {
     @Test
     fun testZipOrder() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
-            db.products.flatMap { it.zip(it.images.assertNotEmpty()) }.mapLocal2 {
+            db.products.flatMap { it.zip(it.images.assertNotEmpty()) }.buildLocalMapping {
                 val product = it.first.getLater()
                 val image = it.second.getLater()
                 onSuccess {

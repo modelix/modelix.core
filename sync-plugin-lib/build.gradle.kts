@@ -28,6 +28,7 @@ dependencies {
     // modelix deps from the same project
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))
     implementation(project(":model-api", configuration = "jvmRuntimeElements"))
+    implementation(project(":mps-model-adapters"))
     // TODO make api instead?
     implementation(project(":model-datastructure", configuration = "jvmRuntimeElements"))
     implementation(project(":mps-model-adapters"))

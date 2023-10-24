@@ -17,47 +17,38 @@
 package org.modelix.mps.sync.neu
 
 import org.jetbrains.mps.openapi.model.SNode
+import org.jetbrains.mps.openapi.module.SRepository
+import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.client2.ReplicatedModel
+import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.NodeAsMPSNode
 import java.util.concurrent.atomic.AtomicReference
 
-class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel) {
+class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val repository: SRepository) {
 
     fun transform(): SNode {
         val newTreeHolder = AtomicReference<SNode>()
         try {
-            // TODO for each getChild level spawn new cooperating coroutines?
-            // TODO transform each node to an SNode/SModule/SProject, etc. depending on which level we are
-            // TODO first build this model tree only in memory, but do not connect to the (physical) model/project in MPS
+            // 1. Register the language concepts so they are ready for lookup
+            val mpsLanguageRepo = MPSLanguageRepository(repository)
+            ILanguageRepository.register(mpsLanguageRepo)
+
+            // 2. Traverse and transform the tree
+            // TODO use coroutines instead of big-bang eager loading?
             replicatedModel.getBranch().runReadT { transaction ->
                 val allChildren = transaction.tree.getAllChildren(1L)
-                // println("Number of children of root: ${allChildren.count()}")
-                // val childrenOfRoot = allChildren.joinToString(", ") { it.toString() }
-                // println("All children of root: $childrenOfRoot")
 
+                println("Level: 1")
                 allChildren.forEach { id ->
-                    val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())
-                    val newTree = NodeAsMPSNode.wrap(iNode)!!
+                    val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
+                    val newTree = NodeAsMPSNode.wrap(iNode, repository)!!
                     newTreeHolder.set(newTree)
 
-                    println()
-                    println("New SNode's name: ${newTree.name}")
-                    println("New SNode's SModel: ${newTree.model}")
-                    // println("New SNode's concept: ${newTree.concept}")
-                    println()
-
-                    println("Properties:")
-                    newTree.properties.forEach { println("${it.name}: $it") }
-                    println()
-
-                    println("References:")
-                    newTree.references.forEach { println("${it.link.name}: ${it.targetNodeId}") }
-                    println()
-
-                    println("Children:")
-                    newTree.children.forEach { println("${it.name}: ${it.nodeId}") }
-                    println("-----------------")
+                    printNode(newTree)
+                    println("Parent was: ${newTree.name}")
+                    traverse(iNode, 1)
                 }
             }
         } catch (ex: Exception) {
@@ -66,5 +57,34 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel) {
         }
 
         return newTreeHolder.get()
+    }
+
+    fun traverse(parent: INode, level: Int) {
+        println("Level: $level")
+        parent.allChildren.forEach {
+            val sNode = NodeAsMPSNode.wrap(parent)!!
+            printNode(sNode)
+            traverse(it, level + 1)
+        }
+    }
+
+    private fun printNode(node: SNode) {
+        println()
+        println("New SNode's name: ${node.name}")
+        println("New SNode's SModel: ${node.model}")
+        // println("New SNode's concept: ${newTree.concept}")
+        println()
+
+        println("Properties:")
+        node.properties.forEach { println("${it.name}: $it") }
+        println()
+
+        println("References:")
+        node.references.forEach { println("${it.link.name}: ${it.targetNodeId}") }
+        println()
+
+        println("Children:")
+        node.children.forEach { println("${it.name}: ${it.nodeId}") }
+        println("-----------------")
     }
 }

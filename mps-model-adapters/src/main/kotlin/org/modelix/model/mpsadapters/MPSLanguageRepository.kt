@@ -31,7 +31,9 @@ class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepo
 
         val conceptId = try {
             SConceptId.deserialize(uid.substring(4))
-        } catch (e: NumberFormatException) { return null } ?: return null // in case the id cannot be parsed
+        } catch (e: NumberFormatException) {
+            return null
+        } ?: return null // in case the id cannot be parsed
 
         val conceptDescriptor = ConceptRegistry.getInstance().getConceptDescriptor(conceptId)
 
@@ -49,4 +51,15 @@ class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepo
     }
 
     override fun getPriority(): Int = 1000
+
+    override fun equals(other: Any?) =
+        if (this === other) {
+            true
+        } else if (javaClass != other?.javaClass) {
+            false
+        } else {
+            repository == (other as MPSLanguageRepository).repository
+        }
+
+    override fun hashCode() = repository.hashCode()
 }

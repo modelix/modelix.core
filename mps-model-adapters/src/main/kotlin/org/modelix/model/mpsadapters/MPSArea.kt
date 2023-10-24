@@ -160,7 +160,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
                     ?.let { MPSModuleAsNode(it).findDevKitDependency(ref.usedModuleId) }
                 ref.userModel != null -> ref.userModel.resolve(repository)
                     ?.let { MPSModelAsNode(it).findDevKitDependency(ref.usedModuleId) }
-                else -> throw IllegalStateException("No importer found.")
+                else -> error("No importer found.")
             }
         }
         val serialized = ref.serialize()
@@ -286,7 +286,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
                     ?.let { MPSModuleAsNode(it).findSingleLanguageDependency(ref.usedModuleId) }
                 ref.userModel != null -> ref.userModel.resolve(repository)
                     ?.let { MPSModelAsNode(it).findSingleLanguageDependency(ref.usedModuleId) }
-                else -> throw IllegalStateException("No importer found.")
+                else -> error("No importer found.")
             }
         }
         val serialized = ref.serialize()

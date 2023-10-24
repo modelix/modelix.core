@@ -51,7 +51,7 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
         }
 
     override fun removeChild(child: INode) {
-        val link = child.getContainmentLink() ?: throw RuntimeException("ContainmentLink not found for node $child")
+        val link = child.getContainmentLink() ?: error("ContainmentLink not found for node $child")
         if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)) {
             removeUsedLanguage(child)
         }

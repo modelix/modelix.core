@@ -82,7 +82,7 @@ data class MPSDevKitDependencyReference(
     override fun serialize(): String {
         val importer = userModule?.let { "mps-module:$it" }
             ?: userModel?.let { "mps-model:$it" }
-            ?: throw IllegalStateException("importer not found")
+            ?: error("importer not found")
 
         return "$PREFIX:$usedModuleId$SEPARATOR$importer"
     }
@@ -166,7 +166,7 @@ data class MPSSingleLanguageDependencyReference(
     override fun serialize(): String {
         val importer = userModule?.let { "mps-module:$it" }
             ?: userModel?.let { "mps-model:$it" }
-            ?: throw IllegalStateException("importer not found")
+            ?: error("importer not found")
 
         return "$PREFIX:$usedModuleId$SEPARATOR$importer"
     }

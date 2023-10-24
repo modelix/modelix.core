@@ -65,15 +65,11 @@ interface IDefaultNodeAdapter : IDeprecatedNodeDefaults {
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
-        if (target != null) {
-            throw IllegalArgumentException("$concept doesn't contain a reference link $link")
-        }
+        require(target == null) { "$concept doesn't contain a reference link $link" }
     }
 
     override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {
-        if (target != null) {
-            throw IllegalArgumentException("$concept doesn't contain a reference link $role")
-        }
+        require(target == null) { "$concept doesn't contain a reference link $role" }
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {
@@ -91,7 +87,7 @@ interface IDefaultNodeAdapter : IDeprecatedNodeDefaults {
     }
 
     override fun removeChild(child: INode) {
-        val link = child.getContainmentLink() ?: throw RuntimeException("ContainmentLink not found for node $child")
+        val link = child.getContainmentLink() ?: error("ContainmentLink not found for node $child")
         throw UnsupportedOperationException("Cannot remove child in link $link of concept $concept.")
     }
 }

@@ -52,7 +52,7 @@ data class MPSSingleLanguageDependencyAsNode(
         } else if (modelImporter != null) {
             BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
         } else {
-            throw IllegalStateException("No importer found for $this")
+            error("No importer found for $this")
         }
     }
 
@@ -76,6 +76,6 @@ data class MPSSingleLanguageDependencyAsNode(
         } else if (modelImporter != null) {
             MPSModelAsNode(modelImporter)
         } else {
-            throw IllegalStateException("No importer found for $this")
+            error("No importer found for $this")
         }
 }

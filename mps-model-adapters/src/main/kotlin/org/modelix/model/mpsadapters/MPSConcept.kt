@@ -40,7 +40,7 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
         val id: SConceptId = when (concept) {
             is SConceptAdapterById -> concept.id
             is SInterfaceConceptAdapterById -> concept.id
-            else -> throw RuntimeException("Unknown concept type: $concept")
+            else -> error("Unknown concept type: $concept")
         }
         return "mps:" + id.serialize()
     }

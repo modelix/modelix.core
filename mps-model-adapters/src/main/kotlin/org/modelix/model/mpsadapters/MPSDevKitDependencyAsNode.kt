@@ -53,7 +53,7 @@ data class MPSDevKitDependencyAsNode(
         } else if (modelImporter != null) {
             MPSModelAsNode(modelImporter)
         } else {
-            throw IllegalStateException("No importer found for $this")
+            error("No importer found for $this")
         }
 
     override fun getContainmentLink(): IChildLink {
@@ -62,7 +62,7 @@ data class MPSDevKitDependencyAsNode(
         } else if (modelImporter != null) {
             BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
         } else {
-            throw IllegalStateException("No importer found for $this")
+            error("No importer found for $this")
         }
     }
 

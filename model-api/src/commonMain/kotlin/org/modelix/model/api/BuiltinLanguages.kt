@@ -85,7 +85,7 @@ object BuiltinLanguages {
         override var includedConcepts = arrayOf(
             Model, Module, Solution, Language, DevKit, Repository, Project,
             ModelReference, LanguageDependency, SingleLanguageDependency, DevkitDependency, ModuleFacet,
-            ModuleDependency,
+            ModuleDependency, JavaModuleFacet,
         )
 
         object Model : SimpleConcept(
@@ -304,6 +304,16 @@ object BuiltinLanguages {
             conceptName = "ModuleDependency",
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init {
+                addConcept(this)
+            }
+        }
+
+        object JavaModuleFacet : SimpleConcept(
+            conceptName = "JavaModuleFacet",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406",
+            directSuperConcepts = listOf(ModuleFacet),
         ) {
             init {
                 addConcept(this)

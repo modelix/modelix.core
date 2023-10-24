@@ -15,6 +15,7 @@ import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.mps.sync.binding.IBinding
+import org.modelix.mps.sync.neu.ITreeToSTreeTransformer
 import java.net.ConnectException
 import java.net.URL
 
@@ -78,6 +79,10 @@ class SyncServiceImpl : SyncService {
                 log.info("Binding model $modelName")
                 val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
                 replicatedModel.start()
+
+                // 🚧🏗️👷👷‍♂️ WARNING Construction area 🚧🚧🚧
+                ITreeToSTreeTransformer(replicatedModel).transform()
+
                 bindingImpl = BindingImpl(replicatedModel, modelName, project)
             } catch (e: ConnectException) {
                 log.warn("Unable to connect: ${e.message} / ${e.cause}")

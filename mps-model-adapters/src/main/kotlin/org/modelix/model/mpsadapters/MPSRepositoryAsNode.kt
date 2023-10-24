@@ -24,7 +24,6 @@ import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.NodeReference
 import org.modelix.model.api.NullChildLink
 import org.modelix.model.area.IArea
 
@@ -35,7 +34,7 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDefaultNodeAdapte
     }
 
     override val reference: INodeReference
-        get() = NodeReference("mps-repository")
+        get() = MPSRepositoryReference
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.Repository
     override val parent: INode?

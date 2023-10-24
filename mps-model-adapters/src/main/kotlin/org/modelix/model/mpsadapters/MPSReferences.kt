@@ -24,19 +24,32 @@ import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.model.api.INodeReference
 
 data class MPSModuleReference(val moduleReference: SModuleReference) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-module"
+    }
+
     override fun serialize(): String {
-        return "mps-module:$moduleReference"
+        return "$PREFIX:$moduleReference"
     }
 }
 
 data class MPSModelReference(val modelReference: SModelReference) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-model"
+    }
+
     override fun serialize(): String {
-        return "mps-model:$modelReference"
+        return "$PREFIX:$modelReference"
     }
 }
 
 data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
     companion object {
+
+        internal const val PREFIX = "mps"
+
         @Deprecated("INodeResolutionScope.resolveNode(INodeReference) is now responsible for deserializing supported references")
         fun tryConvert(ref: INodeReference): MPSNodeReference? {
             if (ref is MPSNodeReference) return ref
@@ -51,7 +64,7 @@ data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
     }
 
     override fun serialize(): String {
-        return "mps:$ref"
+        return "$PREFIX:$ref"
     }
 }
 
@@ -60,18 +73,29 @@ data class MPSDevKitDependencyReference(
     val userModule: SModuleReference? = null,
     val userModel: SModelReference? = null,
 ) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-devkit"
+        internal const val SEPARATOR = "#IN#"
+    }
+
     override fun serialize(): String {
         val importer = userModule?.let { "mps-module:$it" }
             ?: userModel?.let { "mps-model:$it" }
             ?: throw IllegalStateException("importer not found")
 
-        return "mps-devkit:$usedModuleId#IN#$importer"
+        return "$PREFIX:$usedModuleId$SEPARATOR$importer"
     }
 }
 
 data class MPSJavaModuleFacetReference(val moduleReference: SModuleReference) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-java-facet"
+    }
+
     override fun serialize(): String {
-        return "mps-java-facet:$moduleReference"
+        return "$PREFIX:$moduleReference"
     }
 }
 
@@ -79,8 +103,14 @@ data class MPSModelImportReference(
     val importedModel: SModelReference,
     val importingModel: SModelReference,
 ) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-model-import"
+        internal const val SEPARATOR = "#IN#"
+    }
+
     override fun serialize(): String {
-        return "mps-model-import:$importedModel#IN#$importingModel"
+        return "$PREFIX:$importedModel$SEPARATOR$importingModel"
     }
 }
 
@@ -88,20 +118,37 @@ data class MPSModuleDependencyReference(
     val usedModuleId: SModuleId,
     val userModuleReference: SModuleReference,
 ) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-module-dep"
+        internal const val SEPARATOR = "#IN#"
+    }
+
     override fun serialize(): String {
-        return "mps-module-dependency:$usedModuleId#IN#$userModuleReference"
+        return "$PREFIX:$usedModuleId$SEPARATOR$userModuleReference"
     }
 }
 
 data class MPSProjectReference(val projectName: String) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-project"
+    }
+
     override fun serialize(): String {
-        return "mps-project:$projectName"
+        return "$PREFIX:$projectName"
     }
 }
 
 data class MPSProjectModuleReference(val moduleRef: SModuleReference, val projectRef: MPSProjectReference) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-project-module"
+        internal const val SEPARATOR = "#IN#"
+    }
+
     override fun serialize(): String {
-        return "mps-project-module:$moduleRef#IN#${projectRef.serialize()}"
+        return "$PREFIX:$moduleRef$SEPARATOR${projectRef.serialize()}"
     }
 }
 
@@ -110,11 +157,25 @@ data class MPSSingleLanguageDependencyReference(
     val userModule: SModuleReference? = null,
     val userModel: SModelReference? = null,
 ) : INodeReference {
+
+    companion object {
+        internal const val PREFIX = "mps-lang"
+        internal const val SEPARATOR = "#IN#"
+    }
+
     override fun serialize(): String {
         val importer = userModule?.let { "mps-module:$it" }
             ?: userModel?.let { "mps-model:$it" }
             ?: throw IllegalStateException("importer not found")
 
-        return "mps-lang:$usedModuleId#IN#$importer"
+        return "$PREFIX:$usedModuleId$SEPARATOR$importer"
+    }
+}
+
+object MPSRepositoryReference : INodeReference {
+    internal const val PREFIX = "mps-repository"
+
+    override fun serialize(): String {
+        return "$PREFIX:repository"
     }
 }

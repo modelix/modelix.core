@@ -154,4 +154,48 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
             false
         }
     }
+
+    internal fun findModuleDependency(dependencyId: SModuleId): MPSModuleDependencyAsNode? {
+        if (module !is AbstractModule) {
+            return null
+        }
+
+        module.moduleDescriptor?.dependencyVersions?.forEach { entry ->
+            if (entry.key.moduleId == dependencyId) {
+                return MPSModuleDependencyAsNode(
+                    moduleReference = entry.key,
+                    moduleVersion = entry.value,
+                    explicit = isDirectDependency(module, entry.key.moduleId),
+                    reexport = isReexport(module, entry.key.moduleId),
+                    importer = module,
+                    dependencyScope = getDependencyScope(module, entry.key.moduleId),
+                )
+            }
+        }
+        return null
+    }
+
+    internal fun findSingleLanguageDependency(dependencyId: SModuleId): MPSSingleLanguageDependencyAsNode? {
+        if (module !is AbstractModule) {
+            return null
+        }
+        module.moduleDescriptor?.dependencyVersions?.forEach { entry ->
+            if (entry.key.moduleId == dependencyId) {
+                return MPSSingleLanguageDependencyAsNode(entry.key, entry.value, moduleImporter = module)
+            }
+        }
+        return null
+    }
+
+    internal fun findDevKitDependency(dependencyId: SModuleId): MPSDevKitDependencyAsNode? {
+        if (module !is AbstractModule) {
+            return null
+        }
+        module.moduleDescriptor?.usedDevkits?.forEach { devKit ->
+            if (devKit.moduleId == dependencyId) {
+                return MPSDevKitDependencyAsNode(devKit, module)
+            }
+        }
+        return null
+    }
 }

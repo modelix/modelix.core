@@ -17,6 +17,7 @@ import jetbrains.mps.extapi.model.SModelDescriptorStub
 import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.SModuleId
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -116,5 +117,31 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
         } else {
             null
         }
+    }
+
+    internal fun findSingleLanguageDependency(dependencyId: SModuleId): MPSSingleLanguageDependencyAsNode? {
+        if (model is SModelDescriptorStub) {
+            model.importedLanguageIds().forEach { entry ->
+                if (entry.sourceModule?.moduleId == dependencyId) {
+                    return MPSSingleLanguageDependencyAsNode(
+                        entry.sourceModuleReference,
+                        model.getLanguageImportVersion(entry),
+                        modelImporter = model,
+                    )
+                }
+            }
+        }
+        return null
+    }
+
+    internal fun findDevKitDependency(dependencyId: SModuleId): MPSDevKitDependencyAsNode? {
+        if (model is SModelDescriptorStub) {
+            model.importedDevkits().forEach { devKit ->
+                if (devKit.moduleId == dependencyId) {
+                    return MPSDevKitDependencyAsNode(devKit, modelImporter = model)
+                }
+            }
+        }
+        return null
     }
 }

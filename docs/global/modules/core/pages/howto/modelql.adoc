@@ -17,7 +17,7 @@ val result: List<String?> = client.query { root ->
 == Integration with LightModelClient
 
 When creating a `LightModelClient` you can optionally provide a `ModelQLClient` instance,
-which allows to invoke `.query { ... }` (see below) on a node returned by the `LightModelClient`.
+which allows invoking `.query { ... }` (see below) on a node returned by the `LightModelClient`.
 
 [source,kotlin]
 --
@@ -28,7 +28,7 @@ val result: List<String?> = client.getRootNode()!!.query {
 }
 --
 
-== Type safe ModelQL API
+== Type-safe ModelQL API
 
 You can use the `model-api-gen-gradle` plugin to generate type safe extensions from your meta-model.
 Specify the `modelqlKotlinDir` property to enable the generation.
@@ -139,8 +139,8 @@ val result: List<MyProduct> = query { db ->
 result.forEach { println("ID: ${it.id}, Title: ${it.title}, Images: ${it.images}") }
 --
 
-At the beginning of the `buildLocalMapping` body you invoke `request()` on all the values you need to assemble your object.
-This basically ads the operand to the internal `zip` operation and returns an object that gives you access to the value
+At the beginning of the `buildLocalMapping` body, you invoke `request()` on all the values you need to assemble your object.
+This basically adds the operand to the internal `zip` operation and returns an object that gives you access to the value
 after receiving it from the server.
 Inside the `onSuccess` block you assemble the local object using the previously requested values.
 

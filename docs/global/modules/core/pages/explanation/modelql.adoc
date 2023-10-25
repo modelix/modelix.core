@@ -17,8 +17,8 @@ While this results in a more predictable performance, it is also hard to maintai
 You have to download all the data at the beginning that you might eventually need, potentially exceeding the available memory of the system.
 
 The ModelQL query language provides a more dynamic way of loading parts of the model on demand,
-but still allows to reduce the number of request to a minimum.
-The downside is, that it's not just a different implementation hidden behind the model-api,
+but still allows reducing the number of request to a minimum.
+The downside is that it's not just a different implementation hidden behind the model-api,
 but requires to use a different API.
 
 == Reactive Streams

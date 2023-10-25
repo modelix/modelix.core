@@ -75,7 +75,7 @@ class HtmlBuilderTest {
 
     @Test
     fun modular() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
 
         val modelTemplate = buildModelQLFragment<INode, FlowContent> {
             val name = input.property("name").getLater()
@@ -121,7 +121,7 @@ class HtmlBuilderTest {
 
     @Test
     fun recursive() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
 
         val modelTemplate = buildModelQLFragment<INode, FlowContent> {
             val name = input.property("name").getLater()

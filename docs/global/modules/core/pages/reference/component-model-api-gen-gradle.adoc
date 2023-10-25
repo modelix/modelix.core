@@ -82,7 +82,7 @@ Inside of the `metamodel` block the following settings can be configured.
 |File
 |Target Kotlin directory of the generator
 
-|`modelqlKotlinDir`
+|`modelqlKotlinDir` [[model-api-gen-gradle_attributes_modelqlKotlinDir,modelqlKotlinDir]]
 |File
 |The generation of the ModelQL API is optional, because the output has a dependency on the ModelQL runtime.
  If this option is set, you have to add a dependency on `org.modelix:modelql-typed`.

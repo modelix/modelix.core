@@ -107,14 +107,24 @@ class ExecuteLocalStep<In, Out>(transformation: (In) -> Out) : LocalMappingStep<
     }
 }
 
+@Deprecated("renamed to buildLocalMapping", ReplaceWith("buildLocalMapping(body)"))
 fun <In, Out> IFluxStep<In>.mapLocal2(body: ILocalMappingBuilder<In, Out>.(IMonoStep<In>) -> Unit): IFluxStep<Out> {
-    return map { it.mapLocal2(body) }
+    return buildLocalMapping(body)
 }
 
+fun <In, Out> IFluxStep<In>.buildLocalMapping(body: ILocalMappingBuilder<In, Out>.(IMonoStep<In>) -> Unit): IFluxStep<Out> {
+    return map { it.buildLocalMapping(body) }
+}
+
+@Deprecated("renamed to buildLocalMapping", ReplaceWith("buildLocalMapping(body)"))
 fun <In, Out> IMonoStep<In>.mapLocal2(body: ILocalMappingBuilder<In, Out>.(IMonoStep<In>) -> Unit): IMonoStep<Out> {
+    return buildLocalMapping(body)
+}
+
+fun <In, Out> IMonoStep<In>.buildLocalMapping(body: ILocalMappingBuilder<In, Out>.(IMonoStep<In>) -> Unit): IMonoStep<Out> {
     val builder = LocalMappingBuilder<In, Out>()
     builder.apply {
-        body(this@mapLocal2)
+        body(this@buildLocalMapping)
     }
     return builder.compileProcessingOutputStep()
 }

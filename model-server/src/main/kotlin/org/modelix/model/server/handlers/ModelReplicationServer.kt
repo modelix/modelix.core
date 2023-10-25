@@ -14,20 +14,17 @@
 
 package org.modelix.model.server.handlers
 
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.receive
-import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
-import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.webSocket
@@ -38,6 +35,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.authorization.getUserName
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
 import org.modelix.model.area.getArea
 import org.modelix.model.client2.checkObjectHashes
@@ -46,14 +44,11 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
-import org.modelix.model.persistent.HashUtil
-import org.modelix.model.server.api.ModelQuery
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.server.ModelQLServer
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 /**
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
@@ -65,10 +60,6 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
 
     companion object {
         private val LOG = LoggerFactory.getLogger(ModelReplicationServer::class.java)
-
-        private fun randomUUID(): String {
-            return UUID.randomUUID().toString().replace("[^a-zA-Z0-9]".toRegex(), "")
-        }
     }
 
     private val modelClient: LocalModelClient get() = repositoriesManager.client
@@ -191,10 +182,43 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                         }
                     }
                 }
+                route("versions") {
+                    route("{versionHash}") {
+                        get {
+                            // TODO permission check on the repository ID is not sufficient, because the client could
+                            //      provide any repository ID to access a version inside a different repository.
+                            //      A check if the version belongs to the repository is required.
+                            val baseVersionHash = call.request.queryParameters["lastKnown"]
+                            val versionHash = call.parameters["versionHash"]!!
+                            if (storeClient[versionHash] == null) {
+                                call.respondText(
+                                    "Version '$versionHash' doesn't exist",
+                                    status = HttpStatusCode.NotFound,
+                                )
+                                return@get
+                            }
+                            call.respondDelta(versionHash, baseVersionHash)
+                        }
+                        get("history/{oldestVersionHash}") {
+                            TODO()
+                        }
+                        post("query") {
+                            val versionHash = call.parameters["versionHash"]!!
+                            val version = CLVersion.loadFromHash(versionHash, repositoriesManager.client.storeCache)
+                            val initialTree = version.getTree()
+                            val branch = TreePointer(initialTree)
+                            ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
+                        }
+                    }
+                }
             }
         }
         route("versions") {
             get("{versionHash}") {
+                // TODO versions should be stored inside a repository with permission checks.
+                //      Knowing a version hash should not give you access to the content.
+                //      This handler was already moved to the 'repositories' route. Removing it here would be a breaking
+                //      change, but should be done in some future version.
                 val baseVersionHash = call.request.queryParameters["lastKnown"]
                 val versionHash = call.parameters["versionHash"]!!
                 if (storeClient[versionHash] == null) {
@@ -208,47 +232,6 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             }
             get("{versionHash}/history/{oldestVersionHash}") {
                 TODO()
-            }
-        }
-        route("objects") {
-            post {
-                val values = call.receive<List<String>>()
-                storeClient.putAll(values.associateBy { HashUtil.sha256(it) }, true)
-                call.respondText("OK")
-            }
-            get("{hash}") {
-                val key = call.parameters["hash"]!!
-                val value = storeClient[key]
-                if (value == null) {
-                    call.respondText("object '$key' not found", status = HttpStatusCode.NotFound)
-                } else {
-                    call.respondText(value)
-                }
-            }
-        }
-        route("modelql") {
-            put {
-                val params = call.receiveParameters()
-                val queryFromClient = params["query"]
-                if (queryFromClient == null) {
-                    call.respondText(text = "'query' is missing", status = HttpStatusCode.BadRequest)
-                    return@put
-                }
-                val query = ModelQuery.fromJson(queryFromClient)
-                val json = query.toJson()
-                val hash = HashUtil.sha256(json)
-                storeClient.put(hash, json)
-                call.respondText(text = hash)
-            }
-            get("{hash}") {
-                val hash = call.parameters["hash"]!!
-                val json = storeClient[hash]
-                if (json == null) {
-                    call.respondText(status = HttpStatusCode.NotFound, text = "ModelQL with hash '$hash' doesn't exist")
-                    return@get
-                }
-                ModelQuery.fromJson(json) // ensure it's a valid ModelQuery
-                call.respondText(json, ContentType.Application.Json)
             }
         }
     }

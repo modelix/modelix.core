@@ -43,6 +43,8 @@ kotlin {
                 api(project(":model-api"))
                 api(project(":model-datastructure"))
                 api(project(":model-server-api"))
+                implementation(project(":modelql-client"))
+                api(project(":modelql-core"))
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.collections.immutable)
                 implementation(libs.kotlin.coroutines.core)

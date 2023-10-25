@@ -32,6 +32,8 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.modelql.core.count
+import org.modelix.modelql.untyped.allChildren
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -85,6 +87,21 @@ class ModelClientV2Test {
             client.listBranches(repositoryId).toSet(),
             setOf(repositoryId.getBranchReference(), branchId),
         )
+    }
+
+    @Test
+    fun modelqlSmokeTest() = runTest {
+        val url = "http://localhost/v2"
+        val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+
+        val repositoryId = RepositoryId("repo1")
+        val branchRef = repositoryId.getBranchReference()
+        val initialVersion = client.initRepository(repositoryId)
+        val size = client.query(branchRef) { it.allChildren().count() }
+        assertEquals(0, size)
+
+        val size2 = client.query(repositoryId, initialVersion.getContentHash()) { it.allChildren().count() }
+        assertEquals(0, size2)
     }
 
     @Test

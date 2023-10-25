@@ -63,6 +63,7 @@ dependencies {
     testImplementation(libs.cucumber.java)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
+    testImplementation(project(":modelql-untyped"))
 }
 
 tasks.test {

@@ -31,7 +31,7 @@ val result: List<String?> = client.getRootNode()!!.query {
 == Type-safe ModelQL API
 
 You can use the `model-api-gen-gradle` plugin to generate type safe extensions from your meta-model.
-Specify the `modelqlKotlinDir` property to enable the generation.
+Specify the link:../reference/component-model-api-gen-gradle.adoc#model-api-gen-gradle_attributes_modelqlKotlinDir[modelqlKotlinDir] property to enable the generation.
 
 [source,kotlin]
 --

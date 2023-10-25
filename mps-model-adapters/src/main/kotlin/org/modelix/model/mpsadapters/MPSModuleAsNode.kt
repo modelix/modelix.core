@@ -33,6 +33,10 @@ import org.modelix.model.area.IArea
 
 data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
 
+    companion object {
+        private val logger = mu.KotlinLogging.logger { }
+    }
+
     override fun getArea(): IArea {
         return MPSArea(module.repository ?: MPSModuleRepository.getInstance())
     }
@@ -151,6 +155,7 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
         return try {
             module.moduleDescriptor?.compileInMPS ?: false
         } catch (ex: UnsupportedOperationException) {
+            logger.debug { ex }
             false
         }
     }

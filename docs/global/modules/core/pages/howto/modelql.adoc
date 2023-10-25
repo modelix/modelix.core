@@ -56,7 +56,7 @@ val cls: ClassConcept = client.query {
 val names = cls.query { it.member.ofConcept(C_StaticMethodDeclaration).name.toList() }
 --
 
-For convenience, it's possible to access further data of that node using the INode API,
+For convenience, it's possible to access further data of that node using the https://api.modelix.org/3.6.0/model-api/org.modelix.model.api/-i-node/index.html?query=interface%20INode[INode] API,
 but this is not recommended though, because each access sends a new query to the server.
 
 [source,kotlin]

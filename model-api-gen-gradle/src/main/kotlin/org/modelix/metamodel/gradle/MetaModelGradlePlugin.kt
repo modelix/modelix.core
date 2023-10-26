@@ -17,7 +17,7 @@ class MetaModelGradlePlugin : Plugin<Project> {
     override fun apply(project: Project) {
         this.project = project
         this.settings = project.extensions.create("metamodel", MetaModelGradleSettings::class.java)
-        this.buildDir = project.buildDir
+        this.buildDir = project.layout.buildDirectory.get().asFile
 
         val exporterDependencies = project.configurations.create("metamodel-mps-dependencies")
         val exporterDir = getBuildOutputDir().resolve("mpsExporter")

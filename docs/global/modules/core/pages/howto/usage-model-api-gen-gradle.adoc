@@ -77,7 +77,7 @@ val mpsVersion: String by rootProject
 val modelixCoreVersion: String by rootProject
 
 // ensure that the MPS directory name is correct
-val mpsDir = buildDir.resolve("mps")
+val mpsDir = project.layout.buildDirectory.dir("mps").get().asFile
 
 val mps by configurations.creating
 val mpsDependencies by configurations.creating

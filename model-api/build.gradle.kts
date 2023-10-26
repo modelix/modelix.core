@@ -9,7 +9,9 @@ description = "API to access models stored in Modelix"
 ktlint {
     filter {
         exclude {
-            it.file.toPath().toAbsolutePath().startsWith(project(":ts-model-api").buildDir.toPath().toAbsolutePath())
+            val kotlinGeneratedFromTypeScript =
+                project(":ts-model-api").layout.buildDirectory.get().asFile.toPath().toAbsolutePath()
+            it.file.toPath().toAbsolutePath().startsWith(kotlinGeneratedFromTypeScript)
         }
     }
 }

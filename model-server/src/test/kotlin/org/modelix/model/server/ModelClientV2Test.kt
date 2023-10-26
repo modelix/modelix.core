@@ -118,4 +118,36 @@ class ModelClientV2Test {
             setOf(repositoryId.getBranchReference(), branchId),
         )
     }
+
+    @Test
+    fun `user id can be provided to client after creation`() = runTest {
+        val url = "http://localhost/v2"
+        val modelClient = ModelClientV2
+            .builder()
+            .url(url)
+            .client(client)
+            .build()
+            .also { it.init() }
+
+        val userId = "a_user_id"
+        modelClient.setClientProvideUserId(userId)
+
+        assertEquals(userId, modelClient.getUserId())
+    }
+
+    @Test
+    fun `user id provided by client can be removed`() = runTest {
+        val url = "http://localhost/v2"
+        val modelClient = ModelClientV2
+            .builder()
+            .url(url)
+            .client(client)
+            .userId("a_user_id")
+            .build()
+            .also { it.init() }
+
+        modelClient.setClientProvideUserId(null)
+
+        assertEquals("localhost", modelClient.getUserId())
+    }
 }

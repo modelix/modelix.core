@@ -13,119 +13,194 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
+import jetbrains.mps.project.Solution
+import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.smodel.MPSModuleRepository
+import org.jetbrains.mps.openapi.module.SDependencyScope
 import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SModuleId
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
-import org.modelix.model.api.IConceptReference
-import org.modelix.model.api.IDeprecatedNodeDefaults
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
-import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 
-data class MPSModuleAsNode(val module: SModule) : IDeprecatedNodeDefaults {
+data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
+
+    companion object {
+        private val logger = mu.KotlinLogging.logger { }
+    }
+
     override fun getArea(): IArea {
         return MPSArea(module.repository ?: MPSModuleRepository.getInstance())
     }
 
-    override val isValid: Boolean
-        get() = TODO("Not yet implemented")
     override val reference: INodeReference
-        get() = NodeReference("mps-module:" + module.moduleReference.toString())
+        get() = MPSModuleReference(module.moduleReference)
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.Module
     override val parent: INode?
         get() = module.repository?.let { MPSRepositoryAsNode(it) }
 
-    override fun getConceptReference(): IConceptReference {
-        return concept.getReference()
-    }
-
     override val allChildren: Iterable<INode>
         get() = module.models.map { MPSModelAsNode(it) }
 
-    override fun removeChild(child: INode) {
-        TODO("Not yet implemented")
-    }
-
     override fun getContainmentLink(): IChildLink {
-        return RepositoryLanguage.Repository.modules
+        return BuiltinLanguages.MPSRepositoryConcepts.Repository.modules
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.getUID().endsWith("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898") ||
-            link.getUID().contains("models") ||
-            link.getSimpleName() == "models"
-        ) {
+        return if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.models)) {
             module.models.map { MPSModelAsNode(it) }
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.facets)) {
+            module.facets.filterIsInstance<JavaModuleFacet>().map { MPSJavaModuleFacetAsNode(it) }
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)) {
+            getDependencies()
+        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies)) {
+            getLanguageDependencies()
         } else {
             emptyList()
         }
     }
 
-    override fun moveChild(role: IChildLink, index: Int, child: INode) {
-        TODO("Not yet implemented")
+    private fun getDependencies(): Iterable<INode> {
+        if (module !is AbstractModule) return emptyList()
+
+        val moduleDescriptor = module.moduleDescriptor ?: return emptyList()
+
+        return moduleDescriptor.dependencyVersions.map { (ref, version) ->
+            MPSModuleDependencyAsNode(
+                moduleReference = ref,
+                moduleVersion = version,
+                explicit = isDirectDependency(module, ref.moduleId),
+                reexport = isReexport(module, ref.moduleId),
+                importer = module,
+                dependencyScope = getDependencyScope(module, ref.moduleId),
+            )
+        }
     }
 
-    override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode {
-        TODO("Not yet implemented")
+    private fun getLanguageDependencies(): Iterable<INode> {
+        if (module !is AbstractModule) return emptyList()
+
+        val moduleDescriptor = module.moduleDescriptor ?: return emptyList()
+        val dependencies = mutableListOf<INode>()
+
+        for ((language, version) in moduleDescriptor.languageVersions) {
+            dependencies.add(
+                MPSSingleLanguageDependencyAsNode(language.sourceModuleReference, version, moduleImporter = module),
+            )
+        }
+
+        for (devKit in moduleDescriptor.usedDevkits) {
+            dependencies.add(MPSDevKitDependencyAsNode(devKit, module))
+        }
+
+        return dependencies
     }
 
-    override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode {
-        TODO("Not yet implemented")
+    private fun isDirectDependency(module: SModule, moduleId: SModuleId): Boolean {
+        if (module is Solution) {
+            return module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
+        }
+        return module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
     }
 
-    override fun getReferenceTarget(link: IReferenceLink): INode? {
-        TODO("Not yet implemented")
+    private fun isReexport(module: SModule, moduleId: SModuleId): Boolean {
+        return module.declaredDependencies
+            .firstOrNull { it.targetModule.moduleId == moduleId }?.isReexport ?: false
     }
 
-    override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {
-        TODO("Not yet implemented")
+    private fun getDependencyScope(module: SModule, moduleId: SModuleId): SDependencyScope? {
+        if (module is Solution) {
+            return module.moduleDescriptor.dependencies
+                .firstOrNull { it.moduleRef.moduleId == moduleId }?.scope
+        }
+        return module.declaredDependencies.firstOrNull { it.targetModule.moduleId == moduleId }?.scope
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()) ||
-            property.getUID().contains("name") ||
-            property.getSimpleName() == "name"
-        ) {
+        return if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)) {
             module.moduleName
-        } else if (property.getUID().endsWith(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.getUID()) ||
-            property.getUID().contains("virtualPackage") ||
-            property.getSimpleName() == "virtualPackage"
-        ) {
+        } else if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage)) {
             ProjectManager.getInstance().openedProjects.asSequence()
                 .filterIsInstance<ProjectBase>()
                 .mapNotNull { it.getPath(module) }
                 .firstOrNull()
                 ?.virtualFolder
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.id)) {
+            module.moduleId.toString()
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion)) {
+            val version = (module as? AbstractModule)?.moduleDescriptor?.moduleVersion ?: 0
+            version.toString()
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS)) {
+            getCompileInMPS().toString()
+        } else if (property.isIdProperty()) {
+            reference.serialize()
         } else {
             null
         }
     }
 
-    override fun setPropertyValue(property: IProperty, value: String?) {
-        // TODO("Not yet implemented")
+    private fun getCompileInMPS(): Boolean {
+        if (module is DevKit || module !is AbstractModule) {
+            return false
+        }
+        return try {
+            module.moduleDescriptor?.compileInMPS ?: false
+        } catch (ex: UnsupportedOperationException) {
+            logger.debug { ex }
+            false
+        }
     }
 
-    override fun getPropertyLinks(): List<IProperty> {
-        return concept.getAllProperties()
+    internal fun findModuleDependency(dependencyId: SModuleId): MPSModuleDependencyAsNode? {
+        if (module !is AbstractModule) {
+            return null
+        }
+
+        module.moduleDescriptor?.dependencyVersions?.forEach { entry ->
+            if (entry.key.moduleId == dependencyId) {
+                return MPSModuleDependencyAsNode(
+                    moduleReference = entry.key,
+                    moduleVersion = entry.value,
+                    explicit = isDirectDependency(module, entry.key.moduleId),
+                    reexport = isReexport(module, entry.key.moduleId),
+                    importer = module,
+                    dependencyScope = getDependencyScope(module, entry.key.moduleId),
+                )
+            }
+        }
+        return null
     }
 
-    override fun getReferenceLinks(): List<IReferenceLink> {
-        return concept.getAllReferenceLinks()
+    internal fun findSingleLanguageDependency(dependencyId: SModuleId): MPSSingleLanguageDependencyAsNode? {
+        if (module !is AbstractModule) {
+            return null
+        }
+        module.moduleDescriptor?.dependencyVersions?.forEach { entry ->
+            if (entry.key.moduleId == dependencyId) {
+                return MPSSingleLanguageDependencyAsNode(entry.key, entry.value, moduleImporter = module)
+            }
+        }
+        return null
+    }
+
+    internal fun findDevKitDependency(dependencyId: SModuleId): MPSDevKitDependencyAsNode? {
+        if (module !is AbstractModule) {
+            return null
+        }
+        module.moduleDescriptor?.usedDevkits?.forEach { devKit ->
+            if (devKit.moduleId == dependencyId) {
+                return MPSDevKitDependencyAsNode(devKit, module)
+            }
+        }
+        return null
     }
 }

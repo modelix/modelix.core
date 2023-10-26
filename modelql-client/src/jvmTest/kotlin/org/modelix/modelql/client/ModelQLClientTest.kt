@@ -79,7 +79,7 @@ class ModelQLClientTest {
 
     @Test
     fun test_count() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result: Int = client.query { root ->
             root.allChildren().count()
         }
@@ -88,7 +88,7 @@ class ModelQLClientTest {
 
     @Test
     fun test_properties() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result: List<String?> = client.query { root ->
             root.children("modules").property("name").toList()
         }
@@ -97,7 +97,7 @@ class ModelQLClientTest {
 
     @Test
     fun test_zip() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result = client.query { root ->
             root.children("modules").map {
                 it.property("name").zip(it.allChildren().nodeReference().toList())
@@ -107,7 +107,7 @@ class ModelQLClientTest {
 
     @Test
     fun test_zipN() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result = client.query { root ->
             root.children("modules").map {
                 it.property("name").zip(
@@ -123,7 +123,7 @@ class ModelQLClientTest {
 
     @Test
     fun writeProperty() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val updatesNodes = client.query { root ->
             root.children("modules")
                 .children("models").filter { it.property("name").contains("model1a") }
@@ -148,7 +148,7 @@ class ModelQLClientTest {
 
     @Test
     fun writeReference() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val updatedNodes = client.query { root ->
             root.children("modules")
                 .children("models").filter { it.property("name").contains("model1a") }
@@ -167,7 +167,7 @@ class ModelQLClientTest {
 
     @Test
     fun addNewChild() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val createdNodes = client.query { root ->
             root.children("modules")
                 .children("models")
@@ -188,7 +188,7 @@ class ModelQLClientTest {
 
     @Test
     fun removeNode() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
 
         suspend fun countModels(): Int {
             return client.query { root ->
@@ -214,7 +214,7 @@ class ModelQLClientTest {
 
     @Test
     fun recursiveQuery() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
 
         val descendantsNames: IFluxUnboundQuery<INode, String?> = buildFluxQuery<INode, String?> {
             it.property("name") + it.allChildren().mapRecursive()
@@ -229,7 +229,7 @@ class ModelQLClientTest {
 
     @Test
     fun testCaching() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
 
         val result: List<Int> = client.query { root ->
             val numberOfNodes = root.descendants()

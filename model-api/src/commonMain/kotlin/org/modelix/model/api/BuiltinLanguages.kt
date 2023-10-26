@@ -93,11 +93,10 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept, jetbrains_mps_lang_core.INamedConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val id by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/2615330535972958738")
+            val stereotype by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/3832696962605996173")
 
             val rootNodes = SimpleChildLink(
                 simpleName = "rootNodes",
@@ -127,9 +126,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept, jetbrains_mps_lang_core.INamedConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val id by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/4225291329823310560")
             val moduleVersion by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242370")
@@ -170,9 +167,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598211",
             directSuperConcepts = listOf(Module),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
         }
 
         object Language : SimpleConcept(
@@ -180,9 +175,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598212",
             directSuperConcepts = listOf(Module),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
         }
 
         object DevKit : SimpleConcept(
@@ -190,9 +183,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598213",
             directSuperConcepts = listOf(Module),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
         }
 
         object Repository : SimpleConcept(
@@ -200,9 +191,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val modules = SimpleChildLink(
                 simpleName = "modules",
@@ -218,6 +207,13 @@ object BuiltinLanguages {
                 targetConcept = Project,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/7064605579395546636",
             )
+            val tempModules = SimpleChildLink(
+                simpleName = "tempModules",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = Module,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/8226136427470548682",
+            )
         }
 
         object Project : SimpleConcept(
@@ -225,9 +221,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept, jetbrains_mps_lang_core.INamedConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val modules = SimpleChildLink(
                 simpleName = "modules",
@@ -236,6 +230,39 @@ object BuiltinLanguages {
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4008363636171860450",
             )
+            val projectModules = SimpleChildLink(
+                simpleName = "projectModules",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = ProjectModule,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4201834143491306088",
+            )
+        }
+
+        object ProjectModule : SimpleConcept(
+            conceptName = "ProjectModule",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/4201834143491306084",
+            directSuperConcepts = listOf(ModuleReference),
+        ) {
+            init { addConcept(this) }
+
+            val virtualFolder by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/4201834143491306084/4201834143491306085")
+        }
+
+        object ModuleReference : SimpleConcept(
+            conceptName = "ModuleReference",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/5782622473578468308",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+
+            init { addConcept(this) }
+
+            val module = SimpleReferenceLink(
+                simpleName = "module",
+                isOptional = false,
+                targetConcept = Module,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/5782622473578468308/5782622473578468333",
+            )
         }
 
         object ModelReference : SimpleConcept(
@@ -243,9 +270,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/6402965165736932003",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val model = SimpleReferenceLink(
                 simpleName = "model",
@@ -260,9 +285,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val uuid by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575314")
             val name by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575315")
@@ -273,9 +296,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429",
             directSuperConcepts = listOf(LanguageDependency),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val version by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429/2206727074858242435")
         }
@@ -285,9 +306,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575318",
             directSuperConcepts = listOf(LanguageDependency),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
         }
 
         object ModuleFacet : SimpleConcept(
@@ -300,24 +319,30 @@ object BuiltinLanguages {
             }
         }
 
-        object ModuleDependency : SimpleConcept(
-            conceptName = "ModuleDependency",
-            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415",
-            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
-        ) {
-            init {
-                addConcept(this)
-            }
-        }
-
         object JavaModuleFacet : SimpleConcept(
             conceptName = "JavaModuleFacet",
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406",
             directSuperConcepts = listOf(ModuleFacet),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
+
+            val generated by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406/2206727074858242407")
+            val path by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406/2206727074858242409")
+        }
+
+        object ModuleDependency : SimpleConcept(
+            conceptName = "ModuleDependency",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415",
+            directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
+        ) {
+            init { addConcept(this) }
+
+            val reexport by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242416")
+            val uuid by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242418")
+            val name by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242421")
+            val explicit by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750565")
+            val version by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750570")
+            val scope by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/8438396892798826745")
         }
     }
 
@@ -331,9 +356,7 @@ object BuiltinLanguages {
             uid = "mps:b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348863",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val repositories = SimpleChildLink(
                 simpleName = "repositories",
@@ -349,9 +372,7 @@ object BuiltinLanguages {
             uid = "mps:b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348864",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
 
             val id by property("b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348864/7113393488488348870")
 
@@ -369,9 +390,7 @@ object BuiltinLanguages {
             uid = "mps:b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348865",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept, jetbrains_mps_lang_core.INamedConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
         }
     }
 

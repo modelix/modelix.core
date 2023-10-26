@@ -5,9 +5,11 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.html.respondHtml
 import io.ktor.server.html.respondHtmlTemplate
+import io.ktor.server.request.receive
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.html.BODY
 import kotlinx.html.FlowContent
@@ -24,6 +26,7 @@ import kotlinx.html.li
 import kotlinx.html.link
 import kotlinx.html.script
 import kotlinx.html.small
+import kotlinx.html.stream.appendHTML
 import kotlinx.html.style
 import kotlinx.html.table
 import kotlinx.html.td
@@ -67,19 +70,45 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
             get("/content/{versionHash}/") {
                 val versionHash = call.parameters["versionHash"]
                 if (versionHash.isNullOrEmpty()) {
-                    call.respondText("version not found", status = HttpStatusCode.InternalServerError)
+                    call.respondText("version not found", status = HttpStatusCode.BadRequest)
                     return@get
                 }
+
                 val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
                 val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+
                 call.respondHtmlTemplate(PageWithMenuBar("repos/", "../..")) {
                     headContent {
                         title("Content Explorer")
                         link("../../public/content-explorer.css", rel = "stylesheet")
                         script("text/javascript", src = "../../public/content-explorer.js") {}
                     }
-                    bodyContent { contentPageBody(rootNode, versionHash) }
+                    bodyContent { contentPageBody(rootNode, versionHash, emptySet()) }
                 }
+            }
+            post("/content/{versionHash}/") {
+                val versionHash = call.parameters["versionHash"]
+                if (versionHash.isNullOrEmpty()) {
+                    call.respondText("version not found", status = HttpStatusCode.BadRequest)
+                    return@post
+                }
+                val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
+
+                val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
+                val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+
+                var expandedNodeIds = expandedNodes.expandedNodeIds
+                if (expandedNodes.expandAll) {
+                    expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds)
+                }
+
+                call.respondText(
+                    buildString {
+                        appendHTML().ul("treeRoot") {
+                            nodeItem(rootNode, expandedNodeIds)
+                        }
+                    },
+                )
             }
             get("/content/{versionHash}/{nodeId}/") {
                 val id = call.parameters["nodeId"]!!.toLong()
@@ -100,7 +129,25 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         }
     }
 
-    private fun FlowContent.contentPageBody(rootNode: PNodeAdapter, versionHash: String) {
+    // The method traverses the expanded tree based on the alreadyExpandedNodeIds and
+    // collects the expandable (not empty) nodes which are not expanded yet
+    private fun collectExpandableChildNodes(under: PNodeAdapter, alreadyExpandedNodeIds: Set<String>): Set<String> {
+        if (alreadyExpandedNodeIds.contains(under.nodeId.toString())) {
+            val expandableIds = mutableSetOf<String>()
+            for (child in under.allChildren) {
+                expandableIds.addAll(collectExpandableChildNodes(child as PNodeAdapter, alreadyExpandedNodeIds))
+            }
+            return expandableIds
+        }
+
+        if (under.allChildren.toList().isNotEmpty()) {
+            // Node is collected if it is expandable
+            return setOf(under.nodeId.toString())
+        }
+        return emptySet()
+    }
+
+    private fun FlowContent.contentPageBody(rootNode: PNodeAdapter, versionHash: String, expandedNodeIds: Set<String>) {
         h1 { +"Model Server Content" }
         small {
             style = "color: #888; text-align: center; margin-bottom: 15px;"
@@ -120,7 +167,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         div {
             id = "treeWrapper"
             ul("treeRoot") {
-                nodeItem(rootNode)
+                nodeItem(rootNode, expandedNodeIds)
             }
         }
         div {
@@ -128,10 +175,11 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         }
     }
 
-    private fun UL.nodeItem(node: PNodeAdapter) {
+    private fun UL.nodeItem(node: PNodeAdapter, expandedNodeIds: Set<String>) {
         li("nodeItem") {
+            val expanded = expandedNodeIds.contains(node.nodeId.toString())
             if (node.allChildren.toList().isNotEmpty()) {
-                div("expander") { unsafe { +"&#x25B6;" } }
+                div(if (expanded) "expander expander-expanded" else "expander") { unsafe { +"&#x25B6;" } }
             }
             div("nameField") {
                 attributes["data-nodeid"] = node.nodeId.toString()
@@ -157,10 +205,12 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     }
                 }
             }
-            div("nested") {
-                ul("nodeTree") {
-                    for (child in node.allChildren) {
-                        nodeItem(child as PNodeAdapter)
+            div(if (expanded) "nested active" else "nested") {
+                if (expanded) {
+                    ul("nodeTree") {
+                        for (child in node.allChildren) {
+                            nodeItem(child as PNodeAdapter, expandedNodeIds)
+                        }
                     }
                 }
             }

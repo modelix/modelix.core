@@ -1,0 +1,190 @@
+= ModelQL
+
+== Independent ModelQLClient
+
+ModelQL defines its own HTTP endpoint and provides server/client implementations for it.
+The `model-server` and the `mps-model-server-plugin` already implement this endpoint.
+The client can be created like this:
+
+[source,kotlin]
+--
+val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+val result: List<String?> = client.query { root ->
+    root.children("modules").property("name").toList()
+}
+--
+
+== Integration with LightModelClient
+
+When creating a `LightModelClient` you can optionally provide a `ModelQLClient` instance,
+which allows invoking `.query { ... }` (see below) on a node returned by the `LightModelClient`.
+
+[source,kotlin]
+--
+val modelqlClient = ModelQLClient.builder().build()
+val client = LightModelClient.builder().modelQLClient(modelqlClient).build()
+val result: List<String?> = client.getRootNode()!!.query {
+    it.children("modules").property("name").toList()
+}
+--
+
+== Type-safe ModelQL API
+
+You can use the `model-api-gen-gradle` plugin to generate type safe extensions from your meta-model.
+Specify the link:../reference/component-model-api-gen-gradle.adoc#model-api-gen-gradle_attributes_modelqlKotlinDir[modelqlKotlinDir] property to enable the generation.
+
+[source,kotlin]
+--
+val result: List<StaticMethodDeclaration> = client.query { root ->
+    root.children("classes").ofConcept(C_ClassConcept)
+        .member
+        .ofConcept(C_StaticMethodDeclaration)
+        .filter { it.visibility.instanceOf(C_PublicVisibility) }
+        .toList()
+}
+--
+
+== Run query on an INode
+
+If a query returns a node, you can execute a new query starting from that node.
+
+[source,kotlin]
+--
+val cls: ClassConcept = client.query {
+    it.children("classes").ofConcept(C_ClassConcept).first()
+}
+val names = cls.query { it.member.ofConcept(C_StaticMethodDeclaration).name.toList() }
+--
+
+For convenience, it's possible to access further data of that node using the https://api.modelix.org/3.6.0/model-api/org.modelix.model.api/-i-node/index.html?query=interface%20INode[INode] API,
+but this is not recommended though, because each access sends a new query to the server.
+
+[source,kotlin]
+--
+val cls: ClassConcept = client.query {
+    it.children("classes").ofConcept(C_ClassConcept).first()
+}
+val className = cls.name
+--
+
+== Complex query results
+
+While returning a list of elements is simple,
+the purpose of the query language is to reduce the number of request to a minimum.
+This requires combining multiple values into more complex data structures.
+The `zip` operation provides a simple way of doing that:
+
+[source,kotlin]
+--
+val result: List<IZip3Output<Any, Int, String, List<String>>> = query { db ->
+    db.products.map {
+        val id = it.id
+        val title = it.title
+        val images = it.images.toList()
+        id.zip(title, images)
+    }.toList()
+}
+result.forEach { println("ID: ${it.first}, Title: ${it.second}, Images: ${it.third}") }
+--
+
+This is suitable for combining a small number of values,
+but because of the missing variable names it can be hard to read for a larger number of values
+or even multiple zip operations assembled into a hierarchical data structure.
+
+This can be solved by defining custom data classes and using the `mapLocal` operation:
+
+[source,kotlin]
+--
+data class MyProduct(val id: Int, val title: String, val images: List<MyImage>)
+data class MyImage(val url: String)
+
+val result: List<MyProduct> = remoteProductDatabaseQuery { db ->
+    db.products.map {
+        val id = it.id
+        val title = it.title
+        val images = it.images.mapLocal { MyImage(it) }.toList()
+        id.zip(title, images).mapLocal {
+            MyProduct(it.first, it.second, it.third)
+        }
+    }.toList()
+}
+result.forEach { println("ID: ${it.id}, Title: ${it.title}, Images: ${it.images}") }
+--
+
+The `mapLocal` operation is not just useful in combination with the `zip` operation,
+but in general to create instances of classes only known to the client.
+
+The body of `mapLocal` is executed on the client after receiving the result from the server.
+That's why you only have access to the output of the `zip` operation
+and still have to use `first`, `second` and `third` inside the query.
+
+To make this even more readable there is a `buildLocalMapping` operation,
+which provides a different syntax for the `zip`-`mapLocal` chain.
+
+[source,kotlin]
+--
+data class MyProduct(val id: Int, val title: String, val images: List<MyImage>)
+data class MyImage(val url: String)
+
+val result: List<MyProduct> = query { db ->
+    db.products.buildLocalMapping {
+        val id = it.id.request()
+        val title = it.title.request()
+        val images = it.images.mapLocal { MyImage(it) }.toList().request()
+        onSuccess {
+            MyProduct(id.get(), title.get(), images.get())
+        }
+    }.toList()
+}
+result.forEach { println("ID: ${it.id}, Title: ${it.title}, Images: ${it.images}") }
+--
+
+At the beginning of the `buildLocalMapping` body, you invoke `request()` on all the values you need to assemble your object.
+This basically adds the operand to the internal `zip` operation and returns an object that gives you access to the value
+after receiving it from the server.
+Inside the `onSuccess` block you assemble the local object using the previously requested values.
+
+== Kotlin HTML integration
+
+One use case of the query language is to build database applications
+that generate HTML pages from the data stored in the model server.
+You can use the https://kotlinlang.org/docs/typesafe-html-dsl.html[Kotlin HTML DSL] together with ModelQL to do that.
+
+Use `buildHtmlQuery` to request data from the server and render it into an HTML string:
+
+[source,kotlin]
+--
+val html = query {
+    it.map(buildHtmlQuery {
+        val modules = input.children("modules").requestFragment<_, FlowContent> {
+            val moduleName = input.property("name").request()
+            val models = input.children("models").requestFragment<_, FlowContent> {
+                val modelName = input.property("name").request()
+                onSuccess {
+                    div {
+                        h2 {
+                            +"Model: ${modelName.get()}"
+                        }
+                    }
+                }
+            }
+            onSuccess {
+                div {
+                    h1 {
+                        +"Module: ${moduleName.get()}"
+                    }
+                    insertFragment(models)
+                }
+            }
+        }
+        onSuccess {
+            body {
+                insertFragment(modules)
+            }
+        }
+    })
+}
+--
+
+`buildHtmlQuery` and the `requestFragment` operation are similar to the `buildLocalMapping` operation,
+but inside the `onSuccess` block you use the Kotlin HTML DSL.

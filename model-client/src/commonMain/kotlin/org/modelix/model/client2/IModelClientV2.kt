@@ -13,10 +13,13 @@
  */
 package org.modelix.model.client2
 
+import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
+import org.modelix.model.api.INode
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.modelql.core.IMonoStep
 
 /**
  * This interface is meant exclusively for model client usage.
@@ -42,7 +45,11 @@ interface IModelClientV2 {
 
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>
 
+    @Deprecated("repository ID is required for permission checks")
+    @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion
+
+    suspend fun loadVersion(repositoryId: RepositoryId, versionHash: String, baseVersion: IVersion?): IVersion
 
     /**
      * The pushed version is merged automatically by the server with the current head.
@@ -63,4 +70,8 @@ interface IModelClientV2 {
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
 
     suspend fun pollHash(branch: BranchReference, lastKnownVersion: IVersion?): String
+
+    suspend fun <R> query(branch: BranchReference, body: (IMonoStep<INode>) -> IMonoStep<R>): R
+
+    suspend fun <R> query(repositoryId: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R
 }

@@ -46,19 +46,23 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         getBaseDir(project).mkdirs()
 
         project.afterEvaluate {
-            val validateSyncSettings = project.tasks.register("validateSyncSettings", ValidateSyncSettings::class.java) {
-                settings.taskDependencies.forEach { dependency ->
-                    it.dependsOn(dependency)
+            val validateSyncSettings =
+                project.tasks.register("validateSyncSettings", ValidateSyncSettings::class.java) {
+                    settings.taskDependencies.forEach { dependency ->
+                        it.dependsOn(dependency)
+                    }
+                    it.settings.set(settings)
                 }
-                it.settings.set(settings)
-            }
             val modelixCoreVersion = readModelixCoreVersion()
                 ?: throw RuntimeException("modelix.core version not found. Try running the writeVersionFile task.")
             val antDependencies = project.configurations.create(antDependenciesConfigName)
             project.dependencies.add(antDependencies.name, "org.apache.ant:ant-junit:1.10.12")
 
             val mpsDependencies = project.configurations.create("modelSyncMpsDependencies")
-            project.dependencies.add(mpsDependencies.name, "org.modelix.mps:bulk-model-sync-solution:$modelixCoreVersion")
+            project.dependencies.add(
+                mpsDependencies.name,
+                "org.modelix.mps:bulk-model-sync-solution:$modelixCoreVersion",
+            )
 
             val copyMpsDependencies = project.tasks.register("copyMpsDependencies", Sync::class.java) { sync ->
                 sync.dependsOn(validateSyncSettings)
@@ -79,7 +83,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         project: Project,
         previousTask: TaskProvider<*>,
     ) {
-        val baseDir = project.buildDir.resolve("model-sync").apply { mkdirs() }
+        val baseDir = project.layout.buildDirectory.dir("model-sync").get().asFile.apply { mkdirs() }
         val jsonDir = baseDir.resolve(syncDirection.name).apply { mkdir() }
         val sourceTask = when (syncDirection.source) {
             is LocalSource -> registerTasksForLocalSource(syncDirection, project, previousTask, jsonDir)
@@ -221,7 +225,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
     }
 
     private fun getBaseDir(project: Project): File {
-        return project.buildDir.resolve("model-sync")
+        return project.layout.buildDirectory.dir("model-sync").get().asFile
     }
 
     private fun getDependenciesDir(project: Project): File {

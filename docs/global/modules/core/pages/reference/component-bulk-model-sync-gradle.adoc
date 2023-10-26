@@ -131,7 +131,7 @@ modelSync {
         registerLanguage(L_MyGeneratedLanguage)
         includeModule("MySolution")
         fromLocal {
-            mpsHome = buildDir.resolve("mps")
+            mpsHome = project.layout.buildDirectory.dir("mps").get().asFile
             mpsHeapSize = "4g"
             repositoryDir = projectDir.resolve("my-repo")
         }

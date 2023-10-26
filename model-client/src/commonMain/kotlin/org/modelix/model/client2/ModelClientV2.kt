@@ -33,6 +33,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
@@ -50,6 +51,8 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.VersionDelta
+import org.modelix.modelql.client.ModelQLClient
+import org.modelix.modelql.core.IMonoStep
 import kotlin.time.Duration.Companion.seconds
 
 class ModelClientV2(
@@ -132,6 +135,8 @@ class ModelClientV2(
         }.bodyAsText().lines().map { repository.getBranchReference(it) }
     }
 
+    @Deprecated("repository ID is required for permission checks")
+    @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     override suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion {
         val response = httpClient.post {
             url {
@@ -143,7 +148,25 @@ class ModelClientV2(
             }
         }
         val delta = Json.decodeFromString<VersionDelta>(response.bodyAsText())
-        return createVersion(null, delta)
+        return createVersion(baseVersion as CLVersion?, delta)
+    }
+
+    override suspend fun loadVersion(
+        repositoryId: RepositoryId,
+        versionHash: String,
+        baseVersion: IVersion?,
+    ): IVersion {
+        val response = httpClient.post {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegments("repositories", repositoryId.id, "versions", versionHash)
+                if (baseVersion != null) {
+                    parameters["lastKnown"] = (baseVersion as CLVersion).getContentHash()
+                }
+            }
+        }
+        val delta = Json.decodeFromString<VersionDelta>(response.bodyAsText())
+        return createVersion(baseVersion as CLVersion?, delta)
     }
 
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
@@ -222,6 +245,22 @@ class ModelClientV2(
         val receivedVersion = createVersion(lastKnownVersion, response.body())
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
         return receivedVersion
+    }
+
+    override suspend fun <R> query(branch: BranchReference, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+        val url = URLBuilder().apply {
+            takeFrom(baseUrl)
+            appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "query")
+        }
+        return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
+    }
+
+    override suspend fun <R> query(repository: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+        val url = URLBuilder().apply {
+            takeFrom(baseUrl)
+            appendPathSegmentsEncodingSlash("repositories", repository.id, "versions", versionHash, "query")
+        }
+        return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
     }
 
     override fun close() {

@@ -18,7 +18,7 @@ val patchKotlinExternals = tasks.create("patchKotlinExternals") {
   dependsOn("npm_run_generateKotlin")
   doLast {
     val annotationLine = """@file:JsModule("@modelix/ts-model-api") @file:JsNonModule"""
-    val dukatDir = buildDir.resolve("dukat")
+    val dukatDir = project.layout.buildDirectory.dir("dukat").get().asFile
     val files = dukatDir.listFiles()?.toList() ?: emptyList()
     val matchingFiles = files.filter { it.name.contains("@modelix_ts-model-api") }
     if (matchingFiles.isEmpty()) throw RuntimeException("No files found for patching in $dukatDir")

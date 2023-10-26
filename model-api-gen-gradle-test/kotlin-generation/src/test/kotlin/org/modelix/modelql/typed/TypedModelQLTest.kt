@@ -106,7 +106,7 @@ class TypedModelQLTest {
 
     @Test
     fun simpleTest() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result: Int = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -118,7 +118,7 @@ class TypedModelQLTest {
 
     @Test
     fun test() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result: List<Pair<String, String>> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -132,7 +132,7 @@ class TypedModelQLTest {
 
     @Test
     fun testReferences() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val usedVariables: Set<String> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -148,7 +148,7 @@ class TypedModelQLTest {
 
     @Test
     fun testReferencesFqName() = runTest { httpClient ->
-        val client = ModelQLClient("http://localhost/query", httpClient)
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val usedVariables: Set<String> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member

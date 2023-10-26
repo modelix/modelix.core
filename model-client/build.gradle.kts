@@ -43,6 +43,8 @@ kotlin {
                 api(project(":model-api"))
                 api(project(":model-datastructure"))
                 api(project(":model-server-api"))
+                implementation(project(":modelql-client"))
+                api(project(":modelql-core"))
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.collections.immutable)
                 implementation(libs.kotlin.coroutines.core)
@@ -95,9 +97,9 @@ kotlin {
 }
 
 tasks.jacocoTestReport {
-    classDirectories.setFrom("$buildDir/classes/kotlin/jvm/")
+    classDirectories.setFrom(project.layout.buildDirectory.dir("classes/kotlin/jvm/"))
     sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
-    executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
+    executionData.setFrom(project.layout.buildDirectory.file("jacoco/jvmTest.exec"))
 
     reports {
         xml.required.set(true)

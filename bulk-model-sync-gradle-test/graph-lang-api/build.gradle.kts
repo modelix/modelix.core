@@ -16,14 +16,14 @@ val modelixCoreVersion = file("../../version.txt").readText()
 version = modelixCoreVersion
 
 val mps: Configuration by configurations.creating
-val kotlinGenDir = buildDir.resolve("metamodel/kotlin").apply { mkdirs() }
+val kotlinGenDir = project.layout.buildDirectory.dir("metamodel/kotlin").get().asFile.apply { mkdirs() }
 
 dependencies {
     mps("com.jetbrains:mps:2021.2.5")
     api("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
 }
 
-val mpsDir = buildDir.resolve("mps").apply { mkdirs() }
+val mpsDir = project.layout.buildDirectory.dir("mps").get().asFile.apply { mkdirs() }
 
 val resolveMps by tasks.registering(Copy::class) {
     from(mps.resolve().map { zipTree(it) })

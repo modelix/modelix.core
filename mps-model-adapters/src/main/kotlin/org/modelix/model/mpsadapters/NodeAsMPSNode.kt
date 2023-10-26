@@ -101,10 +101,14 @@ class NodeAsMPSNode(private val node: INode, private val repository: SRepository
         if (concept is MPSConcept && concept.concept is SConcept) {
             return concept.concept
         }
+        // SAbstractConcept sConcept = BootstrapConceptMappings.INSTANCE.getSConcept(concept);
+        // TODO maybe we have to use the MPSLanguageRepository to do the inverse lookup. Look up the SConcept by the IConcept.UID
+        // TODO for the concepts that we do not find in the MPSLanguageRepository, we have to look up the BultinLanguages (or the DefaultLanguageRegistry).
         val unwrapped = MPSConcept.unwrap(concept)
         if (unwrapped is SConcept) {
             return unwrapped
         }
+        // TODO missing IConcept -> SConcept
         return MPSConcept.unwrap(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept) as SConcept
     }
 

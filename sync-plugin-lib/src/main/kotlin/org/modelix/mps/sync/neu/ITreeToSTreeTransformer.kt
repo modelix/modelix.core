@@ -40,6 +40,8 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             replicatedModel.getBranch().runReadT { transaction ->
                 val allChildren = transaction.tree.getAllChildren(1L)
 
+                // TODO make sure that each INode is transformed to the correct SNode, SModule, SProject etc. class
+
                 println("Level: 1")
                 allChildren.forEach { id ->
                     val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
@@ -72,7 +74,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         println()
         println("New SNode's name: ${node.name}")
         println("New SNode's SModel: ${node.model}")
-        // println("New SNode's concept: ${newTree.concept}")
+        // println("New SNode's concept: ${node.concept}")
         println()
 
         println("Properties:")

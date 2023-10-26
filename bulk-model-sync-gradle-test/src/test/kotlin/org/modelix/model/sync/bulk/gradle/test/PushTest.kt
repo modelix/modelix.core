@@ -1,7 +1,9 @@
 package org.modelix.model.sync.bulk.gradle.test
 
 import GraphLang.L_GraphLang
+import GraphLang.N_Edge
 import GraphLang.N_Node
+import GraphLang._C_UntypedImpl_Edge
 import GraphLang._C_UntypedImpl_Node
 import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import kotlinx.coroutines.runBlocking
@@ -67,6 +69,15 @@ class PushTest {
                 graphNodes[0].name = "X"
                 graphNodes[1].name = "Y"
                 graphNodes[2].name = "Z"
+
+                val edges = rootNode
+                    .getDescendants(false)
+                    .filter { it.getConceptReference() == ConceptReference(_C_UntypedImpl_Edge.getUID()) }
+                    .map { it.typed<N_Edge>() }
+                    .toList()
+
+                edges[0].source = graphNodes[1]
+                edges[0].target = graphNodes[3]
             }
         }
     }

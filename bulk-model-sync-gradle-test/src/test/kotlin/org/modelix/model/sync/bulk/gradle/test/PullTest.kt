@@ -16,22 +16,44 @@
 
 package org.modelix.model.sync.bulk.gradle.test
 
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.xmlunit.builder.Input
 import org.xmlunit.xpath.JAXPXPathEngine
 import java.io.File
+import javax.xml.transform.Source
 import kotlin.test.assertContentEquals
 
 class PullTest {
+    companion object {
+        private lateinit var source: Source
+
+        @JvmStatic
+        @BeforeAll
+        fun initSource() {
+            val localModel = File("build/test-repo/solutions/GraphSolution/models/GraphSolution.example.mps").readText()
+            source = Input.fromString(localModel).build()
+        }
+    }
 
     @Test
-    fun `nodes were synced to local`() {
-        val localModel = File("build/test-repo/solutions/GraphSolution/models/GraphSolution.example.mps").readText()
-        val source = Input.fromString(localModel).build()
-        val properties = JAXPXPathEngine().selectNodes("model/node/node[@concept='1DmExO']/property", source)
+    fun `properties were synced to local`() {
+        val properties = JAXPXPathEngine()
+            .selectNodes("model/node/node[@concept='1DmExO']/property", source)
 
         val actual = properties.map { it.attributes.getNamedItem("value").nodeValue }
         val expected = listOf("X", "Y", "Z", "D", "E")
+
+        assertContentEquals(expected, actual)
+    }
+
+    @Test
+    fun `references were synced to local`() {
+        val references = JAXPXPathEngine()
+            .selectNodes("model/node/node[@id='pSCM1J8Fg1']/ref", source)
+
+        val actual = references.map { it.attributes.getNamedItem("node").nodeValue }
+        val expected = listOf("pSCM1J8FfX", "pSCM1J8FfZ")
 
         assertContentEquals(expected, actual)
     }

@@ -17,6 +17,9 @@
       <sourceRoot location="model-api-jvm.jar" />
       <sourceRoot location="slf4j-api.jar" />
     </modelRoot>
+    <modelRoot contentPath="${module}/lib/kotlin-utils-jvm.jar!/" type="java_classes">
+      <sourceRoot location="." />
+    </modelRoot>
   </models>
   <facets>
     <facet type="java">
@@ -36,6 +39,7 @@
     <stubModelEntry path="${module}/lib/slf4j-api.jar" />
     <stubModelEntry path="${module}/lib/mps-model-adapters.jar" />
     <stubModelEntry path="${module}/lib/bulk-model-sync-lib-jvm.jar" />
+    <stubModelEntry path="${module}/lib/kotlin-utils-jvm.jar" />
   </stubModelEntries>
   <sourcePath />
   <dependencies>

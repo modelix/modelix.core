@@ -94,6 +94,10 @@ This means that only a minimal amount of write operations is used to update the 
 |`repositoryDir`
 |File
 |Directory in which the modules are stored.
+
+|`mpsDebugPort`
+|Int
+|If set, the headless MPS will suspend on startup and wait for a remote debugger on the specified port.
 |===
 
 === ServerSource/-Target configuration

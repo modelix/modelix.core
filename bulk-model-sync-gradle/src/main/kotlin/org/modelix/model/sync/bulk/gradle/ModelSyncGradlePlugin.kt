@@ -139,6 +139,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.exportFlag.set(true)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.debugPort.set(localSource.mpsDebugPort)
         }
 
         val exportFromMps = project.tasks.register("${syncDirection.name}ExportFromMps", ExportFromMps::class.java) {
@@ -205,6 +206,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.exportFlag.set(false)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.debugPort.set(localTarget.mpsDebugPort)
         }
 
         val importName = "${syncDirection.name}ImportIntoMps"

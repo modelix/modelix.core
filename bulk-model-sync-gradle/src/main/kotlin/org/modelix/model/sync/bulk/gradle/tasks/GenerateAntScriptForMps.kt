@@ -23,6 +23,7 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -58,6 +59,10 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
 
     @Input
     val includedModulePrefixes: ListProperty<String> = of.listProperty(String::class.java)
+
+    @Optional
+    @Input
+    val debugPort: Property<Int> = of.property(Int::class.javaObjectType)
 
     @TaskAction
     fun generate() {
@@ -108,6 +113,7 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
                         <arg value="-Didea.system.path=${"$"}{build.mps.system.path}" />
                         <arg value="-ea" />
                         <arg value="-Xmx${mpsHeapSize.get()}" />
+                        ${if (debugPort.isPresent) """<arg value="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=${debugPort.get()}" />""" else ""}
                     </jvmargs>
                 </runMPS>
             </target>

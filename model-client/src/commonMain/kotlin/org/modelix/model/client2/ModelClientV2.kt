@@ -57,10 +57,11 @@ import kotlin.time.Duration.Companion.seconds
 class ModelClientV2(
     private val httpClient: HttpClient,
     val baseUrl: String,
+    private var clientProvidedUserId: String?,
 ) : IModelClientV2, Closable {
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
-    private var userId: String? = null
+    private var serverProvidedUserId: String? = null
     private val kvStore = MapBasedStore()
     val store = ObjectStoreCache(kvStore) // TODO the store will accumulate garbage
 
@@ -80,7 +81,7 @@ class ModelClientV2(
     }
 
     suspend fun updateUserId() {
-        userId = httpClient.get {
+        serverProvidedUserId = httpClient.get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("user-id")
@@ -88,11 +89,22 @@ class ModelClientV2(
         }.bodyAsText()
     }
 
+    /**
+     * Set or remove the client provided user ID.
+     *
+     * When the used ID is removed by passing null, [[getUserId]] might return the [[serverProvidedUserId]].
+     *
+     * @param userId A new user ID, or null to remove the old one.
+     */
+    fun setClientProvideUserId(userId: String?) {
+        clientProvidedUserId = userId
+    }
+
     override fun getClientId(): Int = clientId
 
     override fun getIdGenerator(): IIdGenerator = idGenerator
 
-    override fun getUserId(): String? = userId
+    override fun getUserId(): String? = clientProvidedUserId ?: serverProvidedUserId
 
     override suspend fun initRepository(repository: RepositoryId): IVersion {
         val response = httpClient.post {
@@ -283,11 +295,13 @@ abstract class ModelClientV2Builder {
     protected var httpClient: HttpClient? = null
     protected var baseUrl: String = "https://localhost/model/v2"
     protected var authTokenProvider: (() -> String?)? = null
+    protected var userId: String? = null
 
     fun build(): ModelClientV2 {
         return ModelClientV2(
             httpClient?.config { configureHttpClient(this) } ?: createHttpClient(),
             baseUrl,
+            userId,
         )
     }
 
@@ -303,6 +317,11 @@ abstract class ModelClientV2Builder {
 
     fun authToken(provider: () -> String?): ModelClientV2Builder {
         authTokenProvider = provider
+        return this
+    }
+
+    fun userId(userId: String?): ModelClientV2Builder {
+        this.userId = userId
         return this
     }
 

@@ -128,6 +128,10 @@ class ReplicatedModel(
         }
     }
 
+    suspend fun getCurrentVersion(): CLVersion {
+        return localModel.getCurrentVersion()
+    }
+
     private enum class State {
         New,
         Starting,

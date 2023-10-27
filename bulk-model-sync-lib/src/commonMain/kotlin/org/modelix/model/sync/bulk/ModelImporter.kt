@@ -20,6 +20,7 @@ import mu.KotlinLogging
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.remove
@@ -84,7 +85,9 @@ class ModelImporter(private val root: INode) {
         print("\r($currentNodeProgress / $numExpectedNodes) Synchronizing nodes...                    ")
         syncProperties(node, data)
         syncChildren(node, data)
-        syncReferences(node, data)
+        INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
+            syncReferences(node, data)
+        }
     }
 
     private fun syncChildren(node: INode, data: NodeData) {

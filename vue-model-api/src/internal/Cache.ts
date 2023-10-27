@@ -1,6 +1,6 @@
 // The cache could be made independent from INodeJS. Currently this is not needed.
 // The cache is a implemenation detail and can be refactored when needed for reuse.
-import { INodeJS } from "@modelix/ts-model-api";
+import { INodeJS } from "@modelix/model-client";
 
 /**
  * Cache for memoizing values assoziated with {@link INodeJS}.

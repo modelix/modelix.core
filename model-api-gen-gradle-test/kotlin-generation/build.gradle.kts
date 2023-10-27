@@ -1,44 +1,74 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    id("org.modelix.model-api-gen") apply false
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.npm.publish)
 }
 
 val modelixCoreVersion: String = projectDir.resolve("../../version.txt").readText()
 
-dependencies {
-    implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
-    implementation("org.modelix:modelql-typed:$modelixCoreVersion")
-    implementation("org.modelix:modelql-untyped:$modelixCoreVersion")
+kotlin {
+    jvm()
+    js(IR) {
+        browser {}
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "10s"
+                }
+            }
+        }
+        binaries.library()
+        generateTypeScriptDefinitions()
+        useCommonJs()
+    }
 
-    testImplementation(kotlin("test"))
-    testImplementation(kotlin("reflect"))
-
-    testImplementation("org.modelix:model-api:$modelixCoreVersion")
-    testImplementation("org.modelix:model-client:$modelixCoreVersion")
-    testImplementation("org.modelix:model-server-lib:$modelixCoreVersion")
-    testImplementation("org.modelix:modelql-client:$modelixCoreVersion")
-
-    testImplementation(libs.ktor.server.core)
-    testImplementation(libs.ktor.server.cors)
-    testImplementation(libs.ktor.server.netty)
-    testImplementation(libs.ktor.server.html.builder)
-    testImplementation(libs.ktor.server.auth)
-    testImplementation(libs.ktor.server.auth.jwt)
-    testImplementation(libs.ktor.server.status.pages)
-    testImplementation(libs.ktor.server.forwarded.header)
-    testImplementation(libs.ktor.server.websockets)
-    testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.logback.classic)
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib"))
+                implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
+                implementation("org.modelix:modelql-typed:$modelixCoreVersion")
+                implementation("org.modelix:modelql-untyped:$modelixCoreVersion")
+                implementation("org.modelix:model-client:$modelixCoreVersion")
+            }
+            kotlin.srcDir(layout.buildDirectory.dir("kotlin_gen"))
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+            }
+        }
+    }
 }
 
-tasks.test {
-    useJUnitPlatform()
+tasks.all {
+    if (name.contains("compileKotlin")) {
+        dependsOn(":metamodel-export:generateMetaModelSources")
+    }
 }
 
-sourceSets["main"].kotlin {
-    srcDir(layout.buildDirectory.dir("kotlin_gen"))
-}
-
-tasks.compileKotlin {
-    dependsOn(":metamodel-export:generateMetaModelSources")
+npmPublish {
+    packages {
+        named("js") {
+            packageJson {
+                name.set("@modelix/model-client")
+                version.set("1.0.0")
+            }
+        }
+    }
 }

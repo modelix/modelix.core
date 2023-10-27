@@ -5,12 +5,19 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.area.IArea
+import kotlin.js.JsExport
 import kotlin.reflect.KClass
 
+@JsExport
 interface ITypedNode {
     val _concept: ITypedConcept
     fun unwrap(): INode
 }
+
+fun ITypedNode.getAllChildren(): List<ITypedNode> = unwrap().allChildren.map { it.typed() }.toList()
+
+@JsExport
+fun ITypedNode.getAllChildrenAsArray(): Array<ITypedNode> = getAllChildren().toTypedArray()
 
 fun ITypedNode.untyped() = unwrap()
 fun ITypedNode.untypedConcept() = _concept.untyped()

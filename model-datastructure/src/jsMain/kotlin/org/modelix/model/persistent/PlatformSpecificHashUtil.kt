@@ -4,15 +4,6 @@ import Sha256
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
-@JsModule("js-base64")
-@JsNonModule
-external object Base64 {
-    fun fromUint8Array(input: Uint8Array, uriSafe: Boolean): String
-    fun decode(input: String): String
-    fun encode(input: String): String
-    fun encode(input: String, uriSafe: Boolean): String
-}
-
 actual object PlatformSpecificHashUtil {
     actual fun sha256asByteArray(input: String): ByteArray {
         val hash = Sha256()

@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2023.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,33 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.api
+import org.modelix.model.api.IConcept
 
-import kotlin.js.JsExport
-
-/**
- * Representation of a language.
- */
 @JsExport
-interface ILanguage {
-    /**
-     * Returns the unique id of this language.
-     *
-     * @return unique language id
-     */
+interface IConceptJS {
+    fun unwrap(): IConcept
     fun getUID(): String
-
-    /**
-     * Returns the name of this language.
-     *
-     * @return language name
-     */
-    fun getName(): String
-
-    /**
-     * Returns all the concepts defined in this language.
-     *
-     * @return list of all concepts
-     */
-    fun getConcepts(): List<IConcept>
+    fun getDirectSuperConcepts(): Array<IConceptJS>
 }
+
+class ConceptAdapterJS(private val concept: IConcept) : IConceptJS {
+    override fun unwrap(): IConcept = concept
+
+    override fun getUID(): String = concept.getUID()
+
+    override fun getDirectSuperConcepts(): Array<IConceptJS> {
+        return concept.getDirectSuperConcepts().map { ConceptAdapterJS(it) }.toTypedArray()
+    }
+}
+
+fun IConcept.toJS(): IConceptJS = ConceptAdapterJS(this)

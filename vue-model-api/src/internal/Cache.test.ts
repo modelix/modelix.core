@@ -1,4 +1,4 @@
-import { INodeJS } from "@modelix/ts-model-api";
+import { INodeJS } from "@modelix/model-client";
 import { Cache } from "./Cache";
 
 test("wrapper is added to cache", () => {

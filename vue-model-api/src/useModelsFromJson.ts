@@ -1,8 +1,7 @@
-import { INodeJS } from "@modelix/ts-model-api";
-import { ReactiveINodeJS, toReactiveINodeJS } from "./internal/ReactiveINodeJS";
+import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { Cache } from "./internal/Cache";
 import { handleChange } from "./internal/handleChange";
-import { org } from "@modelix/model-client";
+import { INodeJS, org } from "@modelix/model-client";
 
 const { loadModelsFromJson } = org.modelix.model.client2;
 
@@ -19,7 +18,7 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
  * @returns A new root node the combines all children from the loaded root nodes.
  */
 export function useModelsFromJson(modelDataJsonStrings: string[]): INodeJS {
-  const cache = new Cache<ReactiveINodeJS>();
+  const cache = new Cache<INodeJS>();
   const unreactiveRootNode = loadModelsFromJson(
     modelDataJsonStrings,
     (change: ChangeJS) => {

@@ -22,10 +22,13 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
 import org.modelix.model.area.IArea
+import kotlin.js.JsExport
+import kotlin.js.JsName
 
 /**
  * Representation of a model element.
  */
+@JsExport
 interface INode {
 
     /**
@@ -69,12 +72,15 @@ interface INode {
      * @return iterable over the child nodes
      */
     @Deprecated("use IChildLink instead of String")
+    @JsName("getChildrenByName")
     fun getChildren(role: String?): Iterable<INode>
 
     /**
      * Iterable over all child nodes of this node.
      */
     val allChildren: Iterable<INode>
+
+    fun getAllChildrenAsArray(): Array<INode> = allChildren.toList().toTypedArray()
 
     /**
      * Moves a node to this node's children with the given role and index.
@@ -85,6 +91,7 @@ interface INode {
      * @param child child node to be moved
      */
     @Deprecated("use IChildLink instead of String")
+    @JsName("moveChildByName")
     fun moveChild(role: String?, index: Int, child: INode)
 
     /**
@@ -100,6 +107,7 @@ interface INode {
      * @see addNewChild
      */
     @Deprecated("use IChildLink instead of String")
+    @JsName("addNewChildByNameWithConcept")
     fun addNewChild(role: String?, index: Int, concept: IConcept?): INode
 
     /**
@@ -113,6 +121,7 @@ interface INode {
      * @return new child node
      */
     @Deprecated("use IChildLink instead of String")
+    @JsName("addNewChildByNameWithConceptRef")
     fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
         return addNewChild(role, index, concept?.resolve())
     }
@@ -131,6 +140,7 @@ interface INode {
      * @return target node, or null if the target could not be found
      */
     @Deprecated("use IReferenceLink instead of String")
+    @JsName("getReferenceTargetByName")
     fun getReferenceTarget(role: String): INode?
 
     /**
@@ -140,6 +150,7 @@ interface INode {
      * @return node reference to the target, or null if the target could not be found
      */
     @Deprecated("use IReferenceLink instead of String")
+    @JsName("getReferenceTargetRefByName")
     fun getReferenceTargetRef(role: String): INodeReference? {
         return getReferenceTarget(role)?.reference
     }
@@ -151,6 +162,7 @@ interface INode {
      * @param target new target for this node's reference
      */
     @Deprecated("use IReferenceLink instead of String")
+    @JsName("setReferenceTargetByName")
     fun setReferenceTarget(role: String, target: INode?)
 
     /**
@@ -161,6 +173,7 @@ interface INode {
      * @param target reference to the new target for this node's reference
      */
     @Deprecated("use IReferenceLink instead of String")
+    @JsName("setReferenceTargetRefByName")
     fun setReferenceTarget(role: String, target: INodeReference?) {
         // Default implementation for backward compatibility only.
         setReferenceTarget(role, target?.resolveIn(getArea()!!))
@@ -173,6 +186,7 @@ interface INode {
      * @return property value, or null if there is no value
      */
     @Deprecated("use getPropertyValue(IProperty)")
+    @JsName("getPropertyValueByName")
     fun getPropertyValue(role: String): String?
 
     /**
@@ -182,6 +196,7 @@ interface INode {
      * @param value the new property value
      */
     @Deprecated("use setPropertyValue(IProperty, String?)")
+    @JsName("setPropertyValueByName")
     fun setPropertyValue(role: String, value: String?)
 
     /**
@@ -207,10 +222,18 @@ interface INode {
     }
     fun getChildren(link: IChildLink): Iterable<INode> = getChildren(link.key(this))
     fun moveChild(role: IChildLink, index: Int, child: INode) = moveChild(role.key(this), index, child)
+
+    @JsName("addNewChildWithConcept")
     fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode = addNewChild(role.key(this), index, concept)
+
+    @JsName("addNewChildWithConceptRef")
     fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode = addNewChild(role.key(this), index, concept)
     fun getReferenceTarget(link: IReferenceLink): INode? = getReferenceTarget(link.key(this))
+
+    @JsName("setReferenceTarget")
     fun setReferenceTarget(link: IReferenceLink, target: INode?) = setReferenceTarget(link.key(this), target)
+
+    @JsName("setReferenceTargetRef")
     fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) = setReferenceTarget(role.key(this), target)
     fun removeReference(role: IReferenceLink) = setReferenceTarget(role, null as INodeReference?)
     fun getReferenceTargetRef(role: IReferenceLink): INodeReference? = getReferenceTargetRef(role.key(this))

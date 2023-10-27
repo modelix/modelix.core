@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "description": "",
   "keywords": [
-    "ts-model-api",
     "node",
     "typescript"
   ],
@@ -30,10 +29,11 @@
     "ts": "tsc",
     "watch": "tsc --watch"
   },
-  "dependencies": {
-    "@modelix/ts-model-api": "file:../../ts-model-api"
+  "peerDependencies": {
+    "@modelix/model-client": "*"
   },
   "devDependencies": {
+    "@modelix/model-client": "file:../kotlin-generation/build/packages/modelix-model-client-1.0.0.tgz",
     "@reallyland/tsconfig": "^2.0.0",
     "@reallyland/tslint-config": "^1.1.1",
     "@types/node": "^13.9.8",

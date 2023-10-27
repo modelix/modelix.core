@@ -1,4 +1,10 @@
+import org.modelix.metamodel.ITypedNode
+import org.modelix.metamodel.typed
+import org.modelix.model.api.INode
+
 /*
+ * Copyright (c) 2023.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,33 +17,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.api
 
-import kotlin.js.JsExport
-
-/**
- * Representation of a language.
- */
 @JsExport
-interface ILanguage {
-    /**
-     * Returns the unique id of this language.
-     *
-     * @return unique language id
-     */
-    fun getUID(): String
+object TypedNodeConverter {
+    fun toTypedNode(node: Any): ITypedNode {
+        if (node is ITypedNode) return node
+        return JSNodeConverter.toINode(node).typed()
+    }
 
-    /**
-     * Returns the name of this language.
-     *
-     * @return language name
-     */
-    fun getName(): String
+    fun toINode(node: Any): INode {
+        if (node is ITypedNode) return toINode(node.unwrap())
+        return JSNodeConverter.toINode(node)
+    }
 
-    /**
-     * Returns all the concepts defined in this language.
-     *
-     * @return list of all concepts
-     */
-    fun getConcepts(): List<IConcept>
+    fun isSameNode(node1: Any, node2: Any) = JSNodeConverter.isSameNode(toINode(node1), toINode(node2))
 }

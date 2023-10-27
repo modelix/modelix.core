@@ -80,7 +80,8 @@ class KotlinGeneratorTest {
         val language = Yaml.default.decodeFromString<LanguageData>(input)
         // val outputDir = File(".").toPath().resolve("build").resolve("test-generator-output")
         val outputDir = File("build/test-generator-output").toPath()
-        TypescriptMMGenerator(outputDir).generate(LanguageSet(listOf(language)).process())
+        TypescriptMMGenerator(outputDir, runtimeNpmPackage = "@modelix/model-client")
+            .generate(LanguageSet(listOf(language)).process())
     }
 
     @OptIn(ExperimentalPathApi::class)

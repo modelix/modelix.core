@@ -1,10 +1,14 @@
 package org.modelix.metamodel
 
+import org.modelix.kotlin.utils.toTypedArray
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
+import kotlin.js.JsExport
+import kotlin.js.JsName
 import kotlin.reflect.KClass
 
+@JsExport
 abstract class ChildAccessor<ChildT : ITypedNode>(
     protected val parent: INode,
     protected val role: IChildLink,
@@ -28,14 +32,19 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
         }.iterator()
     }
 
+    fun asArray(): Array<ChildT> = toList().toTypedArray(childType)
+
+    @JsName("addNewAt")
     fun addNew(index: Int = -1): ChildT {
         return parent.addNewChild(role, index, childConcept).typed(childType)
     }
 
+    @JsName("addNewAtWithConcept")
     fun <NewNodeT : ChildT> addNew(index: Int = -1, concept: INonAbstractConcept<NewNodeT>): NewNodeT {
         return parent.addNewChild(role, index, concept.untyped()).typed(concept.getInstanceClass())
     }
 
+    @JsName("addNewWithConcept")
     fun <NewNodeT : ChildT> addNew(concept: INonAbstractConcept<NewNodeT>): NewNodeT {
         return addNew(-1, concept)
     }

@@ -20,14 +20,15 @@ metamodel {
     modelqlKotlinDir = kotlinGenDir.get().asFile
     kotlinProject = project
     typescriptDir = typescriptGenDir.get().asFile
+    runtimeNpmPackage = "@modelix/model-client"
     includeNamespace("jetbrains")
     exportModules("jetbrains.mps.baseLanguage")
 
     names {
         languageClass.prefix = "L_"
         languageClass.baseNameConversion = { it.replace(".", "_") }
-        typedNode.prefix = ""
-        typedNodeImpl.suffix = "Impl"
+        typedNode.prefix = "N_"
+        typedNodeImpl.prefix = "_N_TypedImpl_"
     }
     registrationHelperName = "org.modelix.apigen.test.ApigenTestLanguages"
     conceptPropertiesInterfaceName = "org.modelix.apigen.test.IMetaConceptProperties"

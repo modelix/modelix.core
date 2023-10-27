@@ -21,6 +21,8 @@ kotlin {
             }
         }
         useCommonJs()
+        binaries.library()
+        generateTypeScriptDefinitions()
     }
     sourceSets {
         val commonMain by getting {
@@ -73,10 +75,9 @@ kotlin {
         val jsMain by getting {
             dependencies {
 //                implementation(kotlin("stdlib-js"))
-//                implementation(npm("uuid", "^8.3.0"))
-//                implementation(npm("js-sha256", "^0.9.0"))
+                implementation(npm("uuid", "^8.3.0"))
                 implementation(npm("@aws-crypto/sha256-js", "^5.0.0"))
-//                implementation(npm("js-base64", "^3.4.5"))
+                implementation(npm("js-base64", "^3.4.5"))
             }
         }
         val jsTest by getting {

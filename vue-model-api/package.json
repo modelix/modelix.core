@@ -20,16 +20,11 @@
     "prettier": "prettier . --check",
     "prettier:fix": "npm run prettier -- --write"
   },
-  "overrides": {
-    "@modelix/model-client": {
-      "@modelix/ts-model-api": "file:../ts-model-api"
-    }
-  },
   "publishConfig": {
     "access": "public",
     "registry": "https://artifacts.itemis.cloud/repository/npm-open/"
   },
-  "dependencies": {
+  "devDependencies": {
     "@modelix/model-client": "file:../model-client/build/npmDevPackage/model-client.tgz",
     "@tsconfig/recommended": "^1.0.3",
     "@types/jest": "^29.5.5",
@@ -46,6 +41,7 @@
   "prettier-comment": "// IMPORTANT: keep Prettier version in sync with the version in .pre-commit-config.yaml",
   "eslint-comment": "// IMPORTANT: keep ESLint version and versions and plugins in sync with the version in .pre-commit-config.yaml",
   "peerDependencies": {
+    "@modelix/model-client": "*",
     "vue": "^3.3.4"
   }
 }

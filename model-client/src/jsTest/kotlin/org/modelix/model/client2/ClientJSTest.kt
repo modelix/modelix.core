@@ -16,8 +16,9 @@
 
 package org.modelix.model.client2
 
-import GeneratedConcept
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.SimpleConcept
+import toJS
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -35,7 +36,7 @@ class ClientJSTest {
     fun canAddChildrenWithUnregisteredConcept() {
         // Arrange
         val rootNode = loadModelsFromJson(arrayOf(emptyRoot)) {}
-        val jsConcept = GeneratedConcept("aConceptUid")
+        val jsConcept = SimpleConcept("aConceptUid").toJS()
 
         // Act
         // This call should work, even if no GeneratedLanguage for this concept
@@ -96,7 +97,7 @@ class ClientJSTest {
         }
 
         // Act
-        rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        rootNode.addNewChild("aRole", -1, SimpleConcept("aConceptUid").toJS())
 
         // Assert
         assertEquals(1, childrenChanged)
@@ -114,7 +115,7 @@ class ClientJSTest {
                 else -> {}
             }
         }
-        val childNode = rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        val childNode = rootNode.addNewChild("aRole", -1, SimpleConcept("aConceptUid").toJS())
         childrenChanged = 0
 
         // Act
@@ -137,7 +138,7 @@ class ClientJSTest {
                 else -> {}
             }
         }
-        val childNode = rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        val childNode = rootNode.addNewChild("aRole", -1, SimpleConcept("aConceptUid").toJS())
         childrenChanged = 0
 
         // Act

@@ -15,12 +15,11 @@ val updateModelClient = tasks.create<NpmTask>("updateModelClient") {
     outputs.cacheIf { true }
     outputs.file("package-lock.json")
     outputs.file("package.json")
-    args.set(listOf("install", modelClientPackage))
+    args.set(listOf("install", modelClientPackage, "--save-dev"))
     dependsOn(":model-client:packJsPackage")
 }
 
 tasks.npmInstall {
-    dependsOn(":ts-model-api:build")
     dependsOn(updateModelClient)
 }
 
@@ -75,8 +74,8 @@ val createPackageJsonForPublishing = tasks.create("createPackageJsonForPublishin
         // replaces versions which where needed for development and builds,
         // with its published versions
         @Suppress("UNCHECKED_CAST")
-        val dependencies = packageJsonData["dependencies"] as MutableMap<String, String>
-        dependencies["@modelix/model-client"] = "^${project.version}"
+        val peerDependencies = packageJsonData["peerDependencies"] as MutableMap<String, String>
+        // peerDependencies["@modelix/model-client"] = "^${project.version}"
 
         // remove key value pairs that where used for comments
         val packageJsonDataIterator = packageJsonData.iterator()

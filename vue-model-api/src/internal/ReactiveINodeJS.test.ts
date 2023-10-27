@@ -1,5 +1,6 @@
 import { useModelsFromJson } from "../useModelsFromJson";
 import { computed, isReactive, reactive } from "vue";
+import { JSNodeConverter } from "@modelix/model-client";
 
 const root = {
   root: {
@@ -77,11 +78,15 @@ test("change to reference is reactivly updated", () => {
 
   child0.setReferenceTargetRef("aReference", child1.getReference());
   expect(computedReferenceTargetRef.value).toBe(child1.getReference());
-  expect(computedReferenceTargetNode.value).toBe(child1);
+  expect(
+    JSNodeConverter.isSameNode(computedReferenceTargetNode.value, child1),
+  ).toBeTruthy();
 
   child0.setReferenceTargetNode("aReference", child2);
   expect(computedReferenceTargetRef.value).toBe(child2.getReference());
-  expect(computedReferenceTargetNode.value).toBe(child2);
+  expect(
+    JSNodeConverter.isSameNode(computedReferenceTargetNode.value, child2),
+  ).toBeTruthy();
 });
 
 test("change to children with role is reactive", () => {

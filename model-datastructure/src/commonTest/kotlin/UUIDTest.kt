@@ -1,11 +1,15 @@
+import org.modelix.model.randomUUID
+import kotlin.test.Test
+import kotlin.test.assertTrue
+
 /*
- * Copyright (c) 2022.
+ * Copyright (c) 2023.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,17 +18,13 @@
  * limitations under the License.
  */
 
-import type {IConceptJS} from "./IConceptJS.js";
+class UUIDTest {
 
-export abstract class GeneratedConcept implements IConceptJS {
-
-  protected constructor(private uid: string) {
-  }
-
-  abstract getDirectSuperConcepts(): Array<IConceptJS>
-
-  getUID(): string {
-    return this.uid;
-  }
-
+    @Test
+    fun randomUUIDFormat() {
+        val id = randomUUID()
+        assertTrue("Invalid UUID: $id") {
+            id.matches(Regex("""[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}"""))
+        }
+    }
 }

@@ -15,9 +15,12 @@
 
 package org.modelix.model.api
 
+import kotlin.js.JsExport
+
 /**
  * Representation of a language concept.
  */
+@JsExport
 interface IConcept {
 
     /**

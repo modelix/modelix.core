@@ -89,6 +89,8 @@ class MetaModelGradlePlugin : Plugin<Project> {
                 settings.kotlinDir?.let { task.kotlinOutputDir.set(it) }
                 settings.modelqlKotlinDir?.let { task.modelqlKotlinOutputDir.set(it) }
                 settings.typescriptDir?.let { task.typescriptOutputDir.set(it) }
+                task.runtimeNpmPackage.set(settings.runtimeNpmPackage)
+                settings.kotlinTargetPlatform?.let { task.kotlinTargetPlatform.set(it) }
                 task.includedNamespaces.addAll(settings.includedLanguageNamespaces)
                 task.includedLanguages.addAll(settings.includedLanguages)
                 task.includedConcepts.addAll(settings.includedConcepts)

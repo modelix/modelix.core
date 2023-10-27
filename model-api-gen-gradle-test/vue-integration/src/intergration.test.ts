@@ -1,20 +1,14 @@
 import { useModelsFromJson } from "@modelix/vue-model-api";
 import { computed } from "vue";
-import { registerLanguages } from "typescript-generation";
-import {
-  BaseConcept,
-  C_Attribute,
-  C_INamedConcept,
-  isOfConcept_INamedConcept,
-} from "typescript-generation/dist/L_jetbrains_mps_lang_core";
-import {
-  StaticFieldReference,
-  Classifier,
-} from "typescript-generation/dist/L_jetbrains_mps_baseLanguage";
+import { jetbrains, org, TypedNodeConverter } from "@modelix/model-client";
+import { isOfConcept_INamedConcept } from "typescript-generation/dist/L_jetbrains_mps_lang_core";
+import N_BaseConcept = jetbrains.mps.lang.core.N_BaseConcept;
+import N_StaticFieldReference = jetbrains.mps.baseLanguage.N_StaticFieldReference;
+import N_Classifier = jetbrains.mps.baseLanguage.N_Classifier;
+import L_jetbrains_mps_lang_core = jetbrains.mps.lang.core.L_jetbrains_mps_lang_core;
+import ApigenTestLanguages = org.modelix.apigen.test.ApigenTestLanguages;
 
-import { ITypedNode, LanguageRegistry } from "@modelix/ts-model-api";
-
-registerLanguages();
+ApigenTestLanguages.registerAll();
 
 function useRootNode(nodeData: object) {
   return useModelsFromJson([JSON.stringify(nodeData)]);
@@ -37,9 +31,9 @@ test("change to property is reactivly updated", () => {
   };
 
   const untypedNode = useRootNode(nodeData).getChildren("children1")[0];
-  const typedNode = LanguageRegistry.INSTANCE.wrapNode(untypedNode);
+  const typedNode = TypedNodeConverter.toTypedNode(untypedNode);
   if (!isOfConcept_INamedConcept(typedNode)) {
-    fail(`${typedNode} should be a ${C_INamedConcept}`);
+    fail(`${typedNode} should be a INamedConcept`);
   }
 
   // We use `computed` to test the reactivity with Vue.
@@ -79,16 +73,18 @@ test("change to children is reactivly updated", () => {
     },
   };
   const untypedNode = useRootNode(nodeData).getChildren("children1")[0];
-  const baseConcept = LanguageRegistry.INSTANCE.wrapNode(
+  const baseConcept = TypedNodeConverter.toTypedNode(
     untypedNode,
-  ) as BaseConcept;
+  ) as N_BaseConcept;
 
   const computedNumberOfAttributes = computed(
     () => baseConcept.smodelAttribute.asArray().length,
   );
   expect(computedNumberOfAttributes.value).toBe(1);
 
-  baseConcept.smodelAttribute.addNew(C_Attribute);
+  baseConcept.smodelAttribute.addNewWithConcept(
+    L_jetbrains_mps_lang_core.Attribute,
+  );
   expect(computedNumberOfAttributes.value).toBe(2);
 
   const firstAttribute = baseConcept.smodelAttribute.asArray()[0];
@@ -118,15 +114,15 @@ test("change to reference is reactivly updated", () => {
     },
   };
   const rootNode = useRootNode(nodeData);
-  const staticFieldReference = LanguageRegistry.INSTANCE.wrapNode(
+  const staticFieldReference = TypedNodeConverter.toTypedNode(
     rootNode.getChildren("staticFieldReferences")[0],
-  ) as StaticFieldReference;
-  const classifier = LanguageRegistry.INSTANCE.wrapNode(
+  ) as N_StaticFieldReference;
+  const classifier = TypedNodeConverter.toTypedNode(
     rootNode.getChildren("classifiers")[0],
-  ) as Classifier;
+  ) as N_Classifier;
 
   const computedClassifierName = computed(
-    () => staticFieldReference.classifier?.name,
+    () => staticFieldReference.classifier_orNull?.name,
   );
 
   expect(computedClassifierName.value).toBe(undefined);

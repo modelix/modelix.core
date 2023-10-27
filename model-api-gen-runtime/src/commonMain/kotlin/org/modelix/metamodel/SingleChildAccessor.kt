@@ -3,8 +3,11 @@ package org.modelix.metamodel
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
+import kotlin.js.JsExport
+import kotlin.js.JsName
 import kotlin.reflect.KClass
 
+@JsExport
 class SingleChildAccessor<ChildT : ITypedNode>(
     parent: INode,
     role: IChildLink,
@@ -18,6 +21,8 @@ class SingleChildAccessor<ChildT : ITypedNode>(
         get()?.let { parent.removeChild(it.unwrap()) }
         return addNew()
     }
+
+    @JsName("setNewWithConcept")
     fun <NewChildT : ChildT> setNew(concept: INonAbstractConcept<NewChildT>): NewChildT {
         require(concept.untyped().isSubConceptOf(childConcept)) {
             "$concept is not a sub concept of $childConcept"

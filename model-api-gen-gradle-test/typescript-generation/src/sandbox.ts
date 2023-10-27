@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2023.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,18 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.api
 
-/**
- * Wrapper for [INode]
- */
-interface INodeWrapper : INode {
-    /**
-     * Returns the wrapped node.
-     *
-     * @return node wrapped by this wrapper
-     */
-    fun getWrappedNode(): INode
+import {jetbrains} from "@modelix/model-client";
+import N_ClassConcept = jetbrains.mps.baseLanguage.N_ClassConcept;
+
+export function main() {
+    let cls: N_ClassConcept = null
+    cls.member
 }
-
-fun INode.deepUnwrap(): INode = if (this is INodeWrapper) getWrappedNode().deepUnwrap() else this

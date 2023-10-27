@@ -1,5 +1,5 @@
 import { org } from "@modelix/model-client";
-import { INodeJS } from "@modelix/ts-model-api";
+import { INodeJS } from "@modelix/model-client";
 import { watchEffect } from "vue";
 import { useModelClient } from "./useModelClient";
 import { useRootNode } from "./useRootNode";

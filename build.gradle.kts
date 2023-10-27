@@ -239,9 +239,6 @@ fun MavenPublication.setMetadata() {
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask> {
-    dependsOn(":ts-model-api:npm_run_build")
-}
 val docsDir = project.layout.buildDirectory.dir("dokka").get().asFile
 
 tasks.dokkaHtmlMultiModule {

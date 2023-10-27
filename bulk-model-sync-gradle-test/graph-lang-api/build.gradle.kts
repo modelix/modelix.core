@@ -48,6 +48,7 @@ metamodel {
     dependsOn(copyMetamodelToMpsHome)
     mpsHome = mpsDir
     kotlinDir = kotlinGenDir
+    generateKotlinJvm()
     includeLanguage("GraphLang")
     registrationHelperName = "org.modelix.model.sync.bulk.gradle.test.GraphLanguagesHelper"
 }

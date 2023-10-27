@@ -1,14 +1,30 @@
-package org.modelix.model.api
+/*
+ * Copyright (c) 2023.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import IConceptJS
-import INodeJS
-import INodeReferenceJS
-import LanguageRegistry
-import TypedNode
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.deepUnwrap
 
-@ExperimentalJsExport
 @JsExport
 object JSNodeConverter {
+    fun isSameNode(node1: Any, node2: Any): Boolean {
+        return toINode(node1).deepUnwrap() == toINode(node2).deepUnwrap()
+    }
+
     fun nodeToJs(node: INode?): Any? {
         if (node == null) return node
         // return type is Any because the import for INodeJS is missing in the generated .d.ts
@@ -32,29 +48,29 @@ object JSNodeConverter {
     fun toINode(node: Any): INode {
         if (node is INode) return node
         if (node is NodeAdapterJS) return node.node
-        if (node is TypedNode) return toINode(node._node)
+        if (node is INodeJS) return node.unwrap()
 
-        // Workaround, because ts-model-api is loaded twice by webpack making the instanceof check on TypedNode fail.
-        val unwrapped = node.asDynamic().node
-        if (unwrapped != null) return toINode(unwrapped)
+        // handle ReactiveINodeJS in vue-model-api
+        if (node.asDynamic().unwrap != null) return node.asDynamic().unwrap()
 
         throw IllegalArgumentException("Unsupported node type: $node")
     }
 }
 
-// workaround: because of the missing import for INodeJS, this intermediate interface prevents it from being generated
-// into the .d.ts file.
-@Suppress("ClassName")
-interface INodeJS_ : INodeJS
-
-@JsExport // this is only required to prevent the compiler from renaming the methods in the generated JS
-class NodeAdapterJS(val node: INode) : INodeJS_ {
+@JsExport
+class NodeAdapterJS(val node: INode) : INodeJS {
     init {
         // This is called from JS, so this check is not redundant.
+        @Suppress("USELESS_IS_CHECK")
         require(node is INode) { "Not an INode: $node" }
     }
+
+    override fun unwrap(): INode {
+        return node
+    }
+
     override fun getConcept(): IConceptJS? {
-        return getConceptUID()?.let { LanguageRegistry.INSTANCE.resolveConcept(it) }
+        return node.concept?.toJS()
     }
 
     override fun getConceptUID(): String? {
@@ -78,12 +94,12 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         return node.allChildren.map { NodeAdapterJS(it) }.toTypedArray()
     }
 
-    override fun moveChild(role: String?, index: Number, child: INodeJS) {
+    override fun moveChild(role: String?, index: Int, child: INodeJS) {
         // TODO use IChildLink instead of String
         node.moveChild(role, index.toInt(), (child as NodeAdapterJS).node)
     }
 
-    override fun addNewChild(role: String?, index: Number, concept: IConceptJS?): INodeJS {
+    override fun addNewChild(role: String?, index: Int, concept: IConceptJS?): INodeJS {
         val conceptRef = concept?.getUID()?.let { ConceptReference(it) }
         // TODO use IChildLink instead of String
         return NodeAdapterJS(node.addNewChild(role, index.toInt(), conceptRef))

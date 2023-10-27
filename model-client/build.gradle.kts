@@ -94,9 +94,6 @@ kotlin {
             languageSettings.optIn("kotlin.js.ExperimentalJsExport")
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                implementation(npm("uuid", "^8.3.0"))
-                implementation(npm("js-sha256", "^0.9.0"))
-                implementation(npm("js-base64", "^3.4.5"))
             }
         }
     }
@@ -166,8 +163,6 @@ val patchTypesScriptInProductionLibrary = tasks.register("patchTypesScriptInProd
          */
         """.trimIndent()
         typescriptDeclaration.writer().use {
-            it.appendLine("""import { INodeJS } from "@modelix/ts-model-api";""")
-                .appendLine()
             for (line in originalTypescriptDeclarationContent) {
                 // Only mark the parts of the client (`org.modelix.model.client2`) experimental.
                 // Reported declarations from `org.modelix.model.api` should not be annotated as experimental.
@@ -211,10 +206,6 @@ npmPublish {
                     url.set("https://github.com/modelix/modelix.core.git")
                     directory.set(project.name)
                 }
-            }
-            dependencies {
-                // The model client NPM package uses the types from this @modelix/ts-model-api
-                normal("@modelix/ts-model-api", rootProject.version.toString())
             }
         }
     }

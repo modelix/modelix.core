@@ -1,8 +1,8 @@
 import { org } from "@modelix/model-client";
-import { INodeJS } from "@modelix/ts-model-api";
+import { INodeJS } from "@modelix/model-client";
 import { useLastPromiseEffect } from "./internal/useLastPromiseEffect";
 import { MaybeRefOrGetter, Ref, shallowRef, toValue } from "vue";
-import { ReactiveINodeJS, toReactiveINodeJS } from "./internal/ReactiveINodeJS";
+import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { Cache } from "./internal/Cache";
 import { handleChange } from "./internal/handleChange";
 
@@ -66,7 +66,7 @@ export function useRootNode(
       if (branchIdValue === null) {
         return;
       }
-      const cache = new Cache<ReactiveINodeJS>();
+      const cache = new Cache<INodeJS>();
       return clientValue
         .connectBranch(repositoryIdValue, branchIdValue, (change: ChangeJS) => {
           if (cache === null) {

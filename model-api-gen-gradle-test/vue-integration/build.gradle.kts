@@ -7,12 +7,14 @@ plugins {
 
 val updateDependencies = tasks.create<NpmTask>("updateDependencies") {
     dependsOn(":typescript-generation:packJsPackage")
+    dependsOn(":kotlin-generation:packJsPackage")
     args.set(
         listOf(
             "install",
-            "../../model-client/build/npmDevPackage/model-client.tgz",
+            "../kotlin-generation/build/packages/modelix-model-client-1.0.0.tgz",
             "../../vue-model-api/build/npmDevPackage/vue-model-api.tgz",
             "../typescript-generation/build/typescript-generation-0.0.0.tgz",
+            "--save-dev",
         ),
     )
 }

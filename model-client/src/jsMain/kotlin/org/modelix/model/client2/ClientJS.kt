@@ -29,12 +29,12 @@ import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
-import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getRootNode
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.withAutoTransactions
+import org.modelix.model.withIncrementalComputationSupport
 import kotlin.Unit
 import kotlin.js.Promise
 
@@ -50,7 +50,7 @@ fun loadModelsFromJson(
     val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
     json.forEach { ModelData.fromJson(it).load(branch) }
     branch.addListener(ChangeListener(branch, changeCallback))
-    val rootNode = branch.withAutoTransactions().getRootNode()
+    val rootNode = branch.withIncrementalComputationSupport().withAutoTransactions().getRootNode()
     return toNodeJs(rootNode)
 }
 

@@ -51,6 +51,7 @@ kotlin {
                 implementation(project(":modelql-client"))
                 api(project(":modelql-core"))
                 implementation(kotlin("stdlib-common"))
+                implementation(libs.modelix.incremental)
                 implementation(libs.kotlin.collections.immutable)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)

@@ -59,7 +59,12 @@ fun computeVersion(): Any {
     return if (versionFile.exists()) {
         versionFile.readText().trim()
     } else {
-        gitVersion().let { if (it.endsWith("-SNAPSHOT")) it else "$it-SNAPSHOT" }.also { versionFile.writeText(it) }
+        gitVersion()
+            // Avoid duplicated "-SNAPSHOT" ending
+            .let { if (it.endsWith("-SNAPSHOT")) it else "$it-SNAPSHOT" }
+            // Normalize the version so that is always a valid NPM version.
+            .let { if (it.matches("""\d+\.\d+.\d+-.*""".toRegex())) it else "0.0.1-$it" }
+            .also { versionFile.writeText(it) }
     }
 }
 

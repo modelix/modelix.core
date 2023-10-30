@@ -329,6 +329,17 @@ fun createDocsIndexPage(): String {
                                     ?.filter { it.isDirectory && !it.name.startsWith('.') }
                                     ?.sortedByDescending { Version.parse(it.name) }
                                 if (versionDirs != null) {
+                                    div("table-row") {
+                                        div("main-subrow") {
+                                            div("w-100") {
+                                                span("inline-flex") {
+                                                    a(href = "/latest") {
+                                                        +"modelix.core LATEST"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                     for (versionDir in versionDirs) {
                                         val versionIndex = versionDir.resolve("index.html")
                                         if (versionIndex.exists()) {

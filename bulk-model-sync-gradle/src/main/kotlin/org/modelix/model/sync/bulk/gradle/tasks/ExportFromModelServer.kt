@@ -20,8 +20,8 @@ import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
@@ -62,10 +62,10 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
     val outputDir: DirectoryProperty = of.directoryProperty()
 
     @Input
-    val includedModules: ListProperty<String> = of.listProperty(String::class.java)
+    val includedModules: SetProperty<String> = of.setProperty(String::class.java)
 
     @Input
-    val includedModulePrefixes: ListProperty<String> = of.listProperty(String::class.java)
+    val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
 
     @TaskAction
     fun export() {

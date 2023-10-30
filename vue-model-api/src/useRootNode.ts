@@ -25,7 +25,7 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
  * @param branchId - Reactive reference of a branchId in the repository of the model server.
  *
  * @returns {Object} values Wrapper around diffrent returned values.
- * @returns {Ref<ClientJS>} values.rootNode  Reactive reference to a reactive root node.
+ * @returns {Ref<INodeJS | null>} values.rootNode  Reactive reference to a reactive root node.
  * @returns {() => void} values.dispose A function to manually dispose the root node.
  * @returns {Ref<unknown>} values.error Reactive reference to a connection error.
  */
@@ -33,7 +33,11 @@ export function useRootNode(
   client: MaybeRefOrGetter<ClientJS | null>,
   repositoryId: MaybeRefOrGetter<string | null>,
   branchId: MaybeRefOrGetter<string | null>,
-) {
+): {
+  rootNode: Ref<INodeJS | null>;
+  dispose: () => void;
+  error: Ref<unknown>;
+} {
   let branch: BranchJS | null = null;
   const rootNodeRef: Ref<INodeJS | null> = shallowRef(null);
   const errorRef: Ref<unknown> = shallowRef(null);
@@ -83,7 +87,7 @@ export function useRootNode(
       }
     },
     (reason, isResultOfLastStartedPromise) => {
-      if (!isResultOfLastStartedPromise) {
+      if (isResultOfLastStartedPromise) {
         errorRef.value = reason;
       }
     },

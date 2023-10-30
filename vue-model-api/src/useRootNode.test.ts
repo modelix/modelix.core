@@ -9,63 +9,69 @@ type ClientJS = org.modelix.model.client2.ClientJS;
 type ChangeJS = org.modelix.model.client2.ChangeJS;
 const { loadModelsFromJson } = org.modelix.model.client2;
 
-const root = {
-  root: {},
-};
-
-function getClient(_url: string): Promise<ClientJS> {
-  return Promise.resolve(new TestClientJS() as unknown as ClientJS);
-}
-
-class TestBranchJS implements BranchJS {
-  public disposed = false;
-  public rootNode: INodeJS;
-
-  constructor(branchId: string, changeCallback: (change: ChangeJS) => void) {
-    this.rootNode = loadModelsFromJson([JSON.stringify(root)], changeCallback);
-    this.rootNode.setPropertyValue("branchId", branchId);
-  }
-
-  dispose(): void {
-    this.disposed = true;
-  }
-
-  // @ts-ignore It is fine to be undefined, because we do not pass it back to Kotlin code.
-  __doNotUseOrImplementIt: undefined;
-}
-
-class TestClientJS implements ClientJS {
-  public disposed = false;
-
-  dispose(): void {
-    this.disposed = true;
-  }
-  connectBranch(
-    _repositoryId: string,
-    branchId: string,
-    changeCallback: (change: ChangeJS) => void,
-  ): Promise<BranchJS> {
-    return Promise.resolve(
-      new TestBranchJS(branchId, changeCallback) as unknown as BranchJS,
-    );
-  }
-  fetchBranches(_repositoryId: string): Promise<string[]> {
-    throw new Error("Method not implemented.");
-  }
-  fetchRepositories(): Promise<string[]> {
-    throw new Error("Method not implemented.");
-  }
-
-  // @ts-ignore It is fine to be undefined, because we do not pass it back to Kotlin code.
-  __doNotUseOrImplementIt: undefined;
-}
-
 test("test branch connects", (done) => {
-  const { client } = useModelClient("anURL", getClient);
+  class SuccessfulBranchJS {
+    public rootNode: INodeJS;
+
+    constructor(branchId: string, changeCallback: (change: ChangeJS) => void) {
+      const root = {
+        root: {},
+      };
+
+      this.rootNode = loadModelsFromJson(
+        [JSON.stringify(root)],
+        changeCallback,
+      );
+      this.rootNode.setPropertyValue("branchId", branchId);
+    }
+  }
+
+  class SuccessfulClientJS {
+    connectBranch(
+      _repositoryId: string,
+      branchId: string,
+      changeCallback: (change: ChangeJS) => void,
+    ): Promise<BranchJS> {
+      return Promise.resolve(
+        new SuccessfulBranchJS(branchId, changeCallback) as BranchJS,
+      );
+    }
+  }
+
+  const { client } = useModelClient("anURL", () =>
+    Promise.resolve(new SuccessfulClientJS() as ClientJS),
+  );
+
   const { rootNode } = useRootNode(client, "aRepository", "aBranch");
+
   watchEffect(() => {
     if (rootNode.value !== null) {
       expect(rootNode.value.getPropertyValue("branchId")).toBe("aBranch");
+      done();
+    }
+  });
+});
+
+test("test branch connection error is exposed", (done) => {
+  class FailingClientJS {
+    connectBranch(
+      _repositoryId: string,
+      _branchId: string,
+      _changeCallback: (change: ChangeJS) => void,
+    ): Promise<BranchJS> {
+      return Promise.reject("Could not connect branch.");
+    }
+  }
+
+  const { client } = useModelClient("anURL", () =>
+    Promise.resolve(new FailingClientJS() as ClientJS),
+  );
+
+  const { error } = useRootNode(client, "aRepository", "aBranch");
+
+  watchEffect(() => {
+    if (error.value !== null) {
+      expect(error.value).toBe("Could not connect branch.");
       done();
     }
   });

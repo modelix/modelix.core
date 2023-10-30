@@ -328,7 +328,7 @@ fun createDocsIndexPage(): String {
                                         div("main-subrow") {
                                             div("w-100") {
                                                 span("inline-flex") {
-                                                    a(href = versionDirs.first().relativeTo(docsDir).path) {
+                                                    a(href = "/latest") {
                                                         +"modelix.core LATEST"
                                                     }
                                                 }

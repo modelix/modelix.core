@@ -113,6 +113,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.repositoryId.set(serverSource.repositoryId)
             it.branchName.set(serverSource.branchName)
             it.revision.set(serverSource.revision)
+            it.includedModules.set(syncDirection.includedModules)
+            it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
         }
         return exportFromModelServer
     }
@@ -173,6 +175,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.url.set(serverTarget.url)
             it.repositoryId.set(serverTarget.repositoryId)
             it.branchName.set(serverTarget.branchName)
+            it.includedModules.set(syncDirection.includedModules)
+            it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
         }
 
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {

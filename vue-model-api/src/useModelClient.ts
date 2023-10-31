@@ -19,14 +19,18 @@ type ClientJS = org.modelix.model.client2.ClientJS;
  * Defaults to connecting directly to the modelix model server under the given URL.
  *
  * @returns {Object} values Wrapper around diffrent returned values.
- * @returns {Ref<ClientJS>} values.client Reactive reference to a client.
+ * @returns {Ref<ClientJS | null>} values.client Reactive reference to a client.
  * @returns {() => void} values.dispose A function to manually dispose the client.
  * @returns {Ref<unknown>} values.error Reactive reference to a client connection error.
  */
 export function useModelClient(
   url: MaybeRefOrGetter<string>,
   getClient: (url: string) => Promise<ClientJS> = connectClient,
-) {
+): {
+  client: Ref<ClientJS | null>;
+  dispose: () => void;
+  error: Ref<unknown>;
+} {
   let client: ClientJS | null = null;
   const clientRef: Ref<ClientJS | null> = shallowRef(client);
   const errorRef: Ref<unknown> = shallowRef(null);
@@ -52,7 +56,7 @@ export function useModelClient(
       }
     },
     (reason, isResultOfLastStartedPromise) => {
-      if (!isResultOfLastStartedPromise) {
+      if (isResultOfLastStartedPromise) {
         errorRef.value = reason;
       }
     },

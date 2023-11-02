@@ -1,10 +1,10 @@
-== Gradle Plugin for synchronizing models between model-api endpoints
+= Gradle Plugin for synchronizing models between model-api endpoints
 :navtitle: `bulk-model-sync-gradle`
 
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
-https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-sync-gradle/build.gradle.kts[buildfile^]
+https://api.modelix.org/3.12.0/bulk-model-sync-gradle/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/bulk-model-sync-gradle/[Nexus^] https://github.com/modelix/modelix.core/packages/1946684[GitHub Packages^]
 --
 
 == Overview

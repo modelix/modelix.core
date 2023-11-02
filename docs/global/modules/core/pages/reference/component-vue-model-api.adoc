@@ -4,7 +4,7 @@
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
-https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/vue-model-api/build.gradle.kts[buildfile^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/npm-open/%40modelix/vue-model-api/[Nexus^]
+https://github.com/modelix/modelix.core[Repository^] | https://artifacts.itemis.cloud/service/rest/repository/browse/npm-open/%40modelix/vue-model-api/[Nexus^]
 --
 
 

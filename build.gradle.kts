@@ -326,7 +326,9 @@ fun createDocsIndexPage(): String {
                             h2 { +"Available versions:" }
                             div("table") {
                                 val versionDirs = docsDir.listFiles()
-                                    ?.filter { it.isDirectory && !it.name.startsWith('.') }
+                                    ?.filter {
+                                        it.isDirectory && !it.name.startsWith('.') && it.name != "latest"
+                                    }
                                     ?.sortedByDescending { Version.parse(it.name) }
                                 if (versionDirs != null) {
                                     div("table-row") {

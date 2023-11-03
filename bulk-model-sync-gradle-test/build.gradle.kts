@@ -74,7 +74,7 @@ tasks.register("runModelServer", JavaExec::class) {
 
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("org.modelix.model.server.Main")
-    args("-inmemory")
+    args("-inmemory", "-port", "28309")
 }
 
 val resolveMps by tasks.registering(Copy::class) {
@@ -101,7 +101,7 @@ modelSync {
             repositoryDir = repoDir
         }
         toModelServer {
-            url = "http://0.0.0.0:${Main.DEFAULT_PORT}/v2"
+            url = "http://0.0.0.0:28309/v2"
             repositoryId = "ci-test"
             branchName = "master"
         }
@@ -109,7 +109,7 @@ modelSync {
     direction("testPull") {
         includeModule("GraphSolution")
         fromModelServer {
-            url = "http://0.0.0.0:${Main.DEFAULT_PORT}/v2"
+            url = "http://0.0.0.0:28309/v2"
             repositoryId = "ci-test"
             branchName = "master"
         }

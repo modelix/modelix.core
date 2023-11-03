@@ -42,7 +42,7 @@ class PushTest {
 
         val repoId = RepositoryId("ci-test")
         val branchName = "master"
-        val url = "http://0.0.0.0:${Main.DEFAULT_PORT}/v2"
+        val url = "http://0.0.0.0:28309/v2"
 
         val branchRef = ModelFacade.createBranchReference(repoId, branchName)
         val client = ModelClientV2PlatformSpecificBuilder().url(url).build().apply { runBlocking { init() } }

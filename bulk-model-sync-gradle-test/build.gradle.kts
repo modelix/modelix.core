@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-import org.modelix.model.server.Main
-
 buildscript {
     val modelixCoreVersion: String = file("../version.txt").readText()
     dependencies {
         classpath("org.modelix:model-server:$modelixCoreVersion")
-        classpath("org.modelix:graph-lang-api:$modelixCoreVersion")
     }
 }
 
@@ -41,12 +38,9 @@ repositories {
     maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
 }
 
-val mps by configurations.creating
-val mpsDir = project.layout.buildDirectory.dir("mps").get().asFile.apply { mkdirs() }
 val kotlinGenDir = project.layout.buildDirectory.dir("metamodel/kotlin").get().asFile.apply { mkdirs() }
 
 dependencies {
-    mps("com.jetbrains:mps:2021.2.5")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
     implementation("org.modelix:model-server:$modelixCoreVersion")
     implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
@@ -77,11 +71,6 @@ tasks.register("runModelServer", JavaExec::class) {
     args("-inmemory", "-port", "28309")
 }
 
-val resolveMps by tasks.registering(Copy::class) {
-    from(mps.resolve().map { zipTree(it) })
-    into(mpsDir)
-}
-
 val repoDir = project.layout.buildDirectory.dir("test-repo").get().asFile
 
 val copyTestRepo by tasks.registering(Sync::class) {
@@ -89,14 +78,15 @@ val copyTestRepo by tasks.registering(Sync::class) {
     into(repoDir)
 }
 
+mpsBuild {
+    mpsVersion("2021.2.5")
+}
+
 modelSync {
-    dependsOn(resolveMps)
     dependsOn(copyTestRepo)
     direction("testPush") {
-        org.modelix.model.sync.bulk.gradle.test.GraphLanguagesHelper.registerAll()
         includeModule("GraphSolution")
         fromLocal {
-            mpsHome = mpsDir
             mpsHeapSize = "2g"
             repositoryDir = repoDir
         }
@@ -114,7 +104,6 @@ modelSync {
             branchName = "master"
         }
         toLocal {
-            mpsHome = mpsDir
             repositoryDir = repoDir
         }
     }

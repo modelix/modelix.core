@@ -14,7 +14,7 @@ gitVersion = { id = "com.palantir.git-version", version = "3.0.0" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "11.6.1" }
 spotless = { id = "com.diffplug.spotless", version = "6.22.0" }
 tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
-modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.2.0" }
+modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
 dokka = {id = "org.jetbrains.dokka", version = "1.9.10"}
 node = {id = "com.github.node-gradle.node", version = "7.0.1"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.3" }
@@ -29,6 +29,7 @@ kotlinSerialization="1.6.1"
 ignite="2.15.0"
 apacheCxf="3.6.2"
 node="18.17.1"
+modelixBuildtools="1.2.0"
 
 [libraries]
 
@@ -94,3 +95,6 @@ apache-cxf-client = { group = "org.apache.cxf", name = "cxf-rt-rs-client", versi
 
 semver = { group = "org.semver", name = "api", version = "0.9.33"}
 dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", version = "1.9.10"}
+
+modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gradle", version.ref = "modelixBuildtools"}
+modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}

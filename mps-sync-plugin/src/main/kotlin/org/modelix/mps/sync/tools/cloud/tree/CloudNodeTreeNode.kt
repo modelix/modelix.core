@@ -30,7 +30,7 @@ import org.modelix.model.area.ContextArea
 import org.modelix.model.area.PArea
 import org.modelix.model.client.SharedExecutors
 import org.modelix.model.mpsadapters.MPSArea
-import org.modelix.model.mpsadapters.NodeAsMPSNode
+import org.modelix.model.mpsadapters.mps.NodeAsMPSNode
 import org.modelix.mps.sync.icons.LoadingIcon
 import org.modelix.mps.sync.replication.CloudRepository
 import org.modelix.mps.sync.util.CommandHelper

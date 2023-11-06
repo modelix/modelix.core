@@ -22,7 +22,7 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.index
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSNode
-import org.modelix.model.mpsadapters.NodeAsMPSNode
+import org.modelix.model.mpsadapters.mps.NodeAsMPSNode
 
 // status: ready to test
 

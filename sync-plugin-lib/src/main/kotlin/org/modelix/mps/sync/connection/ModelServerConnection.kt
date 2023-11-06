@@ -24,7 +24,7 @@ import org.modelix.model.client.IModelClient
 import org.modelix.model.client.ReplicatedRepository
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.NodeAsMPSNode
+import org.modelix.model.mpsadapters.mps.NodeAsMPSNode
 import org.modelix.mps.sync.binding.Binding
 import org.modelix.mps.sync.binding.ModuleBinding
 import org.modelix.mps.sync.binding.ProjectBinding

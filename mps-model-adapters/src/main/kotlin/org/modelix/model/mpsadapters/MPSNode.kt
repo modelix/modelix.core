@@ -29,6 +29,7 @@ import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.resolveIn
 import org.modelix.model.area.IArea
+import org.modelix.model.mpsadapters.mps.NodeAsMPSNode
 
 data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
 

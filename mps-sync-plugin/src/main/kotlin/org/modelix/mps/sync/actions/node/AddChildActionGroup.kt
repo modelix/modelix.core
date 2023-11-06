@@ -24,7 +24,7 @@ import jetbrains.mps.smodel.language.LanguageRegistry
 import org.jetbrains.mps.openapi.language.SConcept
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.mpsadapters.MPSConcept
-import org.modelix.model.mpsadapters.NodeAsMPSNode
+import org.modelix.model.mpsadapters.mps.NodeAsMPSNode
 import org.modelix.mps.sync.actions.getMpsProject
 import org.modelix.mps.sync.actions.getTreeNode
 import org.modelix.mps.sync.actions.getTreeNodeAs

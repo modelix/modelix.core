@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.mpsadapters
+package org.modelix.model.mpsadapters.mps
 
 import jetbrains.mps.util.IterableUtil
 import jetbrains.mps.util.containers.EmptyIterable
@@ -33,6 +33,11 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.getAncestor
+import org.modelix.model.mpsadapters.MPSChildLink
+import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSNode
+import org.modelix.model.mpsadapters.MPSProperty
+import org.modelix.model.mpsadapters.MPSReferenceLink
 
 class NodeAsMPSNode(private val node: INode, private val repository: SRepository?) : SNode {
 
@@ -180,6 +185,7 @@ class NodeAsMPSNode(private val node: INode, private val repository: SRepository
         return wrap(n1)!!
     }
 
+    // TODO are we sure that node.getChildContainmentLink() is always an MPSChildLink?
     override fun getContainmentLink() = (this.node.getContainmentLink() as? MPSChildLink)?.link
 
     override fun getFirstChild(): SNode? {

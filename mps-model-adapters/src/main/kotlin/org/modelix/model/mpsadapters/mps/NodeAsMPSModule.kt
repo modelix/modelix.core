@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.mpsadapters
+package org.modelix.model.mpsadapters.mps
 
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.language.SLanguage
@@ -24,6 +24,7 @@ import org.jetbrains.mps.openapi.module.SModuleListener
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
+import org.modelix.model.mpsadapters.Module
 
 class NodeAsMPSModule private constructor(val node: INode, val sRepository: SRepository?) : SModule {
 

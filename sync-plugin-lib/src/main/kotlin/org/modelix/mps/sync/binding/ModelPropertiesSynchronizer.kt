@@ -34,8 +34,8 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.area.PArea
 import org.modelix.model.mpsadapters.DevKitDependencyAsNode
 import org.modelix.model.mpsadapters.MPSModelAsNode
-import org.modelix.model.mpsadapters.NodeAsMPSNode
 import org.modelix.model.mpsadapters.SingleLanguageDependencyAsNode
+import org.modelix.model.mpsadapters.mps.NodeAsMPSNode
 import org.modelix.mps.sync.replication.ICloudRepository
 import org.modelix.mps.sync.util.addDevKit
 import org.modelix.mps.sync.util.addLanguageImport

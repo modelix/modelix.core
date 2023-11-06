@@ -23,7 +23,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
-import org.modelix.model.mpsadapters.NodeAsMPSNode
+import org.modelix.model.mpsadapters.mps.NodeAsMPSNode
 import java.util.concurrent.atomic.AtomicReference
 
 class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val repository: SRepository) {

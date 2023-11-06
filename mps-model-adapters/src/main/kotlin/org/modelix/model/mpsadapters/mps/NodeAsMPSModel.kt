@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.mpsadapters
+package org.modelix.model.mpsadapters.mps
 
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.language.SConcept
@@ -28,6 +28,7 @@ import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
+import org.modelix.model.mpsadapters.Model
 
 class NodeAsMPSModel private constructor(private val node: INode, private val sRepository: SRepository?) : SModel {
     companion object {

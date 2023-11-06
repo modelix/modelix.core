@@ -16,7 +16,6 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    @Suppress("UNUSED_VARIABLE", "KotlinRedundantDiagnosticSuppress")
     sourceSets {
         val commonMain by getting {
             dependencies {

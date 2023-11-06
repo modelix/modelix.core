@@ -17,7 +17,6 @@ kotlin {
         useCommonJs()
     }
 
-    @Suppress("UNUSED_VARIABLE", "KotlinRedundantDiagnosticSuppress")
     sourceSets {
         val commonMain by getting {
             dependencies {

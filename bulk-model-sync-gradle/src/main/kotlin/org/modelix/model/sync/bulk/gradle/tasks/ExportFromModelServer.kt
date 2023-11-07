@@ -92,6 +92,7 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
                 ModelExporter(it).export(outputFile)
             }
         }
+        client.close()
     }
 
     private fun getIncludedModules(root: INode): Iterable<INode> {

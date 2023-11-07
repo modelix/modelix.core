@@ -99,7 +99,7 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
         val nameRole = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
 
         return root.allChildren.filter {
-            val isModule = it.concept == BuiltinLanguages.MPSRepositoryConcepts.Module
+            val isModule = it.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()
             val moduleName = it.getPropertyValue(nameRole) ?: return@filter false
             val isIncluded = isModuleIncluded(moduleName, includedModules.get(), includedModulePrefixes.get())
 

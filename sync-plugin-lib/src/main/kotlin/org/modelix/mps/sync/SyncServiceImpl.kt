@@ -79,7 +79,7 @@ class SyncServiceImpl : SyncService {
                 replicatedModel.start()
 
                 // 🚧🏗️👷👷‍♂️ WARNING Construction area 🚧🚧🚧
-                ITreeToSTreeTransformer(replicatedModel, project.repository).transform()
+                ITreeToSTreeTransformer(replicatedModel, project).transform()
 
                 bindingImpl = BindingImpl(replicatedModel, modelName, project)
             } catch (e: ConnectException) {

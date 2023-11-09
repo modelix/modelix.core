@@ -69,30 +69,30 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
 
     @TaskAction
     fun export() {
-        val client = ModelClientV2PlatformSpecificBuilder()
+        val modelClient = ModelClientV2PlatformSpecificBuilder()
             .url(url.get())
             .build()
+        modelClient.use { client ->
+            runBlocking { client.init() }
 
-        runBlocking { client.init() }
+            val branch = if (revision.isPresent) {
+                getBranchByRevision(client)
+            } else {
+                getBranchByRepoIdAndBranch(client)
+            }
 
-        val branch = if (revision.isPresent) {
-            getBranchByRevision(client)
-        } else {
-            getBranchByRepoIdAndBranch(client)
-        }
+            branch.runRead {
+                val root = branch.getRootNode()
+                logger.info("Got root node: {}", root)
+                val outputDir = outputDir.get().asFile
 
-        branch.runRead {
-            val root = branch.getRootNode()
-            logger.info("Got root node: {}", root)
-            val outputDir = outputDir.get().asFile
-
-            getIncludedModules(root).forEach {
-                val fileName = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-                val outputFile = outputDir.resolve("$fileName.json")
-                ModelExporter(it).export(outputFile)
+                getIncludedModules(root).forEach {
+                    val fileName = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+                    val outputFile = outputDir.resolve("$fileName.json")
+                    ModelExporter(it).export(outputFile)
+                }
             }
         }
-        client.close()
     }
 
     private fun getIncludedModules(root: INode): Iterable<INode> {

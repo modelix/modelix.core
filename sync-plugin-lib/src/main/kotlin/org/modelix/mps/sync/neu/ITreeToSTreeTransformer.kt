@@ -30,6 +30,7 @@ import jetbrains.mps.project.structure.modules.SolutionKind
 import jetbrains.mps.smodel.GeneralModuleFactory
 import jetbrains.mps.vfs.IFile
 import jetbrains.mps.vfs.VFSManager
+import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
@@ -43,15 +44,13 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.util.createModel
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.io.File
-import java.util.concurrent.atomic.AtomicReference
 
 class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val project: MPSProject) {
 
     private val sModuleById = mutableMapOf<String, SModule>()
     private val sModelById = mutableMapOf<String, SModel>()
 
-    fun transform(): SNode {
-        val newTreeHolder = AtomicReference<SNode>()
+    fun transform(): SNode? {
         try {
             // 1. Register the language concepts so they are ready for lookup
             val repository = project.repository
@@ -75,7 +74,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             ex.printStackTrace()
         }
 
-        return newTreeHolder.get()
+        return null
     }
 
     fun traverse(parent: INode, level: Int) {
@@ -137,7 +136,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Module's ($iNode) name is null" }
 
-        val moduleId: String? = iNode.parent?.nodeIdAsLong()?.toString()
+        val moduleId: String? = iNode.parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)
         val module: SModule? = sModuleById[moduleId]
         check(module != null) { "Parent module with ID $moduleId is not found" }
 
@@ -145,8 +144,13 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         check(serializedId.isNotEmpty()) { "Model's ($iNode) ID is empty" }
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
-        val sModel = module.createModel(name, modelId)!!
-        sModelById[serializedId] = sModel
+        project.modelAccess.runWriteInEDT {
+            val sModel = module.createModel(name, modelId) as EditableSModel
+            module.repository?.modelAccess?.runWriteInEDT {
+                sModel.save()
+            }
+            sModelById[serializedId] = sModel
+        }
     }
 
     // TODO HACKY WAY TO CREATE A MODULE IN THE PROJECT (part 1)

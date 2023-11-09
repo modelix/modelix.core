@@ -22,7 +22,6 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 
 /**
- * Helper-method used by the gradle plugin and the MPS solution.
  * Checks if a module is included in the sync.
  *
  * @param moduleName name of the module to be checked

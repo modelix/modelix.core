@@ -16,20 +16,8 @@
 
 package org.modelix.mps.sync.neu
 
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.util.io.systemIndependentPath
-import com.intellij.openapi.vfs.VirtualFileManager
-import jetbrains.mps.ide.MPSCoreComponents
-import jetbrains.mps.persistence.DefaultModelRoot
-import jetbrains.mps.project.MPSExtentions
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
-import jetbrains.mps.project.Solution
-import jetbrains.mps.project.structure.modules.SolutionDescriptor
-import jetbrains.mps.project.structure.modules.SolutionKind
-import jetbrains.mps.smodel.GeneralModuleFactory
-import jetbrains.mps.vfs.IFile
-import jetbrains.mps.vfs.VFSManager
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
@@ -43,9 +31,10 @@ import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.util.createModel
 import org.modelix.mps.sync.util.nodeIdAsLong
-import java.io.File
 
 class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val project: MPSProject) {
+
+    private val solutionProducer = SolutionProducer(project)
 
     private val sModuleById = mutableMapOf<String, SModule>()
     private val sModelById = mutableMapOf<String, SModel>()
@@ -128,7 +117,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Module's ($iNode) name is null" }
 
-        val sModule = createModule(name, moduleId as ModuleId)
+        val sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
         sModuleById[serializedId] = sModule
     }
 
@@ -146,80 +135,8 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
         project.modelAccess.runWriteInEDT {
             val sModel = module.createModel(name, modelId) as EditableSModel
-            module.repository?.modelAccess?.runWriteInEDT {
-                sModel.save()
-            }
+            sModel.save()
             sModelById[serializedId] = sModel
         }
-    }
-
-    // TODO HACKY WAY TO CREATE A MODULE IN THE PROJECT (part 1)
-    private fun createModule(name: String, moduleId: ModuleId): Solution {
-        val inCheckoutMode = true // cloud -> mps
-        val exportPath = project.projectFile.systemIndependentPath
-        println("SYSTEM INDEPENDENT PATH: $exportPath")
-        val coreComponents = ApplicationManager.getApplication().getComponent(
-            MPSCoreComponents::class.java,
-        )
-        val vfsManager = coreComponents.platform.findComponent(
-            VFSManager::class.java,
-        )
-        val fileSystem = vfsManager!!.getFileSystem(VFSManager.FILE_FS)
-        val outputFolder: IFile = fileSystem.getFile(exportPath)
-
-        if (!inCheckoutMode) {
-            outputFolder.deleteIfExists()
-        }
-        val solutionFile = outputFolder.findChild(name).findChild("solution" + MPSExtentions.DOT_SOLUTION)
-        val solutionDir = outputFolder.findChild(name)
-        if (inCheckoutMode) {
-            ApplicationManager.getApplication().invokeAndWait {
-                VirtualFileManager.getInstance().syncRefresh()
-                val modelsDirVirtual = solutionDir.findChild("models")
-                ensureDirDeletionAndRecreation(modelsDirVirtual)
-            }
-        }
-        val descriptor = SolutionDescriptor()
-        descriptor.namespace = name
-
-        descriptor.id = moduleId
-        descriptor.modelRootDescriptors.add(
-            DefaultModelRoot.createDescriptor(
-                solutionFile.parent!!,
-                solutionFile.parent!!
-                    .findChild(Solution.SOLUTION_MODELS),
-            ),
-        )
-        descriptor.setKind(SolutionKind.PLUGIN_OTHER)
-        val solution = GeneralModuleFactory().instantiate(descriptor, solutionFile) as Solution
-        project.addModule(solution)
-        check(solution.repository != null) { "The solution should be in a repo, so also the model will be in a repo and syncReference will not crash" }
-
-        return solution
-    }
-
-    // TODO HACKY WAY TO CREATE A MODULE IN THE PROJECT (part 2)
-    /**
-     * We experienced issues with physical and virtual files being out of sync.
-     * This method ensure that files are deleted, recursively both on the virtual filesystem and the physical filesystem.
-     */
-    private fun ensureDeletion(virtualFile: IFile) {
-        if (virtualFile.isDirectory) {
-            virtualFile.children?.forEach { child ->
-                ensureDeletion(child)
-            }
-        } else {
-            if (virtualFile.exists()) {
-                virtualFile.delete()
-            }
-            val physicalFile = File(virtualFile.path)
-            physicalFile.delete()
-        }
-    }
-
-    // TODO HACKY WAY TO CREATE A MODULE IN THE PROJECT (part 3)
-    private fun ensureDirDeletionAndRecreation(virtualDir: IFile) {
-        ensureDeletion(virtualDir)
-        virtualDir.mkdirs()
     }
 }

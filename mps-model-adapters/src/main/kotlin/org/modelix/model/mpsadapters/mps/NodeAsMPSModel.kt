@@ -40,7 +40,7 @@ import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSModelReference
 import org.modelix.model.mpsadapters.Model
 
-class NodeAsMPSModel private constructor(private val node: INode, private val sRepository: SRepository?) : SModel {
+data class NodeAsMPSModel(val node: INode, val sRepository: SRepository?) : SModel {
     companion object {
         fun wrap(modelNode: INode, repository: SRepository?): SModel = NodeAsMPSModel(modelNode, repository)
     }
@@ -137,15 +137,4 @@ class NodeAsMPSModel private constructor(private val node: INode, private val sR
     }
 
     override fun getProblems() = emptyList<Problem>()
-
-    override fun equals(other: Any?) =
-        if (this === other) {
-            true
-        } else if (other == null || other !is NodeAsMPSModel) {
-            false
-        } else {
-            node != other.node
-        }
-
-    override fun hashCode() = 31 + node.hashCode()
 }

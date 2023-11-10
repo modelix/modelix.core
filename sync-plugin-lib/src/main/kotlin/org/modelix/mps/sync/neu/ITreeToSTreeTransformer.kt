@@ -49,13 +49,26 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             // 2. Traverse and transform the tree
             // TODO use coroutines instead of big-bang eager loading?
             replicatedModel.getBranch().runReadT { transaction ->
+                val sNodeFactory = SNodeFactory(mpsLanguageRepo, project.modelAccess, transaction)
+
                 val allChildren = transaction.tree.getAllChildren(1L)
 
-                println("Level: 1")
+                println("--- PRINTING TREE ---")
                 allChildren.forEach { id ->
                     val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
-                    printNode(iNode)
-                    traverse(iNode, 1)
+                    traverse(iNode, 1) { }
+                }
+
+                println("--- FILTERING MODULES AND MODELS ---")
+                allChildren.forEach { id ->
+                    val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
+                    traverse(iNode, 1) { transformModulesAndModels(it) }
+                }
+
+                println("--- TRANSFORMING NODES ---")
+                allChildren.forEach { id ->
+                    val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
+                    traverse(iNode, 1) { transformNode(it, sNodeFactory) }
                 }
             }
         } catch (ex: Exception) {
@@ -66,11 +79,12 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         return null
     }
 
-    fun traverse(parent: INode, level: Int) {
+    private fun traverse(parent: INode, level: Int, processNode: (INode) -> Unit) {
         println("Level: $level")
+        printNode(parent)
+        processNode(parent)
         parent.allChildren.forEach {
-            printNode(it)
-            traverse(it, level + 1)
+            traverse(it, level + 1, processNode)
         }
     }
 
@@ -93,19 +107,31 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             println("\t Target: ${it.second.serialize()}")
             println()
         }
-
-        transformNode(iNode)
     }
 
-    private fun transformNode(iNode: INode) {
+    private fun transformModulesAndModels(iNode: INode) {
         val isModule = iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()
         if (isModule) {
             transformToModule(iNode)
+            return
         }
 
         val isModel = iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Model.getUID()
         if (isModel) {
             addModelToModule(iNode)
+            return
+        }
+    }
+
+    private fun transformNode(iNode: INode, nodeFactory: SNodeFactory) {
+        // TODO remove local try-catch that isolates the problems
+        try {
+            // TODO figure out which model the iNode belongs to
+            val model = sModelById.values.firstOrNull()
+            nodeFactory.createNode(iNode, model)
+        } catch (ex: Exception) {
+            println("transformNode(...) exploded")
+            ex.printStackTrace()
         }
     }
 

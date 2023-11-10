@@ -21,11 +21,25 @@ import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.smodel.language.ConceptRegistry
 import jetbrains.mps.smodel.language.LanguageRegistry
 import jetbrains.mps.smodel.runtime.illegal.IllegalConceptDescriptor
+import org.jetbrains.mps.openapi.language.SAbstractConcept
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.ILanguageRepository
 
 class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepository {
+
+    private val concepts = mutableMapOf<String, MPSConcept>()
+
+    init {
+        LanguageRegistry.getInstance(repository).withAvailableLanguages { language ->
+            language.identity.concepts.forEach {
+                val mpsConcept = MPSConcept(it)
+                val id = mpsConcept.getUID()
+                concepts[id] = mpsConcept
+            }
+        }
+    }
+
     override fun resolveConcept(uid: String): IConcept? {
         if (!uid.startsWith("mps:")) return null
 
@@ -42,13 +56,9 @@ class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepo
         return MPSConcept(MetaAdapterFactory.getAbstractConcept(conceptDescriptor))
     }
 
-    override fun getAllConcepts(): List<IConcept> {
-        val result = mutableListOf<IConcept>()
-        LanguageRegistry.getInstance(repository).withAvailableLanguages { language ->
-            result.addAll(language.identity.concepts.map { MPSConcept(it) }.toList())
-        }
-        return result
-    }
+    fun getConcept(uid: String): SAbstractConcept? = concepts[uid]?.concept
+
+    override fun getAllConcepts(): List<IConcept> = concepts.values.toMutableList()
 
     override fun getPriority(): Int = 1000
 

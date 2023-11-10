@@ -19,8 +19,8 @@ package org.modelix.model.sync.bulk.gradle.tasks
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
@@ -55,10 +55,10 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
     val antScriptFile: RegularFileProperty = of.fileProperty()
 
     @Input
-    val includedModules: ListProperty<String> = of.listProperty(String::class.java)
+    val includedModules: SetProperty<String> = of.setProperty(String::class.java)
 
     @Input
-    val includedModulePrefixes: ListProperty<String> = of.listProperty(String::class.java)
+    val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
 
     @Optional
     @Input

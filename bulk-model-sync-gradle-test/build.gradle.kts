@@ -107,6 +107,7 @@ modelSync {
         }
     }
     direction("testPull") {
+        includeModule("GraphSolution")
         fromModelServer {
             url = "http://0.0.0.0:${Main.DEFAULT_PORT}/v2"
             repositoryId = "ci-test"

@@ -21,6 +21,20 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 
+/**
+ * Checks if a module is included in the sync.
+ *
+ * @param moduleName name of the module to be checked
+ * @param includedModules collection of included module names
+ * @param includedPrefixes collection of included module name prefixes
+ */
+fun isModuleIncluded(moduleName: String, includedModules: Collection<String>, includedPrefixes: Collection<String>): Boolean {
+    val includedDirectly = includedModules.contains(moduleName)
+    val includedByPrefix = includedPrefixes.any { prefix -> moduleName.startsWith(prefix) }
+
+    return includedDirectly || includedByPrefix
+}
+
 fun mergeModelData(models: Collection<ModelData>): ModelData {
     return ModelData(root = NodeData(children = models.map { it.root }))
 }

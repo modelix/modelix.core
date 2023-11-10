@@ -35,6 +35,7 @@ import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.importFilesAsRootChildren
+import org.modelix.model.sync.bulk.isModuleIncluded
 import javax.inject.Inject
 
 abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : DefaultTask() {
@@ -55,6 +56,12 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val registeredLanguages: SetProperty<ILanguage> = of.setProperty(ILanguage::class.java)
 
+    @Input
+    val includedModules: SetProperty<String> = of.setProperty(String::class.java)
+
+    @Input
+    val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
+
     @TaskAction
     fun import() {
         registeredLanguages.get().forEach {
@@ -66,8 +73,10 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
 
         val branchRef = ModelFacade.createBranchReference(repoId, branchName.get())
         val client = ModelClientV2PlatformSpecificBuilder().url(url.get()).build()
-        val files = inputDir.listFiles()?.filter { it.extension == "json" }
-        if (files.isNullOrEmpty()) error("no json files found")
+        val files = inputDir.listFiles()?.filter {
+            it.extension == "json" && isModuleIncluded(it.nameWithoutExtension, includedModules.get(), includedModulePrefixes.get())
+        }
+        if (files.isNullOrEmpty()) error("no json files found for included modules")
 
         runBlocking {
             client.init()

@@ -19,36 +19,18 @@ package org.modelix.model.mpsadapters.mps
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SDependencyScope
 import org.jetbrains.mps.openapi.module.SModule
-import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepository
-import org.modelix.model.api.INode
 import org.modelix.model.mpsadapters.MPSModuleDependencyAsNode
 import org.modelix.model.mpsadapters.MPSModuleReference
 
-data class NodeAsMPSDependency(val node: INode, val sRepository: SRepository?) : SDependency {
-    override fun getScope(): SDependencyScope {
-        return when (node) {
-            is MPSModuleDependencyAsNode -> node.dependencyScope
-            else -> null
-        } ?: error("Node is not a valid dependency")
-    }
+data class NodeAsMPSDependency(val node: MPSModuleDependencyAsNode, val sRepository: SRepository?) : SDependency {
 
-    override fun isReexport(): Boolean {
-        return when (node) {
-            is MPSModuleDependencyAsNode -> node.reexport
-            else -> error("Node is not a valid dependency")
-        }
-    }
-
-    override fun getTargetModule(): SModuleReference {
-        return when (node) {
-            is MPSModuleDependencyAsNode -> node.moduleReference
-            else -> null
-        } ?: error("Node is not a valid dependency")
-    }
+    override fun getScope(): SDependencyScope = checkNotNull(node.dependencyScope) { "Invalid dependency scope for dependency $node" }
+    override fun isReexport() = node.reexport
+    override fun getTargetModule() = node.moduleReference
 
     override fun getTarget(): SModule? {
-        val ref = MPSModuleReference(targetModule)
+        val ref = MPSModuleReference(node.moduleReference)
         return node.getArea().resolveNode(ref)?.let { NodeAsMPSModule(it, sRepository) }
     }
 }

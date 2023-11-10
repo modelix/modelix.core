@@ -32,6 +32,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.getDescendants
 import org.modelix.model.mpsadapters.MPSJavaModuleFacetAsNode
+import org.modelix.model.mpsadapters.MPSModuleDependencyAsNode
 import org.modelix.model.mpsadapters.MPSModuleReference
 import org.modelix.model.mpsadapters.Module
 
@@ -49,7 +50,9 @@ data class NodeAsMPSModule(val node: INode, val sRepository: SRepository?) : SMo
 
     override fun getDeclaredDependencies(): MutableIterable<SDependency> {
         val dependencies = node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
-        return dependencies.map { NodeAsMPSDependency(node, sRepository) }.toMutableList()
+        return dependencies.mapNotNull { depNode ->
+            (depNode as? MPSModuleDependencyAsNode)?.let { NodeAsMPSDependency(it, sRepository) }
+        }.toMutableList()
     }
 
     override fun getFacets(): MutableIterable<SModuleFacet> {

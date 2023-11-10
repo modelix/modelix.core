@@ -51,7 +51,7 @@ data class NodeAsMPSModule(val node: INode, val sRepository: SRepository?) : SMo
     override fun getDeclaredDependencies(): MutableIterable<SDependency> {
         val dependencies = node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
         return dependencies.mapNotNull { depNode ->
-            (depNode as? MPSModuleDependencyAsNode)?.let { NodeAsMPSDependency(it, sRepository) }
+            (depNode as? MPSModuleDependencyAsNode)?.let { NodeAsMPSModuleDependency(it, sRepository) }
         }.toMutableList()
     }
 

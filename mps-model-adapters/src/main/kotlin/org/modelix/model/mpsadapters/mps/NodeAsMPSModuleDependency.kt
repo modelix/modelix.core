@@ -23,7 +23,7 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.mpsadapters.MPSModuleDependencyAsNode
 import org.modelix.model.mpsadapters.MPSModuleReference
 
-data class NodeAsMPSDependency(val node: MPSModuleDependencyAsNode, val sRepository: SRepository?) : SDependency {
+data class NodeAsMPSModuleDependency(val node: MPSModuleDependencyAsNode, val sRepository: SRepository?) : SDependency {
 
     override fun getScope(): SDependencyScope = checkNotNull(node.dependencyScope) { "Invalid dependency scope for dependency $node" }
     override fun isReexport() = node.reexport

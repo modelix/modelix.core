@@ -17,28 +17,27 @@
 package org.modelix.mps.sync.neu
 
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
+import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapter2
 import org.jetbrains.mps.openapi.language.SAbstractConcept
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SInterfaceConcept
+import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.INode
-import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
 
-class SNodeFactory(
-    val conceptRepository: MPSLanguageRepository,
-    val modelAccess: ModelAccess,
-    val transaction: IReadTransaction,
-) {
+class SNodeFactory(val conceptRepository: MPSLanguageRepository, val modelAccess: ModelAccess) {
 
     private val nodeMapping = mutableMapOf<SNodeId, SNode>()
+    private val resolveableReferences = mutableListOf<ResolveableReference>()
 
     fun createNode(iNode: INode, model: SModel?): SNode {
         val nodeId = getNodeId(iNode)
@@ -58,6 +57,7 @@ class SNodeFactory(
 
         // 1. create node
         val sNode = jetbrains.mps.smodel.SNode(concept, nodeId)
+        nodeMapping[nodeId] = sNode
 
         // 2. add to parent
         // TODO check if parent is the model ID, otherwise lookup the parent node
@@ -81,15 +81,8 @@ class SNodeFactory(
         setProperties(iNode, sNode)
 
         // 4. set references
-        // TODO circular references and stuff, we might have to delay resolving the links...
-        // setLinkReferences(iNode, sNode)
+        prepareLinkReferences(iNode, concept)
 
-        // 5. transform children
-        // TODO we have to transform the children first and then set them here --> check how it was done before
-        // or we can do it like so: we traverse the model anyways, and when we get here we check if parent is an SNode. If it is, then we add this newly created node to the parent via the appropriate childLink.
-        // setChildren(iNode, SNode)
-
-        nodeMapping[nodeId] = sNode
         return sNode
     }
 
@@ -115,4 +108,39 @@ class SNodeFactory(
             }
         }
     }
+
+    private fun prepareLinkReferences(iNode: INode, concept: SConcept) {
+        iNode.getAllReferenceTargets().forEach {
+            val sourceNodeId = getNodeId(iNode)
+            val source = nodeMapping[sourceNodeId]!!
+
+            val sReferenceLink = (it.first as MPSReferenceLink).link
+            val reference = SReferenceLinkAdapter2(sReferenceLink.id, sReferenceLink.name)
+
+            // TODO what about those references whose target is outside of the model?
+            val targetNodeId = getNodeId(it.second)
+
+            resolveableReferences.add(ResolveableReference(source, reference, targetNodeId))
+        }
+    }
+
+    fun resolveReferences() {
+        resolveableReferences.forEach {
+            val source = it.source
+            val reference = it.reference
+            val target = nodeMapping[it.targetNodeId]
+
+            modelAccess.runWriteAction {
+                modelAccess.executeCommandInEDT {
+                    source.setReferenceTarget(reference, target)
+                }
+            }
+        }
+    }
 }
+
+data class ResolveableReference(
+    val source: SNode,
+    val reference: SReferenceLink,
+    val targetNodeId: SNodeId,
+)

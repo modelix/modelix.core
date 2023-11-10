@@ -49,7 +49,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             // 2. Traverse and transform the tree
             // TODO use coroutines instead of big-bang eager loading?
             replicatedModel.getBranch().runReadT { transaction ->
-                val sNodeFactory = SNodeFactory(mpsLanguageRepo, project.modelAccess, transaction)
+                val sNodeFactory = SNodeFactory(mpsLanguageRepo, project.modelAccess)
 
                 val allChildren = transaction.tree.getAllChildren(1L)
 
@@ -70,6 +70,9 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
                     val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
                     traverse(iNode, 1) { transformNode(it, sNodeFactory) }
                 }
+
+                println("--- RESOLVING REFERENCES ---")
+                sNodeFactory.resolveReferences()
             }
         } catch (ex: Exception) {
             println("${this.javaClass} exploded")

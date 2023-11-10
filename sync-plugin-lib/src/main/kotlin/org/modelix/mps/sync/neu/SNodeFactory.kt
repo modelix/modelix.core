@@ -70,7 +70,7 @@ class SNodeFactory(
                 parentNode?.let {
                     val role = iNode.getContainmentLink()
                     val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
-                    modelAccess.executeCommand {
+                    modelAccess.executeCommandInEDT {
                         parentNode.addChild(containmentLink, sNode)
                     }
                 }
@@ -107,7 +107,12 @@ class SNodeFactory(
         target.concept.properties.forEach {
             val property = PropertyFromName(it.name)
             val value = source.getPropertyValue(property)
-            target.setProperty(it, value)
+
+            modelAccess.runWriteAction {
+                modelAccess.executeCommandInEDT {
+                    target.setProperty(it, value)
+                }
+            }
         }
     }
 }

@@ -27,6 +27,7 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSLanguageRepository
@@ -34,10 +35,10 @@ import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
 
-class SNodeFactory(val conceptRepository: MPSLanguageRepository, val modelAccess: ModelAccess) {
+class SNodeFactory(private val conceptRepository: MPSLanguageRepository, private val modelAccess: ModelAccess) {
 
     private val nodeMapping = mutableMapOf<SNodeId, SNode>()
-    private val resolveableReferences = mutableListOf<ResolveableReference>()
+    private val resolvableReferences = mutableListOf<ResolvableReference>()
 
     fun createNode(iNode: INode, model: SModel?): SNode {
         val nodeId = getNodeId(iNode)
@@ -60,19 +61,29 @@ class SNodeFactory(val conceptRepository: MPSLanguageRepository, val modelAccess
         nodeMapping[nodeId] = sNode
 
         // 2. add to parent
-        // TODO check if parent is the model ID, otherwise lookup the parent node
         modelAccess.runWriteAction {
-            if (concept.isRootable) {
+            val parent = iNode.parent
+            val parentSerializedModelId =
+                parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
+            val parentModelId = if (parentSerializedModelId.isNotEmpty()) {
+                PersistenceFacade.getInstance().createModelId(parentSerializedModelId)
+            } else {
+                null
+            }
+            val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
+            val isRootNode = concept.isRootable && modelIsTheParent
+
+            if (isRootNode) {
                 model?.addRootNode(sNode)
             } else {
-                val parent = iNode.parent?.let { getNodeId(it) }
-                val parentNode = nodeMapping[parent]
-                parentNode?.let {
-                    val role = iNode.getContainmentLink()
-                    val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
-                    modelAccess.executeCommandInEDT {
-                        parentNode.addChild(containmentLink, sNode)
-                    }
+                val parentNodeId = parent?.let { getNodeId(it) }
+                val parentNode = nodeMapping[parentNodeId]
+                check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
+
+                val role = iNode.getContainmentLink()
+                val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
+                modelAccess.executeCommandInEDT {
+                    parentNode.addChild(containmentLink, sNode)
                 }
             }
         }
@@ -81,7 +92,7 @@ class SNodeFactory(val conceptRepository: MPSLanguageRepository, val modelAccess
         setProperties(iNode, sNode)
 
         // 4. set references
-        prepareLinkReferences(iNode, concept)
+        prepareLinkReferences(iNode)
 
         return sNode
     }
@@ -109,7 +120,7 @@ class SNodeFactory(val conceptRepository: MPSLanguageRepository, val modelAccess
         }
     }
 
-    private fun prepareLinkReferences(iNode: INode, concept: SConcept) {
+    private fun prepareLinkReferences(iNode: INode) {
         iNode.getAllReferenceTargets().forEach {
             val sourceNodeId = getNodeId(iNode)
             val source = nodeMapping[sourceNodeId]!!
@@ -120,12 +131,12 @@ class SNodeFactory(val conceptRepository: MPSLanguageRepository, val modelAccess
             // TODO what about those references whose target is outside of the model?
             val targetNodeId = getNodeId(it.second)
 
-            resolveableReferences.add(ResolveableReference(source, reference, targetNodeId))
+            resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
         }
     }
 
     fun resolveReferences() {
-        resolveableReferences.forEach {
+        resolvableReferences.forEach {
             val source = it.source
             val reference = it.reference
             val target = nodeMapping[it.targetNodeId]
@@ -139,7 +150,7 @@ class SNodeFactory(val conceptRepository: MPSLanguageRepository, val modelAccess
     }
 }
 
-data class ResolveableReference(
+data class ResolvableReference(
     val source: SNode,
     val reference: SReferenceLink,
     val targetNodeId: SNodeId,

@@ -16,8 +16,11 @@
 
 package org.modelix.mps.sync.neu
 
+import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.smodel.Language
+import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
@@ -29,8 +32,12 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.util.addDevKit
+import org.modelix.mps.sync.util.addLanguageImport
 import org.modelix.mps.sync.util.createModel
 import org.modelix.mps.sync.util.nodeIdAsLong
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 
 class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val project: MPSProject) {
 
@@ -127,14 +134,42 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
     }
 
     private fun transformNode(iNode: INode, nodeFactory: SNodeFactory) {
-        // TODO remove local try-catch that isolates the problems
-        try {
-            // TODO figure out which model the iNode belongs to
-            val model = sModelById.values.firstOrNull()
-            nodeFactory.createNode(iNode, model)
-        } catch (ex: Exception) {
-            println("transformNode(...) exploded")
-            ex.printStackTrace()
+        // TODO figure out which model the iNode belongs to
+        val model = sModelById.values.firstOrNull()
+        val repository = model?.repository
+
+        val isDevKit = iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getUID()
+        val isLanguageDependency =
+            iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getUID()
+
+        val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
+        val dependentModule = uuid?.let {
+            val reference = AtomicReference<SModule>()
+            project.modelAccess.runReadAction {
+                reference.set(repository?.getModule(ModuleId.regular(UUID.fromString(it))))
+            }
+            reference.get()
+        }
+
+        if (isDevKit) {
+            project.modelAccess.runWriteInEDT {
+                model?.addDevKit((dependentModule as DevKit).moduleReference)
+            }
+        } else if (isLanguageDependency) {
+            val version =
+                iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)
+            val sLanguage = MetaAdapterFactory.getLanguage((dependentModule as Language).moduleReference)
+
+            project.modelAccess.runWriteInEDT {
+                model?.addLanguageImport(sLanguage, version?.toInt()!!)
+            }
+        } else {
+            try {
+                nodeFactory.createNode(iNode, model)
+            } catch (ex: Exception) {
+                println("transformNode(...) exploded")
+                ex.printStackTrace()
+            }
         }
     }
 

@@ -16,16 +16,19 @@
 
 package org.modelix.mps.sync.neu
 
-import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.Language
+import jetbrains.mps.smodel.ModelImports
+import jetbrains.mps.smodel.SModelReference
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ILanguageRepository
@@ -38,6 +41,7 @@ import org.modelix.mps.sync.util.addLanguageImport
 import org.modelix.mps.sync.util.createModel
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 
 class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val project: MPSProject) {
@@ -46,6 +50,8 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
     private val sModuleById = mutableMapOf<String, SModule>()
     private val sModelById = mutableMapOf<String, SModel>()
+
+    private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
     fun transform(): SNode? {
         try {
@@ -79,8 +85,9 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
                     traverse(iNode, 1) { transformNode(it, sNodeFactory) }
                 }
 
-                println("--- RESOLVING REFERENCES ---")
+                println("--- RESOLVING REFERENCES AND MODEL IMPORTS ---")
                 sNodeFactory.resolveReferences()
+                resolveModelImports(repository)
             }
         } catch (ex: Exception) {
             println("${this.javaClass} exploded")
@@ -198,12 +205,38 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         check(serializedId.isNotEmpty()) { "Model's ($iNode) ID is empty" }
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
-        ThreadUtils.runInUIThreadAndWait {
-            project.modelAccess.runWriteInEDT {
-                val sModel = module.createModel(name, modelId) as EditableSModel
-                sModel.save()
-                sModelById[serializedId] = sModel
-            }
+        lateinit var sModel: EditableSModel
+        val latch = CountDownLatch(1)
+        project.modelAccess.runWriteInEDT {
+            sModel = module.createModel(name, modelId) as EditableSModel
+            sModel.save()
+            latch.countDown()
+        }
+        latch.await()
+        sModelById[serializedId] = sModel
+
+        // register model imports
+        iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).forEach {
+            val targetModel = it.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+            val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
+            resolvableModelImports.add(ResolvableModelImport(sModel, targetId))
+        }
+    }
+
+    private fun resolveModelImports(repository: SRepository) {
+        resolvableModelImports.forEach {
+            val id = PersistenceFacade.getInstance().createModelId(it.target)
+            val targetModel = sModelById.getOrElse(it.target) { repository.getModel(id) }!!
+            val targetModule = targetModel.module
+
+            val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
+            val modelImport = SModelReference(moduleReference, id, targetModel.name)
+            ModelImports(it.source).addModelImport(modelImport)
         }
     }
 }
+
+data class ResolvableModelImport(
+    val source: SModel,
+    val target: String,
+)

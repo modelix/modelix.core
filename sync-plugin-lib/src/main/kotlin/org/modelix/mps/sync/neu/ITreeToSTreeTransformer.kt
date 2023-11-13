@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.neu
 
+import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
@@ -135,13 +136,14 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
     private fun transformNode(iNode: INode, nodeFactory: SNodeFactory) {
         // TODO figure out which model the iNode belongs to
-        val model = sModelById.values.firstOrNull()
-        val repository = model?.repository
+        val model = sModelById.values.firstOrNull()!!
+        val repository = model.repository
 
-        val isDevKit = iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getUID()
+        // DevKit or LanguageDependency
+        val isDevKitDependency =
+            iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getUID()
         val isLanguageDependency =
             iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getUID()
-
         val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
         val dependentModule = uuid?.let {
             val reference = AtomicReference<SModule>()
@@ -151,17 +153,16 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             reference.get()
         }
 
-        if (isDevKit) {
+        if (isDevKitDependency) {
             project.modelAccess.runWriteInEDT {
-                model?.addDevKit((dependentModule as DevKit).moduleReference)
+                model.addDevKit((dependentModule as DevKit).moduleReference)
             }
         } else if (isLanguageDependency) {
             val version =
                 iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)
             val sLanguage = MetaAdapterFactory.getLanguage((dependentModule as Language).moduleReference)
-
             project.modelAccess.runWriteInEDT {
-                model?.addLanguageImport(sLanguage, version?.toInt()!!)
+                model.addLanguageImport(sLanguage, version?.toInt()!!)
             }
         } else {
             try {
@@ -197,10 +198,12 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         check(serializedId.isNotEmpty()) { "Model's ($iNode) ID is empty" }
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
-        project.modelAccess.runWriteInEDT {
-            val sModel = module.createModel(name, modelId) as EditableSModel
-            sModel.save()
-            sModelById[serializedId] = sModel
+        ThreadUtils.runInUIThreadAndWait {
+            project.modelAccess.runWriteInEDT {
+                val sModel = module.createModel(name, modelId) as EditableSModel
+                sModel.save()
+                sModelById[serializedId] = sModel
+            }
         }
     }
 }

@@ -177,6 +177,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.branchName.set(serverTarget.branchName)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.continueOnError.set(syncDirection.continueOnError)
         }
 
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {
@@ -191,6 +192,10 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         previousTask: TaskProvider<*>,
         jsonDir: File,
     ) {
+        if (syncDirection.continueOnError) {
+            println("Continue on error is currently not supported for local targets")
+        }
+
         val localTarget = syncDirection.target as LocalTarget
 
         val antScript = jsonDir.resolve("build.xml")

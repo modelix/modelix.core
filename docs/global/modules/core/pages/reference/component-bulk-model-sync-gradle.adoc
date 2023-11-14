@@ -74,6 +74,10 @@ This means that only a minimal amount of write operations is used to update the 
 |`includeModulesByPrefix`
 |String
 |Includes all modules, whose fully qualified name starts with the given prefix, in the synchronisation process.
+
+|`enableContinueOnError`
+|Boolean
+|If the sync encounters an error, simply log it and continue instead of terminating. This most likely results in an incomplete sync result. Defaults to `false`.
 |===
 
 === LocalSource/-Target configuration

@@ -43,6 +43,7 @@ data class SyncDirection(
     internal val registeredLanguages: Set<ILanguage> = mutableSetOf(),
     internal val includedModulePrefixes: Set<String> = mutableSetOf(),
     internal var mpsDebugEnabled: Boolean = false,
+    internal var continueOnError: Boolean = false,
 ) {
     fun fromModelServer(action: Action<ServerSource>) {
         val endpoint = ServerSource()
@@ -78,6 +79,10 @@ data class SyncDirection(
 
     fun registerLanguage(language: ILanguage) {
         (registeredLanguages as MutableSet).add(language)
+    }
+
+    fun enableContinueOnError(state: Boolean) {
+        continueOnError = state
     }
 }
 

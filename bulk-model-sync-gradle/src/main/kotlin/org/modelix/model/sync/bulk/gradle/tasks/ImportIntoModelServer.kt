@@ -62,6 +62,9 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
 
+    @Input
+    val continueOnError: Property<Boolean> = of.property(Boolean::class.java)
+
     @TaskAction
     fun import() {
         registeredLanguages.get().forEach {
@@ -83,7 +86,7 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
             client.runWrite(branchRef) { rootNode ->
                 logger.info("Got root node: {}", rootNode)
                 logger.info("Importing...")
-                ModelImporter(rootNode).importFilesAsRootChildren(files)
+                ModelImporter(rootNode, continueOnError.get()).importFilesAsRootChildren(files)
                 logger.info("Import finished")
             }
         }

@@ -38,7 +38,7 @@ import kotlin.jvm.JvmName
  *
  * @param root the root node to be updated
  */
-class ModelImporter(private val root: INode) {
+class ModelImporter(private val root: INode, private val continueOnError: Boolean) {
 
     private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
     private val postponedReferences = ArrayList<() -> Unit>()
@@ -46,6 +46,22 @@ class ModelImporter(private val root: INode) {
     private var numExpectedNodes = 0
     private var currentNodeProgress = 0
     private val logger = KotlinLogging.logger {}
+
+    // For MPS / Java compatibility, where a default value does not work. Can be dropped once the MPS solution is
+    // updated to the constructor with two arguments.
+    constructor(root: INode) : this(root, false)
+
+    private fun doAndPotentiallyContinueOnErrors(block: () -> Unit) {
+        try {
+            block()
+        } catch (e: Exception) {
+            if (continueOnError) {
+                logger.error(e) { "Ignoring this error and continuing as requested" }
+            } else {
+                throw e
+            }
+        }
+    }
 
     /**
      * Incrementally updates this importers root based on the provided [ModelData] specification.
@@ -68,10 +84,18 @@ class ModelImporter(private val root: INode) {
         syncNode(root, data.root)
 
         logger.info { "Synchronizing references..." }
-        postponedReferences.forEach { it.invoke() }
+        postponedReferences.forEach {
+            doAndPotentiallyContinueOnErrors {
+                it.invoke()
+            }
+        }
 
         logger.info { "Removing extra nodes..." }
-        nodesToRemove.forEach { it.remove() }
+        nodesToRemove.forEach {
+            doAndPotentiallyContinueOnErrors {
+                it.remove()
+            }
+        }
 
         logger.info { "Synchronization finished." }
     }
@@ -83,10 +107,12 @@ class ModelImporter(private val root: INode) {
         currentNodeProgress += 1
         // print instead of log, so that the progress line can be overwritten by the carriage return
         print("\r($currentNodeProgress / $numExpectedNodes) Synchronizing nodes...                    ")
-        syncProperties(node, data)
-        syncChildren(node, data)
-        INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
-            syncReferences(node, data)
+        doAndPotentiallyContinueOnErrors {
+            syncProperties(node, data)
+            syncChildren(node, data)
+            INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
+                syncReferences(node, data)
+            }
         }
     }
 

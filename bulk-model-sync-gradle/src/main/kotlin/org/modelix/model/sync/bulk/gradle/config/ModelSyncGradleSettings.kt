@@ -42,7 +42,6 @@ data class SyncDirection(
     internal val includedModules: Set<String> = mutableSetOf(),
     internal val registeredLanguages: Set<ILanguage> = mutableSetOf(),
     internal val includedModulePrefixes: Set<String> = mutableSetOf(),
-    internal var mpsDebugEnabled: Boolean = false,
     internal var continueOnError: Boolean = false,
 ) {
     fun fromModelServer(action: Action<ServerSource>) {

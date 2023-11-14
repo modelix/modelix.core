@@ -62,8 +62,8 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
     private fun process() {
         initIndexes()
         resolveConceptReferences()
-        fixRoleConflicts()
         collectConceptMetaProperties()
+        fixRoleConflicts()
     }
 
     private fun collectConceptMetaProperties() {
@@ -128,8 +128,9 @@ internal class ProcessedLanguageSet(dataList: List<LanguageData>) : IProcessedLa
         sameInHierarchyConflicts.forEach { it.generatedName += "_" + it.concept.name }
 
         // replace illegal names
+        val illegalNames = reservedPropertyNames + conceptMetaProperties
         allConcepts.flatMap { it.getOwnRoles() }.forEach {
-            if (reservedPropertyNames.contains(it.generatedName)) {
+            if (illegalNames.contains(it.generatedName)) {
                 it.generatedName += getTypeSuffix(it)
             }
         }

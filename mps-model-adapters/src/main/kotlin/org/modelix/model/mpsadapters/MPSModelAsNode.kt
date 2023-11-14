@@ -76,8 +76,9 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
         } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes)) {
             model.rootNodes.map { MPSNode(it) }
         } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)) {
-            ModelImports(model).importedModels.mapNotNull {
-                MPSModelImportAsNode(it.resolve(model.repository), model)
+            ModelImports(model).importedModels.mapNotNull { modelRef ->
+                val target = modelRef.resolve(model.repository)
+                target?.let { MPSModelImportAsNode(it, model) }
             }
         } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)) {
             getImportedLanguagesAndDevKits()

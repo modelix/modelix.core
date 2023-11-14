@@ -18,15 +18,25 @@ package org.modelix.model.mpsadapters.mps
 
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.language.SLanguage
+import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
+import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SModuleFacet
+import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleListener
+import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepository
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
+import org.modelix.model.api.getDescendants
+import org.modelix.model.mpsadapters.MPSJavaModuleFacetAsNode
+import org.modelix.model.mpsadapters.MPSModuleDependencyAsNode
+import org.modelix.model.mpsadapters.MPSModuleReference
 import org.modelix.model.mpsadapters.Module
 
-class NodeAsMPSModule private constructor(val node: INode, val sRepository: SRepository?) : SModule {
+data class NodeAsMPSModule(val node: INode, val sRepository: SRepository?) : SModule {
 
     companion object {
         fun wrap(modelNode: INode, repository: SRepository?): SModule = NodeAsMPSModule(modelNode, repository)
@@ -38,21 +48,44 @@ class NodeAsMPSModule private constructor(val node: INode, val sRepository: SRep
 
     override fun addModuleListener(listener: SModuleListener?) = throw UnsupportedOperationException("Not implemented")
 
-    override fun getDeclaredDependencies() = throw UnsupportedOperationException("Not implemented")
+    override fun getDeclaredDependencies(): MutableIterable<SDependency> {
+        val dependencies = node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
+        return dependencies.mapNotNull { depNode ->
+            (depNode as? MPSModuleDependencyAsNode)?.let { NodeAsMPSModuleDependency(it, sRepository) }
+        }.toMutableList()
+    }
 
-    override fun getFacets() = throw UnsupportedOperationException("Not implemented")
+    override fun getFacets(): MutableIterable<SModuleFacet> {
+        val facets = node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.facets)
+        return facets.mapNotNull { (it as? MPSJavaModuleFacetAsNode)?.facet }.toMutableList()
+    }
 
-    override fun getModel(id: SModelId?) = throw UnsupportedOperationException("Not implemented")
+    override fun getModel(id: SModelId?): SModel? {
+        if (id == null) return null
+        val modelId = PersistenceFacade.getInstance().asString(id)
+        val model = node.getDescendants(false).firstOrNull {
+            it.reference.serialize().endsWith(modelId)
+        }
+        return model?.let { NodeAsMPSModel(it, repository) }
+    }
 
     override fun getModelRoots() = throw UnsupportedOperationException("Not implemented")
 
     override fun getModels() = node.getChildren(Module.models).map { NodeAsMPSModel.wrap(it, sRepository) }
 
-    override fun getModuleId() = throw UnsupportedOperationException("Not implemented")
+    override fun getModuleId(): SModuleId {
+        val serialized = checkNotNull(node.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id)) {
+            "Module id was null for $node"
+        }
+        return PersistenceFacade.getInstance().createModuleId(serialized)
+    }
 
     override fun getModuleName() = node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
 
-    override fun getModuleReference() = throw UnsupportedOperationException("Not implemented")
+    override fun getModuleReference(): SModuleReference {
+        val serialized = node.reference.serialize().substringAfter(MPSModuleReference.PREFIX)
+        return PersistenceFacade.getInstance().createModuleReference(serialized)
+    }
 
     override fun getRepository(): SRepository = sRepository ?: MPSModuleRepository.getInstance()
 

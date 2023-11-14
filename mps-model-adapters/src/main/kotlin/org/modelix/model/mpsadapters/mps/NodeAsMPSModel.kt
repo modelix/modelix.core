@@ -16,21 +16,31 @@
 
 package org.modelix.model.mpsadapters.mps
 
+import jetbrains.mps.lang.smodel.generator.smodelAdapter.SConceptOperations
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SModel.Problem
+import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelListener
 import org.jetbrains.mps.openapi.model.SModelName
+import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeAccessListener
 import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.module.SRepository
+import org.jetbrains.mps.openapi.persistence.DataSource
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
+import org.modelix.model.api.getDescendants
+import org.modelix.model.api.remove
+import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSModelReference
 import org.modelix.model.mpsadapters.Model
 
-class NodeAsMPSModel private constructor(private val node: INode, private val sRepository: SRepository?) : SModel {
+data class NodeAsMPSModel(val node: INode, val sRepository: SRepository?) : SModel {
     companion object {
         fun wrap(modelNode: INode, repository: SRepository?): SModel = NodeAsMPSModel(modelNode, repository)
     }
@@ -45,16 +55,29 @@ class NodeAsMPSModel private constructor(private val node: INode, private val sR
 
     override fun addModelListener(l: SModelListener?) = throw UnsupportedOperationException("Not implemented")
 
-    override fun addRootNode(node: SNode?) = throw UnsupportedOperationException("Not implemented")
+    override fun addRootNode(node: SNode?) {
+        if (node != null) {
+            this.node.addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes, -1, MPSConcept(node.concept))
+        }
+    }
 
-    override fun createNode(concept: SConcept) = throw UnsupportedOperationException("Not implemented")
+    override fun createNode(concept: SConcept): SNode? {
+        return SConceptOperations.createNewNode(concept)
+    }
 
-    override fun createNode(concept: SConcept, nodeId: SNodeId?) =
-        throw UnsupportedOperationException("Not implemented")
+    override fun createNode(concept: SConcept, nodeId: SNodeId?): SNode? {
+        // TODO can we set the id somehow?
+        return SConceptOperations.createNewNode(concept)
+    }
 
-    override fun getModelId() = throw UnsupportedOperationException("Not implemented")
+    override fun getModelId(): SModelId {
+        val serialized = checkNotNull(node.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)) {
+            "No model id found"
+        }
+        return PersistenceFacade.getInstance().createModelId(serialized)
+    }
 
-    @Deprecated("Deprecated in Java")
+    @Deprecated("Deprecated in Java", ReplaceWith("getName()"))
     override fun getModelName() = name.value
 
     override fun getModelRoot() = throw UnsupportedOperationException("Not implemented")
@@ -72,13 +95,17 @@ class NodeAsMPSModel private constructor(private val node: INode, private val sR
         adapter
     }
 
-    override fun getSource() = throw UnsupportedOperationException("Not implemented")
+    override fun getSource() = object : DataSource {
+        override fun getLocation() = "modelix"
+        override fun getTimestamp() = 0L
+        override fun isReadOnly() = true
+    }
 
     override fun isLoaded() = true
 
     override fun isReadOnly() = true
 
-    override fun load() = throw UnsupportedOperationException("Not implemented")
+    override fun load() { /* no-op */ }
 
     override fun removeAccessListener(l: SNodeAccessListener?) = throw UnsupportedOperationException("Not implemented")
 
@@ -86,24 +113,28 @@ class NodeAsMPSModel private constructor(private val node: INode, private val sR
 
     override fun removeModelListener(l: SModelListener?) = throw UnsupportedOperationException("Not implemented")
 
-    override fun removeRootNode(node: SNode?) = throw UnsupportedOperationException("Not implemented")
+    override fun removeRootNode(node: SNode?) {
+        if (node == null) return
 
-    override fun unload() = throw UnsupportedOperationException("Not implemented")
+        val rootNodes = this.node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes)
+        val toDelete = rootNodes.find { it.reference.serialize().endsWith(node.reference.toString()) }
+        toDelete?.remove()
+    }
 
-    override fun getReference() = throw UnsupportedOperationException("Not implemented")
+    override fun unload() { /* no-op */ }
 
-    override fun getNode(id: SNodeId?) = throw UnsupportedOperationException("Not implemented")
+    override fun getReference(): SModelReference {
+        val serialized = node.reference.serialize().substringAfter(MPSModelReference.PREFIX)
+        return PersistenceFacade.getInstance().createModelReference(serialized)
+    }
 
-    override fun getProblems() = throw UnsupportedOperationException("Not implemented")
+    override fun getNode(id: SNodeId?): SNode? {
+        if (id == null) return null
 
-    override fun equals(other: Any?) =
-        if (this === other) {
-            true
-        } else if (other == null || other !is NodeAsMPSModel) {
-            false
-        } else {
-            node != other.node
-        }
+        val nodeId = PersistenceFacade.getInstance().asString(id)
+        val node = node.getDescendants(true).firstOrNull { it.reference.serialize().endsWith(nodeId) }
+        return node?.let { NodeAsMPSNode(it, repository) }
+    }
 
-    override fun hashCode() = 31 + node.hashCode()
+    override fun getProblems() = emptyList<Problem>()
 }

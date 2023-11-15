@@ -36,6 +36,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.neu.listeners.NodeChangeListener
 import org.modelix.mps.sync.util.addDevKit
 import org.modelix.mps.sync.util.addLanguageImport
 import org.modelix.mps.sync.util.createModel
@@ -209,6 +210,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         val latch = CountDownLatch(1)
         project.modelAccess.runWriteInEDT {
             sModel = module.createModel(name, modelId) as EditableSModel
+            sModel.addChangeListener(NodeChangeListener(sModel, replicatedModel))
             sModel.save()
             latch.countDown()
         }

@@ -139,7 +139,7 @@ class BindingImpl(val replicatedModel: ReplicatedModel, modelName: String, mpsPp
         // listen to changes on the branch in the replicatedModel (model-server side) ...
         branch.addListener(object : IBranchListener {
             override fun treeChanged(oldTree: ITree?, newTree: ITree) {
-                TODO("Not yet implemented")
+                // TODO fixme, because if we make changes to the model-server from MPS, then we have to avoid getting into a self-calling infinite loop....
                 // ... and write to MPS
             }
         })

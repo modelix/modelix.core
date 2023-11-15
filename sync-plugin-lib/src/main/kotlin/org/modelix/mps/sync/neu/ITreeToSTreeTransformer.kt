@@ -49,7 +49,12 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
     private val solutionProducer = SolutionProducer(project)
 
+    private val nodeMap = MpsToModelixMap()
+
+    // TODO may be replaced by nodeMap
     private val sModuleById = mutableMapOf<String, SModule>()
+
+    // TODO may be replaced by nodeMap
     private val sModelById = mutableMapOf<String, SModel>()
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
@@ -64,7 +69,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             // 2. Traverse and transform the tree
             // TODO use coroutines instead of big-bang eager loading?
             replicatedModel.getBranch().runReadT { transaction ->
-                val sNodeFactory = SNodeFactory(mpsLanguageRepo, project.modelAccess)
+                val sNodeFactory = SNodeFactory(mpsLanguageRepo, project.modelAccess, nodeMap)
 
                 val allChildren = transaction.tree.getAllChildren(1L)
 
@@ -89,6 +94,11 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
                 println("--- RESOLVING REFERENCES AND MODEL IMPORTS ---")
                 sNodeFactory.resolveReferences()
                 resolveModelImports(repository)
+
+                println("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
+                sModelById.values.forEach {
+                    it.addChangeListener(NodeChangeListener(it, replicatedModel, nodeMap))
+                }
             }
         } catch (ex: Exception) {
             println("${this.javaClass} exploded")
@@ -210,12 +220,12 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         val latch = CountDownLatch(1)
         project.modelAccess.runWriteInEDT {
             sModel = module.createModel(name, modelId) as EditableSModel
-            sModel.addChangeListener(NodeChangeListener(sModel, replicatedModel))
             sModel.save()
             latch.countDown()
         }
         latch.await()
         sModelById[serializedId] = sModel
+        nodeMap.put(sModel, iNode.nodeIdAsLong())
 
         // register model imports
         iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).forEach {

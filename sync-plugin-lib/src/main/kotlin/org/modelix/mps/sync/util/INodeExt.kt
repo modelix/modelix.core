@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.util
 
+import jetbrains.mps.smodel.SNodeId.Regular
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
@@ -24,11 +25,12 @@ import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
-import org.modelix.mps.sync.binding.ModelSynchronizer
+import org.modelix.model.data.NodeData
+import org.modelix.model.mpsadapters.MPSNode
 
 // status: ready to test
 
-val MPS_NODE_ID_PROPERTY_NAME: String = ModelSynchronizer.MPS_NODE_ID_PROPERTY_NAME
+const val MPS_NODE_ID_PROPERTY_NAME: String = NodeData.ID_PROPERTY_KEY
 
 fun INode.mapToMpsNode(mpsNode: SNode) {
     val nodeIdProperty = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
@@ -116,7 +118,18 @@ fun INode.replicateChildHelper(
     return copy
 }
 
-fun INode.nodeIdAsLong(): Long = (this as PNodeAdapter).nodeId
+fun INode.nodeIdAsLong(): Long =
+    when (this) {
+        is PNodeAdapter -> this.nodeId
+        is MPSNode -> {
+            when (val nodeId = this.node.nodeId) {
+                is Regular -> nodeId.id
+                else -> throw IllegalStateException("Unsupported NodeId format: $nodeId")
+            }
+        }
+
+        else -> throw IllegalStateException("Unsupported INode implementation")
+    }
 
 fun INode.containingModule(): INode? {
     if (this.isModule()) {

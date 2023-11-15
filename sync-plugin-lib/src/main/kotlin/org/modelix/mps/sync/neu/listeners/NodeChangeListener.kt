@@ -30,20 +30,25 @@ import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
-import org.modelix.model.mpsadapters.MPSModelAsNode
 import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 // TODO test my methods in debug mode!!!
-class NodeChangeListener(val mpsModel: SModel, modelixModel: ReplicatedModel) : SNodeChangeListener {
+class NodeChangeListener(
+    private val mpsModel: SModel,
+    modelixModel: ReplicatedModel,
+    private val nodeMap: MpsToModelixMap,
+) :
+    SNodeChangeListener {
 
     private val branch = modelixModel.getBranch()
 
     override fun propertyChanged(event: SPropertyChangeEvent) {
         val property = MPSProperty(event.property)
-        val nodeId = MPSNode(event.node).nodeIdAsLong()
+        val nodeId = nodeMap[event.node]!!
 
         branch.runWriteT {
             val cloudNode = branch.getNode(nodeId)
@@ -52,9 +57,9 @@ class NodeChangeListener(val mpsModel: SModel, modelixModel: ReplicatedModel) : 
     }
 
     override fun referenceChanged(event: SReferenceChangeEvent) {
-        val sourceNodeId = MPSNode(event.node).nodeIdAsLong()
+        val sourceNodeId = nodeMap[event.node]!!
         val reference = MPSReferenceLink(event.associationLink)
-        val targetNodeId = event.newValue?.targetNode?.let { MPSNode(it).nodeIdAsLong() }
+        val targetNodeId = event.newValue?.targetNode?.let { nodeMap[event.node] }
 
         branch.runWriteT {
             val cloudNode = branch.getNode(sourceNodeId)
@@ -74,28 +79,30 @@ class NodeChangeListener(val mpsModel: SModel, modelixModel: ReplicatedModel) : 
         // What is the order of events, when we add a subtree in the model? Do we get nodeAdded events for every level
         // in the subtree or just for the top level?
 
-        val parentNodeId = (if (event.isRoot) MPSModelAsNode(mpsModel) else MPSNode(event.parent!!)).nodeIdAsLong()
+        val parentNodeId = if (event.isRoot) {
+            nodeMap[mpsModel]!!
+        } else {
+            nodeMap[event.parent!!]!!
+        }
         val childLink = MPSChildLink(event.aggregationLink!!)
 
         val mpsChild = event.child
         val mpsConcept = mpsChild.concept
 
-        val child = MPSNode(mpsChild)
-        val nodeId = child.nodeIdAsLong()
-        val childConcept = child.concept
+        val nodeId = nodeMap[mpsChild]
+        val childConcept = MPSNode(mpsChild).concept
 
-        // if child does not exist in the repo yet, then we have to create it!
         branch.runWriteT { transaction ->
-            val cloudParentNode = branch.getNode(parentNodeId)
-            var cloudChildNode = branch.getNode(nodeId)
-
-            val childExists = cloudChildNode.isValid
+            val childExists = nodeId != null
             if (childExists) {
-                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId)
+                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
             } else {
-                // TODO #2 maintain a Map between the MPS NodeId and the cloud NodeId, because
-                //  the generated cloud NodeId is not necessarily the same as the NodeId in MPS
-                cloudChildNode = cloudParentNode.addNewChild(childLink, -1, childConcept)
+                val cloudParentNode = branch.getNode(parentNodeId)
+                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, childConcept)
+
+                // save the modelix ID and the SNode in the map
+                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+
                 synchronizeNodeToCloud(mpsConcept, mpsChild, cloudChildNode)
             }
         }
@@ -130,6 +137,10 @@ class NodeChangeListener(val mpsModel: SModel, modelixModel: ReplicatedModel) : 
                 val childLink = MPSChildLink(containmentLink)
                 val mpsChildConcept = mpsChild.concept
                 val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
+
+                // save the modelix ID and the SNode in the map
+                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+
                 synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
             }
         }
@@ -139,7 +150,11 @@ class NodeChangeListener(val mpsModel: SModel, modelixModel: ReplicatedModel) : 
         // TODO #1
         // What is the order of events, when we remove a subtree in the model?
 
-        val parentNodeId = (if (event.isRoot) MPSModelAsNode(mpsModel) else MPSNode(event.parent!!)).nodeIdAsLong()
+        val parentNodeId = if (event.isRoot) {
+            nodeMap[mpsModel]!!
+        } else {
+            nodeMap[event.parent!!]!!
+        }
         val nodeId = MPSNode(event.child).nodeIdAsLong()
 
         branch.runWriteT {

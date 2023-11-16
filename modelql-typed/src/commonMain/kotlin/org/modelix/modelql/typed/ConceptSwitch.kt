@@ -30,11 +30,13 @@ import kotlin.experimental.ExperimentalTypeInference
 class ConceptSwitchBuilder<In : ITypedNode, Out>(private val input: IMonoStep<In>) {
     private val cases = HashMap<IConcept, IMonoUnboundQuery<In, Out>>()
 
+    @Suppress("FunctionName")
     fun <TNode : In, TConcept : IConceptOfTypedNode<TNode>> `if`(concept: TConcept): CaseBuilder<TNode> {
         return CaseBuilder<TNode>(concept)
     }
 
     @BuilderInference
+    @Suppress("FunctionName")
     fun `else`(elseBody: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
         val visited = HashSet<IConcept>()
         val sortedCases = LinkedHashMap<IConcept, IMonoUnboundQuery<In, Out>>()

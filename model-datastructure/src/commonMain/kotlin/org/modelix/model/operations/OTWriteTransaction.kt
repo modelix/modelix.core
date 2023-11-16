@@ -70,11 +70,11 @@ class OTWriteTransaction(
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConceptReference?) {
-        var index_ = index
-        if (index_ == -1) {
-            index_ = getChildren(parentId, role).count()
+        var indexInner = index
+        if (indexInner == -1) {
+            indexInner = getChildren(parentId, role).count()
         }
-        apply(AddNewChildOp(PositionInRole(parentId, role, index_), childId, concept))
+        apply(AddNewChildOp(PositionInRole(parentId, role, indexInner), childId, concept))
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?) {

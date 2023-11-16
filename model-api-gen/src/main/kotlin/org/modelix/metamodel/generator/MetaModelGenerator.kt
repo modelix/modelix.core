@@ -77,7 +77,9 @@ class MetaModelGenerator(
                 val enumType = (type as EnumPropertyType)
                 ClassName(enumType.pckg, enumType.enumName)
             }
-            else -> { throw RuntimeException("Unexpected property type: $type") }
+            else -> {
+                throw RuntimeException("Unexpected property type: $type")
+            }
         }
         return if (!optional || alwaysUseNonNullableProperties) nonNullableType else nonNullableType.copy(nullable = true)
     }
@@ -985,7 +987,9 @@ class MetaModelGenerator(
 
     private fun generateDeprecationAnnotation(message: String): AnnotationSpec {
         val annotationBuilder = AnnotationSpec.builder(Deprecated::class)
-        if (message.isNotEmpty()) { annotationBuilder.addMember("message = %S", message) }
+        if (message.isNotEmpty()) {
+            annotationBuilder.addMember("message = %S", message)
+        }
         return annotationBuilder.build()
     }
 

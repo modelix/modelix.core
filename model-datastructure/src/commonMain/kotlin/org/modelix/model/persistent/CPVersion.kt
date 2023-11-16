@@ -27,12 +27,17 @@ class CPVersion(
     time: String?,
     author: String?,
     treeHash: KVEntryReference<CPTree>?,
-    previousVersion: KVEntryReference<CPVersion>?, // deprecated, use baseVersion instead
-    originalVersion: KVEntryReference<CPVersion>?, // deprecated, there is no rewriting of versions anymore. Use mergedVersion1/2 instead
-    baseVersion: KVEntryReference<CPVersion>?, // the version, the operations are applied to, to create this version
+    // deprecated, use baseVersion instead
+    previousVersion: KVEntryReference<CPVersion>?,
+    // deprecated, there is no rewriting of versions anymore. Use mergedVersion1/2 instead
+    originalVersion: KVEntryReference<CPVersion>?,
+    // the version, the operations are applied to, to create this version
+    baseVersion: KVEntryReference<CPVersion>?,
     // in case of a merge it is the common base version of the two branches
-    mergedVersion1: KVEntryReference<CPVersion>?, // null if this is not a merge
-    mergedVersion2: KVEntryReference<CPVersion>?, // null if this is not a merge
+    // null if this is not a merge
+    mergedVersion1: KVEntryReference<CPVersion>?,
+    // null if this is not a merge
+    mergedVersion2: KVEntryReference<CPVersion>?,
     operations: Array<IOperation>?,
     operationsHash: KVEntryReference<CPOperationsList>?,
     numberOfOperations: Int,

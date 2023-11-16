@@ -313,7 +313,13 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
         fun createUpdate(): VersionData {
             val nodesToUpdate: MutableSet<INode> = HashSet()
             queryExecutor.update(query) { nodesToUpdate += it }
-            val nodeDataList = nodesToUpdate.mapNotNull { try { it.toData() } catch (ex: Exception) { null } }
+            val nodeDataList = nodesToUpdate.mapNotNull {
+                try {
+                    it.toData()
+                } catch (ex: Exception) {
+                    null
+                }
+            }
             return VersionData(
                 repositoryId = null,
                 versionHash = null,

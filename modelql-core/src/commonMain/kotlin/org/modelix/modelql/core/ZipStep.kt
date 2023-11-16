@@ -287,10 +287,18 @@ class ZipStepOutput<E : IZipOutput<Common>, Common>(val values: List<IStepOutput
         get() = ZipNOutput(values.map { it.value }) as E
 }
 
-interface IZipOutput<out Common> { val values: List<Common> }
-interface IZip1Output<out Common, out E1> : IZipOutput<Common> { val first: E1 }
-interface IZip2Output<out Common, out E1, out E2> : IZip1Output<Common, E1> { val second: E2 }
-interface IZip3Output<out Common, out E1, out E2, out E3> : IZip2Output<Common, E1, E2> { val third: E3 }
+interface IZipOutput<out Common> {
+    val values: List<Common>
+}
+interface IZip1Output<out Common, out E1> : IZipOutput<Common> {
+    val first: E1
+}
+interface IZip2Output<out Common, out E1, out E2> : IZip1Output<Common, E1> {
+    val second: E2
+}
+interface IZip3Output<out Common, out E1, out E2, out E3> : IZip2Output<Common, E1, E2> {
+    val third: E3
+}
 interface IZip4Output<out Common, out E1, out E2, out E3, out E4> : IZip3Output<Common, E1, E2, E3> {
     val fourth: E4
 
@@ -298,11 +306,21 @@ interface IZip4Output<out Common, out E1, out E2, out E3, out E4> : IZip3Output<
     val forth
         get() = fourth
 }
-interface IZip5Output<out Common, out E1, out E2, out E3, out E4, out E5> : IZip4Output<Common, E1, E2, E3, E4> { val fifth: E5 }
-interface IZip6Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6> : IZip5Output<Common, E1, E2, E3, E4, E5> { val sixth: E6 }
-interface IZip7Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7> : IZip6Output<Common, E1, E2, E3, E4, E5, E6> { val seventh: E7 }
-interface IZip8Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8> : IZip7Output<Common, E1, E2, E3, E4, E5, E6, E7> { val eighth: E8 }
-interface IZip9Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8, out E9> : IZip8Output<Common, E1, E2, E3, E4, E5, E6, E7, E8> { val ninth: E9 }
+interface IZip5Output<out Common, out E1, out E2, out E3, out E4, out E5> : IZip4Output<Common, E1, E2, E3, E4> {
+    val fifth: E5
+}
+interface IZip6Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6> : IZip5Output<Common, E1, E2, E3, E4, E5> {
+    val sixth: E6
+}
+interface IZip7Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7> : IZip6Output<Common, E1, E2, E3, E4, E5, E6> {
+    val seventh: E7
+}
+interface IZip8Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8> : IZip7Output<Common, E1, E2, E3, E4, E5, E6, E7> {
+    val eighth: E8
+}
+interface IZip9Output<out Common, out E1, out E2, out E3, out E4, out E5, out E6, out E7, out E8, out E9> : IZip8Output<Common, E1, E2, E3, E4, E5, E6, E7, E8> {
+    val ninth: E9
+}
 
 operator fun <T> IZip1Output<*, T>.component1() = first
 operator fun <T> IZip2Output<*, *, T>.component2() = second

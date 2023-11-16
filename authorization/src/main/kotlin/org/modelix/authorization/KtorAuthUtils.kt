@@ -45,7 +45,7 @@ import io.ktor.util.AttributeKey
 import io.ktor.util.pipeline.PipelineContext
 import java.security.interfaces.RSAPublicKey
 
-private const val jwtAuth = "jwtAuth"
+private const val JWT_AUTH = "jwtAuth"
 private val httpClient = HttpClient(CIO)
 private val UNIT_TEST_MODE_KEY = AttributeKey<Boolean>("unit-test-mode")
 
@@ -53,7 +53,7 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
     install(XForwardedHeaders)
     install(Authentication) {
         if (unitTestMode) {
-            register(object : AuthenticationProvider(object : Config(jwtAuth) {}) {
+            register(object : AuthenticationProvider(object : Config(JWT_AUTH) {}) {
                 override suspend fun onAuthenticate(context: AuthenticationContext) {
                     context.call.attributes.put(UNIT_TEST_MODE_KEY, true)
                     val token = JWT.create()
@@ -64,7 +64,7 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
             })
         } else {
             // "Authorization: Bearer ..." header is provided in the header by OAuth proxy
-            jwt(jwtAuth) {
+            jwt(JWT_AUTH) {
                 verifier(KeycloakUtils.jwkProvider) {
                     acceptLeeway(60L)
                 }
@@ -108,7 +108,7 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
         }
     }
     routing {
-        authenticate(jwtAuth) {
+        authenticate(JWT_AUTH) {
             get("/user") {
                 val jwt = call.principal<AccessTokenPrincipal>()?.jwt ?: call.jwtFromHeaders()
                 if (jwt == null) {
@@ -154,7 +154,7 @@ fun Route.requiresDelete(resource: KeycloakResource, body: Route.() -> Unit) {
 }
 
 fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, body: Route.() -> Unit) {
-    authenticate(jwtAuth) {
+    authenticate(JWT_AUTH) {
         intercept(ApplicationCallPipeline.Call) {
             call.checkPermission(resource, scope)
         }
@@ -163,7 +163,7 @@ fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, b
 }
 
 fun Route.requiresLogin(body: Route.() -> Unit) {
-    authenticate(jwtAuth) {
+    authenticate(JWT_AUTH) {
         body()
     }
 }

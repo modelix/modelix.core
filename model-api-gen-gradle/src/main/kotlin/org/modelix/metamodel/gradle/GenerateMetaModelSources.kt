@@ -56,7 +56,7 @@ abstract class GenerateMetaModelSources @Inject constructor(of: ObjectFactory) :
     @Optional
     val conceptPropertiesInterfaceName: Property<String> = of.property(String::class.java)
 
-    @get: Input
+    @get:Input
     val nameConfig: Property<NameConfig> = of.property(NameConfig::class.java)
 
     @TaskAction

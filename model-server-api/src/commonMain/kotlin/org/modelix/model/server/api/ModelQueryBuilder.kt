@@ -60,13 +60,27 @@ open class FilterListBuilder {
     }
 
     inner class StringFilterBuilder(val filterBuilder: (StringOperator) -> Filter) {
-        fun startsWith(prefix: String) { addFilter(filterBuilder(StartsWithOperator(prefix))) }
-        fun endsWith(suffix: String) { addFilter(filterBuilder(EndsWithOperator(suffix))) }
-        fun contains(substring: String) { addFilter(filterBuilder(ContainsOperator(substring))) }
-        fun equalTo(value: String) { addFilter(filterBuilder(EqualsOperator(value))) }
-        fun matches(pattern: Regex) { addFilter(filterBuilder(MatchesRegexOperator(pattern.pattern))) }
-        fun isNotNull() { addFilter(filterBuilder(IsNotNullOperator)) }
-        fun isNull() { addFilter(filterBuilder(IsNullOperator)) }
+        fun startsWith(prefix: String) {
+            addFilter(filterBuilder(StartsWithOperator(prefix)))
+        }
+        fun endsWith(suffix: String) {
+            addFilter(filterBuilder(EndsWithOperator(suffix)))
+        }
+        fun contains(substring: String) {
+            addFilter(filterBuilder(ContainsOperator(substring)))
+        }
+        fun equalTo(value: String) {
+            addFilter(filterBuilder(EqualsOperator(value)))
+        }
+        fun matches(pattern: Regex) {
+            addFilter(filterBuilder(MatchesRegexOperator(pattern.pattern)))
+        }
+        fun isNotNull() {
+            addFilter(filterBuilder(IsNotNullOperator))
+        }
+        fun isNull() {
+            addFilter(filterBuilder(IsNullOperator))
+        }
     }
 }
 

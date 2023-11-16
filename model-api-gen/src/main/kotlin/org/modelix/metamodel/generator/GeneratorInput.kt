@@ -21,8 +21,10 @@ import org.modelix.model.data.PropertyType
 import kotlin.reflect.KClass
 
 val reservedPropertyNames: Set<String> = setOf(
-    "constructor", // already exists on JS objects
-    "_node", // exists in TypedNode in ts-model-api
+    // already exists on JS objects
+    "constructor",
+    // exists in TypedNode in ts-model-api
+    "_node",
 ) + IConcept::class.members.map { it.name }
 
 interface IProcessedLanguageSet
@@ -267,12 +269,12 @@ internal class ProcessedConcept(
     }
 
     fun getDirectSuperConcepts(): Sequence<ProcessedConcept> = extends.asSequence().map { it.resolved }
-    private fun getAllSuperConcepts_(): Sequence<ProcessedConcept> = getDirectSuperConcepts().flatMap { it.getAllSuperConceptsAndSelf_() }
-    private fun getAllSuperConceptsAndSelf_(): Sequence<ProcessedConcept> = sequenceOf(this) + getAllSuperConcepts_()
+    private fun getAllSuperConceptsNotDistinct(): Sequence<ProcessedConcept> = getDirectSuperConcepts().flatMap { it.getAllSuperConceptsAndSelfNotDistinct() }
+    private fun getAllSuperConceptsAndSelfNotDistinct(): Sequence<ProcessedConcept> = sequenceOf(this) + getAllSuperConceptsNotDistinct()
 
-    fun getAllSuperConcepts(): Sequence<ProcessedConcept> = getAllSuperConcepts_().distinct()
-    fun getAllSuperConceptsAndSelf(): Sequence<ProcessedConcept> = getAllSuperConceptsAndSelf_().distinct()
-    fun getDuplicateSuperConcepts() = getAllSuperConcepts_().groupBy { it }.filter { it.value.size > 1 }.map { it.key }
+    fun getAllSuperConcepts(): Sequence<ProcessedConcept> = getAllSuperConceptsNotDistinct().distinct()
+    fun getAllSuperConceptsAndSelf(): Sequence<ProcessedConcept> = getAllSuperConceptsAndSelfNotDistinct().distinct()
+    fun getDuplicateSuperConcepts() = getAllSuperConceptsNotDistinct().groupBy { it }.filter { it.value.size > 1 }.map { it.key }
 }
 
 internal sealed class ProcessedRole(

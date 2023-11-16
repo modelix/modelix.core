@@ -8,6 +8,7 @@ import org.modelix.model.area.IArea
 import kotlin.reflect.KClass
 
 interface ITypedNode {
+    @Suppress("PropertyName")
     val _concept: ITypedConcept
     fun unwrap(): INode
 }

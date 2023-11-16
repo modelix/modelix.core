@@ -59,7 +59,9 @@ data class PropertyData(
 
 @Deprecated("use org.modelix.mode.data.*")
 enum class PropertyType {
-    STRING, BOOLEAN, INT
+    STRING,
+    BOOLEAN,
+    INT,
 }
 
 @Serializable

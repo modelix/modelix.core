@@ -91,10 +91,12 @@ class WhenStep<In, Out>(
 class WhenStepBuilder<In, Out>(private val input: IMonoStep<In>) {
     private val cases = ArrayList<Pair<IMonoUnboundQuery<In, Boolean?>, IMonoUnboundQuery<In, Out>>>()
 
+    @Suppress("FunctionName")
     fun `if`(condition: (IMonoStep<In>) -> IMonoStep<Boolean?>): CaseBuilder {
         return CaseBuilder(buildMonoQuery { condition(it) })
     }
 
+    @Suppress("FunctionName")
     @BuilderInference
     fun `else`(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
         return WhenStep(cases, buildMonoQuery { body(it) }).connectAndDowncast(input)
@@ -109,4 +111,5 @@ class WhenStepBuilder<In, Out>(private val input: IMonoStep<In>) {
     }
 }
 
+@Suppress("FunctionName")
 fun <In, Out> IMonoStep<In>.`when`() = WhenStepBuilder<In, Out>(this)

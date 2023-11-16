@@ -58,12 +58,14 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
         outputDir.resolve("index.ts").fixFormatAndWriteText(
             """
             import { LanguageRegistry } from "@modelix/ts-model-api";
-            ${languages.getLanguages().joinToString("\n") { """
+            ${languages.getLanguages().joinToString("\n") {
+                """
                 import { ${it.simpleClassName()} } from "./${it.simpleClassName()}";
             """
             }}
             export function registerLanguages() {
-                ${languages.getLanguages().joinToString("\n") { """
+                ${languages.getLanguages().joinToString("\n") {
+                """
                     LanguageRegistry.INSTANCE.register(${it.simpleClassName()}.INSTANCE);
             """
             }}

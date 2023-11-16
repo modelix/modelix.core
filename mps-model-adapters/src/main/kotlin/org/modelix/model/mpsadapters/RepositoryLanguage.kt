@@ -39,7 +39,9 @@ object Model : SimpleConcept(
     uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892",
     directSuperConcepts = listOf(BaseConcept, INamedConcept),
 ) {
-    init { addConcept(this) }
+    init {
+        addConcept(this)
+    }
     val rootNodes = SimpleChildLink(
         simpleName = "rootNodes",
         isMultiple = true,
@@ -54,7 +56,9 @@ object Module : SimpleConcept(
     uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895",
     directSuperConcepts = listOf(BaseConcept, INamedConcept),
 ) {
-    init { addConcept(this) }
+    init {
+        addConcept(this)
+    }
     val models = SimpleChildLink(
         simpleName = "models",
         isMultiple = true,
@@ -69,7 +73,9 @@ object Repository : SimpleConcept(
     uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902",
     directSuperConcepts = listOf(BaseConcept),
 ) {
-    init { addConcept(this) }
+    init {
+        addConcept(this)
+    }
     val modules = SimpleChildLink(
         simpleName = "modules",
         isMultiple = true,

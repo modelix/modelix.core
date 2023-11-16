@@ -35,7 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object ModelixOAuthClient {
-    private var DATA_STORE_FACTORY: DataStoreFactory = MemoryDataStoreFactory()
+    private val DATA_STORE_FACTORY: DataStoreFactory = MemoryDataStoreFactory()
     private val SCOPE = "email"
     private val HTTP_TRANSPORT: HttpTransport = NetHttpTransport()
     private val JSON_FACTORY: JsonFactory = GsonFactory()

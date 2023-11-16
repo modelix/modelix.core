@@ -32,6 +32,9 @@ import org.modelix.model.persistent.MapBaseStore
 import kotlin.random.Random
 import kotlin.test.Test
 
+// Suppress KLint error for underscores in variable names.
+// `version_0_1` more readable in the test.
+@Suppress("PropertyName")
 class UndoTest {
 
     @Test

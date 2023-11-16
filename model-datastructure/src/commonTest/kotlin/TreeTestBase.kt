@@ -25,7 +25,7 @@ import kotlin.random.Random
 import kotlin.test.BeforeTest
 
 open class TreeTestBase {
-    protected val DEBUG = false
+    protected val debug = false
     protected val roles: List<String> = listOf("role1", "role2", "role3")
     protected var rand: Random = Random(83569)
     protected var store: MapBaseStore = MapBaseStore()

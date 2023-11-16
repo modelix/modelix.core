@@ -80,7 +80,9 @@ class AutoWriteTransaction(branch: IBranch) : AutoTransaction(branch), IWriteTra
 
     override var tree: ITree
         get() = branch.computeReadT { it.tree }
-        set(value) { branch.computeWriteT { it.tree = value } }
+        set(value) {
+            branch.computeWriteT { it.tree = value }
+        }
 }
 
 fun IBranch.withAutoTransactions() = AutoTransactionsBranch(this)

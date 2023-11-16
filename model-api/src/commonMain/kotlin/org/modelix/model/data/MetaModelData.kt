@@ -106,7 +106,9 @@ class PropertyTypeSerializer : KSerializer<PropertyType> {
 sealed interface PropertyType
 
 enum class Primitive {
-    STRING, BOOLEAN, INT
+    STRING,
+    BOOLEAN,
+    INT,
 }
 
 @Serializable

@@ -6,12 +6,18 @@ plugins {
 }
 
 val mpsToIdeaMap = mapOf(
-    "2020.3.6" to "203.8084.24", // https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
-    "2021.1.4" to "211.7628.21", // https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties
-    "2021.2.6" to "212.5284.40", // https://github.com/JetBrains/MPS/blob/2021.2.5/build/version.properties (?)
-    "2021.3.3" to "213.7172.25", // https://github.com/JetBrains/MPS/blob/2021.3.3/build/version.properties
-    "2022.2" to "222.4554.10", // https://github.com/JetBrains/MPS/blob/2021.2.1/build/version.properties
-    "2022.3" to "223.8836.41", // https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties (?)
+    // https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
+    "2020.3.6" to "203.8084.24",
+    // https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties
+    "2021.1.4" to "211.7628.21",
+    // https://github.com/JetBrains/MPS/blob/2021.2.5/build/version.properties (?)
+    "2021.2.6" to "212.5284.40",
+    // https://github.com/JetBrains/MPS/blob/2021.3.3/build/version.properties
+    "2021.3.3" to "213.7172.25",
+    // https://github.com/JetBrains/MPS/blob/2021.2.1/build/version.properties
+    "2022.2" to "222.4554.10",
+    // https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties (?)
+    "2022.3" to "223.8836.41",
 )
 // use the given MPS version, or 2022.2 (last version with JAVA 11) as default
 val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"

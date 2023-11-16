@@ -88,6 +88,7 @@ data class NodeData(
     companion object {
         const val ID_PROPERTY_KEY = "#mpsNodeId#"
 
+        @Suppress("PropertyName")
         @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
         const val idPropertyKey = ID_PROPERTY_KEY
     }

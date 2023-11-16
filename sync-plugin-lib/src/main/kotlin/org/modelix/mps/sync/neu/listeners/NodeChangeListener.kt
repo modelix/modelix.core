@@ -59,7 +59,7 @@ class NodeChangeListener(
     override fun referenceChanged(event: SReferenceChangeEvent) {
         val sourceNodeId = nodeMap[event.node]!!
         val reference = MPSReferenceLink(event.associationLink)
-        val targetNodeId = event.newValue?.targetNode?.let { nodeMap[event.node] }
+        val targetNodeId = event.newValue?.targetNode?.let { nodeMap[it] }
 
         branch.runWriteT {
             val cloudNode = branch.getNode(sourceNodeId)
@@ -90,15 +90,13 @@ class NodeChangeListener(
         val mpsConcept = mpsChild.concept
 
         val nodeId = nodeMap[mpsChild]
-        val childConcept = MPSNode(mpsChild).concept
-
+        val childExists = nodeId != null
         branch.runWriteT { transaction ->
-            val childExists = nodeId != null
             if (childExists) {
                 transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
             } else {
                 val cloudParentNode = branch.getNode(parentNodeId)
-                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, childConcept)
+                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
 
                 // save the modelix ID and the SNode in the map
                 nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
@@ -132,6 +130,7 @@ class NodeChangeListener(
         }
 
         // synchronize children
+        // TODO shall we do it always or only if children do not exist?
         mpsConcept.containmentLinks.forEach { containmentLink ->
             mpsNode.getChildren(containmentLink).forEach { mpsChild ->
                 val childLink = MPSChildLink(containmentLink)

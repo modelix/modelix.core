@@ -92,7 +92,7 @@ subprojects {
 
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         // IMPORTANT: keep in sync with the version in .pre-commit-config.yaml
-        version.set("0.50.0")
+        version.set("1.0.1")
     }
 
     tasks.withType<Detekt> {
@@ -221,7 +221,7 @@ allprojects {
 
     // Set maven metadata for all known publishing tasks. The exact tasks and names are only known after evaluatin.
     afterEvaluate {
-        tasks.withType<AbstractPublishToMaven>() {
+        tasks.withType<AbstractPublishToMaven> {
             this.publication?.apply {
                 setMetadata()
             }

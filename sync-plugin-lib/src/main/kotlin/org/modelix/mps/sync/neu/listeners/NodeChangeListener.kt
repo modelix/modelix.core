@@ -30,13 +30,11 @@ import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
-import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
-// TODO test my methods in debug mode!!!
 class NodeChangeListener(
     private val mpsModel: SModel,
     modelixModel: ReplicatedModel,
@@ -75,10 +73,6 @@ class NodeChangeListener(
     }
 
     override fun nodeAdded(event: SNodeAddEvent) {
-        // TODO #1
-        // What is the order of events, when we add a subtree in the model? Do we get nodeAdded events for every level
-        // in the subtree or just for the top level?
-
         val parentNodeId = if (event.isRoot) {
             nodeMap[mpsModel]!!
         } else {
@@ -121,7 +115,7 @@ class NodeChangeListener(
         // synchronize references
         mpsConcept.referenceLinks.forEach {
             val mpsTargetNode = mpsNode.getReferenceTarget(it)!!
-            val targetNodeId = MPSNode(mpsTargetNode).nodeIdAsLong()
+            val targetNodeId = nodeMap[mpsTargetNode]!!
 
             val modelixReferenceLink = MPSReferenceLink(it)
             val cloudTargetNode = branch.getNode(targetNodeId)
@@ -130,7 +124,6 @@ class NodeChangeListener(
         }
 
         // synchronize children
-        // TODO shall we do it always or only if children do not exist?
         mpsConcept.containmentLinks.forEach { containmentLink ->
             mpsNode.getChildren(containmentLink).forEach { mpsChild ->
                 val childLink = MPSChildLink(containmentLink)
@@ -146,24 +139,17 @@ class NodeChangeListener(
     }
 
     override fun nodeRemoved(event: SNodeRemoveEvent) {
-        // TODO #1
-        // What is the order of events, when we remove a subtree in the model?
-
         val parentNodeId = if (event.isRoot) {
             nodeMap[mpsModel]!!
         } else {
             nodeMap[event.parent!!]!!
         }
-        val nodeId = MPSNode(event.child).nodeIdAsLong()
+        val nodeId = nodeMap[event.child]!!
 
         branch.runWriteT {
             val cloudParentNode = branch.getNode(parentNodeId)
             val cloudChildNode = branch.getNode(nodeId)
-
-            // TODO #2 maybe we have to detach the node instead of deleting it...
             cloudParentNode.removeChild(cloudChildNode)
-            // alternative:
-            // it.moveChild(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE, -1, nodeId)
         }
     }
 }

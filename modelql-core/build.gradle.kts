@@ -76,7 +76,14 @@ val generateVersionVariable by tasks.creating {
             """
             package org.modelix.modelql.core
 
-            const val modelqlVersion: String = "$version"
+            import org.modelix.kotlin.utils.DeprecationInfo
+
+            const val MODEL_QL_VERSION: String = "$version"
+
+            @Suppress("PropertyName")
+            @Deprecated("use MODEL_QL_VERSION")
+            @DeprecationInfo("3.14.2", "May be removed with the next major release.")
+            const val modelqlVersion: String = MODEL_QL_VERSION
 
             """.trimIndent(),
         )

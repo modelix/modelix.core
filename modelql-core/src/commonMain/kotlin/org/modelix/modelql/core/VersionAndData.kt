@@ -21,7 +21,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 class VersionAndData<E>(val data: E, val version: String?) {
-    constructor(data: E) : this(data, modelqlVersion)
+    constructor(data: E) : this(data, MODEL_QL_VERSION)
     companion object {
         private val LOG = mu.KotlinLogging.logger { }
         fun readVersionOnly(text: String): String? {
@@ -41,7 +41,7 @@ class VersionAndData<E>(val data: E, val version: String?) {
                 )
             } catch (ex: Exception) {
                 val actualVersion = readVersionOnly(serializedJson)
-                val expectedVersion = modelqlVersion
+                val expectedVersion = MODEL_QL_VERSION
                 if (actualVersion != expectedVersion) {
                     throw RuntimeException("Deserialization failed. Version $expectedVersion expected, but was $actualVersion", ex)
                 } else {

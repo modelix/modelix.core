@@ -173,12 +173,23 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
         if (isDevKitDependency) {
             project.modelAccess.runWriteInEDT {
-                model.addDevKit((dependentModule as DevKit).moduleReference)
+                val devKitModuleReference = (dependentModule as DevKit).moduleReference
+
+                // TODO this might not work, because if more than one models/modules point to the same DevKit, then the modelix ID will be always overwritten by the last Node (DevkitDependency) that points to this devkit
+                // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing DevKitDependencies in the cloud)
+                nodeMap.put(devKitModuleReference, iNode.nodeIdAsLong())
+
+                model.addDevKit(devKitModuleReference)
             }
         } else if (isLanguageDependency) {
             val version =
                 iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)
-            val sLanguage = MetaAdapterFactory.getLanguage((dependentModule as Language).moduleReference)
+            val languageModuleReference = (dependentModule as Language).moduleReference
+
+            // TODO this might not work, because if more than one models/modules point to the same Language, then the modelix ID will be always overwritten by the last Node (SingleLanguageDependency) that points to this Language
+            // TODO we migth have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
+            nodeMap.put(languageModuleReference, iNode.nodeIdAsLong())
+            val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference)
             project.modelAccess.runWriteInEDT {
                 model.addLanguageImport(sLanguage, version?.toInt()!!)
             }
@@ -202,6 +213,8 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
         val sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
         sModuleById[serializedId] = sModule
+
+        // TODO shall we transform the ModuleDependencies here? module.addDependency(sModuleReference, reexport)
     }
 
     private fun addModelToModule(iNode: INode) {

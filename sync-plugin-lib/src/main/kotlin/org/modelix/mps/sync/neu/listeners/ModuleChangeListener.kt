@@ -36,18 +36,28 @@ class ModuleChangeListener : SModuleListener {
 
     override fun dependencyAdded(module: SModule, dependency: SDependency) {
         TODO("Not yet implemented")
+
+        // save to module.dependencies
     }
 
     override fun dependencyRemoved(module: SModule, dependency: SDependency) {
         TODO("Not yet implemented")
+
+        // remove from module.dependencies
     }
 
     override fun languageAdded(module: SModule, language: SLanguage) {
         TODO("Not yet implemented")
+
+        // save to module.languageDependencies
+        // TODO is it called if we add a language to a model?
     }
 
     override fun languageRemoved(module: SModule, language: SLanguage) {
         TODO("Not yet implemented")
+
+        // remove from module.languageDependencies
+        // TODO is it called if we remove a language from a model?
     }
 
     override fun beforeModelRemoved(module: SModule, model: SModel) {}

@@ -39,7 +39,6 @@ import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
-import org.modelix.model.mpsadapters.Model
 import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -89,38 +88,105 @@ class ModelChangeListener(
     }
 
     override fun languageAdded(event: SModelLanguageEvent) {
-        TODO("Not yet implemented")
-    }
-
-    override fun languageRemoved(event: SModelLanguageEvent) {
-        // TODO
-        // model.usedLanguages között megkeresni az ehhez tartozó referenciát és annak a target nodeját törölni
-    }
-
-    override fun devkitAdded(event: SModelDevKitEvent) {
-        // TODO
-        // ez egy DevKit dependency lesz, aminek a mezőit meg kell példányosítani a szerveren
-        // a DevKit dependencyt pedig a modell "usedLanguages" containment referenciájában mentjük el
+        // TODO might not work, we have to test it
         val modelixId = nodeMap[event.model]!!
 
-        // TODO de miért egy moduleIdra mutat?
-        event.devkitNamespace.moduleId
+        val language = event.eventLanguage
+        val languageModuleReference = language.sourceModuleReference
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
         branch.runWriteT {
             val cloudNode = branch.getNode(modelixId)
+            val cloudLanguageDependency =
+                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency)
+
+            // TODO we might have to find a different traceability between the SingleLanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading Languages from the cloud)
+            nodeMap.put(languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
+
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                languageModuleReference?.moduleName,
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                languageModuleReference?.moduleId.toString(),
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                event.model.module.getUsedLanguageVersion(language).toString(),
+            )
+        }
+    }
+
+    override fun languageRemoved(event: SModelLanguageEvent) {
+        // TODO might not work, we have to test it
+        val modelixId = nodeMap[event.model]!!
+
+        val languageModuleReference = event.eventLanguage.sourceModuleReference
+        val languageModuleReferenceModelixId = nodeMap[languageModuleReference]!!
+
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            val cloudLanguageModuleReference = branch.getNode(languageModuleReferenceModelixId)
+            cloudNode.removeChild(cloudLanguageModuleReference)
+        }
+    }
+
+    override fun devkitAdded(event: SModelDevKitEvent) {
+        // TODO might not work, we have to test it
+        val modelixId = nodeMap[event.model]!!
+
+        val repository = event.model.repository
+        val devKitModuleReference = event.devkitNamespace
+        val devKitModuleId = devKitModuleReference.moduleId
+        val devKitModule = repository.getModule(devKitModuleId)
+
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
+
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            val cloudDevKitDependency =
+                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
+
+            // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading DevKits from the cloud)
+            nodeMap.put(devKitModuleReference, cloudDevKitDependency.nodeIdAsLong())
+
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudDevKitDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                devKitModule?.moduleName,
+            )
+
+            cloudDevKitDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                devKitModule?.moduleId.toString(),
+            )
         }
     }
 
     override fun devkitRemoved(event: SModelDevKitEvent) {
-        // TODO
-        // model.usedLanguages között megkeresni az ehhez tartozó referenciát és annak a target nodeját törölni
+        // TODO might not work, we have to test it
+        val modelixId = nodeMap[event.model]!!
+
+        val devKitModuleReference = event.devkitNamespace
+        // TODO this might not work,
+        val devKitModuleReferenceModelixId = nodeMap[devKitModuleReference]!!
+
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            val cloudDevKitModuleReference = branch.getNode(devKitModuleReferenceModelixId)
+            cloudNode.removeChild(cloudDevKitModuleReference)
+        }
     }
 
     @Deprecated("Deprecated in Java")
     override fun rootAdded(event: SModelRootEvent) {
         // TODO deduplicate implementation
         val parentNodeId = nodeMap[event.model]!!
-        val childLink = Model.rootNodes
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
 
         val mpsChild = event.root
         val mpsConcept = mpsChild.concept
@@ -177,7 +243,7 @@ class ModelChangeListener(
         // TODO #1 when is this method called?
         // TODO #2 deduplicate implementation
         val parentNodeId = nodeMap[event.parent]!!
-        val childLink = Model.rootNodes
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
 
         val mpsChild = event.child
         val mpsConcept = mpsChild.concept

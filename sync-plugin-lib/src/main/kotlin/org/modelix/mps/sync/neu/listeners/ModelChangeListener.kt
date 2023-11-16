@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.neu.listeners
 
+import jetbrains.mps.smodel.SModelInternal
 import jetbrains.mps.smodel.event.SModelChildEvent
 import jetbrains.mps.smodel.event.SModelDevKitEvent
 import jetbrains.mps.smodel.event.SModelImportEvent
@@ -26,90 +27,242 @@ import jetbrains.mps.smodel.event.SModelReferenceEvent
 import jetbrains.mps.smodel.event.SModelRenamedEvent
 import jetbrains.mps.smodel.event.SModelRootEvent
 import jetbrains.mps.smodel.loading.ModelLoadingState
+import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.INode
+import org.modelix.model.api.PropertyFromName
+import org.modelix.model.api.getNode
+import org.modelix.model.client2.ReplicatedModel
+import org.modelix.model.mpsadapters.MPSChildLink
+import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSProperty
+import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.model.mpsadapters.Model
+import org.modelix.mps.sync.neu.MpsToModelixMap
+import org.modelix.mps.sync.util.nodeIdAsLong
 
-class ModelChangeListener : SModelListener {
-    override fun languageAdded(event: SModelLanguageEvent?) {
+// TODO test all methods in debugger
+class ModelChangeListener(
+    modelixModel: ReplicatedModel,
+    private val nodeMap: MpsToModelixMap,
+    private val nodeChangeListener: NodeChangeListener,
+) : SModelListener {
+
+    private val branch = modelixModel.getBranch()
+
+    override fun importAdded(event: SModelImportEvent) {
+        val modelixId = nodeMap[event.model]!!
+        val mpsModelReference = event.modelUID
+        val targetModel = mpsModelReference.resolve(event.model.repository)
+
+        val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
+        val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
+
+        branch.runWriteT {
+            val cloudParentNode = branch.getNode(modelixId)
+            val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
+
+            // save the modelix ID and the SNode in the map
+            nodeMap.put(mpsModelReference, cloudModelReference.nodeIdAsLong())
+
+            // warning: might be fragile, because we just sync the "model" reference, but no other fields
+            val targetModelModelixId = nodeMap[targetModel]!!
+            val cloudTargetModel = branch.getNode(targetModelModelixId)
+            cloudModelReference.setReferenceTarget(
+                BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
+                cloudTargetModel,
+            )
+        }
+    }
+
+    override fun importRemoved(event: SModelImportEvent) {
+        // TODO deduplicate implementation
+        val parentNodeId = nodeMap[event.model]!!
+        val nodeId = nodeMap[event.modelUID]!!
+        branch.runWriteT {
+            val cloudParentNode = branch.getNode(parentNodeId)
+            val cloudChildNode = branch.getNode(nodeId)
+            cloudParentNode.removeChild(cloudChildNode)
+        }
+    }
+
+    override fun languageAdded(event: SModelLanguageEvent) {
         TODO("Not yet implemented")
     }
 
-    override fun languageRemoved(event: SModelLanguageEvent?) {
-        TODO("Not yet implemented")
+    override fun languageRemoved(event: SModelLanguageEvent) {
+        // TODO
+        // model.usedLanguages között megkeresni az ehhez tartozó referenciát és annak a target nodeját törölni
     }
 
-    override fun importAdded(event: SModelImportEvent?) {
-        TODO("Not yet implemented")
+    override fun devkitAdded(event: SModelDevKitEvent) {
+        // TODO
+        // ez egy DevKit dependency lesz, aminek a mezőit meg kell példányosítani a szerveren
+        // a DevKit dependencyt pedig a modell "usedLanguages" containment referenciájában mentjük el
+        val modelixId = nodeMap[event.model]!!
+
+        // TODO de miért egy moduleIdra mutat?
+        event.devkitNamespace.moduleId
+
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+        }
     }
 
-    override fun importRemoved(event: SModelImportEvent?) {
-        TODO("Not yet implemented")
+    override fun devkitRemoved(event: SModelDevKitEvent) {
+        // TODO
+        // model.usedLanguages között megkeresni az ehhez tartozó referenciát és annak a target nodeját törölni
     }
 
-    override fun devkitAdded(event: SModelDevKitEvent?) {
-        TODO("Not yet implemented")
+    @Deprecated("Deprecated in Java")
+    override fun rootAdded(event: SModelRootEvent) {
+        // TODO deduplicate implementation
+        val parentNodeId = nodeMap[event.model]!!
+        val childLink = Model.rootNodes
+
+        val mpsChild = event.root
+        val mpsConcept = mpsChild.concept
+
+        val nodeId = nodeMap[mpsChild]
+        val childExists = nodeId != null
+        branch.runWriteT { transaction ->
+            if (childExists) {
+                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
+            } else {
+                val cloudParentNode = branch.getNode(parentNodeId)
+                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+
+                // save the modelix ID and the SNode in the map
+                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+
+                synchronizeNodeToCloud(mpsConcept, mpsChild, cloudChildNode)
+            }
+        }
     }
 
-    override fun devkitRemoved(event: SModelDevKitEvent?) {
-        TODO("Not yet implemented")
+    @Deprecated("Deprecated in Java")
+    override fun rootRemoved(event: SModelRootEvent) {
+        // TODO deduplicate implementation
+        val parentNodeId = nodeMap[event.model]!!
+        val nodeId = nodeMap[event.root]!!
+        branch.runWriteT {
+            val cloudParentNode = branch.getNode(parentNodeId)
+            val cloudChildNode = branch.getNode(nodeId)
+            cloudParentNode.removeChild(cloudChildNode)
+        }
     }
 
-    override fun rootAdded(event: SModelRootEvent?) {
-        TODO("Not yet implemented")
+    override fun modelRenamed(event: SModelRenamedEvent) {
+        // TODO deduplicate implementation
+        val modelixId = nodeMap[event.model]!!
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            cloudNode.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, event.newName)
+        }
     }
 
-    override fun rootRemoved(event: SModelRootEvent?) {
-        TODO("Not yet implemented")
+    override fun propertyChanged(event: SModelPropertyEvent) {
+        // TODO deduplicate implementation
+        val modelixId = nodeMap[event.model]!!
+        val property = MPSProperty(event.property)
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            cloudNode.setPropertyValue(property, event.newPropertyValue)
+        }
     }
 
-    override fun beforeRootRemoved(event: SModelRootEvent?) {
-        TODO("Not yet implemented")
+    override fun childAdded(event: SModelChildEvent) {
+        // TODO #1 when is this method called?
+        // TODO #2 deduplicate implementation
+        val parentNodeId = nodeMap[event.parent]!!
+        val childLink = Model.rootNodes
+
+        val mpsChild = event.child
+        val mpsConcept = mpsChild.concept
+
+        val nodeId = nodeMap[mpsChild]
+        val childExists = nodeId != null
+        branch.runWriteT { transaction ->
+            if (childExists) {
+                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
+            } else {
+                val cloudParentNode = branch.getNode(parentNodeId)
+                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+
+                // save the modelix ID and the SNode in the map
+                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+
+                synchronizeNodeToCloud(mpsConcept, mpsChild, cloudChildNode)
+            }
+        }
     }
 
-    override fun beforeModelRenamed(event: SModelRenamedEvent?) {
-        TODO("Not yet implemented")
+    override fun childRemoved(event: SModelChildEvent) {
+        // TODO #1 when is this method called?
+        // TODO #2 deduplicate implementation
+        val parentNodeId = nodeMap[event.model]!!
+        val nodeId = nodeMap[event.child]!!
+        branch.runWriteT {
+            val cloudParentNode = branch.getNode(parentNodeId)
+            val cloudChildNode = branch.getNode(nodeId)
+            cloudParentNode.removeChild(cloudChildNode)
+        }
     }
 
-    override fun modelRenamed(event: SModelRenamedEvent?) {
-        TODO("Not yet implemented")
+    override fun beforeModelDisposed(model: SModel) {
+        model.removeChangeListener(nodeChangeListener)
+        (model as? SModelInternal)?.removeModelListener(this)
     }
 
-    override fun propertyChanged(event: SModelPropertyEvent?) {
-        TODO("Not yet implemented")
-    }
+    override fun getPriority(): SModelListener.SModelListenerPriority = SModelListener.SModelListenerPriority.CLIENT
 
-    override fun childAdded(event: SModelChildEvent?) {
-        TODO("Not yet implemented")
-    }
+    /* incoming reference, not interesting for us */
+    override fun referenceAdded(event: SModelReferenceEvent) {}
+    override fun referenceRemoved(event: SModelReferenceEvent) {}
+    override fun beforeChildRemoved(event: SModelChildEvent) {}
+    override fun beforeRootRemoved(event: SModelRootEvent) {}
+    override fun beforeModelRenamed(event: SModelRenamedEvent) {}
+    override fun modelSaved(model: SModel) {}
+    override fun modelLoadingStateChanged(model: SModel?, state: ModelLoadingState) {}
 
-    override fun childRemoved(event: SModelChildEvent?) {
-        TODO("Not yet implemented")
-    }
+    // TODO deduplicate implementation
+    private fun synchronizeNodeToCloud(
+        mpsConcept: SConcept,
+        mpsNode: SNode,
+        cloudNode: INode,
+    ) {
+        // synchronize properties
+        mpsConcept.properties.forEach {
+            val mpsValue = mpsNode.getProperty(it)
+            val modelixProperty = PropertyFromName(it.name)
+            cloudNode.setPropertyValue(modelixProperty, mpsValue)
+        }
 
-    override fun beforeChildRemoved(event: SModelChildEvent?) {
-        TODO("Not yet implemented")
-    }
+        // synchronize references
+        mpsConcept.referenceLinks.forEach {
+            val mpsTargetNode = mpsNode.getReferenceTarget(it)!!
+            val targetNodeId = nodeMap[mpsTargetNode]!!
 
-    override fun referenceAdded(event: SModelReferenceEvent?) {
-        TODO("Not yet implemented")
-    }
+            val modelixReferenceLink = MPSReferenceLink(it)
+            val cloudTargetNode = branch.getNode(targetNodeId)
 
-    override fun referenceRemoved(event: SModelReferenceEvent?) {
-        TODO("Not yet implemented")
-    }
+            cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
+        }
 
-    override fun modelSaved(model: SModel?) {
-        TODO("Not yet implemented")
-    }
+        // synchronize children
+        mpsConcept.containmentLinks.forEach { containmentLink ->
+            mpsNode.getChildren(containmentLink).forEach { mpsChild ->
+                val childLink = MPSChildLink(containmentLink)
+                val mpsChildConcept = mpsChild.concept
+                val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
 
-    override fun modelLoadingStateChanged(model: SModel?, state: ModelLoadingState?) {
-        TODO("Not yet implemented")
-    }
+                // save the modelix ID and the SNode in the map
+                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
 
-    override fun beforeModelDisposed(model: SModel?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getPriority(): SModelListener.SModelListenerPriority {
-        TODO("Not yet implemented")
+                synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
+            }
+        }
     }
 }

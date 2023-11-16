@@ -17,8 +17,10 @@
 package org.modelix.mps.sync.neu
 
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SModuleReference
 
 // use with caution, otherwise this cache may cause memory leaks
 class MpsToModelixMap {
@@ -31,6 +33,12 @@ class MpsToModelixMap {
 
     private val sModuleToModelixId = mutableMapOf<SModule, Long>()
     private val modelixIdToSModule = mutableMapOf<Long, SModule>()
+
+    private val sModuleReferenceToModelixId = mutableMapOf<SModuleReference, Long>()
+    private val modelixIdToSModuleReference = mutableMapOf<Long, SModuleReference>()
+
+    private val sModelReferenceToModelixId = mutableMapOf<SModelReference, Long>()
+    private val modelixIdToSModelReference = mutableMapOf<Long, SModelReference>()
 
     fun put(node: SNode, modelixId: Long) {
         sNodeToModelixId[node] = modelixId
@@ -47,15 +55,33 @@ class MpsToModelixMap {
         modelixIdToSModule[modelixId] = module
     }
 
+    fun put(moduleReference: SModuleReference, modelixId: Long) {
+        sModuleReferenceToModelixId[moduleReference] = modelixId
+        modelixIdToSModuleReference[modelixId] = moduleReference
+    }
+
+    fun put(modelReference: SModelReference, modelixId: Long) {
+        sModelReferenceToModelixId[modelReference] = modelixId
+        modelixIdToSModelReference[modelixId] = modelReference
+    }
+
     operator fun get(node: SNode?) = sNodeToModelixId[node]
 
     operator fun get(model: SModel?) = sModelToModelixId[model]
 
     operator fun get(module: SModule?) = sModuleToModelixId[module]
 
+    operator fun get(moduleReference: SModuleReference?) = sModuleReferenceToModelixId[moduleReference]
+
+    operator fun get(modelReference: SModelReference?) = sModelReferenceToModelixId[modelReference]
+
     fun getNode(modelixId: Long?) = modelixIdToSNode[modelixId]
 
     fun getModel(modelixId: Long?) = modelixIdToSModel[modelixId]
 
     fun getModule(modelixId: Long?) = modelixIdToSModule[modelixId]
+
+    fun getModuleReference(modelixId: Long?) = modelixIdToSModuleReference[modelixId]
+
+    fun getModelReference(modelixId: Long?) = modelixIdToSModelReference[modelixId]
 }

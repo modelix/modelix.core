@@ -24,43 +24,34 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
 
 class ModuleChangeListener : SModuleListener {
-    override fun modelAdded(module: SModule?, model: SModel?) {
+    override fun modelAdded(module: SModule, model: SModel) {
+        // TODO register model in nodeMap with the modelix ID received after upload
+
         TODO("Not yet implemented")
     }
 
-    override fun beforeModelRemoved(module: SModule?, model: SModel?) {
+    override fun modelRemoved(module: SModule, reference: SModelReference) {
         TODO("Not yet implemented")
     }
 
-    override fun modelRemoved(module: SModule?, reference: SModelReference?) {
+    override fun dependencyAdded(module: SModule, dependency: SDependency) {
         TODO("Not yet implemented")
     }
 
-    override fun beforeModelRenamed(module: SModule?, model: SModel?, reference: SModelReference?) {
+    override fun dependencyRemoved(module: SModule, dependency: SDependency) {
         TODO("Not yet implemented")
     }
 
-    override fun modelRenamed(module: SModule?, model: SModel?, reference: SModelReference?) {
+    override fun languageAdded(module: SModule, language: SLanguage) {
         TODO("Not yet implemented")
     }
 
-    override fun dependencyAdded(module: SModule?, dependency: SDependency?) {
+    override fun languageRemoved(module: SModule, language: SLanguage) {
         TODO("Not yet implemented")
     }
 
-    override fun dependencyRemoved(module: SModule?, dependency: SDependency?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun languageAdded(module: SModule?, language: SLanguage?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun languageRemoved(module: SModule?, language: SLanguage?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun moduleChanged(module: SModule?) {
-        TODO("Not yet implemented")
-    }
+    override fun beforeModelRemoved(module: SModule, model: SModel) {}
+    override fun beforeModelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
+    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
+    override fun moduleChanged(module: SModule) {}
 }

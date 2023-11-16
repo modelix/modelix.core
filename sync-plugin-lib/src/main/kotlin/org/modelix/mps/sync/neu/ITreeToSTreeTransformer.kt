@@ -231,18 +231,29 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).forEach {
             val targetModel = it.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
             val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
-            resolvableModelImports.add(ResolvableModelImport(sModel, targetId))
+            resolvableModelImports.add(
+                ResolvableModelImport(
+                    source = sModel,
+                    targetModelId = targetId,
+                    targetModelModelixId = targetModel.nodeIdAsLong(),
+                    modelReferenceNodeId = it.nodeIdAsLong(),
+                ),
+            )
         }
     }
 
     private fun resolveModelImports(repository: SRepository) {
         resolvableModelImports.forEach {
-            val id = PersistenceFacade.getInstance().createModelId(it.target)
-            val targetModel = sModelById.getOrElse(it.target) { repository.getModel(id) }!!
-            val targetModule = targetModel.module
+            val target = it.targetModelId
+            val id = PersistenceFacade.getInstance().createModelId(target)
+            val targetModel = sModelById.getOrElse(target) { repository.getModel(id) }!!
+            nodeMap.put(targetModel, it.targetModelModelixId)
 
+            val targetModule = targetModel.module
             val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
+
+            nodeMap.put(modelImport, it.modelReferenceNodeId)
             ModelImports(it.source).addModelImport(modelImport)
         }
     }
@@ -250,5 +261,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
 data class ResolvableModelImport(
     val source: SModel,
-    val target: String,
+    val targetModelId: String,
+    val targetModelModelixId: Long,
+    val modelReferenceNodeId: Long,
 )

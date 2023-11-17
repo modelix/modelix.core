@@ -21,13 +21,12 @@ import org.jetbrains.mps.openapi.event.SNodeRemoveEvent
 import org.jetbrains.mps.openapi.event.SPropertyChangeEvent
 import org.jetbrains.mps.openapi.event.SReferenceChangeEvent
 import org.jetbrains.mps.openapi.language.SConcept
-import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeChangeListener
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
-import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
@@ -36,13 +35,9 @@ import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 class NodeChangeListener(
-    private val mpsModel: SModel,
-    modelixModel: ReplicatedModel,
+    private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-) :
-    SNodeChangeListener {
-
-    private val branch = modelixModel.getBranch()
+) : SNodeChangeListener {
 
     override fun propertyChanged(event: SPropertyChangeEvent) {
         val property = MPSProperty(event.property)
@@ -74,7 +69,7 @@ class NodeChangeListener(
 
     override fun nodeAdded(event: SNodeAddEvent) {
         val parentNodeId = if (event.isRoot) {
-            nodeMap[mpsModel]!!
+            nodeMap[event.model]!!
         } else {
             nodeMap[event.parent!!]!!
         }
@@ -140,7 +135,7 @@ class NodeChangeListener(
 
     override fun nodeRemoved(event: SNodeRemoveEvent) {
         val parentNodeId = if (event.isRoot) {
-            nodeMap[mpsModel]!!
+            nodeMap[event.model]!!
         } else {
             nodeMap[event.parent!!]!!
         }

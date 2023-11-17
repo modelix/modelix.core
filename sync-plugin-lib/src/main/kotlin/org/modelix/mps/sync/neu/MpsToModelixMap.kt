@@ -40,6 +40,9 @@ class MpsToModelixMap {
     private val sModelReferenceToModelixId = mutableMapOf<SModelReference, Long>()
     private val modelixIdToSModelReference = mutableMapOf<Long, SModelReference>()
 
+    val models = modelixIdToSModel.values
+    val modules = modelixIdToSModule.values
+
     fun put(node: SNode, modelixId: Long) {
         sNodeToModelixId[node] = modelixId
         modelixIdToSNode[modelixId] = node

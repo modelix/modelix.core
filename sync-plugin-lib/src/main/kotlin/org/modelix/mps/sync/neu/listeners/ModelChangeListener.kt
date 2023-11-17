@@ -31,10 +31,10 @@ import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
-import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
@@ -44,12 +44,10 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 
 // TODO test all methods in debugger
 class ModelChangeListener(
-    modelixModel: ReplicatedModel,
+    private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
     private val nodeChangeListener: NodeChangeListener,
 ) : SModelListener {
-
-    private val branch = modelixModel.getBranch()
 
     override fun importAdded(event: SModelImportEvent) {
         val modelixId = nodeMap[event.model]!!
@@ -63,7 +61,6 @@ class ModelChangeListener(
             val cloudParentNode = branch.getNode(modelixId)
             val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
 
-            // save the modelix ID and the SNode in the map
             nodeMap.put(mpsModelReference, cloudModelReference.nodeIdAsLong())
 
             // warning: might be fragile, because we just sync the "model" reference, but no other fields
@@ -278,6 +275,8 @@ class ModelChangeListener(
     }
 
     override fun beforeModelDisposed(model: SModel) {
+        // TODO #1 test if this method is called when we remove a model from a module
+        // TODO #2 if not then we have to remove the listeners in the ModuleChangeListener.modelRemoved
         model.removeChangeListener(nodeChangeListener)
         (model as? SModelInternal)?.removeModelListener(this)
     }

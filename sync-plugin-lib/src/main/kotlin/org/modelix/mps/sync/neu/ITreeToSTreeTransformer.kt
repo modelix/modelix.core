@@ -19,9 +19,11 @@ package org.modelix.mps.sync.neu
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.project.Solution
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.ModelImports
+import jetbrains.mps.smodel.SModelInternal
 import jetbrains.mps.smodel.SModelReference
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.EditableSModel
@@ -36,6 +38,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.neu.listeners.ModelChangeListener
+import org.modelix.mps.sync.neu.listeners.ModuleChangeListener
 import org.modelix.mps.sync.neu.listeners.NodeChangeListener
 import org.modelix.mps.sync.util.addDevKit
 import org.modelix.mps.sync.util.addLanguageImport
@@ -50,12 +54,6 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
     private val solutionProducer = SolutionProducer(project)
 
     private val nodeMap = MpsToModelixMap()
-
-    // TODO may be replaced by nodeMap
-    private val sModuleById = mutableMapOf<String, SModule>()
-
-    // TODO may be replaced by nodeMap
-    private val sModelById = mutableMapOf<String, SModel>()
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
@@ -96,8 +94,17 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
                 resolveModelImports(repository)
 
                 println("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
-                sModelById.values.forEach {
-                    it.addChangeListener(NodeChangeListener(it, replicatedModel, nodeMap))
+                val branch = replicatedModel.getBranch()
+                // TODO unregister listeners later!!!
+                nodeMap.models.forEach {
+                    val nodeChangeListener = NodeChangeListener(branch, nodeMap)
+                    val modelChangeListener = ModelChangeListener(branch, nodeMap, nodeChangeListener)
+
+                    it.addChangeListener(nodeChangeListener)
+                    (it as SModelInternal).addModelListener(modelChangeListener)
+                }
+                nodeMap.modules.forEach {
+                    it.addModuleListener(ModuleChangeListener(branch, nodeMap))
                 }
             }
         } catch (ex: Exception) {
@@ -154,7 +161,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
     private fun transformNode(iNode: INode, nodeFactory: SNodeFactory) {
         // TODO figure out which model the iNode belongs to
-        val model = sModelById.values.firstOrNull()!!
+        val model = nodeMap.models.firstOrNull()!!
         val repository = model.repository
 
         // DevKit or LanguageDependency
@@ -212,17 +219,35 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         check(name != null) { "Module's ($iNode) name is null" }
 
         val sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
-        sModuleById[serializedId] = sModule
+        nodeMap.put(sModule, iNode.nodeIdAsLong())
 
-        // TODO shall we transform the ModuleDependencies here? module.addDependency(sModuleReference, reexport)
+        iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).forEach {
+            // TODO not sure if this is necessary
+            transformModuleDependency(it, sModule)
+        }
+    }
+
+    private fun transformModuleDependency(iNode: INode, module: Solution) {
+        val reexport = (
+            iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
+                ?: "false"
+            ).toBoolean()
+        val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)!!
+        val moduleId = PersistenceFacade.getInstance().createModuleId(uuid)
+        val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
+
+        val moduleReference = ModuleReference(moduleName, moduleId)
+        nodeMap.put(moduleReference, iNode.nodeIdAsLong())
+
+        module.addDependency(moduleReference, reexport)
     }
 
     private fun addModelToModule(iNode: INode) {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Module's ($iNode) name is null" }
 
-        val moduleId: String? = iNode.parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)
-        val module: SModule? = sModuleById[moduleId]
+        val moduleId = iNode.parent?.nodeIdAsLong()
+        val module: SModule? = nodeMap.getModule(moduleId)
         check(module != null) { "Parent module with ID $moduleId is not found" }
 
         val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
@@ -237,7 +262,6 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             latch.countDown()
         }
         latch.await()
-        sModelById[serializedId] = sModel
         nodeMap.put(sModel, iNode.nodeIdAsLong())
 
         // register model imports
@@ -257,9 +281,8 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
     private fun resolveModelImports(repository: SRepository) {
         resolvableModelImports.forEach {
-            val target = it.targetModelId
-            val id = PersistenceFacade.getInstance().createModelId(target)
-            val targetModel = sModelById.getOrElse(target) { repository.getModel(id) }!!
+            val id = PersistenceFacade.getInstance().createModelId(it.targetModelId)
+            val targetModel = (nodeMap.getModel(it.targetModelModelixId) ?: repository.getModel(id))!!
             nodeMap.put(targetModel, it.targetModelModelixId)
 
             val targetModule = targetModel.module

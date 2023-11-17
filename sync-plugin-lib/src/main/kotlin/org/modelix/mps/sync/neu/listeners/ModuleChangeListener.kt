@@ -16,48 +16,174 @@
 
 package org.modelix.mps.sync.neu.listeners
 
+import jetbrains.mps.smodel.SModelInternal
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.getNode
+import org.modelix.mps.sync.neu.MpsToModelixMap
+import org.modelix.mps.sync.util.nodeIdAsLong
 
-class ModuleChangeListener : SModuleListener {
+// TODO test all methods in debugger
+class ModuleChangeListener(
+    private val branch: IBranch,
+    private val nodeMap: MpsToModelixMap,
+) : SModuleListener {
+
     override fun modelAdded(module: SModule, model: SModel) {
-        // TODO register model in nodeMap with the modelix ID received after upload
+        val moduleModelixId = nodeMap[module]!!
+        val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
-        TODO("Not yet implemented")
+        branch.runWriteT {
+            val cloudModule = branch.getNode(moduleModelixId)
+            val cloudModel = cloudModule.addNewChild(models, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
+
+            nodeMap.put(model, cloudModel.nodeIdAsLong())
+
+            val nodeChangeListener = NodeChangeListener(branch, nodeMap)
+            model.addChangeListener(nodeChangeListener)
+            // TODO test if model is always an SModelInternal
+            (model as? SModelInternal)?.addModelListener(ModelChangeListener(branch, nodeMap, nodeChangeListener))
+
+            // TODO trigger full model synchronization
+        }
     }
 
     override fun modelRemoved(module: SModule, reference: SModelReference) {
-        TODO("Not yet implemented")
+        val moduleModelixId = nodeMap[module]!!
+
+        val model = reference.resolve(module.repository)
+        val modelModelixId = nodeMap[model]!!
+
+        branch.runWriteT {
+            val cloudModule = branch.getNode(moduleModelixId)
+            val cloudModel = branch.getNode(modelModelixId)
+            cloudModule.removeChild(cloudModel)
+        }
     }
 
     override fun dependencyAdded(module: SModule, dependency: SDependency) {
-        TODO("Not yet implemented")
+        // TODO #1 might not work, we have to test it
+        // TODO #2 is it called if we add a new DevKit to a model in the module?
+        val moduleModelixId = nodeMap[module]!!
+        val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
+
+        val moduleReference = dependency.targetModule
+
+        branch.runWriteT {
+            val cloudModule = branch.getNode(moduleModelixId)
+            val cloudDependency = cloudModule.addNewChild(
+                role = dependencies,
+                index = -1,
+                concept = BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency,
+            )
+
+            nodeMap.put(moduleReference, cloudDependency.nodeIdAsLong())
+
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
+                dependency.isReexport.toString(),
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
+                moduleReference.moduleId.toString(),
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name,
+                moduleReference.moduleName,
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit,
+                "false", // TODO fixme, hardcoded default value
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version,
+                "0", // TODO fixme, hardcoded default value
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.scope,
+                dependency.scope.toString(),
+            )
+        }
 
         // save to module.dependencies
     }
 
     override fun dependencyRemoved(module: SModule, dependency: SDependency) {
-        TODO("Not yet implemented")
+        // TODO #1 might not work, we have to test it
+        // TODO #2 is it called if we remove a DevKit from a model in the module?
+        val modelixId = nodeMap[module]!!
 
-        // remove from module.dependencies
+        val targetModule = dependency.targetModule
+        val targetModuleId = nodeMap[targetModule]!!
+
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            val dependencyChild = branch.getNode(targetModuleId)
+            cloudNode.removeChild(dependencyChild)
+        }
     }
 
     override fun languageAdded(module: SModule, language: SLanguage) {
-        TODO("Not yet implemented")
+        // TODO #1 might not work, we have to test it
+        // TODO #2 is it called if we add a language to a model?
+        // TODO #3 deduplicate, because it is handled in a very similar way in ModelChangeListener
+        val modelixId = nodeMap[module]!!
 
-        // save to module.languageDependencies
-        // TODO is it called if we add a language to a model?
+        val languageModuleReference = language.sourceModuleReference
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
+
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            val cloudLanguageDependency =
+                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency)
+
+            // TODO we might have to find a different traceability between the SingleLanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading Languages from the cloud)
+            nodeMap.put(languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
+
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                languageModuleReference?.moduleName,
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                languageModuleReference?.moduleId.toString(),
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                module.getUsedLanguageVersion(language).toString(),
+            )
+        }
     }
 
     override fun languageRemoved(module: SModule, language: SLanguage) {
-        TODO("Not yet implemented")
+        // TODO #1 might not work, we have to test it
+        // TODO #2 is it called if we remove a language from a model?
+        // TODO #3 deduplicate, because it is handled in a very similar way in ModelChangeListener
+        val modelixId = nodeMap[module]!!
 
-        // remove from module.languageDependencies
-        // TODO is it called if we remove a language from a model?
+        val languageModuleReference = language.sourceModuleReference
+        val languageModuleReferenceModelixId = nodeMap[languageModuleReference]!!
+
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            val cloudLanguageModuleReference = branch.getNode(languageModuleReferenceModelixId)
+            cloudNode.removeChild(cloudLanguageModuleReference)
+        }
     }
 
     override fun beforeModelRemoved(module: SModule, model: SModel) {}

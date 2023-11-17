@@ -16,6 +16,8 @@
 
 package org.modelix.mps.sync.neu.listeners
 
+import com.jetbrains.rd.util.firstOrNull
+import jetbrains.mps.project.Solution
 import jetbrains.mps.smodel.SModelInternal
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
@@ -74,6 +76,18 @@ class ModuleChangeListener(
         val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
 
         val moduleReference = dependency.targetModule
+        val moduleId = moduleReference.moduleId
+
+        val isExplicit = if (module is Solution) {
+            module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
+        } else {
+            module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
+        }
+
+        val version = (module as? Solution)?.let {
+            it.moduleDescriptor.dependencyVersions.filter { dependencyVersion -> dependencyVersion.key == moduleReference }
+                .firstOrNull()?.value
+        } ?: 0
 
         branch.runWriteT {
             val cloudModule = branch.getNode(moduleModelixId)
@@ -103,12 +117,12 @@ class ModuleChangeListener(
 
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit,
-                "false", // TODO fixme, hardcoded default value
+                isExplicit.toString(),
             )
 
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version,
-                "0", // TODO fixme, hardcoded default value
+                version.toString(),
             )
 
             cloudDependency.setPropertyValue(
@@ -116,8 +130,6 @@ class ModuleChangeListener(
                 dependency.scope.toString(),
             )
         }
-
-        // save to module.dependencies
     }
 
     override fun dependencyRemoved(module: SModule, dependency: SDependency) {

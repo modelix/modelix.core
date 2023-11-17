@@ -37,12 +37,11 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
-import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
-// TODO test all methods in debugger
+// TODO some methods need some testing
 class ModelChangeListener(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
@@ -50,6 +49,7 @@ class ModelChangeListener(
 ) : SModelListener {
 
     override fun importAdded(event: SModelImportEvent) {
+        // TODO might not work, we have to test it
         val modelixId = nodeMap[event.model]!!
         val mpsModelReference = event.modelUID
         val targetModel = mpsModelReference.resolve(event.model.repository)
@@ -74,6 +74,7 @@ class ModelChangeListener(
     }
 
     override fun importRemoved(event: SModelImportEvent) {
+        // TODO might not work, we have to test it
         // TODO deduplicate implementation
         val parentNodeId = nodeMap[event.model]!!
         val nodeId = nodeMap[event.modelUID]!!
@@ -85,7 +86,6 @@ class ModelChangeListener(
     }
 
     override fun languageAdded(event: SModelLanguageEvent) {
-        // TODO might not work, we have to test it
         val modelixId = nodeMap[event.model]!!
 
         val language = event.eventLanguage
@@ -119,7 +119,6 @@ class ModelChangeListener(
     }
 
     override fun languageRemoved(event: SModelLanguageEvent) {
-        // TODO might not work, we have to test it
         val modelixId = nodeMap[event.model]!!
 
         val languageModuleReference = event.eventLanguage.sourceModuleReference
@@ -133,7 +132,6 @@ class ModelChangeListener(
     }
 
     override fun devkitAdded(event: SModelDevKitEvent) {
-        // TODO might not work, we have to test it
         val modelixId = nodeMap[event.model]!!
 
         val repository = event.model.repository
@@ -165,11 +163,9 @@ class ModelChangeListener(
     }
 
     override fun devkitRemoved(event: SModelDevKitEvent) {
-        // TODO might not work, we have to test it
         val modelixId = nodeMap[event.model]!!
 
         val devKitModuleReference = event.devkitNamespace
-        // TODO this might not work,
         val devKitModuleReferenceModelixId = nodeMap[devKitModuleReference]!!
 
         branch.runWriteT {
@@ -205,18 +201,6 @@ class ModelChangeListener(
         }
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun rootRemoved(event: SModelRootEvent) {
-        // TODO deduplicate implementation
-        val parentNodeId = nodeMap[event.model]!!
-        val nodeId = nodeMap[event.root]!!
-        branch.runWriteT {
-            val cloudParentNode = branch.getNode(parentNodeId)
-            val cloudChildNode = branch.getNode(nodeId)
-            cloudParentNode.removeChild(cloudChildNode)
-        }
-    }
-
     override fun modelRenamed(event: SModelRenamedEvent) {
         // TODO deduplicate implementation
         val modelixId = nodeMap[event.model]!!
@@ -226,66 +210,38 @@ class ModelChangeListener(
         }
     }
 
-    override fun propertyChanged(event: SModelPropertyEvent) {
-        // TODO deduplicate implementation
-        val modelixId = nodeMap[event.model]!!
-        val property = MPSProperty(event.property)
-        branch.runWriteT {
-            val cloudNode = branch.getNode(modelixId)
-            cloudNode.setPropertyValue(property, event.newPropertyValue)
-        }
-    }
-
-    override fun childAdded(event: SModelChildEvent) {
-        // TODO #1 when is this method called?
-        // TODO #2 deduplicate implementation
-        val parentNodeId = nodeMap[event.parent]!!
-        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
-
-        val mpsChild = event.child
-        val mpsConcept = mpsChild.concept
-
-        val nodeId = nodeMap[mpsChild]
-        val childExists = nodeId != null
-        branch.runWriteT { transaction ->
-            if (childExists) {
-                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
-            } else {
-                val cloudParentNode = branch.getNode(parentNodeId)
-                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
-
-                // save the modelix ID and the SNode in the map
-                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
-
-                synchronizeNodeToCloud(mpsConcept, mpsChild, cloudChildNode)
-            }
-        }
-    }
-
-    override fun childRemoved(event: SModelChildEvent) {
-        // TODO #1 when is this method called?
-        // TODO #2 deduplicate implementation
-        val parentNodeId = nodeMap[event.model]!!
-        val nodeId = nodeMap[event.child]!!
-        branch.runWriteT {
-            val cloudParentNode = branch.getNode(parentNodeId)
-            val cloudChildNode = branch.getNode(nodeId)
-            cloudParentNode.removeChild(cloudChildNode)
-        }
-    }
-
     override fun beforeModelDisposed(model: SModel) {
-        // TODO #1 test if this method is called when we remove a model from a module
-        // TODO #2 if not then we have to remove the listeners in the ModuleChangeListener.modelRemoved
         model.removeChangeListener(nodeChangeListener)
         (model as? SModelInternal)?.removeModelListener(this)
     }
 
+    @Deprecated("Deprecated in Java")
+    override fun rootRemoved(event: SModelRootEvent) {
+        // duplicate of SNodeChangeListener.nodeRemoved
+    }
+
     override fun getPriority(): SModelListener.SModelListenerPriority = SModelListener.SModelListenerPriority.CLIENT
 
-    /* incoming reference, not interesting for us */
-    override fun referenceAdded(event: SModelReferenceEvent) {}
-    override fun referenceRemoved(event: SModelReferenceEvent) {}
+    override fun propertyChanged(event: SModelPropertyEvent) {
+        // duplicate of SNodeChangeListener.propertyChanged
+    }
+
+    override fun childAdded(event: SModelChildEvent) {
+        // duplicate of SNodeChangeListener.childAdded
+    }
+
+    override fun childRemoved(event: SModelChildEvent) {
+        // duplicate of SNodeChangeListener.nodeRemoved
+    }
+
+    override fun referenceAdded(event: SModelReferenceEvent) {
+        // duplicate of SNodeChangeListener.referenceChanged
+    }
+
+    override fun referenceRemoved(event: SModelReferenceEvent) {
+        // duplicate of SNodeChangeListener.referenceChanged
+    }
+
     override fun beforeChildRemoved(event: SModelChildEvent) {}
     override fun beforeRootRemoved(event: SModelRootEvent) {}
     override fun beforeModelRenamed(event: SModelRenamedEvent) {}

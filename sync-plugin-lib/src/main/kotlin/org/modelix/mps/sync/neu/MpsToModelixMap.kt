@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.neu
 
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
@@ -30,6 +31,9 @@ class MpsToModelixMap {
 
     private val sModelToModelixId = mutableMapOf<SModel, Long>()
     private val modelixIdToSModel = mutableMapOf<Long, SModel>()
+
+    private val sModelIdToModelixId = mutableMapOf<SModelId, Long>()
+    private val modelixIdToSModelId = mutableMapOf<Long, SModelId>()
 
     private val sModuleToModelixId = mutableMapOf<SModule, Long>()
     private val modelixIdToSModule = mutableMapOf<Long, SModule>()
@@ -51,6 +55,10 @@ class MpsToModelixMap {
     fun put(model: SModel, modelixId: Long) {
         sModelToModelixId[model] = modelixId
         modelixIdToSModel[modelixId] = model
+
+        val modelId = model.modelId
+        sModelIdToModelixId[modelId] = modelixId
+        modelixIdToSModelId[modelixId] = modelId
     }
 
     fun put(module: SModule, modelixId: Long) {
@@ -71,6 +79,8 @@ class MpsToModelixMap {
     operator fun get(node: SNode?) = sNodeToModelixId[node]
 
     operator fun get(model: SModel?) = sModelToModelixId[model]
+
+    operator fun get(modelId: SModelId?) = sModelIdToModelixId[modelId]
 
     operator fun get(module: SModule?) = sModuleToModelixId[module]
 

@@ -73,7 +73,9 @@ class NodeChangeListener(
         } else {
             nodeMap[event.parent!!]!!
         }
-        val childLink = MPSChildLink(event.aggregationLink!!)
+
+        val containmentLink = event.aggregationLink ?: return // SModelListener.rootAdded handles it if null
+        val childLink = MPSChildLink(containmentLink)
 
         val mpsChild = event.child
         val mpsConcept = mpsChild.concept

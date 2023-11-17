@@ -31,7 +31,7 @@ import org.modelix.model.api.getNode
 import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
-// TODO test all methods in debugger
+// TODO some methods need some testing
 class ModuleChangeListener(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
@@ -49,7 +49,6 @@ class ModuleChangeListener(
 
             val nodeChangeListener = NodeChangeListener(branch, nodeMap)
             model.addChangeListener(nodeChangeListener)
-            // TODO test if model is always an SModelInternal
             (model as? SModelInternal)?.addModelListener(ModelChangeListener(branch, nodeMap, nodeChangeListener))
 
             // TODO trigger full model synchronization
@@ -58,9 +57,7 @@ class ModuleChangeListener(
 
     override fun modelRemoved(module: SModule, reference: SModelReference) {
         val moduleModelixId = nodeMap[module]!!
-
-        val model = reference.resolve(module.repository)
-        val modelModelixId = nodeMap[model]!!
+        val modelModelixId = nodeMap[reference.modelId]!!
 
         branch.runWriteT {
             val cloudModule = branch.getNode(moduleModelixId)
@@ -70,8 +67,8 @@ class ModuleChangeListener(
     }
 
     override fun dependencyAdded(module: SModule, dependency: SDependency) {
-        // TODO #1 might not work, we have to test it
-        // TODO #2 is it called if we add a new DevKit to a model in the module?
+        // TODO #1 is it called at all by MPS?
+        // TODO #2 might not work, we have to test it
         val moduleModelixId = nodeMap[module]!!
         val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
 
@@ -133,8 +130,8 @@ class ModuleChangeListener(
     }
 
     override fun dependencyRemoved(module: SModule, dependency: SDependency) {
-        // TODO #1 might not work, we have to test it
-        // TODO #2 is it called if we remove a DevKit from a model in the module?
+        // TODO #1 is it called at all by MPS?
+        // TODO #2 might not work, we have to test it
         val modelixId = nodeMap[module]!!
 
         val targetModule = dependency.targetModule
@@ -148,8 +145,8 @@ class ModuleChangeListener(
     }
 
     override fun languageAdded(module: SModule, language: SLanguage) {
-        // TODO #1 might not work, we have to test it
-        // TODO #2 is it called if we add a language to a model?
+        // TODO #1 is it called at all by MPS?
+        // TODO #2 might not work, we have to test it
         // TODO #3 deduplicate, because it is handled in a very similar way in ModelChangeListener
         val modelixId = nodeMap[module]!!
 
@@ -183,8 +180,8 @@ class ModuleChangeListener(
     }
 
     override fun languageRemoved(module: SModule, language: SLanguage) {
-        // TODO #1 might not work, we have to test it
-        // TODO #2 is it called if we remove a language from a model?
+        // TODO #1 is it called at all by MPS?
+        // TODO #2 might not work, we have to test it
         // TODO #3 deduplicate, because it is handled in a very similar way in ModelChangeListener
         val modelixId = nodeMap[module]!!
 
@@ -200,6 +197,9 @@ class ModuleChangeListener(
 
     override fun beforeModelRemoved(module: SModule, model: SModel) {}
     override fun beforeModelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
-    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
+    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) {
+        // duplicate of SModelListener.modelRenamed
+    }
+
     override fun moduleChanged(module: SModule) {}
 }

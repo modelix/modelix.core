@@ -239,7 +239,9 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         val moduleReference = ModuleReference(moduleName, moduleId)
         nodeMap.put(moduleReference, iNode.nodeIdAsLong())
 
-        module.addDependency(moduleReference, reexport)
+        project.modelAccess.runWriteInEDT {
+            module.addDependency(moduleReference, reexport)
+        }
     }
 
     private fun addModelToModule(iNode: INode) {

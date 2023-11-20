@@ -14,13 +14,6 @@
  * limitations under the License.
  */
 
-buildscript {
-    val modelixCoreVersion: String = file("../version.txt").readText()
-    dependencies {
-        classpath("org.modelix:model-server:$modelixCoreVersion")
-    }
-}
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
     id("org.modelix.bulk-model-sync")

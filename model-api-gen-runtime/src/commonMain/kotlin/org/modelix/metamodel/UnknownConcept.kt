@@ -7,7 +7,6 @@ import org.modelix.model.api.ILanguage
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.getConcept
 import org.modelix.model.area.IArea
 import kotlin.reflect.KClass
 
@@ -91,7 +90,7 @@ data class UnknownTypedConcept(private val ref: IConcept?) : IConceptOfTypedNode
 
 data class UnknownConceptInstance(val node: INode) : ITypedNode {
     override val _concept: ITypedConcept
-        get() = UnknownTypedConcept(node.getConcept())
+        get() = UnknownTypedConcept(node.concept)
 
     override fun unwrap(): INode = node
 }

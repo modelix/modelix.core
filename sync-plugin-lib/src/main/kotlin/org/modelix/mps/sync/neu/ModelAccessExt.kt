@@ -1,0 +1,34 @@
+/*
+ * Copyright (c) 2023.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.modelix.mps.sync.neu
+
+import org.jetbrains.mps.openapi.module.ModelAccess
+import java.util.concurrent.CountDownLatch
+
+fun ModelAccess.runWriteBlocking(r: Runnable) {
+    val latch = CountDownLatch(1)
+    try {
+        this.runWriteInEDT {
+            r.run()
+            latch.countDown()
+        }
+    } catch (t: Throwable) {
+        latch.countDown()
+        throw t
+    }
+    latch.await()
+}

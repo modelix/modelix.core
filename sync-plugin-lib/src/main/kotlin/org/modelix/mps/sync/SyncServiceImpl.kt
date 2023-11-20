@@ -9,6 +9,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
@@ -62,10 +63,11 @@ class SyncServiceImpl : SyncService {
         client.close()
     }
 
-    public override suspend fun bindModel(
+    override suspend fun bindModel(
         modelClientV2: ModelClientV2,
         branchReference: BranchReference,
         modelName: String,
+        model: INode,
         project: MPSProject,
         afterActivate: (() -> Unit)?,
     ): IBinding {
@@ -73,19 +75,14 @@ class SyncServiceImpl : SyncService {
 
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         runBlocking(coroutineScope.coroutineContext) {
-            try {
-                log.info("Binding model $modelName")
-                val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
-                replicatedModel.start()
+            log.info("Binding model $modelName")
+            val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
+            replicatedModel.start()
 
-                // 🚧🏗️👷👷‍♂️ WARNING Construction area 🚧🚧🚧
-                ITreeToSTreeTransformer(replicatedModel, project).transform()
+            // 🚧🏗️👷👷‍♂️ WARNING Construction area 🚧🚧🚧
+            ITreeToSTreeTransformer(replicatedModel, project).transform(model)
 
-                bindingImpl = BindingImpl(replicatedModel, modelName, project)
-            } catch (e: ConnectException) {
-                log.warn("Unable to connect: ${e.message} / ${e.cause}")
-                throw e
-            }
+            bindingImpl = BindingImpl(replicatedModel, modelName, project)
         }
         // trigger callback after activation
         afterActivate?.invoke()

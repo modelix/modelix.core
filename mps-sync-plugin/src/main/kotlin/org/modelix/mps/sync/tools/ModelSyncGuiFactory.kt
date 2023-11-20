@@ -194,6 +194,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                         ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!,
                         branchName.text,
                         modelName.text,
+                        modelModel.selectedItem as INode,
                         repositoryName.text,
                         ::triggerRefresh,
                     )

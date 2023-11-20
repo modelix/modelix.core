@@ -35,7 +35,7 @@ import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
-import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.neu.listeners.ModelChangeListener
@@ -46,7 +46,6 @@ import org.modelix.mps.sync.util.addLanguageImport
 import org.modelix.mps.sync.util.createModel
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 
 class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val project: MPSProject) {
@@ -57,7 +56,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
-    fun transform(): SNode? {
+    fun transform(entryPoint: INode): SNode? {
         try {
             // 1. Register the language concepts so they are ready for lookup
             val repository = project.repository
@@ -66,35 +65,25 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
             // 2. Traverse and transform the tree
             // TODO use coroutines instead of big-bang eager loading?
-            replicatedModel.getBranch().runReadT { transaction ->
+            val branch = replicatedModel.getBranch()
+            branch.runReadT {
                 val sNodeFactory = SNodeFactory(mpsLanguageRepo, project.modelAccess, nodeMap)
-
-                val allChildren = transaction.tree.getAllChildren(1L)
+                val root = branch.getNode(entryPoint.nodeIdAsLong())
 
                 println("--- PRINTING TREE ---")
-                allChildren.forEach { id ->
-                    val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
-                    traverse(iNode, 1) { }
-                }
+                traverse(root, 1) { }
 
                 println("--- FILTERING MODULES AND MODELS ---")
-                allChildren.forEach { id ->
-                    val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
-                    traverse(iNode, 1) { transformModulesAndModels(it) }
-                }
+                traverse(root, 1) { transformModulesAndModels(it) }
 
                 println("--- TRANSFORMING NODES ---")
-                allChildren.forEach { id ->
-                    val iNode = PNodeAdapter.wrap(id, replicatedModel.getBranch())!!
-                    traverse(iNode, 1) { transformNode(it, sNodeFactory) }
-                }
+                traverse(root, 1) { transformNode(it, sNodeFactory) }
 
                 println("--- RESOLVING REFERENCES AND MODEL IMPORTS ---")
                 sNodeFactory.resolveReferences()
                 resolveModelImports(repository)
 
                 println("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
-                val branch = replicatedModel.getBranch()
                 // TODO unregister listeners later!!!
                 nodeMap.models.forEach {
                     val nodeChangeListener = NodeChangeListener(branch, nodeMap)
@@ -179,7 +168,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         }
 
         if (isDevKitDependency) {
-            project.modelAccess.runWriteInEDT {
+            project.modelAccess.runWriteBlocking {
                 val devKitModuleReference = (dependentModule as DevKit).moduleReference
 
                 // TODO this might not work, because if more than one models/modules point to the same DevKit, then the modelix ID will be always overwritten by the last Node (DevkitDependency) that points to this devkit
@@ -197,7 +186,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             // TODO we migth have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
             nodeMap.put(languageModuleReference, iNode.nodeIdAsLong())
             val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference)
-            project.modelAccess.runWriteInEDT {
+            project.modelAccess.runWriteBlocking {
                 model.addLanguageImport(sLanguage, version?.toInt()!!)
             }
         } else {
@@ -239,7 +228,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         val moduleReference = ModuleReference(moduleName, moduleId)
         nodeMap.put(moduleReference, iNode.nodeIdAsLong())
 
-        project.modelAccess.runWriteInEDT {
+        project.modelAccess.runWriteBlocking {
             module.addDependency(moduleReference, reexport)
         }
     }
@@ -257,13 +246,10 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        val latch = CountDownLatch(1)
-        project.modelAccess.runWriteInEDT {
+        project.modelAccess.runWriteBlocking {
             sModel = module.createModel(name, modelId) as EditableSModel
             sModel.save()
-            latch.countDown()
         }
-        latch.await()
         nodeMap.put(sModel, iNode.nodeIdAsLong())
 
         // register model imports

@@ -70,6 +70,13 @@ class SolutionProducer(private val project: MPSProject) {
         descriptor.kind = SolutionKind.PLUGIN_OTHER
         val solution = GeneralModuleFactory().instantiate(descriptor, solutionFile) as Solution
         project.addModule(solution)
+
+        if (solution.repository == null) {
+            project.modelAccess.runWriteBlocking {
+                // this might be a silly workaround...
+                solution.attach(project.repository)
+            }
+        }
         check(solution.repository != null) { "The solution should be in a repo, so also the model will be in a repo and syncReference will not crash" }
 
         return solution

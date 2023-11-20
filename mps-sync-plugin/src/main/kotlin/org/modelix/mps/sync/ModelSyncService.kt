@@ -90,6 +90,7 @@ class ModelSyncService : Disposable {
         theProject: MPSProject,
         branchName: String,
         modelName: String,
+        model: INode,
         repositoryID: String,
         afterActivate: (() -> Unit)?,
     ) {
@@ -100,12 +101,13 @@ class ModelSyncService : Disposable {
                     client,
                     BranchReference(RepositoryId(repositoryID), branchName),
                     modelName,
+                    model,
                     theProject,
                     afterActivate,
                 )
                 existingBindings.add(newBinding)
             } catch (e: ConnectException) {
-                log.warn("Unable to connect2: ${e.message} / ${e.cause}")
+                log.warn("Unable to connect: ${e.message} / ${e.cause}")
             } catch (e: ClientRequestException) {
                 log.warn("Illegal request: ${e.message} / ${e.cause}")
             } catch (e: Exception) {

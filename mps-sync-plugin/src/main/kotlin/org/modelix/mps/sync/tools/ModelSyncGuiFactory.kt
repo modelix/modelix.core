@@ -231,6 +231,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             populateConnectionsCB()
             populateRepoCB()
             populateBindingCB()
+
+            // TODO fixme hardcoded values!
             serverURL.text = "http://127.0.0.1:28101/v2"
             repositoryName.text = "courses"
             branchName.text = "master"

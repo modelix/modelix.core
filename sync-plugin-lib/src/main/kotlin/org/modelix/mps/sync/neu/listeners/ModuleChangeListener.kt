@@ -62,7 +62,9 @@ class ModuleChangeListener(
         branch.runWriteT {
             val cloudModule = branch.getNode(moduleModelixId)
             val cloudModel = branch.getNode(modelModelixId)
-            cloudModule.removeChild(cloudModel)
+
+            // TODO uncomment this line if demo was done and plugin works fine!
+            // cloudModule.removeChild(cloudModel)
         }
     }
 

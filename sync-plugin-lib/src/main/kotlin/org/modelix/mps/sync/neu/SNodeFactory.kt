@@ -103,11 +103,12 @@ class SNodeFactory(
 
     private fun getMpsNodeId(iNode: INode): SNodeId {
         val mpsNodeIdAsString = iNode.mappedMpsNodeID()
-        return if (mpsNodeIdAsString == null) {
+        val mpsId = mpsNodeIdAsString?.let { PersistenceFacade.getInstance().createNodeId(it) }
+        return if (mpsId != null) {
+            mpsId
+        } else {
             val id = iNode.nodeIdAsLong()
             jetbrains.mps.smodel.SNodeId.Regular(id)
-        } else {
-            PersistenceFacade.getInstance().createNodeId(mpsNodeIdAsString)!!
         }
     }
 
@@ -134,16 +135,35 @@ class SNodeFactory(
 
             // TODO what about those references whose target is outside of the model?
             val targetNodeId = it.second.nodeIdAsLong()
+            val mpsId = it.second.mappedMpsNodeID()
 
-            resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
+            resolvableReferences.add(ResolvableReference(source, reference, targetNodeId, mpsId))
         }
     }
 
-    fun resolveReferences() {
+    fun resolveReferences(methodConfiguration: SModel, catalog: SModel) {
         resolvableReferences.forEach {
             val source = it.source
             val reference = it.reference
-            val target = nodeMap.getNode(it.targetNodeId)
+            var target = nodeMap.getNode(it.targetNodeId)
+
+            // TODO remove me: hardcoded node lookup for demo!
+            // TODO remove me: hardcoded method parameters!
+            // TODO remove me: ResolvableReference.targetNodeMpsId
+            val mpsId = it.targetNodeMpsId
+            if (mpsId != null) {
+                val mpsNodeId = PersistenceFacade.getInstance().createNodeId(mpsId)
+                if (target == null) {
+                    modelAccess.runReadAction {
+                        target = methodConfiguration.getNode(mpsNodeId)
+                    }
+                }
+                if (target == null) {
+                    modelAccess.runReadAction {
+                        target = catalog.getNode(mpsNodeId)
+                    }
+                }
+            }
 
             modelAccess.runWriteAction {
                 modelAccess.executeCommandInEDT {
@@ -158,4 +178,5 @@ data class ResolvableReference(
     val source: SNode,
     val reference: SReferenceLink,
     val targetNodeId: Long,
+    val targetNodeMpsId: String?,
 )

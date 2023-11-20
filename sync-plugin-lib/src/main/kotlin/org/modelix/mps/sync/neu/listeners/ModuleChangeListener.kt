@@ -63,7 +63,7 @@ class ModuleChangeListener(
             val cloudModule = branch.getNode(moduleModelixId)
             val cloudModel = branch.getNode(modelModelixId)
 
-            // TODO uncomment this line if demo was done and plugin works fine!
+            // TODO uncomment me: was put in comment for the demo!
             // cloudModule.removeChild(cloudModel)
         }
     }

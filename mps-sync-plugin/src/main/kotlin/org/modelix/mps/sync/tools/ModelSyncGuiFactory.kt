@@ -233,11 +233,12 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             populateRepoCB()
             populateBindingCB()
 
-            // TODO fixme hardcoded values!
-            serverURL.text = "http://127.0.0.1:28101/v2"
-            repositoryName.text = "courses"
-            branchName.text = "master"
-            modelName.text = "University.Schedule.modelserver.backend.sandbox"
+            // TODO remove me: hardcoded values for demo!
+            // serverURL.text = "http://127.0.0.1:28101/v2"
+            serverURL.text = "https://secure.repository.model.sand.itemis.construction/v2"
+            repositoryName.text = "iso_example"
+            branchName.text = "main"
+            modelName.text = "ISO Example"
             jwt.text = ""
         }
 
@@ -262,7 +263,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             if (existingConnectionsModel.size != 0) {
                 val item = existingConnectionsModel.selectedItem as ModelClientV2
                 CoroutineScope(Dispatchers.Default).launch {
-                    repoModel.addAll(item.listRepositories())
+                    // TODO revert me. Fixed repo name
+                    repoModel.addElement(RepositoryId("iso_example"))
                     if (repoModel.size > 0) {
                         repoModel.selectedItem = repoModel.getElementAt(0)
                         populateBranchCB()
@@ -275,7 +277,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
-                    branchModel.addAll((existingConnectionsModel.selectedItem as ModelClientV2).listBranches(repoModel.selectedItem as RepositoryId))
+                    // TODO revert me. Fixed branch name
+                    branchModel.addElement(BranchReference(RepositoryId("iso_example"), "main"))
                     if (branchModel.size > 0) {
                         branchModel.selectedItem = branchModel.getElementAt(0)
                         populateModelCB()

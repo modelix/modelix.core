@@ -23,6 +23,7 @@ import jetbrains.mps.project.Solution
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.ModelImports
+import jetbrains.mps.smodel.SModelId
 import jetbrains.mps.smodel.SModelInternal
 import jetbrains.mps.smodel.SModelReference
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
@@ -77,10 +78,27 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
                 traverse(root, 1) { transformModulesAndModels(it) }
 
                 println("--- TRANSFORMING NODES ---")
-                traverse(root, 1) { transformNode(it, sNodeFactory) }
+                traverse(root, 1) {
+                    val modelixId = it.nodeIdAsLong()
+                    val isTransformed = nodeMap.getModule(modelixId) != null || nodeMap.getModel(modelixId) != null
+                    // TODO remove hardcoded workaround
+                    val isIsoExampleDescriptor =
+                        it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "ISOExample@descriptor"
+                    if (!isTransformed && !isIsoExampleDescriptor) {
+                        transformNode(it, sNodeFactory)
+                    }
+                }
+
+                println("---- HARDCODED DEVKIT AND MODEL IMPORTS (REMOVE ME AFTER DEMO) ---")
+                addIsoCompositionModuleImport()
+                importComMoraadDevkit()
+                val methodConfiguration =
+                    repository.getModel(SModelId.fromString("r:9e0bf89b-7c83-426e-8e13-cd21fab7b94a"))!!
+                val catalog = repository.getModel(SModelId.fromString("r:a269539f-8e07-4b12-82b7-a8f38e6897c9"))!!
+                importIsoComposition(methodConfiguration, catalog)
 
                 println("--- RESOLVING REFERENCES AND MODEL IMPORTS ---")
-                sNodeFactory.resolveReferences()
+                sNodeFactory.resolveReferences(methodConfiguration, catalog)
                 resolveModelImports(repository)
 
                 println("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
@@ -183,7 +201,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             val languageModuleReference = (dependentModule as Language).moduleReference
 
             // TODO this might not work, because if more than one models/modules point to the same Language, then the modelix ID will be always overwritten by the last Node (SingleLanguageDependency) that points to this Language
-            // TODO we migth have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
+            // TODO we might have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
             nodeMap.put(languageModuleReference, iNode.nodeIdAsLong())
             val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference)
             project.modelAccess.runWriteBlocking {
@@ -199,6 +217,44 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         }
     }
 
+    private fun addIsoCompositionModuleImport() {
+        // TODO remove me: hardcoded method for demo!
+        val model = nodeMap.models.firstOrNull()!!
+        val reference = AtomicReference<SModule>()
+        project.modelAccess.runReadAction {
+            reference.set(model.repository?.getModule(ModuleId.regular(UUID.fromString("ea36efc9-242c-402d-9cd6-9b37c96aac34"))))
+        }
+        val isoComposition = reference.get()
+
+        project.modelAccess.runWriteBlocking {
+            (model.module as Solution).addDependency(isoComposition?.moduleReference!!, false)
+        }
+    }
+
+    private fun importComMoraadDevkit() {
+        // TODO remove me: hardcoded method for demo!
+        val model = nodeMap.models.firstOrNull()!!
+        val reference = AtomicReference<SModule>()
+        project.modelAccess.runReadAction {
+            reference.set(model.repository?.getModule(ModuleId.regular(UUID.fromString("9b903ecd-ba57-441e-8d7c-d3f1fbfcc047"))))
+        }
+        val dependentModule = reference.get()
+
+        project.modelAccess.runWriteBlocking {
+            val devKitModuleReference = (dependentModule as DevKit).moduleReference
+            model.addDevKit(devKitModuleReference)
+        }
+    }
+
+    private fun importIsoComposition(methodConfiguration: SModel, catalog: SModel) {
+        // TODO remove me: hardcoded method for demo!
+        val model = nodeMap.models.firstOrNull()!!
+        project.modelAccess.runWriteBlocking {
+            ModelImports(model).addModelImport(methodConfiguration.reference)
+            ModelImports(model).addModelImport(catalog.reference)
+        }
+    }
+
     private fun transformToModule(iNode: INode) {
         val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
         check(serializedId.isNotEmpty()) { "Module's ($iNode) ID is empty" }
@@ -211,7 +267,6 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
         nodeMap.put(sModule, iNode.nodeIdAsLong())
 
         iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).forEach {
-            // TODO not sure if this is necessary
             transformModuleDependency(it, sModule)
         }
     }
@@ -235,6 +290,10 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
 
     private fun addModelToModule(iNode: INode) {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+        if (name == "ISOExample@descriptor") {
+            // TODO remove me: hardcoded workaround for demo!
+            return
+        }
         check(name != null) { "Module's ($iNode) name is null" }
 
         val moduleId = iNode.parent?.nodeIdAsLong()
@@ -278,7 +337,9 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
             nodeMap.put(modelImport, it.modelReferenceNodeId)
-            ModelImports(it.source).addModelImport(modelImport)
+            project.modelAccess.runWriteBlocking {
+                ModelImports(it.source).addModelImport(modelImport)
+            }
         }
     }
 }

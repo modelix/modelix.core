@@ -231,7 +231,10 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IConc
 
     override fun getSimpleName(): String = simpleName
 }
-fun IChildLink.typed() = this as? ITypedChildLink<ITypedNode>
+fun IChildLink.typed(): ITypedChildLink<ITypedNode> {
+    return this as? ITypedChildLink<ITypedNode>
+        ?: if (isMultiple) UnknownTypedChildLinkList(this) else UnknownTypedSingleChildLink(this)
+}
 
 open class GeneratedSingleChildLink<ChildNodeT : ITypedNode, ChildConceptT : IConceptOfTypedNode<ChildNodeT>>(
     owner: IConcept,
@@ -281,4 +284,4 @@ class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : IConcept
 
     override fun getSimpleName(): String = simpleName
 }
-fun IReferenceLink.typed() = this as? ITypedReferenceLink<ITypedNode>
+fun IReferenceLink.typed() = this as? ITypedReferenceLink<ITypedNode> ?: UnknownTypedReferenceLink(this)

@@ -50,6 +50,8 @@ class NodeChangeListener(
     }
 
     override fun referenceChanged(event: SReferenceChangeEvent) {
+        // TODO fix me: it does not work correctly, if event.newValue.targetNode points to a node that is in a different model, that has not been synced yet to model server...
+
         val sourceNodeId = nodeMap[event.node]!!
         val reference = MPSReferenceLink(event.associationLink)
         val targetNodeId = event.newValue?.targetNode?.let { nodeMap[it] }

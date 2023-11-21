@@ -47,13 +47,16 @@ tasks.named("npm_run_lint") {
     outputs.cacheIf { true }
 }
 
+val packageJsonForProd = layout.buildDirectory.file("package-for-publishing.json").get().asFile
 val createPackageJsonForPublishing = tasks.create("createPackageJsonForPublishing") {
     dependsOn(updateModelClient)
-    val packageJsonForProd = projectDir.resolve("dist/package.json")
+
     val packageJsonForDev = projectDir.resolve("package.json")
     inputs.file(packageJsonForDev)
+    inputs.property("project.version", project.version)
     outputs.cacheIf { true }
     outputs.file(packageJsonForProd)
+
     doLast {
         // We cannot use the mechanisms from the [lugin npm-publish `dev.petuska.npm.publish`,
         // because cannot remove fields from the template package.json and does not override dependency versions.
@@ -86,6 +89,7 @@ val createPackageJsonForPublishing = tasks.create("createPackageJsonForPublishin
                 packageJsonDataIterator.remove()
             }
         }
+        packageJsonForProd.parentFile.mkdirs()
         packageJsonForProd.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(packageJsonData)))
     }
 }
@@ -115,7 +119,7 @@ npmPublish {
     }
     packages {
         create("js") {
-            packageJsonTemplateFile.set(projectDir.resolve("dist/package.json"))
+            packageJsonTemplateFile.set(packageJsonForProd)
             files {
                 setFrom("dist")
             }

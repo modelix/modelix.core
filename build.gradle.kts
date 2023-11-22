@@ -25,6 +25,9 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnSetupTask
 import org.semver.Version
 
 buildscript {
@@ -393,5 +396,41 @@ publishing {
 
             setMetadata()
         }
+    }
+}
+
+val isCi = System.getenv().containsKey("CI")
+if (isCi) {
+    // Download Yarn by cURL in CI, because the `kotlinYarnSetup` task has issues downloading it.
+    // This workaround is temporary in can hopefully be removed in the future.
+    // See https://github.com/modelix/modelix.core/actions/runs/6956916928/job/18928752671?pr=329 for the original issue
+    val yarnDirectory = layout.buildDirectory.file("yarnDownload").get().asFile
+    val yarnArchiveFile = yarnDirectory.resolve("yarn.tar.gz")
+    val downloadYarn = task("downloadYarn") {
+        doFirst {
+            yarnDirectory.mkdirs()
+            exec {
+                // Use cURL, because the issue downloading Yarn is probably related to Gradle download mechanism.
+                commandLine(
+                    "curl",
+                    "-o",
+                    yarnArchiveFile.absolutePath,
+                    "--location",
+                    "https://github.com/yarnpkg/yarn/releases/download/v1.22.17/yarn-v1.22.17.tar.gz",
+                )
+            }
+            exec {
+                commandLine("tar", "-C", yarnDirectory.absolutePath, "-xzf", yarnArchiveFile.absolutePath)
+            }
+        }
+    }
+
+    rootProject.plugins.withType(YarnPlugin::class.java) {
+        rootProject.the<YarnRootExtension>().download = false
+        rootProject.the<YarnRootExtension>().command = yarnDirectory.resolve("yarn-v1.22.17/bin/yarn").absolutePath
+    }
+
+    tasks.withType<YarnSetupTask> {
+        dependsOn(downloadYarn)
     }
 }

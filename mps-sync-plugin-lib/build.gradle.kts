@@ -49,6 +49,7 @@ description = "Generic helper library to sync model-server content with MPS"
 publishing {
     publications {
         create<MavenPublication>("maven") {
+            artifactId = "sync-plugin-lib"
             from(components["kotlin"])
         }
     }

@@ -19,10 +19,11 @@ package org.modelix.model.sync.bulk.gradle.tasks
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -54,10 +55,14 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
     val antScriptFile: RegularFileProperty = of.fileProperty()
 
     @Input
-    val includedModules: ListProperty<String> = of.listProperty(String::class.java)
+    val includedModules: SetProperty<String> = of.setProperty(String::class.java)
 
     @Input
-    val includedModulePrefixes: ListProperty<String> = of.listProperty(String::class.java)
+    val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
+
+    @Optional
+    @Input
+    val debugPort: Property<Int> = of.property(Int::class.javaObjectType)
 
     @TaskAction
     fun generate() {
@@ -108,6 +113,7 @@ abstract class GenerateAntScriptForMps @Inject constructor(of: ObjectFactory) : 
                         <arg value="-Didea.system.path=${"$"}{build.mps.system.path}" />
                         <arg value="-ea" />
                         <arg value="-Xmx${mpsHeapSize.get()}" />
+                        ${if (debugPort.isPresent) """<arg value="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=${debugPort.get()}" />""" else ""}
                     </jvmargs>
                 </runMPS>
             </target>

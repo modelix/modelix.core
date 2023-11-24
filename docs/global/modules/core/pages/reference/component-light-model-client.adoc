@@ -4,7 +4,7 @@
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
-https://api.modelix.org/2.3.0/light-model-client/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/light-model-client/build.gradle.kts[buildfile^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/light-model-client/[Nexus^] https://github.com/modelix/modelix.core/packages/1787427[GitHub Packages^]
+https://api.modelix.org/3.12.0/light-model-client/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/light-model-client/build.gradle.kts[buildfile^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/light-model-client/[Nexus^] https://github.com/modelix/modelix.core/packages/1787427[GitHub Packages^]
 --
 
 

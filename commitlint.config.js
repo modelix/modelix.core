@@ -26,6 +26,7 @@ module.exports = {
         "mps-sync-lib",
         "sync-plugin-lib",
         "ts-model-api",
+        "vue-model-api",
       ],
     ],
     "subject-case": [0, 'never']

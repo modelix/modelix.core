@@ -113,6 +113,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.repositoryId.set(serverSource.repositoryId)
             it.branchName.set(serverSource.branchName)
             it.revision.set(serverSource.revision)
+            it.includedModules.set(syncDirection.includedModules)
+            it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
         }
         return exportFromModelServer
     }
@@ -139,6 +141,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.exportFlag.set(true)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.debugPort.set(localSource.mpsDebugPort)
         }
 
         val exportFromMps = project.tasks.register("${syncDirection.name}ExportFromMps", ExportFromMps::class.java) {
@@ -172,6 +175,9 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.url.set(serverTarget.url)
             it.repositoryId.set(serverTarget.repositoryId)
             it.branchName.set(serverTarget.branchName)
+            it.includedModules.set(syncDirection.includedModules)
+            it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.continueOnError.set(syncDirection.continueOnError)
         }
 
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {
@@ -186,6 +192,10 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         previousTask: TaskProvider<*>,
         jsonDir: File,
     ) {
+        if (syncDirection.continueOnError) {
+            println("Continue on error is currently not supported for local targets")
+        }
+
         val localTarget = syncDirection.target as LocalTarget
 
         val antScript = jsonDir.resolve("build.xml")
@@ -205,6 +215,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.exportFlag.set(false)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.debugPort.set(localTarget.mpsDebugPort)
         }
 
         val importName = "${syncDirection.name}ImportIntoMps"

@@ -124,4 +124,35 @@ class KotlinGeneratorTest {
             outputDir.deleteRecursively()
         }
     }
+
+    @OptIn(ExperimentalPathApi::class)
+    @Test
+    fun `avoids name clashes for concept meta properties`() {
+        val input = """
+            name: org.modelix.entities
+            concepts:
+            - name: Entity
+              properties:
+              - name: alias
+              children: []
+              metaProperties:
+                alias: this should conflict with the property of the same name
+            enums: []
+        """.trimIndent()
+
+        val language = Yaml.default.decodeFromString<LanguageData>(input)
+        val outputDir = createTempDirectory()
+        try {
+            MetaModelGenerator(outputDir).generate(LanguageSet(listOf(language)).process())
+
+            val fileContents = outputDir.resolve("org/modelix/entities/Entity.kt").readText()
+            assertContains(
+                fileContents,
+                "alias_property",
+                message = "The alias property must have been disambiguated by appending the type to the name.",
+            )
+        } finally {
+            outputDir.deleteRecursively()
+        }
+    }
 }

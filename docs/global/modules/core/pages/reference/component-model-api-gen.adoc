@@ -5,7 +5,7 @@
 :tip-caption: 🔗 Quick Links
 [TIP]
 --
-https://api.modelix.org/2.3.0/model-api-gen/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-api-gen/build.gradle.kts[buildfile^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/model-api-gen/[Nexus^] https://github.com/modelix/modelix.core/packages/1834770[GitHub Packages^]
+https://api.modelix.org/3.12.0/model-api-gen-gradle/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | https://github.com/modelix/modelix.core/blob/main/model-api-gen-gradle/build.gradle.kts[buildfile^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/model-api-gen-gradle/[Nexus^] https://github.com/modelix/modelix.core/packages/1834773[GitHub Packages^]
 --
 
 

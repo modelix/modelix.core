@@ -478,6 +478,33 @@ class ReplicatedRepositoryTest {
             branch.getRootNode().allChildren.map { (it as PNodeAdapter).nodeId.toString(16) }.toSortedSet()
         }
     }
+
+    @Test
+    fun `used id specified for client is used in replicated model`() = runTest {
+        val userId = "a_user_id"
+        val url = "http://localhost/v2"
+        val modelClient = ModelClientV2
+            .builder()
+            .url(url)
+            .client(client)
+            .userId(userId)
+            .build()
+            .also { it.init() }
+        val repositoryId = RepositoryId("repo1")
+        modelClient.initRepository(repositoryId)
+        val replicatedModel = modelClient.getReplicatedModel(repositoryId.getBranchReference())
+        val branch = replicatedModel.start() as OTBranch
+        val initialVersion = modelClient.pull(replicatedModel.branchRef, null) as CLVersion
+
+        branch.computeWriteT {
+            it.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?)
+        }
+        while (replicatedModel.getCurrentVersion() == initialVersion) {
+            delay(10)
+        }
+
+        assertEquals(userId, replicatedModel.getCurrentVersion().author)
+    }
 }
 
 private fun IBranch.treeHash(): String = computeReadT { t -> (t.tree as CLTree).hash }

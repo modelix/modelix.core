@@ -42,6 +42,7 @@ data class SyncDirection(
     internal val includedModules: Set<String> = mutableSetOf(),
     internal val registeredLanguages: Set<ILanguage> = mutableSetOf(),
     internal val includedModulePrefixes: Set<String> = mutableSetOf(),
+    internal var continueOnError: Boolean = false,
 ) {
     fun fromModelServer(action: Action<ServerSource>) {
         val endpoint = ServerSource()
@@ -78,6 +79,10 @@ data class SyncDirection(
     fun registerLanguage(language: ILanguage) {
         (registeredLanguages as MutableSet).add(language)
     }
+
+    fun enableContinueOnError(state: Boolean) {
+        continueOnError = state
+    }
 }
 
 interface SyncEndpoint {
@@ -88,6 +93,7 @@ sealed interface LocalEndpoint : SyncEndpoint {
     var mpsHome: File?
     var mpsHeapSize: String
     var repositoryDir: File?
+    var mpsDebugPort: Int?
 
     override fun getValidationErrors(): List<String> {
         val errors = mutableListOf<String>()
@@ -105,12 +111,14 @@ data class LocalSource(
     override var mpsHome: File? = null,
     override var mpsHeapSize: String = "2g",
     override var repositoryDir: File? = null,
+    override var mpsDebugPort: Int? = null,
 ) : LocalEndpoint
 
 data class LocalTarget(
     override var mpsHome: File? = null,
     override var mpsHeapSize: String = "2g",
     override var repositoryDir: File? = null,
+    override var mpsDebugPort: Int? = null,
 ) : LocalEndpoint
 
 sealed interface ServerEndpoint : SyncEndpoint {

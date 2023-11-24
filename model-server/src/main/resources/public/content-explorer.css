@@ -46,9 +46,7 @@
     background-color: #c9c9c9;
 }
 #treeWrapper {
-    position: absolute;
-    left: 0px;
-    top: 210px;
+    align-self: flex-start;
 }
 #nodeInspector {
     position: fixed;

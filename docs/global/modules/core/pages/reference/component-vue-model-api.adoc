@@ -1,0 +1,18 @@
+= Vue.js bindings
+:navtitle: `vue-model-api`
+
+:tip-caption: 🔗 Quick Links
+[TIP]
+--
+https://github.com/modelix/modelix.core[Repository^] | https://artifacts.itemis.cloud/service/rest/repository/browse/npm-open/%40modelix/vue-model-api/[Nexus^]
+--
+
+
+
+The `@modelix/vue-model-api` can be used to create Vue.js applications, that interact with a xref:reference/component-model-server.adoc[model server] by reading and writing models.
+
+== Overview
+
+`@modelix/vue-model-api` provides https://vuejs.org/guide/reusability/composables.html[Vue.js composable] to connect to the model server. It exposes the model as a tree of reactive objects to the application developer. The exposed object can be further wrapped by the generated TypeScript API by the xref:reference/component-model-api-gen-gradle.adoc[Gradle plugin for typed model API generation].
+
+// Ideas for more comprehensive and useful documentation are recorded in https://issues.modelix.org/issue/MODELIX-599

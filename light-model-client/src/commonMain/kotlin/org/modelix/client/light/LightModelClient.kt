@@ -5,6 +5,9 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.plugins.websocket.WebSockets
 import kotlinx.coroutines.delay
+import org.modelix.incremental.DependencyTracking
+import org.modelix.incremental.IStateVariableGroup
+import org.modelix.incremental.IStateVariableReference
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
@@ -60,9 +63,9 @@ class LightModelClient internal constructor(
     val autoFilterNonLoadedNodes: Boolean,
     val debugName: String = "",
     val modelQLClient: ModelQLClient? = null,
-) {
+) : IStateVariableGroup {
 
-    private val nodes: MutableMap<NodeId, NodeData> = HashMap()
+    private val nodes = NodesMap<NodeData>(this)
     private val area = Area()
     private var areaListeners: Set<IAreaListener> = emptySet()
     private var repositoryId: String? = null
@@ -73,8 +76,7 @@ class LightModelClient internal constructor(
     private var temporaryIdsSequence: Long = 0
     private var changeSetIdSequence: Int = 0
     private val nodesReferencingTemporaryIds = HashSet<NodeId>()
-    private var writeLevel: Int = 0
-    private val temporaryNodeAdapters: MutableMap<String, NodeAdapter> = HashMap()
+    private val temporaryNodeAdapters = NodesMap<NodeAdapter>(this)
     private var initialized = false
     private var lastUnconfirmedChangeSetId: ChangeSetId? = null
     private val unappliedVersions: MutableList<VersionData> = ArrayList()
@@ -91,6 +93,7 @@ class LightModelClient internal constructor(
             }
         }
         transactionManager.afterWrite {
+            flush()
             val changes = object : IAreaChangeList {
                 override fun visitChanges(visitor: (IAreaChangeEvent) -> Boolean) {}
             }
@@ -102,6 +105,10 @@ class LightModelClient internal constructor(
                 }
             }
         }
+    }
+
+    override fun getGroup(): IStateVariableGroup? {
+        return null
     }
 
     fun dispose() {
@@ -154,15 +161,7 @@ class LightModelClient internal constructor(
     }
 
     fun <T> runWrite(body: () -> T): T {
-        return transactionManager.runWrite {
-            writeLevel++
-            try {
-                body()
-            } finally {
-                writeLevel--
-                if (writeLevel == 0) flush()
-            }
-        }
+        return transactionManager.runWrite(body)
     }
 
     suspend fun waitForRootNode(timeout: Duration = 30.seconds): INode? {
@@ -202,6 +201,10 @@ class LightModelClient internal constructor(
         }
     }
 
+    fun tryGetParentId(nodeId: NodeId): NodeId? {
+        return requiresRead { nodes[nodeId]?.parent }
+    }
+
     fun isInitialized(): Boolean = runRead { initialized }
 
     private fun fullConsistencyCheck() {
@@ -216,10 +219,6 @@ class LightModelClient internal constructor(
 //                throw RuntimeException("missing registrations: $unregisteredTempReferences, unnecessary registration: $wrongRegistered")
 //            }
 //        }
-    }
-
-    fun hasTemporaryIds(): Boolean = requiresRead {
-        temporaryNodeAdapters.isNotEmpty() || nodesReferencingTemporaryIds.isNotEmpty()
     }
 
     fun getNode(nodeId: NodeId): NodeAdapter {
@@ -718,6 +717,7 @@ internal interface ITransactionManager {
 private class ReadWriteLockTransactionManager : ITransactionManager {
     private var writeListener: (() -> Unit)? = null
     private val lock = ReadWriteLock()
+    private var writeLevel = 0
     override fun <T> requiresRead(body: () -> T): T {
         if (!lock.canRead()) throw IllegalStateException("Not in a read transaction")
         return body()
@@ -728,16 +728,18 @@ private class ReadWriteLockTransactionManager : ITransactionManager {
     }
     override fun <T> runRead(body: () -> T): T = lock.runRead(body)
     override fun <T> runWrite(body: () -> T): T {
-        if (canWrite()) {
-            return body()
-        } else {
+        return lock.runWrite {
+            writeLevel++
             try {
-                return lock.runWrite(body)
+                body()
             } finally {
-                try {
-                    writeListener?.invoke()
-                } catch (ex: Exception) {
-                    mu.KotlinLogging.logger { }.error(ex) { "Exception in write listener" }
+                writeLevel--
+                if (writeLevel == 0) {
+                    try {
+                        writeListener?.invoke()
+                    } catch (ex: Exception) {
+                        mu.KotlinLogging.logger { }.error(ex) { "Exception in write listener" }
+                    }
                 }
             }
         }
@@ -901,3 +903,62 @@ fun NodeData.asUpdateData(): NodeUpdateData {
 fun INode.isLoaded() = isValid
 fun <T : INode> Iterable<T>.filterLoaded() = filter { it.isLoaded() }
 fun <T : INode> Sequence<T>.filterLoaded() = filter { it.isLoaded() }
+
+data class NodeDataDependency(val client: LightModelClient, val id: NodeId) : IStateVariableReference<NodeData> {
+    override fun getGroup(): IStateVariableGroup {
+        return client.tryGetParentId(id)
+            ?.let { NodeDataDependency(client, it) }
+            ?: client
+    }
+
+    override fun read(): NodeData {
+        return client.getNode(id).getData()
+    }
+}
+
+private class NodesMap<V : Any>(val client: LightModelClient) {
+    private val map: MutableMap<NodeId, V> = HashMap()
+
+    operator fun get(key: NodeId): V? {
+        DependencyTracking.accessed(NodeDataDependency(client, key))
+        return map[key]
+    }
+
+    operator fun set(key: NodeId, value: V) {
+        if (map[key] == value) return
+        map[key] = value
+        DependencyTracking.modified(NodeDataDependency(client, key))
+    }
+
+    fun remove(key: NodeId): V? {
+        if (!map.containsKey(key)) return null
+        val result = map.remove(key)
+        DependencyTracking.modified(NodeDataDependency(client, key))
+        return result
+    }
+
+    fun clear() {
+        if (map.isEmpty()) return
+        val removedKeys = map.keys.toList()
+        map.clear()
+        for (key in removedKeys) {
+            DependencyTracking.modified(NodeDataDependency(client, key))
+        }
+    }
+
+    fun containsKey(key: NodeId): Boolean {
+        DependencyTracking.accessed(NodeDataDependency(client, key))
+        return map.containsKey(key)
+    }
+
+    fun getOrPut(key: NodeId, defaultValue: () -> V): V {
+        DependencyTracking.accessed(NodeDataDependency(client, key))
+        map[key]?.let { return it }
+        val createdValue = defaultValue()
+        map[key] = createdValue
+        // No modified notification necessary, because only the first access modifies the map, but then there can't be
+        // any dependency on that key yet.
+        // DependencyTracking.modified(NodeDataDependency(client, key))
+        return createdValue
+    }
+}

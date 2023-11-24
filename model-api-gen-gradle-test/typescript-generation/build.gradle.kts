@@ -1,4 +1,4 @@
-import org.modelix.metamodel.gradle.GenerateMetaModelSources
+import com.github.gradle.node.npm.task.NpmTask
 
 plugins {
     base
@@ -6,10 +6,9 @@ plugins {
     id("org.modelix.model-api-gen") apply false
 }
 
-val codeGenerationTask = project(":metamodel-export").tasks.named<GenerateMetaModelSources>("generateMetaModelSources")
-
 tasks.named("npm_run_build") {
-    inputs.dir(codeGenerationTask.map { it.typescriptOutputDir })
+    dependsOn(":metamodel-export:generateMetaModelSources")
+    inputs.dir(layout.buildDirectory.dir("typescript_src"))
     inputs.file("package.json")
     inputs.file("package-lock.json")
 
@@ -22,4 +21,9 @@ tasks.assemble {
 
 tasks.clean {
     dependsOn("npm_run_clean")
+}
+
+tasks.register<NpmTask>("packJsPackage") {
+    dependsOn("npm_run_build")
+    args.set(listOf("pack", "--pack-destination", "build"))
 }

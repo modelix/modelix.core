@@ -21,6 +21,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
@@ -28,6 +29,7 @@ import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.IModelClientV2
@@ -36,6 +38,7 @@ import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelExporter
+import org.modelix.model.sync.bulk.isModuleIncluded
 import javax.inject.Inject
 
 abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : DefaultTask() {
@@ -58,30 +61,49 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
     @OutputDirectory
     val outputDir: DirectoryProperty = of.directoryProperty()
 
+    @Input
+    val includedModules: SetProperty<String> = of.setProperty(String::class.java)
+
+    @Input
+    val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
+
     @TaskAction
     fun export() {
-        val client = ModelClientV2PlatformSpecificBuilder()
+        val modelClient = ModelClientV2PlatformSpecificBuilder()
             .url(url.get())
             .build()
+        modelClient.use { client ->
+            runBlocking { client.init() }
 
-        runBlocking { client.init() }
-
-        val branch = if (revision.isPresent) {
-            getBranchByRevision(client)
-        } else {
-            getBranchByRepoIdAndBranch(client)
-        }
-
-        branch.runRead {
-            val root = branch.getRootNode()
-            logger.info("Got root node: {}", root)
-            val outputDir = outputDir.get().asFile
-            root.allChildren.forEach {
-                val nameRole = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
-                val fileName = it.getPropertyValue(nameRole)
-                val outputFile = outputDir.resolve("$fileName.json")
-                ModelExporter(it).export(outputFile)
+            val branch = if (revision.isPresent) {
+                getBranchByRevision(client)
+            } else {
+                getBranchByRepoIdAndBranch(client)
             }
+
+            branch.runRead {
+                val root = branch.getRootNode()
+                logger.info("Got root node: {}", root)
+                val outputDir = outputDir.get().asFile
+
+                getIncludedModules(root).forEach {
+                    val fileName = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+                    val outputFile = outputDir.resolve("$fileName.json")
+                    ModelExporter(it).export(outputFile)
+                }
+            }
+        }
+    }
+
+    private fun getIncludedModules(root: INode): Iterable<INode> {
+        val nameRole = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
+
+        return root.allChildren.filter {
+            val isModule = it.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()
+            val moduleName = it.getPropertyValue(nameRole) ?: return@filter false
+            val isIncluded = isModuleIncluded(moduleName, includedModules.get(), includedModulePrefixes.get())
+
+            isModule && isIncluded
         }
     }
 

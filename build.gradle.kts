@@ -59,7 +59,12 @@ fun computeVersion(): Any {
     return if (versionFile.exists()) {
         versionFile.readText().trim()
     } else {
-        gitVersion().let { if (it.endsWith("-SNAPSHOT")) it else "$it-SNAPSHOT" }.also { versionFile.writeText(it) }
+        gitVersion()
+            // Avoid duplicated "-SNAPSHOT" ending
+            .let { if (it.endsWith("-SNAPSHOT")) it else "$it-SNAPSHOT" }
+            // Normalize the version so that is always a valid NPM version.
+            .let { if (it.matches("""\d+\.\d+.\d+-.*""".toRegex())) it else "0.0.1-$it" }
+            .also { versionFile.writeText(it) }
     }
 }
 
@@ -321,9 +326,22 @@ fun createDocsIndexPage(): String {
                             h2 { +"Available versions:" }
                             div("table") {
                                 val versionDirs = docsDir.listFiles()
-                                    ?.filter { it.isDirectory && !it.name.startsWith('.') }
+                                    ?.filter {
+                                        it.isDirectory && !it.name.startsWith('.') && it.name != "latest"
+                                    }
                                     ?.sortedByDescending { Version.parse(it.name) }
                                 if (versionDirs != null) {
+                                    div("table-row") {
+                                        div("main-subrow") {
+                                            div("w-100") {
+                                                span("inline-flex") {
+                                                    a(href = "/latest") {
+                                                        +"modelix.core LATEST"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                     for (versionDir in versionDirs) {
                                         val versionIndex = versionDir.resolve("index.html")
                                         if (versionIndex.exists()) {

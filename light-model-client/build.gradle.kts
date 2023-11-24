@@ -17,7 +17,6 @@ kotlin {
         useCommonJs()
     }
 
-    @Suppress("UNUSED_VARIABLE", "KotlinRedundantDiagnosticSuppress")
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -29,6 +28,7 @@ kotlin {
 
                 api(project(":modelql-untyped"))
 
+                implementation(libs.modelix.incremental)
                 implementation(libs.ktor.client.websockets)
                 implementation(libs.kotlin.stdlib.common)
                 implementation(libs.kotlin.logging)
@@ -60,6 +60,7 @@ kotlin {
 //                implementation(project(":model-client"))
                 implementation(project(":model-server"))
                 implementation(project(":model-server-lib"))
+                implementation(libs.modelix.incremental)
 
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.cors)

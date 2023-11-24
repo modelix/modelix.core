@@ -1,0 +1,51 @@
+{
+  "name": "@modelix/vue-model-api",
+  "version": "0.0.1",
+  "description": "API to interact with models from Vue.js",
+  "homepage": "https://modelix.org/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/modelix/modelix.core.git",
+    "directory": "vue-model-api"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "test": "jest",
+    "lint": "eslint src",
+    "lint:fix": "npm run lint -- --fix",
+    "prettier": "prettier . --check",
+    "prettier:fix": "npm run prettier -- --write"
+  },
+  "overrides": {
+    "@modelix/model-client": {
+      "@modelix/ts-model-api": "file:../ts-model-api"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://artifacts.itemis.cloud/repository/npm-open/"
+  },
+  "dependencies": {
+    "@modelix/model-client": "file:../model-client/build/npmDevPackage/model-client.tgz",
+    "@tsconfig/recommended": "^1.0.3",
+    "@types/jest": "^29.5.5",
+    "@typescript-eslint/eslint-plugin": "^6.7.2",
+    "@typescript-eslint/parser": "^6.7.2",
+    "dukat": "^0.5.8-rc.4",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "jest": "^29.7.0",
+    "prettier": "3.0.3",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "prettier-comment": "// IMPORTANT: keep Prettier version in sync with the version in .pre-commit-config.yaml",
+  "eslint-comment": "// IMPORTANT: keep ESLint version and versions and plugins in sync with the version in .pre-commit-config.yaml",
+  "peerDependencies": {
+    "vue": "^3.3.4"
+  }
+}

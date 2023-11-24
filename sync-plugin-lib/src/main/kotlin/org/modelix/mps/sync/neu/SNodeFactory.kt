@@ -135,35 +135,16 @@ class SNodeFactory(
 
             // TODO what about those references whose target is outside of the model?
             val targetNodeId = it.second.nodeIdAsLong()
-            val mpsId = it.second.mappedMpsNodeID()
 
-            resolvableReferences.add(ResolvableReference(source, reference, targetNodeId, mpsId))
+            resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
         }
     }
 
-    fun resolveReferences(methodConfiguration: SModel, catalog: SModel) {
+    fun resolveReferences() {
         resolvableReferences.forEach {
             val source = it.source
             val reference = it.reference
-            var target = nodeMap.getNode(it.targetNodeId)
-
-            // TODO remove me: hardcoded node lookup for demo!
-            // TODO remove me: hardcoded method parameters!
-            // TODO remove me: ResolvableReference.targetNodeMpsId
-            val mpsId = it.targetNodeMpsId
-            if (mpsId != null) {
-                val mpsNodeId = PersistenceFacade.getInstance().createNodeId(mpsId)
-                if (target == null) {
-                    modelAccess.runReadAction {
-                        target = methodConfiguration.getNode(mpsNodeId)
-                    }
-                }
-                if (target == null) {
-                    modelAccess.runReadAction {
-                        target = catalog.getNode(mpsNodeId)
-                    }
-                }
-            }
+            val target = nodeMap.getNode(it.targetNodeId)
 
             modelAccess.runWriteAction {
                 modelAccess.executeCommandInEDT {
@@ -178,5 +159,4 @@ data class ResolvableReference(
     val source: SNode,
     val reference: SReferenceLink,
     val targetNodeId: Long,
-    val targetNodeMpsId: String?,
 )

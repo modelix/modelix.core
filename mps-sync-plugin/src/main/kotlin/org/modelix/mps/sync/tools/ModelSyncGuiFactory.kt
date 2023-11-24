@@ -32,7 +32,6 @@ import jetbrains.mps.ide.project.ProjectHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
@@ -233,12 +232,11 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             populateRepoCB()
             populateBindingCB()
 
-            // TODO remove me: hardcoded values for demo!
-            // serverURL.text = "http://127.0.0.1:28101/v2"
-            serverURL.text = "https://secure.repository.model.sand.itemis.construction/v2"
-            repositoryName.text = "iso_example"
-            branchName.text = "main"
-            modelName.text = "ISO Example"
+            // TODO fixme: hardcoded values
+            serverURL.text = "http://127.0.0.1:28101/v2"
+            repositoryName.text = "courses"
+            branchName.text = "master"
+            modelName.text = "University.Schedule.modelserver.backend.sandbox"
             jwt.text = ""
         }
 
@@ -263,8 +261,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             if (existingConnectionsModel.size != 0) {
                 val item = existingConnectionsModel.selectedItem as ModelClientV2
                 CoroutineScope(Dispatchers.Default).launch {
-                    // TODO revert me. Fixed repo name
-                    repoModel.addElement(RepositoryId("iso_example"))
+                    repoModel.addAll(item.listRepositories())
                     if (repoModel.size > 0) {
                         repoModel.selectedItem = repoModel.getElementAt(0)
                         populateBranchCB()
@@ -277,8 +274,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
-                    // TODO revert me. Fixed branch name
-                    branchModel.addElement(BranchReference(RepositoryId("iso_example"), "main"))
+                    val branches = (existingConnectionsModel.selectedItem as ModelClientV2).listBranches(repoModel.selectedItem as RepositoryId)
+                    branchModel.addAll(branches)
                     if (branchModel.size > 0) {
                         branchModel.selectedItem = branchModel.getElementAt(0)
                         populateModelCB()
@@ -291,10 +288,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             modelModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
-                    val qq: IBranch = (existingConnectionsModel.selectedItem as ModelClientV2).getReplicatedModel(branchModel.selectedItem as BranchReference).start()
-                    qq.runRead {
-                        val aa: Iterable<INode> = qq.getRootNode().allChildren
-                        modelModel.addAll(aa.toList())
+                    val branch = (existingConnectionsModel.selectedItem as ModelClientV2).getReplicatedModel(branchModel.selectedItem as BranchReference).start()
+                    branch.runRead {
+                        val children = branch.getRootNode().allChildren
+                        modelModel.addAll(children.toList())
                     }
                     if (modelModel.size > 0) {
                         modelModel.selectedItem = modelModel.getElementAt(0)

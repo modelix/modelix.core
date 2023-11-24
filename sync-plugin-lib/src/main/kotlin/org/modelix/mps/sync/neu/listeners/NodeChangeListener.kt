@@ -59,8 +59,7 @@ class NodeChangeListener(
         branch.runWriteT {
             val cloudNode = branch.getNode(sourceNodeId)
             val target = if (targetNodeId == null) null else branch.getNode(targetNodeId)
-            // TODO uncomment me: was put in comment for the demo!
-            // cloudNode.setReferenceTarget(reference, target)
+            cloudNode.setReferenceTarget(reference, target)
         }
     }
 

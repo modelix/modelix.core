@@ -29,10 +29,6 @@ import org.modelix.model.area.IArea
 
 data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
 
-    companion object {
-        fun wrap(model: SModel?): MPSModelAsNode? = model?.let { MPSModelAsNode(it) }
-    }
-
     override fun getArea(): IArea {
         return MPSArea(model.repository)
     }

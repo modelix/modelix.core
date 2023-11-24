@@ -35,7 +35,6 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
 
     companion object {
         private val logger = mu.KotlinLogging.logger { }
-        fun wrap(module: SModule?): MPSModuleAsNode? = module?.let { MPSModuleAsNode(it) }
     }
 
     override fun getArea(): IArea {

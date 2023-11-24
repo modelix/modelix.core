@@ -23,8 +23,10 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.module.SModule
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ModelPersistenceWithFixedId
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun SModule.createModel(name: String, id: SModelId): SModel? {
     val modelName = SModelName(name)
     val modelRoot = this.modelRoots.filterIsInstance<DefaultModelRoot>().firstOrNull { it.canCreateModel(modelName) }

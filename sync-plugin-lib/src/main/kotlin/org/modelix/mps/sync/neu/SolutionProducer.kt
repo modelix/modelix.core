@@ -30,9 +30,11 @@ import jetbrains.mps.project.structure.modules.SolutionKind
 import jetbrains.mps.smodel.GeneralModuleFactory
 import jetbrains.mps.vfs.IFile
 import jetbrains.mps.vfs.VFSManager
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.io.File
 
 // TODO hacky solution. A nicer one could be: https://github.com/JetBrains/MPS/blob/master/workbench/mps-platform/jetbrains.mps.ide.platform/source_gen/jetbrains/mps/project/modules/SolutionProducer.java
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SolutionProducer(private val project: MPSProject) {
 
     fun createOrGetModule(name: String, moduleId: ModuleId): Solution {

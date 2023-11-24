@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INode
@@ -19,6 +20,7 @@ import org.modelix.mps.sync.neu.ITreeToSTreeTransformer
 import java.net.ConnectException
 import java.net.URL
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SyncServiceImpl : SyncService {
 
     private var log: Logger = logger<SyncServiceImpl>()
@@ -113,6 +115,7 @@ class SyncServiceImpl : SyncService {
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class BindingImpl(val replicatedModel: ReplicatedModel, modelName: String, mpsPproject: MPSProject) : IBinding {
 
     val branch: IBranch

@@ -32,6 +32,7 @@ import jetbrains.mps.ide.project.ProjectHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
@@ -54,6 +55,7 @@ import javax.swing.JList
 import javax.swing.JPanel
 import javax.swing.JSeparator
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
     private var log: Logger = logger<ModelSyncGuiFactory>()

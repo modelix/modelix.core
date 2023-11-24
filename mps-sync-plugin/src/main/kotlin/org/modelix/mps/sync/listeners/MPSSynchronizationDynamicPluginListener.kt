@@ -19,8 +19,10 @@ package org.modelix.mps.sync.listeners
 import com.intellij.ide.plugins.DynamicPluginListener
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.components.service
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ModelSyncService
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MPSSynchronizationDynamicPluginListener : DynamicPluginListener {
     override fun beforePluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
         println("============================================ before load")

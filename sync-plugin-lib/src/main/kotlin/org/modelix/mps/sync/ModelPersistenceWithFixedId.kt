@@ -37,12 +37,14 @@ import org.jetbrains.mps.openapi.persistence.ModelSaveException
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.jetbrains.mps.openapi.persistence.StreamDataSource
 import org.jetbrains.mps.openapi.persistence.UnsupportedDataSourceException
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.io.IOException
 
 /**
  * Uses the provided model ID instead of SModelId.generate().
  * Everything else is just copied from DefaultModelPersistence.
  */
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 open class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val modelId: SModelId) :
     DefaultModelPersistence() {
 
@@ -67,6 +69,7 @@ open class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val mode
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 open class ModelPersistenceFacility(modelFactory: DefaultModelPersistence, dataSource: StreamDataSource) :
     LazyLoadFacility(modelFactory, dataSource, true) {
     protected val source0: StreamDataSource

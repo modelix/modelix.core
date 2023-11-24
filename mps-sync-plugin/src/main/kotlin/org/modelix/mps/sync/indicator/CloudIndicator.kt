@@ -25,10 +25,12 @@ import com.intellij.ui.ClickListener
 import com.intellij.ui.UIBundle
 import com.intellij.ui.components.JBLabel
 import org.jetbrains.annotations.Nls
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.icons.CloudIcons
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class CloudIndicator : StatusBarWidgetFactory {
     companion object {
         private const val ID = "CloudStatus"

@@ -21,11 +21,13 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import org.modelix.kotlin.utils.UnstableModelixFeature
 
 /**
  * This component handles the storage of the cloud configuration.
  * For information about component persistence refer to https://jetbrains.org/intellij/sdk/docs/basics/persisting_state_of_components.html
  */
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 @Service(Service.Level.PROJECT)
 @State(
     name = "CloudResources",

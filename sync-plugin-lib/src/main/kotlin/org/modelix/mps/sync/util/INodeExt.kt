@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.util
 
 import jetbrains.mps.smodel.SNodeId.Regular
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
@@ -26,6 +27,7 @@ import org.modelix.model.mpsadapters.MPSNode
 
 const val MPS_NODE_ID_PROPERTY_NAME: String = NodeData.ID_PROPERTY_KEY
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun INode.mappedMpsNodeID(): String? {
     return try {
         val nodeIdProperty = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
@@ -38,6 +40,7 @@ fun INode.mappedMpsNodeID(): String? {
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun INode.nodeIdAsLong(): Long =
     when (this) {
         is PNodeAdapter -> this.nodeId
@@ -51,11 +54,13 @@ fun INode.nodeIdAsLong(): Long =
         else -> throw IllegalStateException("Unsupported INode implementation")
     }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun INode.isModule(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Module)
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun INode.isModel(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Model)

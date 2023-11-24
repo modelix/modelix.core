@@ -27,6 +27,7 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
@@ -35,6 +36,7 @@ import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SNodeFactory(
     private val conceptRepository: MPSLanguageRepository,
     private val modelAccess: ModelAccess,
@@ -155,6 +157,7 @@ class SNodeFactory(
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class ResolvableReference(
     val source: SNode,
     val reference: SReferenceLink,

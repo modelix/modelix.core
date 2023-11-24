@@ -30,6 +30,7 @@ import jetbrains.mps.smodel.loading.ModelLoadingState
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
@@ -42,6 +43,7 @@ import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 // TODO some methods need some testing
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelChangeListener(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,

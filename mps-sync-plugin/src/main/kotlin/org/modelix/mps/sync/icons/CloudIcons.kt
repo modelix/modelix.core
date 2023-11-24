@@ -18,7 +18,9 @@ package org.modelix.mps.sync.icons
 
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.JBColor
+import org.modelix.kotlin.utils.UnstableModelixFeature
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object CloudIcons {
 
     val ROOT_ICON = LetterInSquareIcon("C", 14, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)

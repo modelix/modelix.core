@@ -23,6 +23,7 @@ import org.jetbrains.mps.openapi.event.SReferenceChangeEvent
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeChangeListener
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
@@ -34,6 +35,7 @@ import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeChangeListener(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,

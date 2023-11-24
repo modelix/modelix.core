@@ -32,6 +32,7 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
@@ -50,6 +51,7 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val project: MPSProject) {
 
     private val solutionProducer = SolutionProducer(project)
@@ -286,6 +288,7 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class ResolvableModelImport(
     val source: SModel,
     val targetModelId: String,

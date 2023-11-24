@@ -20,7 +20,9 @@ import jetbrains.mps.extapi.model.SModelDescriptorStub
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModuleReference
+import org.modelix.kotlin.utils.UnstableModelixFeature
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
     if (this is SModelDescriptorStub) {
         this.addDevKit(devKitModuleReference)
@@ -29,6 +31,7 @@ fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
     if (this is SModelDescriptorStub) {
         this.addLanguage(sLanguage)

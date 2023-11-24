@@ -22,8 +22,10 @@ import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
+import org.modelix.kotlin.utils.UnstableModelixFeature
 
 // use with caution, otherwise this cache may cause memory leaks
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MpsToModelixMap {
 
     private val sNodeToModelixId = mutableMapOf<SNode, Long>()

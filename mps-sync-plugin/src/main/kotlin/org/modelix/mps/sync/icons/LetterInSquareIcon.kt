@@ -18,6 +18,7 @@ package org.modelix.mps.sync.icons
 
 import com.intellij.ui.Gray
 import com.intellij.ui.JBColor
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.awt.Color
 import java.awt.Component
 import java.awt.Font
@@ -27,6 +28,7 @@ import java.awt.RenderingHints
 import java.awt.geom.RoundRectangle2D
 import javax.swing.Icon
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class LetterInSquareIcon(
     private val letter: String,
     private val fontSize: Int,

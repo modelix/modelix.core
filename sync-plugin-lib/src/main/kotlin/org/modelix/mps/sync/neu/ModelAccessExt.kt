@@ -17,8 +17,10 @@
 package org.modelix.mps.sync.neu
 
 import org.jetbrains.mps.openapi.module.ModelAccess
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.CountDownLatch
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun ModelAccess.runWriteBlocking(r: Runnable) {
     val latch = CountDownLatch(1)
     try {

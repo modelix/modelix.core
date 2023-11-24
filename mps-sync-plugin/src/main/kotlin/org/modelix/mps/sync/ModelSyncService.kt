@@ -25,6 +25,7 @@ import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
@@ -35,6 +36,7 @@ import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import java.net.ConnectException
 import java.net.URL
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable {
 

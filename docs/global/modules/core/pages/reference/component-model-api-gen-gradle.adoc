@@ -9,6 +9,9 @@ https://api.modelix.org/3.12.0/model-api-gen-gradle/index.html[API doc^] | https
 
 == Overview
 The `model-api-gen.gradle.plugin` is a Gradle plugin that wraps the functionality of the xref:core:reference/component-metamodel-export.adoc[] and xref:core:reference/component-model-api-gen.adoc[].
+
+image::api-gen-pipeline.png[API generation pipeline from MPS language to Kotlin and TypeScript]
+
 It provides an additional Gradle task which will apply a 2-staged process:
 
 . MPS metamodel export to JSON (optional)

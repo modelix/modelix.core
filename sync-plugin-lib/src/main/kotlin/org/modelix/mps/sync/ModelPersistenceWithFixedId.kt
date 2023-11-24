@@ -39,7 +39,6 @@ import org.jetbrains.mps.openapi.persistence.StreamDataSource
 import org.jetbrains.mps.openapi.persistence.UnsupportedDataSourceException
 import java.io.IOException
 
-// status: ready to test
 /**
  * Uses the provided model ID instead of SModelId.generate().
  * Everything else is just copied from DefaultModelPersistence.

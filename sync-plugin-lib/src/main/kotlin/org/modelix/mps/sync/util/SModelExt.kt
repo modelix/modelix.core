@@ -17,15 +17,9 @@
 package org.modelix.mps.sync.util
 
 import jetbrains.mps.extapi.model.SModelDescriptorStub
-import jetbrains.mps.project.SModuleOperations
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModuleReference
-import org.jetbrains.mps.openapi.module.SRepository
-
-// status: ready to test
-
-fun SModel.getRootsAsList() = this.rootNodes.toList()
 
 fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
     if (this is SModelDescriptorStub) {
@@ -41,18 +35,5 @@ fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
         this.setLanguageImportVersion(sLanguage, version)
     } else {
         throw IllegalStateException("Unable to handle this model $this (class: ${this.javaClass.canonicalName})")
-    }
-}
-
-fun SModel.runInWriteActionIfNeeded(runnable: Runnable) {
-    var repo: SRepository? = null
-    if (this.module != null) {
-        val project = SModuleOperations.getProjectForModule(this.module)
-        project?.let { repo = it.repository }
-    }
-    if (repo == null) {
-        runnable.run()
-    } else {
-        repo?.modelAccess?.runWriteAction(runnable)
     }
 }

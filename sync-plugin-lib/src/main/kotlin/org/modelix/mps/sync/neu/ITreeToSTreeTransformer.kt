@@ -44,6 +44,8 @@ import org.modelix.mps.sync.neu.listeners.NodeChangeListener
 import org.modelix.mps.sync.util.addDevKit
 import org.modelix.mps.sync.util.addLanguageImport
 import org.modelix.mps.sync.util.createModel
+import org.modelix.mps.sync.util.isModel
+import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
@@ -141,16 +143,10 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
     }
 
     private fun transformModulesAndModels(iNode: INode) {
-        val isModule = iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()
-        if (isModule) {
+        if (iNode.isModule()) {
             transformToModule(iNode)
-            return
-        }
-
-        val isModel = iNode.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Model.getUID()
-        if (isModel) {
+        } else if (iNode.isModel()) {
             addModelToModule(iNode)
-            return
         }
     }
 

@@ -22,7 +22,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 
-// status: migrated, but needs some bugfixes
 /**
  * This component handles the storage of the cloud configuration.
  * For information about component persistence refer to https://jetbrains.org/intellij/sdk/docs/basics/persisting_state_of_components.html

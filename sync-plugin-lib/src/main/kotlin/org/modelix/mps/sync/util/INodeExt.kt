@@ -17,25 +17,14 @@
 package org.modelix.mps.sync.util
 
 import jetbrains.mps.smodel.SNodeId.Regular
-import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
-import org.modelix.model.api.IProperty
-import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSNode
 
-// status: ready to test
-
 const val MPS_NODE_ID_PROPERTY_NAME: String = NodeData.ID_PROPERTY_KEY
-
-fun INode.mapToMpsNode(mpsNode: SNode) {
-    val nodeIdProperty = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
-    this.setPropertyValue(nodeIdProperty, mpsNode.nodeId.toString())
-}
 
 fun INode.mappedMpsNodeID(): String? {
     return try {
@@ -47,75 +36,6 @@ fun INode.mappedMpsNodeID(): String? {
             e,
         )
     }
-}
-
-fun INode.isMappedToMpsNode() = this.mappedMpsNodeID() != null
-
-fun INode.copyPropertyIfNecessary(original: INode, property: IProperty) {
-    if (original.getPropertyValue(property) != this.getPropertyValue(property)) {
-        this.copyProperty(original, property)
-    }
-}
-
-fun INode.copyProperty(original: INode, property: IProperty) {
-    try {
-        this.setPropertyValue(property, original.getPropertyValue(property))
-    } catch (ex: Exception) {
-        throw RuntimeException("Unable to copy property ${property.name} from $original to $this", ex)
-    }
-}
-
-fun INode.replicateChild(role: IChildLink, original: INode): INode {
-    try {
-        val equivalenceMap = mutableMapOf<INode, INode>()
-        val postponedReferencesAssignments = mutableListOf<Triple<INode, IReferenceLink, INode>>()
-        val result = this.replicateChildHelper(role, original, equivalenceMap, postponedReferencesAssignments)
-        postponedReferencesAssignments.forEach { postponedRefAssignment ->
-            var target = postponedRefAssignment.third
-            if (equivalenceMap.containsKey(target)) {
-                target = equivalenceMap[target]!!
-            }
-            postponedRefAssignment.first.setReferenceTarget(postponedRefAssignment.second, target)
-        }
-        return result
-    } catch (ex: Exception) {
-        throw RuntimeException(
-            "Unable to replicate child in role ${role.getSimpleName()}. Original: $original, This: $this",
-            ex,
-        )
-    }
-}
-
-fun INode.replicateChildHelper(
-    role: IChildLink,
-    original: INode,
-    equivalenceMap: Map<INode, INode>,
-    postponedReferencesAssignments: MutableList<Triple<INode, IReferenceLink, INode>>,
-): INode {
-    val concept = original.concept
-    val copy: INode
-    try {
-        copy = this.addNewChild(role, -1, concept)
-    } catch (ex: Exception) {
-        throw RuntimeException(
-            "Unable to add child to $this with role ${role.getSimpleName()} and concept $concept",
-            ex,
-        )
-    }
-
-    concept?.getAllProperties()?.forEach { property ->
-        copy.setPropertyValue(property, original.getPropertyValue(property))
-    }
-    concept?.getAllChildLinks()?.forEach { childLink ->
-        original.getChildren(childLink).forEach { child ->
-            copy.replicateChildHelper(childLink, child, equivalenceMap, postponedReferencesAssignments)
-        }
-    }
-    concept?.getAllReferenceLinks()?.forEach { refLink ->
-        val target = original.getReferenceTarget(refLink)
-        target?.let { postponedReferencesAssignments.add(Triple(copy, refLink, target)) }
-    }
-    return copy
 }
 
 fun INode.nodeIdAsLong(): Long =
@@ -131,22 +51,6 @@ fun INode.nodeIdAsLong(): Long =
         else -> throw IllegalStateException("Unsupported INode implementation")
     }
 
-fun INode.containingModule(): INode? {
-    if (this.isModule()) {
-        return this
-    }
-    val parent: INode = this.parent ?: return null
-    return parent.containingModule()
-}
-
-fun INode.containingModel(): INode? {
-    if (this.isModel()) {
-        return this
-    }
-    val parent: INode = this.parent ?: return null
-    return parent.containingModel()
-}
-
 fun INode.isModule(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Module)
@@ -155,17 +59,4 @@ fun INode.isModule(): Boolean {
 fun INode.isModel(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Model)
-}
-
-fun INode.removeAllChildrenWithRole(role: IChildLink) {
-    this.getChildren(role).forEach { child ->
-        this.removeChild(child)
-    }
-}
-
-fun INode.cloneChildren(original: INode, role: IChildLink) {
-    this.removeAllChildrenWithRole(role)
-    original.getChildren(role).forEach { originalChild ->
-        this.replicateChild(role, originalChild)
-    }
 }

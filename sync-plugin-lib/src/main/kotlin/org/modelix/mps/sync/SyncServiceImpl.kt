@@ -15,7 +15,6 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
-import org.modelix.mps.sync.binding.IBinding
 import org.modelix.mps.sync.neu.ITreeToSTreeTransformer
 import java.net.ConnectException
 import java.net.URL

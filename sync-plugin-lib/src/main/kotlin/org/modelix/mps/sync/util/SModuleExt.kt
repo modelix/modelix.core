@@ -19,16 +19,11 @@ package org.modelix.mps.sync.util
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.persistence.DefaultModelRoot
 import jetbrains.mps.persistence.ModelCannotBeCreatedException
-import jetbrains.mps.smodel.SModelStereotype
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.mps.sync.ModelPersistenceWithFixedId
-
-// status: ready to test
-
-fun SModule.getModelsWithoutDescriptor(): List<SModel> = this.models.filter { !SModelStereotype.isDescriptorModel(it) }
 
 fun SModule.createModel(name: String, id: SModelId): SModel? {
     val modelName = SModelName(name)

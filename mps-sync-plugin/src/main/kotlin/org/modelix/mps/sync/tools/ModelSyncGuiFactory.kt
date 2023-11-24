@@ -39,8 +39,8 @@ import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.BindingImpl
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.ModelSyncService
-import org.modelix.mps.sync.binding.IBinding
 import org.modelix.mps.sync.icons.CloudIcons
 import java.awt.Component
 import java.awt.FlowLayout

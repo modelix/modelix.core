@@ -19,10 +19,6 @@ package org.modelix.mps.sync.icons
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.JBColor
 
-// status: ready to test
-/**
- * Perhaps we need an Icon for Project?
- */
 object CloudIcons {
 
     val ROOT_ICON = LetterInSquareIcon("C", 14, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)

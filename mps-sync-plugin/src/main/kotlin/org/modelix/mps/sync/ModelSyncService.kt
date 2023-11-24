@@ -32,7 +32,6 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
-import org.modelix.mps.sync.binding.IBinding
 import java.net.ConnectException
 import java.net.URL
 
@@ -40,9 +39,9 @@ import java.net.URL
 class ModelSyncService : Disposable {
 
     private var log: Logger = logger<ModelSyncService>()
-    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
-    public var syncService: SyncServiceImpl
-    private var existingBindings: MutableList<IBinding> = mutableListOf<IBinding>()
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    var syncService: SyncServiceImpl
+    private var existingBindings = mutableListOf<IBinding>()
 
     fun getBindingList(): List<IBinding> {
         return existingBindings.toMutableList()

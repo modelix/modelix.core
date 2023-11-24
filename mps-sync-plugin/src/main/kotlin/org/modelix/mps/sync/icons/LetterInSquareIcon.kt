@@ -27,7 +27,6 @@ import java.awt.RenderingHints
 import java.awt.geom.RoundRectangle2D
 import javax.swing.Icon
 
-// status: ready to test
 class LetterInSquareIcon(
     private val letter: String,
     private val fontSize: Int,

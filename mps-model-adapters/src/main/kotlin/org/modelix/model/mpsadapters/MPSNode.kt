@@ -24,6 +24,7 @@ import jetbrains.mps.smodel.adapter.structure.property.SPropertyAdapterById
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapterById
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.incremental.DependencyTracking
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
@@ -46,9 +47,15 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
     override val reference: INodeReference
         get() = MPSNodeReference(node.reference)
     override val concept: IConcept
-        get() = MPSConcept(node.concept)
+        get() {
+            DependencyTracking.accessed(MPSNodeDependency(node))
+            return MPSConcept(node.concept)
+        }
     override val parent: INode?
-        get() = node.parent?.let { MPSNode(it) } ?: node.model?.let { MPSModelAsNode(it) }
+        get() {
+            DependencyTracking.accessed(MPSContainmentDependency(node))
+            return node.parent?.let { MPSNode(it) } ?: node.model?.let { MPSModelAsNode(it) }
+        }
 
     override fun tryGetConcept(): IConcept {
         return MPSConcept(node.concept)
@@ -59,7 +66,10 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
     }
 
     override val allChildren: Iterable<INode>
-        get() = node.children.map { MPSNode(it) }
+        get() {
+            DependencyTracking.accessed(MPSAllChildrenDependency(node))
+            return node.children.map { MPSNode(it) }
+        }
 
     override fun removeChild(child: INode) {
         require(child is MPSNode) { "child must be an MPSNode" }
@@ -67,18 +77,26 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
     }
 
     override fun getPropertyLinks(): List<IProperty> {
+        DependencyTracking.accessed(MPSNodeDependency(node))
         return node.properties.map { MPSProperty(it) }
     }
 
     override fun getReferenceLinks(): List<IReferenceLink> {
+        DependencyTracking.accessed(MPSNodeDependency(node))
         return node.references.map { MPSReferenceLink(it.link) }
     }
 
     override fun getContainmentLink(): IChildLink {
+        DependencyTracking.accessed(MPSNodeDependency(node))
         return node.containmentLink?.let { MPSChildLink(it) } ?: BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
+        if (link is MPSChildLink) {
+            DependencyTracking.accessed(MPSChildrenDependency(node, link.link))
+        } else {
+            DependencyTracking.accessed(MPSAllChildrenDependency(node))
+        }
         return node.children.map { MPSNode(it) }.filter {
             it.getContainmentLink().conformsTo(link)
         }
@@ -132,6 +150,11 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
     }
 
     override fun getReferenceTarget(link: IReferenceLink): INode? {
+        if (link is MPSReferenceLink) {
+            DependencyTracking.accessed(MPSReferenceDependency(node, link.link))
+        } else {
+            DependencyTracking.accessed(MPSAllReferencesDependency(node))
+        }
         return node.references.filter { MPSReferenceLink(it.link).getUID() == link.getUID() }
             .firstOrNull()?.targetNode?.let { MPSNode(it) }
     }
@@ -153,11 +176,21 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {
+        if (role is MPSReferenceLink) {
+            DependencyTracking.accessed(MPSReferenceDependency(node, role.link))
+        } else {
+            DependencyTracking.accessed(MPSAllReferencesDependency(node))
+        }
         return node.references.firstOrNull { MPSReferenceLink(it.link).getUID() == role.getUID() }
             ?.targetNodeReference?.let { MPSNodeReference(it) }
     }
 
     override fun getPropertyValue(property: IProperty): String? {
+        if (property is MPSProperty) {
+            DependencyTracking.accessed(MPSPropertyDependency(node, property.property))
+        } else {
+            DependencyTracking.accessed(MPSAllPropertiesDependency(node))
+        }
         val mpsProperty = node.properties.firstOrNull { MPSProperty(it).getUID() == property.getUID() } ?: return null
         return node.getProperty(mpsProperty)
     }

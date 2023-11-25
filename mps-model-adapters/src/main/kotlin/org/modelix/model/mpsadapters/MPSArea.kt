@@ -13,6 +13,8 @@
  */
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.ide.ThreadUtils
+import jetbrains.mps.project.Project
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.project.facets.JavaModuleFacet
@@ -108,12 +110,42 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
 
     override fun <T> executeWrite(f: () -> T): T {
         var result: T? = null
-        if (repository.modelAccess is GlobalModelAccess) {
-            repository.modelAccess.runWriteAction { result = f() }
-        } else {
-            repository.modelAccess.executeCommand { result = f() }
+        executeWrite({ result = f() }, enforceCommand = true)
+        return result as T
+    }
+
+    fun executeWrite(f: () -> Unit, enforceCommand: Boolean) {
+        // Try to execute a command instead of a write action if possible,
+        // because write actions don't trigger an update of the MPS editor.
+
+        // A command can only be executed on the EDT (Event Dispatch Thread/AWT Thread/UI Thread).
+        // We could dispatch it to the EDT and wait for the result, but that increases the risk for deadlocks.
+        // The caller is responsible for calling this method from the EDT if a command is desired.
+        val inEDT = ThreadUtils.isInEDT()
+
+        if (inEDT || enforceCommand) {
+            val projects: Sequence<Project> = Sequence { ProjectManager.getInstance().openedProjects.iterator() }
+            val modelAccessCandidates = sequenceOf(repository.modelAccess) + projects.map { it.modelAccess }
+            // GlobalModelAccess throws an Exception when trying to execute a command.
+            // Only a ProjectModelAccess can execute a command.
+            val modelAccess = modelAccessCandidates.filter { it !is GlobalModelAccess }.firstOrNull()
+
+            if (modelAccess != null) {
+                if (inEDT) {
+                    modelAccess.executeCommand { f() }
+                } else {
+                    ThreadUtils.runInUIThreadAndWait {
+                        modelAccess.executeCommand { f() }
+                    }
+                }
+                return
+            }
         }
-        return result!!
+
+        // For a write access any ModelAccess works.
+        // If there is no ModelAccess that is not a GlobalModelAccess then there are probably no open projects and
+        // there can't be any open editors, so the issues doesn't exist.
+        repository.modelAccess.runWriteAction { f() }
     }
 
     override fun canRead(): Boolean {

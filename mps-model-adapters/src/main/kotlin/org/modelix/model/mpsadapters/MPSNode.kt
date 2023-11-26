@@ -23,6 +23,7 @@ import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapterById
 import jetbrains.mps.smodel.adapter.structure.property.SPropertyAdapterById
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapterById
 import org.jetbrains.mps.openapi.language.SContainmentLink
+import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.incremental.DependencyTracking
 import org.modelix.model.api.BuiltinLanguages

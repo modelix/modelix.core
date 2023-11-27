@@ -136,10 +136,15 @@ class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
 
     override fun <T> runTransaction(body: () -> T): T {
         val transactions = ignite.transactions()
-        transactions.txStart().use { tx ->
-            val result = body()
-            tx.commit()
-            return result
+        if (transactions.tx() == null) {
+            transactions.txStart().use { tx ->
+                val result = body()
+                tx.commit()
+                return result
+            }
+        } else {
+            // already in a transaction
+            return body()
         }
     }
 

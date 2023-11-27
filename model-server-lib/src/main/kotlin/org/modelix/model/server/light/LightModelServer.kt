@@ -35,6 +35,7 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
+import io.ktor.util.toMap
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
@@ -208,14 +209,19 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
                 try {
                     val allChecks = healthChecks.associateBy { it.id }.toMap()
                     val enabledChecks = allChecks.filter { it.value.enabledByDefault }.keys.toMutableSet()
+                    val validParameterNames = (allChecks.keys + allChecks.flatMap { it.value.validParameterNames }).toSet()
 
-                    call.request.queryParameters.entries().forEach { entry ->
-                        entry.value.forEach { value ->
-                            if (!allChecks.containsKey(entry.key)) throw IllegalArgumentException("Unknown check: ${entry.key}")
-                            if (value.toBooleanStrict()) {
-                                enabledChecks.add(entry.key)
-                            } else {
-                                enabledChecks.remove(entry.key)
+                    val queryParameters = call.request.queryParameters
+                    val queryParametersMap = queryParameters.toMap()
+                    queryParameters.entries().forEach { entry ->
+                        require(validParameterNames.contains(entry.key)) { "Unknown check: ${entry.key}" }
+                        if (allChecks.containsKey(entry.key)) {
+                            entry.value.forEach { value ->
+                                if (value.toBooleanStrict()) {
+                                    enabledChecks.add(entry.key)
+                                } else {
+                                    enabledChecks.remove(entry.key)
+                                }
                             }
                         }
                     }
@@ -223,7 +229,7 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
                     for (healthCheck in allChecks.values) {
                         if (enabledChecks.contains(healthCheck.id)) {
                             output.appendLine("--- running check '${healthCheck.id}' ---")
-                            val result = healthCheck.run(output)
+                            val result = healthCheck.run(output, queryParametersMap)
                             output.appendLine()
                             output.appendLine("-> " + if (result) "successful" else "failed")
                             isHealthy = isHealthy && result
@@ -442,9 +448,11 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
     }
 
     interface IHealthCheck {
+        val validParameterNames: Set<String> get() = emptySet()
         val id: String
         val enabledByDefault: Boolean
         fun run(output: StringBuilder): Boolean
+        fun run(output: StringBuilder, parameters: Map<String, List<String>>): Boolean = run(output)
     }
 }
 

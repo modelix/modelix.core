@@ -31,16 +31,28 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
+import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.modelql.core.count
 import org.modelix.modelql.untyped.allChildren
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ModelClientV2Test {
+abstract class ModelClientV2Test {
+
+    class Ignite : ModelClientV2Test() {
+        override fun createStoreClient() = IgniteStoreClient(inmemory = true)
+    }
+
+    class InMemoryMap : ModelClientV2Test() {
+        override fun createStoreClient() = InMemoryStoreClient()
+    }
+
+    protected abstract fun createStoreClient(): IStoreClient
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        IgniteStoreClient(inmemory = true).use { storeClient ->
+        createStoreClient().use { storeClient ->
             application {
                 installAuthentication(unitTestMode = true)
                 install(ContentNegotiation) {

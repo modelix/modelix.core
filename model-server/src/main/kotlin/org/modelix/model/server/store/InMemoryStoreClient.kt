@@ -104,4 +104,7 @@ class InMemoryStoreClient : IStoreClient {
     override fun <T> runTransaction(body: () -> T): T {
         return body()
     }
+
+    override fun close() {
+    }
 }

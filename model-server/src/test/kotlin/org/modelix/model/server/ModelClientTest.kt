@@ -24,7 +24,9 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
+import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
+import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import java.util.Random
 import kotlin.test.Test
@@ -32,10 +34,19 @@ import kotlin.test.assertEquals
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
-class ModelClientTest {
+abstract class ModelClientTest {
+    class Ignite : ModelClientTest() {
+        override fun createStoreClient() = IgniteStoreClient(inmemory = true)
+    }
+
+    class InMemoryMap : ModelClientTest() {
+        override fun createStoreClient() = InMemoryStoreClient()
+    }
+
+    protected abstract fun createStoreClient(): IStoreClient
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        IgniteStoreClient(inmemory = true).use { storeClient ->
+        createStoreClient().use { storeClient ->
             application {
                 installAuthentication(unitTestMode = true)
                 KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(storeClient))).init(this)

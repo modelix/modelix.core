@@ -30,7 +30,9 @@ import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.LightModelServer
+import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
+import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.random.Random
@@ -41,11 +43,21 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class LightModelClientTest {
+abstract class LightModelClientTest {
+    class Ignite : LightModelClientTest() {
+        override fun createStoreClient() = IgniteStoreClient(inmemory = true)
+    }
+
+    class InMemoryMap : LightModelClientTest() {
+        override fun createStoreClient() = InMemoryStoreClient()
+    }
+
+    protected abstract fun createStoreClient(): IStoreClient
+
     var localModelClient: LocalModelClient? = null
 
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
-        IgniteStoreClient(inmemory = true).use { storeClient ->
+        createStoreClient().use { storeClient ->
             application {
                 installAuthentication(unitTestMode = true)
                 install(io.ktor.server.websocket.WebSockets)

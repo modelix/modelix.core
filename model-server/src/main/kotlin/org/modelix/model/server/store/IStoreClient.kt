@@ -23,7 +23,7 @@ import java.io.File
 import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
-interface IStoreClient {
+interface IStoreClient : AutoCloseable {
     operator fun get(key: String): String?
     fun getAll(keys: List<String>): List<String?>
     fun getAll(keys: Set<String>): Map<String, String?>

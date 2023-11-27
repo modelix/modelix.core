@@ -52,7 +52,9 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
+import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
+import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import java.util.Collections
@@ -66,10 +68,19 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
-class ReplicatedRepositoryTest {
+abstract class ReplicatedRepositoryTest {
+    class Ignite : ReplicatedRepositoryTest() {
+        override fun createStoreClient() = IgniteStoreClient(inmemory = true)
+    }
+
+    class InMemoryMap : ReplicatedRepositoryTest() {
+        override fun createStoreClient() = InMemoryStoreClient()
+    }
+
+    protected abstract fun createStoreClient(): IStoreClient
 
     private fun runTest(block: suspend ApplicationTestBuilder.(scope: CoroutineScope) -> Unit) = testApplication {
-        IgniteStoreClient(inmemory = true).use { storeClient ->
+        createStoreClient().use { storeClient ->
             application {
                 installAuthentication(unitTestMode = true)
                 install(ContentNegotiation) {

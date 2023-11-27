@@ -33,15 +33,27 @@ import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.asObjectList
 import org.modelix.model.server.handlers.buildJSONArray
 import org.modelix.model.server.handlers.buildJSONObject
+import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
+import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class JsonAPITest {
+abstract class JsonAPITest {
+    class Ignite : JsonAPITest() {
+        override fun createStoreClient() = IgniteStoreClient(inmemory = true)
+    }
+
+    class InMemoryMap : JsonAPITest() {
+        override fun createStoreClient() = InMemoryStoreClient()
+    }
+
+    protected abstract fun createStoreClient(): IStoreClient
+
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) {
-        IgniteStoreClient(inmemory = true).use { storeClient ->
+        createStoreClient().use { storeClient ->
             testApplication {
                 application {
                     installAuthentication(unitTestMode = true)

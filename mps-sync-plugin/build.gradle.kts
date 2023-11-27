@@ -29,7 +29,7 @@ dependencies {
     api(project(":model-api"))
 
     implementation(project(":mps-model-adapters"))
-    implementation(project(":sync-plugin-lib"))
+    implementation(project(":mps-sync-plugin-lib"))
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))
     implementation(project(":model-api", configuration = "jvmRuntimeElements"))
     implementation(project(":model-datastructure", configuration = "jvmRuntimeElements"))

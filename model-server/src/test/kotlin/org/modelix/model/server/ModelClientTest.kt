@@ -24,7 +24,7 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
-import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import java.util.Random
 import kotlin.test.Test
@@ -35,11 +35,13 @@ import kotlin.time.Duration.Companion.seconds
 class ModelClientTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        application {
-            installAuthentication(unitTestMode = true)
-            KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(InMemoryStoreClient()))).init(this)
+        IgniteStoreClient(inmemory = true).use { storeClient ->
+            application {
+                installAuthentication(unitTestMode = true)
+                KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(storeClient))).init(this)
+            }
+            block()
         }
-        block()
     }
 
     @Test

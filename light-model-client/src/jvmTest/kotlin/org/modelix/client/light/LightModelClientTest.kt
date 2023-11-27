@@ -30,7 +30,7 @@ import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.LightModelServer
-import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.random.Random
@@ -45,18 +45,20 @@ class LightModelClientTest {
     var localModelClient: LocalModelClient? = null
 
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
-        application {
-            installAuthentication(unitTestMode = true)
-            install(io.ktor.server.websocket.WebSockets)
-            val modelClient = LocalModelClient(InMemoryStoreClient())
-            localModelClient = modelClient
-            DeprecatedLightModelServer(modelClient).init(this)
-            LightModelServer(modelClient).init(this)
+        IgniteStoreClient(inmemory = true).use { storeClient ->
+            application {
+                installAuthentication(unitTestMode = true)
+                install(io.ktor.server.websocket.WebSockets)
+                val modelClient = LocalModelClient(storeClient)
+                localModelClient = modelClient
+                DeprecatedLightModelServer(modelClient).init(this)
+                LightModelServer(modelClient).init(this)
+            }
+            val client = createClient {
+                install(WebSockets)
+            }
+            block(client)
         }
-        val client = createClient {
-            install(WebSockets)
-        }
-        block(client)
     }
 
     fun runClientTest(block: suspend (suspend (debugName: String) -> LightModelClient) -> Unit) = runTest { httpClient ->

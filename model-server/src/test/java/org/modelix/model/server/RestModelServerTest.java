@@ -23,148 +23,154 @@ import org.json.JSONArray;
 import org.junit.Test;
 import org.modelix.model.server.handlers.KeyValueLikeModelServer;
 import org.modelix.model.server.handlers.RepositoriesManager;
-import org.modelix.model.server.store.InMemoryStoreClient;
+import org.modelix.model.server.store.IgniteStoreClient;
 import org.modelix.model.server.store.LocalModelClient;
 
 public class RestModelServerTest {
 
     @Test
     public void testCollectUnexistingKey() {
-        KeyValueLikeModelServer rms =
-                new KeyValueLikeModelServer(
-                        new RepositoriesManager(new LocalModelClient(new InMemoryStoreClient())));
-        JSONArray result = rms.collect("unexistingKey");
-        assertEquals(1, result.length());
-        assertEquals(new HashSet<>(Arrays.asList("key")), result.getJSONObject(0).keySet());
-        assertEquals("unexistingKey", result.getJSONObject(0).get("key"));
+        try (IgniteStoreClient storeClient = new IgniteStoreClient(null, true)) {
+            KeyValueLikeModelServer rms =
+                    new KeyValueLikeModelServer(
+                            new RepositoriesManager(new LocalModelClient(storeClient)));
+            JSONArray result = rms.collect("unexistingKey");
+            assertEquals(1, result.length());
+            assertEquals(new HashSet<>(Arrays.asList("key")), result.getJSONObject(0).keySet());
+            assertEquals("unexistingKey", result.getJSONObject(0).get("key"));
+        }
     }
 
     @Test
     public void testCollectExistingKeyNotHash() {
-        InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        storeClient.put("existingKey", "foo", false);
-        KeyValueLikeModelServer rms =
-                new KeyValueLikeModelServer(
-                        new RepositoriesManager(new LocalModelClient(storeClient)));
-        JSONArray result = rms.collect("existingKey");
-        assertEquals(1, result.length());
-        assertEquals(
-                new HashSet<>(Arrays.asList("key", "value")), result.getJSONObject(0).keySet());
-        assertEquals("existingKey", result.getJSONObject(0).get("key"));
-        assertEquals("foo", result.getJSONObject(0).get("value"));
+        try (IgniteStoreClient storeClient = new IgniteStoreClient(null, true)) {
+            storeClient.put("existingKey", "foo", false);
+            KeyValueLikeModelServer rms =
+                    new KeyValueLikeModelServer(
+                            new RepositoriesManager(new LocalModelClient(storeClient)));
+            JSONArray result = rms.collect("existingKey");
+            assertEquals(1, result.length());
+            assertEquals(
+                    new HashSet<>(Arrays.asList("key", "value")), result.getJSONObject(0).keySet());
+            assertEquals("existingKey", result.getJSONObject(0).get("key"));
+            assertEquals("foo", result.getJSONObject(0).get("value"));
+        }
     }
 
     @Test
     public void testCollectExistingKeyHash() {
-        InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        storeClient.put("existingKey", "hash-*0123456789-0123456789-0123456789-00001", false);
-        storeClient.put("hash-*0123456789-0123456789-0123456789-00001", "bar", false);
-        KeyValueLikeModelServer rms =
-                new KeyValueLikeModelServer(
-                        new RepositoriesManager(new LocalModelClient(storeClient)));
-        JSONArray result = rms.collect("existingKey");
-        assertEquals(2, result.length());
+        try (IgniteStoreClient storeClient = new IgniteStoreClient(null, true)) {
+            storeClient.put("existingKey", "hash-*0123456789-0123456789-0123456789-00001", false);
+            storeClient.put("hash-*0123456789-0123456789-0123456789-00001", "bar", false);
+            KeyValueLikeModelServer rms =
+                    new KeyValueLikeModelServer(
+                            new RepositoriesManager(new LocalModelClient(storeClient)));
+            JSONArray result = rms.collect("existingKey");
+            assertEquals(2, result.length());
 
-        var obj = result.getJSONObject(0);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("existingKey", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("value"));
+            var obj = result.getJSONObject(0);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("existingKey", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("value"));
 
-        obj = result.getJSONObject(1);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("key"));
-        assertEquals("bar", obj.get("value"));
+            obj = result.getJSONObject(1);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("key"));
+            assertEquals("bar", obj.get("value"));
+        }
     }
 
     @Test
     public void testCollectExistingKeyHashChained() {
-        InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001", false);
-        storeClient.put(
-                "hash-*0123456789-0123456789-0123456789-00001",
-                "hash-*0123456789-0123456789-0123456789-00002",
-                false);
-        storeClient.put(
-                "hash-*0123456789-0123456789-0123456789-00002",
-                "hash-*0123456789-0123456789-0123456789-00003",
-                false);
-        storeClient.put(
-                "hash-*0123456789-0123456789-0123456789-00003",
-                "hash-*0123456789-0123456789-0123456789-00004",
-                false);
-        storeClient.put("hash-*0123456789-0123456789-0123456789-00004", "end", false);
-        KeyValueLikeModelServer rms =
-                new KeyValueLikeModelServer(
-                        new RepositoriesManager(new LocalModelClient(storeClient)));
-        JSONArray result = rms.collect("root");
-        assertEquals(5, result.length());
+        try (IgniteStoreClient storeClient = new IgniteStoreClient(null, true)) {
+            storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001", false);
+            storeClient.put(
+                    "hash-*0123456789-0123456789-0123456789-00001",
+                    "hash-*0123456789-0123456789-0123456789-00002",
+                    false);
+            storeClient.put(
+                    "hash-*0123456789-0123456789-0123456789-00002",
+                    "hash-*0123456789-0123456789-0123456789-00003",
+                    false);
+            storeClient.put(
+                    "hash-*0123456789-0123456789-0123456789-00003",
+                    "hash-*0123456789-0123456789-0123456789-00004",
+                    false);
+            storeClient.put("hash-*0123456789-0123456789-0123456789-00004", "end", false);
+            KeyValueLikeModelServer rms =
+                    new KeyValueLikeModelServer(
+                            new RepositoriesManager(new LocalModelClient(storeClient)));
+            JSONArray result = rms.collect("root");
+            assertEquals(5, result.length());
 
-        var obj = result.getJSONObject(0);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("root", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("value"));
+            var obj = result.getJSONObject(0);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("root", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("value"));
 
-        obj = result.getJSONObject(1);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00002", obj.get("value"));
+            obj = result.getJSONObject(1);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00002", obj.get("value"));
 
-        obj = result.getJSONObject(2);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("hash-*0123456789-0123456789-0123456789-00002", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00003", obj.get("value"));
+            obj = result.getJSONObject(2);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("hash-*0123456789-0123456789-0123456789-00002", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00003", obj.get("value"));
 
-        obj = result.getJSONObject(3);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("hash-*0123456789-0123456789-0123456789-00003", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00004", obj.get("value"));
+            obj = result.getJSONObject(3);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("hash-*0123456789-0123456789-0123456789-00003", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00004", obj.get("value"));
 
-        obj = result.getJSONObject(4);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("hash-*0123456789-0123456789-0123456789-00004", obj.get("key"));
-        assertEquals("end", obj.get("value"));
+            obj = result.getJSONObject(4);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("hash-*0123456789-0123456789-0123456789-00004", obj.get("key"));
+            assertEquals("end", obj.get("value"));
+        }
     }
 
     @Test
     public void testCollectExistingKeyHashChainedWithRepetitions() {
-        InMemoryStoreClient storeClient = new InMemoryStoreClient();
-        storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001", false);
-        storeClient.put(
-                "hash-*0123456789-0123456789-0123456789-00001",
-                "hash-*0123456789-0123456789-0123456789-00002",
-                false);
-        storeClient.put(
-                "hash-*0123456789-0123456789-0123456789-00002",
-                "hash-*0123456789-0123456789-0123456789-00003",
-                false);
-        storeClient.put(
-                "hash-*0123456789-0123456789-0123456789-00003",
-                "hash-*0123456789-0123456789-0123456789-00001",
-                false);
-        KeyValueLikeModelServer rms =
-                new KeyValueLikeModelServer(
-                        new RepositoriesManager(new LocalModelClient(storeClient)));
-        JSONArray result = rms.collect("root");
-        assertEquals(4, result.length());
+        try (IgniteStoreClient storeClient = new IgniteStoreClient(null, true)) {
+            storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001", false);
+            storeClient.put(
+                    "hash-*0123456789-0123456789-0123456789-00001",
+                    "hash-*0123456789-0123456789-0123456789-00002",
+                    false);
+            storeClient.put(
+                    "hash-*0123456789-0123456789-0123456789-00002",
+                    "hash-*0123456789-0123456789-0123456789-00003",
+                    false);
+            storeClient.put(
+                    "hash-*0123456789-0123456789-0123456789-00003",
+                    "hash-*0123456789-0123456789-0123456789-00001",
+                    false);
+            KeyValueLikeModelServer rms =
+                    new KeyValueLikeModelServer(
+                            new RepositoriesManager(new LocalModelClient(storeClient)));
+            JSONArray result = rms.collect("root");
+            assertEquals(4, result.length());
 
-        var obj = result.getJSONObject(0);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("root", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("value"));
+            var obj = result.getJSONObject(0);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("root", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("value"));
 
-        obj = result.getJSONObject(1);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00002", obj.get("value"));
+            obj = result.getJSONObject(1);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00002", obj.get("value"));
 
-        obj = result.getJSONObject(2);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("hash-*0123456789-0123456789-0123456789-00002", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00003", obj.get("value"));
+            obj = result.getJSONObject(2);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("hash-*0123456789-0123456789-0123456789-00002", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00003", obj.get("value"));
 
-        obj = result.getJSONObject(3);
-        assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
-        assertEquals("hash-*0123456789-0123456789-0123456789-00003", obj.get("key"));
-        assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("value"));
+            obj = result.getJSONObject(3);
+            assertEquals(new HashSet<>(Arrays.asList("key", "value")), obj.keySet());
+            assertEquals("hash-*0123456789-0123456789-0123456789-00003", obj.get("key"));
+            assertEquals("hash-*0123456789-0123456789-0123456789-00001", obj.get("value"));
+        }
     }
 }

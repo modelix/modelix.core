@@ -26,7 +26,7 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.stream.Collectors
 
-class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
+class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) : IStoreClient, AutoCloseable {
     private val ignite: Ignite
     private val cache: IgniteCache<String, String?>
     private val timer = Executors.newScheduledThreadPool(1)
@@ -63,7 +63,7 @@ class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
                 )
             }
         }
-        ignite = Ignition.start(javaClass.getResource("ignite.xml"))
+        ignite = Ignition.start(javaClass.getResource(if (inmemory) "ignite-inmemory.xml" else "ignite.xml"))
         cache = ignite.getOrCreateCache("model")
         //        timer.scheduleAtFixedRate(() -> {
         //            System.out.println("stats: " + cache.metrics());
@@ -81,6 +81,10 @@ class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
 
     override fun getAll(keys: Set<String>): Map<String, String?> {
         return cache.getAll(keys)
+    }
+
+    override fun getAll(): Map<String, String?> {
+        return cache.associate { it.key to it.value }
     }
 
     override fun put(key: String, value: String?, silent: Boolean) {
@@ -150,5 +154,9 @@ class IgniteStoreClient(jdbcConfFile: File?) : IStoreClient {
 
     fun dispose() {
         ignite.close()
+    }
+
+    override fun close() {
+        dispose()
     }
 }

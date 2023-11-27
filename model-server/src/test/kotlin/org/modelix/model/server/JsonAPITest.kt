@@ -33,20 +33,24 @@ import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.asObjectList
 import org.modelix.model.server.handlers.buildJSONArray
 import org.modelix.model.server.handlers.buildJSONObject
-import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class JsonAPITest {
-    private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        application {
-            installAuthentication(unitTestMode = true)
-            install(WebSockets)
-            DeprecatedLightModelServer(LocalModelClient(InMemoryStoreClient())).init(this)
+    private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) {
+        IgniteStoreClient(inmemory = true).use { storeClient ->
+            testApplication {
+                application {
+                    installAuthentication(unitTestMode = true)
+                    install(WebSockets)
+                    DeprecatedLightModelServer(LocalModelClient(storeClient)).init(this)
+                }
+                block()
+            }
         }
-        block()
     }
     val repoId = "myrepo"
 

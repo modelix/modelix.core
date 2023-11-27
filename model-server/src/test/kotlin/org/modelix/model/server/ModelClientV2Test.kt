@@ -31,7 +31,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.handlers.ModelReplicationServer
-import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.modelql.core.count
 import org.modelix.modelql.untyped.allChildren
 import kotlin.test.Test
@@ -40,15 +40,17 @@ import kotlin.test.assertEquals
 class ModelClientV2Test {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        application {
-            installAuthentication(unitTestMode = true)
-            install(ContentNegotiation) {
-                json()
+        IgniteStoreClient(inmemory = true).use { storeClient ->
+            application {
+                installAuthentication(unitTestMode = true)
+                install(ContentNegotiation) {
+                    json()
+                }
+                install(WebSockets)
+                ModelReplicationServer(storeClient).init(this)
             }
-            install(WebSockets)
-            ModelReplicationServer(InMemoryStoreClient()).init(this)
+            block()
         }
-        block()
     }
 
     @Test

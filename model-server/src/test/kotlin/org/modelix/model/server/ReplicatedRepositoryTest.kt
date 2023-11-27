@@ -52,7 +52,7 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
-import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import java.util.Collections
@@ -69,19 +69,21 @@ import kotlin.time.measureTime
 class ReplicatedRepositoryTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.(scope: CoroutineScope) -> Unit) = testApplication {
-        application {
-            installAuthentication(unitTestMode = true)
-            install(ContentNegotiation) {
-                json()
+        IgniteStoreClient(inmemory = true).use { storeClient ->
+            application {
+                installAuthentication(unitTestMode = true)
+                install(ContentNegotiation) {
+                    json()
+                }
+                install(WebSockets)
+                val repositoriesManager = RepositoriesManager(LocalModelClient(storeClient))
+                ModelReplicationServer(repositoriesManager).init(this)
+                KeyValueLikeModelServer(repositoriesManager).init(this)
             }
-            install(WebSockets)
-            val repositoriesManager = RepositoriesManager(LocalModelClient(InMemoryStoreClient()))
-            ModelReplicationServer(repositoriesManager).init(this)
-            KeyValueLikeModelServer(repositoriesManager).init(this)
-        }
 
-        coroutineScope {
-            block(this)
+            coroutineScope {
+                block(this)
+            }
         }
     }
 

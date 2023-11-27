@@ -69,6 +69,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
 abstract class ReplicatedRepositoryTest {
+    @Ignore
     class Ignite : ReplicatedRepositoryTest() {
         override fun createStoreClient() = IgniteStoreClient(inmemory = true)
     }

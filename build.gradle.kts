@@ -40,7 +40,6 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.gitVersion)
-    alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.tasktree)
     alias(libs.plugins.dokka)
@@ -97,7 +96,6 @@ subprojects {
     val subproject = this
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "io.gitlab.arturbosch.detekt")
 
     version = rootProject.version
@@ -107,11 +105,6 @@ subprojects {
         pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
             footerMessage = createFooterMessage()
         }
-    }
-
-    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        // IMPORTANT: keep in sync with the version in .pre-commit-config.yaml
-        version.set("0.50.0")
     }
 
     tasks.withType<Detekt> {

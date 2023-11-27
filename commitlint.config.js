@@ -28,4 +28,7 @@ module.exports = {
     ],
     "subject-case": [0, 'never']
   },
+  ignores: [
+    (message) => message.includes('skip-lint')
+  ],
 };

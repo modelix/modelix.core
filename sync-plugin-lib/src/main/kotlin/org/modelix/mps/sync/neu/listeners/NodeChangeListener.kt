@@ -34,63 +34,73 @@ import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.runIfAlone
+import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeChangeListener(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
+    private val isSynchronizing: AtomicReference<Boolean>,
 ) : SNodeChangeListener {
 
     override fun propertyChanged(event: SPropertyChangeEvent) {
-        val property = MPSProperty(event.property)
-        val nodeId = nodeMap[event.node]!!
+        isSynchronizing.runIfAlone {
+            val property = MPSProperty(event.property)
+            val nodeId = nodeMap[event.node]!!
 
-        branch.runWriteT {
-            val cloudNode = branch.getNode(nodeId)
-            cloudNode.setPropertyValue(property, event.newValue)
+            branch.runWriteT {
+                val cloudNode = branch.getNode(nodeId)
+                cloudNode.setPropertyValue(property, event.newValue)
+            }
         }
     }
 
     override fun referenceChanged(event: SReferenceChangeEvent) {
-        // TODO fix me: it does not work correctly, if event.newValue.targetNode points to a node that is in a different model, that has not been synced yet to model server...
+        isSynchronizing.runIfAlone {
+            // TODO fix me: it does not work correctly, if event.newValue.targetNode points to a node that is in a different model, that has not been synced yet to model server...
 
-        val sourceNodeId = nodeMap[event.node]!!
-        val reference = MPSReferenceLink(event.associationLink)
-        val targetNodeId = event.newValue?.targetNode?.let { nodeMap[it] }
+            val sourceNodeId = nodeMap[event.node]!!
+            val reference = MPSReferenceLink(event.associationLink)
+            val targetNodeId = event.newValue?.targetNode?.let { nodeMap[it] }
 
-        branch.runWriteT {
-            val cloudNode = branch.getNode(sourceNodeId)
-            val target = if (targetNodeId == null) null else branch.getNode(targetNodeId)
-            cloudNode.setReferenceTarget(reference, target)
+            branch.runWriteT {
+                val cloudNode = branch.getNode(sourceNodeId)
+                val target = if (targetNodeId == null) null else branch.getNode(targetNodeId)
+                cloudNode.setReferenceTarget(reference, target)
+            }
         }
     }
 
     override fun nodeAdded(event: SNodeAddEvent) {
-        val parentNodeId = if (event.isRoot) {
-            nodeMap[event.model]!!
-        } else {
-            nodeMap[event.parent!!]!!
-        }
-
-        val containmentLink = event.aggregationLink ?: return // SModelListener.rootAdded handles it if null
-        val childLink = MPSChildLink(containmentLink)
-
-        val mpsChild = event.child
-        val mpsConcept = mpsChild.concept
-
-        val nodeId = nodeMap[mpsChild]
-        val childExists = nodeId != null
-        branch.runWriteT { transaction ->
-            if (childExists) {
-                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
+        isSynchronizing.runIfAlone {
+            val parentNodeId = if (event.isRoot) {
+                nodeMap[event.model]!!
             } else {
-                val cloudParentNode = branch.getNode(parentNodeId)
-                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+                nodeMap[event.parent!!]!!
+            }
 
-                // save the modelix ID and the SNode in the map
-                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+            val containmentLink =
+                event.aggregationLink ?: return@runIfAlone // SModelListener.rootAdded handles it if null
+            val childLink = MPSChildLink(containmentLink)
 
-                synchronizeNodeToCloud(mpsConcept, mpsChild, cloudChildNode)
+            val mpsChild = event.child
+            val mpsConcept = mpsChild.concept
+
+            val nodeId = nodeMap[mpsChild]
+            val childExists = nodeId != null
+            branch.runWriteT { transaction ->
+                if (childExists) {
+                    transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
+                } else {
+                    val cloudParentNode = branch.getNode(parentNodeId)
+                    val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+
+                    // save the modelix ID and the SNode in the map
+                    nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+
+                    synchronizeNodeToCloud(mpsConcept, mpsChild, cloudChildNode)
+                }
             }
         }
     }
@@ -100,51 +110,55 @@ class NodeChangeListener(
         mpsNode: SNode,
         cloudNode: INode,
     ) {
-        // synchronize properties
-        mpsConcept.properties.forEach {
-            val mpsValue = mpsNode.getProperty(it)
-            val modelixProperty = PropertyFromName(it.name)
-            cloudNode.setPropertyValue(modelixProperty, mpsValue)
-        }
+        isSynchronizing.runIfAlone {
+            // synchronize properties
+            mpsConcept.properties.forEach {
+                val mpsValue = mpsNode.getProperty(it)
+                val modelixProperty = PropertyFromName(it.name)
+                cloudNode.setPropertyValue(modelixProperty, mpsValue)
+            }
 
-        // synchronize references
-        mpsConcept.referenceLinks.forEach {
-            val mpsTargetNode = mpsNode.getReferenceTarget(it)!!
-            val targetNodeId = nodeMap[mpsTargetNode]!!
+            // synchronize references
+            mpsConcept.referenceLinks.forEach {
+                val mpsTargetNode = mpsNode.getReferenceTarget(it)!!
+                val targetNodeId = nodeMap[mpsTargetNode]!!
 
-            val modelixReferenceLink = MPSReferenceLink(it)
-            val cloudTargetNode = branch.getNode(targetNodeId)
+                val modelixReferenceLink = MPSReferenceLink(it)
+                val cloudTargetNode = branch.getNode(targetNodeId)
 
-            cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
-        }
+                cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
+            }
 
-        // synchronize children
-        mpsConcept.containmentLinks.forEach { containmentLink ->
-            mpsNode.getChildren(containmentLink).forEach { mpsChild ->
-                val childLink = MPSChildLink(containmentLink)
-                val mpsChildConcept = mpsChild.concept
-                val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
+            // synchronize children
+            mpsConcept.containmentLinks.forEach { containmentLink ->
+                mpsNode.getChildren(containmentLink).forEach { mpsChild ->
+                    val childLink = MPSChildLink(containmentLink)
+                    val mpsChildConcept = mpsChild.concept
+                    val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
 
-                // save the modelix ID and the SNode in the map
-                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+                    // save the modelix ID and the SNode in the map
+                    nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
 
-                synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
+                    synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
+                }
             }
         }
     }
 
     override fun nodeRemoved(event: SNodeRemoveEvent) {
-        val parentNodeId = if (event.isRoot) {
-            nodeMap[event.model]!!
-        } else {
-            nodeMap[event.parent!!]!!
-        }
-        val nodeId = nodeMap[event.child]!!
+        isSynchronizing.runIfAlone {
+            val parentNodeId = if (event.isRoot) {
+                nodeMap[event.model]!!
+            } else {
+                nodeMap[event.parent!!]!!
+            }
+            val nodeId = nodeMap[event.child]!!
 
-        branch.runWriteT {
-            val cloudParentNode = branch.getNode(parentNodeId)
-            val cloudChildNode = branch.getNode(nodeId)
-            cloudParentNode.removeChild(cloudChildNode)
+            branch.runWriteT {
+                val cloudParentNode = branch.getNode(parentNodeId)
+                val cloudChildNode = branch.getNode(nodeId)
+                cloudParentNode.removeChild(cloudChildNode)
+            }
         }
     }
 }

@@ -41,6 +41,8 @@ import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.runIfAlone
+import java.util.concurrent.atomic.AtomicReference
 
 // TODO some methods need some testing
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -48,167 +50,188 @@ class ModelChangeListener(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
     private val nodeChangeListener: NodeChangeListener,
+    private val isSynchronizing: AtomicReference<Boolean>,
 ) : SModelListener {
 
     override fun importAdded(event: SModelImportEvent) {
-        // TODO might not work, we have to test it
-        val modelixId = nodeMap[event.model]!!
-        val mpsModelReference = event.modelUID
-        val targetModel = mpsModelReference.resolve(event.model.repository)
+        isSynchronizing.runIfAlone {
+            // TODO might not work, we have to test it
+            val modelixId = nodeMap[event.model]!!
+            val mpsModelReference = event.modelUID
+            val targetModel = mpsModelReference.resolve(event.model.repository)
 
-        val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
-        val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
+            val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
+            val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
 
-        branch.runWriteT {
-            val cloudParentNode = branch.getNode(modelixId)
-            val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
+            branch.runWriteT {
+                val cloudParentNode = branch.getNode(modelixId)
+                val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
 
-            nodeMap.put(mpsModelReference, cloudModelReference.nodeIdAsLong())
+                nodeMap.put(mpsModelReference, cloudModelReference.nodeIdAsLong())
 
-            // warning: might be fragile, because we just sync the "model" reference, but no other fields
-            val targetModelModelixId = nodeMap[targetModel]!!
-            val cloudTargetModel = branch.getNode(targetModelModelixId)
-            cloudModelReference.setReferenceTarget(
-                BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
-                cloudTargetModel,
-            )
+                // warning: might be fragile, because we just sync the "model" reference, but no other fields
+                val targetModelModelixId = nodeMap[targetModel]!!
+                val cloudTargetModel = branch.getNode(targetModelModelixId)
+                cloudModelReference.setReferenceTarget(
+                    BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
+                    cloudTargetModel,
+                )
+            }
         }
     }
 
     override fun importRemoved(event: SModelImportEvent) {
-        // TODO might not work, we have to test it
-        // TODO deduplicate implementation
-        val parentNodeId = nodeMap[event.model]!!
-        val nodeId = nodeMap[event.modelUID]!!
-        branch.runWriteT {
-            val cloudParentNode = branch.getNode(parentNodeId)
-            val cloudChildNode = branch.getNode(nodeId)
-            cloudParentNode.removeChild(cloudChildNode)
+        isSynchronizing.runIfAlone {
+            // TODO might not work, we have to test it
+            // TODO deduplicate implementation
+            val parentNodeId = nodeMap[event.model]!!
+            val nodeId = nodeMap[event.modelUID]!!
+            branch.runWriteT {
+                val cloudParentNode = branch.getNode(parentNodeId)
+                val cloudChildNode = branch.getNode(nodeId)
+                cloudParentNode.removeChild(cloudChildNode)
+            }
         }
     }
 
     override fun languageAdded(event: SModelLanguageEvent) {
-        val modelixId = nodeMap[event.model]!!
+        isSynchronizing.runIfAlone {
+            val modelixId = nodeMap[event.model]!!
 
-        val language = event.eventLanguage
-        val languageModuleReference = language.sourceModuleReference
-        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
+            val language = event.eventLanguage
+            val languageModuleReference = language.sourceModuleReference
+            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
-        branch.runWriteT {
-            val cloudNode = branch.getNode(modelixId)
-            val cloudLanguageDependency =
-                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency)
+            branch.runWriteT {
+                val cloudNode = branch.getNode(modelixId)
+                val cloudLanguageDependency =
+                    cloudNode.addNewChild(
+                        childLink,
+                        -1,
+                        BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
+                    )
 
-            // TODO we might have to find a different traceability between the SingleLanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading Languages from the cloud)
-            nodeMap.put(languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
+                // TODO we might have to find a different traceability between the SingleLanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading Languages from the cloud)
+                nodeMap.put(languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the properties by hand
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                languageModuleReference?.moduleName,
-            )
+                // warning: might be fragile, because we synchronize the properties by hand
+                cloudLanguageDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                    languageModuleReference?.moduleName,
+                )
 
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                languageModuleReference?.moduleId.toString(),
-            )
+                cloudLanguageDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                    languageModuleReference?.moduleId.toString(),
+                )
 
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
-                event.model.module.getUsedLanguageVersion(language).toString(),
-            )
+                cloudLanguageDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                    event.model.module.getUsedLanguageVersion(language).toString(),
+                )
+            }
         }
     }
 
     override fun languageRemoved(event: SModelLanguageEvent) {
-        val modelixId = nodeMap[event.model]!!
+        isSynchronizing.runIfAlone {
+            val modelixId = nodeMap[event.model]!!
 
-        val languageModuleReference = event.eventLanguage.sourceModuleReference
-        val languageModuleReferenceModelixId = nodeMap[languageModuleReference]!!
+            val languageModuleReference = event.eventLanguage.sourceModuleReference
+            val languageModuleReferenceModelixId = nodeMap[languageModuleReference]!!
 
-        branch.runWriteT {
-            val cloudNode = branch.getNode(modelixId)
-            val cloudLanguageModuleReference = branch.getNode(languageModuleReferenceModelixId)
-            cloudNode.removeChild(cloudLanguageModuleReference)
+            branch.runWriteT {
+                val cloudNode = branch.getNode(modelixId)
+                val cloudLanguageModuleReference = branch.getNode(languageModuleReferenceModelixId)
+                cloudNode.removeChild(cloudLanguageModuleReference)
+            }
         }
     }
 
     override fun devkitAdded(event: SModelDevKitEvent) {
-        val modelixId = nodeMap[event.model]!!
+        isSynchronizing.runIfAlone {
+            val modelixId = nodeMap[event.model]!!
 
-        val repository = event.model.repository
-        val devKitModuleReference = event.devkitNamespace
-        val devKitModuleId = devKitModuleReference.moduleId
-        val devKitModule = repository.getModule(devKitModuleId)
+            val repository = event.model.repository
+            val devKitModuleReference = event.devkitNamespace
+            val devKitModuleId = devKitModuleReference.moduleId
+            val devKitModule = repository.getModule(devKitModuleId)
 
-        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
+            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
-        branch.runWriteT {
-            val cloudNode = branch.getNode(modelixId)
-            val cloudDevKitDependency =
-                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
+            branch.runWriteT {
+                val cloudNode = branch.getNode(modelixId)
+                val cloudDevKitDependency =
+                    cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
 
-            // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading DevKits from the cloud)
-            nodeMap.put(devKitModuleReference, cloudDevKitDependency.nodeIdAsLong())
+                // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading DevKits from the cloud)
+                nodeMap.put(devKitModuleReference, cloudDevKitDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the properties by hand
-            cloudDevKitDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                devKitModule?.moduleName,
-            )
+                // warning: might be fragile, because we synchronize the properties by hand
+                cloudDevKitDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                    devKitModule?.moduleName,
+                )
 
-            cloudDevKitDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                devKitModule?.moduleId.toString(),
-            )
+                cloudDevKitDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                    devKitModule?.moduleId.toString(),
+                )
+            }
         }
     }
 
     override fun devkitRemoved(event: SModelDevKitEvent) {
-        val modelixId = nodeMap[event.model]!!
+        isSynchronizing.runIfAlone {
+            val modelixId = nodeMap[event.model]!!
 
-        val devKitModuleReference = event.devkitNamespace
-        val devKitModuleReferenceModelixId = nodeMap[devKitModuleReference]!!
+            val devKitModuleReference = event.devkitNamespace
+            val devKitModuleReferenceModelixId = nodeMap[devKitModuleReference]!!
 
-        branch.runWriteT {
-            val cloudNode = branch.getNode(modelixId)
-            val cloudDevKitModuleReference = branch.getNode(devKitModuleReferenceModelixId)
-            cloudNode.removeChild(cloudDevKitModuleReference)
+            branch.runWriteT {
+                val cloudNode = branch.getNode(modelixId)
+                val cloudDevKitModuleReference = branch.getNode(devKitModuleReferenceModelixId)
+                cloudNode.removeChild(cloudDevKitModuleReference)
+            }
         }
     }
 
     @Deprecated("Deprecated in Java")
     override fun rootAdded(event: SModelRootEvent) {
-        // TODO deduplicate implementation
-        val parentNodeId = nodeMap[event.model]!!
-        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
+        isSynchronizing.runIfAlone {
+            // TODO deduplicate implementation
+            val parentNodeId = nodeMap[event.model]!!
+            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
 
-        val mpsChild = event.root
-        val mpsConcept = mpsChild.concept
+            val mpsChild = event.root
+            val mpsConcept = mpsChild.concept
 
-        val nodeId = nodeMap[mpsChild]
-        val childExists = nodeId != null
-        branch.runWriteT { transaction ->
-            if (childExists) {
-                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
-            } else {
-                val cloudParentNode = branch.getNode(parentNodeId)
-                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+            val nodeId = nodeMap[mpsChild]
+            val childExists = nodeId != null
+            branch.runWriteT { transaction ->
+                if (childExists) {
+                    transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
+                } else {
+                    val cloudParentNode = branch.getNode(parentNodeId)
+                    val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
 
-                // save the modelix ID and the SNode in the map
-                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+                    // save the modelix ID and the SNode in the map
+                    nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
 
-                synchronizeNodeToCloud(mpsConcept, mpsChild, cloudChildNode)
+                    synchronizeNodeToCloud(mpsConcept, mpsChild, cloudChildNode)
+                }
             }
         }
     }
 
     override fun modelRenamed(event: SModelRenamedEvent) {
-        // TODO deduplicate implementation
-        val modelixId = nodeMap[event.model]!!
-        branch.runWriteT {
-            val cloudNode = branch.getNode(modelixId)
-            cloudNode.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, event.newName)
+        isSynchronizing.runIfAlone {
+            // TODO deduplicate implementation
+            val modelixId = nodeMap[event.model]!!
+            branch.runWriteT {
+                val cloudNode = branch.getNode(modelixId)
+                cloudNode.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, event.newName)
+            }
         }
     }
 

@@ -67,30 +67,30 @@ class SNodeFactory(
         nodeMap.put(sNode, nodeId)
 
         // 2. add to parent
-        modelAccess.runWriteAction {
-            val parent = iNode.parent
-            val parentSerializedModelId =
-                parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
-            val parentModelId = if (parentSerializedModelId.isNotEmpty()) {
-                PersistenceFacade.getInstance().createModelId(parentSerializedModelId)
-            } else {
-                null
-            }
-            val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
-            val isRootNode = concept.isRootable && modelIsTheParent
+        val parent = iNode.parent
+        val parentSerializedModelId =
+            parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
+        val parentModelId = if (parentSerializedModelId.isNotEmpty()) {
+            PersistenceFacade.getInstance().createModelId(parentSerializedModelId)
+        } else {
+            null
+        }
+        val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
+        val isRootNode = concept.isRootable && modelIsTheParent
 
-            if (isRootNode) {
+        if (isRootNode) {
+            modelAccess.runWriteBlocking {
                 model?.addRootNode(sNode)
-            } else {
-                val parentNodeId = parent?.nodeIdAsLong()
-                val parentNode = nodeMap.getNode(parentNodeId)
-                check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
+            }
+        } else {
+            val parentNodeId = parent?.nodeIdAsLong()
+            val parentNode = nodeMap.getNode(parentNodeId)
+            check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
 
-                val role = iNode.getContainmentLink()
-                val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
-                modelAccess.executeCommandInEDT {
-                    parentNode.addChild(containmentLink, sNode)
-                }
+            val role = iNode.getContainmentLink()
+            val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
+            modelAccess.runWriteBlocking {
+                parentNode.addChild(containmentLink, sNode)
             }
         }
 
@@ -119,10 +119,8 @@ class SNodeFactory(
             val property = PropertyFromName(it.name)
             val value = source.getPropertyValue(property)
 
-            modelAccess.runWriteAction {
-                modelAccess.executeCommandInEDT {
-                    target.setProperty(it, value)
-                }
+            modelAccess.runWriteBlocking {
+                target.setProperty(it, value)
             }
         }
     }
@@ -148,10 +146,8 @@ class SNodeFactory(
             val reference = it.reference
             val target = nodeMap.getNode(it.targetNodeId)
 
-            modelAccess.runWriteAction {
-                modelAccess.executeCommandInEDT {
-                    source.setReferenceTarget(reference, target)
-                }
+            modelAccess.runWriteBlocking {
+                source.setReferenceTarget(reference, target)
             }
         }
     }

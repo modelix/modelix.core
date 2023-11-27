@@ -52,16 +52,21 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, private val project: MPSProject) {
+class ITreeToSTreeTransformer(
+    private val replicatedModel: ReplicatedModel,
+    private val project: MPSProject,
+    private val isSynchronizing: AtomicReference<Boolean>,
+    private val nodeMap: MpsToModelixMap,
+) {
 
     private val solutionProducer = SolutionProducer(project)
-
-    private val nodeMap = MpsToModelixMap()
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
     fun transform(entryPoint: INode): SNode? {
         try {
+            isSynchronizing.set(true)
+
             // 1. Register the language concepts so they are ready for lookup
             val repository = project.repository
             val mpsLanguageRepo = MPSLanguageRepository(repository)
@@ -96,19 +101,21 @@ class ITreeToSTreeTransformer(private val replicatedModel: ReplicatedModel, priv
                 println("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
                 // TODO unregister listeners later!!!
                 nodeMap.models.forEach {
-                    val nodeChangeListener = NodeChangeListener(branch, nodeMap)
-                    val modelChangeListener = ModelChangeListener(branch, nodeMap, nodeChangeListener)
+                    val nodeChangeListener = NodeChangeListener(branch, nodeMap, isSynchronizing)
+                    val modelChangeListener = ModelChangeListener(branch, nodeMap, nodeChangeListener, isSynchronizing)
 
                     it.addChangeListener(nodeChangeListener)
                     (it as SModelInternal).addModelListener(modelChangeListener)
                 }
                 nodeMap.modules.forEach {
-                    it.addModuleListener(ModuleChangeListener(branch, nodeMap))
+                    it.addModuleListener(ModuleChangeListener(branch, nodeMap, isSynchronizing))
                 }
             }
         } catch (ex: Exception) {
             println("${this.javaClass} exploded")
             ex.printStackTrace()
+        } finally {
+            isSynchronizing.set(false)
         }
 
         return null

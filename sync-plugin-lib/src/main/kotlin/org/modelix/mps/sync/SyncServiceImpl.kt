@@ -12,13 +12,21 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
+import org.modelix.model.api.ITreeChangeVisitor
+import org.modelix.model.api.PropertyFromName
+import org.modelix.model.api.getNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.mps.sync.neu.ITreeToSTreeTransformer
+import org.modelix.mps.sync.neu.MpsToModelixMap
+import org.modelix.mps.sync.neu.runWriteBlocking
+import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.runIfAlone
 import java.net.ConnectException
 import java.net.URL
+import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SyncServiceImpl : SyncService {
@@ -81,9 +89,10 @@ class SyncServiceImpl : SyncService {
             replicatedModel.start()
 
             // 🚧🏗️👷👷‍♂️ WARNING Construction area 🚧🚧🚧
-            ITreeToSTreeTransformer(replicatedModel, project).transform(model)
-
-            bindingImpl = BindingImpl(replicatedModel, modelName, project)
+            val isSynchronizing = AtomicReference<Boolean>()
+            val nodeMap = MpsToModelixMap()
+            ITreeToSTreeTransformer(replicatedModel, project, isSynchronizing, nodeMap).transform(model)
+            bindingImpl = BindingImpl(replicatedModel, project, isSynchronizing, nodeMap)
         }
         // trigger callback after activation
         afterActivate?.invoke()
@@ -115,41 +124,99 @@ class SyncServiceImpl : SyncService {
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class BindingImpl(val replicatedModel: ReplicatedModel, modelName: String, mpsPproject: MPSProject) : IBinding {
+@UnstableModelixFeature(reason = "The new mod elix MPS plugin is under construction", intendedFinalization = "2024.1")
+class BindingImpl(
+    val replicatedModel: ReplicatedModel,
+    mpsProject: MPSProject,
+    private val isSynchronizing: AtomicReference<Boolean>,
+    private val nodeMap: MpsToModelixMap,
+) : IBinding {
 
-    val branch: IBranch
+    private val branch: IBranch = replicatedModel.getBranch()
+    private val modelAccess = mpsProject.modelAccess
 
     init {
-        branch = replicatedModel.getBranch()
-
-        // TODO use the modelName here...
-
-        // todo: test if there is a module already
-        // if (!mpsPproject.projectModels.any { it.name.equals(branch.getId()) }) {
-        // todo: create model
-        // }
         setupBinding()
     }
 
     private fun setupBinding() {
-        // TODO: Re-implement features here which are currently available in the mps sync plugin
-
         // listen to changes on the branch in the replicatedModel (model-server side) ...
+        // TODO refactor the IBranchListener to a new class
         branch.addListener(object : IBranchListener {
             override fun treeChanged(oldTree: ITree?, newTree: ITree) {
-                // TODO fixme, because if we make changes to the model-server from MPS, then we have to avoid getting into a self-calling infinite loop....
-                // ... and write to MPS
+                if (oldTree == null) {
+                    return
+                }
+                newTree.visitChanges(
+                    oldTree,
+                    object : ITreeChangeVisitor {
+
+                        fun getBranch() = replicatedModel.getBranch()
+
+                        override fun containmentChanged(nodeId: Long) {
+                            // TODO What is the order for new nodes?
+                            // 1. parent.childrenChanged, 2.child.containmentChanged
+                            // or the other way around?
+
+                            // TODO How to transform new model, new module added?
+                            // TODO Are they also containmentChanged events?
+                            isSynchronizing.runIfAlone {
+                                // child node is moved to a new parent
+                                val sNode = nodeMap.getNode(nodeId)!!
+                                val oldParent = sNode.parent
+                                oldParent?.removeChild(sNode)
+
+                                val iNode = getBranch().getNode(nodeId)
+                                val containmentLinkName = iNode.getContainmentLink()!!.getSimpleName()
+                                val newIParent = iNode.parent!!
+                                val newParent = nodeMap.getNode(newIParent.nodeIdAsLong())!!
+
+                                val containment =
+                                    newParent.concept.containmentLinks.find { it.name == containmentLinkName }!!
+                                newParent.addChild(containment, sNode)
+                            }
+                        }
+
+                        override fun referenceChanged(nodeId: Long, role: String) {
+                            // TODO how to transform modelImport, modelDependency, languageDependency changes?
+                            // TODO Are they also "referenceChanged" events?
+                            isSynchronizing.runIfAlone {
+                                val sNode = nodeMap.getNode(nodeId)!!
+                                val sReferenceLink = sNode.references.find { it.link.name == role }!!.link
+
+                                val iNode = getBranch().getNode(nodeId)
+                                val iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }!!
+                                val targetINode = iNode.getReferenceTarget(iReferenceLink)
+                                val targetSNode = nodeMap.getNode(targetINode!!.nodeIdAsLong())
+
+                                modelAccess.runWriteBlocking {
+                                    sNode.setReferenceTarget(sReferenceLink, targetSNode)
+                                }
+                            }
+                        }
+
+                        override fun propertyChanged(nodeId: Long, role: String) {
+                            isSynchronizing.runIfAlone {
+                                val sNode = nodeMap.getNode(nodeId)!!
+                                val sProperty = sNode.properties.find { it.name == role }!!
+
+                                val iNode = getBranch().getNode(nodeId)
+                                val iProperty = PropertyFromName(role)
+                                val value = iNode.getPropertyValue(iProperty)
+
+                                modelAccess.runWriteBlocking {
+                                    sNode.setProperty(sProperty, value)
+                                }
+                            }
+                        }
+
+                        override fun childrenChanged(nodeId: Long, role: String?) {
+                            println("children of $nodeId changed in role $role")
+                        }
+                    },
+                )
             }
         })
-
-        // this includes setting up of syncing
-        // * to MPS from the replicated model
-        // * to the replicated model from MPS
-
-        // replicatedModel.getBranch().getRootNode()
-
-        // todo: check if replication and connection work and raise exception otherwise
     }
 
     override fun deactivate(callback: Runnable?) {

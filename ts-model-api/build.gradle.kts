@@ -1,7 +1,6 @@
 plugins {
   base
   alias(libs.plugins.node)
-  alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.npm.publish)
 }
 

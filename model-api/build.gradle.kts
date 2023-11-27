@@ -6,16 +6,6 @@ plugins {
 
 description = "API to access models stored in Modelix"
 
-ktlint {
-    filter {
-        exclude {
-            val kotlinGeneratedFromTypeScript =
-                project(":ts-model-api").layout.buildDirectory.get().asFile.toPath().toAbsolutePath()
-            it.file.toPath().toAbsolutePath().startsWith(kotlinGeneratedFromTypeScript)
-        }
-    }
-}
-
 kotlin {
     jvm()
     js(IR) {
@@ -70,7 +60,6 @@ kotlin {
 
 listOf(
     "sourcesJar",
-    "runKtlintCheckOverJsMainSourceSet",
     "jsSourcesJar",
     "jsPackageJson",
     "compileKotlinJs",

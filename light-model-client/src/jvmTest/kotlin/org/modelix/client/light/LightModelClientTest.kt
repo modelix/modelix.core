@@ -44,7 +44,6 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 abstract class LightModelClientTest {
-    @Ignore
     class Ignite : LightModelClientTest() {
         override fun createStoreClient() = IgniteStoreClient(inmemory = true)
     }

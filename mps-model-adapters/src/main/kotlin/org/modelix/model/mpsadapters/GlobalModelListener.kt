@@ -1,3 +1,5 @@
+@file:Suppress("removal")
+
 /*
  * Copyright (c) 2023.
  *
@@ -13,21 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.modelix.model.mpsadapters
 
-import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
-import org.jetbrains.mps.openapi.model.SModelReference
-import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
-import org.jetbrains.mps.openapi.module.SModuleReference
+import org.jetbrains.mps.openapi.module.SModuleListenerBase
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.module.SRepositoryListener
+import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 
 abstract class GlobalModelListener {
-    @Suppress("removal")
-    protected var repositoryListener: SRepositoryListener = object : SRepositoryListener {
+    protected var repositoryListener: SRepositoryListener = object : SRepositoryListenerBase() {
         override fun moduleAdded(m: SModule) {
             start(m)
         }
@@ -35,18 +35,9 @@ abstract class GlobalModelListener {
         override fun beforeModuleRemoved(m: SModule) {
             stop(m)
         }
-
-        override fun moduleRemoved(p0: SModuleReference) {}
-        override fun commandStarted(p0: SRepository?) {}
-        override fun commandFinished(p0: SRepository?) {}
-        override fun updateStarted(p0: SRepository?) {}
-        override fun updateFinished(p0: SRepository?) {}
-        override fun repositoryCommandStarted(p0: SRepository?) {}
-        override fun repositoryCommandFinished(p0: SRepository?) {}
     }
 
-    @Suppress("removal")
-    protected var moduleListener: SModuleListener = object : SModuleListener {
+    protected var moduleListener: SModuleListener = object : SModuleListenerBase() {
         override fun modelAdded(module: SModule, model: SModel) {
             start(model)
         }
@@ -54,15 +45,6 @@ abstract class GlobalModelListener {
         override fun beforeModelRemoved(module: SModule, model: SModel) {
             stop(model)
         }
-
-        override fun modelRemoved(p0: SModule?, p1: SModelReference?) {}
-        override fun beforeModelRenamed(p0: SModule?, p1: SModel?, p2: SModelReference?) {}
-        override fun modelRenamed(p0: SModule?, p1: SModel?, p2: SModelReference?) {}
-        override fun dependencyAdded(p0: SModule?, p1: SDependency?) {}
-        override fun dependencyRemoved(p0: SModule?, p1: SDependency?) {}
-        override fun languageAdded(p0: SModule?, p1: SLanguage?) {}
-        override fun languageRemoved(p0: SModule?, p1: SLanguage?) {}
-        override fun moduleChanged(p0: SModule?) {}
     }
     protected var myRepositories: MutableSet<SRepository> = HashSet()
     protected var myModules: MutableSet<SModule> = HashSet()

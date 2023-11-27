@@ -1,3 +1,5 @@
+@file:Suppress("removal")
+
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.SModelInternal
@@ -29,6 +31,7 @@ import org.jetbrains.mps.openapi.module.SModuleListener
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.module.SRepositoryListener
+import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.incremental.DependencyTracking
 import org.modelix.incremental.IStateVariableReference
 
@@ -36,21 +39,9 @@ class MPSChangeTranslator :
     GlobalModelListener(),
     SNodeChangeListener,
     SModuleListener,
-    SRepositoryListener,
+    SRepositoryListener by object : SRepositoryListenerBase() {},
     SModelListener,
     org.jetbrains.mps.openapi.model.SModelListener {
-
-    @Suppress("removal")
-    override fun updateStarted(p0: SRepository?) {}
-
-    @Suppress("removal")
-    override fun updateFinished(p0: SRepository?) {}
-
-    @Suppress("removal")
-    override fun repositoryCommandStarted(p0: SRepository?) {}
-
-    @Suppress("removal")
-    override fun repositoryCommandFinished(p0: SRepository?) {}
 
     private fun notifyChange(change: IStateVariableReference<*>) {
         DependencyTracking.modified(change)

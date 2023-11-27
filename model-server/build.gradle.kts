@@ -149,7 +149,7 @@ publishing {
 
 spotless {
     java {
-        googleJavaFormat("1.8").aosp()
+        googleJavaFormat("1.18.1").aosp()
         licenseHeader(
             "/*\n" +
                 """ * Licensed under the Apache License, Version 2.0 (the "License");""" + "\n" +

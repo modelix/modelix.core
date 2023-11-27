@@ -95,11 +95,10 @@ sealed interface LocalEndpoint : SyncEndpoint {
     var repositoryDir: File?
     var mpsDebugPort: Int?
 
+    fun mpsLibrary(folder: File)
+
     override fun getValidationErrors(): List<String> {
         val errors = mutableListOf<String>()
-        if (mpsHome == null) {
-            errors.addUndefinedLocalFieldError("mpsHome")
-        }
         if (repositoryDir == null) {
             errors.addUndefinedLocalFieldError("repositoryDir")
         }
@@ -109,17 +108,27 @@ sealed interface LocalEndpoint : SyncEndpoint {
 
 data class LocalSource(
     override var mpsHome: File? = null,
+    internal var mpsLibraries: Set<File> = emptySet(),
     override var mpsHeapSize: String = "2g",
     override var repositoryDir: File? = null,
     override var mpsDebugPort: Int? = null,
-) : LocalEndpoint
+) : LocalEndpoint {
+    override fun mpsLibrary(folder: File) {
+        mpsLibraries += folder
+    }
+}
 
 data class LocalTarget(
     override var mpsHome: File? = null,
+    internal var mpsLibraries: Set<File> = emptySet(),
     override var mpsHeapSize: String = "2g",
     override var repositoryDir: File? = null,
     override var mpsDebugPort: Int? = null,
-) : LocalEndpoint
+) : LocalEndpoint {
+    override fun mpsLibrary(folder: File) {
+        mpsLibraries += folder
+    }
+}
 
 sealed interface ServerEndpoint : SyncEndpoint {
     var url: String?

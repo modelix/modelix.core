@@ -18,8 +18,10 @@ package org.modelix.model.sync.bulk.gradle
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.tasks.Sync
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.TaskProvider
+import org.modelix.buildtools.runner.MPSRunnerConfig
+import org.modelix.gradle.mpsbuild.MPSBuildPlugin
 import org.modelix.model.sync.bulk.gradle.config.LocalSource
 import org.modelix.model.sync.bulk.gradle.config.LocalTarget
 import org.modelix.model.sync.bulk.gradle.config.ModelSyncGradleSettings
@@ -27,10 +29,7 @@ import org.modelix.model.sync.bulk.gradle.config.ServerSource
 import org.modelix.model.sync.bulk.gradle.config.ServerTarget
 import org.modelix.model.sync.bulk.gradle.config.SyncDirection
 import org.modelix.model.sync.bulk.gradle.tasks.ExportFromModelServer
-import org.modelix.model.sync.bulk.gradle.tasks.ExportFromMps
-import org.modelix.model.sync.bulk.gradle.tasks.GenerateAntScriptForMps
 import org.modelix.model.sync.bulk.gradle.tasks.ImportIntoModelServer
-import org.modelix.model.sync.bulk.gradle.tasks.ImportIntoMps
 import org.modelix.model.sync.bulk.gradle.tasks.ValidateSyncSettings
 import java.io.File
 import java.util.Properties
@@ -38,10 +37,12 @@ import java.util.Properties
 class ModelSyncGradlePlugin : Plugin<Project> {
 
     private lateinit var settings: ModelSyncGradleSettings
-
-    private val antDependenciesConfigName = "model-sync-ant-dependencies"
+    private lateinit var mpsBuildPlugin: MPSBuildPlugin
+    private lateinit var mpsDependencies: Configuration
 
     override fun apply(project: Project) {
+        mpsBuildPlugin = project.plugins.apply(MPSBuildPlugin::class.java)
+
         settings = project.extensions.create("modelSync", ModelSyncGradleSettings::class.java)
         getBaseDir(project).mkdirs()
 
@@ -55,25 +56,15 @@ class ModelSyncGradlePlugin : Plugin<Project> {
                 }
             val modelixCoreVersion = readModelixCoreVersion()
                 ?: throw RuntimeException("modelix.core version not found. Try running the writeVersionFile task.")
-            val antDependencies = project.configurations.create(antDependenciesConfigName)
-            project.dependencies.add(antDependencies.name, "org.apache.ant:ant-junit:1.10.12")
 
-            val mpsDependencies = project.configurations.create("modelSyncMpsDependencies")
+            mpsDependencies = project.configurations.create("modelSyncMpsDependencies")
             project.dependencies.add(
                 mpsDependencies.name,
-                "org.modelix.mps:bulk-model-sync-solution:$modelixCoreVersion",
+                "org.modelix:bulk-model-sync-mps:$modelixCoreVersion",
             )
 
-            val copyMpsDependencies = project.tasks.register("copyMpsDependencies", Sync::class.java) { sync ->
-                sync.dependsOn(validateSyncSettings)
-                val src = mpsDependencies.resolve().map { project.zipTree(it) }
-                val target = getDependenciesDir(project).apply { mkdirs() }
-                sync.from(src)
-                sync.into(target)
-            }
-
             settings.syncDirections.forEach {
-                registerTasksForSyncDirection(it, project, copyMpsDependencies)
+                registerTasksForSyncDirection(it, project, validateSyncSettings)
             }
         }
     }
@@ -126,38 +117,29 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         jsonDir: File,
     ): TaskProvider<*> {
         val localSource = syncDirection.source as LocalSource
-        val antScript = jsonDir.resolve("build.xml")
-        val generateAntScript = project.tasks.register(
-            "${syncDirection.name}GenerateAntScriptForExport",
-            GenerateAntScriptForMps::class.java,
-        ) {
-            it.dependsOn(previousTask)
-            it.mpsHomePath.set(localSource.mpsHome?.absolutePath)
-            it.mpsHeapSize.set(localSource.mpsHeapSize)
-            it.repositoryPath.set(localSource.repositoryDir?.absolutePath)
-            it.antScriptFile.set(antScript)
-            it.mpsDependenciesPath.set(getDependenciesDir(project).absolutePath)
-            it.jsonDirPath.set(jsonDir.absolutePath)
-            it.exportFlag.set(true)
-            it.includedModules.set(syncDirection.includedModules)
-            it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
-            it.debugPort.set(localSource.mpsDebugPort)
+        val resolvedDependencies = mpsDependencies.resolvedConfiguration.files
+        val config = MPSRunnerConfig(
+            mainClassName = "org.modelix.mps.model.sync.bulk.MPSBulkSynchronizer",
+            mainMethodName = "exportRepository",
+            classPathElements = resolvedDependencies.toList(),
+            mpsHome = localSource.mpsHome,
+            workDir = jsonDir,
+            additionalModuleDirs = localSource.mpsLibraries.toList() + listOfNotNull(localSource.repositoryDir),
+            jvmArgs = listOfNotNull(
+                "-Dmodelix.mps.model.sync.bulk.output.path=${jsonDir.absolutePath}",
+                "-Dmodelix.mps.model.sync.bulk.output.modules=${syncDirection.includedModules.joinToString(",")}",
+                "-Dmodelix.mps.model.sync.bulk.output.modules.prefixes=${syncDirection.includedModulePrefixes.joinToString(",")}",
+                "-Dmodelix.mps.model.sync.bulk.repo.path=${localSource.repositoryDir?.absolutePath}",
+                "-Xmx${localSource.mpsHeapSize}",
+                localSource.mpsDebugPort?.let { "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$it" },
+            ),
+        )
+        return mpsBuildPlugin.createRunMPSTask("${syncDirection.name}ExportFromMps", config, arrayOf(previousTask)).also {
+            it.configure { task ->
+                task.outputs.dir(jsonDir)
+            }
         }
-
-        val exportFromMps = project.tasks.register("${syncDirection.name}ExportFromMps", ExportFromMps::class.java) {
-            it.dependsOn(generateAntScript)
-            it.outputs.cacheIf { false }
-            it.workingDir = jsonDir
-            it.classpath = project.getAntDependencies()
-            it.mainClass.set("org.apache.tools.ant.launch.Launcher")
-            it.mpsHome.set(localSource.mpsHome)
-            it.antScript.set(antScript)
-            it.jsonDir.set(jsonDir)
-        }
-        return exportFromMps
     }
-
-    private fun Project.getAntDependencies() = configurations.getByName(antDependenciesConfigName)
 
     private fun registerTasksForServerTarget(
         syncDirection: SyncDirection,
@@ -197,36 +179,28 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         }
 
         val localTarget = syncDirection.target as LocalTarget
-
-        val antScript = jsonDir.resolve("build.xml")
-
-        val antDependencies = project.configurations.create("model-import-ant-dependencies")
-        project.dependencies.add(antDependencies.name, "org.apache.ant:ant-junit:1.10.12")
-
-        val generateAntScriptName = "${syncDirection.name}GenerateAntScriptForImport"
-        val generateAntScript = project.tasks.register(generateAntScriptName, GenerateAntScriptForMps::class.java) {
-            it.dependsOn(previousTask)
-            it.mpsHomePath.set(localTarget.mpsHome?.absolutePath)
-            it.mpsHeapSize.set(localTarget.mpsHeapSize)
-            it.repositoryPath.set(localTarget.repositoryDir?.absolutePath)
-            it.antScriptFile.set(antScript)
-            it.mpsDependenciesPath.set(getDependenciesDir(project).absolutePath)
-            it.jsonDirPath.set(jsonDir.absolutePath)
-            it.exportFlag.set(false)
-            it.includedModules.set(syncDirection.includedModules)
-            it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
-            it.debugPort.set(localTarget.mpsDebugPort)
-        }
-
         val importName = "${syncDirection.name}ImportIntoMps"
-        val importIntoMps = project.tasks.register(importName, ImportIntoMps::class.java) {
-            it.dependsOn(generateAntScript)
-            it.workingDir = jsonDir
-            it.classpath = project.getAntDependencies()
-            it.mainClass.set("org.apache.tools.ant.launch.Launcher")
-            it.jsonDir.set(jsonDir)
-            it.antScript.set(jsonDir.resolve("build.xml"))
-            it.mpsHome.set(localTarget.mpsHome)
+        val resolvedDependencies = mpsDependencies.resolvedConfiguration.files
+        val config = MPSRunnerConfig(
+            mainClassName = "org.modelix.mps.model.sync.bulk.MPSBulkSynchronizer",
+            mainMethodName = "importRepository",
+            classPathElements = resolvedDependencies.toList(),
+            mpsHome = localTarget.mpsHome,
+            workDir = jsonDir,
+            additionalModuleDirs = localTarget.mpsLibraries.toList() + listOfNotNull(localTarget.repositoryDir),
+            jvmArgs = listOfNotNull(
+                "-Dmodelix.mps.model.sync.bulk.input.path=${jsonDir.absolutePath}",
+                "-Dmodelix.mps.model.sync.bulk.input.modules=${syncDirection.includedModules.joinToString(",")}",
+                "-Dmodelix.mps.model.sync.bulk.input.modules.prefixes=${syncDirection.includedModulePrefixes.joinToString(",")}",
+                "-Dmodelix.mps.model.sync.bulk.repo.path=${localTarget.repositoryDir?.absolutePath}",
+                "-Xmx${localTarget.mpsHeapSize}",
+                localTarget.mpsDebugPort?.let { "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$it" },
+            ),
+        )
+        val importIntoMps = mpsBuildPlugin.createRunMPSTask(importName, config, arrayOf(previousTask)).also {
+            it.configure { task ->
+                task.inputs.dir(jsonDir)
+            }
         }
 
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {

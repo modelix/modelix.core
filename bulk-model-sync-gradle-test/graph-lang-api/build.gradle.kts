@@ -32,11 +32,6 @@ val resolveMps by tasks.registering(Copy::class) {
 
 val repoDir = projectDir.resolve("test-repo")
 
-val copyMetamodelToMpsHome by tasks.registering(Copy::class) {
-    from(file(projectDir.resolve("../test-repo/languages")))
-    into(file(mpsDir.resolve("languages").apply { mkdirs() }))
-}
-
 kotlin {
     sourceSets.named("main") {
         kotlin.srcDir(kotlinGenDir)
@@ -45,9 +40,9 @@ kotlin {
 
 metamodel {
     dependsOn(resolveMps)
-    dependsOn(copyMetamodelToMpsHome)
     mpsHome = mpsDir
     kotlinDir = kotlinGenDir
+    modulesFrom(projectDir.parentFile.resolve("test-repo"))
     includeLanguage("GraphLang")
     registrationHelperName = "org.modelix.model.sync.bulk.gradle.test.GraphLanguagesHelper"
 }

@@ -70,7 +70,7 @@ fun computeVersion(): Any {
 
 // ensure the whole project uses the same default MPS version
 if (project.findProperty("mps.version") == null) {
-    ext["mps.version"] = "2020.3.6"
+    ext["mps.version"] = "2023.2"
 }
 
 dependencies {

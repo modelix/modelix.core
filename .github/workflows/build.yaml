@@ -61,6 +61,10 @@ jobs:
           java-version: '17'
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
+      - name: Download MPS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --build-cache downloadMPS -PciBuild=true
       - name: Assemble
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -81,6 +85,10 @@ jobs:
           java-version: '17'
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
+      - name: Download MPS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --build-cache downloadMPS -PciBuild=true
       - name: Assemble
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.transformation
+package org.modelix.mps.sync.transformation.modelixToMps.transformers
 
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.structure.modules.ModuleReference
@@ -30,6 +30,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
+import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

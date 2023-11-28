@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.transformation
+package org.modelix.mps.sync.transformation.modelixToMps.initial
 
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.project.MPSProject
@@ -25,9 +25,13 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
-import org.modelix.mps.sync.mps.listeners.ModelChangeListener
-import org.modelix.mps.sync.mps.listeners.ModuleChangeListener
-import org.modelix.mps.sync.mps.listeners.NodeChangeListener
+import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
+import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
+import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
+import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
+import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
+import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
 import org.modelix.mps.sync.util.isModel
 import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.nodeIdAsLong
@@ -81,7 +85,6 @@ class ITreeToSTreeTransformer(
                 modelTransformer.resolveModelImports(project.repository)
 
                 logger.info("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
-                // TODO unregister listeners later!!!
                 nodeMap.models.forEach {
                     val nodeChangeListener = NodeChangeListener(branch, nodeMap, isSynchronizing)
                     val modelChangeListener = ModelChangeListener(branch, nodeMap, nodeChangeListener, isSynchronizing)

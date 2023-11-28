@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.transformation
+package org.modelix.mps.sync.transformation.modelixToMps.transformers
 
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.project.DevKit
@@ -32,6 +32,7 @@ import org.modelix.mps.sync.mps.factories.SNodeFactory
 import org.modelix.mps.sync.mps.util.addDevKit
 import org.modelix.mps.sync.mps.util.addLanguageImport
 import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
+import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference

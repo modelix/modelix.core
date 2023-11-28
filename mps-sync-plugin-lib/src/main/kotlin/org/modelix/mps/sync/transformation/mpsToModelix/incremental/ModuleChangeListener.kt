@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.mps.listeners
+package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
 import com.jetbrains.rd.util.firstOrNull
 import jetbrains.mps.project.Solution

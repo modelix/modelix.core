@@ -99,4 +99,13 @@ class MpsToModelixMap {
     fun getModuleReference(modelixId: Long?) = modelixIdToSModuleReference[modelixId]
 
     fun getModelReference(modelixId: Long?) = modelixIdToSModelReference[modelixId]
+
+    fun remove(modelixId: Long) {
+        modelixIdToSNode.remove(modelixId)?.let { sNodeToModelixId.remove(it) }
+        modelixIdToSModel.remove(modelixId)?.let { sModelIdToModelixId.remove(it.modelId) }
+        modelixIdToSModelId.remove(modelixId)?.let { sModelIdToModelixId.remove(it) }
+        modelixIdToSModule.remove(modelixId)?.let { sModuleToModelixId.remove(it) }
+        modelixIdToSModuleReference.remove(modelixId)?.let { sModuleReferenceToModelixId.remove(it) }
+        modelixIdToSModelReference.remove(modelixId)?.let { sModelReferenceToModelixId.remove(it) }
+    }
 }

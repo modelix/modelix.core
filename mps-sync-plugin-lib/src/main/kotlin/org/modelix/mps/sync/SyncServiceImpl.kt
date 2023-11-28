@@ -2,6 +2,8 @@ package org.modelix.mps.sync
 
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
+import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.extapi.module.SModuleBase
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,14 +11,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
-import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.ITree
-import org.modelix.model.api.ITreeChangeVisitor
+import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ModelClientV2
@@ -27,7 +28,6 @@ import org.modelix.mps.sync.neu.ITreeToSTreeTransformer
 import org.modelix.mps.sync.neu.MpsToModelixMap
 import org.modelix.mps.sync.neu.runReadBlocking
 import org.modelix.mps.sync.neu.runWriteActionInEDTBlocking
-import org.modelix.mps.sync.neu.runWriteInEDTBlocking
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.runIfAlone
 import java.net.ConnectException
@@ -159,41 +159,9 @@ class BindingImpl(
                 }
                 newTree.visitChanges(
                     oldTree,
-                    object : ITreeChangeVisitor {
+                    object : ITreeChangeVisitorEx {
 
                         fun getBranch() = replicatedModel.getBranch()
-
-                        override fun containmentChanged(nodeId: Long) {
-                            // TODO What is the order for new nodes?
-                            // 1. parent.childrenChanged, 2.child.containmentChanged
-                            // or the other way around?
-
-                            // TODO How to transform new model, new module added?
-                            // TODO Are they also containmentChanged events?
-                            isSynchronizing.runIfAlone(::handleThrowable) {
-                                // child node is moved to a new parent
-                                val sNode = nodeMap.getNode(nodeId)!!
-                                var oldParent: SNode? = null
-                                modelAccess.runReadBlocking { oldParent = sNode.parent }
-                                modelAccess.runWriteInEDTBlocking { oldParent?.removeChild(sNode) }
-
-                                val iNode = getBranch().getNode(nodeId)
-                                var containmentLinkName: String? = null
-                                var newIParent: INode? = null
-                                getBranch().runRead {
-                                    containmentLinkName = iNode.getContainmentLink()!!.getSimpleName()
-                                    newIParent = iNode.parent
-                                }
-
-                                val newParent = nodeMap.getNode(newIParent!!.nodeIdAsLong())!!
-
-                                val containment =
-                                    newParent.concept.containmentLinks.find { it.name == containmentLinkName!! }!!
-                                modelAccess.runWriteActionInEDTBlocking {
-                                    newParent.addChild(containment, sNode)
-                                }
-                            }
-                        }
 
                         override fun referenceChanged(nodeId: Long, role: String) {
                             // TODO how to transform modelImport, modelDependency, languageDependency changes?
@@ -202,17 +170,17 @@ class BindingImpl(
                                 val sNode = nodeMap.getNode(nodeId)!!
                                 var sReferenceLink: SReferenceLink? = null
                                 modelAccess.runReadBlocking {
-                                    sReferenceLink = sNode.references.find { it.link.name == role }!!.link
+                                    sReferenceLink = sNode.concept.referenceLinks.find { it.name == role }
                                 }
 
                                 val iNode = getBranch().getNode(nodeId)
-                                var iReferenceLink: IReferenceLink
+                                var iReferenceLink: IReferenceLink?
                                 var targetINode: INode? = null
                                 getBranch().runRead {
-                                    iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }!!
-                                    targetINode = iNode.getReferenceTarget(iReferenceLink)
+                                    iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }
+                                    targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
                                 }
-                                val targetSNode = nodeMap.getNode(targetINode!!.nodeIdAsLong())
+                                val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
 
                                 modelAccess.runWriteActionInEDTBlocking {
                                     sNode.setReferenceTarget(sReferenceLink!!, targetSNode)
@@ -221,10 +189,13 @@ class BindingImpl(
                         }
 
                         override fun propertyChanged(nodeId: Long, role: String) {
+                            // TODO what if nodeId is a Model or a Module?
                             isSynchronizing.runIfAlone(::handleThrowable) {
                                 val sNode = nodeMap.getNode(nodeId)!!
                                 var sProperty: SProperty? = null
-                                modelAccess.runReadBlocking { sProperty = sNode.properties.find { it.name == role } }
+                                modelAccess.runReadBlocking {
+                                    sProperty = sNode.concept.properties.find { it.name == role }
+                                }
 
                                 val iNode = getBranch().getNode(nodeId)
                                 val iProperty = PropertyFromName(role)
@@ -237,9 +208,40 @@ class BindingImpl(
                             }
                         }
 
-                        override fun childrenChanged(nodeId: Long, role: String?) {
-                            println("children of $nodeId changed in role $role")
+                        override fun nodeRemoved(nodeId: Long) {
+                            val sNode = nodeMap.getNode(nodeId)
+                            sNode?.let {
+                                modelAccess.runWriteActionInEDTBlocking {
+                                    it.delete()
+                                    nodeMap.remove(nodeId)
+                                }
+                            }
+
+                            val sModel = nodeMap.getModel(nodeId)
+                            sModel?.let {
+                                val sModule = sModel.module
+                                require(sModel is SModelBase) { "Model ${sModel.modelId} is not SModelBase" }
+                                require(sModule is SModuleBase) { "Module ${sModule.moduleId} is not SModuleBase" }
+                                sModule.unregisterModel(sModel)
+                                nodeMap.remove(nodeId)
+                            }
+
+                            val sModule = nodeMap.getModule(nodeId)
+                            sModule?.let {
+                                require(sModule is SModuleBase) { "Module ${sModule.moduleId} is not SModuleBase" }
+                                sModule.dispose()
+                                nodeMap.remove(nodeId)
+                            }
                         }
+
+                        override fun nodeAdded(nodeId: Long) {
+                            // TODO decide if node is model, module or model and transform using the corresponding transformation methods
+                            println("node added $nodeId")
+                        }
+
+                        override fun childrenChanged(nodeId: Long, role: String?) {}
+
+                        override fun containmentChanged(nodeId: Long) {}
                     },
                 )
             }

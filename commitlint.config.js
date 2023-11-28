@@ -8,7 +8,6 @@ module.exports = {
         "bulk-model-sync",
         "bulk-model-sync-gradle",
         "bulk-model-sync-lib",
-        "bulk-model-sync-solution",
         "deps",
         "light-model-client",
         "model-server-lib",

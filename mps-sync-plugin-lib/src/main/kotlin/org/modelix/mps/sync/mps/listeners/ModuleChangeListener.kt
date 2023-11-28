@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.neu.listeners
+package org.modelix.mps.sync.mps.listeners
 
 import com.jetbrains.rd.util.firstOrNull
 import jetbrains.mps.project.Solution
@@ -29,7 +29,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.getNode
-import org.modelix.mps.sync.neu.MpsToModelixMap
+import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.runIfAlone
 import java.util.concurrent.atomic.AtomicReference

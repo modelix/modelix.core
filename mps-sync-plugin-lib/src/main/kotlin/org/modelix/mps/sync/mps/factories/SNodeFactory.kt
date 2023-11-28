@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.neu
+package org.modelix.mps.sync.mps.factories
 
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapter2
@@ -33,6 +33,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
+import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
 

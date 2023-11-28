@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync
+package org.modelix.mps.sync.mps
 
 import jetbrains.mps.extapi.model.SModelData
 import jetbrains.mps.persistence.DefaultModelPersistence

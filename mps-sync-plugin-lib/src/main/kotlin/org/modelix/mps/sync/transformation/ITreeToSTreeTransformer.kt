@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.neu
+package org.modelix.mps.sync.transformation
 
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
@@ -39,12 +39,15 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
-import org.modelix.mps.sync.neu.listeners.ModelChangeListener
-import org.modelix.mps.sync.neu.listeners.ModuleChangeListener
-import org.modelix.mps.sync.neu.listeners.NodeChangeListener
-import org.modelix.mps.sync.util.addDevKit
-import org.modelix.mps.sync.util.addLanguageImport
-import org.modelix.mps.sync.util.createModel
+import org.modelix.mps.sync.mps.factories.SNodeFactory
+import org.modelix.mps.sync.mps.factories.SolutionProducer
+import org.modelix.mps.sync.mps.listeners.ModelChangeListener
+import org.modelix.mps.sync.mps.listeners.ModuleChangeListener
+import org.modelix.mps.sync.mps.listeners.NodeChangeListener
+import org.modelix.mps.sync.mps.util.addDevKit
+import org.modelix.mps.sync.mps.util.addLanguageImport
+import org.modelix.mps.sync.mps.util.createModel
+import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
 import org.modelix.mps.sync.util.isModel
 import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.nodeIdAsLong

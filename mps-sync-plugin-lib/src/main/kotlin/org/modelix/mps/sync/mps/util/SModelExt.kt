@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.util
+package org.modelix.mps.sync.mps.util
 
 import jetbrains.mps.extapi.model.SModelDescriptorStub
 import org.jetbrains.mps.openapi.language.SLanguage

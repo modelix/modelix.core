@@ -24,10 +24,10 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
-import org.modelix.mps.sync.neu.ITreeToSTreeTransformer
-import org.modelix.mps.sync.neu.MpsToModelixMap
-import org.modelix.mps.sync.neu.runReadBlocking
-import org.modelix.mps.sync.neu.runWriteActionInEDTBlocking
+import org.modelix.mps.sync.mps.util.runReadBlocking
+import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
+import org.modelix.mps.sync.transformation.ITreeToSTreeTransformer
+import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.runIfAlone
 import java.net.ConnectException

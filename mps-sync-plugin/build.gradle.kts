@@ -13,9 +13,10 @@ val mpsToIdeaMap = mapOf(
     "2021.3.3" to "213.7172.25", // https://github.com/JetBrains/MPS/blob/2021.3.3/build/version.properties
     "2022.2" to "222.4554.10", // https://github.com/JetBrains/MPS/blob/2021.2.1/build/version.properties
     "2022.3" to "223.8836.41", // https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties (?)
+    "2023.2" to "232.10072.27", // https://github.com/JetBrains/MPS/blob/2023.2.0/build/version.properties (?)
 )
 // use the given MPS version, or 2022.2 (last version with JAVA 11) as default
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2023.2"
 if (!mpsToIdeaMap.containsKey(mpsVersion)) {
     throw GradleException("Build for the given MPS version '$mpsVersion' is not supported.")
 }
@@ -38,11 +39,11 @@ dependencies {
 
     // extracting jars from zipped products
     mpsZip("com.jetbrains:mps:$mpsVersion")
-    compileOnly(
-        zipTree({ mpsZip.singleFile }).matching {
-            include("lib/**/*.jar")
-        },
-    )
+//    val mpsZipTree = zipTree({ mpsZip.singleFile }).matching {
+//        include("lib/**/*.jar")
+//    }
+//    compileOnly(mpsZipTree)
+//    testImplementation(mpsZipTree)
 
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.ktor.server.test.host)
@@ -61,20 +62,49 @@ dependencies {
 //    implementation(libs.ktor.serialization.json)
 }
 
+val mpsHome = project.layout.buildDirectory.dir("mps")
+
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-    version.set(ideaVersion)
+
+    // You can only set 'localPath' or 'version'. We want 'localPath', but that has to exist at configuration time.
+    if (mpsHome.get().asFile.exists()) {
+        localPath.set(mpsHome.map { it.asFile.absolutePath })
+    } else {
+        // Tests will fail with this IDE, but after the first 'assemble' run 'mpsHome' exists, so it shouldn't happen
+        // frequently. During CI the 'downloadMPS' task should be executed in a separate run before the actual 'build'.
+        version.set(ideaVersion)
+    }
+    instrumentCode = false
 }
 
 tasks {
+
+    val downloadMPS = register("downloadMPS", Sync::class.java) {
+        from(zipTree({ mpsZip.singleFile }))
+        into(mpsHome)
+
+        doLast {
+            // The build number of a local IDE is expected to contain a product code, otherwise an exception is thrown.
+            val buildTxt = mpsHome.get().asFile.resolve("build.txt")
+            val buildNumber = buildTxt.readText()
+            val prefix = "MPS-"
+            if (!buildNumber.startsWith(prefix)) {
+                buildTxt.writeText("$prefix$buildNumber")
+            }
+        }
+    }
+
+    assemble { dependsOn(downloadMPS) }
+    test { dependsOn(downloadMPS) }
 
     // This plugin in intended to be used by all 'supported' MPS versions, as a result we need to use the lowest
     // common java version, which is JAVA 11 to ensure bytecode compatibility.
     // However, when building with MPS >= 2022.3 to ensure compileOnly dependency compatibility, we need to build
     // with JAVA 17 explicitly.
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        if (mpsVersion == "2022.3") {
+        if (mpsVersion >= "2022.2") {
             kotlinOptions.jvmTarget = "17"
             java.sourceCompatibility = JavaVersion.VERSION_17
             java.targetCompatibility = JavaVersion.VERSION_17

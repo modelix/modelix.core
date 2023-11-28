@@ -51,4 +51,9 @@ class SyncPluginTests : BasePlatformTestCase() {
         TestCase.assertNotSame(0, modelClient.getClientId())
     }
 
+    fun testMPSProjectLoaded() {
+        println(ApplicationManager::class.java.classLoader)
+        val mpsProjects = jetbrains.mps.project.ProjectManager.getInstance().openedProjects
+        TestCase.assertEquals(1, mpsProjects.size)
+    }
 }

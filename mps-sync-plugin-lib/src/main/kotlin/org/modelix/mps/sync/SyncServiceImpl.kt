@@ -24,6 +24,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.util.runReadBlocking
 import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
 import org.modelix.mps.sync.transformation.ITreeToSTreeTransformer
@@ -79,32 +80,32 @@ class SyncServiceImpl : SyncService {
     }
 
     override suspend fun bindModel(
-        modelClientV2: ModelClientV2,
+        client: ModelClientV2,
         branchReference: BranchReference,
-        modelName: String,
         model: INode,
-        project: MPSProject,
+        targetProject: MPSProject,
+        languageRepository: MPSLanguageRepository,
         afterActivate: (() -> Unit)?,
     ): IBinding {
         lateinit var bindingImpl: BindingImpl
 
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         runBlocking(coroutineScope.coroutineContext) {
-            log.info("Binding model $modelName")
-            val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
+            val replicatedModel: ReplicatedModel = client.getReplicatedModel(branchReference)
             replicatedModel.start()
 
-            // 🚧🏗️👷👷‍♂️ WARNING Construction area 🚧🚧🚧
             val isSynchronizing = AtomicReference<Boolean>()
             val nodeMap = MpsToModelixMap()
-            ITreeToSTreeTransformer(replicatedModel, project, isSynchronizing, nodeMap).transform(model)
-            bindingImpl = BindingImpl(replicatedModel, project, isSynchronizing, nodeMap)
+            // transform the model
+            ITreeToSTreeTransformer(replicatedModel, targetProject, languageRepository, isSynchronizing, nodeMap)
+                .transform(model)
+            bindingImpl = BindingImpl(replicatedModel, targetProject, isSynchronizing, nodeMap)
         }
         // trigger callback after activation
         afterActivate?.invoke()
 
         // remember the new binding
-        clientBindingMap[modelClientV2]!!.add(bindingImpl)
+        clientBindingMap[client]!!.add(bindingImpl)
 
         return bindingImpl
     }

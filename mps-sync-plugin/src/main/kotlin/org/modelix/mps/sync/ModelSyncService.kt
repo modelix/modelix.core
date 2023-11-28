@@ -32,6 +32,7 @@ import org.modelix.model.api.runSynchronized
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import java.net.ConnectException
 import java.net.URL
@@ -44,6 +45,7 @@ class ModelSyncService : Disposable {
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     var syncService: SyncServiceImpl
     private var existingBindings = mutableListOf<IBinding>()
+    private var server: String? = null
 
     fun getBindingList(): List<IBinding> {
         return existingBindings.toMutableList()
@@ -96,14 +98,15 @@ class ModelSyncService : Disposable {
         afterActivate: (() -> Unit)?,
     ) {
         coroutineScope.launch {
-            log.info("Binding to project: $theProject")
+            log.info("Binding model $modelName to project: $theProject")
             try {
+                val languageRepository = registerLanguages(theProject)
                 val newBinding = syncService.bindModel(
                     client,
                     BranchReference(RepositoryId(repositoryID), branchName),
-                    modelName,
                     model,
                     theProject,
+                    languageRepository,
                     afterActivate,
                 )
                 existingBindings.add(newBinding)
@@ -119,7 +122,12 @@ class ModelSyncService : Disposable {
         }
     }
 
-    private var server: String? = null
+    private fun registerLanguages(project: MPSProject): MPSLanguageRepository {
+        val repository = project.repository
+        val mpsLanguageRepo = MPSLanguageRepository(repository)
+        ILanguageRepository.register(mpsLanguageRepo)
+        return mpsLanguageRepo
+    }
 
     fun deactivateBinding(binding: IBinding) {
         binding.deactivate()

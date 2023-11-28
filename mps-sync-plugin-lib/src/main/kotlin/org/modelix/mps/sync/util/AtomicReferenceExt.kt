@@ -16,8 +16,10 @@
 
 package org.modelix.mps.sync.util
 
+import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.atomic.AtomicReference
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun AtomicReference<Boolean>.runIfAlone(
     handleThrowable: ((Throwable) -> Unit) = { throw it },
     callback: (() -> Unit),

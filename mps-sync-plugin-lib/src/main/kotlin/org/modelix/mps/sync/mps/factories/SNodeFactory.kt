@@ -153,6 +153,8 @@ class SNodeFactory(
             }
         }
     }
+
+    fun clearResolvableReferences() = resolvableReferences.clear()
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

@@ -74,7 +74,7 @@ class SolutionProducer(private val project: MPSProject) {
         project.addModule(solution)
 
         if (solution.repository == null) {
-            project.modelAccess.runWriteBlocking {
+            project.modelAccess.runWriteInEDTBlocking {
                 // this might be a silly workaround...
                 solution.attach(project.repository)
             }

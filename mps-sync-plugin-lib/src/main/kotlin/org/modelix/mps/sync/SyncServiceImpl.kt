@@ -7,10 +7,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.mps.openapi.language.SProperty
+import org.jetbrains.mps.openapi.language.SReferenceLink
+import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INode
+import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.PropertyFromName
@@ -21,7 +25,9 @@ import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.mps.sync.neu.ITreeToSTreeTransformer
 import org.modelix.mps.sync.neu.MpsToModelixMap
-import org.modelix.mps.sync.neu.runWriteBlocking
+import org.modelix.mps.sync.neu.runReadBlocking
+import org.modelix.mps.sync.neu.runWriteActionInEDTBlocking
+import org.modelix.mps.sync.neu.runWriteInEDTBlocking
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.runIfAlone
 import java.net.ConnectException
@@ -143,6 +149,10 @@ class BindingImpl(
         // listen to changes on the branch in the replicatedModel (model-server side) ...
         // TODO refactor the IBranchListener to a new class
         branch.addListener(object : IBranchListener {
+            fun handleThrowable(t: Throwable) {
+                t.printStackTrace()
+            }
+
             override fun treeChanged(oldTree: ITree?, newTree: ITree) {
                 if (oldTree == null) {
                     return
@@ -160,52 +170,69 @@ class BindingImpl(
 
                             // TODO How to transform new model, new module added?
                             // TODO Are they also containmentChanged events?
-                            isSynchronizing.runIfAlone {
+                            isSynchronizing.runIfAlone(::handleThrowable) {
                                 // child node is moved to a new parent
                                 val sNode = nodeMap.getNode(nodeId)!!
-                                val oldParent = sNode.parent
-                                oldParent?.removeChild(sNode)
+                                var oldParent: SNode? = null
+                                modelAccess.runReadBlocking { oldParent = sNode.parent }
+                                modelAccess.runWriteInEDTBlocking { oldParent?.removeChild(sNode) }
 
                                 val iNode = getBranch().getNode(nodeId)
-                                val containmentLinkName = iNode.getContainmentLink()!!.getSimpleName()
-                                val newIParent = iNode.parent!!
-                                val newParent = nodeMap.getNode(newIParent.nodeIdAsLong())!!
+                                var containmentLinkName: String? = null
+                                var newIParent: INode? = null
+                                getBranch().runRead {
+                                    containmentLinkName = iNode.getContainmentLink()!!.getSimpleName()
+                                    newIParent = iNode.parent
+                                }
+
+                                val newParent = nodeMap.getNode(newIParent!!.nodeIdAsLong())!!
 
                                 val containment =
-                                    newParent.concept.containmentLinks.find { it.name == containmentLinkName }!!
-                                newParent.addChild(containment, sNode)
+                                    newParent.concept.containmentLinks.find { it.name == containmentLinkName!! }!!
+                                modelAccess.runWriteActionInEDTBlocking {
+                                    newParent.addChild(containment, sNode)
+                                }
                             }
                         }
 
                         override fun referenceChanged(nodeId: Long, role: String) {
                             // TODO how to transform modelImport, modelDependency, languageDependency changes?
                             // TODO Are they also "referenceChanged" events?
-                            isSynchronizing.runIfAlone {
+                            isSynchronizing.runIfAlone(::handleThrowable) {
                                 val sNode = nodeMap.getNode(nodeId)!!
-                                val sReferenceLink = sNode.references.find { it.link.name == role }!!.link
+                                var sReferenceLink: SReferenceLink? = null
+                                modelAccess.runReadBlocking {
+                                    sReferenceLink = sNode.references.find { it.link.name == role }!!.link
+                                }
 
                                 val iNode = getBranch().getNode(nodeId)
-                                val iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }!!
-                                val targetINode = iNode.getReferenceTarget(iReferenceLink)
+                                var iReferenceLink: IReferenceLink
+                                var targetINode: INode? = null
+                                getBranch().runRead {
+                                    iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }!!
+                                    targetINode = iNode.getReferenceTarget(iReferenceLink)
+                                }
                                 val targetSNode = nodeMap.getNode(targetINode!!.nodeIdAsLong())
 
-                                modelAccess.runWriteBlocking {
-                                    sNode.setReferenceTarget(sReferenceLink, targetSNode)
+                                modelAccess.runWriteActionInEDTBlocking {
+                                    sNode.setReferenceTarget(sReferenceLink!!, targetSNode)
                                 }
                             }
                         }
 
                         override fun propertyChanged(nodeId: Long, role: String) {
-                            isSynchronizing.runIfAlone {
+                            isSynchronizing.runIfAlone(::handleThrowable) {
                                 val sNode = nodeMap.getNode(nodeId)!!
-                                val sProperty = sNode.properties.find { it.name == role }!!
+                                var sProperty: SProperty? = null
+                                modelAccess.runReadBlocking { sProperty = sNode.properties.find { it.name == role } }
 
                                 val iNode = getBranch().getNode(nodeId)
                                 val iProperty = PropertyFromName(role)
-                                val value = iNode.getPropertyValue(iProperty)
+                                var value: String? = null
+                                getBranch().runRead { value = iNode.getPropertyValue(iProperty) }
 
-                                modelAccess.runWriteBlocking {
-                                    sNode.setProperty(sProperty, value)
+                                modelAccess.runWriteActionInEDTBlocking {
+                                    sNode.setProperty(sProperty!!, value)
                                 }
                             }
                         }

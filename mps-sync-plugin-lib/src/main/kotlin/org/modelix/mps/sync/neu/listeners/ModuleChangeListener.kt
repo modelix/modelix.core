@@ -77,7 +77,7 @@ class ModuleChangeListener(
             branch.runWriteT {
                 val cloudModule = branch.getNode(moduleModelixId)
                 val cloudModel = branch.getNode(modelModelixId)
-                cloudModule.removeChild(cloudModel)
+                // cloudModule.removeChild(cloudModel)
             }
         }
     }

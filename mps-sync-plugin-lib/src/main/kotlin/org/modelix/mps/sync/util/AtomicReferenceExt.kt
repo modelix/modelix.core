@@ -18,13 +18,18 @@ package org.modelix.mps.sync.util
 
 import java.util.concurrent.atomic.AtomicReference
 
-fun AtomicReference<Boolean>.runIfAlone(callback: (() -> Unit)) {
+fun AtomicReference<Boolean>.runIfAlone(
+    handleThrowable: ((Throwable) -> Unit) = { throw it },
+    callback: (() -> Unit),
+) {
     if (this.get()) {
         return
     } else {
         try {
             this.set(true)
             callback()
+        } catch (t: Throwable) {
+            handleThrowable(t)
         } finally {
             this.set(false)
         }

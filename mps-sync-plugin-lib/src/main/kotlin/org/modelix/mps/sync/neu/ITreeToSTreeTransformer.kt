@@ -179,7 +179,7 @@ class ITreeToSTreeTransformer(
         }
 
         if (isDevKitDependency) {
-            project.modelAccess.runWriteBlocking {
+            project.modelAccess.runWriteInEDTBlocking {
                 val devKitModuleReference = (dependentModule as DevKit).moduleReference
 
                 // TODO this might not work, because if more than one models/modules point to the same DevKit, then the modelix ID will be always overwritten by the last Node (DevkitDependency) that points to this devkit
@@ -197,7 +197,7 @@ class ITreeToSTreeTransformer(
             // TODO we might have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
             nodeMap.put(languageModuleReference, iNode.nodeIdAsLong())
             val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference)
-            project.modelAccess.runWriteBlocking {
+            project.modelAccess.runWriteInEDTBlocking {
                 model.addLanguageImport(sLanguage, version?.toInt()!!)
             }
         } else {
@@ -238,7 +238,7 @@ class ITreeToSTreeTransformer(
         val moduleReference = ModuleReference(moduleName, moduleId)
         nodeMap.put(moduleReference, iNode.nodeIdAsLong())
 
-        project.modelAccess.runWriteBlocking {
+        project.modelAccess.runWriteInEDTBlocking {
             module.addDependency(moduleReference, reexport)
         }
     }
@@ -256,7 +256,7 @@ class ITreeToSTreeTransformer(
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        project.modelAccess.runWriteBlocking {
+        project.modelAccess.runWriteInEDTBlocking {
             sModel = module.createModel(name, modelId) as EditableSModel
             sModel.save()
         }
@@ -288,7 +288,7 @@ class ITreeToSTreeTransformer(
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
             nodeMap.put(modelImport, it.modelReferenceNodeId)
-            project.modelAccess.runWriteBlocking {
+            project.modelAccess.runWriteInEDTBlocking {
                 ModelImports(it.source).addModelImport(modelImport)
             }
         }

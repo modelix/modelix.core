@@ -79,7 +79,7 @@ class SNodeFactory(
         val isRootNode = concept.isRootable && modelIsTheParent
 
         if (isRootNode) {
-            modelAccess.runWriteBlocking {
+            modelAccess.runWriteActionInEDTBlocking {
                 model?.addRootNode(sNode)
             }
         } else {
@@ -89,7 +89,7 @@ class SNodeFactory(
 
             val role = iNode.getContainmentLink()
             val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
-            modelAccess.runWriteBlocking {
+            modelAccess.runWriteActionInEDTBlocking {
                 parentNode.addChild(containmentLink, sNode)
             }
         }
@@ -119,7 +119,7 @@ class SNodeFactory(
             val property = PropertyFromName(it.name)
             val value = source.getPropertyValue(property)
 
-            modelAccess.runWriteBlocking {
+            modelAccess.runWriteActionInEDTBlocking {
                 target.setProperty(it, value)
             }
         }
@@ -146,7 +146,7 @@ class SNodeFactory(
             val reference = it.reference
             val target = nodeMap.getNode(it.targetNodeId)
 
-            modelAccess.runWriteBlocking {
+            modelAccess.runWriteActionInEDTBlocking {
                 source.setReferenceTarget(reference, target)
             }
         }

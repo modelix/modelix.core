@@ -21,11 +21,24 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.CountDownLatch
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun ModelAccess.runWriteBlocking(r: Runnable) {
+fun ModelAccess.runWriteInEDTBlocking(callback: Runnable) = runBlocking(this::runWriteInEDT, callback)
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun ModelAccess.runReadBlocking(callback: Runnable) = runBlocking(this::runReadAction, callback)
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun ModelAccess.runWriteActionInEDTBlocking(callback: Runnable) =
+    runBlocking(this::runWriteAction) {
+        this.executeCommandInEDT {
+            callback.run()
+        }
+    }
+
+private fun runBlocking(mpsAction: (Runnable) -> Unit, callback: Runnable) {
     val latch = CountDownLatch(1)
     try {
-        this.runWriteInEDT {
-            r.run()
+        mpsAction {
+            callback.run()
             latch.countDown()
         }
     } catch (t: Throwable) {

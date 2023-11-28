@@ -2,16 +2,17 @@ package org.modelix.mps.sync
 
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
+import io.ktor.client.HttpClient
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.runBlocking
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
+import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
@@ -28,10 +29,13 @@ class SyncServiceImpl : SyncService {
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
     public var clientBindingMap: MutableMap<ModelClientV2, MutableList<BindingImpl>> = mutableMapOf()
 
+    fun getAllClients(): List<IModelClientV2> = clientBindingMap.keys.toList()
+
     // todo add afterActivate to allow async refresh
     suspend fun connectToModelServer(
+        httpClient: HttpClient?,
         serverURL: URL,
-        jwt: String,
+        jwt: String?,
     ): ModelClientV2 {
         // avoid reconnect to existing server
         val client = clientBindingMap.keys.find { it.baseUrl == serverURL.toString() }
@@ -41,17 +45,17 @@ class SyncServiceImpl : SyncService {
         }
 
         // TODO: use JWT here
-        val modelClientV2: ModelClientV2 = ModelClientV2.builder().url(serverURL.toString()).build()
+        val modelClientV2: ModelClientV2 = ModelClientV2.builder()
+            .also { if (httpClient != null) it.client(httpClient) }
+            .url(serverURL.toString()).build()
 
-        runBlocking(coroutineScope.coroutineContext) {
-            try {
-                log.info("Connecting to $serverURL")
-                modelClientV2.init()
+        try {
+            log.info("Connecting to $serverURL")
+            modelClientV2.init()
 //                modelClientV2.initRepository(RepositoryId("lolwat"+(0..10).random().toString()))
-            } catch (e: ConnectException) {
-                log.warn("Unable to connect: ${e.message} / ${e.cause}")
-                throw e
-            }
+        } catch (e: ConnectException) {
+            log.warn("Unable to connect: ${e.message} / ${e.cause}")
+            throw e
         }
         log.info("Connection to $serverURL successful")
         clientBindingMap[modelClientV2] = mutableListOf<BindingImpl>()
@@ -75,16 +79,14 @@ class SyncServiceImpl : SyncService {
         lateinit var bindingImpl: BindingImpl
 
         // set up a client, a replicated model and an implementation of a binding (to MPS)
-        runBlocking(coroutineScope.coroutineContext) {
-            log.info("Binding model $modelName")
-            val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
-            replicatedModel.start()
+        log.info("Binding model $modelName")
+        val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(branchReference)
+        replicatedModel.start()
 
-            // 🚧🏗️👷👷‍♂️ WARNING Construction area 🚧🚧🚧
-            ITreeToSTreeTransformer(replicatedModel, project).transform(model)
+        // 🚧🏗️👷👷‍♂️ WARNING Construction area 🚧🚧🚧
 
-            bindingImpl = BindingImpl(replicatedModel, modelName, project)
-        }
+        ITreeToSTreeTransformer(replicatedModel, project).transform(model)
+        bindingImpl = BindingImpl(replicatedModel, modelName, project)
         // trigger callback after activation
         afterActivate?.invoke()
 

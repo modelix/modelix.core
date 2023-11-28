@@ -19,6 +19,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
+import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.MPSModuleRepository
@@ -62,16 +63,21 @@ class ModelSyncService : Disposable {
     }
 
     fun connectModelServer(
+        httpClient: HttpClient?,
         url: String,
         jwt: String,
         afterActivate: (() -> Unit)?,
     ) {
         coroutineScope.launch {
-            log.info("Connection to server: $url with JWT $jwt")
-            syncService.connectToModelServer(URL(url), jwt)
-            log.info("Connected to server: $url with JWT $jwt")
+            connectModelServerSuspending(httpClient, url, jwt)
             afterActivate?.invoke()
         }
+    }
+
+    suspend fun connectModelServerSuspending(httpClient: HttpClient?, url: String, jwt: String?) {
+        log.info("Connection to server: $url with JWT $jwt")
+        syncService.connectToModelServer(httpClient, URL(url), jwt)
+        log.info("Connected to server: $url with JWT $jwt")
     }
 
     fun disconnectServer(

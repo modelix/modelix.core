@@ -43,6 +43,22 @@ dependencies {
             include("lib/**/*.jar")
         },
     )
+
+    testImplementation(libs.kotlin.coroutines.test)
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(project(":model-server"))
+    testImplementation(project(":authorization"))
+//    implementation(libs.ktor.server.core)
+//    implementation(libs.ktor.server.cors)
+//    implementation(libs.ktor.server.netty)
+//    implementation(libs.ktor.server.html.builder)
+//    implementation(libs.ktor.server.auth)
+//    implementation(libs.ktor.server.auth.jwt)
+//    implementation(libs.ktor.server.status.pages)
+//    implementation(libs.ktor.server.forwarded.header)
+    implementation(libs.ktor.server.websockets)
+    implementation(libs.ktor.server.content.negotiation)
+//    implementation(libs.ktor.serialization.json)
 }
 
 // Configure Gradle IntelliJ Plugin

@@ -125,9 +125,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val connectProjectButton = JButton("Connect")
             connectProjectButton.addActionListener { _: ActionEvent ->
                 modelSyncService.connectModelServer(
-                    serverURL.text,
-                    jwt.text,
-                    ::triggerRefresh,
+                    httpClient = null,
+                    url = serverURL.text,
+                    jwt = jwt.text,
+                    afterActivate = ::triggerRefresh,
                 )
             }
             jwtPanel.add(connectProjectButton)

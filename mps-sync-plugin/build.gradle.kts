@@ -15,8 +15,7 @@ val mpsToIdeaMap = mapOf(
     "2022.3" to "223.8836.41", // https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties (?)
     "2023.2" to "232.10072.27", // https://github.com/JetBrains/MPS/blob/2023.2.0/build/version.properties (?)
 )
-// use the given MPS version, or 2022.2 (last version with JAVA 11) as default
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2023.2"
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() }!!
 if (!mpsToIdeaMap.containsKey(mpsVersion)) {
     throw GradleException("Build for the given MPS version '$mpsVersion' is not supported.")
 }

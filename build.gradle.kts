@@ -68,6 +68,11 @@ fun computeVersion(): Any {
     }
 }
 
+// ensure the whole project uses the same default MPS version
+if (project.findProperty("mps.version") == null) {
+    ext["mps.version"] = "2020.3.6"
+}
+
 dependencies {
     dokkaPlugin(libs.dokka.versioning)
 }

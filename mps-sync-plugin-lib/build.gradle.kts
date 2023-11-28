@@ -13,8 +13,7 @@ kotlin {
     }
 }
 
-// use the given MPS version, or 2022.2 (last version with JAVA 11) as default
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() }!!
 
 val mpsZip by configurations.creating
 

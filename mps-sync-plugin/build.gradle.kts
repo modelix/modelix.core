@@ -5,24 +5,8 @@ plugins {
 
 group = "org.modelix.mps"
 val mpsZip by configurations.creating
-
-val mpsToIdeaMap = mapOf(
-    "2020.3.6" to "203.8084.24", // https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
-    "2021.1.4" to "211.7628.21", // https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties
-    "2021.2.6" to "212.5284.40", // https://github.com/JetBrains/MPS/blob/2021.2.5/build/version.properties (?)
-    "2021.3.3" to "213.7172.25", // https://github.com/JetBrains/MPS/blob/2021.3.3/build/version.properties
-    "2022.2" to "222.4554.10", // https://github.com/JetBrains/MPS/blob/2021.2.1/build/version.properties
-    "2022.3" to "223.8836.41", // https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties (?)
-    "2023.2" to "232.10072.27", // https://github.com/JetBrains/MPS/blob/2023.2.0/build/version.properties (?)
-)
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() }!!
-if (!mpsToIdeaMap.containsKey(mpsVersion)) {
-    throw GradleException("Build for the given MPS version '$mpsVersion' is not supported.")
-}
-// identify the corresponding intelliJ platform version used by the MPS version
-val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
-println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion")
-
+val mpsVersion = project.findProperty("mps.version").toString()
+val ideaVersion = project.findProperty("mps.platform.version").toString()
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 

@@ -13,7 +13,7 @@ kotlin {
     }
 }
 
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() }!!
+val mpsVersion = project.findProperty("mps.version").toString()
 
 val mpsZip by configurations.creating
 

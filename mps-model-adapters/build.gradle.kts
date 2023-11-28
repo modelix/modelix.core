@@ -3,15 +3,18 @@ plugins {
     `maven-publish`
 }
 
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() }!!
-println("Building for MPS version $mpsVersion")
+val mpsZip by configurations.creating
+val mpsVersion = project.findProperty("mps.version").toString()
 
 dependencies {
     api(project(":model-api"))
 
-    compileOnly("com.jetbrains:mps-openapi:$mpsVersion")
-    compileOnly("com.jetbrains:mps-core:$mpsVersion")
-    compileOnly("com.jetbrains:mps-environment:$mpsVersion")
+    mpsZip("com.jetbrains:mps:$mpsVersion")
+    val mpsZipTree = zipTree({ mpsZip.singleFile }).matching {
+        include("lib/**/*.jar")
+    }
+    compileOnly(mpsZipTree)
+
     implementation(libs.trove)
 
     implementation(kotlin("stdlib"))

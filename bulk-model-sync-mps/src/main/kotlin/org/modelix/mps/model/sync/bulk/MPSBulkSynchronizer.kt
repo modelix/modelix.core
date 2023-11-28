@@ -27,6 +27,7 @@ import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.import
 import org.modelix.model.sync.bulk.isModuleIncluded
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 
 object MPSBulkSynchronizer {
 
@@ -43,12 +44,18 @@ object MPSBulkSynchronizer {
             }
             val numIncludedModules = includedModules.count()
             val outputPath = System.getProperty("modelix.mps.model.sync.bulk.output.path")
+            val counter = AtomicInteger()
 
-            for ((index, module) in includedModules.withIndex()) {
-                println("Exporting module ${index + 1} of $numIncludedModules: '${module.moduleName}'")
-                val exporter = ModelExporter(MPSModuleAsNode(module))
-                val outputFile = File(outputPath + File.separator + module.moduleName + ".json")
-                exporter.export(outputFile)
+            includedModules.parallelStream().forEach { module ->
+                val pos = counter.incrementAndGet()
+
+                repository.modelAccess.runReadAction {
+                    println("Exporting module $pos of $numIncludedModules: '${module.moduleName}'")
+                    val exporter = ModelExporter(MPSModuleAsNode(module))
+                    val outputFile = File(outputPath + File.separator + module.moduleName + ".json")
+                    exporter.export(outputFile)
+                    println("Exported module $pos of $numIncludedModules: '${module.moduleName}'")
+                }
             }
         }
     }

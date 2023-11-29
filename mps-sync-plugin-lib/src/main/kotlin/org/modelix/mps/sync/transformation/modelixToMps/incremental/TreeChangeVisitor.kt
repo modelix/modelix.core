@@ -20,8 +20,10 @@ import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.module.SModuleBase
 import jetbrains.mps.project.MPSProject
+import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
+import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
@@ -32,6 +34,7 @@ import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.util.runReadBlocking
 import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
+import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
@@ -156,7 +159,54 @@ class TreeChangeVisitor(
     }
 
     override fun containmentChanged(nodeId: Long) {
-        logger.info("TODO IMPLEMENT ME!!! Containment changed for Node $nodeId")
+        // TODO test for the case when moving the node to a new model (e.g. we have two models and we move a root node to a new model)
+        isSynchronizing.runIfAlone(::handleThrowable) {
+            val iNode = getBranch().getNode(nodeId)
+            var newParentId: Long? = null
+            getBranch().runRead {
+                newParentId = iNode.parent?.nodeIdAsLong()
+            }
+
+            val sNode = nodeMap.getNode(nodeId)
+            if (sNode != null) {
+                var oldParent: SNode? = null
+                modelAccess.runReadBlocking { oldParent = sNode.parent }
+                modelAccess.runWriteInEDTBlocking { oldParent?.removeChild(sNode) }
+
+                val newParentNode = nodeMap.getNode(newParentId)
+                if (newParentNode != null) {
+                    // TODO do we have to remove it from old parent or MPS takes care of that?
+                    var containment: SContainmentLink? = null
+                    getBranch().runRead {
+                        containment =
+                            newParentNode.concept.containmentLinks.find {
+                                it.name == iNode.getContainmentLink()!!.getSimpleName()
+                            }
+                    }
+                    modelAccess.runWriteActionInEDTBlocking { newParentNode.addChild(containment!!, sNode) }
+                }
+
+                val newParentModel = nodeMap.getModel(newParentId)
+                if (newParentModel != null) {
+                    // TODO do we have to remove it from old parent or MPS takes care of that?
+                    modelAccess.runWriteActionInEDTBlocking {
+                        newParentModel.addRootNode(sNode)
+                    }
+                }
+            } else {
+                val sModel = nodeMap.getModel(nodeId)
+                val newParentModule = nodeMap.getModule(newParentId)
+                // TODO test for the case when moving model to a new module
+                if (sModel != null && newParentModule != null) {
+                    // TODO do we have to remove it from old parent or MPS takes care of that?
+                    require(sModel is SModelBase) { "Model ${sModel.modelId} is not an SModelBase" }
+                    require(newParentModule is SModuleBase) { "New parent Module ${newParentModule.moduleId} is not an SModuleBase" }
+                    modelAccess.runWriteInEDTBlocking {
+                        newParentModule.registerModel(sModel)
+                    }
+                }
+            }
+        }
     }
 
     private fun handleThrowable(t: Throwable) = t.printStackTrace()

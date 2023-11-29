@@ -107,7 +107,6 @@ class ITreeToSTreeTransformer(
     }
 
     private fun traverse(parent: INode, level: Int, processNode: (INode) -> Unit) {
-        logger.info("Level: $level")
         processNode(parent)
         parent.allChildren.forEach {
             traverse(it, level + 1, processNode)

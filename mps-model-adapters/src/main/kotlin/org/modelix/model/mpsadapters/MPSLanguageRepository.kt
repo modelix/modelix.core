@@ -26,7 +26,7 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.ILanguageRepository
 
-class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepository {
+class MPSLanguageRepository(val repository: SRepository) : ILanguageRepository {
 
     private val concepts = mutableMapOf<String, MPSConcept>()
 

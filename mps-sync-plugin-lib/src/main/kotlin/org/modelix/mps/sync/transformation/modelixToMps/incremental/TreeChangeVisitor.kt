@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.incremental
 
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.module.SModuleBase
 import jetbrains.mps.project.MPSProject
@@ -28,9 +29,15 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
+import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.util.runReadBlocking
 import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
+import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
+import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
+import org.modelix.mps.sync.util.isModel
+import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.runIfAlone
 import java.util.concurrent.atomic.AtomicReference
@@ -38,12 +45,19 @@ import java.util.concurrent.atomic.AtomicReference
 @UnstableModelixFeature(reason = "The new mod elix MPS plugin is under construction", intendedFinalization = "2024.1")
 class TreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
-    mpsProject: MPSProject,
+    project: MPSProject,
+    private val languageRepository: MPSLanguageRepository,
     private val isSynchronizing: AtomicReference<Boolean>,
     private val nodeMap: MpsToModelixMap,
 ) : ITreeChangeVisitorEx {
 
-    private val modelAccess = mpsProject.modelAccess
+    private val logger = logger<TreeChangeVisitor>()
+
+    private val modelAccess = project.modelAccess
+
+    private val nodeTransformer = NodeTransformer(project, nodeMap, languageRepository)
+    private val modelTransformer = ModelTransformer(project, nodeMap)
+    private val moduleTransformer = ModuleTransformer(project, nodeMap)
 
     override fun referenceChanged(nodeId: Long, role: String) {
         // TODO how to transform modelImport, modelDependency, languageDependency changes?
@@ -71,7 +85,6 @@ class TreeChangeVisitor(
     }
 
     override fun propertyChanged(nodeId: Long, role: String) {
-        // TODO what if nodeId is a Model or a Module?
         isSynchronizing.runIfAlone(::handleThrowable) {
             val sNode = nodeMap.getNode(nodeId)!!
             var sProperty: SProperty? = null
@@ -91,39 +104,60 @@ class TreeChangeVisitor(
     }
 
     override fun nodeRemoved(nodeId: Long) {
-        val sNode = nodeMap.getNode(nodeId)
-        sNode?.let {
-            modelAccess.runWriteActionInEDTBlocking {
-                it.delete()
+        isSynchronizing.runIfAlone(::handleThrowable) {
+            val sNode = nodeMap.getNode(nodeId)
+            sNode?.let {
+                modelAccess.runWriteActionInEDTBlocking {
+                    it.delete()
+                    nodeMap.remove(nodeId)
+                }
+            }
+
+            val sModel = nodeMap.getModel(nodeId)
+            sModel?.let {
+                val sModule = sModel.module
+                require(sModel is SModelBase) { "Model ${sModel.modelId} is not SModelBase" }
+                require(sModule is SModuleBase) { "Module ${sModule.moduleId} is not SModuleBase" }
+                sModule.unregisterModel(sModel)
                 nodeMap.remove(nodeId)
             }
-        }
 
-        val sModel = nodeMap.getModel(nodeId)
-        sModel?.let {
-            val sModule = sModel.module
-            require(sModel is SModelBase) { "Model ${sModel.modelId} is not SModelBase" }
-            require(sModule is SModuleBase) { "Module ${sModule.moduleId} is not SModuleBase" }
-            sModule.unregisterModel(sModel)
-            nodeMap.remove(nodeId)
-        }
-
-        val sModule = nodeMap.getModule(nodeId)
-        sModule?.let {
-            require(sModule is SModuleBase) { "Module ${sModule.moduleId} is not SModuleBase" }
-            sModule.dispose()
-            nodeMap.remove(nodeId)
+            val sModule = nodeMap.getModule(nodeId)
+            sModule?.let {
+                require(sModule is SModuleBase) { "Module ${sModule.moduleId} is not SModuleBase" }
+                sModule.dispose()
+                nodeMap.remove(nodeId)
+            }
         }
     }
 
     override fun nodeAdded(nodeId: Long) {
-        // TODO decide if node is model, module or model and transform using the corresponding transformation methods
-        println("node added $nodeId")
+        isSynchronizing.runIfAlone(::handleThrowable) {
+            val iNode = getBranch().getNode(nodeId)
+
+            getBranch().runRead {
+                if (iNode.isModule()) {
+                    moduleTransformer.transformToModule(iNode)
+                } else if (iNode.isModel()) {
+                    modelTransformer.transformToModel(iNode)
+                } else {
+                    nodeTransformer.transformToNode(iNode)
+                }
+            }
+        }
     }
 
-    override fun childrenChanged(nodeId: Long, role: String?) {}
+    override fun childrenChanged(nodeId: Long, role: String?) {
+        modelTransformer.resolveModelImports(languageRepository.repository)
+        modelTransformer.clearResolvableModelImports()
 
-    override fun containmentChanged(nodeId: Long) {}
+        nodeTransformer.resolveReferences()
+        nodeTransformer.clearResolvableReferences()
+    }
+
+    override fun containmentChanged(nodeId: Long) {
+        logger.info("TODO IMPLEMENT ME!!! Containment changed for Node $nodeId")
+    }
 
     private fun handleThrowable(t: Throwable) = t.printStackTrace()
 

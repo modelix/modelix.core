@@ -86,7 +86,7 @@ class SyncServiceImpl : SyncService {
             // transform the model
             ITreeToSTreeTransformer(replicatedModel, targetProject, languageRepository, isSynchronizing, nodeMap)
                 .transform(model)
-            bindingImpl = BindingImpl(replicatedModel, targetProject, isSynchronizing, nodeMap)
+            bindingImpl = BindingImpl(replicatedModel, targetProject, languageRepository, isSynchronizing, nodeMap)
         }
         // trigger callback after activation
         afterActivate?.invoke()
@@ -120,8 +120,9 @@ class SyncServiceImpl : SyncService {
 
 @UnstableModelixFeature(reason = "The new mod elix MPS plugin is under construction", intendedFinalization = "2024.1")
 class BindingImpl(
-    private val replicatedModel: ReplicatedModel,
-    mpsProject: MPSProject,
+    val replicatedModel: ReplicatedModel,
+    project: MPSProject,
+    languageRepository: MPSLanguageRepository,
     isSynchronizing: AtomicReference<Boolean>,
     nodeMap: MpsToModelixMap,
 ) : IBinding {
@@ -132,7 +133,7 @@ class BindingImpl(
                 if (oldTree != null) {
                     newTree.visitChanges(
                         oldTree,
-                        TreeChangeVisitor(replicatedModel, mpsProject, isSynchronizing, nodeMap),
+                        TreeChangeVisitor(replicatedModel, project, languageRepository, isSynchronizing, nodeMap),
                     )
                 }
             }

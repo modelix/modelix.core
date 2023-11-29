@@ -25,16 +25,14 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSNode
 
-const val MPS_NODE_ID_PROPERTY_NAME: String = NodeData.ID_PROPERTY_KEY
-
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun INode.mappedMpsNodeID(): String? {
     return try {
-        val nodeIdProperty = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
+        val nodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
         this.getPropertyValue(nodeIdProperty)
     } catch (e: RuntimeException) {
         throw RuntimeException(
-            "Failed to retrieve the $MPS_NODE_ID_PROPERTY_NAME property in mappedMpsNodeID. The INode is $this , concept: ${this.concept}",
+            "Failed to retrieve the ${NodeData.ID_PROPERTY_KEY} property in mappedMpsNodeID. The INode is $this , concept: ${this.concept}",
             e,
         )
     }

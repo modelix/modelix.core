@@ -28,6 +28,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
+import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
@@ -81,7 +82,7 @@ class NodeChangeListener(
             }
 
             val containmentLink =
-                event.aggregationLink ?: return@runIfAlone // SModelListener.rootAdded handles it if null
+                event.aggregationLink ?: return@runIfAlone // ModelChangeListener.rootAdded handles it if null
             val childLink = MPSChildLink(containmentLink)
 
             val mpsChild = event.child
@@ -110,37 +111,38 @@ class NodeChangeListener(
         mpsNode: SNode,
         cloudNode: INode,
     ) {
-        isSynchronizing.runIfAlone {
-            // synchronize properties
-            mpsConcept.properties.forEach {
-                val mpsValue = mpsNode.getProperty(it)
-                val modelixProperty = PropertyFromName(it.name)
-                cloudNode.setPropertyValue(modelixProperty, mpsValue)
-            }
+        // synchronize properties
+        mpsConcept.properties.forEach {
+            val mpsValue = mpsNode.getProperty(it)
+            val modelixProperty = PropertyFromName(it.name)
+            cloudNode.setPropertyValue(modelixProperty, mpsValue)
+        }
+        // save MPS Node ID explicitly
+        val mpsNodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
+        cloudNode.setPropertyValue(mpsNodeIdProperty, mpsNode.nodeId.toString())
 
-            // synchronize references
-            mpsConcept.referenceLinks.forEach {
-                val mpsTargetNode = mpsNode.getReferenceTarget(it)!!
-                val targetNodeId = nodeMap[mpsTargetNode]!!
+        // synchronize references
+        mpsConcept.referenceLinks.forEach {
+            val mpsTargetNode = mpsNode.getReferenceTarget(it)!!
+            val targetNodeId = nodeMap[mpsTargetNode]!!
 
-                val modelixReferenceLink = MPSReferenceLink(it)
-                val cloudTargetNode = branch.getNode(targetNodeId)
+            val modelixReferenceLink = MPSReferenceLink(it)
+            val cloudTargetNode = branch.getNode(targetNodeId)
 
-                cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
-            }
+            cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
+        }
 
-            // synchronize children
-            mpsConcept.containmentLinks.forEach { containmentLink ->
-                mpsNode.getChildren(containmentLink).forEach { mpsChild ->
-                    val childLink = MPSChildLink(containmentLink)
-                    val mpsChildConcept = mpsChild.concept
-                    val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
+        // synchronize children
+        mpsConcept.containmentLinks.forEach { containmentLink ->
+            mpsNode.getChildren(containmentLink).forEach { mpsChild ->
+                val childLink = MPSChildLink(containmentLink)
+                val mpsChildConcept = mpsChild.concept
+                val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
 
-                    // save the modelix ID and the SNode in the map
-                    nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+                // save the modelix ID and the SNode in the map
+                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
 
-                    synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
-                }
+                synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
             }
         }
     }

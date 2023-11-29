@@ -115,4 +115,6 @@ class NodeTransformer(
     }
 
     fun resolveReferences() = nodeFactory.resolveReferences()
+
+    fun clearResolvableReferences() = nodeFactory.clearResolvableReferences()
 }

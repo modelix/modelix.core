@@ -21,9 +21,9 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 
 @OptIn(UnstableModelixFeature::class)
-class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF") {
+abstract class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF") {
 
-    fun testEverything() = runTestWithSyncService { syncService ->
+    fun testInitialSyncToServer() = runTestWithSyncService { syncService ->
         val modelClient = syncService.syncService.getAllClients().single()
         val mpsProject = getMPSProject()
 //        TestCase.assertEquals("SimpleProjectF", mpsProject.name)

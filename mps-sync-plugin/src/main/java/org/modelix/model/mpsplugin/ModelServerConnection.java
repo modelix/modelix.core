@@ -58,7 +58,6 @@ import org.modelix.model.mpsadapters.mps.SConceptAdapter;
 import org.modelix.model.client.ReplicatedRepository;
 import org.modelix.model.client.IModelClient;
 import java.util.function.Consumer;
-import de.q60.mps.incremental.runtime.DependencyBroadcaster;
 import org.jetbrains.mps.openapi.language.SContainmentLink;
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory;
 import org.jetbrains.mps.openapi.language.SProperty;
@@ -79,7 +78,6 @@ public class ModelServerConnection {
   private List<IListener> listeners = ListSequence.fromList(new ArrayList<IListener>());
   private String id;
   private String email;
-  private Map<ActiveBranch, IBranchListener> invalidationListeners = MapSequence.fromMap(new HashMap<ActiveBranch, IBranchListener>());
   private MessageBusConnection messageBusConnection;
   private Map<RepositoryId, RootBinding> bindings = MapSequence.fromMap(new HashMap<RepositoryId, RootBinding>());
 
@@ -435,9 +433,6 @@ public class ModelServerConnection {
             });
           }
         };
-        InvalidationBranchListener invalidationListener = new InvalidationBranchListener(ab);
-        MapSequence.fromMap(invalidationListeners).put(ab, invalidationListener);
-        ab.addListener(invalidationListener);
         MapSequence.fromMap(activeBranches).put(repositoryId, ab);
       }
       return ab;
@@ -479,10 +474,6 @@ public class ModelServerConnection {
     synchronized (activeBranches) {
       for (ActiveBranch ab : Sequence.fromIterable(MapSequence.fromMap(activeBranches).values())) {
         try {
-          IBranchListener invalidationListener = MapSequence.fromMap(invalidationListeners).removeKey(ab);
-          if (invalidationListener != null) {
-            ab.removeListener(invalidationListener);
-          }
           ab.dispose();
         } catch (Exception ex) {
           if (LOG.isEnabledFor(Level.ERROR)) {
@@ -547,22 +538,6 @@ public class ModelServerConnection {
     default void bindingActivated(Binding binding) {
     }
     default void bindingDeactivated(Binding binding) {
-    }
-  }
-
-  public class InvalidationBranchListener implements IBranchListener {
-    private ActiveBranch branch;
-    public InvalidationBranchListener(ActiveBranch branch) {
-      this.branch = branch;
-    }
-    @Override
-    public void treeChanged(@Nullable ITree oldTree, @NotNull ITree newTree) {
-      if (oldTree == null) {
-        return;
-      }
-      TreeChangesCollector changesCollector = new TreeChangesCollector(branch.getBranch());
-      newTree.visitChanges(oldTree, changesCollector);
-      DependencyBroadcaster.INSTANCE.dependenciesChanged(changesCollector.getChanges());
     }
   }
   private static RestWebModelClient.ConnectionStatus check_v06aqd_a0a0fb(RestWebModelClient checkedDotOperand) {

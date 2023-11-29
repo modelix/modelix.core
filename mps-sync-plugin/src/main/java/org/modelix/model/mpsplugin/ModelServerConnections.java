@@ -6,13 +6,11 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.LogManager;
 import org.modelix.model.api.IBranch;
 import org.modelix.model.api.PBranch;
-import de.q60.mps.shadowmodels.runtime.model.persistent.SM_PTree;
 import org.modelix.model.client.IdGenerator;
 import org.modelix.model.api.IBranchListener;
 import org.jetbrains.annotations.Nullable;
 import org.modelix.model.api.ITree;
 import org.jetbrains.annotations.NotNull;
-import de.q60.mps.incremental.runtime.DependencyBroadcaster;
 import java.util.List;
 import jetbrains.mps.internal.collections.runtime.ListSequence;
 import java.util.ArrayList;
@@ -46,21 +44,6 @@ import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory;
 public class ModelServerConnections {
   private static final Logger LOG = LogManager.getLogger(ModelServerConnections.class);
   private static ModelServerConnections ourInstance = new ModelServerConnections();
-  public static final IBranch LOCAL_UI_STATE_BRANCH = new PBranch(SM_PTree.EMPTY, IdGenerator.Companion.getInstance(1));
-
-  static {
-    LOCAL_UI_STATE_BRANCH.addListener(new IBranchListener() {
-      @Override
-      public void treeChanged(@Nullable ITree oldTree, @NotNull ITree newTree) {
-        if (oldTree == null) {
-          return;
-        }
-        TreeChangesCollector changesCollector = new TreeChangesCollector(LOCAL_UI_STATE_BRANCH);
-        newTree.visitChanges(oldTree, changesCollector);
-        DependencyBroadcaster.INSTANCE.dependenciesChanged(changesCollector.getChanges());
-      }
-    });
-  }
 
   public static ModelServerConnections getInstance() {
     return ourInstance;
@@ -93,8 +76,8 @@ public class ModelServerConnections {
         IBranch branch = it.getBranch();
         return new PArea(branch);
       }
-    }).where(new NotNullWhereFilter<PArea>());
-    CompositeArea area = new CompositeArea(Sequence.fromIterable(Sequence.<IArea>singleton(new MPSArea(mpsRepository))).concat(Sequence.fromIterable(cloudAreas)).concat(Sequence.fromIterable(Sequence.<IArea>singleton(new PArea(LOCAL_UI_STATE_BRANCH)))).toListSequence());
+    }).where(new NotNullWhereFilter());
+    CompositeArea area = new CompositeArea(Sequence.fromIterable(Sequence.<IArea>singleton(new MPSArea(mpsRepository))).concat(Sequence.fromIterable(cloudAreas)).toListSequence());
     return area;
   }
 

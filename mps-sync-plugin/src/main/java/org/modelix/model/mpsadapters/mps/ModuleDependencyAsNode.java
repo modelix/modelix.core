@@ -217,7 +217,7 @@ public class ModuleDependencyAsNode implements INode {
           public SRepository select(MPSArea it) {
             return it.getRepository();
           }
-        }).where(new NotNullWhereFilter<SRepository>()).first();
+        }).where(new NotNullWhereFilter()).first();
       }
       if (repo == null) {
         repo = MPSModuleRepository.getInstance();

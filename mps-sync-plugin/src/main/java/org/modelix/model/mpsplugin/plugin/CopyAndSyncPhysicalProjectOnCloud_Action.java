@@ -9,7 +9,6 @@ import org.jetbrains.mps.openapi.model.SNode;
 import jetbrains.mps.workbench.action.ActionAccess;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import java.util.Map;
-import jetbrains.mps.lang.core.behavior.INamedConcept__BehaviorDescriptor;
 import org.jetbrains.annotations.NotNull;
 import jetbrains.mps.project.MPSProject;
 import jetbrains.mps.ide.actions.MPSCommonDataKeys;
@@ -39,7 +38,7 @@ public class CopyAndSyncPhysicalProjectOnCloud_Action extends BaseAction {
     } else {
       CopyAndSyncPhysicalProjectOnCloud_Action.this.treeInRepository.runRead(new Runnable() {
         public void run() {
-          event.getPresentation().setText("Sync to Cloud Repo " + CopyAndSyncPhysicalProjectOnCloud_Action.this.treeInRepository.presentation() + " to project " + INamedConcept__BehaviorDescriptor.getFqName_idhEwIO9y.invoke(CopyAndSyncPhysicalProjectOnCloud_Action.this.cloudProject));
+          event.getPresentation().setText("Sync to Cloud Repo " + CopyAndSyncPhysicalProjectOnCloud_Action.this.treeInRepository.presentation() + " to project " + CopyAndSyncPhysicalProjectOnCloud_Action.this.cloudProject);
         }
       });
     }
@@ -82,6 +81,6 @@ public class CopyAndSyncPhysicalProjectOnCloud_Action extends BaseAction {
     return object.presentation();
   }
   public static String cloudProject_State(SNode object) {
-    return (String) INamedConcept__BehaviorDescriptor.getFqName_idhEwIO9y.invoke(object);
+    return "" + object;
   }
 }

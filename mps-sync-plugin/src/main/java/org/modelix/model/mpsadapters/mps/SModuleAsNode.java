@@ -72,7 +72,7 @@ public class SModuleAsNode extends TreeElementAsNode<SModule> {
         public String select(MPSProject it) {
           return check_jbj149_a0a0a0a0b0a0a0f(it.getPath(element));
         }
-      }).where(new NotNullWhereFilter<String>()).first();
+      }).where(new NotNullWhereFilter()).first();
     }
   };
 
@@ -366,7 +366,7 @@ public class SModuleAsNode extends TreeElementAsNode<SModule> {
           public SRepository select(MPSArea it) {
             return it.getRepository();
           }
-        }).where(new NotNullWhereFilter<SRepository>()).first();
+        }).where(new NotNullWhereFilter()).first();
       }
       if (repo.value == null) {
         repo.value = MPSModuleRepository.getInstance();

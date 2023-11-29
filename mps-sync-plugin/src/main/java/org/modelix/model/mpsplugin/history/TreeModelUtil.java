@@ -96,7 +96,7 @@ public class TreeModelUtil {
   }
   private static DefaultTreeModel check_spdlqu_a0a5(MPSTree checkedDotOperand) {
     if (null != checkedDotOperand) {
-      return checkedDotOperand.getModel();
+      return (DefaultTreeModel) checkedDotOperand.getModel();
     }
     return null;
   }

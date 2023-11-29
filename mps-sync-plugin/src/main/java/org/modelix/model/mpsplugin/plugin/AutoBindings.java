@@ -34,7 +34,6 @@ import org.modelix.model.api.ITransaction;
 import org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter;
 import org.modelix.model.api.PNodeAdapter;
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations;
-import jetbrains.mps.lang.core.behavior.INamedConcept__BehaviorDescriptor;
 import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter;
 import jetbrains.mps.project.Project;
 import jetbrains.mps.project.ProjectManager;
@@ -199,7 +198,7 @@ public class AutoBindings implements ModelServerConnections.IListener, ModelServ
             if (bindProjects) {
               SNode firstProject = Sequence.fromIterable(allProjects).first();
               if (LOG.isDebugEnabled()) {
-                LOG.debug("trying to bind project: " + INamedConcept__BehaviorDescriptor.getFqName_idhEwIO9y.invoke(firstProject));
+                LOG.debug("trying to bind project: " + firstProject);
               }
               remainingProjects = Sequence.fromIterable(allProjects).skip(1);
               final long projectNodeId = (firstProject == null ? 0L : ((PNodeAdapter) SNodeToNodeAdapter.wrap(firstProject)).getNodeId());

@@ -79,7 +79,7 @@ public class SModelAsNode extends TreeElementAsNode<SModel> implements INode {
         public SModel select(SModelReference it) {
           return it.resolve(element.getRepository());
         }
-      }).where(new NotNullWhereFilter<SModel>());
+      }).where(new NotNullWhereFilter());
       return Sequence.fromIterable(importedModels).select(new ISelector<SModel, ModelImportAsNode>() {
         public ModelImportAsNode select(SModel it) {
           return new ModelImportAsNode(it, element);
@@ -231,7 +231,7 @@ public class SModelAsNode extends TreeElementAsNode<SModel> implements INode {
           public SRepository select(MPSArea it) {
             return it.getRepository();
           }
-        }).where(new NotNullWhereFilter<SRepository>()).first();
+        }).where(new NotNullWhereFilter()).first();
       }
       if (repo.value == null) {
         repo.value = MPSModuleRepository.getInstance();

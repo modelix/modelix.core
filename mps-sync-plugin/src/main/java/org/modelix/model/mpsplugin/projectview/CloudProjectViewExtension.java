@@ -30,7 +30,6 @@ import org.jetbrains.mps.openapi.module.SModuleListener;
 import org.jetbrains.mps.openapi.module.SModuleListenerBase;
 import org.jetbrains.mps.openapi.model.SModel;
 import org.jetbrains.mps.openapi.model.SModelReference;
-import de.q60.mps.util.invalidation.Invalidatable;
 import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes;
 import jetbrains.mps.ide.projectPane.logicalview.ProjectTree;
 import jetbrains.mps.baseLanguage.closures.runtime.Wrappers;
@@ -137,20 +136,6 @@ public class CloudProjectViewExtension {
       super.modelRemoved(module, ref);
     }
   };
-  private Invalidatable invalidatable = new Invalidatable("Project view extension", new _FunctionTypes._void_P0_E0() {
-    public void invoke() {
-      ApplicationManager.getApplication().invokeLater(new Runnable() {
-        public void run() {
-          forceUpdate();
-        }
-      });
-    }
-  }) {
-    @Override
-    public String getText() {
-      return "Project view extension (" + project.getName() + ")";
-    }
-  };
 
   public CloudProjectViewExtension(jetbrains.mps.project.Project project) {
     this.project = project;
@@ -161,7 +146,7 @@ public class CloudProjectViewExtension {
     cloudTreeNode.setIcon(ROOT_ICON);
     waitForProjectTree(new _FunctionTypes._void_P1_E0<ProjectTree>() {
       public void invoke(ProjectTree tree) {
-        treeModel = tree.getModel();
+        treeModel = (DefaultTreeModel) tree.getModel();
         treeModel.addTreeModelListener(treeListener);
         project.getRepository().addRepositoryListener(repositoryListener);
         updateModules();
@@ -205,7 +190,6 @@ public class CloudProjectViewExtension {
       treeModel.removeTreeModelListener(treeListener);
     }
     MapSequence.fromMap(ourInstances).removeKey(ProjectHelper.toIdeaProject(project));
-    invalidatable.dispose();
   }
 
   public void attachCloudRoot() {
@@ -214,7 +198,7 @@ public class CloudProjectViewExtension {
     if (root == null) {
       return;
     }
-    final DefaultTreeModel model = projectPane.getTree().getModel();
+    final DefaultTreeModel model = (DefaultTreeModel) projectPane.getTree().getModel();
 
     // wrong parent
     if (cloudTreeNode.getParent() != null && cloudTreeNode.getParent() != root) {
@@ -239,7 +223,7 @@ public class CloudProjectViewExtension {
   public void attachCloudRootIfNotEmpty() {
     if (cloudTreeNode.getChildCount() == 0) {
       if (cloudTreeNode.getParent() != null && cloudTreeNode.getTree() != null) {
-        cloudTreeNode.getTree().getModel().removeNodeFromParent(cloudTreeNode);
+        ((DefaultTreeModel) cloudTreeNode.getTree().getModel()).removeNodeFromParent(cloudTreeNode);
       }
     } else {
       attachCloudRoot();
@@ -249,7 +233,7 @@ public class CloudProjectViewExtension {
   public void forceUpdate() {
     while (cloudTreeNode.getChildCount() > 0) {
       CloudModuleTreeNode moduleTreeNode = (CloudModuleTreeNode) cloudTreeNode.getChildAt(0);
-      getProjectTree().getModel().removeNodeFromParent(moduleTreeNode);
+      ((DefaultTreeModel) getProjectTree().getModel()).removeNodeFromParent(moduleTreeNode);
       moduleTreeNode.dispose();
     }
     updateModules();
@@ -260,7 +244,7 @@ public class CloudProjectViewExtension {
     if (root == null) {
       return;
     }
-    final DefaultTreeModel treeModel = getProjectTree().getModel();
+    final DefaultTreeModel treeModel = (DefaultTreeModel) getProjectTree().getModel();
 
     project.getRepository().getModelAccess().runReadAction(new Runnable() {
       public void run() {

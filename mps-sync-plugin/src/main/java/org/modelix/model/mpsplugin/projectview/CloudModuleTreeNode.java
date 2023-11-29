@@ -85,7 +85,7 @@ public class CloudModuleTreeNode extends ProjectModuleTreeNode {
   }
   private static DefaultTreeModel check_7wx4yo_a0c0i(MPSTree checkedDotOperand, CloudModuleTreeNode checkedDotThisExpression) {
     if (null != checkedDotOperand) {
-      return checkedDotOperand.getModel();
+      return (DefaultTreeModel) checkedDotOperand.getModel();
     }
     return null;
   }

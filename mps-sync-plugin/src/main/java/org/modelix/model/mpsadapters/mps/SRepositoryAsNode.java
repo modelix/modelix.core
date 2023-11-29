@@ -147,7 +147,7 @@ public class SRepositoryAsNode extends TreeElementAsNode<SRepository> {
           public SRepository select(MPSArea it) {
             return it.getRepository();
           }
-        }).where(new NotNullWhereFilter<SRepository>()).first();
+        }).where(new NotNullWhereFilter()).first();
       }
       if (repo == null) {
         repo = MPSModuleRepository.getInstance();

@@ -12,11 +12,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import org.jetbrains.annotations.NotNull;
 import com.intellij.openapi.ui.Messages;
-import jetbrains.mps.baseLanguage.logging.runtime.model.LoggingRuntime;
 import org.apache.log4j.Level;
 import jetbrains.mps.ide.project.ProjectHelper;
 import org.modelix.model.mpsplugin.ModelServerConnections;
-import org.modelix.authentication.plugin.AuthenticationManager;
 import java.util.function.Consumer;
 import org.modelix.model.mpsplugin.ModelServerConnection;
 
@@ -57,7 +55,7 @@ public class AddModelServer_Action extends BaseAction {
       if (!(url.endsWith("/"))) {
         String originalUrl = url;
         url = url + "/";
-        LoggingRuntime.logMsgView(Level.INFO, "A Model Server URL should end with a slash. URL modified from '" + originalUrl + "' to '" + url + "'", AddModelServer_Action.class, null, ProjectHelper.fromIdeaProject(event.getData(CommonDataKeys.PROJECT)));
+        LOG.info("A Model Server URL should end with a slash. URL modified from '" + originalUrl + "' to '" + url + "'");
       }
       if (ModelServerConnections.getInstance().existModelServer(url)) {
         Messages.showErrorDialog(event.getData(CommonDataKeys.PROJECT), "Already present!", "Add Model Server");
@@ -65,18 +63,18 @@ public class AddModelServer_Action extends BaseAction {
       }
       String token = null;
       final String finalUrl = url;
-      if (AuthenticationManager.getAuthenticationProcess(finalUrl).areWeUsingAuthentication(event.getData(CommonDataKeys.PROJECT))) {
-        AuthenticationManager.getAuthenticationProcess(finalUrl).getToken(event.getData(CommonDataKeys.PROJECT), new Consumer<String>() {
-          @Override
-          public void accept(String token) {
-            ModelServerConnection modelServer = ModelServerConnections.getInstance().ensureModelServerIsPresent(finalUrl);
-            PersistedBindingConfiguration.getInstance(event.getData(CommonDataKeys.PROJECT)).ensureModelServerIsPresent(modelServer);
-          }
-        });
-      } else {
+//      if (AuthenticationManager.getAuthenticationProcess(finalUrl).areWeUsingAuthentication(event.getData(CommonDataKeys.PROJECT))) {
+//        AuthenticationManager.getAuthenticationProcess(finalUrl).getToken(event.getData(CommonDataKeys.PROJECT), new Consumer<String>() {
+//          @Override
+//          public void accept(String token) {
+//            ModelServerConnection modelServer = ModelServerConnections.getInstance().ensureModelServerIsPresent(finalUrl);
+//            PersistedBindingConfiguration.getInstance(event.getData(CommonDataKeys.PROJECT)).ensureModelServerIsPresent(modelServer);
+//          }
+//        });
+//      } else {
         ModelServerConnection modelServer = ModelServerConnections.getInstance().ensureModelServerIsPresent(finalUrl);
         PersistedBindingConfiguration.getInstance(event.getData(CommonDataKeys.PROJECT)).ensureModelServerIsPresent(modelServer);
-      }
+//      }
     }
   }
 }

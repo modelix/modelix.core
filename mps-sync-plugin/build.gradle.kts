@@ -7,6 +7,8 @@ group = "org.modelix.mps"
 val mpsZip by configurations.creating
 val mpsVersion = project.findProperty("mps.version").toString()
 val ideaVersion = project.findProperty("mps.platform.version").toString()
+val mpsHome = project.layout.buildDirectory.dir("mps")
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
@@ -28,6 +30,9 @@ dependencies {
 //    compileOnly(mpsZipTree)
 //    testImplementation(mpsZipTree)
 
+    // There is a usage of MakeActionParameters in ProjectMakeRunner which we might want to delete
+    compileOnly(mpsHome.map { it.files("plugins/mps-make/languages/jetbrains.mps.ide.make.jar") })
+
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(project(":model-server"))
@@ -45,8 +50,6 @@ dependencies {
 //    implementation(libs.ktor.serialization.json)
 }
 
-val mpsHome = project.layout.buildDirectory.dir("mps")
-
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
@@ -60,6 +63,8 @@ intellij {
         version.set(ideaVersion)
     }
     instrumentCode = false
+
+    plugins = listOf("jetbrains.mps.ide.make")
 }
 
 tasks {
@@ -79,6 +84,7 @@ tasks {
         }
     }
 
+    compileJava { dependsOn(downloadMPS) }
     assemble { dependsOn(downloadMPS) }
     test { dependsOn(downloadMPS) }
 

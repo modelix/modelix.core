@@ -133,7 +133,7 @@ public class ModelServerTreeNode extends TextTreeNode {
                   }
                   return tn;
                 }
-              }).where(new NotNullWhereFilter<TreeNode>()).toListSequence();
+              }).where(new NotNullWhereFilter()).toListSequence();
             }
           });
 

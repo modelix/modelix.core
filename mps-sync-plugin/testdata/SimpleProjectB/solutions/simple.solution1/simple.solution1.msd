@@ -20,4 +20,3 @@
     <module reference="f2fb433a-7484-46c7-a61e-ec59ba5ea58f(simple.solution1)" version="0" />
   </dependencyVersions>
 </solution>
-

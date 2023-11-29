@@ -63,7 +63,7 @@ public abstract class Binding {
           }
         });
       case TO_MPS:
-        // Even if the ITree is passed to the sync method we still need a read transaction on the cloud model 
+        // Even if the ITree is passed to the sync method we still need a read transaction on the cloud model
         // ITree.getReferenceTarget(...).resolveNode(...) requires a read transaction
         return new SyncTask(this, direction, initial, SetSequence.fromSetAndArray(new HashSet<ELockType>(), ELockType.MPS_COMMAND, ELockType.CLOUD_READ), new Runnable() {
           public void run() {
@@ -89,7 +89,7 @@ public abstract class Binding {
         case TO_CLOUD:
           return SetSequence.fromSetAndArray(new HashSet<ELockType>(), ELockType.MPS_READ, ELockType.CLOUD_WRITE);
         case TO_MPS:
-          // Even if the ITree is passed to the sync method we still need a read transaction on the cloud model 
+          // Even if the ITree is passed to the sync method we still need a read transaction on the cloud model
           // ITree.getReferenceTarget(...).resolveNode(...) requires a read transaction
           return SetSequence.fromSetAndArray(new HashSet<ELockType>(), ELockType.MPS_COMMAND, ELockType.CLOUD_READ);
         default:

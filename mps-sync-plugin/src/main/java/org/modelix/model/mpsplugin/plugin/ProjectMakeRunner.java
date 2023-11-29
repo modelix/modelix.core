@@ -95,7 +95,7 @@ public class ProjectMakeRunner {
     final IMakeService makeService = mpsProject.getComponent(MakeServiceComponent.class).get();
     if (makeService.openNewSession(session)) {
       // empty collection is fine, it's up to make service to report there's nothing to do (odd, but fine for now. Action could have do that instead)
-      //  
+      //
       // ModelValidatorAdapter needs to be refactored not to mix model checking code with UI, which might request
       // write access e.g. on focus lost and eventually lead to 'write from read' issue like
       // FIXME https://youtrack.jetbrains.com/issue/MPS-24020. Proper fix is to split model check into read, and results reporting into EDT.

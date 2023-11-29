@@ -400,9 +400,9 @@ public class PersistedBindingConfiguration {
 
   /**
    * FIXME we should probably not identify modules by name but some unique identifier instead
-   * 
-   * @param repositoryInModelServer 
-   * @param modulesToBind 
+   *
+   * @param repositoryInModelServer
+   * @param modulesToBind
    */
   private static void bindToTransientModules(final CloudRepository repositoryInModelServer, final Set<String> modulesToBind) {
     SharedExecutors.FIXED.execute(new Runnable() {
@@ -423,9 +423,9 @@ public class PersistedBindingConfiguration {
 
   /**
    * FIXME we should probably not identify modules by name but some unique identifier instead
-   * 
-   * @param repositoryInModelServer 
-   * @param modulesToBind 
+   *
+   * @param repositoryInModelServer
+   * @param modulesToBind
    */
   private void bindToMappedModules(final CloudRepository repositoryInModelServer, final Set<String> modulesToBind) {
     SharedExecutors.FIXED.execute(new Runnable() {

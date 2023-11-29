@@ -104,7 +104,7 @@ fun ModelData.nodeUID(node: NodeData): String = node.uid(this)
 
 fun IBranch.asData() = ModelData(
     id = getId(),
-    root = getRootNode().asData()
+    root = getRootNode().asData(),
 )
 
 fun ITree.asData() = TreePointer(this).asData()

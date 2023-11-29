@@ -38,6 +38,4 @@ abstract class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("Simple
         val dumpFromMPS = MPSProjectAsNode(mpsProject).asData()
         TestCase.assertEquals(dumpFromMPS, dumpFromServer)
     }
-
-
 }

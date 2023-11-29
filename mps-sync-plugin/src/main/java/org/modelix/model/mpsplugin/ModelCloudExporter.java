@@ -135,12 +135,12 @@ public class ModelCloudExporter {
   }
 
   /**
-   * 
-   * 
-   * @param exportPath 
+   *
+   *
+   * @param exportPath
    * @param selectedMduleIds null indicates all modules
-   * @param mpsProject 
-   * @return 
+   * @param mpsProject
+   * @return
    */
   public List<Solution> export(String exportPath, @Nullable Set<Long> selectedMduleIds, @Nullable Project mpsProject) {
     MPSCoreComponents coreComponents = ApplicationManager.getApplication().getComponent(MPSCoreComponents.class);
@@ -156,11 +156,11 @@ public class ModelCloudExporter {
 
   /**
    * This method is expected to be called when a user is present to see the notifications.
-   * 
-   * @param outputFolder 
+   *
+   * @param outputFolder
    * @param selectedModuleIds null indicates all modules
-   * @param mpsProject 
-   * @return 
+   * @param mpsProject
+   * @return
    */
   public List<Solution> export(final IFile outputFolder, @Nullable final Set<Long> selectedModuleIds, final Project mpsProject) {
     System.out.println("exporting to " + outputFolder.getPath());

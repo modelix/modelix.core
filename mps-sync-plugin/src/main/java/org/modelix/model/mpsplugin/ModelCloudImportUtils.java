@@ -178,7 +178,7 @@ public class ModelCloudImportUtils {
 
   /**
    * This creates a copy of the given physicalModel under the given cloudModule. It then ensures that it is exactly the same as the given physicalModule.
-   * 
+   *
    * @return the created cloud model
    */
   public static INode copyPhysicalModel(CloudRepository treeInRepository, INode cloudModule, final SModel physicalModel) {
@@ -203,8 +203,8 @@ public class ModelCloudImportUtils {
 
   /**
    * This takes a cloud node already created and a physical node.
-   *  It then ensures that the cloud node is exactly as the original physical node. 
-   * 
+   *  It then ensures that the cloud node is exactly as the original physical node.
+   *
    * It operates recursively on children.
    */
   private static void replicatePhysicalNode(INode cloudNode, SNode physicalNode) {

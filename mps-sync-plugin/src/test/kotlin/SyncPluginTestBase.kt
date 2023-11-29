@@ -15,23 +15,25 @@
  */
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.openapi.util.Disposer
+import com.intellij.testFramework.HeavyPlatformTestCase
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import junit.framework.TestCase
+import jetbrains.mps.ide.project.ProjectHelper
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.mps.sync.ModelSyncService
+import java.io.File
+import java.nio.file.Path
 
 @OptIn(UnstableModelixFeature::class)
-class SyncPluginTests : BasePlatformTestCase() {
-
-    private fun runTestWithModelServer(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
+abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlatformTestCase() {
+    protected fun runTestWithModelServer(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
             install(ContentNegotiation) {
@@ -43,17 +45,31 @@ class SyncPluginTests : BasePlatformTestCase() {
         block()
     }
 
-    fun testEstablishConnection() = runTestWithModelServer {
+    protected fun runTestWithSyncService(body: suspend (ModelSyncService) -> Unit) = runTestWithModelServer {
         val syncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
-        syncService.ensureStarted()
-        syncService.connectModelServerSuspending(client, "http://localhost/v2/", null)
-        val modelClient = syncService.syncService.getAllClients().single()
-        TestCase.assertNotSame(0, modelClient.getClientId())
+        try {
+            syncService.ensureStarted()
+            syncService.connectModelServerSuspending(client, "http://localhost/v2/", null)
+            body(syncService)
+        } finally {
+            Disposer.dispose(syncService)
+        }
     }
 
-    fun testMPSProjectLoaded() {
-        println(ApplicationManager::class.java.classLoader)
-        val mpsProjects = jetbrains.mps.project.ProjectManager.getInstance().openedProjects
-        TestCase.assertEquals(1, mpsProjects.size)
+    override fun isCreateDirectoryBasedProject(): Boolean = true
+
+    override fun getProjectDirOrFile(isDirectoryBasedProject: Boolean): Path {
+        val projectDir = super.getProjectDirOrFile(isDirectoryBasedProject)
+        val testSpecificDataName = testDataName
+            ?: getTestName(false).substringAfterLast("_with_", "").takeIf { it.isNotEmpty() }
+        if (testSpecificDataName != null) {
+            val sourceDir = File("testdata/$testSpecificDataName")
+            sourceDir.copyRecursively(projectDir.toFile(), overwrite = true)
+        }
+        return projectDir
+    }
+
+    protected fun getMPSProject(): org.jetbrains.mps.openapi.project.Project {
+        return checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPS project not loaded" }
     }
 }

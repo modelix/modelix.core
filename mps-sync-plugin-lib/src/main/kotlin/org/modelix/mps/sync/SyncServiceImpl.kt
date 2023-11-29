@@ -161,4 +161,8 @@ class BindingImpl(val replicatedModel: ReplicatedModel, modelName: String, mpsPp
     override fun activate(callback: Runnable?) {
         TODO("Not yet implemented")
     }
+
+    override suspend fun flush() {
+        TODO("Not yet implemented")
+    }
 }

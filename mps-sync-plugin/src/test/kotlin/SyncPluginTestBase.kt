@@ -23,6 +23,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import jetbrains.mps.ide.project.ProjectHelper
+import jetbrains.mps.project.MPSProject
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.server.handlers.ModelReplicationServer
@@ -69,7 +70,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
         return projectDir
     }
 
-    protected fun getMPSProject(): org.jetbrains.mps.openapi.project.Project {
+    protected fun getMPSProject(): MPSProject {
         return checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPS project not loaded" }
     }
 }

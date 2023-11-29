@@ -21,7 +21,11 @@ interface SyncService {
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 interface IBinding {
-
     fun activate(callback: Runnable? = null)
     fun deactivate(callback: Runnable? = null)
+
+    /**
+     * Wait until all pending sync operations are done.
+     */
+    suspend fun flush()
 }

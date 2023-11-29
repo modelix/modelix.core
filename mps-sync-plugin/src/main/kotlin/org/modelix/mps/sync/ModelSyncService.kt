@@ -26,6 +26,7 @@ import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.jetbrains.mps.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
@@ -90,6 +91,10 @@ class ModelSyncService : Disposable {
             log.info("disconnected server: ${modelClient.baseUrl}")
             afterActivate?.invoke()
         }
+    }
+
+    suspend fun bindProject(mpsProject: Project, branch: BranchReference): IBinding {
+        TODO()
     }
 
     fun bindProject(

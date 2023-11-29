@@ -9,6 +9,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getRootNode
 
 @Serializable
 data class ModelData(
@@ -99,6 +101,13 @@ fun NodeData.uid(model: ModelData): String {
         (id ?: throw IllegalArgumentException("Node has no ID"))
 }
 fun ModelData.nodeUID(node: NodeData): String = node.uid(this)
+
+fun IBranch.asData() = ModelData(
+    id = getId(),
+    root = getRootNode().asData()
+)
+
+fun ITree.asData() = TreePointer(this).asData()
 
 fun INode.asData(): NodeData = NodeData(
     id = reference.serialize(),

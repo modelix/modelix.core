@@ -27,6 +27,7 @@ import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.mps.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -42,7 +43,6 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter
-import org.modelix.model.mpsplugin.CloudRepository
 import org.modelix.model.mpsplugin.ModelServerConnections
 import org.modelix.model.mpsplugin.ProjectBinding
 import org.modelix.model.mpsplugin.SyncDirection
@@ -52,6 +52,7 @@ import org.modelix.mps.sync.api.IModuleBinding
 import org.modelix.mps.sync.api.ISyncService
 import java.net.ConnectException
 import java.net.URL
+import kotlin.time.Duration.Companion.seconds
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 @Service(Service.Level.APP)
@@ -141,13 +142,12 @@ class ModelSyncService : Disposable, ISyncService {
 
             override fun bindProject(mpsProject: Project, existingProjectNodeId: Long?): org.modelix.mps.sync.api.IBinding {
                 val mpsProject = mpsProject as MPSProject
-                val treeInRepository = CloudRepository(legacyConnection, repositoryId)
                 val legacyBinding = if (existingProjectNodeId == null) {
                     ProjectBinding(mpsProject, 0L, SyncDirection.TO_CLOUD)
                 } else {
                     ProjectBinding(mpsProject, existingProjectNodeId, SyncDirection.TO_MPS)
                 }
-                treeInRepository.addBinding(legacyBinding)
+                legacyConnection.addBinding(repositoryId, legacyBinding)
                 return ProjectBindingAdapter(legacyBinding).also {
                     Disposer.register(this, it)
                     synchronized(bindings) {
@@ -182,6 +182,7 @@ class ModelSyncService : Disposable, ISyncService {
 
                 override suspend fun flush() {
                     legacyBinding.rootBinding.syncQueue.flush()
+                    delay(5.seconds) // TODO wait until the client is done writing to the server
                 }
 
                 override fun dispose() {

@@ -11,6 +11,7 @@ import jetbrains.mps.project.Solution;
 import org.modelix.model.api.ITree;
 import jetbrains.mps.internal.collections.runtime.Sequence;
 import org.modelix.model.api.IConcept;
+import org.modelix.model.data.NodeData;
 import org.modelix.model.mpsadapters.mps.SConceptAdapter;
 import org.jetbrains.mps.openapi.module.SModuleId;
 import jetbrains.mps.project.ModuleId;
@@ -29,6 +30,7 @@ import org.jetbrains.mps.openapi.language.SContainmentLink;
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory;
 import org.jetbrains.mps.openapi.language.SConcept;
 import org.jetbrains.mps.openapi.language.SProperty;
+import org.modelix.model.mpsadapters.mps.SModuleAsNode;
 
 public class ProjectModulesSynchronizer extends Synchronizer<SModule> {
 
@@ -126,6 +128,7 @@ public class ProjectModulesSynchronizer extends Synchronizer<SModule> {
   public long createCloudChild(IWriteTransaction t, SModule mpsChild) {
     long modelNodeId = t.addNewChild(getCloudParentId(), LINKS.modules$Bi3g.getName(), -1, SConceptAdapter.wrap(CONCEPTS.Module$4i));
     t.setProperty(modelNodeId, PROPS.id$7MjP.getName(), mpsChild.getModuleId().toString());
+    t.setProperty(modelNodeId, NodeData.ORIGINAL_NODE_ID_KEY, new SModuleAsNode(mpsChild).getReference().serialize());
     t.setProperty(modelNodeId, PROPS.name$MnvL.getName(), mpsChild.getModuleName());
     return modelNodeId;
   }

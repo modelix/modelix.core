@@ -89,6 +89,7 @@ data class NodeData(
 ) {
     companion object {
         const val ID_PROPERTY_KEY = "#mpsNodeId#"
+        const val ORIGINAL_NODE_ID_KEY = "\$originalId"
 
         @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
         const val idPropertyKey = ID_PROPERTY_KEY
@@ -109,13 +110,13 @@ fun IBranch.asData() = ModelData(
 
 fun ITree.asData() = TreePointer(this).asData()
 
-fun INode.asData(): NodeData = NodeData(
+fun INode.asData(includeChildren: Boolean = true): NodeData = NodeData(
     id = reference.serialize(),
     concept = concept?.getUID(),
     role = roleInParent,
     properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) },
     references = getReferenceRoles().associateWithNotNull { getReferenceTargetRef(it)?.serialize() },
-    children = allChildren.map { it.asData() },
+    children = if (includeChildren) allChildren.map { it.asData() } else emptyList(),
 )
 
 inline fun <K, V : Any> Iterable<K>.associateWithNotNull(valueSelector: (K) -> V?): Map<K, V> {

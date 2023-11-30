@@ -248,6 +248,16 @@ public class SingleLanguageDependencyAsNode implements INode {
       this.usedModuleId = usedModuleId;
     }
 
+    @NotNull
+    @Override
+    public String serialize() {
+      if (userModuleReference == null) {
+        return "mps-lang:" + usedModuleId + "#IN#" + userModel;
+      } else {
+        return "mps-lang:" + usedModuleId + "#IN#" + userModuleReference;
+      }
+    }
+
     @Nullable
     @Override
     public INode resolveNode(@Nullable IArea area) {

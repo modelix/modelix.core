@@ -50,5 +50,6 @@
         <statusBarWidgetFactory id="CloudStatus"
                                 implementation="org.modelix.mps.sync.indicator.CloudIndicator"/>
 
+        <mps.LanguageLibrary dir="/languages" />
     </extensions>
 </idea-plugin>

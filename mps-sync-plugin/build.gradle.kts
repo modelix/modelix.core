@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.tasks.PrepareSandboxTask
+
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.intellij") version "1.16.0"
@@ -124,6 +126,11 @@ tasks {
             from(buildDir.resolve("idea-sandbox/plugins/mps-sync-plugin"))
             into(mpsPluginDir.resolve("mps-sync-plugin"))
         }
+    }
+
+    withType<PrepareSandboxTask> {
+        intoChild(pluginName.map { "$it/languages" })
+            .from(project.layout.projectDirectory.dir("repositoryconcepts"))
     }
 }
 

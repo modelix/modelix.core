@@ -18,20 +18,37 @@ import io.ktor.http.Url
 import junit.framework.TestCase
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.modelix.model.api.IChildLink
+import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.MPSProjectAsNode
+import org.modelix.model.mpsadapters.mps.MPSLanguageRepository
+import org.modelix.model.mpsadapters.mps.SModuleAsNode
+import org.modelix.model.mpsadapters.plugin.MPSNodeReferenceSerializer
 
 class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF") {
 
     fun testInitialSyncToServer() = runTestWithSyncService { syncService ->
+        ILanguageRepository.register(MPSLanguageRepository.INSTANCE)
+        INodeReferenceSerializer.register(MPSNodeReferenceSerializer.INSTANCE)
+
         val json = Json { prettyPrint = true }
 
         val mpsProject = getMPSProject()
-        val dumpFromMPS: NodeData = MPSProjectAsNode(mpsProject).asData()
-            .copy(role = "")
-        json.encodeToString(dumpFromMPS).lineSequence().forEach { println("MPS   : $it") }
+        val projectAsNode = org.modelix.model.mpsadapters.mps.ProjectAsNode(mpsProject) // org.modelix.model.mpsadapters.MPSProjectAsNode(mpsProject)
+
+        TestCase.assertEquals(mpsProject.projectModules.size, projectAsNode.getChildren(IChildLink.fromName("projectModules")).count())
+
+        val dumpFromMPS = projectAsNode.getArea().executeRead {
+            projectAsNode.asData(includeChildren = false)
+                .copy(
+                    id = null,
+                    role = "",
+                    children = mpsProject.projectModules.map { SModuleAsNode(it).asData() },
+                )
+        }
 
 //        TestCase.assertEquals("SimpleProjectF", mpsProject.name)
 //        TestCase.assertEquals(0, syncService.getBindingList().size)
@@ -50,8 +67,30 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
         }
             .root // the node with ID ITree.ROOT_ID
             .children.single() // the project node
-            .copy(role = "")
-        json.encodeToString(dumpFromServer).lineSequence().forEach { println("Server: $it") }
-        TestCase.assertEquals(json.encodeToString(dumpFromMPS), json.encodeToString(dumpFromServer))
+            .copy(id = null, role = "")
+        TestCase.assertEquals(json.encodeToString(dumpFromMPS.normalize()), json.encodeToString(dumpFromServer.normalize()))
     }
+}
+
+private fun NodeData.normalize(): NodeData {
+    val idMap = HashMap<String, String>()
+    collectNodeIds(this, idMap)
+    return normalizeNodeData(this, idMap)
+}
+private fun normalizeNodeData(node: NodeData, originalIds: MutableMap<String, String>): NodeData {
+    return node.copy(
+        id = originalIds[node.id] ?: node.id,
+        properties = node.properties.minus(NodeData.ID_PROPERTY_KEY).minus(NodeData.ORIGINAL_NODE_ID_KEY).toSortedMap(),
+        references = node.references.mapValues { originalIds[it.value] ?: it.value }.toSortedMap(),
+        children = node.children.map { normalizeNodeData(it, originalIds) }.sortedBy { it.role },
+    )
+}
+
+private fun collectNodeIds(node: NodeData, idMap: MutableMap<String, String>) {
+    val copyId = node.id
+    val originalId = node.properties[NodeData.ORIGINAL_NODE_ID_KEY]
+    if (originalId != null && copyId != null) {
+        idMap[copyId] = originalId
+    }
+    node.children.forEach { collectNodeIds(it, idMap) }
 }

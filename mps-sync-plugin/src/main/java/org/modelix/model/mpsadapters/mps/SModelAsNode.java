@@ -221,6 +221,12 @@ public class SModelAsNode extends TreeElementAsNode<SModel> implements INode {
       return this.modelRef;
     }
 
+    @NotNull
+    @Override
+    public String serialize() {
+      return "mps-model:" + modelRef;
+    }
+
     @Nullable
     @Override
     public SModelAsNode resolveNode(@Nullable IArea area) {

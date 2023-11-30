@@ -207,6 +207,12 @@ public class ModuleDependencyAsNode implements INode {
       this.usedModuleId = usedModuleId;
     }
 
+    @NotNull
+    @Override
+    public String serialize() {
+      return "mps-module-dep:" + usedModuleId + "#IN#" + userModuleReference;
+    }
+
     @Nullable
     @Override
     public INode resolveNode(@Nullable IArea area) {

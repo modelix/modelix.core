@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade;
 import org.modelix.model.api.IWriteTransaction;
+import org.modelix.model.data.NodeData;
 import org.modelix.model.mpsadapters.mps.SConceptAdapter;
 import jetbrains.mps.project.Project;
 import jetbrains.mps.project.ProjectManager;
@@ -27,6 +28,7 @@ import org.jetbrains.mps.openapi.language.SContainmentLink;
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory;
 import org.jetbrains.mps.openapi.language.SProperty;
 import org.jetbrains.mps.openapi.language.SConcept;
+import org.modelix.model.mpsadapters.mps.SModelAsNode;
 
 public class ModelsSynchronizer extends Synchronizer<SModel> {
 
@@ -105,6 +107,7 @@ public class ModelsSynchronizer extends Synchronizer<SModel> {
   public long createCloudChild(IWriteTransaction t, SModel mpsChild) {
     long modelNodeId = t.addNewChild(getCloudParentId(), LINKS.models$h3QT.getName(), -1, SConceptAdapter.wrap(CONCEPTS.Model$2P));
     t.setProperty(modelNodeId, PROPS.id$lDUo.getName(), mpsChild.getModelId().toString());
+    t.setProperty(modelNodeId, NodeData.ORIGINAL_NODE_ID_KEY, new SModelAsNode(mpsChild).getReference().serialize());
     t.setProperty(modelNodeId, PROPS.name$MnvL.getName(), mpsChild.getName().getValue());
     return modelNodeId;
   }

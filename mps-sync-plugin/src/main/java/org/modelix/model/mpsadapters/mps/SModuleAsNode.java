@@ -356,6 +356,12 @@ public class SModuleAsNode extends TreeElementAsNode<SModule> {
       return this.moduleRef;
     }
 
+    @NotNull
+    @Override
+    public String serialize() {
+      return "mps-module:" + moduleRef;
+    }
+
     @Nullable
     @Override
     public INode resolveNode(@Nullable IArea area) {

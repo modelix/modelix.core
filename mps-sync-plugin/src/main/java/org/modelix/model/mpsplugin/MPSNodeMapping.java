@@ -4,6 +4,8 @@ package org.modelix.model.mpsplugin;
 
 import org.modelix.model.api.INode;
 import org.jetbrains.mps.openapi.model.SNode;
+import org.modelix.model.data.NodeData;
+import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter;
 
 public class MPSNodeMapping {
   private static final String MPS_NODE_ID_PROPERTY_NAME = ModelSynchronizer.MPS_NODE_ID_PROPERTY_NAME;
@@ -11,6 +13,7 @@ public class MPSNodeMapping {
   }
   public static void mapToMpsNode(final INode _this, SNode mpsNode) {
     _this.setPropertyValue(MPS_NODE_ID_PROPERTY_NAME, mpsNode.getNodeId().toString());
+    _this.setPropertyValue(NodeData.ORIGINAL_NODE_ID_KEY, SNodeToNodeAdapter.wrap(mpsNode).getReference().serialize());
   }
   public static String mappedMpsNodeID(final INode _this) {
     try {

@@ -99,6 +99,12 @@ public class JavaModuleFacetAsNode extends TreeElementAsNode<JavaModuleFacet> {
       this.moduleReference = moduleReference;
     }
 
+    @NotNull
+    @Override
+    public String serialize() {
+      return "mps-java-facet:" + moduleReference;
+    }
+
     @Nullable
     @Override
     public INode resolveNode(@Nullable IArea area) {

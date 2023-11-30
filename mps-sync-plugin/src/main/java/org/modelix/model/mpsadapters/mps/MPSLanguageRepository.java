@@ -61,4 +61,9 @@ public class MPSLanguageRepository implements ILanguageRepository {
     });
     return result;
   }
+
+  @Override
+  public int getPriority() {
+    return 1000 - 1; // org.modelix.model.mpsadapters.MPSLanguageRepository has 1000
+  }
 }

@@ -107,6 +107,12 @@ public class ProjectAsNode extends TreeElementAsNode<MPSProject> {
       this.path = path;
     }
 
+    @NotNull
+    @Override
+    public String serialize() {
+      return "mps-project:" + projectName;
+    }
+
     public String getProjectName() {
       return this.projectName;
     }

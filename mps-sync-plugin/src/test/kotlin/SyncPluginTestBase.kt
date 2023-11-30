@@ -23,8 +23,12 @@ import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import jetbrains.mps.core.tool.environment.util.SetLibraryContributor
+import jetbrains.mps.ide.MPSCoreComponents
 import jetbrains.mps.ide.project.ProjectHelper
+import jetbrains.mps.library.contributor.LibDescriptor
 import jetbrains.mps.project.MPSProject
+import jetbrains.mps.vfs.impl.IoFileSystem
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client2.IModelClientV2
@@ -70,6 +74,24 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             Disposer.dispose(syncService)
         }
     }
+
+    override fun setUpProject() {
+        super.setUpProject()
+
+        @Suppress("removal")
+        MPSCoreComponents.getInstance().getLibraryInitializer().load(
+            listOf(
+                SetLibraryContributor.fromSet(
+                    "repositoryconcepts",
+                    setOf(
+                        LibDescriptor(IoFileSystem.INSTANCE.getFile("repositoryconcepts")),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    override fun runInDispatchThread(): Boolean = false
 
     override fun isCreateDirectoryBasedProject(): Boolean = true
 

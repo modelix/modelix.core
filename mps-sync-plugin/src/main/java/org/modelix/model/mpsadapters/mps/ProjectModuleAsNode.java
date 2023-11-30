@@ -93,6 +93,12 @@ public class ProjectModuleAsNode extends TreeElementAsNode<Tuples._2<MPSProject,
       this.moduleRef = moduleRef;
     }
 
+    @NotNull
+    @Override
+    public String serialize() {
+      return "mps-project-module:" + moduleRef + "#IN#" + projectRef.serialize();
+    }
+
     public SModuleReference getModuleRef() {
       return this.moduleRef;
     }

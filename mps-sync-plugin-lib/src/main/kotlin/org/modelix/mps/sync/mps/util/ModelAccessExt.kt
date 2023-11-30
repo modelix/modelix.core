@@ -28,18 +28,26 @@ fun ModelAccess.runReadBlocking(callback: Runnable) = runBlocking(this::runReadA
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun ModelAccess.runWriteActionInEDTBlocking(callback: Runnable) =
-    runBlocking(this::runWriteAction) {
+    runBlocking(this::runWriteAction) { latch ->
         this.executeCommandInEDT {
             callback.run()
+            latch.countDown()
         }
     }
 
-private fun runBlocking(mpsAction: (Runnable) -> Unit, callback: Runnable) {
+private fun runBlocking(
+    mpsAction: (Runnable) -> Unit,
+    callback: Runnable? = null,
+    callbackWithLatch: ((CountDownLatch) -> Unit)? = null,
+) {
     val latch = CountDownLatch(1)
     try {
         mpsAction {
-            callback.run()
-            latch.countDown()
+            callback?.let {
+                it.run()
+                latch.countDown()
+            }
+            callbackWithLatch?.invoke(latch)
         }
     } catch (t: Throwable) {
         latch.countDown()

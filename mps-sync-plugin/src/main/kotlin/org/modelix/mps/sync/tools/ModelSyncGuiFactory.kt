@@ -25,6 +25,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
@@ -218,8 +219,18 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 // todo
             }
             bindingsPanel.add(unbindButton)
-            inputBox.add(bindingsPanel)
 
+            // TODO remove TextField and Button that were used only for test purposes (shouldn't be in the plugin)
+            val nodeId = JBTextField(20)
+            val moveButton = JButton("Don't press me")
+            moveButton.background = JBColor.RED
+            moveButton.addActionListener { _: ActionEvent? ->
+                modelSyncService.moveNode(nodeId.text)
+            }
+            bindingsPanel.add(moveButton)
+            bindingsPanel.add(nodeId)
+
+            inputBox.add(bindingsPanel)
             return inputBox
         }
 

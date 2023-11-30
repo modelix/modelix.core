@@ -29,7 +29,9 @@ class SyncServiceImpl : SyncService {
     private var log: Logger = logger<SyncServiceImpl>()
 
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
-    public var clientBindingMap: MutableMap<ModelClientV2, MutableList<BindingImpl>> = mutableMapOf()
+    var clientBindingMap: MutableMap<ModelClientV2, MutableList<BindingImpl>> = mutableMapOf()
+
+    private lateinit var replicatedModel: ReplicatedModel
 
     // todo add afterActivate to allow async refresh
     suspend fun connectToModelServer(
@@ -78,7 +80,7 @@ class SyncServiceImpl : SyncService {
 
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         runBlocking(coroutineScope.coroutineContext) {
-            val replicatedModel: ReplicatedModel = client.getReplicatedModel(branchReference)
+            replicatedModel = client.getReplicatedModel(branchReference)
             replicatedModel.start()
 
             val isSynchronizing = AtomicReference<Boolean>()
@@ -106,7 +108,7 @@ class SyncServiceImpl : SyncService {
         clientBindingMap.keys.forEach { it: ModelClientV2 -> it.close() }
     }
 
-    suspend fun removeServerConnectionAndAllBindings(serverURL: URL) {
+    fun removeServerConnectionAndAllBindings(serverURL: URL) {
         val foundClient = clientBindingMap.keys.find { it.baseUrl.equals(serverURL) } ?: return
 
         // TODO do a proper binding removal here?
@@ -116,9 +118,51 @@ class SyncServiceImpl : SyncService {
 
         clientBindingMap.remove(foundClient)
     }
+
+    @Deprecated("TODO: remove this method")
+    override fun moveNode(nodeId: String) {
+        val branch = replicatedModel.getBranch()
+
+        /*
+        // move scheduling child from one Lecture to another
+        val nodeId = 17179869198L
+        val childNode = branch.getNode(nodeId)
+        var childLink: IChildLink? = null
+        branch.runReadT {
+            childLink = childNode.getContainmentLink()
+        }
+
+        // delete old schedule
+        val parentNode = branch.getNode(17179869190)
+        branch.runWrite {
+            parentNode.getChildren(childLink!!).forEach { it.remove() }
+        }
+
+        // add new schedule
+        val parentNodeId = parentNode.nodeIdAsLong()
+        branch.runWriteT { transaction ->
+            transaction.moveChild(parentNodeId, childLink?.getSimpleName(), -1, nodeId)
+        }*/
+
+        /*
+        // move a LectureList from model root to a child node
+        val lectureListToMoveNodeId = nodeId.toLong()
+        val newParentNodeId = 17179869190
+        branch.runWriteT { transaction ->
+            transaction.moveChild(newParentNodeId, "sublecturelist", -1, lectureListToMoveNodeId)
+        }
+         */
+
+        // move a LectureList from childNode to model root
+        val lectureListToMoveNodeId = nodeId.toLong()
+        val modelNodeId = 17179869185
+        branch.runWriteT { transaction ->
+            transaction.moveChild(modelNodeId, null, -1, lectureListToMoveNodeId)
+        }
+    }
 }
 
-@UnstableModelixFeature(reason = "The new mod elix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class BindingImpl(
     val replicatedModel: ReplicatedModel,
     project: MPSProject,

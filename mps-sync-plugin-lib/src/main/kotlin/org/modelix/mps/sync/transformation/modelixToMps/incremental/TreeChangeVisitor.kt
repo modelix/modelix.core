@@ -180,9 +180,7 @@ class TreeChangeVisitor(
                     }
                     modelAccess.runWriteActionCommandBlocking {
                         // remove from old parent
-                        // TODO test me: old parent is a simple node
                         sNode.parent?.removeChild(sNode)
-                        // TODO test me: old parent is a model
                         sNode.model?.removeRootNode(sNode)
 
                         // add to new parent
@@ -194,9 +192,7 @@ class TreeChangeVisitor(
                 if (newParentModel != null) {
                     modelAccess.runWriteActionCommandBlocking {
                         // remove from old parent
-                        // TODO test me: old parent is a model
                         sNode.model?.removeRootNode(sNode)
-                        // TODO test me: old parent is a simple node
                         sNode.parent?.removeChild(sNode)
 
                         // add to new parent

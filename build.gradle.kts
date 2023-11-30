@@ -182,8 +182,8 @@ allprojects {
     repositories {
         mavenLocal()
         maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
-        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
         mavenCentral()
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
     }
 
     publishing {

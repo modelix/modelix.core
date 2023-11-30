@@ -23,7 +23,6 @@ import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
-import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
@@ -33,8 +32,7 @@ import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.util.runReadBlocking
-import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
-import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
+import org.modelix.mps.sync.mps.util.runWriteActionCommandBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
@@ -81,7 +79,7 @@ class TreeChangeVisitor(
             }
             val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
 
-            modelAccess.runWriteActionInEDTBlocking {
+            modelAccess.runWriteActionCommandBlocking {
                 sNode.setReferenceTarget(sReferenceLink!!, targetSNode)
             }
         }
@@ -100,7 +98,7 @@ class TreeChangeVisitor(
             var value: String? = null
             getBranch().runRead { value = iNode.getPropertyValue(iProperty) }
 
-            modelAccess.runWriteActionInEDTBlocking {
+            modelAccess.runWriteActionCommandBlocking {
                 sNode.setProperty(sProperty!!, value)
             }
         }
@@ -110,7 +108,7 @@ class TreeChangeVisitor(
         isSynchronizing.runIfAlone(::handleThrowable) {
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
-                modelAccess.runWriteActionInEDTBlocking {
+                modelAccess.runWriteActionCommandBlocking {
                     it.delete()
                     nodeMap.remove(nodeId)
                 }
@@ -151,11 +149,13 @@ class TreeChangeVisitor(
     }
 
     override fun childrenChanged(nodeId: Long, role: String?) {
-        modelTransformer.resolveModelImports(languageRepository.repository)
-        modelTransformer.clearResolvableModelImports()
+        isSynchronizing.runIfAlone(::handleThrowable) {
+            modelTransformer.resolveModelImports(languageRepository.repository)
+            modelTransformer.clearResolvableModelImports()
 
-        nodeTransformer.resolveReferences()
-        nodeTransformer.clearResolvableReferences()
+            nodeTransformer.resolveReferences()
+            nodeTransformer.clearResolvableReferences()
+        }
     }
 
     override fun containmentChanged(nodeId: Long) {
@@ -169,13 +169,8 @@ class TreeChangeVisitor(
 
             val sNode = nodeMap.getNode(nodeId)
             if (sNode != null) {
-                var oldParent: SNode? = null
-                modelAccess.runReadBlocking { oldParent = sNode.parent }
-                modelAccess.runWriteInEDTBlocking { oldParent?.removeChild(sNode) }
-
                 val newParentNode = nodeMap.getNode(newParentId)
                 if (newParentNode != null) {
-                    // TODO do we have to remove it from old parent or MPS takes care of that?
                     var containment: SContainmentLink? = null
                     getBranch().runRead {
                         containment =
@@ -183,25 +178,46 @@ class TreeChangeVisitor(
                                 it.name == iNode.getContainmentLink()!!.getSimpleName()
                             }
                     }
-                    modelAccess.runWriteActionInEDTBlocking { newParentNode.addChild(containment!!, sNode) }
+                    modelAccess.runWriteActionCommandBlocking {
+                        // remove from old parent
+                        // TODO test me: old parent is a simple node
+                        sNode.parent?.removeChild(sNode)
+                        // TODO test me: old parent is a model
+                        sNode.model?.removeRootNode(sNode)
+
+                        // add to new parent
+                        newParentNode.addChild(containment!!, sNode)
+                    }
                 }
 
                 val newParentModel = nodeMap.getModel(newParentId)
                 if (newParentModel != null) {
-                    // TODO do we have to remove it from old parent or MPS takes care of that?
-                    modelAccess.runWriteActionInEDTBlocking {
+                    modelAccess.runWriteActionCommandBlocking {
+                        // remove from old parent
+                        // TODO test me: old parent is a model
+                        sNode.model?.removeRootNode(sNode)
+                        // TODO test me: old parent is a simple node
+                        sNode.parent?.removeChild(sNode)
+
+                        // add to new parent
                         newParentModel.addRootNode(sNode)
                     }
                 }
             } else {
                 val sModel = nodeMap.getModel(nodeId)
                 val newParentModule = nodeMap.getModule(newParentId)
-                // TODO test for the case when moving model to a new module
                 if (sModel != null && newParentModule != null) {
-                    // TODO do we have to remove it from old parent or MPS takes care of that?
                     require(sModel is SModelBase) { "Model ${sModel.modelId} is not an SModelBase" }
+
+                    // remove from old parent
+                    // TODO test me: old parent is another module
+                    val oldParentModule = sModel.module
+                    require(oldParentModule is SModuleBase) { "Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase" }
+                    oldParentModule.unregisterModel(sModel)
+
+                    // add to new parent
                     require(newParentModule is SModuleBase) { "New parent Module ${newParentModule.moduleId} is not an SModuleBase" }
-                    modelAccess.runWriteInEDTBlocking {
+                    modelAccess.runWriteActionCommandBlocking {
                         newParentModule.registerModel(sModel)
                     }
                 }

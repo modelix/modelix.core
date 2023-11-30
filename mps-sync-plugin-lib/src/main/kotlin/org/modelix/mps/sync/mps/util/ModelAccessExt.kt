@@ -27,6 +27,15 @@ fun ModelAccess.runWriteInEDTBlocking(callback: Runnable) = runBlocking(this::ru
 fun ModelAccess.runReadBlocking(callback: Runnable) = runBlocking(this::runReadAction, callback)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun ModelAccess.runWriteActionCommandBlocking(callback: Runnable) =
+    runBlocking(this::runWriteAction) { latch ->
+        this.executeCommand {
+            callback.run()
+            latch.countDown()
+        }
+    }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun ModelAccess.runWriteActionInEDTBlocking(callback: Runnable) =
     runBlocking(this::runWriteAction) { latch ->
         this.executeCommandInEDT {

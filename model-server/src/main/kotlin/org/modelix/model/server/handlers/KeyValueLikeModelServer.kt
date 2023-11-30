@@ -109,7 +109,11 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                 get("/get/{key}") {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
-                    val value = storeClient[key]
+                    val value = if (key == "server-id" || key == "repositoryId") {
+                        repositoriesManager.getServerId()
+                    } else {
+                        storeClient[key]
+                    }
                     respondValue(key, value)
                 }
 

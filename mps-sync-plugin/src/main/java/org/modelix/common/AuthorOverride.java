@@ -13,7 +13,7 @@ public class AuthorOverride {
   }
 
   public static String apply(String author) {
-    String override = AUTHOR.getValue();
+    String override = AUTHOR.getValueOrNull();
     if ((override != null && override.length() > 0)) {
       return override;
     }

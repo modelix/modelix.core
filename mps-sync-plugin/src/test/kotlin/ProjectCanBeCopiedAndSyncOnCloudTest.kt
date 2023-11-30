@@ -14,28 +14,44 @@
  * limitations under the License.
  */
 
+import io.ktor.http.Url
 import junit.framework.TestCase
-import org.modelix.kotlin.utils.UnstableModelixFeature
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 
-@OptIn(UnstableModelixFeature::class)
-abstract class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF") {
+class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF") {
 
     fun testInitialSyncToServer() = runTestWithSyncService { syncService ->
-        val modelClient = syncService.syncService.getAllClients().single()
+        val json = Json { prettyPrint = true }
+
         val mpsProject = getMPSProject()
+        val dumpFromMPS: NodeData = MPSProjectAsNode(mpsProject).asData()
+            .copy(role = "")
+        json.encodeToString(dumpFromMPS).lineSequence().forEach { println("MPS   : $it") }
+
 //        TestCase.assertEquals("SimpleProjectF", mpsProject.name)
-        TestCase.assertEquals(0, syncService.getBindingList().size)
+//        TestCase.assertEquals(0, syncService.getBindingList().size)
         val module = mpsProject.projectModules.single()
         TestCase.assertEquals("simple.solution1", module.moduleName)
         val branchRef = RepositoryId("default").getBranchReference()
-        val binding = syncService.bindProject(mpsProject, branchRef)
-        binding.flush()
-        val versionOnServer = modelClient.pull(branchRef, null)
-        val dumpFromServer = versionOnServer.getTree().asData()
-        val dumpFromMPS = MPSProjectAsNode(mpsProject).asData()
-        TestCase.assertEquals(dumpFromMPS, dumpFromServer)
+
+        syncService.connectServer(httpClient, Url("http://localhost/"))
+            .newBranchConnection(branchRef)
+            .bindProject(mpsProject, null)
+            .flush()
+
+        val dumpFromServer = runWithNewConnection { client ->
+            val versionOnServer = client.pull(branchRef, null)
+            versionOnServer.getTree().asData()
+        }
+            .root // the node with ID ITree.ROOT_ID
+            .children.single() // the project node
+            .copy(role = "")
+        json.encodeToString(dumpFromServer).lineSequence().forEach { println("Server: $it") }
+        TestCase.assertEquals(json.encodeToString(dumpFromMPS), json.encodeToString(dumpFromServer))
     }
 }

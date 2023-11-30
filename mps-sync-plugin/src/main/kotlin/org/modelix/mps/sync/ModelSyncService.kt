@@ -19,8 +19,10 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.util.Disposer
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.http.Url
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
@@ -28,19 +30,166 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.mps.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
+import org.modelix.model.api.IProperty
+import org.modelix.model.api.getRootNode
 import org.modelix.model.api.runSynchronized
+import org.modelix.model.client.ActiveBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter
+import org.modelix.model.mpsplugin.CloudRepository
+import org.modelix.model.mpsplugin.ModelServerConnections
+import org.modelix.model.mpsplugin.ProjectBinding
+import org.modelix.model.mpsplugin.SyncDirection
+import org.modelix.mps.sync.api.IBranchConnection
+import org.modelix.mps.sync.api.IModelServerConnection
+import org.modelix.mps.sync.api.IModuleBinding
+import org.modelix.mps.sync.api.ISyncService
 import java.net.ConnectException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 @Service(Service.Level.APP)
-class ModelSyncService : Disposable {
+class ModelSyncService : Disposable, ISyncService {
+
+    private var serverConnections: List<ServerConnection> = emptyList()
+
+    override fun getBindings(): List<org.modelix.mps.sync.api.IBinding> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getConnections(): List<IModelServerConnection> {
+        return serverConnections
+    }
+
+    @Synchronized
+    override fun connectServer(httpClient: HttpClient?, baseUrl: Url): IModelServerConnection {
+        return ServerConnection(httpClient, baseUrl.toString()).also {
+            Disposer.register(this, it)
+            serverConnections += it
+        }
+    }
+
+    private inner class ServerConnection(httpClient: HttpClient?, url: String) : IModelServerConnection {
+        private val legacyConnection = ModelServerConnections.getInstance().addModelServer(url, httpClient)
+        private val legacyActiveBranches: MutableMap<RepositoryId, ActiveBranchAdapter> = HashMap()
+
+        override fun getActiveBranches(): List<IBranchConnection> {
+            return legacyActiveBranches.values.toList()
+        }
+
+        override fun newBranchConnection(branchRef: BranchReference): IBranchConnection {
+            val repositoryId = branchRef.repositoryId
+            synchronized(legacyActiveBranches) {
+                check(legacyActiveBranches[repositoryId] == null) {
+                    "Currently, only one branch connection is supported per repository"
+                }
+                return ActiveBranchAdapter(repositoryId, legacyConnection.getActiveBranch(repositoryId)).also {
+                    Disposer.register(this, it)
+                    legacyActiveBranches[repositoryId] = it
+                }
+            }
+        }
+
+        override fun listRepositories(): List<RepositoryId> {
+            val infoBranch = legacyConnection.infoBranch
+            val ids = infoBranch.computeRead {
+                legacyConnection.allRepositories.map {
+                    SNodeToNodeAdapter.wrap(it).getPropertyValue(IProperty.fromName("id"))
+                }
+            }
+            return ids.filterNotNull().map { RepositoryId(it) }
+        }
+
+        override fun listBranches(): List<BranchReference> {
+            val infoBranch = legacyConnection.infoBranch
+            return infoBranch.computeRead {
+                legacyConnection.allRepositories.map { SNodeToNodeAdapter.wrap(it) }
+                    .flatMap { repoNode ->
+                        val repoId = RepositoryId(repoNode.getPropertyValue(IProperty.fromName("id"))!!)
+                        repoNode.getChildren(IChildLink.fromName("branches")).map { branchNode ->
+                            repoId.getBranchReference(branchNode.getPropertyValue(IProperty.fromName("name")))
+                        }
+                    }
+            }
+        }
+
+        override fun listBranches(repository: RepositoryId): List<BranchReference> {
+            return listBranches().filter { it.repositoryId == repository }
+        }
+
+        override fun dispose() {
+            serverConnections -= this
+            ModelServerConnections.getInstance().removeModelServer(legacyConnection)
+        }
+
+        private inner class ActiveBranchAdapter(val repositoryId: RepositoryId, val legacyActiveBranch: ActiveBranch) : IBranchConnection {
+            private val bindings: MutableList<org.modelix.mps.sync.api.IBinding> = ArrayList()
+
+            override fun getServerConnection(): IModelServerConnection {
+                return this@ServerConnection
+            }
+
+            override fun switchBranch(branchName: String) {
+                legacyActiveBranch.switchBranch(branchName)
+            }
+
+            override fun bindProject(mpsProject: Project, existingProjectNodeId: Long?): org.modelix.mps.sync.api.IBinding {
+                val mpsProject = mpsProject as MPSProject
+                val treeInRepository = CloudRepository(legacyConnection, repositoryId)
+                val legacyBinding = if (existingProjectNodeId == null) {
+                    ProjectBinding(mpsProject, 0L, SyncDirection.TO_CLOUD)
+                } else {
+                    ProjectBinding(mpsProject, existingProjectNodeId, SyncDirection.TO_MPS)
+                }
+                treeInRepository.addBinding(legacyBinding)
+                return ProjectBindingAdapter(legacyBinding).also {
+                    Disposer.register(this, it)
+                    synchronized(bindings) {
+                        bindings += it
+                    }
+                }
+            }
+
+            override fun bindTransientModule(): IModuleBinding {
+                TODO("Not yet implemented")
+            }
+
+            override fun <R> readModel(body: (INode) -> R): R {
+                val branch = legacyActiveBranch.branch
+                return branch.computeRead { body(branch.getRootNode()) }
+            }
+
+            override fun <R> writeModel(body: (INode) -> R): R {
+                val branch = legacyActiveBranch.branch
+                return branch.computeWrite { body(branch.getRootNode()) }
+            }
+
+            override fun dispose() {
+                legacyActiveBranches -= repositoryId
+                legacyActiveBranch.dispose()
+            }
+
+            inner class ProjectBindingAdapter(val legacyBinding: ProjectBinding) : org.modelix.mps.sync.api.IBinding {
+                override fun getConnection(): IBranchConnection {
+                    return this@ActiveBranchAdapter
+                }
+
+                override suspend fun flush() {
+                    legacyBinding.rootBinding.syncQueue.flush()
+                }
+
+                override fun dispose() {
+                    legacyBinding.deactivate(null)
+                }
+            }
+        }
+    }
 
     private var log: Logger = logger<ModelSyncService>()
     private val coroutineScope = CoroutineScope(Dispatchers.Default)

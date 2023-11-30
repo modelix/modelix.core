@@ -17,6 +17,7 @@
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.HeavyPlatformTestCase
+import io.ktor.client.HttpClient
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -26,14 +27,23 @@ import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.client2.IModelClientV2
+import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.LocalModelClient
 import org.modelix.mps.sync.ModelSyncService
+import org.modelix.mps.sync.api.ISyncService
 import java.io.File
 import java.nio.file.Path
 
 @OptIn(UnstableModelixFeature::class)
 abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlatformTestCase() {
+    protected lateinit var httpClient: HttpClient
+    protected lateinit var syncService: ISyncService
+
     protected fun runTestWithModelServer(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
@@ -41,16 +51,20 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
                 json()
             }
             install(io.ktor.server.websocket.WebSockets)
-            ModelReplicationServer(InMemoryStoreClient()).init(this)
+            val repositoriesManager = RepositoriesManager(LocalModelClient(InMemoryStoreClient()))
+            ModelReplicationServer(repositoriesManager).init(this)
+            KeyValueLikeModelServer(repositoriesManager).init(this)
         }
+        httpClient = client
         block()
     }
 
-    protected fun runTestWithSyncService(body: suspend (ModelSyncService) -> Unit) = runTestWithModelServer {
+    protected fun runTestWithSyncService(body: suspend (ISyncService) -> Unit) = runTestWithModelServer {
         val syncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
         try {
             syncService.ensureStarted()
             syncService.connectModelServerSuspending(client, "http://localhost/v2/", null)
+            this@SyncPluginTestBase.syncService = syncService
             body(syncService)
         } finally {
             Disposer.dispose(syncService)
@@ -72,5 +86,10 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
 
     protected fun getMPSProject(): MPSProject {
         return checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPS project not loaded" }
+    }
+
+    protected suspend fun <R> runWithNewConnection(body: suspend (IModelClientV2) -> R): R {
+        val client = ModelClientV2.builder().client(httpClient).url("http://localhost/v2/").build()
+        return client.use { body(it) }
     }
 }

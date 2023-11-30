@@ -24,10 +24,10 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 @OptIn(UnstableModelixFeature::class)
 class TestInfrastructureTests : SyncPluginTestBase(null) {
 
-    fun testEstablishConnection() = runTestWithSyncService { syncService ->
-        val modelClient = syncService.syncService.getAllClients().single()
-        TestCase.assertNotSame(0, modelClient.getClientId())
-    }
+//    fun testEstablishConnection() = runTestWithSyncService { syncService ->
+//        val modelClient = syncService.syncService.getAllClients().single()
+//        TestCase.assertNotSame(0, modelClient.getClientId())
+//    }
 
     fun testGlobalModulesLoaded() {
         val repository = getMPSProject().repository

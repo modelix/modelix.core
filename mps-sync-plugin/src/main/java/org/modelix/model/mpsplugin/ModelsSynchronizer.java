@@ -8,6 +8,7 @@ import org.jetbrains.mps.openapi.model.SModel;
 import org.jetbrains.mps.openapi.module.SModule;
 import jetbrains.mps.internal.collections.runtime.ListSequence;
 import jetbrains.mps.internal.collections.runtime.IWhereFilter;
+import org.modelix.model.api.IProperty;
 import org.modelix.model.api.ITree;
 import org.jetbrains.mps.openapi.model.SModelId;
 import jetbrains.mps.model.ModelDeleteHelper;
@@ -29,6 +30,7 @@ import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory;
 import org.jetbrains.mps.openapi.language.SProperty;
 import org.jetbrains.mps.openapi.language.SConcept;
 import org.modelix.model.mpsadapters.mps.SModelAsNode;
+import org.modelix.model.mpsadapters.mps.SModuleAsNode;
 
 public class ModelsSynchronizer extends Synchronizer<SModel> {
 
@@ -106,6 +108,10 @@ public class ModelsSynchronizer extends Synchronizer<SModel> {
   @Override
   public long createCloudChild(IWriteTransaction t, SModel mpsChild) {
     long modelNodeId = t.addNewChild(getCloudParentId(), LINKS.models$h3QT.getName(), -1, SConceptAdapter.wrap(CONCEPTS.Model$2P));
+    SModelAsNode modelAsNode = new SModelAsNode(mpsChild);
+    for (IProperty property : modelAsNode.getConcept().getAllProperties()) {
+      t.setProperty(modelNodeId, property.getName(), modelAsNode.getPropertyValue(property.getName()));
+    }
     t.setProperty(modelNodeId, PROPS.id$lDUo.getName(), mpsChild.getModelId().toString());
     t.setProperty(modelNodeId, NodeData.ORIGINAL_NODE_ID_KEY, new SModelAsNode(mpsChild).getReference().serialize());
     t.setProperty(modelNodeId, PROPS.name$MnvL.getName(), mpsChild.getName().getValue());

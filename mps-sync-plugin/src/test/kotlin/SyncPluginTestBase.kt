@@ -16,7 +16,9 @@
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
+import com.intellij.testFramework.EdtTestUtil
 import com.intellij.testFramework.HeavyPlatformTestCase
+import com.intellij.testFramework.runInEdtAndWait
 import io.ktor.client.HttpClient
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
@@ -89,6 +91,12 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
                 ),
             ),
         )
+    }
+
+    override fun tearDown() {
+        runInEdtAndWait {
+            super.tearDown()
+        }
     }
 
     override fun runInDispatchThread(): Boolean = false

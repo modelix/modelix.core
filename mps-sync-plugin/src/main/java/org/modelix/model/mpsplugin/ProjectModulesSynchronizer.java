@@ -8,6 +8,7 @@ import java.util.List;
 import jetbrains.mps.internal.collections.runtime.ListSequence;
 import jetbrains.mps.internal.collections.runtime.IWhereFilter;
 import jetbrains.mps.project.Solution;
+import org.modelix.model.api.IProperty;
 import org.modelix.model.api.ITree;
 import jetbrains.mps.internal.collections.runtime.Sequence;
 import org.modelix.model.api.IConcept;
@@ -127,8 +128,12 @@ public class ProjectModulesSynchronizer extends Synchronizer<SModule> {
   @Override
   public long createCloudChild(IWriteTransaction t, SModule mpsChild) {
     long modelNodeId = t.addNewChild(getCloudParentId(), LINKS.modules$Bi3g.getName(), -1, SConceptAdapter.wrap(CONCEPTS.Module$4i));
+    SModuleAsNode moduleAsNode = new SModuleAsNode(mpsChild);
+    for (IProperty property : moduleAsNode.getConcept().getAllProperties()) {
+      t.setProperty(modelNodeId, property.getName(), moduleAsNode.getPropertyValue(property.getName()));
+    }
     t.setProperty(modelNodeId, PROPS.id$7MjP.getName(), mpsChild.getModuleId().toString());
-    t.setProperty(modelNodeId, NodeData.ORIGINAL_NODE_ID_KEY, new SModuleAsNode(mpsChild).getReference().serialize());
+    t.setProperty(modelNodeId, NodeData.ORIGINAL_NODE_ID_KEY, moduleAsNode.getReference().serialize());
     t.setProperty(modelNodeId, PROPS.name$MnvL.getName(), mpsChild.getModuleName());
     return modelNodeId;
   }

@@ -15,6 +15,9 @@
  */
 
 import io.ktor.http.Url
+import jetbrains.mps.project.modules.SolutionProducer
+import jetbrains.mps.smodel.SModelId
+import jetbrains.mps.vfs.impl.IoFileSystem
 import junit.framework.TestCase
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -27,6 +30,10 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.mps.MPSLanguageRepository
 import org.modelix.model.mpsadapters.mps.SModuleAsNode
 import org.modelix.model.mpsadapters.plugin.MPSNodeReferenceSerializer
+import org.modelix.model.mpsplugin.SModuleUtils
+import java.nio.file.Path
+import java.util.UUID
+import kotlin.io.path.absolutePathString
 
 class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF") {
 
@@ -41,7 +48,7 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
 
         TestCase.assertEquals(mpsProject.projectModules.size, projectAsNode.getChildren(IChildLink.fromName("projectModules")).count())
 
-        val dumpFromMPS = projectAsNode.getArea().executeRead {
+        fun dumpMpsProject() = readAction {
             projectAsNode.asData(includeChildren = false)
                 .copy(
                     id = null,
@@ -50,27 +57,56 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
                 )
         }
 
+        val dumpFromMPS = dumpMpsProject()
+
 //        TestCase.assertEquals("SimpleProjectF", mpsProject.name)
 //        TestCase.assertEquals(0, syncService.getBindingList().size)
         val module = mpsProject.projectModules.single()
         TestCase.assertEquals("simple.solution1", module.moduleName)
         val branchRef = RepositoryId("default").getBranchReference()
 
-        syncService.connectServer(httpClient, Url("http://localhost/"))
+        val projectBinding = syncService.connectServer(httpClient, Url("http://localhost/"))
             .newBranchConnection(branchRef)
             .bindProject(mpsProject, null)
-            .flush()
+        projectBinding.flush()
 
-        val dumpFromServer = runWithNewConnection { client ->
+        suspend fun readDumpFromServer() = runWithNewConnection { client ->
             val versionOnServer = client.pull(branchRef, null)
             versionOnServer.getTree().asData()
         }
             .root // the node with ID ITree.ROOT_ID
             .children.single() // the project node
             .copy(id = null, role = "")
-        TestCase.assertEquals(json.encodeToString(dumpFromMPS.normalize()), json.encodeToString(dumpFromServer.normalize()))
+
+        assertEquals(json.encodeToString(dumpFromMPS.normalize()), json.encodeToString(readDumpFromServer().normalize()))
+
+        suspend fun compareDumps() {
+            assertEquals(json.encodeToString(dumpMpsProject().normalize()), json.encodeToString(readDumpFromServer().normalize()))
+        }
+
+        // create new solution in MPS
+        val newSolution = writeAction {
+            SolutionProducer(mpsProject).create("MyNewModule", projectDir.resolve("MyNewModule").toIFile())
+        }
+        assertEquals(2, mpsProject.projectModules.size)
+        projectBinding.flush()
+        assertEquals(2, mpsProject.projectModules.size)
+        compareDumps()
+
+        // create new model
+        assertEquals(0, readAction { newSolution.models.size })
+        val newModel = writeAction {
+            SModuleUtils.createModel(newSolution, "my.wonderful.brandnew.modelInNewModule", SModelId.regular(UUID.fromString("0c2e757d-5555-4444-8888-a6db9dd85152")))
+        }
+        assertEquals(1, readAction { newSolution.models.size })
+        projectBinding.flush()
+        assertEquals(1, readAction { newSolution.models.size })
+        compareDumps()
     }
 }
+
+@Suppress("removal")
+private fun Path.toIFile() = IoFileSystem.INSTANCE.getFile(this.absolutePathString())
 
 private fun NodeData.normalize(): NodeData {
     val idMap = HashMap<String, String>()

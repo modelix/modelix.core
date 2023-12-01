@@ -108,13 +108,13 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
         compareDumps()
 
         // create new model
-        assertEquals(0, readAction { newSolution.models.size })
+        assertEquals(0, readAction { SModuleUtils.getModelsWithoutDescriptor(newSolution).size })
         val newModel = writeAction {
             SModuleUtils.createModel(newSolution, "my.wonderful.brandnew.modelInNewModule", SModelId.regular(UUID.fromString("8081c614-b145-4cdf-97ff-ce7cf6b979d2")))
         }
-        assertEquals(1, readAction { newSolution.models.size })
+        assertEquals(1, readAction { SModuleUtils.getModelsWithoutDescriptor(newSolution).size })
         projectBinding.flush()
-        assertEquals(1, readAction { newSolution.models.size })
+        assertEquals(1, readAction { SModuleUtils.getModelsWithoutDescriptor(newSolution).size })
         compareDumps()
 
         // remove module from MPS

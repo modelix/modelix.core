@@ -370,7 +370,7 @@ public class NodeToSNodeAdapter implements SNode {
   public void setReference(@NotNull SReferenceLink link, ResolveInfo info) {
     throw new UnsupportedOperationException("Not implemented");
   }
-  @Override
+//  @Override
   public void setReference(@NotNull SReferenceLink link, @NotNull SNodeReference reference) {
     throw new UnsupportedOperationException("Not implemented");
   }

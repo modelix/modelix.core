@@ -38,4 +38,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --build-cache downloadMPS -PciBuild=true -Pmps.version=${{ matrix.version }}
       - name: Build with ${{ matrix.version }}
-        run: ./gradlew --build-cache :mps-model-adapters:build :mps-model-server-plugin:build :mps-sync-plugin:build -Pmps.version=${{ matrix.version }}
+        run: ./gradlew --build-cache mpsCompatibility -PciBuild=true -Pmps.version=${{ matrix.version }}

@@ -79,24 +79,31 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     override fun setUpProject() {
-        super.setUpProject()
-
-        @Suppress("removal")
-        MPSCoreComponents.getInstance().getLibraryInitializer().load(
-            listOf(
-                SetLibraryContributor.fromSet(
-                    "repositoryconcepts",
-                    setOf(
-                        LibDescriptor(IoFileSystem.INSTANCE.getFile("repositoryconcepts")),
+        runInEdtAndWait {
+            super.setUpProject()
+            @Suppress("removal")
+            MPSCoreComponents.getInstance().getLibraryInitializer().load(
+                listOf(
+                    SetLibraryContributor.fromSet(
+                        "repositoryconcepts",
+                        setOf(
+                            LibDescriptor(IoFileSystem.INSTANCE.getFile("repositoryconcepts")),
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
+        }
     }
 
     override fun tearDown() {
         runInEdtAndWait {
             super.tearDown()
+        }
+    }
+
+    override fun setUp() {
+        runInEdtAndWait {
+            super.setUp()
         }
     }
 
@@ -131,6 +138,10 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     protected fun <R> readAction(body: () -> R): R {
-        return getMPSProject().modelAccess.computeReadAction(body)
+        var result: R? = null
+        getMPSProject().modelAccess.runReadAction {
+            result = body()
+        }
+        return result as R
     }
 }

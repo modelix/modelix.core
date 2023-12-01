@@ -107,8 +107,12 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("203")
-        untilBuild.set("231.*")
+        sinceBuild.set("211") // 203 not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
+        untilBuild.set("232")
+    }
+
+    if (mpsVersion >= "2021") {
+        register("mpsCompatibility") { dependsOn("build") }
     }
 
     buildSearchableOptions {

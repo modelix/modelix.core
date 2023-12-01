@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("org.modelix.model-api-gen")
     `maven-publish`
@@ -17,6 +19,17 @@ version = modelixCoreVersion
 
 val mps: Configuration by configurations.creating
 val kotlinGenDir = project.layout.buildDirectory.dir("metamodel/kotlin").get().asFile.apply { mkdirs() }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_11
+    }
+}
 
 dependencies {
     mps("com.jetbrains:mps:2021.2.5")

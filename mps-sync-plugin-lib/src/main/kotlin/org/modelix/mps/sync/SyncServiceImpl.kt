@@ -176,6 +176,13 @@ class SyncServiceImpl : SyncService {
             branch.getNode(4294967309).remove()
         }
          */
+
+        // move LectureList (root node) to a new model
+        val lectureListNodeId = 17179869188
+        val newModelId = nodeId.toLong()
+        branch.runWriteT { transaction ->
+            transaction.moveChild(newModelId, null, -1, lectureListNodeId)
+        }
     }
 }
 

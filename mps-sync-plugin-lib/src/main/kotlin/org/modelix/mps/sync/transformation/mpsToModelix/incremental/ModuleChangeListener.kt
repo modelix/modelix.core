@@ -55,13 +55,19 @@ class ModuleChangeListener(
 
                 val nodeChangeListener = NodeChangeListener(branch, nodeMap, isSynchronizing)
                 model.addChangeListener(nodeChangeListener)
-                (model as? SModelInternal)?.addModelListener(
-                    ModelChangeListener(
-                        branch,
-                        nodeMap,
-                        isSynchronizing,
-                    ),
+                (model as? SModelInternal)?.addModelListener(ModelChangeListener(branch, nodeMap, isSynchronizing))
+
+                cloudModel.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id, model.modelId.toString())
+                cloudModel.setPropertyValue(
+                    BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
+                    model.name.value,
                 )
+                if (model.name.hasStereotype()) {
+                    cloudModel.setPropertyValue(
+                        BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype,
+                        model.name.stereotype,
+                    )
+                }
 
                 // TODO trigger full model synchronization
             }

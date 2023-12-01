@@ -40,7 +40,7 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
     fun transformToModel(iNode: INode) {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-        check(name != null) { "Module's ($iNode) name is null" }
+        check(name != null) { "Model's ($iNode) name is null" }
 
         val moduleId = iNode.getModule()?.nodeIdAsLong()!!
         val module: SModule? = nodeMap.getModule(moduleId)

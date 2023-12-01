@@ -6,10 +6,9 @@ plugins {
 }
 
 group = "org.modelix.mps"
-val mpsZip by configurations.creating
 val mpsVersion = project.findProperty("mps.version").toString()
 val ideaVersion = project.findProperty("mps.platform.version").toString()
-val mpsHome = project.layout.buildDirectory.dir("mps")
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
@@ -25,7 +24,7 @@ dependencies {
     implementation(libs.kotlin.reflect)
 
     // extracting jars from zipped products
-    mpsZip("com.jetbrains:mps:$mpsVersion")
+//    mpsZip("com.jetbrains:mps:$mpsVersion")
 //    val mpsZipTree = zipTree({ mpsZip.singleFile }).matching {
 //        include("lib/**/*.jar")
 //    }
@@ -55,41 +54,12 @@ dependencies {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-
-    // You can only set 'localPath' or 'version'. We want 'localPath', but that has to exist at configuration time.
-    if (mpsHome.get().asFile.exists()) {
-        localPath.set(mpsHome.map { it.asFile.absolutePath })
-    } else {
-        // Tests will fail with this IDE, but after the first 'assemble' run 'mpsHome' exists, so it shouldn't happen
-        // frequently. During CI the 'downloadMPS' task should be executed in a separate run before the actual 'build'.
-        version.set(ideaVersion)
-    }
+    localPath = mpsHome.map { it.asFile.absolutePath }
     instrumentCode = false
-
     plugins = listOf("jetbrains.mps.ide.make")
 }
 
 tasks {
-
-    val downloadMPS = register("downloadMPS", Sync::class.java) {
-        from(zipTree({ mpsZip.singleFile }))
-        into(mpsHome)
-
-        doLast {
-            // The build number of a local IDE is expected to contain a product code, otherwise an exception is thrown.
-            val buildTxt = mpsHome.get().asFile.resolve("build.txt")
-            val buildNumber = buildTxt.readText()
-            val prefix = "MPS-"
-            if (!buildNumber.startsWith(prefix)) {
-                buildTxt.writeText("$prefix$buildNumber")
-            }
-        }
-    }
-
-    compileJava { dependsOn(downloadMPS) }
-    assemble { dependsOn(downloadMPS) }
-    test { dependsOn(downloadMPS) }
-
     // This plugin in intended to be used by all 'supported' MPS versions, as a result we need to use the lowest
     // common java version, which is JAVA 11 to ensure bytecode compatibility.
     // However, when building with MPS >= 2022.3 to ensure compileOnly dependency compatibility, we need to build

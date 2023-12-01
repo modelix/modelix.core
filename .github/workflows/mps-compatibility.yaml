@@ -36,9 +36,5 @@ jobs:
           java-version: '17'
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
-      - name: Download MPS
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --build-cache downloadMPS -PciBuild=true -Pmps.version=${{ matrix.version }}
       - name: Build with ${{ matrix.version }}
         run: ./gradlew --build-cache mpsCompatibility -PciBuild=true -Pmps.version=${{ matrix.version }}

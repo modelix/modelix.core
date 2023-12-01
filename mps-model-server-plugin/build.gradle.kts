@@ -8,28 +8,26 @@ plugins {
 val mpsVersion = project.findProperty("mps.version").toString()
 val ideaVersion = project.findProperty("mps.platform.version").toString()
 val mpsJavaVersion = project.findProperty("mps.java.version").toString()
-val mpsZip by configurations.creating
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
+
 dependencies {
     implementation(project(":model-server-lib"))
     implementation(project(":mps-model-adapters"))
 
-    mpsZip("com.jetbrains:mps:$mpsVersion")
-    val mpsZipTree = zipTree({ mpsZip.singleFile }).matching {
-        include("lib/**/*.jar")
+    val mpsTree = mpsHome.map {
+        it.asFileTree.matching {
+            include("lib/**/*.jar")
+        }
     }
-    compileOnly(mpsZipTree)
+    compileOnly(mpsTree)
 }
 
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-
-    // IDEA platform version used in MPS 2021.1.4: https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties#L11
-    version.set(ideaVersion)
-
-    // type.set("IC") // Target IDE Platform
-
+    localPath = mpsHome.map { it.asFile.absolutePath }
     // plugins.set(listOf("jetbrains.mps.core", "com.intellij.modules.mps"))
+    instrumentCode = false
 }
 
 java {

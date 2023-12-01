@@ -16,9 +16,10 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.incremental
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.module.SModuleBase
+import jetbrains.mps.model.ModelDeleteHelper
+import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
@@ -46,13 +47,11 @@ import java.util.concurrent.atomic.AtomicReference
 @UnstableModelixFeature(reason = "The new mod elix MPS plugin is under construction", intendedFinalization = "2024.1")
 class TreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
-    project: MPSProject,
+    private val project: MPSProject,
     private val languageRepository: MPSLanguageRepository,
     private val isSynchronizing: AtomicReference<Boolean>,
     private val nodeMap: MpsToModelixMap,
 ) : ITreeChangeVisitorEx {
-
-    private val logger = logger<TreeChangeVisitor>()
 
     private val modelAccess = project.modelAccess
 
@@ -116,18 +115,23 @@ class TreeChangeVisitor(
 
             val sModel = nodeMap.getModel(nodeId)
             sModel?.let {
-                val sModule = sModel.module
-                require(sModel is SModelBase) { "Model ${sModel.modelId} is not SModelBase" }
-                require(sModule is SModuleBase) { "Module ${sModule.moduleId} is not SModuleBase" }
-                sModule.unregisterModel(sModel)
-                nodeMap.remove(nodeId)
+                modelAccess.runWriteActionCommandBlocking {
+                    ModelDeleteHelper(sModel).delete()
+                    nodeMap.remove(nodeId)
+                }
             }
 
             val sModule = nodeMap.getModule(nodeId)
             sModule?.let {
-                require(sModule is SModuleBase) { "Module ${sModule.moduleId} is not SModuleBase" }
-                sModule.dispose()
-                nodeMap.remove(nodeId)
+                modelAccess.runWriteActionCommandBlocking {
+                    sModule.models.forEach { model ->
+                        val modelNodeId = nodeMap[model]
+                        ModelDeleteHelper(model).delete()
+                        modelNodeId?.let { nodeMap.remove(it) }
+                    }
+                    ModuleDeleteHelper(project).deleteModules(listOf(sModule), false, true)
+                    nodeMap.remove(nodeId)
+                }
             }
         }
     }

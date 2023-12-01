@@ -142,7 +142,8 @@ class SyncServiceImpl : SyncService {
         val parentNodeId = parentNode.nodeIdAsLong()
         branch.runWriteT { transaction ->
             transaction.moveChild(parentNodeId, childLink?.getSimpleName(), -1, nodeId)
-        }*/
+        }
+         */
 
         /*
         // move a LectureList from model root to a child node
@@ -153,12 +154,28 @@ class SyncServiceImpl : SyncService {
         }
          */
 
+        /*
         // move a LectureList from childNode to model root
         val lectureListToMoveNodeId = nodeId.toLong()
         val modelNodeId = 17179869185
         branch.runWriteT { transaction ->
             transaction.moveChild(modelNodeId, null, -1, lectureListToMoveNodeId)
         }
+         */
+
+        /*
+        // delete model
+        branch.runWrite{
+            branch.getNode(17179869185).remove()
+        }
+         */
+
+        /*
+        // delete module
+        branch.runWrite {
+            branch.getNode(4294967309).remove()
+        }
+         */
     }
 }
 

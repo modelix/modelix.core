@@ -16,12 +16,15 @@ jobs:
     strategy:
       matrix:
         version:
-          - "2020.3.6"
+# Testing with the first and last version of the supported range should be enough. Breaking changes usually stay there
+# after being introduced. It's not expected that an incompatibility only exists in some intermediate version and then
+# becomes compatible again.
+#          - "2020.3.6" VersionFixer was replaced by ModuleDependencyVersions in 2021.1 (used by model-sync-plugin)
           - "2021.1.4"
-          - "2021.2.6"
-          - "2021.3.3"
-          - "2022.2"
-          - "2022.3"
+#          - "2021.2.6"
+#          - "2021.3.3"
+#          - "2022.2"
+#          - "2022.3"
           - "2023.2"
 
     steps:

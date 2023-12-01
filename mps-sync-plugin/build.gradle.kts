@@ -111,9 +111,7 @@ tasks {
         untilBuild.set("232")
     }
 
-    if (mpsVersion >= "2021") {
-        register("mpsCompatibility") { dependsOn("build") }
-    }
+    register("mpsCompatibility") { dependsOn("build") }
 
     buildSearchableOptions {
         enabled = false

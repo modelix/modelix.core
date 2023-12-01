@@ -117,7 +117,7 @@ public class CommandHelper {
       public SRepository select(Project it) {
         return it.getRepository();
       }
-    }).where((_FunctionTypes._return_P1_E0<Boolean, SRepository>) new NotNullWhereFilter()).first();
+    }).where((_FunctionTypes._return_P1_E0<Boolean, SRepository>) (_FunctionTypes._return_P1_E0) new NotNullWhereFilter()).first();
     return (projectRepo != null ? projectRepo : MPSModuleRepository.getInstance());
   }
 

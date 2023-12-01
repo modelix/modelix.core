@@ -74,7 +74,7 @@ public class SModuleAsNode extends TreeElementAsNode<SModule> {
         public String select(MPSProject it) {
           return check_jbj149_a0a0a0a0b0a0a0f(it.getPath(element));
         }
-      }).where((_FunctionTypes._return_P1_E0<Boolean, String>) new NotNullWhereFilter()).first();
+      }).where((_FunctionTypes._return_P1_E0<Boolean, String>) (_FunctionTypes._return_P1_E0) new NotNullWhereFilter()).first();
       if ("".equals(value)) return null; // default value is returned as not being set to avoid unnecessary synchronization
       return value;
     }
@@ -380,7 +380,7 @@ public class SModuleAsNode extends TreeElementAsNode<SModule> {
           public SRepository select(MPSArea it) {
             return it.getRepository();
           }
-        }).where((_FunctionTypes._return_P1_E0<Boolean, SRepository>) new NotNullWhereFilter()).first();
+        }).where((_FunctionTypes._return_P1_E0<Boolean, SRepository>) (_FunctionTypes._return_P1_E0) new NotNullWhereFilter()).first();
       }
       if (repo.value == null) {
         repo.value = MPSModuleRepository.getInstance();

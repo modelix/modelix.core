@@ -269,7 +269,7 @@ public class SingleLanguageDependencyAsNode implements INode {
           public SRepository select(MPSArea it) {
             return it.getRepository();
           }
-        }).where((_FunctionTypes._return_P1_E0<Boolean, SRepository>) new NotNullWhereFilter()).first();
+        }).where((_FunctionTypes._return_P1_E0<Boolean, SRepository>) (_FunctionTypes._return_P1_E0) new NotNullWhereFilter()).first();
       }
       if (repo == null) {
         repo = MPSModuleRepository.getInstance();

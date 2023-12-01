@@ -64,7 +64,7 @@ public class LoadingIcon implements Icon {
             public MPSTree select(MPSTreeNode it) {
               return it.getTree();
             }
-          }).where((_FunctionTypes._return_P1_E0<Boolean, MPSTree>) new NotNullWhereFilter()).distinct()) {
+          }).where((_FunctionTypes._return_P1_E0<Boolean, MPSTree>) (_FunctionTypes._return_P1_E0) new NotNullWhereFilter()).distinct()) {
             c.repaint();
           }
         }

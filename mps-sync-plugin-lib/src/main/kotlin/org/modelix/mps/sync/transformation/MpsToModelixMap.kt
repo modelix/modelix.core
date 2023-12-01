@@ -28,6 +28,8 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MpsToModelixMap {
 
+    // WARNING: if you add a new Map here, please also add it to the `remove` and `isMappedToMps` methods below
+
     private val sNodeToModelixId = mutableMapOf<SNode, Long>()
     private val modelixIdToSNode = mutableMapOf<Long, SNode>()
 
@@ -108,4 +110,11 @@ class MpsToModelixMap {
         modelixIdToSModuleReference.remove(modelixId)?.let { sModuleReferenceToModelixId.remove(it) }
         modelixIdToSModelReference.remove(modelixId)?.let { sModelReferenceToModelixId.remove(it) }
     }
+
+    fun isMappedToMps(modelixId: Long?) =
+        modelixId != null && (
+            modelixIdToSNode.contains(modelixId) || modelixIdToSModel.contains(modelixId) ||
+                modelixIdToSModelId.contains(modelixId) || modelixIdToSModule.contains(modelixId) ||
+                modelixIdToSModuleReference.contains(modelixId) || modelixIdToSModelReference.contains(modelixId)
+            )
 }

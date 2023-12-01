@@ -63,3 +63,38 @@ fun INode.isModel(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Model)
 }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.isDevKitDependency(): Boolean {
+    val concept = this.concept ?: return false
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.isSingleLanguageDependency(): Boolean {
+    val concept = this.concept ?: return false
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.getModel(): INode? = findNode { it.isModel() }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.getModule(): INode? = findNode { it.isModule() }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+private fun INode.findNode(criterion: (INode) -> Boolean): INode? {
+    if (criterion(this)) {
+        return this
+    }
+
+    var node = this.parent
+    while (node != null) {
+        if (criterion(node)) {
+            return node
+        }
+        node = node.parent
+    }
+
+    return null
+}

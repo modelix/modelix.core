@@ -55,8 +55,8 @@ class TreeChangeVisitor(
 
     private val modelAccess = project.modelAccess
 
-    private val nodeTransformer = NodeTransformer(project, nodeMap, languageRepository)
-    private val modelTransformer = ModelTransformer(project, nodeMap)
+    private val nodeTransformer = NodeTransformer(modelAccess, nodeMap, languageRepository)
+    private val modelTransformer = ModelTransformer(modelAccess, nodeMap)
     private val moduleTransformer = ModuleTransformer(project, nodeMap)
 
     override fun referenceChanged(nodeId: Long, role: String) {

@@ -16,12 +16,12 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.transformers
 
-import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.SModelReference
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -31,17 +31,18 @@ import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelTransformer(private val project: MPSProject, private val nodeMap: MpsToModelixMap) {
+class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap: MpsToModelixMap) {
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
     fun transformToModel(iNode: INode) {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Module's ($iNode) name is null" }
 
-        val moduleId = iNode.parent?.nodeIdAsLong()
+        val moduleId = iNode.getModule()?.nodeIdAsLong()!!
         val module: SModule? = nodeMap.getModule(moduleId)
         check(module != null) { "Parent module with ID $moduleId is not found" }
 
@@ -50,7 +51,7 @@ class ModelTransformer(private val project: MPSProject, private val nodeMap: Mps
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        project.modelAccess.runWriteInEDTBlocking {
+        modelAccess.runWriteInEDTBlocking {
             sModel = module.createModel(name, modelId) as EditableSModel
             sModel.save()
         }
@@ -82,7 +83,7 @@ class ModelTransformer(private val project: MPSProject, private val nodeMap: Mps
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
             nodeMap.put(modelImport, it.modelReferenceNodeId)
-            project.modelAccess.runWriteInEDTBlocking {
+            modelAccess.runWriteInEDTBlocking {
                 ModelImports(it.source).addModelImport(modelImport)
             }
         }

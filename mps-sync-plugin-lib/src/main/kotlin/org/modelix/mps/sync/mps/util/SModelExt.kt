@@ -24,19 +24,13 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
-    if (this is SModelDescriptorStub) {
-        this.addDevKit(devKitModuleReference)
-    } else {
-        throw IllegalStateException("Unable to handle this model $this (class: ${this.javaClass.canonicalName})")
-    }
+    require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
+    this.addDevKit(devKitModuleReference)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
-    if (this is SModelDescriptorStub) {
-        this.addLanguage(sLanguage)
-        this.setLanguageImportVersion(sLanguage, version)
-    } else {
-        throw IllegalStateException("Unable to handle this model $this (class: ${this.javaClass.canonicalName})")
-    }
+    require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
+    this.addLanguage(sLanguage)
+    this.setLanguageImportVersion(sLanguage, version)
 }

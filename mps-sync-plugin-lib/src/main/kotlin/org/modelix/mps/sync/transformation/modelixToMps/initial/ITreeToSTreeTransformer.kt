@@ -48,8 +48,8 @@ class ITreeToSTreeTransformer(
 
     private val logger = logger<ITreeToSTreeTransformer>()
 
-    private val nodeTransformer = NodeTransformer(project, nodeMap, mpsLanguageRepository)
-    private val modelTransformer = ModelTransformer(project, nodeMap)
+    private val nodeTransformer = NodeTransformer(project.modelAccess, nodeMap, mpsLanguageRepository)
+    private val modelTransformer = ModelTransformer(project.modelAccess, nodeMap)
     private val moduleTransformer = ModuleTransformer(project, nodeMap)
 
     fun transform(entryPoint: INode): SNode? {

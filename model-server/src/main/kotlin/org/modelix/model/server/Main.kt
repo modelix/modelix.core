@@ -29,7 +29,9 @@ import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
+import io.ktor.server.resources.Resources
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
@@ -159,6 +161,8 @@ object Main {
                 install(Routing)
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)
+                install(Resources)
+                install(IgnoreTrailingSlash)
                 install(WebSockets) {
                     pingPeriod = Duration.ofSeconds(30)
                     timeout = Duration.ofSeconds(30)

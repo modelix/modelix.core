@@ -19,6 +19,8 @@ dokka = {id = "org.jetbrains.dokka", version = "1.9.10"}
 node = {id = "com.github.node-gradle.node", version = "7.0.1"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.4" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.1" }
+openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
+#kotlin-plugin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 
 [versions]
 kotlin = "1.9.21"
@@ -30,6 +32,7 @@ ignite="2.15.0"
 apacheCxf="3.6.2"
 node="18.17.1"
 modelixBuildtools="1.2.0"
+openapi = "7.0.1"
 
 [libraries]
 
@@ -57,6 +60,7 @@ ktor-server-sessions = { group = "io.ktor", name = "ktor-server-sessions", versi
 ktor-server-status-pages = { group = "io.ktor", name = "ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
+ktor-server-resources = { group = "io.ktor", name = "ktor-server-resources", version.ref = "ktor" }
 
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }

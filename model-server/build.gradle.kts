@@ -9,6 +9,8 @@ plugins {
     id("org.jetbrains.kotlin.jvm")
     id("com.github.johnrengelman.shadow") version "8.1.1"
     kotlin("plugin.serialization")
+    alias(libs.plugins.openapi.generator)
+//    alias(libs.plugins.kotlin.plugin.allopen)
 }
 
 description = "Model Server offering access to model storage"
@@ -48,6 +50,7 @@ dependencies {
     implementation(libs.ktor.server.forwarded.header)
     implementation(libs.ktor.server.websockets)
     implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.server.resources)
     implementation(libs.ktor.serialization.json)
 
     implementation(libs.bundles.ignite)
@@ -64,6 +67,9 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
+
+//    implementation("jakarta.ws.rs:jakarta.ws.rs-api:2.1.6")
+//    implementation("jakarta.annotation:jakarta.annotation-api:1.3.5")
 }
 
 tasks.test {
@@ -184,3 +190,81 @@ spotless {
                 '\n'*/
     }
 }
+
+// OpenAPI integration
+val basePackage = project.group.toString()
+val openAPIgenerationPath = "$buildDir/generated/openapi"
+
+// We let the Gradle OpenAPI generator plugin build data classes and API interfaces based on the provided
+// OpenAPI specification. That way, the code is forced to stay in sync with the API specification.
+openApiGenerate {
+    generatorName.set("kotlin-server")
+    inputSpec.set(layout.projectDirectory.file("../api/public.yaml").toString())
+    outputDir.set(openAPIgenerationPath)
+    packageName.set(basePackage)
+    packageName.set(basePackage)
+    apiPackage.set(basePackage)
+    modelPackage.set(basePackage)
+    // WARNING: there are patched mustache files used!
+    templateDir.set("$projectDir/src/main/resources/openapi/templates")
+    configOptions.set(
+        mapOf(
+            "library" to "ktor",
+            "omitGradleWrapper" to "true",
+            "featureResources" to "true",
+            "featureAutoHead" to "false",
+            "featureCompression" to "false",
+            "featureHSTS" to "false",
+            "featureMetrics" to "false",
+        ),
+    )
+    globalProperties.putAll(
+        mapOf(
+//            "debugOpenAPI" to "true",
+//            "debugModels" to "true",
+//            "debugSupportingFiles" to "true",
+//            "debugOperations" to "true",
+
+//            "models" to "",
+//            "apis" to "",
+//            "supportingFiles" to "",
+//            "apiTests" to "false",
+//            "modelTests" to "false",
+//            "modelDocs" to "false",
+        ),
+    )
+}
+
+// Ensure that the OpenAPI generator runs before starting to compile
+tasks.named("build") {
+    dependsOn("openApiGenerate")
+}
+tasks.named("processResources") {
+    dependsOn("openApiGenerate")
+}
+tasks.named("compileKotlin") {
+    dependsOn("openApiGenerate")
+}
+tasks.named("runKtlintCheckOverMainSourceSet") {
+    dependsOn("openApiGenerate")
+}
+
+// do not apply ktlint on the generated files
+ktlint {
+    filter {
+        exclude {
+            it.file.toPath().toAbsolutePath().startsWith(openAPIgenerationPath)
+        }
+//        exclude("$openAPIgenerationPath/src/main/kotlin/**")
+//        exclude("$openAPIgenerationPath/**")
+//        exclude("**/generated/**")
+    }
+}
+
+// allOpen {
+//    annotation("javax.ws.rs.Path")
+//    annotation("javax.enterprise.context.ApplicationScoped")
+// }
+
+// add openAPI generated artifacts to the sourceSets
+java.sourceSets.getByName("main").java.srcDir(file("$openAPIgenerationPath/src/main/kotlin"))

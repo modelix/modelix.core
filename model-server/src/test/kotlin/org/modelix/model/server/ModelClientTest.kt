@@ -15,6 +15,9 @@
 
 package org.modelix.model.server
 
+import io.ktor.server.application.install
+import io.ktor.server.resources.Resources
+import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.delay
@@ -37,6 +40,8 @@ class ModelClientTest {
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
+            install(Resources)
+            install(IgnoreTrailingSlash)
             KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(InMemoryStoreClient()))).init(this)
         }
         block()

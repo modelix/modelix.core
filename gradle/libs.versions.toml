@@ -12,16 +12,16 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 gitVersion = { id = "com.palantir.git-version", version = "3.0.0" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "11.6.1" }
-spotless = { id = "com.diffplug.spotless", version = "6.22.0" }
+spotless = { id = "com.diffplug.spotless", version = "6.23.2" }
 tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
-modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version = "1.2.0" }
+modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
 dokka = {id = "org.jetbrains.dokka", version = "1.9.10"}
 node = {id = "com.github.node-gradle.node", version = "7.0.1"}
-detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.3" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.4" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.1" }
 
 [versions]
-kotlin = "1.9.20"
+kotlin = "1.9.21"
 kotlinCoroutines="1.7.3"
 ktor="2.3.6"
 kotlinHtml="0.8.0"
@@ -29,6 +29,7 @@ kotlinSerialization="1.6.1"
 ignite="2.15.0"
 apacheCxf="3.6.2"
 node="18.17.1"
+modelixBuildtools="1.2.0"
 
 [libraries]
 
@@ -67,13 +68,13 @@ ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref =
 
 ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
-keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "22.0.5" }
+keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "23.0.1" }
 guava = { group = "com.google.guava", name = "guava", version = "32.1.3-jre" }
 modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.2.0" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "1.15.1" }
 vavr = { group = "io.vavr", name = "vavr", version = "0.10.4" }
 apache-commons-lang = { group = "org.apache.commons", name = "commons-lang3", version = "3.14.0" }
-apache-commons-io = { group = "commons-io", name = "commons-io", version = "2.15.0" }
+apache-commons-io = { group = "commons-io", name = "commons-io", version = "2.15.1" }
 apache-commons-collections = { group = "org.apache.commons", name = "commons-collections4", version = "4.4" }
 trove = { group = "trove", name = "trove", version = "1.0.2"}
 trove4j = { group = "net.sf.trove4j", name = "trove4j", version = "3.0.3" }
@@ -82,10 +83,10 @@ ignite-core = { group = "org.apache.ignite", name = "ignite-core", version.ref =
 ignite-spring = { group = "org.apache.ignite", name = "ignite-spring", version.ref = "ignite" }
 ignite-indexing = { group = "org.apache.ignite", name = "ignite-indexing", version.ref = "ignite" }
 
-logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.4.11" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.4.13" }
 postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.0" }
 jcommander = { group = "com.beust", name = "jcommander", version = "1.82" }
-cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.14.0" }
+cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.14.1" }
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 xmlunit-core = { group = "org.xmlunit", name = "xmlunit-core", version = "2.9.1"}
 
@@ -94,3 +95,6 @@ apache-cxf-client = { group = "org.apache.cxf", name = "cxf-rt-rs-client", versi
 
 semver = { group = "org.semver", name = "api", version = "0.9.33"}
 dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", version = "1.9.10"}
+
+modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gradle", version.ref = "modelixBuildtools"}
+modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}

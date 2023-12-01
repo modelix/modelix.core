@@ -12,6 +12,8 @@ dependencies {
     implementation(project(":model-client", "jvmRuntimeElements"))
     implementation(project(":bulk-model-sync-lib"))
     implementation(project(":mps-model-adapters"))
+    implementation(libs.modelix.buildtools.gradle)
+    implementation(libs.modelix.buildtools.lib)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
 }

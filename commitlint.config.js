@@ -5,6 +5,7 @@ module.exports = {
       2,
       "always",
       [
+        "bulk-model-sync",
         "bulk-model-sync-gradle",
         "bulk-model-sync-lib",
         "bulk-model-sync-solution",

@@ -22,7 +22,6 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.server.Main
 import org.modelix.model.sync.bulk.asExported
 import java.io.File
 import kotlin.test.assertContentEquals
@@ -32,7 +31,7 @@ class PushTest {
     @Test
     fun `nodes were synced to server`() {
         val inputDir = File("build/model-sync/testPush")
-        val files = inputDir.listFiles()?.filter { it.extension == "json" } ?: error("no json files found")
+        val files = inputDir.listFiles()?.filter { it.extension == "json" } ?: error("no json files found in ${inputDir.absolutePath}")
 
         val modules = files.map { ModelData.fromJson(it.readText()) }
         val inputModel = ModelData(root = NodeData(children = modules.map { it.root }))
@@ -42,7 +41,7 @@ class PushTest {
 
         val repoId = RepositoryId("ci-test")
         val branchName = "master"
-        val url = "http://0.0.0.0:${Main.DEFAULT_PORT}/v2"
+        val url = "http://0.0.0.0:28309/v2"
 
         val branchRef = ModelFacade.createBranchReference(repoId, branchName)
         val client = ModelClientV2PlatformSpecificBuilder().url(url).build().apply { runBlocking { init() } }

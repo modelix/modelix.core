@@ -33,4 +33,4 @@ jobs:
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
       - name: Build with ${{ matrix.version }}
-        run: ./gradlew --build-cache :mps-model-adapters:build :mps-model-server-plugin:build -Pmps.version=${{ matrix.version }}
+        run: ./gradlew --build-cache :mps-model-adapters:build :mps-model-server-plugin:build :mps-sync-plugin:build -Pmps.version=${{ matrix.version }}

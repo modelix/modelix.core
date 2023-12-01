@@ -87,9 +87,9 @@ class ITreeToSTreeTransformer(
                 logger.info("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
                 nodeMap.models.forEach {
                     val nodeChangeListener = NodeChangeListener(branch, nodeMap, isSynchronizing)
-                    val modelChangeListener = ModelChangeListener(branch, nodeMap, nodeChangeListener, isSynchronizing)
-
                     it.addChangeListener(nodeChangeListener)
+
+                    val modelChangeListener = ModelChangeListener(branch, nodeMap, isSynchronizing)
                     (it as SModelInternal).addModelListener(modelChangeListener)
                 }
                 nodeMap.modules.forEach {

@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicReference
 class ModelChangeListener(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-    private val nodeChangeListener: NodeChangeListener,
     private val isSynchronizing: AtomicReference<Boolean>,
 ) : SModelListener {
 
@@ -236,7 +235,6 @@ class ModelChangeListener(
     }
 
     override fun beforeModelDisposed(model: SModel) {
-        model.removeChangeListener(nodeChangeListener)
         (model as? SModelInternal)?.removeModelListener(this)
     }
 

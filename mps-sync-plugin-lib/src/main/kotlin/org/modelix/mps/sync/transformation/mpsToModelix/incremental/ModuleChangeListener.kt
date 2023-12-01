@@ -59,7 +59,6 @@ class ModuleChangeListener(
                     ModelChangeListener(
                         branch,
                         nodeMap,
-                        nodeChangeListener,
                         isSynchronizing,
                     ),
                 )

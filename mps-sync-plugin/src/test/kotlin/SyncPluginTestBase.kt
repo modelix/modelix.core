@@ -29,7 +29,6 @@ import jetbrains.mps.ide.MPSCoreComponents
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.library.contributor.LibDescriptor
 import jetbrains.mps.project.MPSProject
-import jetbrains.mps.vfs.IFile
 import jetbrains.mps.vfs.impl.IoFileSystem
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -44,7 +43,6 @@ import org.modelix.mps.sync.ModelSyncService
 import org.modelix.mps.sync.api.ISyncService
 import java.io.File
 import java.nio.file.Path
-import kotlin.io.path.absolutePathString
 
 @Suppress("removal")
 @OptIn(UnstableModelixFeature::class)
@@ -124,6 +122,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
 
     protected suspend fun <R> runWithNewConnection(body: suspend (IModelClientV2) -> R): R {
         val client = ModelClientV2.builder().client(httpClient).url("http://localhost/v2/").build()
+        client.init()
         return client.use { body(it) }
     }
 

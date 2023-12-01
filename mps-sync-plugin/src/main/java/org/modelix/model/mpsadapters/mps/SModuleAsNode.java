@@ -68,11 +68,13 @@ public class SModuleAsNode extends TreeElementAsNode<SModule> {
   private static TreeElementAsNode.IPropertyAccessor<SModule> virtualFolderAccessor = new ReadOnlyPropertyAccessor<SModule>() {
     public String get(final SModule element) {
       List<Project> projects = ProjectManager.getInstance().getOpenedProjects();
-      return ListSequence.fromList(projects).ofType(MPSProject.class).select(new ISelector<MPSProject, String>() {
+      String value = ListSequence.fromList(projects).ofType(MPSProject.class).select(new ISelector<MPSProject, String>() {
         public String select(MPSProject it) {
           return check_jbj149_a0a0a0a0b0a0a0f(it.getPath(element));
         }
       }).where(new NotNullWhereFilter()).first();
+      if ("".equals(value)) return null; // default value is returned as not being set to avoid unnecessary synchronization
+      return value;
     }
   };
 
@@ -80,7 +82,9 @@ public class SModuleAsNode extends TreeElementAsNode<SModule> {
     public String get(SModule element) {
       ModuleDescriptor moduleDescriptor = ((AbstractModule) element).getModuleDescriptor();
       if (element instanceof AbstractModule) {
-        return Integer.toString(check_jbj149_a0a0b0a0a0h(moduleDescriptor));
+        int version = check_jbj149_a0a0b0a0a0h(moduleDescriptor);
+        if (version == 0) return null; // default value is returned as not being set to avoid unnecessary synchronization
+        return Integer.toString(version);
       } else {
         return Integer.toString(0);
       }
@@ -94,7 +98,9 @@ public class SModuleAsNode extends TreeElementAsNode<SModule> {
       }
       if (element instanceof AbstractModule) {
         try {
-          return Boolean.toString(check_jbj149_a0a0a0b0a0a0j(((AbstractModule) element).getModuleDescriptor()));
+          boolean value = check_jbj149_a0a0a0b0a0a0j(((AbstractModule) element).getModuleDescriptor());
+          if (value) return null; // default value is returned as not being set to avoid unnecessary synchronization
+          return Boolean.toString(value);
         } catch (UnsupportedOperationException uoe) {
           return Boolean.toString(false);
         }

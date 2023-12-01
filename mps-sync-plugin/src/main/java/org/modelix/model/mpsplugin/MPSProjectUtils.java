@@ -4,6 +4,7 @@ package org.modelix.model.mpsplugin;
 
 import jetbrains.mps.internal.collections.runtime.ListSequence;
 import jetbrains.mps.project.*;
+import jetbrains.mps.project.modules.SolutionProducer;
 import jetbrains.mps.smodel.ModuleDependencyVersions;
 import jetbrains.mps.smodel.language.LanguageRegistry;
 import org.jetbrains.mps.openapi.module.SModule;
@@ -23,19 +24,19 @@ import jetbrains.mps.smodel.GeneralModuleFactory;
 public class MPSProjectUtils {
   public MPSProjectUtils() {
   }
-  public static SModule createModule(final MPSProject _this, String nameSpace, ModuleId moduleId, Object requestor) {
+  public static SModule createModule(final MPSProject mpsProject, String nameSpace, ModuleId moduleId, Object requestor) {
     if (nameSpace == null) {
       throw new IllegalArgumentException("nameSpace should not be null");
     }
 
     // A module may already exist in the global repository, but is just not part of the project yet.
-    SModule existingModule = _this.getRepository().getModule(moduleId);
+    SModule existingModule = mpsProject.getRepository().getModule(moduleId);
     if (existingModule != null) {
-      _this.addModule(existingModule);
+      mpsProject.addModule(existingModule);
       return existingModule;
     }
 
-    File moduleFolder = new File(_this.getProjectFile(), nameSpace);
+    File moduleFolder = new File(mpsProject.getProjectFile(), nameSpace);
     VirtualFile moduleFolder_ = LocalFileSystem.getInstance().findFileByIoFile(moduleFolder);
     if (moduleFolder_ != null && moduleFolder_.exists()) {
       try {
@@ -45,16 +46,18 @@ public class MPSProjectUtils {
       }
     }
 
-    IFile descriptorFile = (IFile) ReflectionUtil.callStaticMethod(NewModuleUtil.class, "getModuleFile", new Class[]{String.class, String.class, String.class}, new Object[]{nameSpace, moduleFolder.getAbsolutePath(), MPSExtentions.DOT_SOLUTION});
+    IFile descriptorFile = mpsProject.getFileSystem().fromVirtualFile(mpsProject.getProject().getBaseDir())
+            .findChild(nameSpace).findChild(nameSpace + MPSExtentions.DOT_SOLUTION);
     if (descriptorFile == null) {
       throw new IllegalStateException("descriptor file should not be null");
     }
-    SolutionDescriptor descriptor = (SolutionDescriptor) ReflectionUtil.callStaticMethod(NewModuleUtil.class, "createNewSolutionDescriptor", new Class[]{String.class, IFile.class}, new Object[]{nameSpace, descriptorFile});
+    SolutionDescriptor descriptor = SolutionProducer.createSolutionDescriptor(nameSpace, descriptorFile);
+    descriptor.setId(moduleId);
 
     descriptor.setId(moduleId);
     Solution module = (Solution) new GeneralModuleFactory().instantiate(descriptor, descriptorFile);
-    _this.addModule(module);
-    new ModuleDependencyVersions(LanguageRegistry.getInstance(_this.getRepository()), _this.getRepository()).update(module);
+    mpsProject.addModule(module);
+    new ModuleDependencyVersions(LanguageRegistry.getInstance(mpsProject.getRepository()), mpsProject.getRepository()).update(module);
     module.save();
     return module;
   }

@@ -14,8 +14,7 @@ kotlin {
 }
 
 val mpsVersion = project.findProperty("mps.version").toString()
-
-val mpsZip by configurations.creating
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
@@ -33,11 +32,11 @@ dependencies {
 
     implementation(libs.kotlin.reflect)
 
-    // extracting jars from zipped products
-    mpsZip("com.jetbrains:mps:$mpsVersion")
     compileOnly(
-        zipTree({ mpsZip.singleFile }).matching {
-            include("lib/**/*.jar")
+        mpsHome.map {
+            it.asFileTree.matching {
+                include("lib/**/*.jar")
+            }
         },
     )
 }

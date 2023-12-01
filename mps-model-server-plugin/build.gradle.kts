@@ -14,12 +14,13 @@ dependencies {
     implementation(project(":model-server-lib"))
     implementation(project(":mps-model-adapters"))
 
-    val mpsTree = mpsHome.map {
-        it.asFileTree.matching {
-            include("lib/**/*.jar")
-        }
-    }
-    compileOnly(mpsTree)
+    compileOnly(
+        mpsHome.map {
+            it.asFileTree.matching {
+                include("lib/**/*.jar")
+            }
+        },
+    )
 }
 
 // Configure Gradle IntelliJ Plugin

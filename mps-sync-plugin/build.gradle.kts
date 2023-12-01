@@ -23,14 +23,6 @@ dependencies {
 
     implementation(libs.kotlin.reflect)
 
-    // extracting jars from zipped products
-//    mpsZip("com.jetbrains:mps:$mpsVersion")
-//    val mpsZipTree = zipTree({ mpsZip.singleFile }).matching {
-//        include("lib/**/*.jar")
-//    }
-//    compileOnly(mpsZipTree)
-//    testImplementation(mpsZipTree)
-
     // There is a usage of MakeActionParameters in ProjectMakeRunner which we might want to delete
     compileOnly(mpsHome.map { it.files("plugins/mps-make/languages/jetbrains.mps.ide.make.jar") })
 

@@ -3,17 +3,19 @@ plugins {
     `maven-publish`
 }
 
-val mpsZip by configurations.creating
 val mpsVersion = project.findProperty("mps.version").toString()
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 
 dependencies {
     api(project(":model-api"))
 
-    mpsZip("com.jetbrains:mps:$mpsVersion")
-    val mpsZipTree = zipTree({ mpsZip.singleFile }).matching {
-        include("lib/**/*.jar")
-    }
-    compileOnly(mpsZipTree)
+    compileOnly(
+        mpsHome.map {
+            it.asFileTree.matching {
+                include("lib/**/*.jar")
+            }
+        },
+    )
 
     implementation(libs.trove)
 

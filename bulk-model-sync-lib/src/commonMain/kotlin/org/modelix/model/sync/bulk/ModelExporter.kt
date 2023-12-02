@@ -30,14 +30,19 @@ expect class ModelExporter(root: INode)
  * This function is recursively called on the node's children.
  */
 fun INode.asExported(): NodeData {
-    val idKey = NodeData.idPropertyKey
+    fun INode.originalId() = getPropertyValue(NodeData.ORIGINAL_NODE_ID_KEY)
+        ?: getPropertyValue(NodeData.idPropertyKey)
+        ?: reference.serialize()
+
     return NodeData(
-        id = getPropertyValue(idKey) ?: reference.serialize(),
+        id = originalId(),
         concept = getConceptReference()?.getUID(),
         role = roleInParent,
-        properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) }.filterKeys { it != idKey },
+        properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) }
+            .minus(NodeData.ORIGINAL_NODE_ID_KEY)
+            .minus(NodeData.idPropertyKey),
         references = getReferenceRoles().associateWithNotNull {
-            getReferenceTarget(it)?.getPropertyValue(idKey) ?: getReferenceTargetRef(it)?.serialize()
+            getReferenceTarget(it)?.originalId() ?: getReferenceTargetRef(it)?.serialize()
         },
         children = allChildren.map { it.asExported() },
     )

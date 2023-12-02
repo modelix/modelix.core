@@ -68,8 +68,8 @@ internal fun assertNodeConformsToSpec(expected: NodeData, actual: INode, origina
 
 internal fun assertNodePropertiesConformToSpec(expected: NodeData, actual: INode) {
     val actualProperties = actual.getPropertyRoles().associateWithNotNull { actual.getPropertyValue(it) }
-    assertEquals(expected.properties, actualProperties.filterKeys { it != NodeData.idPropertyKey })
-    assertEquals(expected.id, actualProperties[NodeData.idPropertyKey])
+    assertEquals(expected.properties, actualProperties.minus(NodeData.idPropertyKey).minus(NodeData.ORIGINAL_NODE_ID_KEY))
+    assertEquals(expected.id, actualProperties[NodeData.ORIGINAL_NODE_ID_KEY] ?: actualProperties[NodeData.idPropertyKey])
 }
 
 internal fun assertNodeReferencesConformToSpec(
@@ -85,7 +85,9 @@ internal fun assertNodeReferencesConformToSpec(
             numUnresolvableRefs++
             return@associateWithNotNull null
         }
-        target.getPropertyValue(NodeData.idPropertyKey) ?: target.reference.serialize()
+        target.getPropertyValue(NodeData.ORIGINAL_NODE_ID_KEY)
+            ?: target.getPropertyValue(NodeData.idPropertyKey)
+            ?: target.reference.serialize()
     }
 
     assertEquals(expected.references.size, actualResolvableRefs.size + numUnresolvableRefs)

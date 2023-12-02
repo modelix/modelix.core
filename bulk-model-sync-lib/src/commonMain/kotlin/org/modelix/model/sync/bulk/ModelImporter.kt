@@ -138,6 +138,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
                     if (existingNode == null) {
                         val newChild = node.addNewChild(role, index, expectedConcept)
                         newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                        newChild.setPropertyValue(NodeData.ORIGINAL_NODE_ID_KEY, expectedId)
                         originalIdToExisting[expectedId] = newChild
                         newChild
                     } else {
@@ -167,6 +168,9 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
         if (node.getPropertyValue(NodeData.idPropertyKey) == null) {
             node.setPropertyValue(NodeData.idPropertyKey, nodeData.originalId())
         }
+        if (node.getPropertyValue(NodeData.ORIGINAL_NODE_ID_KEY) == null) {
+            node.setPropertyValue(NodeData.ORIGINAL_NODE_ID_KEY, nodeData.originalId())
+        }
 
         nodeData.properties.forEach {
             if (node.getPropertyValue(it.key) != it.value) {
@@ -176,7 +180,8 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
 
         val toBeRemoved = node.getPropertyRoles().toSet()
             .subtract(nodeData.properties.keys)
-            .filter { it != NodeData.idPropertyKey }
+            .minus(NodeData.idPropertyKey)
+            .minus(NodeData.ORIGINAL_NODE_ID_KEY)
         toBeRemoved.forEach { node.setPropertyValue(it, null) }
     }
 
@@ -211,9 +216,9 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
 }
 
 internal fun INode.originalId(): String? {
-    return this.getPropertyValue(NodeData.idPropertyKey)
+    return getPropertyValue(NodeData.ORIGINAL_NODE_ID_KEY) ?: this.getPropertyValue(NodeData.idPropertyKey)
 }
 
 internal fun NodeData.originalId(): String? {
-    return properties[NodeData.idPropertyKey] ?: id
+    return properties[NodeData.ORIGINAL_NODE_ID_KEY] ?: properties[NodeData.idPropertyKey] ?: id
 }

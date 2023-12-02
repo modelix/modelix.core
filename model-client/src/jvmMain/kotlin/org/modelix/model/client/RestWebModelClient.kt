@@ -371,7 +371,7 @@ class RestWebModelClient @JvmOverloads constructor(
         return runBlocking { getA(key) }
     }
 
-    suspend fun getA(key: String): String? {
+    override suspend fun getA(key: String): String? {
         val isHash = HashUtil.isSha256(key)
         if (isHash) {
             if (LOG.isDebugEnabled) {

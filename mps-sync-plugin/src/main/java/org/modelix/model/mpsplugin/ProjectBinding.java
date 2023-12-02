@@ -14,6 +14,7 @@ import kotlin.jvm.functions.Function1;
 import org.modelix.model.api.IWriteTransaction;
 import kotlin.Unit;
 import org.modelix.model.api.ITree;
+import org.modelix.model.mpsadapters.MPSChildLink;
 import org.modelix.model.mpsadapters.mps.SConceptAdapter;
 import org.modelix.model.api.IReadTransaction;
 import jetbrains.mps.internal.collections.runtime.Sequence;

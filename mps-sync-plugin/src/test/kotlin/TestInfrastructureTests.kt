@@ -16,12 +16,10 @@
 
 import junit.framework.TestCase
 import org.jetbrains.mps.openapi.module.SModule
-import org.modelix.kotlin.utils.UnstableModelixFeature
 
 /**
  * Doesn't test the SyncService itself, but only if we use the IntelliJ test infrastructure correctly.
  */
-@OptIn(UnstableModelixFeature::class)
 class TestInfrastructureTests : SyncPluginTestBase(null) {
 
 //    fun testEstablishConnection() = runTestWithSyncService { syncService ->
@@ -30,7 +28,7 @@ class TestInfrastructureTests : SyncPluginTestBase(null) {
 //    }
 
     fun testGlobalModulesLoaded() {
-        val repository = getMPSProject().repository
+        val repository = mpsProject.repository
         lateinit var modules: List<SModule>
         repository.modelAccess.runReadAction {
             modules = repository.modules.toList()
@@ -39,7 +37,6 @@ class TestInfrastructureTests : SyncPluginTestBase(null) {
     }
 
     fun testProjectModulesLoaded_with_SimpleProjectA() {
-        val mpsProject = getMPSProject()
         val repository = mpsProject.repository
         lateinit var modules: List<SModule>
         repository.modelAccess.runReadAction {

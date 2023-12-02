@@ -282,7 +282,8 @@ interface IDeprecatedNodeDefaults : INode {
 
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
 fun IRole.key(): String = RoleAccessContext.getKey(this)
-fun IRole.key(node: INode): String = if (node.usesRoleIds()) getUID() else getSimpleName()
+fun IRole.key(useRoleIds: Boolean): String = if (useRoleIds) getUID() else getSimpleName()
+fun IRole.key(node: INode): String = key(node.usesRoleIds())
 fun INode.usesRoleIds(): Boolean = if (this is INodeEx) this.usesRoleIds() else false
 fun INode.getChildren(link: IChildLink): Iterable<INode> = if (this is INodeEx) getChildren(link) else getChildren(link.key(this))
 fun INode.moveChild(role: IChildLink, index: Int, child: INode): Unit = if (this is INodeEx) moveChild(role, index, child) else moveChild(role.key(this), index, child)

@@ -29,11 +29,23 @@ import jetbrains.mps.ide.MPSCoreComponents
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.library.contributor.LibDescriptor
 import jetbrains.mps.project.MPSProject
-import jetbrains.mps.vfs.impl.IoFileSystem
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.data.NodeData
+import org.modelix.model.data.asData
+import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.mps.MPSLanguageRepository
+import org.modelix.model.mpsadapters.mps.ProjectAsNode
+import org.modelix.model.mpsadapters.mps.SModuleAsNode
+import org.modelix.model.mpsadapters.plugin.MPSNodeReferenceSerializer
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -43,6 +55,7 @@ import org.modelix.mps.sync.ModelSyncService
 import org.modelix.mps.sync.api.ISyncService
 import java.io.File
 import java.nio.file.Path
+import kotlin.io.path.absolutePathString
 
 @Suppress("removal")
 @OptIn(UnstableModelixFeature::class)
@@ -50,6 +63,48 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     protected lateinit var httpClient: HttpClient
     protected lateinit var syncService: ISyncService
     protected lateinit var projectDir: Path
+    protected val json = Json { prettyPrint = true }
+    protected lateinit var initialDumpFromMPS: NodeData
+    protected val defaultBranchRef = RepositoryId("default").getBranchReference()
+
+    protected val mpsProject: MPSProject get() {
+        return checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPS project not loaded" }
+    }
+
+    protected val projectAsNode: ProjectAsNode get() = org.modelix.model.mpsadapters.mps.ProjectAsNode(mpsProject)
+
+    protected fun dumpMpsProject() = readAction {
+        projectAsNode.asData(includeChildren = false)
+            .copy(
+                id = null,
+                role = "",
+                children = mpsProject.projectModules.map { SModuleAsNode(it).asData() },
+            )
+    }
+
+    suspend fun readDumpFromServer(branchRef: BranchReference = defaultBranchRef): NodeData {
+        return runWithNewConnection { client ->
+            val versionOnServer = client.pull(branchRef, null)
+            versionOnServer.getTree().asData()
+        }
+            .root // the node with ID ITree.ROOT_ID
+            .children.single() // the project node
+            .copy(id = null, role = "")
+    }
+
+    suspend fun compareDumps(useInitialDump: Boolean = false, branchRef: BranchReference = defaultBranchRef) {
+        compareDumps(
+            if (useInitialDump) initialDumpFromMPS else dumpMpsProject(),
+            readDumpFromServer(branchRef),
+        )
+    }
+
+    fun compareDumps(expected: NodeData, actual: NodeData) {
+        assertEquals(
+            json.encodeToString(expected.normalize()),
+            json.encodeToString(actual.normalize()),
+        )
+    }
 
     protected fun runTestWithModelServer(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
@@ -67,14 +122,13 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     protected fun runTestWithSyncService(body: suspend (ISyncService) -> Unit) = runTestWithModelServer {
-        val syncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
+        val syncService: ISyncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
         try {
-            syncService.ensureStarted()
-            syncService.connectModelServerSuspending(client, "http://localhost/v2/", null)
             this@SyncPluginTestBase.syncService = syncService
             body(syncService)
         } finally {
-            Disposer.dispose(syncService)
+            syncService.getConnections().forEach { Disposer.dispose(it) }
+//            Disposer.dispose(syncService)
         }
     }
 
@@ -87,11 +141,12 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
                     SetLibraryContributor.fromSet(
                         "repositoryconcepts",
                         setOf(
-                            LibDescriptor(IoFileSystem.INSTANCE.getFile("repositoryconcepts")),
+                            LibDescriptor(mpsProject.fileSystem.getFile(Path.of("repositoryconcepts").absolutePathString())),
                         ),
                     ),
                 ),
             )
+            initialDumpFromMPS = dumpMpsProject()
         }
     }
 
@@ -102,6 +157,8 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     override fun setUp() {
+        INodeReferenceSerializer.register(MPSNodeReferenceSerializer.INSTANCE)
+        ILanguageRepository.register(MPSLanguageRepository.INSTANCE)
         runInEdtAndWait {
             super.setUp()
         }
@@ -123,10 +180,6 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
         return projectDir
     }
 
-    protected fun getMPSProject(): MPSProject {
-        return checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPS project not loaded" }
-    }
-
     protected suspend fun <R> runWithNewConnection(body: suspend (IModelClientV2) -> R): R {
         val client = ModelClientV2.builder().client(httpClient).url("http://localhost/v2/").build()
         client.init()
@@ -134,14 +187,66 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     protected fun <R> writeAction(body: () -> R): R {
-        return getMPSProject().modelAccess.computeWriteAction(body)
+        return mpsProject.modelAccess.computeWriteAction(body)
     }
 
     protected fun <R> readAction(body: () -> R): R {
         var result: R? = null
-        getMPSProject().modelAccess.runReadAction {
+        mpsProject.modelAccess.runReadAction {
             result = body()
         }
         return result as R
     }
+}
+
+private fun NodeData.normalize(): NodeData {
+    val idMap = HashMap<String, String>()
+    collectNodeIds(this, idMap)
+    return normalizeNodeData(this, idMap)
+}
+
+private fun normalizeNodeData(node: NodeData, originalIds: MutableMap<String, String>): NodeData {
+    var filteredChildren = node.children
+    var filteredProperties = node.properties.minus(NodeData.ID_PROPERTY_KEY).minus(NodeData.ORIGINAL_NODE_ID_KEY)
+    var replacedId = (originalIds[node.id] ?: node.id)
+    var replacedRole = node.role
+    when (node.concept) {
+        "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313" -> { // project
+            replacedRole = null
+            filteredProperties -= "name"
+            filteredProperties -= BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()
+        }
+        "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895" -> { // Module
+            // TODO remove this filter and fix the test
+            filteredChildren = filteredChildren.filter { it.role == "models" }
+                .sortedBy { it.properties["name"] }
+                .sortedBy { it.properties[BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()] }
+
+            if (replacedId?.startsWith("mps-module:") == false && node.properties["id"] != null) {
+                // TODO the name shouldn't be part of the ID
+                replacedId = "mps-module:" + node.properties["id"] + "(" + node.properties["name"] + ")"
+            }
+        }
+        "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429" -> { // SingleLanguageDependency
+            // TODO remove this filter and fix the test
+            replacedId = null
+        }
+    }
+
+    return node.copy(
+        id = null, // replacedId,
+        role = replacedRole,
+        properties = filteredProperties.toSortedMap(),
+        references = node.references.mapValues { originalIds[it.value] ?: it.value }.toSortedMap(),
+        children = filteredChildren.map { normalizeNodeData(it, originalIds) }.sortedBy { it.role },
+    )
+}
+
+private fun collectNodeIds(node: NodeData, idMap: MutableMap<String, String>) {
+    val copyId = node.id
+    val originalId = node.properties[NodeData.ORIGINAL_NODE_ID_KEY]
+    if (originalId != null && copyId != null) {
+        idMap[copyId] = originalId
+    }
+    node.children.forEach { collectNodeIds(it, idMap) }
 }

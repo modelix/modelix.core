@@ -48,7 +48,7 @@ public class MPSProjectUtils {
       }
     }
 
-    IFile descriptorFile = mpsProject.getFileSystem().fromVirtualFile(mpsProject.getProject().getBaseDir())
+    IFile descriptorFile = mpsProject.getFileSystem().getFile(mpsProject.getProject().getBasePath())
             .findChild(nameSpace).findChild(nameSpace + MPSExtentions.DOT_SOLUTION);
     if (descriptorFile == null) {
       throw new IllegalStateException("descriptor file should not be null");

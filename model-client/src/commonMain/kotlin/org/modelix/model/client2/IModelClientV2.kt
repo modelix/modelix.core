@@ -39,7 +39,7 @@ interface IModelClientV2 {
     fun getIdGenerator(): IIdGenerator
     fun getUserId(): String?
 
-    suspend fun initRepository(repository: RepositoryId): IVersion
+    suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true): IVersion
     suspend fun listRepositories(): List<RepositoryId>
     suspend fun deleteRepository(repository: RepositoryId): IVersion
 

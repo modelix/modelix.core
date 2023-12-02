@@ -26,6 +26,8 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.IProperty
+import org.modelix.model.api.remove
 import org.modelix.model.client2.runWrite
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
@@ -138,6 +140,19 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
         }
         projectBinding.flush()
         assertEquals(2, readAction { mpsProject.projectModules.size })
+        compareDumps()
+
+        // remove module on server
+        assertEquals(2, readAction { mpsProject.projectModules.size })
+        runWithNewConnection { client ->
+            client.runWrite(branchRef) { rootNode ->
+                val projectNode = rootNode.allChildren.single()
+                val solutionNode = projectNode.allChildren.first { it.getPropertyValue(IProperty.fromName("name")) == "cloudFirstModule" }
+                solutionNode.remove()
+            }
+        }
+        projectBinding.flush()
+        assertEquals(1, readAction { mpsProject.projectModules.size })
         compareDumps()
     }
 }

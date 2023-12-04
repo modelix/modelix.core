@@ -27,6 +27,8 @@ module.exports = {
         "vue-model-api",
       ],
     ],
-    "subject-case": [0, 'never']
+    "subject-case": [0, 'never'],
+    // No need to restrict the body line length. That only gives issues with URLs etc.
+    "body-max-line-length": [0, 'always']
   },
 };

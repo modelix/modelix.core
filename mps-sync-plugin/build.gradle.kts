@@ -70,7 +70,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("211") // 203 not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
-        untilBuild.set("232")
+        untilBuild.set("232.10072.781")
     }
 
     register("mpsCompatibility") { dependsOn("build") }
@@ -83,7 +83,7 @@ tasks {
         autoReloadPlugins.set(true)
     }
 
-    val mpsPluginDir = project.findProperty("mps.plugins.dir")?.toString()?.let { file(it) }
+    val mpsPluginDir = project.findProperty("mps232.plugins.dir")?.toString()?.let { file(it) }
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
         create<Sync>("installMpsPlugin") {
             dependsOn(prepareSandbox)

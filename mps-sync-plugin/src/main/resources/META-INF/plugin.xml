@@ -29,6 +29,7 @@
         <listener
                 class="org.modelix.mps.sync.listeners.MPSSynchronizationAppLifecycleListener"
                 topic="com.intellij.ide.AppLifecycleListener"/>
+        <listener class="org.modelix.mps.sync.AppListener" topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 
     <!-- Extension points defined by the plugin.
@@ -38,6 +39,9 @@
         <toolWindow id="Modelix Model Synchronization" secondary="true"
                     icon="org.modelix.mps.sync.icons.CloudIcons.PLUGIN_ICON" anchor="right"
                     factoryClass="org.modelix.mps.sync.tools.ModelSyncGuiFactory"/>
+        <toolWindow id="Modelix Server Connection" secondary="false"
+                    icon="org.modelix.model.mpsplugin.plugin.IconContainer.ICON_a0" anchor="bottom"
+                    factoryClass="org.modelix.model.mpsplugin.plugin.CloudTool_Tool"/>
 
         <!-- service to handle storage of cloud details via project settings, aka .mps/modelix.xml -->
         <projectService

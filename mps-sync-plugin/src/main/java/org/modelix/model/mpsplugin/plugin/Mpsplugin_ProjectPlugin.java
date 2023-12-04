@@ -16,7 +16,7 @@ public class Mpsplugin_ProjectPlugin extends BaseProjectPlugin {
   public List<BaseTool> initAllTools1(Project project) {
     List<BaseTool> tools = ListSequence.fromList(new ArrayList<BaseTool>());
     ListSequence.fromList(tools).addElement(new CloudHistoryTool_Tool(project));
-    ListSequence.fromList(tools).addElement(new CloudTool_Tool(project));
+//    ListSequence.fromList(tools).addElement(new CloudTool_Tool(project));
     return tools;
   }
   public void fillCustomParts(List<ProjectPluginPart> parts) {

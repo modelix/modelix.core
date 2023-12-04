@@ -20,6 +20,8 @@ import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Solution
 import jetbrains.mps.smodel.SModelId
 import junit.framework.TestCase
+import kotlinx.serialization.encodeToString
+import org.jetbrains.mps.openapi.language.SConcept
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IProperty
@@ -44,6 +46,7 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
         val projectBinding = syncService.connectServer(httpClient, Url("http://localhost/"))
             .newBranchConnection(defaultBranchRef)
             .bindProject(mpsProject, null)
+        // TODO A new repository is created on demand in roleNames mode. Also test with an existing repository in roleIds mode.
         projectBinding.flush()
         compareDumps(useInitialDump = true)
 
@@ -120,6 +123,28 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
         projectBinding.flush()
         assertEquals(1, readAction { mpsProject.projectModules.size })
         compareDumps()
+    }
+
+    fun testNewRootNode() = runTestWithProjectBinding { projectBinding ->
+        val classConcept = resolveMPSConcept("jetbrains.mps.baseLanguage.ClassConcept")
+        val newNodeName = "MyNewlyCreateClass"
+        writeAction {
+            val model = mpsProject.projectModules.single().modelsWithoutDescriptor().single()
+            val newRootNode = model.createNode(classConcept as SConcept)
+            newRootNode.setPropertyByName("name", newNodeName)
+            model.addRootNode(newRootNode)
+        }
+        projectBinding.flush()
+        compareDumps()
+        println(json.encodeToString(readDumpFromServer()))
+        assertEquals(
+            org.modelix.model.mpsadapters.mps.SConceptAdapter(classConcept).getUID(),
+            readDumpFromServer().children // modules
+                .flatMap { it.children } // models
+                .flatMap { it.children } // root nodes
+                .single { it.properties.any { it.value == newNodeName } } // created root node
+                .concept,
+        )
     }
 
     protected override suspend fun readDumpFromServer(branchRef: BranchReference): NodeData {

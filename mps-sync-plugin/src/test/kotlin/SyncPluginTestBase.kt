@@ -19,6 +19,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.runInEdtAndWait
 import io.ktor.client.HttpClient
+import io.ktor.http.Url
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -29,8 +30,15 @@ import jetbrains.mps.ide.MPSCoreComponents
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.library.contributor.LibDescriptor
 import jetbrains.mps.project.MPSProject
+import jetbrains.mps.smodel.adapter.structure.concept.InvalidConcept
+import jetbrains.mps.smodel.language.LanguageRegistry
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.jetbrains.mps.openapi.language.SAbstractConcept
+import org.jetbrains.mps.openapi.language.SConcept
+import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SNode
+import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -46,12 +54,14 @@ import org.modelix.model.mpsadapters.mps.MPSLanguageRepository
 import org.modelix.model.mpsadapters.mps.ProjectAsNode
 import org.modelix.model.mpsadapters.mps.SModuleAsNode
 import org.modelix.model.mpsadapters.plugin.MPSNodeReferenceSerializer
+import org.modelix.model.mpsplugin.SModuleUtils
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.mps.sync.ModelSyncService
+import org.modelix.mps.sync.api.IBinding
 import org.modelix.mps.sync.api.ISyncService
 import java.io.File
 import java.nio.file.Path
@@ -194,6 +204,38 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             result = body()
         }
         return result as R
+    }
+
+    protected fun runTestWithProjectBinding(body: suspend (IBinding) -> Unit) = runTestWithSyncService {
+        // initial sync to the server
+        val projectBinding = syncService.connectServer(httpClient, Url("http://localhost/"))
+            .newBranchConnection(defaultBranchRef)
+            .bindProject(mpsProject, null)
+        projectBinding.flush()
+        body(projectBinding)
+    }
+
+    protected fun resolveMPSConcept(conceptFqName: String): SAbstractConcept {
+        return resolveMPSConcept(conceptFqName.substringBeforeLast("."), conceptFqName.substringAfterLast("."))
+    }
+
+    protected fun resolveMPSConcept(languageName: String, conceptName: String): SAbstractConcept {
+        val baseLanguage = LanguageRegistry.getInstance(mpsProject.repository).allLanguages.single { it.qualifiedName == languageName }
+        val classConcept = baseLanguage.concepts.single { it.name == conceptName }
+        check(classConcept !is InvalidConcept)
+        return classConcept
+    }
+
+    protected fun SModel.createNode(conceptName: String): SNode {
+        return createNode(resolveMPSConcept("jetbrains.mps.baseLanguage.ClassConcept") as SConcept)
+    }
+
+    protected fun SNode.setPropertyByName(name: String, value: String?) {
+        setProperty(concept.properties.single { it.name == name }, value)
+    }
+
+    protected fun SModule.modelsWithoutDescriptor(): List<SModel> {
+        return org.modelix.model.mpsplugin.SModuleUtils.getModelsWithoutDescriptor(this)
     }
 }
 

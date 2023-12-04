@@ -7,6 +7,8 @@ plugins {
 
 group = "org.modelix.mps"
 
+val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2021.1.4"
+
 val generatorLibs by configurations.creating
 
 dependencies {
@@ -32,7 +34,7 @@ val copyLibs by tasks.registering(Sync::class) {
 
 extensions.configure<MPSBuildSettings> {
     dependsOn(copyLibs)
-    mpsVersion("2021.1.4")
+    mpsVersion(mpsVersion)
     search(".")
     disableParentPublication()
 

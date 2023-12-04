@@ -36,6 +36,7 @@ jobs:
         run: >-
           ./gradlew --build-cache
           :bulk-model-sync-mps:build
+          :metamodel-export:build
           :mps-model-adapters:build
           :mps-model-server-plugin:build
           -Pmps.version=${{ matrix.version }}

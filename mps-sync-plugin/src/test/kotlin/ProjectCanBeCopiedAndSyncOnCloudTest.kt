@@ -25,6 +25,8 @@ import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.remove
 import org.modelix.model.client2.runWrite
+import org.modelix.model.data.NodeData
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsplugin.MPSProjectUtils
 import org.modelix.model.mpsplugin.SModuleUtils
 import java.util.UUID
@@ -118,5 +120,11 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
         projectBinding.flush()
         assertEquals(1, readAction { mpsProject.projectModules.size })
         compareDumps()
+    }
+
+    protected override suspend fun readDumpFromServer(branchRef: BranchReference): NodeData {
+        return super.readDumpFromServer(branchRef)
+            .children.single() // the project node
+            .copy(id = null, role = null)
     }
 }

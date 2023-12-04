@@ -26,6 +26,10 @@ fun buildMPSProjectData(useRoleIds: Boolean = true, body: MPSProjectDataBuilder.
     return MPSProjectDataBuilder(NodeDataBuilderContext(useRoleIds)).also(body).data
 }
 
+fun buildMPSModuleData(useRoleIds: Boolean = true, body: MPSModuleDataBuilder.() -> Unit): NodeData {
+    return buildMPSProjectData(useRoleIds, { module(body) }).children.single()
+}
+
 class NodeDataBuilderContext(val useRoleIds: Boolean) {
     fun roleKey(role: IRole) = if (useRoleIds) role.getUID() else role.getSimpleName()
 }
@@ -91,8 +95,31 @@ class MPSProjectDataBuilder(context: NodeDataBuilderContext) :
 
 class MPSModuleDataBuilder(context: NodeDataBuilderContext, subconcept: IConcept) : NodeDataBuilder(context, subconcept) {
     init {
-        property(BuiltinLanguages.MPSRepositoryConcepts.Module.id, UUID.randomUUID().toString())
+        id(UUID.randomUUID())
     }
+
+    fun id(uuid: UUID) = property(BuiltinLanguages.MPSRepositoryConcepts.Module.id, uuid.toString())
+
+    fun model(body: MPSModelDataBuilder.() -> Unit) {
+        model(BuiltinLanguages.MPSRepositoryConcepts.Model, body)
+    }
+
+    fun model(type: IConcept, body: MPSModelDataBuilder.() -> Unit) {
+        addChild(
+            MPSModelDataBuilder(context, type).apply {
+                role(BuiltinLanguages.MPSRepositoryConcepts.Module.models)
+                body()
+            }.data,
+        )
+    }
+}
+
+class MPSModelDataBuilder(context: NodeDataBuilderContext, subconcept: IConcept) : NodeDataBuilder(context, subconcept) {
+    init {
+        id(UUID.randomUUID())
+    }
+
+    fun id(uuid: UUID) = property(BuiltinLanguages.MPSRepositoryConcepts.Model.id, "r:$uuid")
 }
 
 private fun IConcept.newNodeData() = NodeData(concept = getUID())

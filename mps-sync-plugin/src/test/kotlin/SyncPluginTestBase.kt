@@ -88,8 +88,6 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             versionOnServer.getTree().asData()
         }
             .root // the node with ID ITree.ROOT_ID
-            .children.single() // the project node
-            .copy(id = null, role = null)
     }
 
     suspend fun compareDumps(useInitialDump: Boolean = false, branchRef: BranchReference = defaultBranchRef) {

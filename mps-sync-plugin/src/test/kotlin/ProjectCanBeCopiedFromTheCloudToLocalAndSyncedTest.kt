@@ -20,11 +20,13 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITree
 import org.modelix.model.api.key
 import org.modelix.model.client2.runWriteOnBranch
+import org.modelix.model.data.NodeData
+import org.modelix.model.lazy.BranchReference
 
 // TODO enable and fix this test
-abstract class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest_UsingRoleIds : ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(true)
+abstract class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTestUsingRoleIds : ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(true)
 
-class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest_UsingRoleNames : ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(false)
+class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTestUsingRoleNames : ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(false)
 
 abstract class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(val useRoleIds: Boolean) : SyncPluginTestBase(null) {
 
@@ -44,7 +46,7 @@ abstract class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(val useRoleIds
         }
         println(json.encodeToString(dataForServerInit))
         val projectNodeIdOnServer = runWithNewConnection { client ->
-            client.initRepository(defaultBranchRef.repositoryId, useRoleIds = useRoleIds) // TODO also test with useRoleIds = true
+            client.initRepository(defaultBranchRef.repositoryId, useRoleIds = useRoleIds)
             client.runWriteOnBranch(defaultBranchRef) { branch ->
                 dataForServerInit.load(branch.writeTransaction, ITree.ROOT_ID)
             }
@@ -73,5 +75,11 @@ abstract class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(val useRoleIds
                 )
             },
         )
+    }
+
+    protected override suspend fun readDumpFromServer(branchRef: BranchReference): NodeData {
+        return super.readDumpFromServer(branchRef)
+            .children.single() // the project node
+            .copy(id = null, role = null)
     }
 }

@@ -47,7 +47,9 @@ public class SModelAsNode extends TreeElementAsNode<SModel> implements INode {
   };
   private static TreeElementAsNode.IPropertyAccessor<SModel> stereotypeAccessor = new TreeElementAsNode.IPropertyAccessor<SModel>() {
     public String get(SModel element) {
-      return element.getName().getStereotype();
+      String value = element.getName().getStereotype();
+      if ("".equals(value)) return null; // default value is returned as not being set to avoid unnecessary synchronization
+      return value;
     }
     public String set(SModel element, String value) {
       throw new UnsupportedOperationException("Stereotype is read only");

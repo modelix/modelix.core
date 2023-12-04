@@ -204,6 +204,7 @@ class ModelSyncService : Disposable, ISyncService {
                 override fun getConnection(): IBranchConnection {
                     return this@ActiveBranchAdapter
                 }
+
                 @OptIn(ExperimentalTime::class)
                 override suspend fun flush() {
                     legacyBinding.rootBinding.syncQueue.flush()

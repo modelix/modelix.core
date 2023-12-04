@@ -19,6 +19,7 @@ import jetbrains.mps.smodel.SModelId
 import junit.framework.TestCase
 import org.modelix.model.api.IChildLink
 import org.modelix.model.data.NodeData
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsplugin.SModuleUtils
 import java.util.UUID
 
@@ -64,5 +65,11 @@ class ModuleCanBeCopiedOnAndSyncedCloudTest : SyncPluginTestBase("SimpleProjectF
 
     override fun readDumpFromMPS(): NodeData {
         return super.readDumpFromMPS().children.single().copy(role = null)
+    }
+
+    protected override suspend fun readDumpFromServer(branchRef: BranchReference): NodeData {
+        return super.readDumpFromServer(branchRef)
+            .children.single() // the project node
+            .copy(id = null, role = null)
     }
 }

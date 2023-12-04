@@ -22,11 +22,11 @@ import org.modelix.model.api.key
 import org.modelix.model.client2.runWriteOnBranch
 
 // TODO enable and fix this test
-abstract class CloudFirstProjectTestUsingRoleIds : CloudFirstProjectTest(true)
+abstract class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest_UsingRoleIds : ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(true)
 
-class CloudFirstProjectTestUsingRoleNames : CloudFirstProjectTest(false)
+class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest_UsingRoleNames : ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(false)
 
-abstract class CloudFirstProjectTest(val useRoleIds: Boolean) : SyncPluginTestBase(null) {
+abstract class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(val useRoleIds: Boolean) : SyncPluginTestBase(null) {
 
     fun testInitialSyncToServer() = runTestWithSyncService { syncService ->
         val initialMpsProjectName = mpsProject.name

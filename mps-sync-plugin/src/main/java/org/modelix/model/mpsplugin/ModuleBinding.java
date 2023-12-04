@@ -25,7 +25,7 @@ import jetbrains.mps.internal.collections.runtime.ListSequence;
 
 public abstract class ModuleBinding extends Binding {
   private static final Logger LOG = LogManager.getLogger(ModuleBinding.class);
-  protected final long moduleNodeId;
+  protected long moduleNodeId;
   private ITreeChangeVisitor treeChangeVisitor = new ITreeChangeVisitor() {
     @Override
     public void childrenChanged(long nodeId, @Nullable String role) {
@@ -122,6 +122,9 @@ public abstract class ModuleBinding extends Binding {
 
   @Override
   public void doSyncToCloud(IWriteTransaction t) {
+    if (moduleNodeId == 0L) {
+      moduleNodeId = ProjectModulesSynchronizer.createModuleOnCloud(t, getModule(), ITree.ROOT_ID, "modules");
+    }
     Map<Long, SModel> mappings = getModelsSynchronizer().syncToCloud(t);
     updateBindings(mappings, SyncDirection.TO_CLOUD);
   }

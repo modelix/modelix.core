@@ -29,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IChildLink
@@ -43,16 +44,22 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter
+import org.modelix.model.mpsplugin.Binding
 import org.modelix.model.mpsplugin.ModelServerConnections
+import org.modelix.model.mpsplugin.ModuleBinding
 import org.modelix.model.mpsplugin.ProjectBinding
+import org.modelix.model.mpsplugin.ProjectModuleBinding
 import org.modelix.model.mpsplugin.SyncDirection
+import org.modelix.model.mpsplugin.TransientModuleBinding
 import org.modelix.mps.sync.api.IBranchConnection
 import org.modelix.mps.sync.api.IModelServerConnection
 import org.modelix.mps.sync.api.IModuleBinding
 import org.modelix.mps.sync.api.ISyncService
 import java.net.ConnectException
 import java.net.URL
+import java.util.Collections
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 @Service(Service.Level.APP)
@@ -130,7 +137,7 @@ class ModelSyncService : Disposable, ISyncService {
         }
 
         private inner class ActiveBranchAdapter(val repositoryId: RepositoryId, val legacyActiveBranch: ActiveBranch) : IBranchConnection {
-            private val bindings: MutableList<org.modelix.mps.sync.api.IBinding> = ArrayList()
+            private val bindings: MutableList<org.modelix.mps.sync.api.IBinding> = Collections.synchronizedList(ArrayList())
 
             override fun getServerConnection(): IModelServerConnection {
                 return this@ServerConnection
@@ -150,14 +157,31 @@ class ModelSyncService : Disposable, ISyncService {
                 legacyConnection.addBinding(repositoryId, legacyBinding)
                 return ProjectBindingAdapter(legacyBinding).also {
                     Disposer.register(this, it)
-                    synchronized(bindings) {
-                        bindings += it
-                    }
+                    bindings += it
                 }
             }
 
-            override fun bindTransientModule(): IModuleBinding {
-                TODO("Not yet implemented")
+            override fun bindModule(mpsModule: SModule?, existingModuleNodeId: Long?): IModuleBinding {
+                val direction = when {
+                    mpsModule == null -> SyncDirection.TO_MPS
+                    existingModuleNodeId == null -> SyncDirection.TO_CLOUD
+                    else -> throw IllegalArgumentException("One of 'mpsModule' or 'existingModuleNodeId' must be provided")
+                }
+                val legacyBinding = ProjectModuleBinding(existingModuleNodeId ?: 0L, mpsModule, direction)
+                legacyConnection.addBinding(repositoryId, legacyBinding)
+                return ModuleBindingAdapter(legacyBinding).also {
+                    Disposer.register(this, it)
+                    bindings += it
+                }
+            }
+
+            override fun bindTransientModule(existingModuleNodeId: Long): IModuleBinding {
+                val legacyBinding = TransientModuleBinding(existingModuleNodeId)
+                legacyConnection.addBinding(repositoryId, legacyBinding)
+                return ModuleBindingAdapter(legacyBinding).also {
+                    Disposer.register(this, it)
+                    bindings += it
+                }
             }
 
             override fun <R> readModel(body: (INode) -> R): R {
@@ -175,11 +199,12 @@ class ModelSyncService : Disposable, ISyncService {
                 legacyActiveBranch.dispose()
             }
 
-            inner class ProjectBindingAdapter(val legacyBinding: ProjectBinding) : org.modelix.mps.sync.api.IBinding {
+            abstract inner class BindingAdapter : org.modelix.mps.sync.api.IBinding {
+                abstract val legacyBinding: Binding
                 override fun getConnection(): IBranchConnection {
                     return this@ActiveBranchAdapter
                 }
-
+                @OptIn(ExperimentalTime::class)
                 override suspend fun flush() {
                     legacyBinding.rootBinding.syncQueue.flush()
                     delay(5.seconds) // TODO wait until the client is done writing to the server
@@ -189,15 +214,21 @@ class ModelSyncService : Disposable, ISyncService {
                     legacyBinding.deactivate(null)
                 }
             }
+
+            inner class ProjectBindingAdapter(override val legacyBinding: ProjectBinding) : BindingAdapter()
+
+            inner class ModuleBindingAdapter(override val legacyBinding: ModuleBinding) : BindingAdapter(), org.modelix.mps.sync.api.IModuleBinding {
+                override fun getModule(): SModule = legacyBinding.module
+            }
         }
     }
 
     private var log: Logger = logger<ModelSyncService>()
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     var syncService: SyncServiceImpl
-    private var existingBindings = mutableListOf<IBinding>()
+    private var existingBindings = mutableListOf<org.modelix.mps.sync.IBinding>()
 
-    fun getBindingList(): List<IBinding> {
+    fun getBindingList(): List<org.modelix.mps.sync.IBinding> {
         return existingBindings.toMutableList()
     }
 

@@ -20,6 +20,7 @@ public abstract class Synchronizer<MPSChildT> {
   private String cloudRole;
 
   public Synchronizer(long cloudParentId, String cloudRole) {
+    if (cloudParentId == 0L) throw new IllegalArgumentException("Illegal 'cloudParentId': " + cloudParentId);
     this.cloudParentId = cloudParentId;
     this.cloudRole = cloudRole;
   }

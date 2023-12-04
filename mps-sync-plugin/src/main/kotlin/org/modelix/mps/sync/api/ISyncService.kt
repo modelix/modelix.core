@@ -44,7 +44,8 @@ interface IBranchConnection : Disposable {
     fun getServerConnection(): IModelServerConnection
     fun switchBranch(branchName: String)
     fun bindProject(mpsProject: Project, existingProjectNodeId: Long?): IBinding
-    fun bindTransientModule(): IModuleBinding
+    fun bindModule(mpsModule: SModule?, existingModuleNodeId: Long?): IModuleBinding
+    fun bindTransientModule(existingModuleNodeId: Long): IModuleBinding
     fun <R> readModel(body: (INode) -> R): R
     fun <R> writeModel(body: (INode) -> R): R
 }

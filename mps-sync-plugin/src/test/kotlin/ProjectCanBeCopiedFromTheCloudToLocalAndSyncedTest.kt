@@ -65,7 +65,7 @@ abstract class ProjectCanBeCopiedFromTheCloudToLocalAndSyncedTest(val useRoleIds
                     it.properties[BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.key(useRoleIds)],
                 )
             },
-            dumpMpsProject().also {
+            readDumpFromMPS().also {
                 // A mismatch of the project name should not be synchronized
                 assertEquals(
                     initialMpsProjectName,

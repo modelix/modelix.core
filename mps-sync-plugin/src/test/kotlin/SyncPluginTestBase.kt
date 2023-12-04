@@ -73,28 +73,28 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
 
     protected val projectAsNode: ProjectAsNode get() = org.modelix.model.mpsadapters.mps.ProjectAsNode(mpsProject)
 
-    protected fun dumpMpsProject() = readAction {
+    protected open fun readDumpFromMPS() = readAction {
         projectAsNode.asData(includeChildren = false)
             .copy(
                 id = null,
-                role = "",
+                role = null,
                 children = mpsProject.projectModules.map { SModuleAsNode(it).asData() },
             )
     }
 
-    suspend fun readDumpFromServer(branchRef: BranchReference = defaultBranchRef): NodeData {
+    protected open suspend fun readDumpFromServer(branchRef: BranchReference = defaultBranchRef): NodeData {
         return runWithNewConnection { client ->
             val versionOnServer = client.pull(branchRef, null)
             versionOnServer.getTree().asData()
         }
             .root // the node with ID ITree.ROOT_ID
             .children.single() // the project node
-            .copy(id = null, role = "")
+            .copy(id = null, role = null)
     }
 
     suspend fun compareDumps(useInitialDump: Boolean = false, branchRef: BranchReference = defaultBranchRef) {
         compareDumps(
-            if (useInitialDump) initialDumpFromMPS else dumpMpsProject(),
+            if (useInitialDump) initialDumpFromMPS else readDumpFromMPS(),
             readDumpFromServer(branchRef),
         )
     }
@@ -146,7 +146,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
                     ),
                 ),
             )
-            initialDumpFromMPS = dumpMpsProject()
+            initialDumpFromMPS = readDumpFromMPS()
         }
     }
 

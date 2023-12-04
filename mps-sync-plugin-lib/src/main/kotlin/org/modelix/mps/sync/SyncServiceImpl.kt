@@ -8,9 +8,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
+import org.modelix.model.api.getNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
@@ -177,12 +179,36 @@ class SyncServiceImpl : SyncService {
         }
          */
 
+        /*
         // move LectureList (root node) to a new model
         val lectureListNodeId = 17179869188
         val newModelId = nodeId.toLong()
         branch.runWriteT { transaction ->
             transaction.moveChild(newModelId, null, -1, lectureListNodeId)
         }
+         */
+
+        // create new model in the cloud
+        branch.runWriteT {
+            val cloudModuleId = nodeId.toLong()
+            val cloudModule = branch.getNode(cloudModuleId)
+            val cloudModel = cloudModule.addNewChild(
+                BuiltinLanguages.MPSRepositoryConcepts.Module.models,
+                -1,
+                BuiltinLanguages.MPSRepositoryConcepts.Model,
+            )
+
+            cloudModel.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.Model.id,
+                "r:ce161c54-ea76-40a6-a31d-9d7cd01fecf2",
+            )
+            cloudModel.setPropertyValue(
+                BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
+                "University.Schedule.modelserver.backend.hellooworld",
+            )
+        }
+
+        // create new module in the cloud
     }
 }
 

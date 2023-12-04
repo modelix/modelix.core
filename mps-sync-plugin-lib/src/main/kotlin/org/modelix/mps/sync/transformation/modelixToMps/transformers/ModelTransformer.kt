@@ -29,6 +29,8 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.util.createModel
+import org.modelix.mps.sync.mps.util.runWriteActionCommandBlocking
+import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
 import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.util.getModule
@@ -38,7 +40,7 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap: MpsToModelixMap) {
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
-    fun transformToModel(iNode: INode) {
+    fun transformToModel(iNode: INode, isInEDT: Boolean = false) {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Model's ($iNode) name is null" }
 
@@ -51,10 +53,16 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        modelAccess.runWriteInEDTBlocking {
+        val createModelAction = {
             sModel = module.createModel(name, modelId) as EditableSModel
             sModel.save()
         }
+        if (isInEDT) {
+            modelAccess.runWriteActionCommandBlocking(createModelAction)
+        } else {
+            modelAccess.runWriteActionInEDTBlocking(createModelAction)
+        }
+
         nodeMap.put(sModel, iNode.nodeIdAsLong())
 
         // register model imports

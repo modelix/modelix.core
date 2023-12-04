@@ -144,7 +144,7 @@ class TreeChangeVisitor(
                 if (iNode.isModule()) {
                     moduleTransformer.transformToModule(iNode)
                 } else if (iNode.isModel()) {
-                    modelTransformer.transformToModel(iNode)
+                    modelTransformer.transformToModel(iNode, true)
                 } else {
                     nodeTransformer.transformToNode(iNode)
                 }

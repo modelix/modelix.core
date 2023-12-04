@@ -169,3 +169,8 @@ modelSync {
 --
 
 Generated Gradle task to perform synchronization: `runSyncPushToMyServer`.
+
+== Logging
+
+The plugin uses the normal Gradle logging.
+In case progress or debug information is required, run Gradle with `--info` or `--debug` command line arguments.

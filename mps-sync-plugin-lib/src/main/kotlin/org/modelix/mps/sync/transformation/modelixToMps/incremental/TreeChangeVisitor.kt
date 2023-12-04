@@ -163,7 +163,6 @@ class TreeChangeVisitor(
     }
 
     override fun containmentChanged(nodeId: Long) {
-        // TODO test for the case when moving the node to a new model (e.g. we have two models and we move a root node to a new model)
         isSynchronizing.runIfAlone(::handleThrowable) {
             val iNode = getBranch().getNode(nodeId)
             var newParentId: Long? = null
@@ -210,10 +209,12 @@ class TreeChangeVisitor(
                     require(sModel is SModelBase) { "Model ${sModel.modelId} is not an SModelBase" }
 
                     // remove from old parent
-                    // TODO test me: old parent is another module
                     val oldParentModule = sModel.module
                     require(oldParentModule is SModuleBase) { "Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase" }
-                    oldParentModule.unregisterModel(sModel)
+                    modelAccess.runWriteActionCommandBlocking {
+                        oldParentModule.unregisterModel(sModel)
+                        sModel.module = null
+                    }
 
                     // add to new parent
                     require(newParentModule is SModuleBase) { "New parent Module ${newParentModule.moduleId} is not an SModuleBase" }

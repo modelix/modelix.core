@@ -162,6 +162,7 @@ object Main {
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)
                 install(Resources)
+                // https://opensource.zalando.com/restful-api-guidelines/#136
                 install(IgnoreTrailingSlash)
                 install(WebSockets) {
                     pingPeriod = Duration.ofSeconds(30)

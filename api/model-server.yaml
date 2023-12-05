@@ -24,18 +24,21 @@ paths:
   /v2/server-id:
     get:
       description: ""
+      operationId: getServerId
       responses:
         "200":
           $ref: '#/components/responses/200'
   /v2/user-id:
     get:
       description: ""
+      operationId: getUserId
       responses:
         "200":
           $ref: '#/components/responses/200'
   /v2/generate-client-id:
     post:
       description: ""
+      operationId: postGenerateClientId
       responses:
         "200":
           $ref: '#/components/responses/200'
@@ -66,12 +69,14 @@ paths:
   /v2/repositories:
     get:
       description: ""
+      operationId: getRepositories
       responses:
         "200":
           $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches:
     get:
       description: ""
+      operationId: getRepositoryBranches
       parameters:
         - name: repository
           in: "path"
@@ -84,6 +89,7 @@ paths:
   /v2/repositories/{repository}/branches/{branch}:
     get:
       description: ""
+      operationId: getRepositoryBranch
       parameters:
         - name: lastKnown
           in: "query"
@@ -142,6 +148,7 @@ paths:
   /v2/repositories/{repository}/branches/{branch}/hash:
     get:
       description: ""
+      operationId: getRepositoryBranchHash
       parameters:
         - name: repository
           in: "path"
@@ -299,6 +306,7 @@ paths:
   /v2/repositories/{repository}/init:
     post:
       description: ""
+      operationId: initializeRepository
       parameters:
         - name: useRoleIds
           in: "query"
@@ -326,6 +334,7 @@ paths:
   /v2/repositories/{repository}/versions/{versionHash}:
     get:
       description: ""
+      operationId: getRepositoryVersionHash
       parameters:
         - name: lastKnown
           in: "query"

@@ -76,30 +76,30 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
     }
 
     private fun Route.installHandlers() {
-        post<Paths.v2GenerateClientIdPost> {
+        post<Paths.postGenerateClientId> {
             call.respondText(storeClient.generateId("clientId").toString())
         }
-        get<Paths.v2ServerIdGet> {
+        get<Paths.getServerId> {
             call.respondText(repositoriesManager.getServerId())
         }
-        get<Paths.v2ServerIdGet> {
+        get<Paths.getServerId> {
             call.respondText(repositoriesManager.getServerId())
         }
-        get<Paths.v2UserIdGet> {
+        get<Paths.getUserId> {
             call.respondText(call.getUserName() ?: call.request.origin.remoteHost)
         }
-        get<Paths.v2RepositoriesGet> {
+        get<Paths.getRepositories> {
             call.respondText(repositoriesManager.getRepositories().joinToString("\n") { it.id })
         }
 
-        get<Paths.v2RepositoriesRepositoryBranchesGet> {
+        get<Paths.getRepositoryBranches> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
             call.respondText(repositoriesManager.getBranchNames(repositoryId()).joinToString("\n"))
         }
 
-        get<Paths.v2RepositoriesRepositoryBranchesBranchGet> {
+        get<Paths.getRepositoryBranch> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
@@ -119,7 +119,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondDelta(versionHash, baseVersionHash)
         }
 
-        get<Paths.v2RepositoriesRepositoryBranchesBranchHashGet> {
+        get<Paths.getRepositoryBranchHash> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
@@ -138,7 +138,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondText(versionHash)
         }
 
-        post<Paths.v2RepositoriesRepositoryInitPost> {
+        post<Paths.initializeRepository> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
@@ -208,7 +208,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             }
         }
 
-        get<Paths.v2RepositoriesRepositoryVersionsVersionHashGet> {
+        get<Paths.getRepositoryVersionHash> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 

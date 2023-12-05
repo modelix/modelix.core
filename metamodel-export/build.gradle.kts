@@ -42,3 +42,5 @@ extensions.configure<MPSBuildSettings> {
         module("org.modelix.metamodel.export")
     }
 }
+
+tasks.register("mpsCompatibility") { dependsOn("build") }

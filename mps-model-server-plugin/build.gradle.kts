@@ -105,3 +105,5 @@ publishing {
         }
     }
 }
+
+tasks.register("mpsCompatibility") { dependsOn("build") }

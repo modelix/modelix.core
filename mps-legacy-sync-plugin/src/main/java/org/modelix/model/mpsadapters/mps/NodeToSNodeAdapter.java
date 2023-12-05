@@ -24,7 +24,6 @@ import org.jetbrains.mps.openapi.model.SNodeReference;
 import org.jetbrains.mps.openapi.language.SConcept;
 import org.modelix.model.api.IConcept;
 import org.jetbrains.mps.openapi.language.SAbstractConcept;
-import jetbrains.mps.lang.core.behavior.BaseConcept__BehaviorDescriptor;
 import org.jetbrains.mps.openapi.language.SContainmentLink;
 import org.modelix.model.api.INodeKt;
 import jetbrains.mps.internal.collections.runtime.Sequence;
@@ -190,7 +189,7 @@ public class NodeToSNodeAdapter implements SNode {
     SNode snode = this;
     String presentation = null;
     try {
-      presentation = BaseConcept__BehaviorDescriptor.getPresentation_idhEwIMiw.invoke(snode);
+      presentation = node.toString(); // BaseConcept__BehaviorDescriptor.getPresentation_idhEwIMiw.invoke(snode);
     } catch (Exception ex) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("", ex);
@@ -371,7 +370,7 @@ public class NodeToSNodeAdapter implements SNode {
   public void setReference(@NotNull SReferenceLink link, ResolveInfo info) {
     throw new UnsupportedOperationException("Not implemented");
   }
-  @Override
+//  @Override
   public void setReference(@NotNull SReferenceLink link, @NotNull SNodeReference reference) {
     throw new UnsupportedOperationException("Not implemented");
   }

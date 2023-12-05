@@ -21,6 +21,7 @@ module.exports = {
         "model-datastructure",
         "model-server",
         "modelql",
+        "mps-legacy-sync-plugin",
         "mps-model-adapters",
         "mps-model-server",
         "mps-model-server-plugin",

@@ -74,7 +74,7 @@ public class RootBinding extends Binding implements IBranchListener {
         public ITreeChangeVisitor select(Binding it) {
           return it.getTreeChangeVisitor(oldTree, newTree);
         }
-      }).where(new NotNullWhereFilter<ITreeChangeVisitor>()).toListSequence();
+      }).where(new NotNullWhereFilter()).toListSequence();
       if (ListSequence.fromList(visitors).isNotEmpty()) {
         newTree.visitChanges(oldTree, new TreeChangeMulticaster(visitors));
       }

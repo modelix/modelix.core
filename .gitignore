@@ -10,3 +10,4 @@ kotlin_gen
 /node_modules
 **/.ideaconfig
 **/.mpsconfig
+$LOG_DIR$

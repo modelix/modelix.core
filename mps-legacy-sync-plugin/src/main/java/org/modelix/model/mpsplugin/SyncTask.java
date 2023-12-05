@@ -52,6 +52,8 @@ public class SyncTask implements Runnable {
         }
         return;
       }
+    } catch (Throwable ex) {
+      LOG.error("Task failed: " + this, ex);
     } finally {
       binding.runningTask = null;
       state = State.DONE;

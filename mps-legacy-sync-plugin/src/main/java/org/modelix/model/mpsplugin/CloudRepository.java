@@ -125,10 +125,10 @@ public class CloudRepository implements ICloudRepository {
   }
   /**
    * Computer receives the root node
-   * 
-   * @param computer 
-   * @param <T> 
-   * @return 
+   *
+   * @param computer
+   * @param <T>
+   * @return
    */
   public <T> T computeWrite(final Function1<PNodeAdapter, T> computer) {
     ActiveBranch activeBranch = modelServer.getActiveBranch(repositoryId);

@@ -9,6 +9,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getRootNode
 
 @Serializable
 data class ModelData(
@@ -26,48 +28,12 @@ data class ModelData(
             if (root.id != null) {
                 createdNodes[root.id] = parentId
             }
-            setOriginalId(root, t, parentId)
+            root.setOriginalId(t, parentId)
             for (nodeData in root.children) {
-                loadNode(nodeData, t, parentId, createdNodes, pendingReferences)
+                nodeData.load(t, parentId, createdNodes, pendingReferences)
             }
             pendingReferences.forEach { it() }
         }
-    }
-
-    private fun loadNode(
-        nodeData: NodeData,
-        t: IWriteTransaction,
-        parentId: Long,
-        createdNodes: HashMap<String, Long>,
-        pendingReferences: ArrayList<() -> Unit>,
-    ) {
-        val conceptRef = nodeData.concept?.let { ConceptReference(it) }
-        val createdId = t.addNewChild(parentId, nodeData.role, -1, conceptRef)
-        if (nodeData.id != null) {
-            createdNodes[nodeData.id] = createdId
-            setOriginalId(nodeData, t, createdId)
-        }
-        for (propertyData in nodeData.properties) {
-            t.setProperty(createdId, propertyData.key, propertyData.value)
-        }
-        for (referenceData in nodeData.references) {
-            pendingReferences += {
-                val target = createdNodes[referenceData.value]?.let { LocalPNodeReference(it) }
-                t.setReferenceTarget(createdId, referenceData.key, target)
-            }
-        }
-        for (childData in nodeData.children) {
-            loadNode(childData, t, createdId, createdNodes, pendingReferences)
-        }
-    }
-
-    private fun setOriginalId(
-        nodeData: NodeData,
-        t: IWriteTransaction,
-        nodeId: Long,
-    ) {
-        val key = NodeData.idPropertyKey
-        t.setProperty(nodeId, key, nodeData.properties[key] ?: nodeData.id)
     }
 
     companion object {
@@ -85,8 +51,57 @@ data class NodeData(
     val properties: Map<String, String> = emptyMap(),
     val references: Map<String, String> = emptyMap(),
 ) {
+    fun load(t: IWriteTransaction, parentId: Long): Long {
+        val pendingReferences = ArrayList<() -> Unit>()
+        val createdNodes = HashMap<String, Long>()
+        val createNodeId = load(t, parentId, createdNodes, pendingReferences)
+        pendingReferences.forEach { it() }
+        return createNodeId
+    }
+
+    internal fun load(
+        t: IWriteTransaction,
+        parentId: Long,
+        createdNodes: HashMap<String, Long>,
+        pendingReferences: ArrayList<() -> Unit>,
+    ): Long {
+        val nodeData = this
+        val conceptRef = nodeData.concept?.let { ConceptReference(it) }
+        val createdId = t.addNewChild(parentId, nodeData.role, -1, conceptRef)
+        if (nodeData.id != null) {
+            createdNodes[nodeData.id] = createdId
+            setOriginalId(t, createdId)
+        }
+        for (propertyData in nodeData.properties) {
+            t.setProperty(createdId, propertyData.key, propertyData.value)
+        }
+        for (referenceData in nodeData.references) {
+            pendingReferences += {
+                val target = createdNodes[referenceData.value]?.let { LocalPNodeReference(it) }
+                t.setReferenceTarget(createdId, referenceData.key, target)
+            }
+        }
+        for (childData in nodeData.children) {
+            childData.load(t, createdId, createdNodes, pendingReferences)
+        }
+        return createdId
+    }
+
+    fun setOriginalId(
+        t: IWriteTransaction,
+        nodeId: Long,
+    ) {
+        val key = NodeData.idPropertyKey
+        t.setProperty(nodeId, key, properties[key] ?: id)
+    }
+
     companion object {
+        @Deprecated(
+            "This is MPS specific and should be replaced by the generalized ORIGINAL_NODE_ID_KEY, " +
+                "which stores the whole ID instead of just the MPS node ID which is only unique inside a model.",
+        )
         const val ID_PROPERTY_KEY = "#mpsNodeId#"
+        const val ORIGINAL_NODE_ID_KEY = "\$originalId"
 
         @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
         const val idPropertyKey = ID_PROPERTY_KEY
@@ -100,13 +115,20 @@ fun NodeData.uid(model: ModelData): String {
 }
 fun ModelData.nodeUID(node: NodeData): String = node.uid(this)
 
-fun INode.asData(): NodeData = NodeData(
+fun IBranch.asData() = ModelData(
+    id = getId(),
+    root = getRootNode().asData(),
+)
+
+fun ITree.asData() = TreePointer(this).asData()
+
+fun INode.asData(includeChildren: Boolean = true): NodeData = NodeData(
     id = reference.serialize(),
     concept = concept?.getUID(),
     role = roleInParent,
     properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) },
     references = getReferenceRoles().associateWithNotNull { getReferenceTargetRef(it)?.serialize() },
-    children = allChildren.map { it.asData() },
+    children = if (includeChildren) allChildren.map { it.asData() } else emptyList(),
 )
 
 inline fun <K, V : Any> Iterable<K>.associateWithNotNull(valueSelector: (K) -> V?): Map<K, V> {

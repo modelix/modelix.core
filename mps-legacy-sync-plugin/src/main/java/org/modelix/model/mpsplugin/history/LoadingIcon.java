@@ -4,6 +4,8 @@ package org.modelix.model.mpsplugin.history;
 
 import javax.swing.Icon;
 import java.util.Set;
+
+import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes;
 import jetbrains.mps.ide.ui.tree.MPSTreeNode;
 import jetbrains.mps.internal.collections.runtime.SetSequence;
 import java.util.HashSet;
@@ -13,6 +15,8 @@ import java.awt.event.ActionEvent;
 import jetbrains.mps.ide.ui.tree.MPSTree;
 import jetbrains.mps.internal.collections.runtime.ISelector;
 import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter;
+import org.jetbrains.mps.openapi.module.SRepository;
+
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -60,7 +64,7 @@ public class LoadingIcon implements Icon {
             public MPSTree select(MPSTreeNode it) {
               return it.getTree();
             }
-          }).where(new NotNullWhereFilter<MPSTree>()).distinct()) {
+          }).where((_FunctionTypes._return_P1_E0<Boolean, MPSTree>) (_FunctionTypes._return_P1_E0) new NotNullWhereFilter()).distinct()) {
             c.repaint();
           }
         }

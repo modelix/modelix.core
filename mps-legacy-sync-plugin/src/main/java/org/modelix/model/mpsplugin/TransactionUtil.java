@@ -46,7 +46,7 @@ public class TransactionUtil {
       public IArea select(Object it) {
         return extractArea(it);
       }
-    }).where(new NotNullWhereFilter<IArea>()), r);
+    }).where(new NotNullWhereFilter()), r);
   }
 
   public static void runWriteOnNode(Object nodeToRead, Runnable r) {
@@ -75,7 +75,7 @@ public class TransactionUtil {
       public IArea select(Object it) {
         return extractArea(it);
       }
-    }).where(new NotNullWhereFilter<IArea>()), r);
+    }).where(new NotNullWhereFilter()), r);
   }
 
   public static void runReadOnAreas(final Iterable<IArea> areasToRead, final Runnable r) {

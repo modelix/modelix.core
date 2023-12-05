@@ -26,7 +26,6 @@ import org.jetbrains.mps.openapi.module.SRepository;
 import org.modelix.model.mpsplugin.CommandHelper;
 import org.modelix.model.area.ContextArea;
 import org.modelix.model.mpsadapters.mps.MPSArea;
-import jetbrains.mps.lang.core.behavior.BaseConcept__BehaviorDescriptor;
 import org.apache.log4j.Level;
 import jetbrains.mps.ide.icons.GlobalIconManager;
 import java.util.Map;
@@ -154,7 +153,7 @@ public class CloudNodeTreeNode extends TextTreeNode {
                     return ContextArea.INSTANCE.withAdditionalContext(new MPSArea(mpsRepo), new Function0<Unit>() {
                       public Unit invoke() {
                         try {
-                          newText.value = BaseConcept__BehaviorDescriptor.getPresentation_idhEwIMiw.invoke(snode) + " [" + concept.getLongName() + "]   #" + Long.toHexString(nodeId);
+                          newText.value = snode + " [" + concept.getLongName() + "]   #" + Long.toHexString(nodeId);
                         } catch (Exception ex) {
                           if (LOG.isEnabledFor(Level.ERROR)) {
                             LOG.error("Failed to update the text", ex);

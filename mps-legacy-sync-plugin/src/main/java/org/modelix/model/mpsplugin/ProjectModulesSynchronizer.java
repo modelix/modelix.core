@@ -8,9 +8,11 @@ import java.util.List;
 import jetbrains.mps.internal.collections.runtime.ListSequence;
 import jetbrains.mps.internal.collections.runtime.IWhereFilter;
 import jetbrains.mps.project.Solution;
+import org.modelix.model.api.IProperty;
 import org.modelix.model.api.ITree;
 import jetbrains.mps.internal.collections.runtime.Sequence;
 import org.modelix.model.api.IConcept;
+import org.modelix.model.data.NodeData;
 import org.modelix.model.mpsadapters.mps.SConceptAdapter;
 import org.jetbrains.mps.openapi.module.SModuleId;
 import jetbrains.mps.project.ModuleId;
@@ -29,6 +31,7 @@ import org.jetbrains.mps.openapi.language.SContainmentLink;
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory;
 import org.jetbrains.mps.openapi.language.SConcept;
 import org.jetbrains.mps.openapi.language.SProperty;
+import org.modelix.model.mpsadapters.mps.SModuleAsNode;
 
 public class ProjectModulesSynchronizer extends Synchronizer<SModule> {
 
@@ -124,9 +127,18 @@ public class ProjectModulesSynchronizer extends Synchronizer<SModule> {
 
   @Override
   public long createCloudChild(IWriteTransaction t, SModule mpsChild) {
-    long modelNodeId = t.addNewChild(getCloudParentId(), LINKS.modules$Bi3g.getName(), -1, SConceptAdapter.wrap(CONCEPTS.Module$4i));
-    t.setProperty(modelNodeId, PROPS.id$7MjP.getName(), mpsChild.getModuleId().toString());
-    t.setProperty(modelNodeId, PROPS.name$MnvL.getName(), mpsChild.getModuleName());
+    return createModuleOnCloud(t, mpsChild, getCloudParentId(), LINKS.modules$Bi3g.getName());
+  }
+
+  public static long createModuleOnCloud(IWriteTransaction t, SModule mpsModule, long cloudParentId, String cloudRole) {
+    long modelNodeId = t.addNewChild(cloudParentId, cloudRole, -1, SConceptAdapter.wrap(CONCEPTS.Module$4i));
+    SModuleAsNode moduleAsNode = new SModuleAsNode(mpsModule);
+    for (IProperty property : moduleAsNode.getConcept().getAllProperties()) {
+      t.setProperty(modelNodeId, property.getName(), moduleAsNode.getPropertyValue(property.getName()));
+    }
+    t.setProperty(modelNodeId, PROPS.id$7MjP.getName(), mpsModule.getModuleId().toString());
+    t.setProperty(modelNodeId, NodeData.ORIGINAL_NODE_ID_KEY, moduleAsNode.getReference().serialize());
+    t.setProperty(modelNodeId, PROPS.name$MnvL.getName(), mpsModule.getModuleName());
     return modelNodeId;
   }
 
@@ -134,7 +146,7 @@ public class ProjectModulesSynchronizer extends Synchronizer<SModule> {
     /*package*/ static final SContainmentLink modules$Bi3g = MetaAdapterFactory.getContainmentLink(0xa7577d1d4e5431dL, 0x98b1fae38f9aee80L, 0x37a0917d689de959L, 0x37a0917d689de9e2L, "modules");
   }
 
-  private static final class CONCEPTS {
+  static final class CONCEPTS {
     /*package*/ static final SConcept Module$4i = MetaAdapterFactory.getConcept(0xa7577d1d4e5431dL, 0x98b1fae38f9aee80L, 0x69652614fd1c50fL, "org.modelix.model.repositoryconcepts.structure.Module");
     /*package*/ static final SConcept Solution$q3 = MetaAdapterFactory.getConcept(0xa7577d1d4e5431dL, 0x98b1fae38f9aee80L, 0x65e0d25ff052e203L, "org.modelix.model.repositoryconcepts.structure.Solution");
     /*package*/ static final SConcept DevKit$r1 = MetaAdapterFactory.getConcept(0xa7577d1d4e5431dL, 0x98b1fae38f9aee80L, 0x65e0d25ff052e205L, "org.modelix.model.repositoryconcepts.structure.DevKit");

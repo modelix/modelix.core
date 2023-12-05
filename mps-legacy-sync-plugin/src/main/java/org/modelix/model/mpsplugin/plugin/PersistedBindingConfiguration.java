@@ -33,7 +33,6 @@ import org.apache.log4j.Level;
 import jetbrains.mps.internal.collections.runtime.SetSequence;
 import java.util.HashSet;
 import org.modelix.model.mpsplugin.ModelServerConnections;
-import jetbrains.mps.baseLanguage.logging.runtime.model.LoggingRuntime;
 import java.util.Set;
 import org.modelix.model.mpsplugin.SharedExecutors;
 import jetbrains.mps.internal.collections.runtime.Sequence;
@@ -376,7 +375,7 @@ public class PersistedBindingConfiguration {
       consumer.accept(modelServer);
     } else {
       if (nAttempts <= 0) {
-        LoggingRuntime.logMsgView(Level.ERROR, "Unable to connect to Modelix server. Modelix configuration aborted", PersistedBindingConfiguration.class, null, null);
+        LOG.error("Unable to connect to Modelix server. Modelix configuration aborted", null);
         return;
       }
       modelServer.reconnect();
@@ -401,9 +400,9 @@ public class PersistedBindingConfiguration {
 
   /**
    * FIXME we should probably not identify modules by name but some unique identifier instead
-   * 
-   * @param repositoryInModelServer 
-   * @param modulesToBind 
+   *
+   * @param repositoryInModelServer
+   * @param modulesToBind
    */
   private static void bindToTransientModules(final CloudRepository repositoryInModelServer, final Set<String> modulesToBind) {
     SharedExecutors.FIXED.execute(new Runnable() {
@@ -424,9 +423,9 @@ public class PersistedBindingConfiguration {
 
   /**
    * FIXME we should probably not identify modules by name but some unique identifier instead
-   * 
-   * @param repositoryInModelServer 
-   * @param modulesToBind 
+   *
+   * @param repositoryInModelServer
+   * @param modulesToBind
    */
   private void bindToMappedModules(final CloudRepository repositoryInModelServer, final Set<String> modulesToBind) {
     SharedExecutors.FIXED.execute(new Runnable() {

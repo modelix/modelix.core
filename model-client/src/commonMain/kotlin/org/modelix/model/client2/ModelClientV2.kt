@@ -20,6 +20,7 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -30,10 +31,12 @@ import io.ktor.http.contentType
 import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
 import org.modelix.model.api.IdGeneratorDummy
@@ -106,11 +109,14 @@ class ModelClientV2(
 
     override fun getUserId(): String? = clientProvidedUserId ?: serverProvidedUserId
 
-    override suspend fun initRepository(repository: RepositoryId): IVersion {
+    override suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean): IVersion {
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "init")
+                if (!useRoleIds) {
+                    parameter("useRoleIds", useRoleIds.toString())
+                }
             }
         }
         val delta = response.body<VersionDelta>()
@@ -267,6 +273,8 @@ class ModelClientV2(
         httpClient.close()
     }
 
+    fun isActive(): Boolean = httpClient.isActive
+
     private fun createVersion(baseVersion: CLVersion?, delta: VersionDelta): CLVersion {
         return if (baseVersion == null) {
             CLVersion(
@@ -375,11 +383,15 @@ fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.ass
  * Performs a write transaction on the root node of the given branch.
  */
 suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode) -> T): T {
+    return runWriteOnBranch(branchRef) { body(it.getRootNode()) }
+}
+
+suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body: (IBranch) -> T): T {
     val client = this
     val baseVersion = client.pull(branchRef, null)
     val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (client as ModelClientV2).store)
     val result = branch.computeWrite {
-        body(branch.getRootNode())
+        body(branch)
     }
     val (ops, newTree) = branch.getPendingChanges()
     val newVersion = CLVersion.createRegularVersion(

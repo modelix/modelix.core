@@ -110,14 +110,14 @@ public class ModelImportExport {
                                     try {
                                       modelCloudExporter.setCheckoutMode().export(exportPath, mpsProject);
                                       // Application.exit does not let us set a proper exit code, therefore we communicate
-                                      // we failed or managed to export through strings... 
+                                      // we failed or managed to export through strings...
                                       System.out.println("DOWNLOAD TASK WRITING " + "<MODEL EXPORT COMPLETED SUCCESSFULLY>\n");
                                       gradleTaskOut.value.println("<MODEL EXPORT COMPLETED SUCCESSFULLY>");
                                     } catch (Throwable t) {
                                       t.printStackTrace();
                                       System.out.println("CHECKOUT FAILED");
                                       // Application.exit does not let us set a proper exit code, therefore we communicate
-                                      // we failed or managed to export through strings... 
+                                      // we failed or managed to export through strings...
                                       System.out.println("DOWNLOAD TASK WRITING " + "<MODEL EXPORT NOT COMPLETED SUCCESSFULLY>\n");
                                       gradleTaskOut.value.println("<MODEL EXPORT NOT COMPLETED SUCCESSFULLY>");
                                     }
@@ -223,7 +223,7 @@ public class ModelImportExport {
                       LOG.error("Modelix Application Plugin Failure", ex);
                     }
                     // Application.exit does not let us set a proper exit code, therefore we communicate
-                    // we failed or managed to export through strings... 
+                    // we failed or managed to export through strings...
                     System.out.println("<MODEL EXPORT NOT COMPLETED SUCCESSFULLY>");
                     ApplicationManager.getApplication().exit(true, true, false);
                   }
@@ -306,7 +306,7 @@ public class ModelImportExport {
                       LOG.error("Modelix Application Plugin Failure", ex);
                     }
                     // Application.exit does not let us set a proper exit code, therefore we communicate
-                    // we failed or managed to export through strings... 
+                    // we failed or managed to export through strings...
                     System.out.println("<MODEL IMPORT FAILED>");
                     ApplicationManager.getApplication().exit(true, true, false);
                   }

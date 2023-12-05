@@ -51,7 +51,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
     // updated to the constructor with two arguments.
     constructor(root: INode) : this(root, false)
 
-    private fun doAndPotentiallyContinueOnErrors(block: () -> Unit) {
+    private inline fun doAndPotentiallyContinueOnErrors(block: () -> Unit) {
         try {
             block()
         } catch (e: Exception) {

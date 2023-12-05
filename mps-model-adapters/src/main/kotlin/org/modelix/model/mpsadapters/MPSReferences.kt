@@ -30,6 +30,7 @@ data class MPSModuleReference(val moduleReference: SModuleReference) : INodeRefe
     }
 
     override fun serialize(): String {
+        // TODO shouldn't contain the module name
         return "$PREFIX:$moduleReference"
     }
 }
@@ -41,6 +42,7 @@ data class MPSModelReference(val modelReference: SModelReference) : INodeReferen
     }
 
     override fun serialize(): String {
+        // TODO shouldn't contain the model name
         return "$PREFIX:$modelReference"
     }
 }

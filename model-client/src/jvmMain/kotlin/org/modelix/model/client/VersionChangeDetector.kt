@@ -69,7 +69,7 @@ abstract class VersionChangeDetector(
             store.listen(key, keyListener)
             while (isActive) {
                 try {
-                    val version = store[key]
+                    val version = store.getA(key)
                     if (version != lastVersionHash) {
                         LOG.debug { "New version detected by polling: $version" }
                         versionChanged(version)

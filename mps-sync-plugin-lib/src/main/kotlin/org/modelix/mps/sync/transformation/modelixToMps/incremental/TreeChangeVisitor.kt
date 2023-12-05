@@ -20,6 +20,7 @@ import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.module.SModuleBase
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.module.ModuleDeleteHelper
+import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
@@ -38,13 +39,18 @@ import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
+import org.modelix.mps.sync.util.getModule
+import org.modelix.mps.sync.util.isDevKitDependency
 import org.modelix.mps.sync.util.isModel
+import org.modelix.mps.sync.util.isModelImport
 import org.modelix.mps.sync.util.isModule
+import org.modelix.mps.sync.util.isModuleDependency
+import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.runIfAlone
 import java.util.concurrent.atomic.AtomicReference
 
-@UnstableModelixFeature(reason = "The new mod elix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class TreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
     private val project: MPSProject,
@@ -60,8 +66,6 @@ class TreeChangeVisitor(
     private val moduleTransformer = ModuleTransformer(project, nodeMap)
 
     override fun referenceChanged(nodeId: Long, role: String) {
-        // TODO how to transform modelImport, modelDependency, languageDependency changes?
-        // TODO Are they also "referenceChanged" events?
         isSynchronizing.runIfAlone(::handleThrowable) {
             val sNode = nodeMap.getNode(nodeId)!!
             var sReferenceLink: SReferenceLink? = null
@@ -138,13 +142,25 @@ class TreeChangeVisitor(
 
     override fun nodeAdded(nodeId: Long) {
         isSynchronizing.runIfAlone(::handleThrowable) {
+            val mpsActionRunner = modelAccess::runWriteActionCommandBlocking
             val iNode = getBranch().getNode(nodeId)
 
             getBranch().runRead {
                 if (iNode.isModule()) {
                     moduleTransformer.transformToModule(iNode)
+                } else if (iNode.isModuleDependency()) {
+                    val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
+                    val parentModule = nodeMap.getModule(moduleNodeId)!!
+                    require(parentModule is AbstractModule) { "Parent Module ($moduleNodeId) of INode (${iNode.nodeIdAsLong()}) is not an AbstractModule." }
+                    moduleTransformer.transformModuleDependency(iNode, parentModule, mpsActionRunner)
                 } else if (iNode.isModel()) {
-                    modelTransformer.transformToModel(iNode, true)
+                    modelTransformer.transformToModel(iNode, mpsActionRunner)
+                } else if (iNode.isModelImport()) {
+                    modelTransformer.transformModelImport(iNode)
+                } else if (iNode.isSingleLanguageDependency()) {
+                    nodeTransformer.transformLanguageDependency(iNode, mpsActionRunner, true)
+                } else if (iNode.isDevKitDependency()) {
+                    nodeTransformer.transformDevKitDependency(iNode, mpsActionRunner, true)
                 } else {
                     nodeTransformer.transformToNode(iNode)
                 }
@@ -154,10 +170,12 @@ class TreeChangeVisitor(
 
     override fun childrenChanged(nodeId: Long, role: String?) {
         isSynchronizing.runIfAlone(::handleThrowable) {
-            modelTransformer.resolveModelImports(languageRepository.repository)
+            val mpsActionRunner = modelAccess::runWriteActionCommandBlocking
+
+            modelTransformer.resolveModelImports(languageRepository.repository, mpsActionRunner)
             modelTransformer.clearResolvableModelImports()
 
-            nodeTransformer.resolveReferences()
+            nodeTransformer.resolveReferences(mpsActionRunner)
             nodeTransformer.clearResolvableReferences()
         }
     }

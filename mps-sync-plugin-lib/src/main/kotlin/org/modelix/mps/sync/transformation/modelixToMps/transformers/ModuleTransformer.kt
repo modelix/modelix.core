@@ -16,9 +16,9 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.transformers
 
+import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
-import jetbrains.mps.project.Solution
 import jetbrains.mps.project.structure.modules.ModuleReference
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -51,7 +51,11 @@ class ModuleTransformer(private val project: MPSProject, private val nodeMap: Mp
         }
     }
 
-    private fun transformModuleDependency(iNode: INode, module: Solution) {
+    fun transformModuleDependency(
+        iNode: INode,
+        parentModule: AbstractModule,
+        mpsWriteAction: ((Runnable) -> Unit) = project.modelAccess::runWriteInEDTBlocking,
+    ) {
         val reexport = (
             iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
                 ?: "false"
@@ -61,10 +65,10 @@ class ModuleTransformer(private val project: MPSProject, private val nodeMap: Mp
         val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
 
         val moduleReference = ModuleReference(moduleName, moduleId)
-        nodeMap.put(moduleReference, iNode.nodeIdAsLong())
-
-        project.modelAccess.runWriteInEDTBlocking {
-            module.addDependency(moduleReference, reexport)
+        mpsWriteAction {
+            parentModule.addDependency(moduleReference, reexport)
         }
+
+        nodeMap.put(moduleReference, iNode.nodeIdAsLong())
     }
 }

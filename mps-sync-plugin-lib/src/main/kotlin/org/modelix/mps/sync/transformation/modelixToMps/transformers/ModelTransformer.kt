@@ -29,10 +29,9 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.util.createModel
-import org.modelix.mps.sync.mps.util.runWriteActionCommandBlocking
 import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
-import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -40,7 +39,10 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap: MpsToModelixMap) {
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
-    fun transformToModel(iNode: INode, isInEDT: Boolean = false) {
+    fun transformToModel(
+        iNode: INode,
+        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
+    ) {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Model's ($iNode) name is null" }
 
@@ -53,34 +55,35 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        val createModelAction = {
+        mpsWriteAction {
             sModel = module.createModel(name, modelId) as EditableSModel
             sModel.save()
         }
-        if (isInEDT) {
-            modelAccess.runWriteActionCommandBlocking(createModelAction)
-        } else {
-            modelAccess.runWriteActionInEDTBlocking(createModelAction)
-        }
-
         nodeMap.put(sModel, iNode.nodeIdAsLong())
 
         // register model imports
-        iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).forEach {
-            val targetModel = it.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
-            val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
-            resolvableModelImports.add(
-                ResolvableModelImport(
-                    source = sModel,
-                    targetModelId = targetId,
-                    targetModelModelixId = targetModel.nodeIdAsLong(),
-                    modelReferenceNodeId = it.nodeIdAsLong(),
-                ),
-            )
-        }
+        iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
+            .forEach { transformModelImport(it) }
     }
 
-    fun resolveModelImports(repository: SRepository) {
+    fun transformModelImport(iNode: INode) {
+        val sourceModel = nodeMap.getModel(iNode.getModel()?.nodeIdAsLong())!!
+        val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+        val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
+        resolvableModelImports.add(
+            ResolvableModelImport(
+                source = sourceModel,
+                targetModelId = targetId,
+                targetModelModelixId = targetModel.nodeIdAsLong(),
+                modelReferenceNodeId = iNode.nodeIdAsLong(),
+            ),
+        )
+    }
+
+    fun resolveModelImports(
+        repository: SRepository,
+        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
+    ) {
         resolvableModelImports.forEach {
             val id = PersistenceFacade.getInstance().createModelId(it.targetModelId)
             val targetModel = (nodeMap.getModel(it.targetModelModelixId) ?: repository.getModel(id))!!
@@ -90,10 +93,10 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
             val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
-            nodeMap.put(modelImport, it.modelReferenceNodeId)
-            modelAccess.runWriteInEDTBlocking {
+            mpsWriteAction {
                 ModelImports(it.source).addModelImport(modelImport)
             }
+            nodeMap.put(modelImport, it.modelReferenceNodeId)
         }
     }
 

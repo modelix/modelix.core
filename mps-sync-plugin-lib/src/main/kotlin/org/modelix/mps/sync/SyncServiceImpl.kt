@@ -188,9 +188,10 @@ class SyncServiceImpl : SyncService {
         }
          */
 
+        /*
         // create new model in the cloud
         branch.runWriteT {
-            val cloudModuleId = nodeId.toLong()
+            val cloudModuleId = 4294967309L
             val cloudModule = branch.getNode(cloudModuleId)
             val cloudModel = cloudModule.addNewChild(
                 BuiltinLanguages.MPSRepositoryConcepts.Module.models,
@@ -207,8 +208,136 @@ class SyncServiceImpl : SyncService {
                 "University.Schedule.modelserver.backend.hellooworld",
             )
         }
+         */
 
         // create new module in the cloud
+        branch.runWriteT {
+            val rootNode = branch.getNode(1)
+            val cloudModel = rootNode.addNewChild(
+                "modules",
+                -1,
+                BuiltinLanguages.MPSRepositoryConcepts.Module,
+            )
+
+            cloudModel.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.Module.id,
+                "a04444a1-c8a4-48e8-a940-32a70d0f9cfe",
+            )
+            cloudModel.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion,
+                "0",
+            )
+            cloudModel.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS,
+                "true",
+            )
+            cloudModel.setPropertyValue(
+                BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
+                "University.Schedule.modelserver.backend.box2",
+            )
+        }
+
+        /*
+        // model import from new model to old one
+        branch.runWriteT {
+            val newModelId = nodeId.toLong()
+            val oldModelId = 17179869185
+
+            val newModel = branch.getNode(newModelId)
+            val modelImport = newModel.addNewChild(
+                BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports,
+                -1,
+                BuiltinLanguages.MPSRepositoryConcepts.ModelReference,
+            )
+
+            val oldModel = branch.getNode(oldModelId)
+            modelImport.setReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model, oldModel)
+        }
+         */
+
+        /*
+        // add language dependency
+        branch.runWriteT {
+            val modelId = nodeId.toLong()
+            val model = branch.getNode(modelId)
+            val cloudLanguageDependency =
+                model.addNewChild(
+                    BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages,
+                    -1,
+                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
+                )
+
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                "University.Schedule",
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                "96533389-8d4c-46f2-b150-8d89155f7fca",
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                "0",
+            )
+        }
+         */
+
+        /*
+        // add devkit dependency
+        branch.runWriteT {
+            val modelId = nodeId.toLong()
+            val model = branch.getNode(modelId)
+            val cloudLanguageDependency =
+                model.addNewChild(
+                    BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages,
+                    -1,
+                    BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency,
+                )
+
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                "University.Schedule.Devkit",
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                "3f0b14cf-38db-4a9e-ae9e-6c078c16c2da",
+            )
+        }
+         */
+
+        /*
+        // add module dependency
+        branch.runWriteT {
+            val moduleId = nodeId.toLong()
+            val module = branch.getNode(moduleId)
+            val cloudDependency =
+                module.addNewChild(
+                    BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies,
+                    -1,
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency,
+                )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
+                "false",
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
+                "a04444a1-c8a4-48e8-a940-32a70d0e8bfc",
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name,
+                "University.Schedule.modelserver.backend.sandbox",
+            )
+        }
+         */
     }
 }
 

@@ -53,37 +53,21 @@ class NodeTransformer(
     private val nodeFactory = SNodeFactory(mpsLanguageRepository, modelAccess, nodeMap)
 
     fun transformToNode(iNode: INode) {
-        val isDevKitDependency = iNode.isDevKitDependency()
-        val isLanguageDependency = iNode.isSingleLanguageDependency()
-
-        if (isDevKitDependency || isLanguageDependency) {
-            val moduleId = iNode.getModule()?.nodeIdAsLong()
-            val parentModule = nodeMap.getModule(moduleId)!!
-            val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
-            val dependentModule = uuid?.let {
-                val reference = AtomicReference<SModule>()
-                modelAccess.runReadAction {
-                    reference.set(parentModule.repository?.getModule(ModuleId.regular(UUID.fromString(it))))
-                }
-                reference.get()
-            }!!
-
-            if (isDevKitDependency) {
-                transformDevKitDependency(iNode, dependentModule, parentModule)
-            } else {
-                transformLanguageDependency(iNode, dependentModule, parentModule)
-            }
+        if (iNode.isDevKitDependency()) {
+            transformDevKitDependency(iNode)
+        } else if (iNode.isSingleLanguageDependency()) {
+            transformLanguageDependency(iNode)
         } else {
             try {
                 val modelId = iNode.getModel()?.nodeIdAsLong()
                 val model = nodeMap.getModel(modelId)
-                if (model == null) {
-                    val isTransformed = nodeMap.isMappedToMps(iNode.nodeIdAsLong())
-                    if (!isTransformed) {
+                val isTransformed = nodeMap.isMappedToMps(iNode.nodeIdAsLong())
+                if (!isTransformed) {
+                    if (model == null) {
                         logger.info("Node ${iNode.nodeIdAsLong()}(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null.")
+                    } else {
+                        nodeFactory.createNode(iNode, model)
                     }
-                } else {
-                    nodeFactory.createNode(iNode, model)
                 }
             } catch (ex: Exception) {
                 logger.error("$javaClass exploded")
@@ -92,55 +76,88 @@ class NodeTransformer(
         }
     }
 
-    private fun transformLanguageDependency(
+    fun transformLanguageDependency(
         iNode: INode,
-        dependentModule: SModule,
-        parentModule: SModule,
+        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
+        onlyAddToParentModel: Boolean = false,
     ) {
+        val moduleId = iNode.getModule()?.nodeIdAsLong()
+        val parentModule = nodeMap.getModule(moduleId)!!
+        val dependentModule = getDependentModule(iNode, parentModule)
+
         var languageModuleReference: SModuleReference? = null
         modelAccess.runReadBlocking {
             languageModuleReference = (dependentModule as Language).moduleReference
         }
-
-        // TODO this might not work, because if more than one models/modules point to the same Language, then the modelix ID will be always overwritten by the last Node (SingleLanguageDependency) that points to this Language
-        // TODO we might have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
-        nodeMap.put(languageModuleReference!!, iNode.nodeIdAsLong())
-
         val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference!!)
         val version =
             iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)
 
         // modelix does not store to which model the dependency belongs, thus adding it to all of them
-        modelAccess.runWriteActionInEDTBlocking {
-            parentModule.models.forEach {
-                it.addLanguageImport(sLanguage, version?.toInt()!!)
+        mpsWriteAction {
+            val languageVersion = version!!.toInt()
+            if (!onlyAddToParentModel) {
+                parentModule.models.forEach {
+                    it.addLanguageImport(sLanguage, languageVersion)
+                }
+            } else {
+                val modelNodeId = iNode.getModel()?.nodeIdAsLong()
+                val parentModel = nodeMap.getModel(modelNodeId)!!
+                parentModel.addLanguageImport(sLanguage, languageVersion)
             }
         }
+
+        // TODO this might not work, because if more than one models/modules point to the same Language, then the modelix ID will be always overwritten by the last Node (SingleLanguageDependency) that points to this Language
+        // TODO we might have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
+        nodeMap.put(languageModuleReference!!, iNode.nodeIdAsLong())
     }
 
-    private fun transformDevKitDependency(
+    fun transformDevKitDependency(
         iNode: INode,
-        dependentModule: SModule,
-        parentModule: SModule,
+        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
+        onlyAddToParentModel: Boolean = false,
     ) {
+        val moduleId = iNode.getModule()?.nodeIdAsLong()
+        val parentModule = nodeMap.getModule(moduleId)!!
+        val dependentModule = getDependentModule(iNode, parentModule)
+
         var devKitModuleReference: SModuleReference? = null
         modelAccess.runReadBlocking {
             devKitModuleReference = (dependentModule as DevKit).moduleReference
         }
 
+        // modelix does not store to which model the dependency belongs, thus adding it to all of them
+        mpsWriteAction {
+            if (!onlyAddToParentModel) {
+                parentModule.models.forEach {
+                    it.addDevKit(devKitModuleReference!!)
+                }
+            } else {
+                val modelNodeId = iNode.getModel()?.nodeIdAsLong()
+                val parentModel = nodeMap.getModel(modelNodeId)!!
+                parentModel.addDevKit(devKitModuleReference!!)
+            }
+        }
+
         // TODO this might not work, because if more than one models/modules point to the same DevKit, then the modelix ID will be always overwritten by the last Node (DevkitDependency) that points to this devkit
         // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing DevKitDependencies in the cloud)
         nodeMap.put(devKitModuleReference!!, iNode.nodeIdAsLong())
-
-        // modelix does not store to which model the dependency belongs, thus adding it to all of them
-        modelAccess.runWriteActionInEDTBlocking {
-            parentModule.models.forEach {
-                it.addDevKit(devKitModuleReference!!)
-            }
-        }
     }
 
-    fun resolveReferences() = nodeFactory.resolveReferences()
+    fun resolveReferences(mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking) =
+        nodeFactory.resolveReferences(mpsWriteAction)
 
     fun clearResolvableReferences() = nodeFactory.clearResolvableReferences()
+
+    private fun getDependentModule(iNode: INode, parentModule: SModule): SModule {
+        val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
+        val dependentModule = uuid?.let {
+            val reference = AtomicReference<SModule>()
+            modelAccess.runReadAction {
+                reference.set(parentModule.repository?.getModule(ModuleId.regular(UUID.fromString(it))))
+            }
+            reference.get()
+        }!!
+        return dependentModule
+    }
 }

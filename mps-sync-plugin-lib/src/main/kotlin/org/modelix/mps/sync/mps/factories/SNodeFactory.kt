@@ -64,9 +64,7 @@ class SNodeFactory(
         // 1. create node
         val mpsNodeId = getMpsNodeId(iNode)
         val sNode = jetbrains.mps.smodel.SNode(concept, mpsNodeId)
-
         val nodeId = iNode.nodeIdAsLong()
-        nodeMap.put(sNode, nodeId)
 
         // 2. add to parent
         val parent = iNode.parent
@@ -95,6 +93,7 @@ class SNodeFactory(
                 parentNode.addChild(containmentLink, sNode)
             }
         }
+        nodeMap.put(sNode, nodeId)
 
         // 3. set properties
         setProperties(iNode, sNode)
@@ -142,13 +141,12 @@ class SNodeFactory(
         }
     }
 
-    fun resolveReferences() {
+    fun resolveReferences(mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking) {
         resolvableReferences.forEach {
             val source = it.source
             val reference = it.reference
             val target = nodeMap.getNode(it.targetNodeId)
-
-            modelAccess.runWriteActionInEDTBlocking {
+            mpsWriteAction {
                 source.setReferenceTarget(reference, target)
             }
         }

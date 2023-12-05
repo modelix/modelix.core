@@ -72,6 +72,9 @@ class ITreeToSTreeTransformer(
                     }
                 }
 
+                logger.info("--- RESOLVING MODEL IMPORTS ---")
+                modelTransformer.resolveModelImports(project.repository)
+
                 logger.info("--- TRANSFORMING NODES ---")
                 traverse(root, 1) {
                     val isNotModuleOrModel = !(it.isModule() || it.isModel())
@@ -80,9 +83,8 @@ class ITreeToSTreeTransformer(
                     }
                 }
 
-                logger.info("--- RESOLVING REFERENCES AND MODEL IMPORTS ---")
+                logger.info("--- RESOLVING REFERENCES ---")
                 nodeTransformer.resolveReferences()
-                modelTransformer.resolveModelImports(project.repository)
 
                 logger.info("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
                 nodeMap.models.forEach {

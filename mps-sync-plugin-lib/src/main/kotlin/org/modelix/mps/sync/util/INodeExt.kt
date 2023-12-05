@@ -77,6 +77,22 @@ fun INode.isSingleLanguageDependency(): Boolean {
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.isModelImport(): Boolean {
+    val concept = this.concept ?: return false
+    val isModelReference = concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
+    // we have to use roleInParent, because getContainmentLink() is sometimes null, when roleInParent is not
+    val isModelImportRole =
+        this.roleInParent == BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports.getSimpleName()
+    return isModelReference && isModelImportRole
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.isModuleDependency(): Boolean {
+    val concept = this.concept ?: return false
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun INode.getModel(): INode? = findNode { it.isModel() }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

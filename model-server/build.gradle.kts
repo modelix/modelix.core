@@ -10,7 +10,6 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     kotlin("plugin.serialization")
     alias(libs.plugins.openapi.generator)
-//    alias(libs.plugins.kotlin.plugin.allopen)
 }
 
 description = "Model Server offering access to model storage"
@@ -67,9 +66,6 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
-
-//    implementation("jakarta.ws.rs:jakarta.ws.rs-api:2.1.6")
-//    implementation("jakarta.annotation:jakarta.annotation-api:1.3.5")
 }
 
 tasks.test {
@@ -218,21 +214,6 @@ openApiGenerate {
             "featureMetrics" to "false",
         ),
     )
-    globalProperties.putAll(
-        mapOf(
-//            "debugOpenAPI" to "true",
-//            "debugModels" to "true",
-//            "debugSupportingFiles" to "true",
-//            "debugOperations" to "true",
-
-//            "models" to "",
-//            "apis" to "",
-//            "supportingFiles" to "",
-//            "apiTests" to "false",
-//            "modelTests" to "false",
-//            "modelDocs" to "false",
-        ),
-    )
 }
 
 // Ensure that the OpenAPI generator runs before starting to compile
@@ -252,16 +233,8 @@ ktlint {
         exclude {
             it.file.toPath().toAbsolutePath().startsWith(openAPIgenerationPath)
         }
-//        exclude("$openAPIgenerationPath/src/main/kotlin/**")
-//        exclude("$openAPIgenerationPath/**")
-//        exclude("**/generated/**")
     }
 }
-
-// allOpen {
-//    annotation("javax.ws.rs.Path")
-//    annotation("javax.enterprise.context.ApplicationScoped")
-// }
 
 // add openAPI generated artifacts to the sourceSets
 java.sourceSets.getByName("main").java.srcDir(file("$openAPIgenerationPath/src/main/kotlin"))

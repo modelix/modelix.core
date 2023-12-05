@@ -20,7 +20,6 @@ node = {id = "com.github.node-gradle.node", version = "7.0.1"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.4" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.1" }
 openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
-#kotlin-plugin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 
 [versions]
 kotlin = "1.9.21"

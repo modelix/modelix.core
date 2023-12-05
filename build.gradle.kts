@@ -222,6 +222,46 @@ allprojects {
     }
 }
 
+val mpsVersion = project.findProperty("mps.version")?.toString()?.takeIf { it.isNotEmpty() }
+    ?: "2021.1.4".also { ext["mps.version"] = it }
+println("Building for MPS version $mpsVersion")
+val mpsToIdeaMap = mapOf<String, String>(
+    "2020.3.6" to "203.8084.24", // https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
+    "2021.1.4" to "211.7628.21", // https://github.com/JetBrains/MPS/blob/2021.1.4/build/version.properties
+    "2021.2.6" to "212.5284.40", // https://github.com/JetBrains/MPS/blob/2021.2.5/build/version.properties (?)
+    "2021.3.3" to "213.7172.25", // https://github.com/JetBrains/MPS/blob/2021.3.3/build/version.properties
+    "2022.2" to "222.4554.10", // https://github.com/JetBrains/MPS/blob/2021.2.1/build/version.properties
+    "2022.3" to "223.8836.41", // https://github.com/JetBrains/MPS/blob/2022.3.0/build/version.properties (?)
+    "2023.2" to "232.10072.27", // https://github.com/JetBrains/MPS/blob/2023.2.0/build/version.properties (?)
+)
+val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
+val mpsJavaVersion = if (mpsVersion >= "2022.2") 17 else 11
+ext["mps.platform.version"] = ideaVersion
+ext["mps.java.version"] = mpsJavaVersion
+
+// Extract MPS during configuration phase, because using it in intellij.localPath requires it to already exist.
+val mpsHome = project.layout.buildDirectory.dir("mps-$mpsVersion")
+val mpsZip by configurations.creating
+dependencies { mpsZip("com.jetbrains:mps:$mpsVersion") }
+mpsHome.get().asFile.let { baseDir ->
+    if (baseDir.exists()) return@let // content of MPS zip is not expected to change
+
+    println("Extracting MPS ...")
+    zipTree({ mpsZip.singleFile }).visit {
+        copyTo(mpsHome.get().asFile.resolve(getRelativePath().getPathString()))
+    }
+
+    // The build number of a local IDE is expected to contain a product code, otherwise an exception is thrown.
+    val buildTxt = mpsHome.get().asFile.resolve("build.txt")
+    val buildNumber = buildTxt.readText()
+    val prefix = "MPS-"
+    if (!buildNumber.startsWith(prefix)) {
+        buildTxt.writeText("$prefix$buildNumber")
+    }
+
+    println("Extracting MPS done.")
+}
+
 fun MavenPublication.setMetadata() {
     pom {
         url.set("https://github.com/modelix/modelix.core")

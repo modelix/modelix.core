@@ -3,14 +3,20 @@ plugins {
     `maven-publish`
 }
 
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2021.1.4"
+val mpsVersion = project.findProperty("mps.version").toString()
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 
 dependencies {
     api(project(":model-api"))
 
-    compileOnly("com.jetbrains:mps-openapi:$mpsVersion")
-    compileOnly("com.jetbrains:mps-core:$mpsVersion")
-    compileOnly("com.jetbrains:mps-environment:$mpsVersion")
+    compileOnly(
+        mpsHome.map {
+            it.asFileTree.matching {
+                include("lib/**/*.jar")
+            }
+        },
+    )
+
     implementation(libs.trove)
 
     implementation(kotlin("stdlib"))

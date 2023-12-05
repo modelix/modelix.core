@@ -28,6 +28,7 @@ data class ModelData(
             if (root.id != null) {
                 createdNodes[root.id] = parentId
             }
+            root.setOriginalId(t, parentId)
             for (nodeData in root.children) {
                 nodeData.load(t, parentId, createdNodes, pendingReferences)
             }
@@ -69,7 +70,7 @@ data class NodeData(
         val createdId = t.addNewChild(parentId, nodeData.role, -1, conceptRef)
         if (nodeData.id != null) {
             createdNodes[nodeData.id] = createdId
-            t.setProperty(createdId, ORIGINAL_NODE_ID_KEY, nodeData.id)
+            setOriginalId(t, createdId)
         }
         for (propertyData in nodeData.properties) {
             t.setProperty(createdId, propertyData.key, propertyData.value)
@@ -84,6 +85,14 @@ data class NodeData(
             childData.load(t, createdId, createdNodes, pendingReferences)
         }
         return createdId
+    }
+
+    fun setOriginalId(
+        t: IWriteTransaction,
+        nodeId: Long,
+    ) {
+        val key = NodeData.idPropertyKey
+        t.setProperty(nodeId, key, properties[key] ?: id)
     }
 
     companion object {

@@ -25,16 +25,14 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSNode
 
-const val MPS_NODE_ID_PROPERTY_NAME: String = NodeData.ID_PROPERTY_KEY
-
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun INode.mappedMpsNodeID(): String? {
     return try {
-        val nodeIdProperty = PropertyFromName(MPS_NODE_ID_PROPERTY_NAME)
+        val nodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
         this.getPropertyValue(nodeIdProperty)
     } catch (e: RuntimeException) {
         throw RuntimeException(
-            "Failed to retrieve the $MPS_NODE_ID_PROPERTY_NAME property in mappedMpsNodeID. The INode is $this , concept: ${this.concept}",
+            "Failed to retrieve the ${NodeData.ID_PROPERTY_KEY} property in mappedMpsNodeID. The INode is $this , concept: ${this.concept}",
             e,
         )
     }
@@ -64,4 +62,55 @@ fun INode.isModule(): Boolean {
 fun INode.isModel(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Model)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.isDevKitDependency(): Boolean {
+    val concept = this.concept ?: return false
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.isSingleLanguageDependency(): Boolean {
+    val concept = this.concept ?: return false
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.isModelImport(): Boolean {
+    val concept = this.concept ?: return false
+    val isModelReference = concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
+    // we have to use roleInParent, because getContainmentLink() is sometimes null, when roleInParent is not
+    val isModelImportRole =
+        this.roleInParent == BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports.getSimpleName()
+    return isModelReference && isModelImportRole
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.isModuleDependency(): Boolean {
+    val concept = this.concept ?: return false
+    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.getModel(): INode? = findNode { it.isModel() }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun INode.getModule(): INode? = findNode { it.isModule() }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+private fun INode.findNode(criterion: (INode) -> Boolean): INode? {
+    if (criterion(this)) {
+        return this
+    }
+
+    var node = this.parent
+    while (node != null) {
+        if (criterion(node)) {
+            return node
+        }
+        node = node.parent
+    }
+
+    return null
 }

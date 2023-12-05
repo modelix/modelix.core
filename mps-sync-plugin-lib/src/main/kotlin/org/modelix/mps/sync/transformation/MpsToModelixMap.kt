@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.neu
+package org.modelix.mps.sync.transformation
 
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
@@ -27,6 +27,8 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 // use with caution, otherwise this cache may cause memory leaks
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MpsToModelixMap {
+
+    // WARNING: if you add a new Map here, please also add it to the `remove` and `isMappedToMps` methods below
 
     private val sNodeToModelixId = mutableMapOf<SNode, Long>()
     private val modelixIdToSNode = mutableMapOf<Long, SNode>()
@@ -99,4 +101,20 @@ class MpsToModelixMap {
     fun getModuleReference(modelixId: Long?) = modelixIdToSModuleReference[modelixId]
 
     fun getModelReference(modelixId: Long?) = modelixIdToSModelReference[modelixId]
+
+    fun remove(modelixId: Long) {
+        modelixIdToSNode.remove(modelixId)?.let { sNodeToModelixId.remove(it) }
+        modelixIdToSModel.remove(modelixId)?.let { sModelIdToModelixId.remove(it.modelId) }
+        modelixIdToSModelId.remove(modelixId)?.let { sModelIdToModelixId.remove(it) }
+        modelixIdToSModule.remove(modelixId)?.let { sModuleToModelixId.remove(it) }
+        modelixIdToSModuleReference.remove(modelixId)?.let { sModuleReferenceToModelixId.remove(it) }
+        modelixIdToSModelReference.remove(modelixId)?.let { sModelReferenceToModelixId.remove(it) }
+    }
+
+    fun isMappedToMps(modelixId: Long?) =
+        modelixId != null && (
+            modelixIdToSNode.contains(modelixId) || modelixIdToSModel.contains(modelixId) ||
+                modelixIdToSModelId.contains(modelixId) || modelixIdToSModule.contains(modelixId) ||
+                modelixIdToSModuleReference.contains(modelixId) || modelixIdToSModelReference.contains(modelixId)
+            )
 }

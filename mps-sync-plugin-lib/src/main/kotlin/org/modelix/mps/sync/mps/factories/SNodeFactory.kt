@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.neu
+package org.modelix.mps.sync.mps.factories
 
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapter2
@@ -33,6 +33,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
+import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -62,37 +64,36 @@ class SNodeFactory(
         // 1. create node
         val mpsNodeId = getMpsNodeId(iNode)
         val sNode = jetbrains.mps.smodel.SNode(concept, mpsNodeId)
-
         val nodeId = iNode.nodeIdAsLong()
-        nodeMap.put(sNode, nodeId)
 
         // 2. add to parent
-        modelAccess.runWriteAction {
-            val parent = iNode.parent
-            val parentSerializedModelId =
-                parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
-            val parentModelId = if (parentSerializedModelId.isNotEmpty()) {
-                PersistenceFacade.getInstance().createModelId(parentSerializedModelId)
-            } else {
-                null
-            }
-            val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
-            val isRootNode = concept.isRootable && modelIsTheParent
+        val parent = iNode.parent
+        val parentSerializedModelId =
+            parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
+        val parentModelId = if (parentSerializedModelId.isNotEmpty()) {
+            PersistenceFacade.getInstance().createModelId(parentSerializedModelId)
+        } else {
+            null
+        }
+        val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
+        val isRootNode = concept.isRootable && modelIsTheParent
 
-            if (isRootNode) {
+        if (isRootNode) {
+            modelAccess.runWriteActionInEDTBlocking {
                 model?.addRootNode(sNode)
-            } else {
-                val parentNodeId = parent?.nodeIdAsLong()
-                val parentNode = nodeMap.getNode(parentNodeId)
-                check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
+            }
+        } else {
+            val parentNodeId = parent?.nodeIdAsLong()
+            val parentNode = nodeMap.getNode(parentNodeId)
+            check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
 
-                val role = iNode.getContainmentLink()
-                val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
-                modelAccess.executeCommandInEDT {
-                    parentNode.addChild(containmentLink, sNode)
-                }
+            val role = iNode.getContainmentLink()
+            val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
+            modelAccess.runWriteActionInEDTBlocking {
+                parentNode.addChild(containmentLink, sNode)
             }
         }
+        nodeMap.put(sNode, nodeId)
 
         // 3. set properties
         setProperties(iNode, sNode)
@@ -119,10 +120,8 @@ class SNodeFactory(
             val property = PropertyFromName(it.name)
             val value = source.getPropertyValue(property)
 
-            modelAccess.runWriteAction {
-                modelAccess.executeCommandInEDT {
-                    target.setProperty(it, value)
-                }
+            modelAccess.runWriteActionInEDTBlocking {
+                target.setProperty(it, value)
             }
         }
     }
@@ -142,19 +141,18 @@ class SNodeFactory(
         }
     }
 
-    fun resolveReferences() {
+    fun resolveReferences(mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking) {
         resolvableReferences.forEach {
             val source = it.source
             val reference = it.reference
             val target = nodeMap.getNode(it.targetNodeId)
-
-            modelAccess.runWriteAction {
-                modelAccess.executeCommandInEDT {
-                    source.setReferenceTarget(reference, target)
-                }
+            mpsWriteAction {
+                source.setReferenceTarget(reference, target)
             }
         }
     }
+
+    fun clearResolvableReferences() = resolvableReferences.clear()
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

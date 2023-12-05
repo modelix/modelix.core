@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.util
+package org.modelix.mps.sync.mps.util
 
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.persistence.DefaultModelRoot
@@ -24,7 +24,7 @@ import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.ModelPersistenceWithFixedId
+import org.modelix.mps.sync.mps.ModelPersistenceWithFixedId
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun SModule.createModel(name: String, id: SModelId): SModel? {

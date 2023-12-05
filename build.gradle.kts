@@ -113,19 +113,19 @@ subprojects {
 
     val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6
     subproject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        if (!name.lowercase().contains("test")) {
-            this.kotlinOptions {
-                jvmTarget = "11"
-                freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+        kotlinOptions {
+            jvmTarget = "11"
+            freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+            if (!name.lowercase().contains("test")) {
                 apiVersion = kotlinApiVersion.version
             }
         }
     }
     subproject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
-        if (!name.lowercase().contains("test")) {
-            this.kotlinOptions {
-                jvmTarget = "11"
-                freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+        kotlinOptions {
+            jvmTarget = "11"
+            freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+            if (!name.lowercase().contains("test")) {
                 apiVersion = kotlinApiVersion.version
             }
         }

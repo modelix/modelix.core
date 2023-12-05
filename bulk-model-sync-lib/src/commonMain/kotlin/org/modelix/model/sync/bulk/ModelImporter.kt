@@ -77,12 +77,13 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
             postponedReferences.clear()
             nodesToRemove.clear()
             numExpectedNodes = countExpectedNodes(data.root)
+            val progressReporter = ProgressReporter(numExpectedNodes.toULong(), logger)
             currentNodeProgress = 0
             buildExistingIndex(root)
 
             logger.info { "Importing nodes..." }
             data.root.originalId()?.let { originalIdToExisting[it] = root }
-            syncNode(root, data.root)
+            syncNode(root, data.root, progressReporter)
 
             logger.info { "Synchronizing references..." }
             postponedReferences.forEach {
@@ -107,18 +108,17 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
     private fun countExpectedNodes(data: NodeData): Int =
         1 + data.children.sumOf { countExpectedNodes(it) }
 
-    private fun syncNode(node: INode, data: NodeData) {
+    private fun syncNode(node: INode, data: NodeData, progressReporter: ProgressReporter) {
         currentNodeProgress += 1
-        // print instead of log, so that the progress line can be overwritten by the carriage return
-        print("\r($currentNodeProgress / $numExpectedNodes) Synchronizing nodes...                    ")
+        progressReporter.step(currentNodeProgress.toULong())
         doAndPotentiallyContinueOnErrors {
             syncProperties(node, data)
-            syncChildren(node, data)
+            syncChildren(node, data, progressReporter)
             syncReferences(node, data)
         }
     }
 
-    private fun syncChildren(node: INode, data: NodeData) {
+    private fun syncChildren(node: INode, data: NodeData, progressReporter: ProgressReporter) {
         val allRoles = (data.children.map { it.role } + node.allChildren.map { it.roleInParent }).distinct()
         for (role in allRoles) {
             val expectedNodes = data.children.filter { it.role == role }
@@ -130,7 +130,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
                     val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
                     newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
                     originalIdToExisting[expectedId] = newChild
-                    syncNode(newChild, expected)
+                    syncNode(newChild, expected, progressReporter)
                 }
                 continue
             }
@@ -138,7 +138,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
             // optimization for when there is no change in the child list
             // size check first to avoid querying the original ID
             if (expectedNodes.size == existingNodes.size && expectedNodes.map { it.originalId() } == existingNodes.map { it.originalId() }) {
-                existingNodes.zip(expectedNodes).forEach { syncNode(it.first, it.second) }
+                existingNodes.zip(expectedNodes).forEach { syncNode(it.first, it.second, progressReporter) }
                 continue
             }
 
@@ -163,7 +163,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
                 }
                 check(childNode.getConceptReference() == expectedConcept) { "Unexpected concept change" }
 
-                syncNode(childNode, expected)
+                syncNode(childNode, expected, progressReporter)
             }
 
             nodesToRemove += node.getChildren(role).drop(expectedNodes.size)

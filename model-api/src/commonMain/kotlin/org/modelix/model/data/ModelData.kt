@@ -27,7 +27,6 @@ data class ModelData(
             val parentId = ITree.ROOT_ID
             if (root.id != null) {
                 createdNodes[root.id] = parentId
-                t.setProperty(ITree.ROOT_ID, NodeData.ORIGINAL_NODE_ID_KEY, root.id)
             }
             for (nodeData in root.children) {
                 nodeData.load(t, parentId, createdNodes, pendingReferences)

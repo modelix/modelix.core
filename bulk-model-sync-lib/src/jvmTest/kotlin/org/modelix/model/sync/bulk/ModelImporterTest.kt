@@ -119,10 +119,9 @@ class ModelImporterTest {
         val operations = branch.operationsAndTree.first
         println(operations.joinToString("\n"))
 
-        val numOps = operations.filter {
-            val op = it.getOriginalOp()
-            op !is SetPropertyOp || op.role != NodeData.idPropertyKey && op.role != NodeData.ORIGINAL_NODE_ID_KEY
-        }.numOpsByType()
+        val numOps = operations.numOpsByType()
+        val numPropertyChangesIgnoringOriginalId =
+            numOps[AddNewChildOp::class]?.let { numOps[SetPropertyOp::class]?.minus(it) } ?: 0
 
         assertEquals(1, numOps[AddNewChildOp::class])
         assertEquals(1, numOps[DeleteNodeOp::class])
@@ -130,7 +129,7 @@ class ModelImporterTest {
         // could be done in 5, but finding that optimization makes the sync algorithm slower
         assertEquals(6, numOps[MoveNodeOp::class])
 
-        assertEquals(4, numOps[SetPropertyOp::class])
+        assertEquals(4, numPropertyChangesIgnoringOriginalId)
         assertEquals(3, numOps[SetReferenceOp::class])
     }
 
@@ -170,7 +169,7 @@ class ModelImporterTest {
 
         branch0.runWrite {
             val rootNode = branch0.getRootNode()
-            rootNode.setPropertyValue(NodeData.ORIGINAL_NODE_ID_KEY, rootNode.reference.serialize())
+            rootNode.setPropertyValue(NodeData.idPropertyKey, rootNode.reference.serialize())
             val grower = RandomModelChangeGenerator(rootNode, rand).growingOperationsOnly()
             for (i in 1..100) {
                 grower.applyRandomChange()

@@ -199,7 +199,7 @@ val openAPIgenerationPath = "$buildDir/generated/openapi"
 // OpenAPI specification. That way, the code is forced to stay in sync with the API specification.
 openApiGenerate {
     generatorName.set("kotlin-server")
-    inputSpec.set(layout.projectDirectory.file("../api/public.yaml").toString())
+    inputSpec.set(layout.projectDirectory.file("../api/model-server.yaml").toString())
     outputDir.set(openAPIgenerationPath)
     packageName.set(basePackage)
     packageName.set(basePackage)
@@ -236,9 +236,6 @@ openApiGenerate {
 }
 
 // Ensure that the OpenAPI generator runs before starting to compile
-tasks.named("build") {
-    dependsOn("openApiGenerate")
-}
 tasks.named("processResources") {
     dependsOn("openApiGenerate")
 }

@@ -20,104 +20,55 @@ paths:
       description: ""
       responses:
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "Model Server"
+          $ref: '#/components/responses/200'
   /v2/server-id:
     get:
       description: ""
       responses:
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /v2/user-id:
     get:
       description: ""
       responses:
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /v2/generate-client-id:
     post:
       description: ""
       responses:
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /repos:
     get:
       description: ""
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
   /headers:
     get:
       description: ""
       responses:
         "200":
-          description: OK
+          $ref: '#/components/responses/200'
   /health:
     get:
       description: ""
       responses:
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "healthy"
+          $ref: '#/components/responses/200'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "not healthy"
+          $ref: '#/components/responses/500'
   /v2/repositories:
     get:
       description: ""
       responses:
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches:
     get:
       description: ""
@@ -129,11 +80,7 @@ paths:
             type: string
       responses:
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches/{branch}:
     get:
       description: ""
@@ -155,14 +102,7 @@ paths:
             type: string
       responses:
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: ""
+          $ref: '#/components/responses/404'
         "200":
           description: OK
           content:
@@ -194,7 +134,7 @@ paths:
 #        required: true
       responses:
         "200":
-          description: OK
+          $ref: '#/components/responses/200'
 #          content:
 #            '*/*':
 #              schema:
@@ -215,20 +155,9 @@ paths:
             type: string
       responses:
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: ""
+          $ref: '#/components/responses/404'
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches/{branch}/listen:
     get:
       description: ""
@@ -268,23 +197,11 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "101":
           description: "Switching Protocols"
           headers:
@@ -321,23 +238,11 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
           description: OK
           content:
@@ -365,29 +270,13 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches/{branch}/query:
     post:
       description: ""
@@ -404,17 +293,9 @@ paths:
             type: string
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
   /v2/repositories/{repository}/init:
     post:
       description: ""
@@ -431,23 +312,11 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
           description: OK
           content:
@@ -475,14 +344,7 @@ paths:
             type: string
       responses:
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: ""
+          $ref: '#/components/responses/404'
         "200":
           description: OK
           content:
@@ -494,7 +356,7 @@ paths:
       description: "TODO"
       responses:
         "200":
-          description: OK
+          $ref: '#/components/responses/200'
       parameters:
         - name: repository
           in: "path"
@@ -527,17 +389,9 @@ paths:
             type: string
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
   /history:
     get:
       description: ""
@@ -582,23 +436,11 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
   /history/{repoId}/{branch}/revert:
     post:
       description: ""
@@ -625,23 +467,11 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "302":
           description: "Found <br> Redirect"
           content:
@@ -667,14 +497,7 @@ paths:
             type: string
       responses:
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: ""
+          $ref: '#/components/responses/404'
         "200":
           description: OK
           content:
@@ -686,7 +509,7 @@ paths:
       description: "TODO"
       responses:
         "200":
-          description: OK
+          $ref: '#/components/responses/200'
       parameters:
         - name: versionHash
           in: "path"
@@ -722,14 +545,7 @@ paths:
             type: string
       responses:
         "400":
-          description: "Bad Request"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "version not found"
+          $ref: '#/components/responses/400'
     post:
       description: ""
       parameters:
@@ -746,20 +562,9 @@ paths:
         required: true
       responses:
         "400":
-          description: "Bad Request"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "version not found"
+          $ref: '#/components/responses/400'
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /content/{versionHash}/{nodeId}:
     get:
       description: ""
@@ -776,14 +581,7 @@ paths:
             type: string
       responses:
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "node id not found"
+          $ref: '#/components/responses/404'
         "200":
           description: OK
           content:
@@ -799,7 +597,7 @@ paths:
       description: ""
       responses:
         "200":
-          description: OK
+          $ref: '#/components/responses/200'
   /json/{repositoryId}:
     get:
       description: ""
@@ -811,11 +609,7 @@ paths:
             type: string
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}:
     get:
       description: ""
@@ -832,11 +626,7 @@ paths:
             type: string
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}/poll:
     get:
       description: ""
@@ -853,11 +643,7 @@ paths:
             type: string
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}/update:
     post:
       description: ""
@@ -883,29 +669,13 @@ paths:
                 Example#1:
                   value: ""
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
   /json/{repositoryId}/init:
     post:
       description: ""
@@ -917,11 +687,7 @@ paths:
             type: string
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
   /json/{repositoryId}/ws:
     get:
       description: ""
@@ -951,23 +717,11 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "101":
           description: "Switching Protocols"
           headers:
@@ -994,29 +748,13 @@ paths:
             type: integer
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
   /counter/{key}:
     post:
       description: ""
@@ -1028,29 +766,13 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /get/{key}:
     get:
       description: ""
@@ -1062,76 +784,33 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: ""
+          $ref: '#/components/responses/404'
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /getAll:
     put:
       description: ""
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
   /getEmail:
     get:
       description: ""
       responses:
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /getRecursively/{key}:
     get:
       description: ""
@@ -1143,11 +822,7 @@ paths:
             type: string
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/200json'
   /poll/{key}:
     get:
       description: ""
@@ -1164,38 +839,15 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: ""
+          $ref: '#/components/responses/404'
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
   /put/{key}:
     put:
       description: ""
@@ -1207,72 +859,29 @@ paths:
             type: string
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: OK
+          $ref: '#/components/responses/200'
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/404'
   /putAll:
     put:
       description: ""
       responses:
         "403":
-          description: "Forbidden"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/403'
         "401":
-          description: "Unauthorized"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/401'
         "500":
-          description: "Internal Server Error"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/200'
         "404":
-          description: "Not Found"
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/404'
   /json/v2/{repositoryId}/ws:
     get:
       description: ""
@@ -1316,10 +925,51 @@ paths:
               required: true
               schema:
                 type: string
-
-
-
 components:
+  responses:
+    "200":
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string
+    "200json":
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: string
+    "400":
+      description: "Bad Request"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "401":
+      description: "Unauthorized"
+      content:
+        text/plain:
+          schema:
+            type: string
+    403:
+      description: "Forbidden"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "404":
+      description: "Not Found"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "500":
+      description: "Internal Server Error"
+      content:
+        text/plain:
+          schema:
+            type: string
+
   schemas:
     VersionDelta:
       title: VersionDelta

@@ -3,7 +3,6 @@ import com.github.gradle.node.npm.task.NpmTask
 plugins {
   base
   alias(libs.plugins.node)
-  id("org.jlleitschuh.gradle.ktlint") apply false
 }
 
 tasks.named("npm_run_build") {

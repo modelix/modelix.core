@@ -7,13 +7,13 @@ import org.jetbrains.mps.openapi.module.SModuleListenerBase;
 import org.jetbrains.mps.openapi.module.SModule;
 import org.jetbrains.mps.openapi.model.SModel;
 import org.jetbrains.mps.openapi.model.SModelReference;
+import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import org.jetbrains.annotations.NotNull;
 import jetbrains.mps.internal.collections.runtime.Sequence;
 import jetbrains.mps.internal.collections.runtime.ISelector;
 import jetbrains.mps.ide.ui.tree.smodel.SModelTreeNode;
 import javax.swing.tree.DefaultTreeModel;
-import jetbrains.mps.ide.ui.tree.MPSTree;
 
 public class CloudModuleTreeNode extends ProjectModuleTreeNode {
   private boolean myInitialized = false;
@@ -83,7 +83,7 @@ public class CloudModuleTreeNode extends ProjectModuleTreeNode {
     }
 
   }
-  private static DefaultTreeModel check_7wx4yo_a0c0i(MPSTree checkedDotOperand, CloudModuleTreeNode checkedDotThisExpression) {
+  private static DefaultTreeModel check_7wx4yo_a0c0i(JTree checkedDotOperand, CloudModuleTreeNode checkedDotThisExpression) {
     if (null != checkedDotOperand) {
       return (DefaultTreeModel) checkedDotOperand.getModel();
     }

@@ -17,10 +17,20 @@
 package org.modelix.mps.sync
 
 import com.intellij.ide.AppLifecycleListener
+import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.mpsadapters.mps.MPSLanguageRepository
+import org.modelix.model.mpsadapters.plugin.MPSNodeReferenceSerializer
 import org.modelix.model.mpsplugin.plugin.Mpsplugin_ApplicationPlugin
 
 class AppListener : AppLifecycleListener {
     override fun appStarted() {
-        Mpsplugin_ApplicationPlugin().createGroups()
+        Mpsplugin_ApplicationPlugin().let {
+            it.createGroups()
+            it.adjustRegularGroups()
+        }
+        // TODO unregister when the plugin is disposed
+        ILanguageRepository.register(MPSLanguageRepository.INSTANCE)
+        INodeReferenceSerializer.register(MPSNodeReferenceSerializer.INSTANCE)
     }
 }

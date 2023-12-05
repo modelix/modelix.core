@@ -17,6 +17,7 @@ package org.modelix.model
 
 interface IKeyValueStore {
     operator fun get(key: String): String?
+    suspend fun getA(key: String): String? = get(key)
     fun put(key: String, value: String?)
     fun getAll(keys: Iterable<String>): Map<String, String?>
     fun putAll(entries: Map<String, String?>)

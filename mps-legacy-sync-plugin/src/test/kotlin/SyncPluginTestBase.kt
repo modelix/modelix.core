@@ -42,18 +42,14 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.ILanguageRepository
-import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.mps.MPSLanguageRepository
 import org.modelix.model.mpsadapters.mps.ProjectAsNode
 import org.modelix.model.mpsadapters.mps.SModuleAsNode
-import org.modelix.model.mpsadapters.plugin.MPSNodeReferenceSerializer
 import org.modelix.model.mpsplugin.SModuleUtils
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
@@ -130,11 +126,14 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     protected fun runTestWithSyncService(body: suspend (ISyncService) -> Unit) = runTestWithModelServer {
-        val syncService: ISyncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
+        val syncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
         try {
             this@SyncPluginTestBase.syncService = syncService
+            syncService.registerProject(project)
+            initialDumpFromMPS = readDumpFromMPS()
             body(syncService)
         } finally {
+            syncService.unregisterProject(project)
             syncService.getConnections().forEach { Disposer.dispose(it) }
 //            Disposer.dispose(syncService)
         }
@@ -154,7 +153,6 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
                     ),
                 ),
             )
-            initialDumpFromMPS = readDumpFromMPS()
         }
     }
 
@@ -165,8 +163,6 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     override fun setUp() {
-        INodeReferenceSerializer.register(MPSNodeReferenceSerializer.INSTANCE)
-        ILanguageRepository.register(MPSLanguageRepository.INSTANCE)
         runInEdtAndWait {
             super.setUp()
         }

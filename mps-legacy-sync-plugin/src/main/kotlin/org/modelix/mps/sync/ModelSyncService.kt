@@ -25,13 +25,17 @@ import kotlinx.coroutines.delay
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.api.IChildLink
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.mps.MPSLanguageRepository
 import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter
+import org.modelix.model.mpsadapters.plugin.MPSNodeReferenceSerializer
 import org.modelix.model.mpsplugin.Binding
 import org.modelix.model.mpsplugin.ModelServerConnections
 import org.modelix.model.mpsplugin.ModuleBinding
@@ -39,6 +43,7 @@ import org.modelix.model.mpsplugin.ProjectBinding
 import org.modelix.model.mpsplugin.ProjectModuleBinding
 import org.modelix.model.mpsplugin.SyncDirection
 import org.modelix.model.mpsplugin.TransientModuleBinding
+import org.modelix.model.mpsplugin.plugin.Mpsplugin_ApplicationPlugin
 import org.modelix.mps.sync.api.IBranchConnection
 import org.modelix.mps.sync.api.IModelServerConnection
 import org.modelix.mps.sync.api.IModuleBinding
@@ -50,7 +55,39 @@ import kotlin.time.ExperimentalTime
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable, ISyncService {
 
+    companion object {
+        var INSTANCE: ModelSyncService? = null
+    }
+
+    private var projects: Set<com.intellij.openapi.project.Project> = emptySet()
     private var serverConnections: List<ServerConnection> = emptyList()
+
+    init {
+        check(INSTANCE == null) { "Single instance expected" }
+        INSTANCE = this
+        Mpsplugin_ApplicationPlugin().let {
+            it.createGroups()
+            it.adjustRegularGroups()
+        }
+        // TODO unregister when the plugin is disposed
+        ILanguageRepository.register(MPSLanguageRepository.INSTANCE)
+        INodeReferenceSerializer.register(MPSNodeReferenceSerializer.INSTANCE)
+    }
+
+    override fun dispose() {
+        INSTANCE = null
+        // serverConnections disposal is handled by Disposer
+        ILanguageRepository.unregister(MPSLanguageRepository.INSTANCE)
+        INodeReferenceSerializer.unregister(MPSNodeReferenceSerializer.INSTANCE)
+    }
+
+    fun registerProject(project: com.intellij.openapi.project.Project) {
+        projects += project
+    }
+
+    fun unregisterProject(project: com.intellij.openapi.project.Project) {
+        projects -= project
+    }
 
     override fun getBindings(): List<org.modelix.mps.sync.api.IBinding> {
         TODO("Not yet implemented")
@@ -207,9 +244,5 @@ class ModelSyncService : Disposable, ISyncService {
                 override fun getModule(): SModule = legacyBinding.module
             }
         }
-    }
-
-    override fun dispose() {
-        // serverConnections disposal is handled by Disposer
     }
 }

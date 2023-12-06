@@ -45,29 +45,26 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
         }
     }
 
-    private fun collectLatestNonMerges(version: CLVersion?, visited: MutableSet<String>, result: MutableSet<Long>) {
-        if (version == null) return
-        if (!visited.add(version.getContentHash())) return
-        if (version.isMerge()) {
-            collectLatestNonMerges(version.getMergedVersion1(), visited, result)
-            collectLatestNonMerges(version.getMergedVersion2(), visited, result)
-        } else {
-            result.add(version.id)
-        }
-    }
-
     protected fun mergeHistory(leftVersion: CLVersion, rightVersion: CLVersion): CLVersion {
         if (leftVersion.hash == rightVersion.hash) return leftVersion
-        val commonBase = Companion.commonBaseVersion(leftVersion, rightVersion)
+        val commonBase = commonBaseVersion(leftVersion, rightVersion)
         if (commonBase?.hash == leftVersion.hash) return rightVersion
         if (commonBase?.hash == rightVersion.hash) return leftVersion
 
-        val leftNonMerges = HashSet<Long>().also { collectLatestNonMerges(leftVersion, HashSet(), it) }
-        val rightNonMerges = HashSet<Long>().also { collectLatestNonMerges(rightVersion, HashSet(), it) }
+        val leftNonMerges = LinearHistory(commonBase?.hash).loadLazy(leftVersion).toSet()
+        val rightNonMerges = LinearHistory(commonBase?.hash).loadLazy(rightVersion).toSet()
         if (leftNonMerges == rightNonMerges) {
             // If there is no actual change on both sides, but they just did the same merge, we have to pick one
             // of them, otherwise both sides will continue creating merges forever.
             return if (leftVersion.id < rightVersion.id) leftVersion else rightVersion
+        }
+        if (leftNonMerges.containsAll(rightNonMerges)) {
+            // No merge needed, fast-forward to the left version
+            return leftVersion
+        }
+        if (rightNonMerges.containsAll(leftNonMerges)) {
+            // No merge needed, fast-forward to the right version
+            return rightVersion
         }
 
         val versionsToApply = LinearHistory(commonBase?.hash).load(leftVersion, rightVersion)

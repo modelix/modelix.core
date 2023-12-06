@@ -1,99 +1,60 @@
 package org.modelix.model
 
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.persistent.CPVersion
 
-/**
- * Was introduced in https://github.com/modelix/modelix/commit/19c74bed5921028af3ac3ee9d997fc1c4203ad44
- * together with the UndoOp. The idea is that an undo should only revert changes if there is no other change that relies
- * on it. In that case the undo should do nothing, to not indirectly undo newer changes.
- * For example, if you added a node and someone else started changing properties on the that node, your undo should not
- * remove the node to not lose the property changes.
- * This requires the versions to be ordered in a way that the undo appears later.
- */
 class LinearHistory(val baseVersionHash: String?) {
 
-    val version2directDescendants: MutableMap<Long, Set<Long>> = HashMap()
-    val versions: MutableMap<Long, CLVersion> = LinkedHashMap()
+    /**
+     * Order all versions descending from any versions in [[fromVersions]] topologically.
+     * This means that a version must come after all its descendants.
+     * Returns the ordered versions starting with the earliest version.
+     */
+    fun loadLazy(vararg fromVersions: CLVersion) = sequence {
+        // The algorithm sorts the versions topologically.
+        // It performs a depth-first search.
+        // It is implemented as an iterative algorithm with a stack.
+
+        val stack = ArrayDeque<CLVersion>()
+        val visited = mutableSetOf<CLVersion>()
+
+        // Ensure deterministic merging,
+        // by putting versions with lower id before versions with higher id.
+        fromVersions.sortedBy { it.id }.forEach { fromVersion ->
+            // Not putting fromVersions directly on the stack and checking visited.contains(fromVersion) ,
+            // ensures the algorithm terminates if one version in `fromVersion`
+            // is a descendant of another version in `fromVersion`
+            if (!visited.contains(fromVersion)) {
+                stack.addLast(fromVersion)
+            }
+            while (stack.isNotEmpty()) {
+                val version = stack.last()
+                val versionWasVisited = !visited.add(version)
+                if (versionWasVisited) {
+                    stack.removeLast()
+                    if (!version.isMerge()) {
+                        yield(version)
+                    }
+                }
+                val descendants = if (version.isMerge()) {
+                    // Put version 1 last, so that is processed first.
+                    // We are using a stack and the last version is viewed first.
+                    listOf(version.getMergedVersion2()!!, version.getMergedVersion1()!!)
+                } else {
+                    listOfNotNull(version.baseVersion)
+                }
+                // Ignore descendant, if it is a base version.
+                val relevantDescendants = descendants.filter { it.getContentHash() != baseVersionHash }
+                // Ignore already visited descendants.
+                val nonCheckedDescendants = relevantDescendants.filterNot { visited.contains(it) }
+                nonCheckedDescendants.forEach { stack.addLast(it) }
+            }
+        }
+    }
 
     /**
-     * @param fromVersions it is assumed that the versions are sorted by the oldest version first. When merging a new
-     *        version into an existing one the new version should appear after the existing one. The resulting order
-     *        will prefer existing versions to new ones, meaning during the conflict resolution the existing changes
-     *        have a higher probability of surviving.
-     * @returns oldest version first
+     * Same as [[loadLazy]], but returning as a list instead of a lazy sequence.
      */
     fun load(vararg fromVersions: CLVersion): List<CLVersion> {
-        for (fromVersion in fromVersions) {
-            collect(fromVersion)
-        }
-
-        var result: List<Long> = emptyList()
-
-        for (version in versions.values.filter { !it.isMerge() }.sortedBy { it.id }) {
-            val descendantIds = collectAllDescendants(version.id).filter { !versions[it]!!.isMerge() }.sorted().toSet()
-            val idsInResult = result.toHashSet()
-            if (idsInResult.contains(version.id)) {
-                result =
-                    result +
-                    descendantIds.filter { !idsInResult.contains(it) }
-            } else {
-                result =
-                    result.filter { !descendantIds.contains(it) } +
-                    version.id +
-                    result.filter { descendantIds.contains(it) } +
-                    descendantIds.filter { !idsInResult.contains(it) }
-            }
-        }
-        return result.map { versions[it]!! }
-    }
-
-    private fun collectAllDescendants(root: Long): Set<Long> {
-        val result = LinkedHashSet<Long>()
-        var previousSize = 0
-        result += root
-
-        while (previousSize != result.size) {
-            val nextElements = result.asSequence().drop(previousSize).toList()
-            previousSize = result.size
-            for (ancestor in nextElements) {
-                version2directDescendants[ancestor]?.let { result += it }
-            }
-        }
-
-        return result.drop(1).toSet()
-    }
-
-    private fun collect(root: CLVersion) {
-        if (root.getContentHash() == baseVersionHash) return
-
-        var previousSize = versions.size
-        versions[root.id] = root
-
-        while (previousSize != versions.size) {
-            val nextElements = versions.asSequence().drop(previousSize).map { it.value }.toList()
-            previousSize = versions.size
-
-            for (descendant in nextElements) {
-                val ancestors = if (descendant.isMerge()) {
-                    sequenceOf(
-                        getVersion(descendant.data!!.mergedVersion1!!, descendant.store),
-                        getVersion(descendant.data!!.mergedVersion2!!, descendant.store),
-                    )
-                } else {
-                    sequenceOf(descendant.baseVersion)
-                }.filterNotNull().filter { it.getContentHash() != baseVersionHash }.toList()
-                for (ancestor in ancestors) {
-                    versions[ancestor.id] = ancestor
-                    version2directDescendants[ancestor.id] = (version2directDescendants[ancestor.id] ?: emptySet()) + setOf(descendant.id)
-                }
-            }
-        }
-    }
-
-    private fun getVersion(hash: KVEntryReference<CPVersion>, store: IDeserializingKeyValueStore): CLVersion {
-        return CLVersion(hash.getValue(store), store)
+        return loadLazy(*fromVersions).toList()
     }
 }

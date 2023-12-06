@@ -15,7 +15,12 @@
 
 package org.modelix.model
 
+import org.modelix.model.lazy.BulkQuery
+import org.modelix.model.lazy.IBulkQuery
+import org.modelix.model.lazy.IDeserializingKeyValueStore
+
 interface IKeyValueStore {
+    fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore): IBulkQuery = BulkQuery(deserializingCache)
     operator fun get(key: String): String?
     fun put(key: String, value: String?)
     fun getAll(keys: Iterable<String>): Map<String, String?>

@@ -93,7 +93,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     fun getSize(): Long {
-        return (nodesMap ?: return 0L).calculateSize(BulkQuery(store)).execute()
+        return (nodesMap ?: return 0L).calculateSize(store.newBulkQuery()).execute()
     }
 
     fun prefetchAll() {
@@ -286,24 +286,24 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun getAllChildren(parentId: Long): Iterable<Long> {
-        val children = getChildren(resolveElement(parentId)!!, BulkQuery(store)).execute()
+        val children = getChildren(resolveElement(parentId)!!, store.newBulkQuery()).execute()
         return children.map { it.id }
     }
 
     override fun getDescendants(root: Long, includeSelf: Boolean): Iterable<CLNode> {
         val parent = resolveElement(root)
-        return getDescendants(parent!!, BulkQuery(store), includeSelf).execute().map { CLNode(this, it) }
+        return getDescendants(parent!!, store.newBulkQuery(), includeSelf).execute().map { CLNode(this, it) }
     }
 
     override fun getDescendants(rootIds: Iterable<Long>, includeSelf: Boolean): Iterable<CLNode> {
-        val bulkQuery = BulkQuery(store)
+        val bulkQuery = store.newBulkQuery()
         val roots: IBulkQuery.Value<List<CPNode>> = resolveElements(rootIds.toList(), bulkQuery)
         val descendants = roots.mapBulk { bulkQuery.map(it) { getDescendants(it, bulkQuery, includeSelf) } }
         return descendants.execute().flatten().map { CLNode(this, it) }
     }
 
     override fun getAncestors(nodeIds: Iterable<Long>, includeSelf: Boolean): Set<Long> {
-        val bulkQuery = BulkQuery(store)
+        val bulkQuery = store.newBulkQuery()
         val nodes: IBulkQuery.Value<List<CPNode>> = resolveElements(nodeIds, bulkQuery)
         val ancestors = nodes.mapBulk { bulkQuery.map(it) { getAncestors(it, bulkQuery, includeSelf) } }
         val result = HashSet<Long>()
@@ -314,7 +314,7 @@ class CLTree : ITree, IBulkTree {
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> {
         checkChildRoleId(parentId, role)
         val parent = resolveElement(parentId)
-        val children = getChildren(parent!!, BulkQuery(store)).execute()
+        val children = getChildren(parent!!, store.newBulkQuery()).execute()
         return children
             .filter { it.roleInParent == role }
             .map { it.id }
@@ -322,7 +322,7 @@ class CLTree : ITree, IBulkTree {
 
     override fun getChildRoles(sourceId: Long): Iterable<String?> {
         val parent = resolveElement(sourceId)
-        val children: Iterable<CPNode> = getChildren(parent!!, BulkQuery(store)).execute()
+        val children: Iterable<CPNode> = getChildren(parent!!, store.newBulkQuery()).execute()
         return children.map { it.roleInParent }.distinct()
     }
 
@@ -412,9 +412,9 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {
-        val bulkQuery = BulkQuery(store)
+        val bulkQuery = store.newBulkQuery()
         visitChanges(oldVersion, visitor, bulkQuery)
-        bulkQuery.process()
+        (bulkQuery as? BulkQuery)?.process()
     }
 
     fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor, bulkQuery: IBulkQuery) {

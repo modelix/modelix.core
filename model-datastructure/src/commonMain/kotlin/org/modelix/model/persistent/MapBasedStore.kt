@@ -17,6 +17,9 @@ package org.modelix.model.persistent
 
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
+import org.modelix.model.lazy.IBulkQuery
+import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.model.lazy.NonBulkQuery
 
 @Deprecated("Use MapBasedStore, without a typo.", ReplaceWith("MapBasedStore"))
 open class MapBaseStore : MapBasedStore()
@@ -25,6 +28,11 @@ open class MapBasedStore : IKeyValueStore {
     private val map: MutableMap<String?, String?> = HashMap()
     override fun get(key: String): String? {
         return map[key]
+    }
+
+    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore): IBulkQuery {
+        // This implementation doesn't benefit from bulk queries. The NonBulkQuery has a lower performance overhead.
+        return NonBulkQuery(deserializingCache)
     }
 
     override fun getPendingSize(): Int = 0

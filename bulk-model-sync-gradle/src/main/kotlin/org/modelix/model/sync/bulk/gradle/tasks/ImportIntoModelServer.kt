@@ -30,7 +30,7 @@ import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.ILanguage
 import org.modelix.model.api.ILanguageRepository
-import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
+import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelImporter
@@ -75,7 +75,7 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
         val repoId = RepositoryId(repositoryId.get())
 
         val branchRef = ModelFacade.createBranchReference(repoId, branchName.get())
-        val client = ModelClientV2PlatformSpecificBuilder().url(url.get()).build()
+        val client = ModelClientV2.builder().url(url.get()).build()
         val files = inputDir.listFiles()?.filter {
             it.extension == "json" && isModuleIncluded(it.nameWithoutExtension, includedModules.get(), includedModulePrefixes.get())
         }

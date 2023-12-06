@@ -9,7 +9,7 @@ class LinearHistory(val baseVersionHash: String?) {
      * This means that a version must come after all its descendants.
      * Returns the ordered versions starting with the earliest version.
      */
-    fun loadLazy(vararg fromVersions: CLVersion) = sequence {
+    fun computeHistoryLazy(vararg fromVersions: CLVersion) = sequence {
         // The algorithm sorts the versions topologically.
         // It performs a depth-first search.
         // It is implemented as an iterative algorithm with a stack.
@@ -31,9 +31,7 @@ class LinearHistory(val baseVersionHash: String?) {
                 val versionWasVisited = !visited.add(version)
                 if (versionWasVisited) {
                     stack.removeLast()
-                    if (!version.isMerge()) {
-                        yield(version)
-                    }
+                    yield(version)
                 }
                 val descendants = if (version.isMerge()) {
                     // Put version 1 last, so that is processed first.
@@ -52,9 +50,9 @@ class LinearHistory(val baseVersionHash: String?) {
     }
 
     /**
-     * Same as [[loadLazy]], but returning as a list instead of a lazy sequence.
+     * Same as [[computeHistoryLazy]], but returning as a list instead of a lazy sequence and omitting merge versions.
      */
-    fun load(vararg fromVersions: CLVersion): List<CLVersion> {
-        return loadLazy(*fromVersions).toList()
+    fun computeHistoryWithoutMerges(vararg fromVersions: CLVersion): List<CLVersion> {
+        return computeHistoryLazy(*fromVersions).filterNot { it.isMerge() }.toList()
     }
 }

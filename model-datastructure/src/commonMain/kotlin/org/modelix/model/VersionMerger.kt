@@ -51,23 +51,25 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
         if (commonBase?.hash == leftVersion.hash) return rightVersion
         if (commonBase?.hash == rightVersion.hash) return leftVersion
 
-        val leftNonMerges = LinearHistory(commonBase?.hash).loadLazy(leftVersion).toSet()
-        val rightNonMerges = LinearHistory(commonBase?.hash).loadLazy(rightVersion).toSet()
+        val leftVersions = LinearHistory(commonBase?.hash).computeHistoryLazy(leftVersion)
+        if (leftVersions.contains(rightVersion)) {
+            // No merge needed, fast-forward to the left version
+            return leftVersion
+        }
+        val rightVersions = LinearHistory(commonBase?.hash).computeHistoryLazy(rightVersion)
+        if (rightVersions.contains(leftVersion)) {
+            // No merge needed, fast-forward to the right version
+            return rightVersion
+        }
+        val leftNonMerges = leftVersions.filterNot { it.isMerge() }.toSet()
+        val rightNonMerges = rightVersions.filterNot { it.isMerge() }.toSet()
         if (leftNonMerges == rightNonMerges) {
             // If there is no actual change on both sides, but they just did the same merge, we have to pick one
             // of them, otherwise both sides will continue creating merges forever.
             return if (leftVersion.id < rightVersion.id) leftVersion else rightVersion
         }
-        if (leftNonMerges.containsAll(rightNonMerges)) {
-            // No merge needed, fast-forward to the left version
-            return leftVersion
-        }
-        if (rightNonMerges.containsAll(leftNonMerges)) {
-            // No merge needed, fast-forward to the right version
-            return rightVersion
-        }
 
-        val versionsToApply = LinearHistory(commonBase?.hash).load(leftVersion, rightVersion)
+        val versionsToApply = LinearHistory(commonBase?.hash).computeHistoryWithoutMerges(leftVersion, rightVersion)
 
         val operationsToApply = versionsToApply.flatMap { captureIntend(it) }
         var mergedVersion: CLVersion? = null

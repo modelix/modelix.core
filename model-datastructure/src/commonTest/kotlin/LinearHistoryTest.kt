@@ -197,7 +197,7 @@ class LinearHistoryTest {
 
     private fun history(v1: CLVersion, v2: CLVersion): List<CLVersion> {
         val base = VersionMerger.commonBaseVersion(v1, v2)
-        val history = LinearHistory(base?.getContentHash()).load(v1, v2)
+        val history = LinearHistory(base?.getContentHash()).computeHistoryWithoutMerges(v1, v2)
         assertHistoryIsCorrect(history)
         return history
     }

@@ -23,10 +23,14 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IVersion
 import org.modelix.model.LinearHistory
+import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.TreePointer
 import org.modelix.model.operations.IOperation
+import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
@@ -431,4 +435,18 @@ private class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
     override fun getPendingSize(): Int {
         TODO("Not yet implemented")
     }
+}
+
+fun CLVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IWriteTransaction) -> Unit): CLVersion {
+    val baseVersion = this
+    val branch = OTBranch(TreePointer(baseVersion.getTree(), idGenerator), idGenerator, this.store)
+    branch.computeWriteT(body)
+    val (ops, newTree) = branch.getPendingChanges()
+    return CLVersion.createRegularVersion(
+        id = idGenerator.generate(),
+        author = author,
+        tree = newTree as CLTree,
+        baseVersion = baseVersion as CLVersion?,
+        operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+    )
 }

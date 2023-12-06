@@ -25,17 +25,13 @@ import kotlinx.coroutines.delay
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.api.IChildLink
-import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
-import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.mps.MPSLanguageRepository
 import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter
-import org.modelix.model.mpsadapters.plugin.MPSNodeReferenceSerializer
 import org.modelix.model.mpsplugin.Binding
 import org.modelix.model.mpsplugin.ModelServerConnections
 import org.modelix.model.mpsplugin.ModuleBinding
@@ -60,6 +56,10 @@ class ModelSyncService : Disposable, ISyncService {
     }
 
     private var projects: Set<com.intellij.openapi.project.Project> = emptySet()
+    private val legacyAppPluginParts = listOf(
+        org.modelix.model.mpsadapters.plugin.ApplicationPlugin_AppPluginPart(),
+        org.modelix.model.mpsplugin.plugin.ApplicationPlugin_AppPluginPart(),
+    )
     private var serverConnections: List<ServerConnection> = emptyList()
 
     init {
@@ -69,16 +69,14 @@ class ModelSyncService : Disposable, ISyncService {
             it.createGroups()
             it.adjustRegularGroups()
         }
-        // TODO unregister when the plugin is disposed
-        ILanguageRepository.register(MPSLanguageRepository.INSTANCE)
-        INodeReferenceSerializer.register(MPSNodeReferenceSerializer.INSTANCE)
+
+        legacyAppPluginParts.forEach { it.init() }
     }
 
     override fun dispose() {
         INSTANCE = null
         // serverConnections disposal is handled by Disposer
-        ILanguageRepository.unregister(MPSLanguageRepository.INSTANCE)
-        INodeReferenceSerializer.unregister(MPSNodeReferenceSerializer.INSTANCE)
+        legacyAppPluginParts.forEach { it.dispose() }
     }
 
     fun registerProject(project: com.intellij.openapi.project.Project) {

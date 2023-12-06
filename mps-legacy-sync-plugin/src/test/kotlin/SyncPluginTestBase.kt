@@ -16,6 +16,7 @@
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
+import com.intellij.serviceContainer.AlreadyDisposedException
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.runInEdtAndWait
 import io.ktor.client.HttpClient
@@ -158,7 +159,11 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
 
     override fun tearDown() {
         runInEdtAndWait {
-            super.tearDown()
+            try {
+                super.tearDown()
+            } catch (ex: AlreadyDisposedException) {
+                Exception("Ignoring exception", ex).printStackTrace()
+            }
         }
     }
 

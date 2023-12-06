@@ -53,7 +53,7 @@ public class LoadHistoryForRepository_Action extends BaseAction {
   public void doExecute(@NotNull final AnActionEvent event, final Map<String, Object> _params) {
     RepositoryTreeNode treeNode = (RepositoryTreeNode) event.getData(MPSCommonDataKeys.TREE_NODE);
     final ActiveBranch activeBranch = treeNode.getModelServer().getActiveBranch(treeNode.getRepositoryId());
-    event.getData(CommonDataKeys.PROJECT).getComponent(ProjectPluginManager.class).getTool(CloudHistoryTool_Tool.class).load(treeNode.getModelServer(), treeNode.getRepositoryId(), new _FunctionTypes._return_P0_E0<CLVersion>() {
+    CloudHistoryTool_Tool.load(event.getData(CommonDataKeys.PROJECT), treeNode.getModelServer(), treeNode.getRepositoryId(), new _FunctionTypes._return_P0_E0<CLVersion>() {
       public CLVersion invoke() {
         return activeBranch.getVersion();
       }

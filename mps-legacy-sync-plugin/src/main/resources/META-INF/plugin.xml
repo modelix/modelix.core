@@ -26,8 +26,11 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Modelix Server Connection" secondary="false"
-                    icon="org.modelix.model.mpsplugin.plugin.IconContainer.ICON_a0" anchor="bottom"
+        <toolWindow id="Modelix History" secondary="false"
+                    icon="org.modelix.model.mpsplugin.plugin.CloudHistoryTool_Tool.ICON" anchor="bottom"
+                    factoryClass="org.modelix.model.mpsplugin.plugin.CloudHistoryTool_Tool"/>
+        <toolWindow id="Modelix Server Connection" secondary="true"
+                    icon="org.modelix.model.mpsplugin.plugin.CloudTool_Tool.ICON" anchor="bottom"
                     factoryClass="org.modelix.model.mpsplugin.plugin.CloudTool_Tool"/>
         <applicationService serviceImplementation="org.modelix.mps.sync.ModelSyncService"/>
         <backgroundPostStartupActivity implementation="org.modelix.mps.sync.ModelixSyncPluginInitializer" />

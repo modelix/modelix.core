@@ -79,7 +79,7 @@ public class LoadHistoryForBranch_Action extends BaseAction {
         final CLVersion version = CLVersion.Companion.loadFromHash(versionHash, client.getStoreCache());
         SwingUtilities.invokeLater(new Runnable() {
           public void run() {
-            event.getData(CommonDataKeys.PROJECT).getComponent(ProjectPluginManager.class).getTool(CloudHistoryTool_Tool.class).load(modelServer, repositoryId, new _FunctionTypes._return_P0_E0<CLVersion>() {
+            CloudHistoryTool_Tool.load(event.getData(CommonDataKeys.PROJECT), modelServer, repositoryId, new _FunctionTypes._return_P0_E0<CLVersion>() {
               public CLVersion invoke() {
                 return version;
               }

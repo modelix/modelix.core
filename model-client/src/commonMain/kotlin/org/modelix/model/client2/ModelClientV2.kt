@@ -23,6 +23,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -178,18 +179,38 @@ class ModelClientV2(
         require(baseVersion is CLVersion?)
         version.write()
         val objects = version.computeDelta(baseVersion)
+        HashUtil.checkObjectHashes(objects)
+        val delta = if (objects.size > 1000) {
+            // large HTTP requests and large Json objects don't scale well
+            uploadObjects(branch.repositoryId, objects.asSequence().map { it.key to it.value })
+            VersionDelta(version.getContentHash(), null)
+        } else {
+            VersionDelta(version.getContentHash(), null, objectsMap = objects)
+        }
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
             contentType(ContentType.Application.Json)
-            val body = VersionDelta(version.getContentHash(), null, objectsMap = objects)
-            body.checkObjectHashes()
-            setBody(body)
+            setBody(delta)
         }
         val mergedVersionDelta = response.body<VersionDelta>()
         return createVersion(version, mergedVersionDelta)
+    }
+
+    private suspend fun uploadObjects(repository: RepositoryId, objects: Sequence<Pair<String, String>>) {
+        LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
+        objects.chunked(100_000).forEach { chunk ->
+            httpClient.put {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash("repositories", repository.id, "objects")
+                }
+                contentType(ContentType.Text.Plain)
+                setBody(chunk.flatMap { it.toList() }.joinToString("\n"))
+            }
+        }
     }
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {

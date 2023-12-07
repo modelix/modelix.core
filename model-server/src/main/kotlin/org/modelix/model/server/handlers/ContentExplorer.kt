@@ -6,10 +6,10 @@ import io.ktor.server.application.call
 import io.ktor.server.html.respondHtml
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.request.receive
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.html.BODY
 import kotlinx.html.FlowContent
@@ -36,6 +36,7 @@ import kotlinx.html.title
 import kotlinx.html.tr
 import kotlinx.html.ul
 import kotlinx.html.unsafe
+import org.modelix.api.html.Paths
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeResolutionScope
@@ -64,10 +65,10 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
 
     fun init(application: Application) {
         application.routing {
-            get("/content/") {
+            get<Paths.contentGet> {
                 call.respondRedirect("../repos/")
             }
-            get("/content/{versionHash}/") {
+            get<Paths.contentVersionHashGet> {
                 val versionHash = call.parameters["versionHash"]
                 if (versionHash.isNullOrEmpty()) {
                     call.respondText("version not found", status = HttpStatusCode.BadRequest)
@@ -86,7 +87,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     bodyContent { contentPageBody(rootNode, versionHash, emptySet()) }
                 }
             }
-            post("/content/{versionHash}/") {
+            post<Paths.contentVersionHashGet> {
                 val versionHash = call.parameters["versionHash"]
                 if (versionHash.isNullOrEmpty()) {
                     call.respondText("version not found", status = HttpStatusCode.BadRequest)
@@ -110,7 +111,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     },
                 )
             }
-            get("/content/{versionHash}/{nodeId}/") {
+            get<Paths.contentVersionHashNodeIdGet> {
                 val id = call.parameters["nodeId"]!!.toLong()
                 var found: PNodeAdapter? = null
                 for (node in rootNodes) {

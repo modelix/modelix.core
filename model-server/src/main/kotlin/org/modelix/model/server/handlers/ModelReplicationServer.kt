@@ -34,7 +34,7 @@ import io.ktor.websocket.send
 import kotlinx.coroutines.Job
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.modelix.Paths
+import org.modelix.api.public.Paths
 import org.modelix.authorization.getUserName
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreePointer

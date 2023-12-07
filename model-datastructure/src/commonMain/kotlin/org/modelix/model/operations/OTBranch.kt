@@ -23,20 +23,48 @@ import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.runSynchronized
+import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.model.lazy.KVEntryReference
 
 class OTBranch(
     private val branch: IBranch,
     private val idGenerator: IIdGenerator,
     private val store: IDeserializingKeyValueStore,
 ) : IBranch {
+    private var bulkUpdateMode: Boolean = false
     private var currentOperations: MutableList<IAppliedOperation> = ArrayList()
     private val completedChanges: MutableList<OpsAndTree> = ArrayList()
     private val id: String = branch.getId()
 
+    /**
+     * This records all changes as a single operation instead of a long list of fine-grained changes.
+     * It is assumed that the intended change is to put the model into the resulting state.
+     *
+     * @param subtreeRootNodeId if the update is not applied on the whole model, but only on a part of it,
+     *                          this ID specifies the root node of that subtree.
+     */
+    fun runBulkUpdate(subtreeRootNodeId: Long = ITree.ROOT_ID, body: () -> Unit) {
+        check(canWrite()) { "Only allowed inside a write transaction" }
+        if (bulkUpdateMode) return body()
+        try {
+            bulkUpdateMode = true
+            val baseTree = branch.transaction.tree as CLTree
+            body()
+            val resultTree = branch.transaction.tree as CLTree
+            currentOperations += BulkUpdateOp(KVEntryReference(resultTree.data), subtreeRootNodeId).afterApply(baseTree)
+        } finally {
+            bulkUpdateMode = false
+        }
+    }
+
+    fun isInBulkMode() = bulkUpdateMode
+
     fun operationApplied(op: IAppliedOperation) {
         check(canWrite()) { "Only allowed inside a write transaction" }
-        currentOperations.add(op)
+        if (!bulkUpdateMode) {
+            currentOperations.add(op)
+        }
     }
 
     override fun getId(): String {

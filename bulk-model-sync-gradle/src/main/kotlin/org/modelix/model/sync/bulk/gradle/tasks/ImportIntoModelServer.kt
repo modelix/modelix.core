@@ -30,9 +30,12 @@ import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.ILanguage
 import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INode
+import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.operations.OTBranch
 import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.importFilesAsRootChildren
 import org.modelix.model.sync.bulk.isModuleIncluded
@@ -84,11 +87,20 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
         runBlocking {
             client.init()
             client.runWrite(branchRef) { rootNode ->
-                logger.info("Got root node: {}", rootNode)
-                logger.info("Importing...")
-                ModelImporter(rootNode, continueOnError.get()).importFilesAsRootChildren(files)
-                logger.info("Import finished")
+                rootNode.runBulkUpdate {
+                    logger.info("Got root node: {}", rootNode)
+                    logger.info("Importing...")
+                    ModelImporter(rootNode, continueOnError.get()).importFilesAsRootChildren(files)
+                    logger.info("Import finished")
+                }
             }
         }
     }
+}
+
+/**
+ * Memory optimization that doesn't record individual change operations, but only the result.
+ */
+private fun INode.runBulkUpdate(body: () -> Unit) {
+    ((this as PNodeAdapter).branch as OTBranch).runBulkUpdate(body = body)
 }

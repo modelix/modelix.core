@@ -24,6 +24,7 @@ import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildSubtreeOp
 import org.modelix.model.operations.AddNewChildrenOp
+import org.modelix.model.operations.BulkUpdateOp
 import org.modelix.model.operations.DeleteNodeOp
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.MoveNodeOp
@@ -127,6 +128,19 @@ class OperationSerializer private constructor() {
                     override fun deserialize(serialized: String): AddNewChildSubtreeOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return AddNewChildSubtreeOp(KVEntryReference(parts[5], CPTree.DESERIALIZER), PositionInRole(longFromHex(parts[0]), unescape(parts[1]), parts[2].toInt()), longFromHex(parts[3]), deserializeConcept(parts[4]))
+                    }
+                },
+            )
+            INSTANCE.registerSerializer(
+                BulkUpdateOp::class,
+                object : Serializer<BulkUpdateOp> {
+                    override fun serialize(op: BulkUpdateOp): String {
+                        return longToHex(op.subtreeRootId) + SEPARATOR + op.resultTreeHash.getHash()
+                    }
+
+                    override fun deserialize(serialized: String): BulkUpdateOp {
+                        val parts = serialized.split(SEPARATOR).toTypedArray()
+                        return BulkUpdateOp(KVEntryReference(parts[1], CPTree.DESERIALIZER), longFromHex(parts[0]))
                     }
                 },
             )

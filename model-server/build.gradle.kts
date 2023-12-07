@@ -1,5 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
     application
@@ -191,50 +192,72 @@ spotless {
 val basePackage = project.group.toString()
 val openAPIgenerationPath = "$buildDir/generated/openapi"
 
-// We let the Gradle OpenAPI generator plugin build data classes and API interfaces based on the provided
-// OpenAPI specification. That way, the code is forced to stay in sync with the API specification.
-openApiGenerate {
-    generatorName.set("kotlin-server")
-    inputSpec.set(layout.projectDirectory.file("../api/model-server.yaml").toString())
-    outputDir.set(openAPIgenerationPath)
-    packageName.set(basePackage)
-    packageName.set(basePackage)
-    apiPackage.set(basePackage)
-    modelPackage.set(basePackage)
-    // WARNING: there are patched mustache files used!
-    templateDir.set("$projectDir/src/main/resources/openapi/templates")
-    configOptions.set(
-        mapOf(
-            "library" to "ktor",
-            "omitGradleWrapper" to "true",
-            "featureResources" to "true",
-            "featureAutoHead" to "false",
-            "featureCompression" to "false",
-            "featureHSTS" to "false",
-            "featureMetrics" to "false",
-        ),
-    )
-}
+// Pairs of the different OpenAPI files we use. Each pair must have its own 'category' as first argument as these
+// are used to generate corresponding packages
+val openApiFiles = listOf(
+    Pair("public", "model-server"),
+    Pair("light", "model-server-light"),
+    Pair("html", "model-server-html"),
+    Pair("deprecated", "model-server-deprecated"),
+)
 
-// Ensure that the OpenAPI generator runs before starting to compile
-tasks.named("processResources") {
-    dependsOn("openApiGenerate")
-}
-tasks.named("compileKotlin") {
-    dependsOn("openApiGenerate")
-}
-tasks.named("runKtlintCheckOverMainSourceSet") {
-    dependsOn("openApiGenerate")
-}
+// generate tasks for each OpenAPI file
+openApiFiles.forEach {
+    val targetTaskName = "openApiGenerate-${it.second}"
+    val targetPackageName = "$basePackage.api.${it.first}"
+    val outputPath = "$openAPIgenerationPath/${it.first}"
+    tasks.register<GenerateTask>(targetTaskName) {
+        // we let the Gradle OpenAPI generator plugin build data classes and API interfaces based on the provided
+        // OpenAPI specification. That way, the code is forced to stay in sync with the API specification.
+        generatorName.set("kotlin-server")
+        inputSpec.set(layout.projectDirectory.file("../api/${it.second}.yaml").toString())
+        outputDir.set(outputPath)
+        packageName.set(targetPackageName)
+        apiPackage.set(targetPackageName)
+        modelPackage.set(targetPackageName)
+        // WARNING: there are patched mustache files used!
+        templateDir.set("$projectDir/src/main/resources/openapi/templates")
+        configOptions.set(
+            mapOf(
+                "library" to "ktor",
+                "omitGradleWrapper" to "true",
+                "featureResources" to "true",
+                "featureAutoHead" to "false",
+                "featureCompression" to "false",
+                "featureHSTS" to "false",
+                "featureMetrics" to "false",
+            ),
+        )
+        // generate only Paths and Models
+        globalProperties.putAll(
+            mapOf(
+                "models" to "",
+                "apis" to "",
+                "supportingFiles" to "Paths.kt",
+            ),
+        )
+    }
 
-// do not apply ktlint on the generated files
-ktlint {
-    filter {
-        exclude {
-            it.file.toPath().toAbsolutePath().startsWith(openAPIgenerationPath)
+    // Ensure that the OpenAPI generator runs before starting to compile
+    tasks.named("processResources") {
+        dependsOn(targetTaskName)
+    }
+    tasks.named("compileKotlin") {
+        dependsOn(targetTaskName)
+    }
+    tasks.named("runKtlintCheckOverMainSourceSet") {
+        dependsOn(targetTaskName)
+    }
+
+    // do not apply ktlint on the generated files
+    ktlint {
+        filter {
+            exclude {
+                it.file.toPath().toAbsolutePath().startsWith(outputPath)
+            }
         }
     }
-}
 
-// add openAPI generated artifacts to the sourceSets
-java.sourceSets.getByName("main").java.srcDir(file("$openAPIgenerationPath/src/main/kotlin"))
+    // add openAPI generated artifacts to the sourceSets
+    java.sourceSets.getByName("main").java.srcDir(file("$outputPath/src/main/kotlin"))
+}

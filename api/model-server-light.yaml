@@ -1,0 +1,62 @@
+# WARNING - EXPERIMENTAL
+# This file was auto generated from the existing API using an IntelliJ plugin,
+# see https://www.jetbrains.com/help/idea/openapi.html#generate_openapi
+#
+# Manual changes were done for this 'spec' to work in-place with the
+# model-server for now. A lot of changes were done and are still necessary
+# to make this OpenAPI a viable artifact. It will most likely be split
+# into multiple OpenAPI files.
+
+openapi: "3.0.3"
+info:
+  title: "model-server light API"
+  description: "modelix light API"
+  version: "0.0.1"
+servers:
+  - url: 'http://127.0.0.1:28101'
+    description: local model-server
+paths:
+  # TODO: this is a WS, openAPI will not help here
+  /json/v2/{repositoryId}/ws:
+    get:
+      description: ""
+      parameters:
+        - name: repositoryId
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: Connection
+          in: "header"
+          required: true
+          description: "Websocket Connection parameter"
+          schema:
+            type: string
+        - name: Upgrade
+          in: "header"
+          required: true
+          description: "Websocket Upgrade parameter"
+          schema:
+            type: string
+        - name: Sec-WebSocket-Key
+          in: "header"
+          required: true
+          description: "Websocket Sec-WebSocket-Key parameter"
+          schema:
+            type: string
+      responses:
+        "101":
+          description: "Switching Protocols"
+          headers:
+            Connection:
+              required: true
+              schema:
+                type: string
+            Upgrade:
+              required: true
+              schema:
+                type: string
+            Sec-WebSocket-Accept:
+              required: true
+              schema:
+                type: string

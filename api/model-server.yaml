@@ -1,9 +1,10 @@
 # WARNING - EXPERIMENTAL
-# This file was auto generated from the existing API using the IntelliJ
+# This file was auto generated from the existing API using an IntelliJ plugin,
 # see https://www.jetbrains.com/help/idea/openapi.html#generate_openapi
+#
 # Manual changes were done for this 'spec' to work in-place with the
-# model-server for now. A lot of changes were and are still necessary
-# to make this OpenAPI a viable artifact. It will most likely be splitted
+# model-server for now. A lot of changes were done and are still necessary
+# to make this OpenAPI a viable artifact. It will most likely be split
 # into multiple OpenAPI files.
 
 openapi: "3.0.3"
@@ -15,12 +16,6 @@ servers:
   - url: 'http://127.0.0.1:28101'
     description: local model-server
 paths:
-  /:
-    get:
-      description: ""
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
   /v2/server-id:
     get:
       description: ""
@@ -42,16 +37,6 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
-  /repos:
-    get:
-      description: ""
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
   /headers:
     get:
       description: ""
@@ -111,10 +96,10 @@ paths:
           $ref: '#/components/responses/404'
         "200":
           description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/VersionDelta"
+#          content:
+#            '*/*':
+#              schema:
+#                $ref: "#/components/schemas/VersionDelta"
     post:
       description: ""
       parameters:
@@ -401,95 +386,7 @@ paths:
           $ref: '#/components/responses/200json'
         "500":
           $ref: '#/components/responses/500'
-  /history:
-    get:
-      description: ""
-      responses:
-        "302":
-          description: "Found <br> Redirect"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "../repos/"
-  /history/{repoId}/{branch}:
-    get:
-      description: ""
-      parameters:
-        - name: repoId
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: branch
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: limit
-          in: "query"
-          required: false
-          schema:
-            type: string
-        - name: skip
-          in: "query"
-          required: false
-          schema:
-            type: string
-        - name: head
-          in: "query"
-          required: false
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-  /history/{repoId}/{branch}/revert:
-    post:
-      description: ""
-      parameters:
-        - name: repoId
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: branch
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: from
-          in: "query"
-          required: false
-          schema:
-            type: string
-        - name: to
-          in: "query"
-          required: false
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "302":
-          description: "Found <br> Redirect"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "."
+
   /v2/versions/{versionHash}:
     get:
       description: ""
@@ -530,77 +427,6 @@ paths:
           required: true
           schema:
             type: string
-  /content:
-    get:
-      description: ""
-      responses:
-        "302":
-          description: "Found <br> Redirect"
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                Example#1:
-                  value: "../repos/"
-  /content/{versionHash}:
-    get:
-      description: ""
-      parameters:
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "400":
-          $ref: '#/components/responses/400'
-    post:
-      description: ""
-      parameters:
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          '*/*':
-            schema:
-              $ref: "#/components/schemas/ContentExplorerExpandedNodes"
-        required: true
-      responses:
-        "400":
-          $ref: '#/components/responses/400'
-        "200":
-          $ref: '#/components/responses/200'
-  /content/{versionHash}/{nodeId}:
-    get:
-      description: ""
-      parameters:
-        - name: nodeId
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          description: OK
-          content:
-            text/plain:
-              schema:
-                $ref: "#/components/schemas/Function2"
-              examples:
-                text/html:
-                  description: "HTML document"
-                  value: ""
   /json:
     get:
       description: ""
@@ -996,29 +822,9 @@ components:
         - versionHash
         - objects
         - objectsMap
-
-
     MapItem:
       properties:
         value1:
           type: string
         value2:
           type: string
-
-
-    ContentExplorerExpandedNodes:
-      type: object
-      properties:
-        expandedNodeIds:
-          type: array
-          items:
-            type: string
-        expandAll:
-          type: boolean
-      required:
-        - "expandedNodeIds"
-    Function1:
-      type: object
-      properties: {}
-    Function2:
-      type: object

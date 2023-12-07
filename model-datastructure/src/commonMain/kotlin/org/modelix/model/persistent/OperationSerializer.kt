@@ -18,11 +18,12 @@ package org.modelix.model.persistent
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeReference
-import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildSubtreeOp
+import org.modelix.model.operations.AddNewChildrenOp
 import org.modelix.model.operations.DeleteNodeOp
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.MoveNodeOp
@@ -39,12 +40,14 @@ import org.modelix.model.persistent.SerializationUtil.unescape
 import kotlin.reflect.KClass
 
 private val localNodeIdPattern = Regex("[a-fA-F0-9]+")
+
+@Deprecated("uses invalid '/' separator that is already reserved for top level objects")
 private val globalNodeIdPattern = Regex("[a-fA-F0-9]+/.+")
 
 class OperationSerializer private constructor() {
     companion object {
         val INSTANCE = OperationSerializer()
-        private const val SEPARATOR = ";"
+        private const val SEPARATOR = Separators.OP_PARTS
         fun serializeConcept(concept: IConceptReference?): String {
             return escape(concept?.serialize())
         }
@@ -57,9 +60,12 @@ class OperationSerializer private constructor() {
             return when (obj) {
                 null -> ""
                 is LocalPNodeReference -> longToHex(obj.id)
-                is PNodeReference -> "${longToHex(obj.id)}/${escape(obj.branchId)}"
-                is SerializedNodeReference -> escape(obj.serialized)
-                else -> escape(org.modelix.model.api.INodeReferenceSerializer.serialize(obj))
+                // This was previously using the '/' separator, that is already used for the top level objects
+                // and would fail to deserialize.
+                // is PNodeReference -> {
+                //     "${longToHex(obj.id)}/${escape(obj.branchId)}"
+                // }
+                else -> escape(obj.serialize())
             }
         }
 
@@ -67,11 +73,16 @@ class OperationSerializer private constructor() {
             return when {
                 serialized.isNullOrEmpty() -> null
                 serialized.matches(localNodeIdPattern) -> LocalPNodeReference(longFromHex(serialized))
-                serialized.matches(globalNodeIdPattern) -> {
+                unescape(serialized)!!.matches(globalNodeIdPattern) -> {
+                    // This is how PNodeReference was serialized before, but the deserialization of the CPVersion
+                    // should fail with this duplicate usage of the '/' separator.
+                    // This branch should not be reachable and can be removed if we are absolutely sure about that.
                     val parts = serialized.split('/', limit = 2)
                     PNodeReference(longFromHex(parts[0]), unescape(parts[1])!!)
                 }
-                else -> unescape(serialized)?.let { SerializedNodeReference(it) }
+                else -> unescape(serialized)?.let {
+                    PNodeReference.tryDeserialize(serialized) ?: NodeReference(it)
+                }
             }
         }
 
@@ -86,6 +97,23 @@ class OperationSerializer private constructor() {
                     override fun deserialize(serialized: String): AddNewChildOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return AddNewChildOp(PositionInRole(longFromHex(parts[0]), unescape(parts[1]), parts[2].toInt()), longFromHex(parts[3]), deserializeConcept(parts[4]))
+                    }
+                },
+            )
+            INSTANCE.registerSerializer(
+                AddNewChildrenOp::class,
+                object : Serializer<AddNewChildrenOp> {
+                    override fun serialize(op: AddNewChildrenOp): String {
+                        val ids = op.childIds.joinToString(Separators.LEVEL4) { longToHex(it) }
+                        val concepts = op.concepts.joinToString(Separators.LEVEL4) { serializeConcept(it) }
+                        return longToHex(op.position.nodeId) + SEPARATOR + escape(op.position.role) + SEPARATOR + op.position.index + SEPARATOR + ids + SEPARATOR + concepts
+                    }
+
+                    override fun deserialize(serialized: String): AddNewChildrenOp {
+                        val parts = serialized.split(SEPARATOR).toTypedArray()
+                        val ids = parts[3].split(Separators.LEVEL4).map { longFromHex(it) }.toLongArray()
+                        val concepts = parts[4].split(Separators.LEVEL4).map { deserializeConcept(it) }.toTypedArray()
+                        return AddNewChildrenOp(PositionInRole(longFromHex(parts[0]), unescape(parts[1]), parts[2].toInt()), ids, concepts)
                     }
                 },
             )

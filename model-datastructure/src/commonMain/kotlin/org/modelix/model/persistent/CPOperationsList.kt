@@ -26,7 +26,7 @@ class CPOperationsList(val operations: Array<IOperation>) : IKVValue {
             ""
         } else {
             operations
-                .joinToString(",") { OperationSerializer.INSTANCE.serialize(it) }
+                .joinToString(Separators.LEVEL2) { OperationSerializer.INSTANCE.serialize(it) }
         }
     }
 
@@ -43,7 +43,7 @@ class CPOperationsList(val operations: Array<IOperation>) : IKVValue {
 
         fun deserialize(input: String): CPOperationsList {
             val data = CPOperationsList(
-                input.split(",")
+                input.split(Separators.LEVEL2)
                     .filter { it.isNotEmpty() }
                     .map { OperationSerializer.INSTANCE.deserialize(it) }
                     .toTypedArray(),

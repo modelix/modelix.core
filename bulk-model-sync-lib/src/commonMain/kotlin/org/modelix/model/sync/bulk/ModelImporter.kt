@@ -122,6 +122,17 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
             val expectedNodes = data.children.filter { it.role == role }
             val existingNodes = node.getChildren(role).toList()
 
+            // optimization that uses the bulk operation .addNewChildren
+            if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {
+                node.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } }).zip(expectedNodes).forEach { (newChild, expected) ->
+                    val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
+                    newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                    originalIdToExisting[expectedId] = newChild
+                    syncNode(newChild, expected)
+                }
+                continue
+            }
+
             // optimization for when there is no change in the child list
             // size check first to avoid querying the original ID
             if (expectedNodes.size == existingNodes.size && expectedNodes.map { it.originalId() } == existingNodes.map { it.originalId() }) {

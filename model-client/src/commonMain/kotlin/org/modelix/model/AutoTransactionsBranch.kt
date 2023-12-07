@@ -69,6 +69,10 @@ class AutoWriteTransaction(branch: IBranch) : AutoTransaction(branch), IWriteTra
         branch.computeWriteT { it.addNewChild(parentId, role, index, concept) }
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?) =
         branch.computeWriteT { it.addNewChild(parentId, role, index, childId, concept) }
+    override fun addNewChildren(parentId: Long, role: String?, index: Int, concepts: Array<IConceptReference?>) =
+        branch.computeWriteT { it.addNewChildren(parentId, role, index, concepts) }
+    override fun addNewChildren(parentId: Long, role: String?, index: Int, childIds: LongArray, concepts: Array<IConceptReference?>) =
+        branch.computeWriteT { it.addNewChildren(parentId, role, index, childIds, concepts) }
     override fun addNewChild(
         parentId: Long,
         role: String?,

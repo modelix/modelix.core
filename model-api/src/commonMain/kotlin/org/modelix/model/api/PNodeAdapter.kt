@@ -68,6 +68,12 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
         return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role, index, concept), branch)
     }
 
+    override fun addNewChildren(role: String?, index: Int, concepts: List<IConceptReference?>): List<INode> {
+        return branch.writeTransaction.addNewChildren(nodeId, role, index, concepts.toTypedArray()).map {
+            PNodeAdapter(it, branch)
+        }
+    }
+
     override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode {
         return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept), branch)
     }

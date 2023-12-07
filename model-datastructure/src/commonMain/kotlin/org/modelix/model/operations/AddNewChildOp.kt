@@ -21,19 +21,16 @@ import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.SerializationUtil
 
-class AddNewChildOp(val position: PositionInRole, val childId: Long, val concept: IConceptReference?) : AbstractOperation() {
+class AddNewChildOp(position: PositionInRole, childId: Long, concept: IConceptReference?) : AddNewChildrenOp(position, longArrayOf(childId), arrayOf(concept)) {
+    val childId: Long get() = childIds[0]
+    val concept: IConceptReference? get() = concepts[0]
 
     fun withConcept(newConcept: IConceptReference?): AddNewChildOp {
         return if (concept == newConcept) this else AddNewChildOp(position, childId, newConcept)
     }
 
-    fun withPosition(newPos: PositionInRole): AddNewChildOp {
+    override fun withPosition(newPos: PositionInRole): AddNewChildOp {
         return if (newPos == position) this else AddNewChildOp(newPos, childId, concept)
-    }
-
-    override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
-        transaction.addNewChild(position.nodeId, position.role, position.index, childId, concept)
-        return Applied()
     }
 
     override fun toString(): String {
@@ -43,12 +40,33 @@ class AddNewChildOp(val position: PositionInRole, val childId: Long, val concept
     override fun toCode(): String {
         return """t.addNewChild(0x${position.nodeId.toString(16)}, "${position.role}", ${position.index}, 0x${childId.toString(16)}, null)"""
     }
+}
+
+open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArray, val concepts: Array<IConceptReference?>) : AbstractOperation() {
+
+    open fun withPosition(newPos: PositionInRole): AddNewChildrenOp {
+        return if (newPos == position) this else AddNewChildrenOp(newPos, childIds, concepts)
+    }
+
+    override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
+        transaction.addNewChildren(position.nodeId, position.role, position.index, childIds, concepts)
+        return Applied()
+    }
+
+    override fun toString(): String {
+        return "AddNewChildrenOp ${childIds.map { SerializationUtil.longToHex(it) }}, $position, $concepts"
+    }
+
+    override fun toCode(): String {
+        return "// TODO addNewChildren"
+        // return """t.addNewChildren(0x${position.nodeId.toString(16)}, "${position.role}", ${position.index}, 0x${childId.toString(16)}, null)"""
+    }
 
     inner class Applied : AbstractOperation.Applied(), IAppliedOperation {
-        override fun getOriginalOp() = this@AddNewChildOp
+        override fun getOriginalOp() = this@AddNewChildrenOp
 
         override fun invert(): List<IOperation> {
-            return listOf(DeleteNodeOp(childId))
+            return childIds.map { DeleteNodeOp(it) }
         }
     }
 
@@ -69,6 +87,6 @@ class AddNewChildOp(val position: PositionInRole, val childId: Long, val concept
             }
         }
 
-        override fun getOriginalOp() = this@AddNewChildOp
+        override fun getOriginalOp() = this@AddNewChildrenOp
     }
 }

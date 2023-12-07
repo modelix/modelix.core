@@ -64,19 +64,18 @@ class CPVersion(
             ?: if (operations!!.isEmpty()) {
                 ""
             } else {
-                operations
-                    .map { OperationSerializer.INSTANCE.serialize(it) }
-                    .reduce { a: String, b: String -> "$a,$b" }
+                operations.joinToString(Separators.OPS) { OperationSerializer.INSTANCE.serialize(it) }
             }
+        val s = Separators.LEVEL1
         return longToHex(id) +
-            "/" + escape(time) +
-            "/" + escape(author) +
-            "/" + nullAsEmptyString(treeHash?.getHash()) +
-            "/" + nullAsEmptyString(baseVersion?.getHash()) +
-            "/" + nullAsEmptyString(mergedVersion1?.getHash()) +
-            "/" + nullAsEmptyString(mergedVersion2?.getHash()) +
-            "/" + numberOfOperations +
-            "/" + opsPart
+            s + escape(time) +
+            s + escape(author) +
+            s + nullAsEmptyString(treeHash?.getHash()) +
+            s + nullAsEmptyString(baseVersion?.getHash()) +
+            s + nullAsEmptyString(mergedVersion1?.getHash()) +
+            s + nullAsEmptyString(mergedVersion2?.getHash()) +
+            s + numberOfOperations +
+            s + opsPart
     }
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> {
@@ -100,14 +99,14 @@ class CPVersion(
 
         fun deserialize(input: String): CPVersion {
             try {
-                val parts = input.split("/").toTypedArray()
+                val parts = input.split(Separators.LEVEL1).toTypedArray()
                 if (parts.size == 9) {
                     var opsHash: String? = null
                     var ops: Array<IOperation>? = null
                     if (HashUtil.isSha256(parts[8])) {
                         opsHash = parts[8]
                     } else {
-                        ops = parts[8].split(",")
+                        ops = parts[8].split(Separators.LEVEL2)
                             .filter { cs -> cs.isNotEmpty() }
                             .map { OperationSerializer.INSTANCE.deserialize(it) }
                             .toTypedArray()
@@ -134,7 +133,7 @@ class CPVersion(
                     if (HashUtil.isSha256(parts[5])) {
                         opsHash = parts[5]
                     } else {
-                        ops = parts[5].split(",")
+                        ops = parts[5].split(Separators.LEVEL2)
                             .filter { cs: String? -> !cs.isNullOrEmpty() }
                             .map { serialized: String -> OperationSerializer.INSTANCE.deserialize(serialized) }
                             .toTypedArray()

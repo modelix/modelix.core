@@ -102,6 +102,9 @@ interface IWriteTransaction : ITransaction {
      */
     fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConceptReference?)
 
+    fun addNewChildren(parentId: Long, role: String?, index: Int, concepts: Array<IConceptReference?>): LongArray
+    fun addNewChildren(parentId: Long, role: String?, index: Int, childIds: LongArray, concepts: Array<IConceptReference?>)
+
     /**
      * Deletes the given node.
      *

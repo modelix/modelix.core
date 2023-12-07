@@ -32,10 +32,11 @@ class CPHamtInternal(
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = children.asList()
 
     override fun serialize(): String {
-        return "I/" +
+        return "I" +
+            Separators.LEVEL1 +
             intToHex(bitmap) +
-            "/" +
-            (if (children.isEmpty()) "" else children.joinToString(",") { it.getHash() })
+            Separators.LEVEL1 +
+            (if (children.isEmpty()) "" else children.joinToString(Separators.LEVEL2) { it.getHash() })
     }
 
     companion object {

@@ -127,11 +127,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConceptReference?): ITree {
-        checkChildRoleId(parentId, role)
-        if (containsNode(childId)) {
-            throw DuplicateNodeId("Node ID already exists: ${childId.toString(16)}")
-        }
-        return createNewNode(childId, concept).addChild(parentId, role, index, childId)
+        return addNewChildren(parentId, role, index, longArrayOf(childId), arrayOf(concept))
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?): ITree {
@@ -140,13 +136,17 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun addNewChildren(parentId: Long, role: String?, index: Int, newIds: LongArray, concepts: Array<IConcept?>): ITree {
-        checkChildRoleId(parentId, role)
-        throw UnsupportedOperationException("Not implemented yet")
+        return addNewChildren(parentId, role, index, newIds, concepts.map { it?.getReference() }.toTypedArray())
     }
 
     override fun addNewChildren(parentId: Long, role: String?, index: Int, newIds: LongArray, concepts: Array<IConceptReference?>): ITree {
         checkChildRoleId(parentId, role)
-        TODO("Not yet implemented")
+        for (childId in newIds) {
+            if (containsNode(childId)) {
+                throw DuplicateNodeId("Node ID already exists: ${childId.toString(16)}")
+            }
+        }
+        return createNewNodes(newIds, concepts).addChildren(parentId, role, index, newIds)
     }
 
     override fun deleteNodes(nodeIds: LongArray): ITree {
@@ -156,56 +156,66 @@ class CLTree : ITree, IBulkTree {
     /**
      * Incomplete operation. The node is added to the map, but not attached anywhere in the tree.
      */
-    protected fun createNewNode(nodeId: Long, concept: IConceptReference?): CLTree {
-        var newIdToHash = nodesMap
-        val newChildData = create(
-            nodeId,
-            concept?.getUID(),
-            0,
-            null,
-            LongArray(0),
-            arrayOf(),
-            arrayOf(),
-            arrayOf(),
-            arrayOf(),
-        )
-        newIdToHash = newIdToHash!!.put(newChildData, store)!!
-        return CLTree(data.id, newIdToHash, store, data.usesRoleIds)
+    protected fun createNewNodes(nodeId: LongArray, concept: Array<IConceptReference?>): CLTree {
+        var newIdToHash: CPHamtNode? = nodesMap
+        val newChildData = Array<CPNode>(nodeId.size) { index ->
+            create(
+                nodeId[index],
+                concept[index]?.getUID(),
+                0,
+                null,
+                LongArray(0),
+                arrayOf(),
+                arrayOf(),
+                arrayOf(),
+                arrayOf(),
+            )
+        }
+        for (newChild in newChildData) {
+            // TODO .putAll method for bulk operations?
+            newIdToHash = newIdToHash!!.put(newChild, store)
+        }
+        return CLTree(data.id, newIdToHash!!, store, data.usesRoleIds)
     }
 
     /**
      * Incomplete operation. The child has to exist in the map, but not be part of the tree.
      */
-    protected fun addChild(parentId: Long, role: String?, index: Int, childId: Long): ITree {
+    protected fun addChildren(parentId: Long, role: String?, index: Int, childIds: LongArray): ITree {
         val parent = resolveElement(parentId)
         var newIdToHash = nodesMap
-        val childData = resolveElement(childId)!!
-        val newChildData = create(
-            childData.id,
-            childData.concept,
-            parentId,
-            role,
-            childData.childrenIdArray,
-            childData.propertyRoles,
-            childData.propertyValues,
-            childData.referenceRoles,
-            childData.referenceTargets,
-        )
-        newIdToHash = newIdToHash!!.put(newChildData, store)
+        val childData = childIds.map { resolveElement(it)!! }
+        val newChildData = childData.map {
+            create(
+                it.id,
+                it.concept,
+                parentId,
+                role,
+                it.childrenIdArray,
+                it.propertyRoles,
+                it.propertyValues,
+                it.referenceRoles,
+                it.referenceTargets,
+            )
+        }
+        for (newChild in newChildData) {
+            // TODO .putAll method for bulk operations?
+            newIdToHash = newIdToHash!!.put(newChild, store)
+        }
         var newChildrenArray = parent!!.childrenIdArray
         newChildrenArray = if (index == -1) {
-            add(newChildrenArray, childData.id)
+            newChildrenArray + childData.map { it.id }
         } else {
             val childrenInRole = getChildren(parentId, role).toList()
             if (index > childrenInRole.size) throw RuntimeException("Invalid index $index. There are only ${childrenInRole.size} nodes in ${parentId.toString(16)}.$role")
             if (index == childrenInRole.size) {
-                add(newChildrenArray, childData.id)
+                newChildrenArray + childData.map { it.id }
             } else {
                 val indexInAll = newChildrenArray.indexOf(childrenInRole[index])
                 insert(
                     newChildrenArray,
                     indexInAll,
-                    childData.id,
+                    childData.map { it.id }.toLongArray(),
                 )
             }
         }
@@ -408,7 +418,7 @@ class CLTree : ITree, IBulkTree {
                 }
             }
         }
-        return deleteNode(childId, false).addChild(targetParentId, targetRole, targetIndex, childId)
+        return deleteNode(childId, false).addChildren(targetParentId, targetRole, targetIndex, longArrayOf(childId))
     }
 
     override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {

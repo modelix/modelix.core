@@ -87,7 +87,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     bodyContent { contentPageBody(rootNode, versionHash, emptySet()) }
                 }
             }
-            post<Paths.contentVersionHashGet> {
+            post<Paths.contentVersionHashPost> {
                 val versionHash = call.parameters["versionHash"]
                 if (versionHash.isNullOrEmpty()) {
                     call.respondText("version not found", status = HttpStatusCode.BadRequest)

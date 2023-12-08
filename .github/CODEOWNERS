@@ -3,6 +3,7 @@
 /bulk-model-sync-gradle/ @mhuster23
 /bulk-model-sync-gradle-test/ @mhuster23
 /bulk-model-sync-lib/ @mhuster23
+/bulk-model-sync-mps/ @mhuster23
 /bulk-model-sync-solution/ @mhuster23
 /light-model-client/ @slisson
 /metamodel-export/ @slisson

@@ -23,7 +23,7 @@ npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.1" }
 [versions]
 kotlin = "1.9.21"
 kotlinCoroutines="1.7.3"
-ktor="2.3.6"
+ktor="2.3.7"
 kotlinHtml="0.8.0"
 kotlinSerialization="1.6.2"
 ignite="2.15.0"

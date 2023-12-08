@@ -70,34 +70,36 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
      */
     @JvmName("importData")
     fun import(data: ModelData) {
-        logImportSize(data.root, logger)
-        logger.info { "Building indices for import..." }
-        originalIdToExisting.clear()
-        postponedReferences.clear()
-        nodesToRemove.clear()
-        numExpectedNodes = countExpectedNodes(data.root)
-        currentNodeProgress = 0
-        buildExistingIndex(root)
+        INodeResolutionScope.runWithAdditionalScope(root.getArea()) {
+            logImportSize(data.root, logger)
+            logger.info { "Building indices for import..." }
+            originalIdToExisting.clear()
+            postponedReferences.clear()
+            nodesToRemove.clear()
+            numExpectedNodes = countExpectedNodes(data.root)
+            currentNodeProgress = 0
+            buildExistingIndex(root)
 
-        logger.info { "Importing nodes..." }
-        data.root.originalId()?.let { originalIdToExisting[it] = root }
-        syncNode(root, data.root)
+            logger.info { "Importing nodes..." }
+            data.root.originalId()?.let { originalIdToExisting[it] = root }
+            syncNode(root, data.root)
 
-        logger.info { "Synchronizing references..." }
-        postponedReferences.forEach {
-            doAndPotentiallyContinueOnErrors {
-                it.invoke()
+            logger.info { "Synchronizing references..." }
+            postponedReferences.forEach {
+                doAndPotentiallyContinueOnErrors {
+                    it.invoke()
+                }
             }
-        }
 
-        logger.info { "Removing extra nodes..." }
-        nodesToRemove.forEach {
-            doAndPotentiallyContinueOnErrors {
-                it.remove()
+            logger.info { "Removing extra nodes..." }
+            nodesToRemove.forEach {
+                doAndPotentiallyContinueOnErrors {
+                    it.remove()
+                }
             }
-        }
 
-        logger.info { "Synchronization finished." }
+            logger.info { "Synchronization finished." }
+        }
     }
 
     private fun countExpectedNodes(data: NodeData): Int =
@@ -110,9 +112,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
         doAndPotentiallyContinueOnErrors {
             syncProperties(node, data)
             syncChildren(node, data)
-            INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
-                syncReferences(node, data)
-            }
+            syncReferences(node, data)
         }
     }
 

@@ -136,11 +136,9 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
     }
 
     private fun tryResolveNodeRef(targetRef: INodeReference): INode? {
-        (targetRef as? PNodeReference)
-            ?.takeIf { it.branchId == branch.getId() }
-            ?.resolveIn(PArea(branch))
-            ?.let { return it }
-        return targetRef.resolveInCurrentContext()
+        return INodeResolutionScope.runWithAdditionalScope(getArea()) {
+            targetRef.resolveInCurrentContext()
+        }
     }
 
     private suspend fun resolveNodeRefInCoroutine(targetRef: INodeReference): INode {

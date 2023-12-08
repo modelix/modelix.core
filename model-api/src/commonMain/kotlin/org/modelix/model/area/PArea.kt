@@ -20,8 +20,11 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
+import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.getNode
 
 data class PArea(val branch: IBranch) : IArea {
 
@@ -36,14 +39,16 @@ data class PArea(val branch: IBranch) : IArea {
     }
 
     override fun resolveOriginalNode(ref: INodeReference): INode? {
-        return if (ref is PNodeReference &&
-            branch.getId() == ref.branchId &&
-            containsNode(ref.id)
-        ) {
-            PNodeAdapter(ref.id, branch)
-        } else {
-            null
+        val pref = when (ref) {
+            is NodeReference -> PNodeReference.tryDeserialize(ref.serialized)
+            else -> ref
         }
+        val nodeId = when (pref) {
+            is PNodeReference -> if (pref.branchId == branch.getId()) pref.id else return null
+            is LocalPNodeReference -> pref.id
+            else -> return null
+        }
+        return if (containsNode(nodeId)) branch.getNode(nodeId) else null
     }
 
     override fun resolveBranch(id: String): IBranch? {

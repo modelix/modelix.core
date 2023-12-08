@@ -94,7 +94,9 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
             logger.info { "Removing extra nodes..." }
             nodesToRemove.forEach {
                 doAndPotentiallyContinueOnErrors {
-                    it.remove()
+                    if (it.isValid) { // if it's invalid then it's already removed
+                        it.remove()
+                    }
                 }
             }
 

@@ -195,10 +195,10 @@ val openAPIgenerationPath = "$buildDir/generated/openapi"
 // Pairs of the different OpenAPI files we use. Each pair must have its own 'category' as first argument as these
 // are used to generate corresponding packages
 val openApiFiles = listOf(
-    Pair("public", "model-server"),
-    Pair("light", "model-server-light"),
-    Pair("html", "model-server-html"),
-    Pair("deprecated", "model-server-deprecated"),
+    "public" to "model-server",
+    "light" to "model-server-light",
+    "html" to "model-server-html",
+    "deprecated" to "model-server-deprecated",
 )
 
 // generate tasks for each OpenAPI file

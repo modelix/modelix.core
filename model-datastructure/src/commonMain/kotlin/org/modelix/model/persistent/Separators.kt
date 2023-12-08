@@ -24,12 +24,20 @@ package org.modelix.model.persistent
  * Each of the separators should be unique and not appear in the output of SerializationUtil.escape (URL encode)
  */
 object Separators {
-    const val LEVEL1 = "/" // Between parts of top level elements stored in the key-value store: CPVersion, CPNode, CPHamt*
-    const val LEVEL2 = "," // between elements of the operation list
-    const val LEVEL3 = ";"
-    const val LEVEL4 = ":" // lists inside operation parts
+    /** Between parts of top level elements stored in the key-value store: CPVersion, CPNode, CPHamt* */
+    const val LEVEL1 = "/"
 
-    const val MAPPING = "=" // for properties and references
+    /** Between elements of the operation list */
+    const val LEVEL2 = ","
+
+    const val LEVEL3 = ";"
+
+    /** For lists inside operation parts */
+    const val LEVEL4 = ":" //
+
+    /** For properties and references */
+    const val MAPPING = "="
+
     const val OPS = LEVEL2
     const val OP_PARTS = LEVEL3
 }

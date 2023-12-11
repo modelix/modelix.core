@@ -168,9 +168,16 @@ interface IConcept {
      * @return reference link
      */
     fun getReferenceLink(name: String): IReferenceLink
+
+    /**
+     * The alias of an MPS concept is one example of a concept property.
+     */
+    fun getConceptProperty(name: String): String? = null
 }
 
 /**
  * @see IConcept.isSubConceptOf
  */
 fun IConcept?.isSubConceptOf(superConcept: IConcept?) = this?.isSubConceptOf(superConcept) == true
+
+fun IConcept.conceptAlias() = getConceptProperty("alias")

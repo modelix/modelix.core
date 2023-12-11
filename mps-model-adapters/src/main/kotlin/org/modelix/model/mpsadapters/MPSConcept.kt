@@ -111,4 +111,11 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
     override fun getReferenceLink(name: String): IReferenceLink {
         return MPSReferenceLink(concept.referenceLinks.first { it.name == name })
     }
+
+    override fun getConceptProperty(name: String): String? {
+        return when (name) {
+            "alias" -> concept.conceptAlias
+            else -> null
+        }
+    }
 }

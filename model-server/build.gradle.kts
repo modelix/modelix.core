@@ -190,7 +190,7 @@ spotless {
 
 // OpenAPI integration
 val basePackage = project.group.toString()
-val openAPIgenerationPath = "$buildDir/generated/openapi"
+val openAPIgenerationPath = "${project.layout.buildDirectory}/generated/openapi"
 
 // Pairs of the different OpenAPI files we use. Each pair must have its own 'category' as first argument as these
 // are used to generate corresponding packages
@@ -215,20 +215,28 @@ openApiFiles.forEach {
         packageName.set(targetPackageName)
         apiPackage.set(targetPackageName)
         modelPackage.set(targetPackageName)
-        // WARNING: there are patched mustache files used!
+        // We use patched mustache so that only the necessary parts (i.e. resources and models)
+        // are generated. additionally we patch the used serialization framework as the `ktor` plugin
+        // uses a different one than we do in the model-server. The templates are based on
+        // https://github.com/OpenAPITools/openapi-generator/tree/809b3331a95b3c3b7bcf025d16ae09dc0682cd69/modules/openapi-generator/src/main/resources/kotlin-server
         templateDir.set("$projectDir/src/main/resources/openapi/templates")
         configOptions.set(
             mapOf(
+                // we use the ktor generator to generate server side resources and model (i.e. data classes)
                 "library" to "ktor",
+                // the generated artifacts are not built independently, thus no dedicated build files have to be generated
                 "omitGradleWrapper" to "true",
+                // the path to resource generation we need
                 "featureResources" to "true",
+                // disable features we do not use
                 "featureAutoHead" to "false",
                 "featureCompression" to "false",
                 "featureHSTS" to "false",
                 "featureMetrics" to "false",
             ),
         )
-        // generate only Paths and Models
+        // generate only Paths and Models - only this set will produce the intended Paths.kt as well as the models
+        // the openapi generator is generally very picky and configuring it is rather complex
         globalProperties.putAll(
             mapOf(
                 "models" to "",
@@ -259,5 +267,5 @@ openApiFiles.forEach {
     }
 
     // add openAPI generated artifacts to the sourceSets
-    java.sourceSets.getByName("main").java.srcDir(file("$outputPath/src/main/kotlin"))
+    sourceSets["main"].kotlin.srcDir("$outputPath/src/main/kotlin")
 }

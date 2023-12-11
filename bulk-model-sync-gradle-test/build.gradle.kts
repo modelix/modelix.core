@@ -24,11 +24,29 @@ val modelixCoreVersion: String = file("../version.txt").readText()
 version = modelixCoreVersion
 
 repositories {
-    mavenLocal()
-    maven { url = uri("https://repo.maven.apache.org/maven2") }
-    maven { url = uri("https://plugins.gradle.org/m2/") }
-    mavenCentral()
-    maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+    val modelixRegex = "org\\.modelix.*"
+    mavenLocal {
+        content {
+            includeGroupByRegex(modelixRegex)
+        }
+    }
+    gradlePluginPortal {
+        content {
+            excludeGroupByRegex(modelixRegex)
+        }
+    }
+    maven {
+        url = uri("https://artifacts.itemis.cloud/repository/maven-mps/")
+        content {
+            includeGroupByRegex(modelixRegex)
+            includeGroup("com.jetbrains")
+        }
+    }
+    mavenCentral {
+        content {
+            excludeGroupByRegex(modelixRegex)
+        }
+    }
 }
 
 val kotlinGenDir = project.layout.buildDirectory.dir("metamodel/kotlin").get().asFile.apply { mkdirs() }
@@ -84,7 +102,7 @@ modelSync {
             repositoryDir = repoDir
         }
         toModelServer {
-            url = "http://0.0.0.0:28309/v2"
+            url = "http://localhost:28309/v2"
             repositoryId = "ci-test"
             branchName = "master"
         }
@@ -92,7 +110,7 @@ modelSync {
     direction("testPull") {
         includeModule("GraphSolution")
         fromModelServer {
-            url = "http://0.0.0.0:28309/v2"
+            url = "http://localhost:28309/v2"
             repositoryId = "ci-test"
             branchName = "master"
         }

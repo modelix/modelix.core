@@ -50,10 +50,6 @@ class BulkUpdateOp(
         return "BulkUpdateOp ${resultTreeHash.getHash()}, ${SerializationUtil.longToHex(subtreeRootId)}"
     }
 
-    override fun toCode(): String {
-        return """// TODO BulkUpdateOp"""
-    }
-
     inner class Applied(val baseTree: CLTree) : AbstractOperation.Applied(), IAppliedOperation {
         override fun getOriginalOp() = this@BulkUpdateOp
 

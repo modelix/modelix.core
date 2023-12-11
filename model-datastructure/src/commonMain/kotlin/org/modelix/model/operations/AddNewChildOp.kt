@@ -36,10 +36,6 @@ class AddNewChildOp(position: PositionInRole, childId: Long, concept: IConceptRe
     override fun toString(): String {
         return "AddNewChildOp ${SerializationUtil.longToHex(childId)}, $position, $concept"
     }
-
-    override fun toCode(): String {
-        return """t.addNewChild(0x${position.nodeId.toString(16)}, "${position.role}", ${position.index}, 0x${childId.toString(16)}, null)"""
-    }
 }
 
 open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArray, val concepts: Array<IConceptReference?>) : AbstractOperation() {
@@ -55,11 +51,6 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArra
 
     override fun toString(): String {
         return "AddNewChildrenOp ${childIds.map { SerializationUtil.longToHex(it) }}, $position, $concepts"
-    }
-
-    override fun toCode(): String {
-        return "// TODO addNewChildren"
-        // return """t.addNewChildren(0x${position.nodeId.toString(16)}, "${position.role}", ${position.index}, 0x${childId.toString(16)}, null)"""
     }
 
     inner class Applied : AbstractOperation.Applied(), IAppliedOperation {

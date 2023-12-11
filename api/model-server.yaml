@@ -18,34 +18,29 @@ servers:
 paths:
   /v2/server-id:
     get:
-      description: ""
       operationId: getServerId
       responses:
         "200":
           $ref: '#/components/responses/200'
   /v2/user-id:
     get:
-      description: ""
       operationId: getUserId
       responses:
         "200":
           $ref: '#/components/responses/200'
   /v2/generate-client-id:
     post:
-      description: ""
       operationId: postGenerateClientId
       responses:
         "200":
           $ref: '#/components/responses/200'
   /headers:
     get:
-      description: ""
       responses:
         "200":
           $ref: '#/components/responses/200'
   /health:
     get:
-      description: ""
       responses:
         "200":
           $ref: '#/components/responses/200'
@@ -53,14 +48,12 @@ paths:
           $ref: '#/components/responses/500'
   /v2/repositories:
     get:
-      description: ""
       operationId: getRepositories
       responses:
         "200":
           $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches:
     get:
-      description: ""
       operationId: getRepositoryBranches
       parameters:
         - name: repository
@@ -73,7 +66,6 @@ paths:
           $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches/{branch}:
     get:
-      description: ""
       operationId: getRepositoryBranch
       parameters:
         - name: lastKnown
@@ -101,7 +93,6 @@ paths:
 #              schema:
 #                $ref: "#/components/schemas/VersionDelta"
     post:
-      description: ""
       parameters:
         - name: repository
           in: "path"
@@ -132,7 +123,6 @@ paths:
 #                type: object
   /v2/repositories/{repository}/branches/{branch}/hash:
     get:
-      description: ""
       operationId: getRepositoryBranchHash
       parameters:
         - name: repository
@@ -152,7 +142,6 @@ paths:
           $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches/{branch}/listen:
     get:
-      description: ""
       parameters:
         - name: lastKnown
           in: "query"
@@ -211,7 +200,6 @@ paths:
                 type: string
   /v2/repositories/{repository}/branches/{branch}/poll:
     get:
-      description: ""
       parameters:
         - name: lastKnown
           in: "query"
@@ -243,7 +231,6 @@ paths:
                 type: object
   /v2/repositories/{repository}/branches/{branch}/pollHash:
     get:
-      description: ""
       parameters:
         - name: lastKnown
           in: "query"
@@ -271,7 +258,6 @@ paths:
           $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches/{branch}/query:
     post:
-      description: ""
       parameters:
         - name: repository
           in: "path"
@@ -290,7 +276,6 @@ paths:
           $ref: '#/components/responses/500'
   /v2/repositories/{repository}/init:
     post:
-      description: ""
       operationId: initializeRepository
       parameters:
         - name: useRoleIds
@@ -318,7 +303,6 @@ paths:
                 type: object
   /v2/repositories/{repository}/versions/{versionHash}:
     get:
-      description: ""
       operationId: getRepositoryVersionHash
       parameters:
         - name: lastKnown
@@ -369,7 +353,6 @@ paths:
             type: string
   /v2/repositories/{repository}/versions/{versionHash}/query:
     post:
-      description: ""
       parameters:
         - name: versionHash
           in: "path"
@@ -389,7 +372,6 @@ paths:
 
   /v2/versions/{versionHash}:
     get:
-      description: ""
       parameters:
         - name: lastKnown
           in: "query"
@@ -429,13 +411,11 @@ paths:
             type: string
   /json:
     get:
-      description: ""
       responses:
         "200":
           $ref: '#/components/responses/200'
   /json/{repositoryId}:
     get:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -447,7 +427,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}:
     get:
-      description: ""
       parameters:
         - name: versionHash
           in: "path"
@@ -464,7 +443,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}/poll:
     get:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -481,7 +459,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}/update:
     post:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -500,9 +477,6 @@ paths:
             '*/*':
               schema:
                 type: string
-              examples:
-                Example#1:
-                  value: ""
         "403":
           $ref: '#/components/responses/403'
         "401":
@@ -513,7 +487,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/init:
     post:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -525,7 +498,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/ws:
     get:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -574,7 +546,6 @@ paths:
                 type: string
   /json/generate-ids:
     post:
-      description: ""
       parameters:
         - name: quantity
           in: "query"
@@ -592,7 +563,6 @@ paths:
           $ref: '#/components/responses/200json'
   /counter/{key}:
     post:
-      description: ""
       parameters:
         - name: key
           in: "path"
@@ -610,7 +580,6 @@ paths:
           $ref: '#/components/responses/200'
   /get/{key}:
     get:
-      description: ""
       parameters:
         - name: key
           in: "path"
@@ -630,7 +599,6 @@ paths:
           $ref: '#/components/responses/200'
   /getAll:
     put:
-      description: ""
       responses:
         "403":
           $ref: '#/components/responses/403'
@@ -642,13 +610,11 @@ paths:
           $ref: '#/components/responses/200json'
   /getEmail:
     get:
-      description: ""
       responses:
         "200":
           $ref: '#/components/responses/200'
   /getRecursively/{key}:
     get:
-      description: ""
       parameters:
         - name: key
           in: "path"
@@ -660,7 +626,6 @@ paths:
           $ref: '#/components/responses/200json'
   /poll/{key}:
     get:
-      description: ""
       parameters:
         - name: key
           in: "path"
@@ -685,7 +650,6 @@ paths:
           $ref: '#/components/responses/200'
   /put/{key}:
     put:
-      description: ""
       parameters:
         - name: key
           in: "path"
@@ -705,7 +669,6 @@ paths:
           $ref: '#/components/responses/404'
   /putAll:
     put:
-      description: ""
       responses:
         "403":
           $ref: '#/components/responses/403'
@@ -719,7 +682,6 @@ paths:
           $ref: '#/components/responses/404'
   /json/v2/{repositoryId}/ws:
     get:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"

@@ -19,7 +19,6 @@ paths:
   # TODO: this is a WS, openAPI will not help here
   /json/v2/{repositoryId}/ws:
     get:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"

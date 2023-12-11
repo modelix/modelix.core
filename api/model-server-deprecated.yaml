@@ -18,13 +18,11 @@ servers:
 paths:
   /json:
     get:
-      description: ""
       responses:
         "200":
           $ref: '#/components/responses/200'
   /json/{repositoryId}:
     get:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -36,7 +34,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}:
     get:
-      description: ""
       parameters:
         - name: versionHash
           in: "path"
@@ -53,7 +50,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}/poll:
     get:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -70,7 +66,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/{versionHash}/update:
     post:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -89,9 +84,6 @@ paths:
             '*/*':
               schema:
                 type: string
-              examples:
-                Example#1:
-                  value: ""
         "403":
           $ref: '#/components/responses/403'
         "401":
@@ -102,7 +94,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/init:
     post:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -114,7 +105,6 @@ paths:
           $ref: '#/components/responses/200json'
   /json/{repositoryId}/ws:
     get:
-      description: ""
       parameters:
         - name: repositoryId
           in: "path"
@@ -163,7 +153,6 @@ paths:
                 type: string
   /json/generate-ids:
     post:
-      description: ""
       parameters:
         - name: quantity
           in: "query"

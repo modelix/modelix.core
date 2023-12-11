@@ -20,13 +20,11 @@ servers:
 paths:
   /:
     get:
-      description: ""
       responses:
         "200":
           $ref: '#/components/responses/200'
   /content:
     get:
-      description: ""
       responses:
         "302":
           description: "Found <br> Redirect"
@@ -39,7 +37,6 @@ paths:
                   value: "../repos/"
   /content/{versionHash}:
     get:
-      description: ""
       parameters:
         - name: versionHash
           in: "path"
@@ -50,7 +47,6 @@ paths:
         "400":
           $ref: '#/components/responses/400'
     post:
-      description: ""
       parameters:
         - name: versionHash
           in: "path"
@@ -70,7 +66,6 @@ paths:
           $ref: '#/components/responses/200'
   /content/{versionHash}/{nodeId}:
     get:
-      description: ""
       parameters:
         - name: nodeId
           in: "path"
@@ -91,13 +86,8 @@ paths:
             text/plain:
               schema:
                 $ref: "#/components/schemas/Function2"
-              examples:
-                text/html:
-                  description: "HTML document"
-                  value: ""
   /repos:
     get:
-      description: ""
       responses:
         "403":
           $ref: '#/components/responses/403'
@@ -107,7 +97,6 @@ paths:
           $ref: '#/components/responses/500'
   /history:
     get:
-      description: ""
       responses:
         "302":
           description: "Found <br> Redirect"
@@ -120,7 +109,6 @@ paths:
                   value: "../repos/"
   /history/{repoId}/{branch}:
     get:
-      description: ""
       parameters:
         - name: repoId
           in: "path"
@@ -156,7 +144,6 @@ paths:
           $ref: '#/components/responses/500'
   /history/{repoId}/{branch}/revert:
     post:
-      description: ""
       parameters:
         - name: repoId
           in: "path"

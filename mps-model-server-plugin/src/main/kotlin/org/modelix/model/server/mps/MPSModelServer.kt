@@ -39,6 +39,8 @@ class MPSModelServerForProject(private val project: Project) : Disposable {
     }
 }
 
+const val LOAD_MODELS_MODULE_PARAMETER_NAME = "loadModelsModuleNamespacePrefix"
+
 @Service(Service.Level.APP)
 class MPSModelServer : Disposable {
 
@@ -126,6 +128,50 @@ class MPSModelServer : Disposable {
                             if (virtualFolders.isNotEmpty()) return true
                         }
                         return false
+                    }
+                })
+                .healthCheck(object : LightModelServer.IHealthCheck {
+                    // Usage example for this health check:
+                    // `/health?loadModels=true&loadModelsModuleNamespacePrefix=org.foo&loadModelsModuleNamespacePrefix=org.bar`
+                    // This should load all models from modules starting with either `org.foo` or `org.bar`.
+                    override val validParameterNames: Set<String> = setOf(LOAD_MODELS_MODULE_PARAMETER_NAME)
+                    override val id: String
+                        get() = "loadModels"
+                    override val enabledByDefault: Boolean
+                        get() = false
+
+                    override fun run(output: StringBuilder): Boolean {
+                        throw UnsupportedOperationException("parameters required")
+                    }
+
+                    override fun run(output: StringBuilder, parameters: Map<String, List<String>>): Boolean {
+                        val projects = getMPSProjects()
+                        val namespaces = parameters[LOAD_MODELS_MODULE_PARAMETER_NAME]?.toSet()
+                        if (namespaces == null) {
+                            output.append("parameter '$LOAD_MODELS_MODULE_PARAMETER_NAME' missing")
+                            return false
+                        }
+
+                        val project = projects.firstOrNull()
+                        if (project == null) {
+                            output.append("no projects loaded")
+                            return false
+                        }
+                        val repository = project.repository
+                        repository.modelAccess.runReadAction {
+                            val modules = repository.modules.filter {
+                                val moduleName = it.moduleName ?: return@filter false
+                                namespaces.any { namespace -> moduleName.startsWith(namespace) }
+                            }
+                            val models = modules.flatMap { it.models }
+                            models.forEach {
+                                // This triggers the loading of the model data which would otherwise slow down the
+                                // first query.
+                                it.rootNodes
+                            }
+                            output.append("${models.size} models in ${modules.size} modules loaded")
+                        }
+                        return true
                     }
                 })
                 .build()

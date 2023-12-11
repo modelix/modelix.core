@@ -89,7 +89,21 @@ This means that only a minimal amount of write operations is used to update the 
 
 |`mpsHome`
 |File
-|Location of the MPS to be used for the sync.
+a|Location of the MPS to be used for the sync.
+
+Alternatively, you can just specify an MPS version that is then downloaded automatically.
+This is handled by a different plugin that you can configure like this:
+[source]
+--
+mpsBuild {
+    mpsVersion("2021.2.5")
+}
+--
+
+|`mpsLibrary`
+|File
+|A folder containing MPS modules that the MPS project in `repositoryDir` depends on.
+ Multiple folders can be specified.
 
 |`mpsHeapSize`
 |String
@@ -133,13 +147,15 @@ This means that only a minimal amount of write operations is used to update the 
 
 [source,kotlin]
 --
+mpsBuild {
+    mpsVersion("2021.2.5")
+}
+
 modelSync {
     dependsOn(someOtherTask)
     direction("pushToMyServer") {
-        registerLanguage(L_MyGeneratedLanguage)
         includeModule("MySolution")
         fromLocal {
-            mpsHome = project.layout.buildDirectory.dir("mps").get().asFile
             mpsHeapSize = "4g"
             repositoryDir = projectDir.resolve("my-repo")
         }
@@ -153,3 +169,8 @@ modelSync {
 --
 
 Generated Gradle task to perform synchronization: `runSyncPushToMyServer`.
+
+== Logging
+
+The plugin uses the normal Gradle logging.
+In case progress or debug information is required, run Gradle with `--info` or `--debug` command line arguments.

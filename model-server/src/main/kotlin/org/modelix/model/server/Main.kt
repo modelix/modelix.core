@@ -29,6 +29,7 @@ import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
+import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.IgnoreTrailingSlash
@@ -90,6 +91,8 @@ object Main {
         LOG.info("Path to JDBC configuration file: " + cmdLineArgs.jdbcConfFile)
         LOG.info("Schema initialization: " + cmdLineArgs.schemaInit)
         LOG.info("Set values: " + cmdLineArgs.setValues)
+        LOG.info("Disable Swagger-UI: " + cmdLineArgs.noSwaggerUi)
+
         if (cmdLineArgs.dumpOutName != null && !cmdLineArgs.inmemory) {
             throw RuntimeException("For now dumps are supported only with the inmemory option")
         }
@@ -224,10 +227,20 @@ object Main {
                                     li {
                                         a("user") { +"View JWT token and permissions" }
                                     }
+                                    li {
+                                        a("swagger") { +"SwaggerUI" }
+                                    }
                                 }
                             }
                         }
                         call.respondText("Model Server")
+                    }
+                    if (cmdLineArgs.noSwaggerUi) {
+                        get("swagger") {
+                            call.respondText("SwaggerUI is disabled")
+                        }
+                    } else {
+                        swaggerUI(path = "swagger", swaggerFile = "../api/model-server.yaml")
                     }
                 }
             }

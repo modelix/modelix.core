@@ -11,10 +11,10 @@ openapi: "3.0.3"
 info:
   title: "model-server public API"
   description: "modelix public API"
-  version: "0.0.1"
+  version: "1.0.0"
 servers:
-  - url: 'http://127.0.0.1:28101'
-    description: local model-server
+  - url: '/'
+    description: model-server
 paths:
   /v2/server-id:
     get:

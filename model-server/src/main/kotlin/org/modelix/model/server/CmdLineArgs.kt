@@ -40,6 +40,9 @@ internal class CmdLineArgs {
     )
     var schemaInit = false
 
+    @Parameter(names = ["-noswagger"], description = "Disables SwaggerUI at endpoint '/swagger'", converter = BooleanConverter::class)
+    var noSwaggerUi: Boolean = false
+
     @Parameter(names = ["-h", "--help"], help = true)
     var help = false
 }

@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.resources)
     implementation(libs.ktor.serialization.json)
+    implementation(libs.ktor.server.swagger)
 
     implementation(libs.bundles.ignite)
 
@@ -190,7 +191,7 @@ spotless {
 
 // OpenAPI integration
 val basePackage = project.group.toString()
-val openAPIgenerationPath = "${project.layout.buildDirectory}/generated/openapi"
+val openAPIgenerationPath = "${project.layout.buildDirectory.get()}/generated/openapi"
 
 // Pairs of the different OpenAPI files we use. Each pair must have its own 'category' as first argument as these
 // are used to generate corresponding packages

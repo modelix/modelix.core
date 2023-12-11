@@ -59,10 +59,10 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
 
     fun init(application: Application) {
         application.routing {
-            get<Paths.historyGet> {
+            get<Paths.getHistory> {
                 call.respondRedirect("../repos/")
             }
-            get<Paths.historyRepoIdBranchGet> {
+            get<Paths.getRepoAndBranch> {
                 val repositoryId = RepositoryId(call.parameters["repoId"]!!)
                 val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
                 val params = call.request.queryParameters
@@ -85,7 +85,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                 }
             }
             requiresPermission("history".asResource(), KeycloakScope.WRITE) {
-                post<Paths.historyRepoIdBranchRevertPost> {
+                post<Paths.revertBranch> {
                     val repositoryId = RepositoryId(call.parameters["repoId"]!!)
                     val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
                     val params = call.receiveParameters()

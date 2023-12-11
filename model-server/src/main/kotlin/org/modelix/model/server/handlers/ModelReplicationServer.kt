@@ -146,7 +146,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondDelta(initialVersion.getContentHash(), null)
         }
 
-        post<Paths.v2RepositoriesRepositoryBranchesBranchPost> {
+        post<Paths.postRepositoryBranch> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
@@ -160,7 +160,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondDelta(mergedHash, deltaFromClient.versionHash)
         }
 
-        get<Paths.v2RepositoriesRepositoryBranchesBranchPollGet> {
+        get<Paths.pollRepositoryBranch> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
@@ -171,7 +171,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
             call.respondDelta(newVersionHash, lastKnownVersionHash)
         }
-        get<Paths.v2RepositoriesRepositoryBranchesBranchPollHashGet> {
+        get<Paths.pollRepositoryBranchHash> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
@@ -225,14 +225,14 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             }
             call.respondDelta(versionHash, baseVersionHash)
         }
-        get<Paths.v2RepositoriesRepositoryVersionsVersionHashHistoryOldestVersionHashGet> {
+        get<Paths.getOldestVersionHash> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
             TODO()
         }
 
-        post<Paths.v2RepositoriesRepositoryBranchesBranchQueryPost> {
+        post<Paths.postRepositoryBranchQuery> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
@@ -258,7 +258,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             }
         }
 
-        post<Paths.v2RepositoriesRepositoryVersionsVersionHashQueryPost> {
+        post<Paths.postRepositoryVersionHashQuery> {
             val versionHash = call.parameters["versionHash"]!!
             val version = CLVersion.loadFromHash(versionHash, repositoriesManager.client.storeCache)
             val initialTree = version.getTree()
@@ -266,7 +266,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
         }
 
-        get<Paths.v2VersionsVersionHashGet> {
+        get<Paths.getVersionHash> {
             // TODO versions should be stored inside a repository with permission checks.
             //      Knowing a version hash should not give you access to the content.
             //      This handler was already moved to the 'repositories' route. Removing it here would be a breaking
@@ -283,7 +283,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondDelta(versionHash, baseVersionHash)
         }
 
-        get<Paths.v2VersionsVersionHashHistoryOldestVersionHashGet> {
+        get<Paths.getOldestVersionHashForVersion> {
             TODO()
         }
     }

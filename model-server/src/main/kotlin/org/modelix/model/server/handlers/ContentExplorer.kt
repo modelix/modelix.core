@@ -65,10 +65,10 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
 
     fun init(application: Application) {
         application.routing {
-            get<Paths.contentGet> {
+            get<Paths.getContent> {
                 call.respondRedirect("../repos/")
             }
-            get<Paths.contentVersionHashGet> {
+            get<Paths.getVersionHash> {
                 val versionHash = call.parameters["versionHash"]
                 if (versionHash.isNullOrEmpty()) {
                     call.respondText("version not found", status = HttpStatusCode.BadRequest)
@@ -87,7 +87,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     bodyContent { contentPageBody(rootNode, versionHash, emptySet()) }
                 }
             }
-            post<Paths.contentVersionHashPost> {
+            post<Paths.postVersionHash> {
                 val versionHash = call.parameters["versionHash"]
                 if (versionHash.isNullOrEmpty()) {
                     call.respondText("version not found", status = HttpStatusCode.BadRequest)
@@ -111,7 +111,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     },
                 )
             }
-            get<Paths.contentVersionHashNodeIdGet> {
+            get<Paths.getNodeIdForVersionHash> {
                 val id = call.parameters["nodeId"]!!.toLong()
                 var found: PNodeAdapter? = null
                 for (node in rootNodes) {

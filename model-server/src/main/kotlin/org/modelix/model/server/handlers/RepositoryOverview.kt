@@ -27,7 +27,7 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
 
     fun init(application: Application) {
         application.routing {
-            get<Paths.reposGet> {
+            get<Paths.getRepos> {
                 call.respondHtmlTemplate(PageWithMenuBar("repos/", "..")) {
                     headContent { title("Repositories") }
                     bodyContent { buildMainPage() }

@@ -83,14 +83,14 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
 
     private fun Application.modelServerModule() {
         routing {
-            get<Paths.healthGet> {
+            get<Paths.getHealth> {
                 if (isHealthy()) {
                     call.respondText(text = "healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
                 } else {
                     call.respondText(text = "not healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.InternalServerError)
                 }
             }
-            get<Paths.headersGet> {
+            get<Paths.getHeaders> {
                 val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
                 call.respondHtmlTemplate(PageWithMenuBar("headers", ".")) {
                     bodyContent {

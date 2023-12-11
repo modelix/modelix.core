@@ -28,7 +28,7 @@ data class PNodeReference(val id: Long, val branchId: String) : INodeReference {
     fun toLocal() = LocalPNodeReference(id)
 
     override fun serialize(): String {
-        return "${id.toString(16)}@$branchId"
+        return "pnode:${id.toString(16)}@$branchId"
     }
 
     override fun toString(): String {

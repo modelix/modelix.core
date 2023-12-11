@@ -36,6 +36,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
+import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSReferenceLink
@@ -198,7 +199,7 @@ class ModelChangeListener(
     @Deprecated("Deprecated in Java")
     override fun rootAdded(event: SModelRootEvent) {
         isSynchronizing.runIfAlone {
-            // TODO deduplicate implementation
+            // TODO deduplicate implementation between NodeChangeListener and this
             val parentNodeId = nodeMap[event.model]!!
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
 
@@ -271,7 +272,7 @@ class ModelChangeListener(
     override fun modelSaved(model: SModel) {}
     override fun modelLoadingStateChanged(model: SModel?, state: ModelLoadingState) {}
 
-    // TODO deduplicate implementation
+    // TODO deduplicate implementation between NodeChangeListener and this
     private fun synchronizeNodeToCloud(
         mpsConcept: SConcept,
         mpsNode: SNode,
@@ -283,6 +284,9 @@ class ModelChangeListener(
             val modelixProperty = PropertyFromName(it.name)
             cloudNode.setPropertyValue(modelixProperty, mpsValue)
         }
+        // save MPS Node ID explicitly
+        val mpsNodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
+        cloudNode.setPropertyValue(mpsNodeIdProperty, mpsNode.nodeId.toString())
 
         // synchronize references
         mpsConcept.referenceLinks.forEach {

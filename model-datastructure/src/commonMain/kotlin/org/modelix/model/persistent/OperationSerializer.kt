@@ -74,7 +74,7 @@ class OperationSerializer private constructor() {
             return when {
                 serialized.isNullOrEmpty() -> null
                 serialized.matches(localNodeIdPattern) -> LocalPNodeReference(longFromHex(serialized))
-                unescape(serialized)!!.matches(globalNodeIdPattern) -> {
+                serialized.matches(globalNodeIdPattern) -> {
                     // This is how PNodeReference was serialized before, but the deserialization of the CPVersion
                     // should fail with this duplicate usage of the '/' separator.
                     // This branch should not be reachable and can be removed if we are absolutely sure about that.

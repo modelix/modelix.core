@@ -91,6 +91,7 @@ internal class ConceptWrapperInterfaceGenerator(
     private fun TypeSpec.Builder.addConceptMetaPropertiesIfNecessary() {
         if (conceptPropertiesInterfaceName == null) return
 
+        // TODO use IConcept.getConceptProperty(name: String)
         concept.metaProperties.forEach { (key, value) ->
             val propertySpec = PropertySpec.builder(key, String::class.asTypeName()).runBuild {
                 addModifiers(KModifier.OVERRIDE)

@@ -221,7 +221,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                     if (rowIndex >= skip) {
                         createTableRow(version, latestVersion)
                         if (version.isMerge()) {
-                            for (v in LinearHistory(version.baseVersion!!.getContentHash()).computeHistoryWithoutMerges(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
+                            for (v in LinearHistory(version.baseVersion!!.getContentHash()).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
                                 createTableRow(v, latestVersion)
                                 rowIndex++
                                 if (rowIndex >= skip + limit) {

@@ -140,7 +140,7 @@ class UndoTest {
     }
 
     fun printHistory(version: CLVersion, store: IDeserializingKeyValueStore) {
-        LinearHistory(null).computeHistoryWithoutMerges(version).forEach {
+        LinearHistory(null).load(version).forEach {
             println("Version ${it.id.toString(16)} ${it.hash} ${it.author}")
             for (op in it.operations) {
                 println("    $op")

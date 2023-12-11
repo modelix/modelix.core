@@ -328,7 +328,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
 //            VersionMerger(store, IdGenerator.newInstance(0)).mergeChange(version, baseVersion)
 //        }
 
-        val history = LinearHistory(baseVersionHash).computeHistoryWithoutMerges(version)
+        val history = LinearHistory(baseVersionHash).load(version)
         val bulkQuery = BulkQuery(store)
         var v1 = baseVersion
         for (v2 in history) {

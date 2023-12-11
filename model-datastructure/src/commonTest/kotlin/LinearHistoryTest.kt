@@ -46,6 +46,18 @@ class LinearHistoryTest {
     }
 
     @Test
+    fun divergedWithTwoCommitsInCommonBase() {
+        val v1 = version(1, null)
+        val v10 = version(10, v1)
+        val v20 = version(20, v10)
+        val v21 = version(21, v10)
+
+        val actual = LinearHistory(null).load(v20, v21).map { it.id }
+        val expected = listOf(1L, 10L, 20, 21)
+        assertEquals(expected, actual)
+    }
+
+    @Test
     fun knownPerformanceIssue() {
         // This test was dumped from actual case discovered during a profiling session.
 
@@ -150,10 +162,10 @@ class LinearHistoryTest {
 
         // val expected = SlowLinearHistory(v1000004d3.getContentHash()).load(v300000075, v1000004ee)
         val expected = listOf(
-            v200000353,
             v1000004d5,
-            v200000356,
+            v200000353,
             v1000004d8,
+            v200000356,
             v200000359,
             v1000004dc,
             v1000004df,
@@ -162,10 +174,10 @@ class LinearHistoryTest {
             v1000004e2,
             v200000362,
             v1000004e5,
-            v200000365,
             v1000004e7,
-            v200000367,
             v1000004e9,
+            v200000365,
+            v200000367,
             v200000369,
             v20000036c,
         )
@@ -181,7 +193,7 @@ class LinearHistoryTest {
         val v4 = merge(4, v2, v3)
         val v8 = version(8, v9)
 
-        val expected = listOf(v2, v3, v9, v8)
+        val expected = listOf(v2, v9, v8, v3)
         assertHistory(v4, v8, expected)
     }
 
@@ -197,7 +209,7 @@ class LinearHistoryTest {
 
     private fun history(v1: CLVersion, v2: CLVersion): List<CLVersion> {
         val base = VersionMerger.commonBaseVersion(v1, v2)
-        val history = LinearHistory(base?.getContentHash()).computeHistoryWithoutMerges(v1, v2)
+        val history = LinearHistory(base?.getContentHash()).load(v1, v2)
         assertHistoryIsCorrect(history)
         return history
     }

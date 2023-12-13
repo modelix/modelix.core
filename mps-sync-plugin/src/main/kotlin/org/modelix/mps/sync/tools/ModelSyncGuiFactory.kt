@@ -25,7 +25,6 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
-import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
@@ -77,6 +76,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     }
 
     private class ModelSyncGui(toolWindow: ToolWindow) {
+
+        // TODO revert me: don't need this field
+        private var repoBranchName = "main"
 
         private var log: Logger = logger<ModelSyncGui>()
         val contentPanel = JPanel()
@@ -220,16 +222,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
             bindingsPanel.add(unbindButton)
 
-            // TODO remove TextField and Button that were used only for test purposes (shouldn't be in the plugin)
-            val nodeId = JBTextField(20)
-            val moveButton = JButton("Don't press me")
-            moveButton.background = JBColor.RED
-            moveButton.addActionListener { _: ActionEvent? ->
-                modelSyncService.moveNode(nodeId.text)
-            }
-            bindingsPanel.add(moveButton)
-            bindingsPanel.add(nodeId)
-
             inputBox.add(bindingsPanel)
             return inputBox
         }
@@ -240,16 +232,19 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun triggerRefresh() {
+            repoBranchName = "master"
+
             populateProjectsCB()
             populateConnectionsCB()
             populateRepoCB()
             populateBindingCB()
 
-            // TODO fixme: hardcoded values
-            serverURL.text = "http://127.0.0.1:28101/v2"
-            repositoryName.text = "courses"
-            branchName.text = "master"
-            modelName.text = "University.Schedule.modelserver.backend.sandbox"
+            // TODO revert me: hardcoded values for demo!
+            serverURL.text = "https://secure.repository.model.itemis.io/v2"
+            // serverURL.text = "http://127.0.0.1:28101/v2"
+            repositoryName.text = "iso_example"
+            branchName.text = repoBranchName
+            modelName.text = "ISO Example"
             jwt.text = ""
         }
 
@@ -274,7 +269,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             if (existingConnectionsModel.size != 0) {
                 val item = existingConnectionsModel.selectedItem as ModelClientV2
                 CoroutineScope(Dispatchers.Default).launch {
-                    repoModel.addAll(item.listRepositories())
+                    // TODO revert me: fixed repo name
+                    repoModel.addElement(RepositoryId("iso_example"))
                     if (repoModel.size > 0) {
                         repoModel.selectedItem = repoModel.getElementAt(0)
                         populateBranchCB()
@@ -287,8 +283,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
-                    val branches = (existingConnectionsModel.selectedItem as ModelClientV2).listBranches(repoModel.selectedItem as RepositoryId)
-                    branchModel.addAll(branches)
+                    // TODO revert me: fixed branch name
+                    branchModel.addElement(BranchReference(RepositoryId("iso_example"), repoBranchName))
                     if (branchModel.size > 0) {
                         branchModel.selectedItem = branchModel.getElementAt(0)
                         populateModelCB()

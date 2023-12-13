@@ -18,9 +18,6 @@ interface SyncService {
         languageRepository: MPSLanguageRepository,
         afterActivate: (() -> Unit)?,
     ): IBinding
-
-    @Deprecated("TODO: remove this method")
-    fun moveNode(nodeId: String)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

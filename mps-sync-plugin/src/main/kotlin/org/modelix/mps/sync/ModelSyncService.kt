@@ -160,7 +160,4 @@ class ModelSyncService : Disposable {
             server = null
         }
     }
-
-    @Deprecated("TODO: remove this method")
-    fun moveNode(nodeId: String) = syncService.moveNode(nodeId)
 }

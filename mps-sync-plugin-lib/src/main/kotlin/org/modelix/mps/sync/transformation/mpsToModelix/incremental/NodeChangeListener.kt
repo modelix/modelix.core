@@ -129,7 +129,8 @@ class NodeChangeListener(
             val modelixReferenceLink = MPSReferenceLink(it)
             val cloudTargetNode = branch.getNode(targetNodeId)
 
-            cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
+            // TODO revert me: was put in comment for the demo!
+            // cloudNode.setReferenceTarget(reference, target)
         }
 
         // synchronize children

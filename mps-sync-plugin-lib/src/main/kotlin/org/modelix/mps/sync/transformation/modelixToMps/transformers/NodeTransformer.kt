@@ -21,6 +21,7 @@ import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
+import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
@@ -62,7 +63,12 @@ class NodeTransformer(
                 val modelId = iNode.getModel()?.nodeIdAsLong()
                 val model = nodeMap.getModel(modelId)
                 val isTransformed = nodeMap.isMappedToMps(iNode.nodeIdAsLong())
-                if (!isTransformed) {
+
+                // TODO revert me: remove hardcoded workaround
+                val isIsoExampleDescriptor =
+                    iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "ISOExample@descriptor"
+
+                if (!isTransformed && !isIsoExampleDescriptor) {
                     if (model == null) {
                         logger.info("Node ${iNode.nodeIdAsLong()}(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null.")
                     } else {
@@ -144,8 +150,11 @@ class NodeTransformer(
         nodeMap.put(devKitModuleReference!!, iNode.nodeIdAsLong())
     }
 
-    fun resolveReferences(mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking) =
-        nodeFactory.resolveReferences(mpsWriteAction)
+    fun resolveReferences(
+        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
+        methodConfiguration: SModel? = null,
+        catalog: SModel? = null,
+    ) = nodeFactory.resolveReferences(mpsWriteAction, methodConfiguration, catalog)
 
     fun clearResolvableReferences() = nodeFactory.clearResolvableReferences()
 

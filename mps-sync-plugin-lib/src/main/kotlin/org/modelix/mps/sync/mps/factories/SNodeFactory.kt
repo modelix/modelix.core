@@ -136,16 +136,40 @@ class SNodeFactory(
 
             // TODO what about those references whose target is outside of the model?
             val targetNodeId = it.second.nodeIdAsLong()
+            val mpsId = it.second.mappedMpsNodeID()
 
-            resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
+            resolvableReferences.add(ResolvableReference(source, reference, targetNodeId, mpsId))
         }
     }
 
-    fun resolveReferences(mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking) {
+    fun resolveReferences(
+        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
+        methodConfiguration: SModel? = null,
+        catalog: SModel? = null,
+    ) {
         resolvableReferences.forEach {
             val source = it.source
             val reference = it.reference
-            val target = nodeMap.getNode(it.targetNodeId)
+            var target = nodeMap.getNode(it.targetNodeId)
+
+            // TODO revert me: hardcoded node lookup for demo!
+            // TODO revert me: hardcoded method parameters!
+            // TODO revert me: ResolvableReference.targetNodeMpsId
+            val mpsId = it.targetNodeMpsId
+            if (mpsId != null) {
+                val mpsNodeId = PersistenceFacade.getInstance().createNodeId(mpsId)
+                if (target == null) {
+                    modelAccess.runReadAction {
+                        target = methodConfiguration?.getNode(mpsNodeId)
+                    }
+                }
+                if (target == null) {
+                    modelAccess.runReadAction {
+                        target = catalog?.getNode(mpsNodeId)
+                    }
+                }
+            }
+
             mpsWriteAction {
                 source.setReferenceTarget(reference, target)
             }
@@ -160,4 +184,5 @@ data class ResolvableReference(
     val source: SNode,
     val reference: SReferenceLink,
     val targetNodeId: Long,
+    val targetNodeMpsId: String?,
 )

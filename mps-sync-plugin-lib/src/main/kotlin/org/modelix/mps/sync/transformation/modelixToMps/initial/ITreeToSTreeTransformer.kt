@@ -18,7 +18,6 @@ package org.modelix.mps.sync.transformation.modelixToMps.initial
 
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.project.MPSProject
-import jetbrains.mps.smodel.SModelId
 import jetbrains.mps.smodel.SModelInternal
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -50,7 +49,7 @@ class ITreeToSTreeTransformer(
     private val logger = logger<ITreeToSTreeTransformer>()
 
     private val nodeTransformer = NodeTransformer(project.modelAccess, nodeMap, mpsLanguageRepository)
-    private val modelTransformer = ModelTransformer(project.modelAccess, nodeMap, project.repository)
+    private val modelTransformer = ModelTransformer(project.modelAccess, nodeMap)
     private val moduleTransformer = ModuleTransformer(project, nodeMap)
 
     fun transform(entryPoint: INode): SNode? {
@@ -85,10 +84,7 @@ class ITreeToSTreeTransformer(
                 }
 
                 logger.info("--- RESOLVING REFERENCES ---")
-                // TODO revert me: methodConfiguration and catalog model lookups
-                val methodConfiguration = project.repository.getModel(SModelId.fromString("r:9e0bf89b-7c83-426e-8e13-cd21fab7b94a"))!!
-                val catalog = project.repository.getModel(SModelId.fromString("r:a269539f-8e07-4b12-82b7-a8f38e6897c9"))!!
-                nodeTransformer.resolveReferences(methodConfiguration = methodConfiguration, catalog = catalog)
+                nodeTransformer.resolveReferences()
 
                 logger.info("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
                 nodeMap.models.forEach {

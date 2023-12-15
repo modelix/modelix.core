@@ -24,6 +24,12 @@ class CPHamtLeaf(
     val key: Long,
     val value: KVEntryReference<CPNode>,
 ) : CPHamtNode() {
+
+    override fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?) {
+        val reusableLeaf = reusableCandidate?.getValueIfLoaded() as? CPHamtLeaf
+        value.load(bulkQuery, reusableLeaf?.value)
+    }
+
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(value)
 
     override fun serialize(): String {

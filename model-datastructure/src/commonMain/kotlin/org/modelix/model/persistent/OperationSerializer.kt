@@ -127,7 +127,12 @@ class OperationSerializer private constructor() {
 
                     override fun deserialize(serialized: String): AddNewChildSubtreeOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
-                        return AddNewChildSubtreeOp(KVEntryReference(parts[5], CPTree.DESERIALIZER), PositionInRole(longFromHex(parts[0]), unescape(parts[1]), parts[2].toInt()), longFromHex(parts[3]), deserializeConcept(parts[4]))
+                        return AddNewChildSubtreeOp(
+                            KVEntryReference.fromHash(parts[5], CPTree.DESERIALIZER),
+                            PositionInRole(longFromHex(parts[0]), unescape(parts[1]), parts[2].toInt()),
+                            longFromHex(parts[3]),
+                            deserializeConcept(parts[4]),
+                        )
                     }
                 },
             )
@@ -233,7 +238,7 @@ class OperationSerializer private constructor() {
                     }
 
                     override fun deserialize(serialized: String): UndoOp {
-                        return UndoOp(KVEntryReference(serialized, CPVersion.DESERIALIZER))
+                        return UndoOp(KVEntryReference.fromHash(serialized, CPVersion.DESERIALIZER))
                     }
                 },
             )
@@ -246,7 +251,10 @@ class OperationSerializer private constructor() {
 
                     override fun deserialize(serialized: String): RevertToOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
-                        return RevertToOp(KVEntryReference(parts[0], CPVersion.DESERIALIZER), KVEntryReference(parts[1], CPVersion.DESERIALIZER))
+                        return RevertToOp(
+                            KVEntryReference.fromHash(parts[0], CPVersion.DESERIALIZER),
+                            KVEntryReference.fromHash(parts[1], CPVersion.DESERIALIZER),
+                        )
                     }
                 },
             )

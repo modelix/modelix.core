@@ -14,6 +14,7 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.metameta.MetaModelBranch
@@ -78,9 +79,8 @@ object ModelFacade {
         val baseVersionHash: String = baseVersionHash
             ?: client.get(branch.getKey())
             ?: throw RuntimeException("$branch doesn't exist")
-        val baseVersionData: CPVersion = client.storeCache.get(baseVersionHash, { CPVersion.deserialize(it) })
-            ?: throw RuntimeException("version not found: $baseVersionHash")
-        val baseVersion = CLVersion(baseVersionData, client.storeCache)
+        val baseVersion =
+            CLVersion(KVEntryReference.fromHash(baseVersionHash, CPVersion.DESERIALIZER), client.storeCache)
         return applyUpdate(client, baseVersion, branch, userName, body)
     }
 

@@ -136,7 +136,11 @@ class RandomTreeChangeGenerator(private val idGenerator: IIdGenerator, private v
     fun applyRandomChange(branch: IBranch, expectedTree: ExpectedTreeData?) {
         branch.runWrite {
             val t = branch.writeTransaction
-            operations[rand.nextInt(operations.size)](t, expectedTree)
+            applyRandomChange(t, expectedTree)
         }
+    }
+
+    fun applyRandomChange(t: IWriteTransaction, expectedTree: ExpectedTreeData?) {
+        operations[rand.nextInt(operations.size)](t, expectedTree)
     }
 }

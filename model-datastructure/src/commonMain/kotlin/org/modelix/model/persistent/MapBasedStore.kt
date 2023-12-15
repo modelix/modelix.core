@@ -25,7 +25,10 @@ import org.modelix.model.lazy.NonBulkQuery
 open class MapBaseStore : MapBasedStore()
 
 open class MapBasedStore : IKeyValueStore {
-    private val map: MutableMap<String?, String?> = HashMap()
+    private val map: MutableMap<String, String?> = HashMap()
+
+    fun size() = map.size
+
     override fun get(key: String): String? {
         return map[key]
     }
@@ -54,7 +57,51 @@ open class MapBasedStore : IKeyValueStore {
     }
 
     override fun prefetch(key: String) {}
-    val entries: Iterable<Map.Entry<String?, String?>>
+
+    val entries: Iterable<Map.Entry<String, String?>>
+        get() = map.entries
+
+    override fun listen(key: String, listener: IKeyListener) {
+        throw UnsupportedOperationException()
+    }
+
+    override fun removeListener(key: String, listener: IKeyListener) {
+        throw UnsupportedOperationException()
+    }
+}
+
+class ReadOnlyMapBasedStore(private val map: Map<String, String>) : IKeyValueStore {
+
+    override fun get(key: String): String? {
+        return map[key]
+    }
+
+    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore): IBulkQuery {
+        // This implementation doesn't benefit from bulk queries. The NonBulkQuery has a lower performance overhead.
+        return NonBulkQuery(deserializingCache)
+    }
+
+    override fun getPendingSize(): Int = 0
+
+    override fun put(key: String, value: String?) {
+        throw UnsupportedOperationException("read only")
+    }
+
+    override fun getAll(keys: Iterable<String>): Map<String, String?> {
+        val result: MutableMap<String, String?> = LinkedHashMap()
+        for (key in keys) {
+            result[key] = map[key]
+        }
+        return result
+    }
+
+    override fun putAll(entries: Map<String, String?>) {
+        throw UnsupportedOperationException("read only")
+    }
+
+    override fun prefetch(key: String) {}
+
+    val entries: Iterable<Map.Entry<String, String?>>
         get() = map.entries
 
     override fun listen(key: String, listener: IKeyListener) {

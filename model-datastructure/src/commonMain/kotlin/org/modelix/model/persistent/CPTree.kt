@@ -15,7 +15,9 @@
 
 package org.modelix.model.persistent
 
+import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.wasDeserialized
 import kotlin.jvm.JvmStatic
 
 class CPTree(
@@ -23,7 +25,12 @@ class CPTree(
     var idToHash: KVEntryReference<CPHamtNode>,
     val usesRoleIds: Boolean,
 ) : IKVValue {
-    override var isWritten: Boolean = false
+    override var ref: KVEntryReference<IKVValue>? = null
+
+    override fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?) {
+        val reusableTree = reusableCandidate?.getValueIfLoaded() as? CPTree
+        idToHash.load(bulkQuery, reusableTree?.idToHash)
+    }
 
     override fun serialize(): String {
         // TODO version bump required for the new operations BulkUpdateOp and AddNewChildrenOp
@@ -33,7 +40,7 @@ class CPTree(
 
     override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
 
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
+    override fun getDeserializer() = DESERIALIZER
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(idToHash)
 
@@ -43,7 +50,7 @@ class CPTree(
          */
         val PERSISTENCE_VERSION: Int = 3
         val NAMED_BASED_PERSISTENCE_VERSION: Int = 2
-        val DESERIALIZER: (String) -> CPTree = { deserialize(it) }
+        val DESERIALIZER = KVEntryReference.IDeserializer.create(CPTree::class, ::deserialize)
 
         @JvmStatic
         fun deserialize(input: String): CPTree {
@@ -57,8 +64,8 @@ class CPTree(
                 )
             }
             val usesRoleIds = persistenceVersion == PERSISTENCE_VERSION
-            val data = CPTree(treeId, KVEntryReference(parts[2], CPHamtNode.DESERIALIZER), usesRoleIds)
-            data.isWritten = true
+            val data = CPTree(treeId, KVEntryReference.fromHash(parts[2], CPHamtNode.DESERIALIZER), usesRoleIds)
+            data.wasDeserialized()
             return data
         }
     }

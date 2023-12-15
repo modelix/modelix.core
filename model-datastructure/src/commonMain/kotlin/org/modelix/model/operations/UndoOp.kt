@@ -23,7 +23,7 @@ class UndoOp(val versionHash: KVEntryReference<CPVersion>) : AbstractOperation()
 
     override fun captureIntend(tree: ITree, store_: IDeserializingKeyValueStore): IOperationIntend {
         val store = (tree as CLTree).store
-        val versionToUndo = CLVersion(versionHash.getValue(store), store)
+        val versionToUndo = CLVersion(versionHash, store)
         val originalAppliedOps = getAppliedOps(versionToUndo, store)
         val invertedOps = originalAppliedOps.reversed().flatMap { it.invert() }
         val invertedOpIntends = captureIntend(versionToUndo.tree, invertedOps, store)

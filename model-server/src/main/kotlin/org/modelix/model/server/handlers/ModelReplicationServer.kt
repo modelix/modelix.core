@@ -23,6 +23,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.request.receiveStream
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
+import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -49,11 +50,13 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.persistent.IKVValue
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.server.ModelQLServer
 import org.slf4j.LoggerFactory
+import java.io.Writer
 
 /**
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
@@ -140,6 +143,28 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                                 return@get
                             }
                             call.respondText(versionHash)
+                        }
+                        get("head-version") {
+                            // Returns the latest version without any history.
+
+                            val branch = branchRef()
+                            val version = repositoriesManager.getVersion(branch)
+                            if (version == null) {
+                                call.respondText(
+                                    "Branch '${branch.branchName}' doesn't exist in repository '${branch.repositoryId.id}'",
+                                    status = HttpStatusCode.NotFound,
+                                )
+                                return@get
+                            }
+                            call.respondObjectList {
+                                val store = repositoriesManager.client.storeCache
+                                appendObject(version.data!!)
+                                // Intentionally exclude operations and base version as they are only required for
+                                // conflict resolution.
+                                version.treeHash!!.visitAll(store.newBulkQuery()) { hash, value ->
+                                    appendObject(hash, value)
+                                }
+                            }
                         }
                         post {
                             val deltaFromClient = call.receive<VersionDelta>()
@@ -282,5 +307,38 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         )
         delta.checkObjectHashes()
         respond(delta)
+    }
+}
+
+private class ObjectListResponse(val writer: Writer) {
+    private var first = true
+
+    fun appendObject(hash: String, serializedObject: String) {
+        HashUtil.checkObjectHash(hash, serializedObject)
+        if (first) {
+            first = false
+        } else {
+            writer.append('\n')
+        }
+        writer.append(hash)
+        writer.append('\n').append(serializedObject)
+    }
+
+    fun appendObject(hash: String, obj: IKVValue) {
+        appendObject(hash, obj.serialize())
+    }
+
+    fun appendObject(value: IKVValue) {
+        appendObject(value.hash, value.serialize())
+    }
+
+    fun appendObject(entry: Pair<String, String>) {
+        appendObject(entry.first, entry.second)
+    }
+}
+
+private suspend fun ApplicationCall.respondObjectList(body: ObjectListResponse.() -> Unit) {
+    respondTextWriter {
+        ObjectListResponse(this).apply(body)
     }
 }

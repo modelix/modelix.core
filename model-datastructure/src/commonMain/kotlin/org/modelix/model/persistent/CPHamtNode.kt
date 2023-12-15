@@ -19,6 +19,8 @@ import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonBulkQuery
+import org.modelix.model.lazy.ref
+import org.modelix.model.lazy.wasDeserialized
 import org.modelix.model.persistent.SerializationUtil.intFromHex
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import kotlin.jvm.JvmStatic
@@ -26,12 +28,11 @@ import kotlin.jvm.JvmStatic
 /**
  * Implementation of a hash array mapped trie.
  */
-abstract class CPHamtNode : IKVValue {
-    override var isWritten: Boolean = false
-
+sealed class CPHamtNode : IKVValue {
+    override var ref: KVEntryReference<IKVValue>? = null
     override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
 
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
+    override fun getDeserializer(): KVEntryReference.IDeserializer<CPHamtNode> = DESERIALIZER
 
     protected fun createEmptyNode(): CPHamtNode {
         return CPHamtInternal(0, arrayOf())
@@ -53,7 +54,7 @@ abstract class CPHamtNode : IKVValue {
     }
 
     fun put(data: CPNode, store: IDeserializingKeyValueStore): CPHamtNode? {
-        return put(data.id, KVEntryReference(data), store)
+        return put(data.id, data.ref(), store)
     }
 
     fun remove(key: Long, store: IDeserializingKeyValueStore): CPHamtNode? {
@@ -98,28 +99,28 @@ abstract class CPHamtNode : IKVValue {
             }
         }
 
-        val DESERIALIZER = { s: String -> deserialize(s) }
+        val DESERIALIZER = KVEntryReference.IDeserializer.create(CPHamtNode::class, ::deserialize)
 
         @JvmStatic
         fun deserialize(input: String): CPHamtNode {
             val parts = input.split(Separators.LEVEL1)
             val data = when (parts[0]) {
-                "L" -> CPHamtLeaf(longFromHex(parts[1]), KVEntryReference(parts[2], CPNode.DESERIALIZER))
+                "L" -> CPHamtLeaf(longFromHex(parts[1]), KVEntryReference.fromHash(parts[2], CPNode.DESERIALIZER))
                 "I" -> CPHamtInternal(
                     intFromHex(parts[1]),
                     parts[2].split(Separators.LEVEL2)
                         .filter { it.isNotEmpty() }
-                        .map { KVEntryReference(it, DESERIALIZER) }
+                        .map { KVEntryReference.fromHash(it, DESERIALIZER) }
                         .toTypedArray(),
                 )
                 "S" -> CPHamtSingle(
                     parts[1].toInt(),
                     longFromHex(parts[2]),
-                    KVEntryReference(parts[3], DESERIALIZER),
+                    KVEntryReference.fromHash(parts[3], DESERIALIZER),
                 )
                 else -> throw RuntimeException("Unknown type: " + parts[0] + ", input: " + input)
             }
-            data.isWritten = true
+            data.wasDeserialized()
             return data
         }
     }

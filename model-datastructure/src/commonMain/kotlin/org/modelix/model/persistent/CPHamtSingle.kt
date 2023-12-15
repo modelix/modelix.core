@@ -20,6 +20,7 @@ import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonBulkQuery
+import org.modelix.model.lazy.ref
 import org.modelix.model.persistent.SerializationUtil.longToHex
 
 class CPHamtSingle(
@@ -29,19 +30,26 @@ class CPHamtSingle(
 ) : CPHamtNode() {
 
     init {
-        require(numLevels <= 13) { "$numLevels > 13" }
+        require(numLevels <= CPHamtNode.MAX_LEVELS) { "Only ${CPHamtNode.MAX_LEVELS} levels expected, but was $numLevels" }
+    }
+
+    private val mask: Long = maskForLevels(numLevels)
+
+    override fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?) {
+        val reusableNode: CPHamtSingle? = (reusableCandidate?.getValueIfLoaded() as? CPHamtNode)?.let {
+            convert(it, numLevels, bits)
+        }
+        if (reusableNode == null) {
+            child.load(bulkQuery, null)
+        } else {
+            child.load(bulkQuery, reusableNode.child)
+        }
     }
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(child)
 
     override fun serialize(): String {
         return "S/$numLevels/${longToHex(bits)}/${child.getHash()}"
-    }
-
-    private val mask: Long = maskForLevels(numLevels)
-
-    init {
-        require(numLevels <= CPHamtNode.MAX_LEVELS) { "Only ${CPHamtNode.MAX_LEVELS} levels expected, but was $numLevels" }
     }
 
     override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
@@ -66,7 +74,8 @@ class CPHamtSingle(
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return withNewChild(getChild(NonBulkQuery(store)).execute().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
+            return getChild(NonBulkQuery(store)).execute().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store)
+                ?.let { withNewChild(it) }
         } else {
             if (numLevels > 1) {
                 return splitOneLevel().put(key, value, shift, store)
@@ -85,21 +94,18 @@ class CPHamtSingle(
 
     fun splitOneLevel(): CPHamtSingle {
         val nextLevel = CPHamtSingle(numLevels - 1, bits and maskForLevels(numLevels - 1), child)
-        return CPHamtSingle(1, bits ushr (CPHamtNode.BITS_PER_LEVEL * (numLevels - 1)), KVEntryReference(nextLevel))
+        return CPHamtSingle(1, bits ushr (CPHamtNode.BITS_PER_LEVEL * (numLevels - 1)), nextLevel.ref())
     }
 
-    fun withNewChild(newChild: CPHamtNode?): CPHamtSingle? {
-        if (newChild is CPHamtSingle) {
-            return CPHamtSingle(
+    fun withNewChild(newChild: CPHamtNode): CPHamtSingle {
+        return if (newChild is CPHamtSingle) {
+            CPHamtSingle(
                 numLevels + newChild.numLevels,
                 (bits shl (newChild.numLevels * CPHamtNode.BITS_PER_LEVEL)) or newChild.bits,
                 newChild.child,
             )
-        }
-        return if (newChild == null) {
-            null
         } else {
-            CPHamtSingle(numLevels, bits, KVEntryReference(newChild))
+            CPHamtSingle(numLevels, bits, newChild.ref())
         }
     }
 
@@ -151,6 +157,26 @@ class CPHamtSingle(
 
         fun replaceIfSingleChild(node: CPHamtInternal, store: IDeserializingKeyValueStore): CPHamtNode {
             return if (node.children.size == 1) replace(node, store) else node
+        }
+
+        fun convert(node: CPHamtNode, desiredLevels: Int, desiredBits: Long): CPHamtSingle {
+            return when (node) {
+                is CPHamtSingle -> {
+                    if (node.numLevels == desiredLevels) {
+                        if (node.bits == desiredBits) {
+                            node
+                        } else {
+                            TODO()
+                        }
+                    } else if (node.numLevels > desiredLevels) {
+                        convert(node.splitOneLevel(), desiredLevels, desiredBits)
+                    } else { // node.numLevels < desiredLevels
+                        TODO()
+                    }
+                }
+                is CPHamtInternal -> TODO()
+                is CPHamtLeaf -> throw RuntimeException("Leaf and intermediate nodes are not expected to appear on the same level")
+            }
         }
 
         private fun indexFromBitmap(bitmap: Int): Int = bitCount(bitmap - 1)

@@ -21,6 +21,7 @@ import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonBulkQuery
+import org.modelix.model.lazy.ref
 import org.modelix.model.persistent.SerializationUtil.intToHex
 
 class CPHamtInternal(
@@ -28,6 +29,24 @@ class CPHamtInternal(
     val children: Array<KVEntryReference<CPHamtNode>>,
 ) : CPHamtNode() {
     val data get() = this
+
+    override fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?) {
+        val reusableHamtNode: CPHamtInternal? = (reusableCandidate?.getValueIfLoaded() as? CPHamtNode)?.let {
+            when (it) {
+                is CPHamtInternal -> it
+                is CPHamtSingle -> replace(it)
+                is CPHamtLeaf -> throw RuntimeException("Leaf and internal nodes are not expected to appear on the same level")
+            }
+        }
+        if (reusableHamtNode != null) {
+            for (i in 0 until ENTRIES_PER_LEVEL) {
+                val childRef = getChildRef(i) ?: continue
+                childRef.load(bulkQuery, reusableHamtNode.getChildRef(i))
+            }
+        } else {
+            children.forEach { it.load(bulkQuery) }
+        }
+    }
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = children.asList()
 
@@ -37,25 +56,6 @@ class CPHamtInternal(
             intToHex(bitmap) +
             Separators.LEVEL1 +
             (if (children.isEmpty()) "" else children.joinToString(Separators.LEVEL2) { it.getHash() })
-    }
-
-    companion object {
-        fun createEmpty() = create(0, arrayOf())
-
-        fun create(bitmap: Int, childHashes: Array<KVEntryReference<CPHamtNode>>): CPHamtInternal {
-            return CPHamtInternal(bitmap, childHashes)
-        }
-
-        fun create(key: Long, childHash: KVEntryReference<CPNode>, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
-            return createEmpty().put(key, childHash, shift, store)
-        }
-
-        fun replace(single: CPHamtSingle): CPHamtInternal {
-            if (single.numLevels != 1) throw RuntimeException("Can only replace single level nodes")
-            val data: CPHamtSingle = single
-            val logicalIndex: Int = data.bits.toInt()
-            return create(1 shl logicalIndex, arrayOf(data.child))
-        }
     }
 
     override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
@@ -106,13 +106,21 @@ class CPHamtInternal(
     }
 
     protected fun getChild(logicalIndex: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode?> {
+        val childHash = getChildRef(logicalIndex)
+        return if (childHash == null) {
+            bulkQuery.constant(null as CPHamtNode?)
+        } else {
+            getChild(childHash, bulkQuery)
+        }
+    }
+
+    fun getChildRef(logicalIndex: Int): KVEntryReference<CPHamtNode>? {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
-            return bulkQuery.constant(null as CPHamtNode?)
+            return null
         }
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
         require(physicalIndex < data.children.size) { "Invalid physical index ($physicalIndex). N. children: ${data.children.size}. Logical index: $logicalIndex" }
-        val childHash = data.children[physicalIndex]
-        return getChild(childHash, bulkQuery)
+        return data.children[physicalIndex]
     }
 
     protected fun getChild(childHash: KVEntryReference<CPHamtNode>, bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode> {
@@ -134,7 +142,7 @@ class CPHamtInternal(
         if (child == null) {
             return deleteChild(logicalIndex, store)
         }
-        val childHash = KVEntryReference(child)
+        val childHash = child.ref()
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
         val newNode = if (isBitNotSet(data.bitmap, logicalIndex)) {
             create(
@@ -270,5 +278,24 @@ class CPHamtInternal(
 
     private fun logicalToPhysicalIndex(bitmap: Int, logicalIndex: Int): Int {
         return bitCount(bitmap and (1 shl logicalIndex) - 1)
+    }
+
+    companion object {
+        fun createEmpty() = create(0, arrayOf())
+
+        fun create(bitmap: Int, childHashes: Array<KVEntryReference<CPHamtNode>>): CPHamtInternal {
+            return CPHamtInternal(bitmap, childHashes)
+        }
+
+        fun create(key: Long, childHash: KVEntryReference<CPNode>, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+            return createEmpty().put(key, childHash, shift, store)
+        }
+
+        fun replace(single: CPHamtSingle): CPHamtInternal {
+            if (single.numLevels != 1) throw RuntimeException("Can only replace single level nodes")
+            val data: CPHamtSingle = single
+            val logicalIndex: Int = data.bits.toInt()
+            return create(1 shl logicalIndex, arrayOf(data.child))
+        }
     }
 }

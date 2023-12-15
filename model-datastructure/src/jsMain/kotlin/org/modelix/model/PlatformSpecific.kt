@@ -15,7 +15,7 @@ actual fun bitCount(bits: Int): Int {
 }
 
 actual fun <K, V> createLRUMap(size: Int): MutableMap<K, V> {
-    return HashMap()
+    return HashMap() // TODO create size limited cache
 }
 
 @Suppress("ClassName")

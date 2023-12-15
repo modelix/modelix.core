@@ -48,11 +48,11 @@ class RevertToOp(val latestKnownVersionRef: KVEntryReference<CPVersion>, val ver
     }
 
     private fun collectUndoOps(store: IDeserializingKeyValueStore): List<IOperation> {
-        val latestKnownVersion = CLVersion(latestKnownVersionRef.getValue(store), store)
-        val versionToRevertTo = CLVersion(versionToRevertToRef.getValue(store), store)
+        val latestKnownVersion = CLVersion(latestKnownVersionRef, store)
+        val versionToRevertTo = CLVersion(versionToRevertToRef, store)
         val result = mutableListOf<IOperation>()
         val commonBase = VersionMerger.commonBaseVersion(latestKnownVersion, versionToRevertTo)
-        result += getPath(latestKnownVersion, commonBase).map { UndoOp(KVEntryReference(it.data!!)) }
+        result += getPath(latestKnownVersion, commonBase).map { UndoOp(it.dataRef) }
         if (commonBase == null || commonBase.hash != versionToRevertTo.hash) {
             // redo operations on a branch
             result += getPath(versionToRevertTo, commonBase).reversed().flatMap { it.operations }

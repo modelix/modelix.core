@@ -15,6 +15,8 @@
 
 package org.modelix.model.lazy
 
+import org.modelix.model.DummyKeyValueStore
+import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -28,7 +30,6 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.tryResolve
-import org.modelix.model.lazy.COWArrays.add
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.lazy.RepositoryId.Companion.random
@@ -42,47 +43,33 @@ import org.modelix.model.persistent.CPNodeRef.Companion.global
 import org.modelix.model.persistent.CPNodeRef.Companion.local
 import org.modelix.model.persistent.CPTree
 
-class CLTree : ITree, IBulkTree {
-    val store: IDeserializingKeyValueStore
-    val data: CPTree
+class CLTree(val dataRef: KVEntryReference<CPTree>, val store: IDeserializingKeyValueStore) : ITree, IBulkTree {
+    val data: CPTree get() = dataRef.getValue(store)
 
+    @Deprecated("use CLTree.builder", ReplaceWith("CLTree.builder(store).repositoryId(id).build()"))
     constructor(id: RepositoryId?, store: IDeserializingKeyValueStore) : this(null, id, store)
-    constructor(hash: String?, store: IDeserializingKeyValueStore) : this(if (hash == null) null else store.get<CPTree>(hash) { CPTree.deserialize(it) }, store)
-    constructor(store: IDeserializingKeyValueStore) : this(null as CPTree?, store)
-    constructor(data: CPTree?, store_: IDeserializingKeyValueStore) : this(data, null as RepositoryId?, store_)
-    constructor(data: CPTree?, repositoryId_: RepositoryId?, store_: IDeserializingKeyValueStore, useRoleIds: Boolean = false) {
-        this.store = store_
-        var repositoryId = repositoryId_
-        if (data == null) {
-            if (repositoryId == null) {
-                repositoryId = random()
-            }
-            val root = CPNode.create(
-                1,
-                null,
-                0,
-                null,
-                LongArray(0),
-                arrayOf(),
-                arrayOf(),
-                arrayOf(),
-                arrayOf(),
-            )
-            val idToHash = storeElement(root, CPHamtInternal.createEmpty())
-            this.data = CPTree(repositoryId.id, KVEntryReference(idToHash), useRoleIds)
-        } else {
-            this.data = data
-        }
-    }
 
-    private constructor(treeId_: String, idToHash: CPHamtNode, store: IDeserializingKeyValueStore, usesRoleIds: Boolean) {
-        var treeId: String? = treeId_
-        if (treeId == null) {
-            treeId = random().id
-        }
-        data = CPTree(treeId, KVEntryReference(idToHash), usesRoleIds)
-        this.store = store
-    }
+    @Deprecated("use CLTree.loadFromHash", ReplaceWith("CLTree.loadFromHash(hash, store)"))
+    constructor(hash: String, store: IDeserializingKeyValueStore) : this(
+        KVEntryReference.fromHash<CPTree>(
+            hash,
+            CPTree.DESERIALIZER,
+        ),
+        store,
+    )
+
+    @Deprecated("use CLTree.builder", ReplaceWith("CLTree.builder(store).build()"))
+    constructor(store: IDeserializingKeyValueStore) : this(null as CPTree?, store)
+
+    @Deprecated("use CLTree.builder or primary constructor")
+    constructor(data: CPTree?, store_: IDeserializingKeyValueStore) : this(data, null as RepositoryId?, store_)
+
+    @Deprecated("use CLTree.builder or primary constructor")
+    constructor(data: CPTree?, repositoryId_: RepositoryId?, store_: IDeserializingKeyValueStore, useRoleIds: Boolean = false) :
+        this((data ?: newEmptyTree((repositoryId_ ?: random()).id, useRoleIds, store_)).ref(), store_)
+
+    private constructor(treeId_: String, idToHash: CPHamtNode, store: IDeserializingKeyValueStore, usesRoleIds: Boolean) :
+        this(CPTree(treeId_, idToHash.ref(), usesRoleIds), store)
 
     override fun usesRoleIds(): Boolean {
         return data.usesRoleIds
@@ -108,7 +95,7 @@ class CLTree : ITree, IBulkTree {
 
     protected fun storeElement(node: CPNode, id2hash: CPHamtNode): CPHamtNode {
         val data = node
-        var newMap = id2hash.put(node.id, KVEntryReference(data), store)
+        var newMap = id2hash.put(node.id, data.ref(), store)
         if (newMap == null) {
             newMap = CPHamtInternal.createEmpty()
         }
@@ -636,12 +623,42 @@ class CLTree : ITree, IBulkTree {
     }
 
     companion object {
-        fun builder(store: IDeserializingKeyValueStore) = Builder(store)
+        fun builder(store: IDeserializingKeyValueStore = NonCachingObjectStore(DummyKeyValueStore())) = Builder(store)
+        fun newEmptyTree(treeId: String, useRoleIds: Boolean, store: IDeserializingKeyValueStore = NonCachingObjectStore(DummyKeyValueStore())): CPTree {
+            val root = create(
+                ITree.ROOT_ID,
+                null,
+                0,
+                null,
+                LongArray(0),
+                arrayOf(),
+                arrayOf(),
+                arrayOf(),
+                arrayOf(),
+            )
+            return CPTree(
+                treeId,
+                CPHamtInternal.createEmpty().put(root.id, root.ref(), store)!!.ref(),
+                useRoleIds,
+            )
+        }
+
+        fun loadFromHash(hash: String, store: IDeserializingKeyValueStore): CLTree {
+            return CLTree(KVEntryReference.fromHash(hash, CPTree.DESERIALIZER), store)
+        }
     }
 
-    class Builder(var store: IDeserializingKeyValueStore) {
+    class Builder(var store: IDeserializingKeyValueStore = NonCachingObjectStore(DummyKeyValueStore())) {
         private var repositoryId: RepositoryId? = null
         private var useRoleIds: Boolean = false
+
+        fun store(store: IDeserializingKeyValueStore) {
+            this.store = store
+        }
+
+        fun store(store: IKeyValueStore) {
+            this.store = NonCachingObjectStore(store)
+        }
 
         fun useRoleIds(value: Boolean = true): Builder {
             this.useRoleIds = value
@@ -657,10 +674,8 @@ class CLTree : ITree, IBulkTree {
 
         fun build(): CLTree {
             return CLTree(
-                data = null as CPTree?,
-                repositoryId_ = repositoryId ?: RepositoryId.random(),
-                store_ = store,
-                useRoleIds = useRoleIds,
+                dataRef = newEmptyTree((repositoryId ?: random()).id, useRoleIds, store).ref(),
+                store = store,
             )
         }
     }

@@ -21,9 +21,13 @@ import kotlin.jvm.Synchronized
 /**
  * Not thread safe
  */
-class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
+class BulkQuery(override val store: IDeserializingKeyValueStore) : IBulkQuery {
     companion object {
         val BATCH_SIZE = 5000
+
+        fun runNewQuery(store: IDeserializingKeyValueStore, body: (BulkQuery) -> Unit) {
+            BulkQuery(store).also(body).process()
+        }
     }
 
     private var queue: MutableList<Pair<KVEntryReference<IKVValue>, (IKVValue?) -> Unit>> = ArrayList()

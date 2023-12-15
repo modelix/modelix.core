@@ -15,11 +15,13 @@
 
 package org.modelix.model.persistent
 
+import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.wasDeserialized
 import org.modelix.model.operations.IOperation
 
 class CPOperationsList(val operations: Array<IOperation>) : IKVValue {
-    override var isWritten: Boolean = false
+    override var ref: KVEntryReference<IKVValue>? = null
 
     override fun serialize(): String {
         return if (operations.isEmpty()) {
@@ -32,14 +34,18 @@ class CPOperationsList(val operations: Array<IOperation>) : IKVValue {
 
     override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
 
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
+    override fun getDeserializer(): KVEntryReference.IDeserializer<CPOperationsList> = DESERIALIZER
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> {
         return operations.map { it.getReferencedEntries() }.flatten()
     }
 
+    override fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?) {
+        // TODO some operations contain references to other versions that may need loading
+    }
+
     companion object {
-        val DESERIALIZER: (String) -> CPOperationsList = { deserialize(it) }
+        val DESERIALIZER = KVEntryReference.IDeserializer.create(CPOperationsList::class, ::deserialize)
 
         fun deserialize(input: String): CPOperationsList {
             val data = CPOperationsList(
@@ -48,7 +54,7 @@ class CPOperationsList(val operations: Array<IOperation>) : IKVValue {
                     .map { OperationSerializer.INSTANCE.deserialize(it) }
                     .toTypedArray(),
             )
-            data.isWritten = true
+            data.wasDeserialized()
             return data
         }
     }

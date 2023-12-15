@@ -19,6 +19,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.modelix.model.IKeyListener
+import java.io.File
+import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
 interface IStoreClient : AutoCloseable {
@@ -79,4 +81,31 @@ suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: St
         if (!handlerCalled) result = storeClient[key]
     }
     return result
+}
+
+fun IStoreClient.loadDump(file: File): Int {
+    var n = 0
+    file.useLines { lines ->
+        val entries = lines.associate { line ->
+            val parts = line.split("#".toRegex(), limit = 2)
+            n++
+            parts[0] to parts[1]
+        }
+        putAll(entries, silent = true)
+    }
+    return n
+}
+
+@Synchronized
+@Throws(IOException::class)
+fun IStoreClient.writeDump(file: File) {
+    file.writer().use { writer ->
+        for ((key, value) in getAll()) {
+            if (value == null) continue
+            writer.append(key)
+            writer.append("#")
+            writer.append(value)
+            writer.append("\n")
+        }
+    }
 }

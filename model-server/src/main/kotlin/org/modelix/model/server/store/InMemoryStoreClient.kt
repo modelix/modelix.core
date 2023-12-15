@@ -16,10 +16,6 @@ package org.modelix.model.server.store
 
 import org.modelix.model.IKeyListener
 import org.slf4j.LoggerFactory
-import java.io.BufferedReader
-import java.io.FileReader
-import java.io.FileWriter
-import java.io.IOException
 import kotlin.collections.HashMap
 
 fun generateId(idStr: String?): Long {
@@ -102,30 +98,6 @@ class InMemoryStoreClient : IStoreClient {
         val id = generateId(get(key))
         put(key, id.toString(), false)
         return id
-    }
-
-    @Synchronized
-    @Throws(IOException::class)
-    fun dump(fileWriter: FileWriter) {
-        for (key in values.keys) {
-            fileWriter.append(key)
-            fileWriter.append("#")
-            fileWriter.append(values[key])
-            fileWriter.append("\n")
-        }
-    }
-
-    @Synchronized
-    fun load(fileReader: FileReader?): Int {
-        val br = BufferedReader(fileReader)
-        val n = intArrayOf(0)
-        br.lines()
-            .forEach { line: String ->
-                val parts = line.split("#".toRegex(), limit = 2).toTypedArray()
-                values[parts[0]] = parts[1]
-                n[0]++
-            }
-        return n[0]
     }
 
     @Synchronized

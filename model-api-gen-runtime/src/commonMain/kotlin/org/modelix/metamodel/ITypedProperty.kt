@@ -27,3 +27,28 @@ fun <ValueT> INode.setTypedPropertyValue(property: ITypedProperty<ValueT>, value
 fun <ValueT> INode.getTypedPropertyValue(property: ITypedProperty<ValueT>): ValueT {
     return property.deserializeValue(getPropertyValue(property.untyped()))
 }
+
+fun INode.getBooleanPropertyValue(property: IProperty): Boolean {
+    return getTypedPropertyValue(TypedPropertyAdapter(property, MandatoryBooleanPropertySerializer))
+}
+
+fun INode.setBooleanPropertyValue(property: IProperty, value: Boolean?) {
+    return setTypedPropertyValue(TypedPropertyAdapter(property, OptionalBooleanPropertySerializer), value)
+}
+
+fun INode.getIntPropertyValue(property: IProperty): Int {
+    return getTypedPropertyValue(TypedPropertyAdapter(property, MandatoryIntPropertySerializer))
+}
+
+fun INode.setIntPropertyValue(property: IProperty, value: Int?) {
+    return setTypedPropertyValue(TypedPropertyAdapter(property, OptionalIntPropertySerializer), value)
+}
+
+class TypedPropertyAdapter<ValueT>(
+    private val untypedProperty: IProperty,
+    val serializer: IPropertyValueSerializer<ValueT>,
+) : ITypedProperty<ValueT> {
+    override fun untyped() = untypedProperty
+    override fun serializeValue(value: ValueT) = serializer.serialize(value)
+    override fun deserializeValue(serialized: String?) = serializer.deserialize(serialized)
+}

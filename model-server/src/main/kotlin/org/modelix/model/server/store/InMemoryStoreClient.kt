@@ -38,7 +38,8 @@ class InMemoryStoreClient : IStoreClient {
 
     private val values: MutableMap<String, String?> = HashMap()
     private var transactionValues: MutableMap<String, String?>? = null
-    private val listeners: MutableMap<String?, MutableSet<IKeyListener>> = HashMap()
+    private val changeNotifier = ChangeNotifier(this)
+    private val pendingChangeMessages = PendingChangeMessages(changeNotifier::notifyListeners)
 
     @Synchronized
     override fun get(key: String): String? {
@@ -62,35 +63,31 @@ class InMemoryStoreClient : IStoreClient {
 
     @Synchronized
     override fun put(key: String, value: String?, silent: Boolean) {
-        (transactionValues ?: values)[key] = value
-        if (!silent) {
-            listeners[key]?.toList()?.forEach {
-                try {
-                    it.changed(key, value)
-                } catch (ex: Exception) {
-                    println(ex.message)
-                    ex.printStackTrace()
-                    LOG.error("Failed to notify listeners after put '$key' = '$value'", ex)
-                }
+        runTransaction {
+            (transactionValues ?: values)[key] = value
+            if (!silent) {
+                pendingChangeMessages.entryChanged(key)
             }
         }
     }
 
     @Synchronized
     override fun putAll(entries: Map<String, String?>, silent: Boolean) {
-        for ((key, value) in entries) {
-            put(key, value, silent)
+        runTransaction {
+            for ((key, value) in entries) {
+                put(key, value, silent)
+            }
         }
     }
 
     @Synchronized
     override fun listen(key: String, listener: IKeyListener) {
-        listeners.getOrPut(key) { LinkedHashSet() }.add(listener)
+        changeNotifier.addListener(key, listener)
     }
 
     @Synchronized
     override fun removeListener(key: String, listener: IKeyListener) {
-        listeners[key]?.remove(listener)
+        changeNotifier.removeListener(key, listener)
     }
 
     @Synchronized
@@ -110,6 +107,7 @@ class InMemoryStoreClient : IStoreClient {
                 return result
             } finally {
                 transactionValues = null
+                pendingChangeMessages.flushChangeMessages()
             }
         } else {
             return body()

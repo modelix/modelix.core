@@ -16,11 +16,14 @@
 
 package org.modelix.model.server
 
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import org.modelix.model.IKeyListener
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
+import java.util.Collections
 import kotlin.random.Random
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -91,5 +94,53 @@ abstract class StoreClientTest(val store: IStoreClient) {
             }
         }
         assertEquals(value1, store.get(key)) // failed transaction should be rolled back
+    }
+
+    @Test
+    fun `listeners don't see incomplete transaction`() = runTest {
+        val key = "nbmndsyr"
+        val value1 = "a"
+        val value2 = "b"
+        val value3 = "c"
+
+        val valuesSeenByListener = Collections.synchronizedSet(HashSet<String?>())
+        store.listen(
+            key,
+            object : IKeyListener {
+                override fun changed(key: String, value: String?) {
+                    valuesSeenByListener += value
+                    valuesSeenByListener += store.get(key)
+                }
+            },
+        )
+
+        store.put(key, value1)
+        assertEquals(value1, store.get(key))
+
+        assertEquals(setOf<String?>(value1), valuesSeenByListener)
+        valuesSeenByListener.clear()
+
+        coroutineScope {
+            launch {
+                assertFailsWith(NullPointerException::class) {
+                    store.runTransaction {
+                        assertEquals(value1, store.get(key))
+                        store.put(key, value2, silent = false)
+                        assertEquals(value2, store.get(key))
+                        throw NullPointerException()
+                    }
+                }
+            }
+
+            launch {
+                store.runTransaction {
+                    assertEquals(value1, store.get(key))
+                    store.put(key, value3, silent = false)
+                    assertEquals(value3, store.get(key))
+                }
+            }
+        }
+
+        assertEquals(setOf<String?>(value3), valuesSeenByListener)
     }
 }

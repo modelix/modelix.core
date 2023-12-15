@@ -14,23 +14,28 @@
  */
 package org.modelix.model.server.store
 
-import com.google.common.collect.MultimapBuilder
+import mu.KotlinLogging
 import org.apache.ignite.Ignite
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.Ignition
 import org.modelix.model.IKeyListener
+import org.modelix.model.persistent.HashUtil
 import java.io.File
 import java.io.FileReader
 import java.io.IOException
 import java.util.*
-import java.util.concurrent.Executors
 import java.util.stream.Collectors
 
+private val LOG = KotlinLogging.logger { }
+
 class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) : IStoreClient, AutoCloseable {
-    private val ignite: Ignite
+    private val ENTRY_CHANGED_TOPIC = "entryChanged"
+    private lateinit var ignite: Ignite
     private val cache: IgniteCache<String, String?>
-    private val timer = Executors.newScheduledThreadPool(1)
-    private val listeners = MultimapBuilder.hashKeys().hashSetValues().build<String, IKeyListener>()
+    private val changeNotifier = ChangeNotifier(this)
+    private val pendingChangeMessages = PendingChangeMessages {
+        ignite.message().send(ENTRY_CHANGED_TOPIC, it)
+    }
 
     /**
      * Istantiate an IgniteStoreClient
@@ -68,6 +73,13 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
         //        timer.scheduleAtFixedRate(() -> {
         //            System.out.println("stats: " + cache.metrics());
         //        }, 10, 10, TimeUnit.SECONDS);
+
+        ignite.message().localListen(ENTRY_CHANGED_TOPIC) { nodeId: UUID?, key: Any? ->
+            if (key is String) {
+                changeNotifier.notifyListeners(key)
+            }
+            true
+        }
     }
 
     override fun get(key: String): String? {
@@ -94,44 +106,27 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
     override fun putAll(entries: Map<String, String?>, silent: Boolean) {
         val deletes = entries.filterValues { it == null }
         val puts = entries.filterValues { it != null }
-        if (deletes.isNotEmpty()) cache.removeAll(deletes.keys)
-        if (puts.isNotEmpty()) cache.putAll(puts)
-        if (!silent) {
-            for ((key, value) in entries) {
-                ignite.message().send(key, value ?: IKeyListener.NULL_VALUE)
+        runTransaction {
+            if (deletes.isNotEmpty()) cache.removeAll(deletes.keys)
+            if (puts.isNotEmpty()) cache.putAll(puts)
+            if (!silent) {
+                for (key in entries.keys) {
+                    if (HashUtil.isSha256(key)) continue
+                    pendingChangeMessages.entryChanged(key)
+                }
             }
         }
     }
 
     override fun listen(key: String, listener: IKeyListener) {
-        synchronized(listeners) {
-            val wasSubscribed = listeners.containsKey(key)
-            listeners.put(key, listener)
-            if (!wasSubscribed) {
-                ignite.message()
-                    .localListen(
-                        key,
-                    ) { nodeId: UUID?, value: Any? ->
-                        if (value is String) {
-                            synchronized(listeners) {
-                                for (l in listeners[key].toList()) {
-                                    try {
-                                        l.changed(key, if (value == IKeyListener.NULL_VALUE) null else value)
-                                    } catch (ex: Exception) {
-                                        println(ex.message)
-                                        ex.printStackTrace()
-                                    }
-                                }
-                            }
-                        }
-                        true
-                    }
-            }
-        }
+        // Entries where the key is the SHA hash over the value are not expected to change and listening is unnecessary.
+        require(!HashUtil.isSha256(key)) { "Listener for $key will never get notified." }
+
+        changeNotifier.addListener(key, listener)
     }
 
     override fun removeListener(key: String, listener: IKeyListener) {
-        synchronized(listeners) { listeners.remove(key, listener) }
+        changeNotifier.removeListener(key, listener)
     }
 
     override fun generateId(key: String): Long {
@@ -144,6 +139,7 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
             transactions.txStart().use { tx ->
                 val result = body()
                 tx.commit()
+                pendingChangeMessages.flushChangeMessages()
                 return result
             }
         } else {
@@ -158,5 +154,64 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
 
     override fun close() {
         dispose()
+    }
+}
+
+class PendingChangeMessages(private val notifier: (String) -> Unit) {
+    private val pendingChangeMessages = Collections.synchronizedSet(HashSet<String>())
+
+    @Synchronized
+    fun flushChangeMessages() {
+        for (pendingChangeMessage in pendingChangeMessages) {
+            notifier(pendingChangeMessage)
+        }
+        pendingChangeMessages.clear()
+    }
+
+    @Synchronized
+    fun entryChanged(key: String) {
+        pendingChangeMessages += key
+    }
+}
+
+class ChangeNotifier(val store: IStoreClient) {
+    private val changeNotifiers = HashMap<String, EntryChangeNotifier>()
+
+    @Synchronized
+    fun notifyListeners(key: String) {
+        changeNotifiers[key]?.notifyIfChanged()
+    }
+
+    @Synchronized
+    fun addListener(key: String, listener: IKeyListener) {
+        changeNotifiers.getOrPut(key) { EntryChangeNotifier(key) }.listeners.add(listener)
+    }
+
+    @Synchronized
+    fun removeListener(key: String, listener: IKeyListener) {
+        val notifier = changeNotifiers[key] ?: return
+        notifier.listeners.remove(listener)
+        if (notifier.listeners.isEmpty()) {
+            changeNotifiers.remove(key)
+        }
+    }
+
+    private inner class EntryChangeNotifier(val key: String) {
+        val listeners = HashSet<IKeyListener>()
+        private var lastNotifiedValue: String? = null
+
+        fun notifyIfChanged() {
+            val value = store.get(key)
+            if (value == lastNotifiedValue) return
+            lastNotifiedValue = value
+
+            for (listener in listeners) {
+                try {
+                    listener.changed(key, value)
+                } catch (ex: Exception) {
+                    LOG.error("Exception in listener of $key", ex)
+                }
+            }
+        }
     }
 }

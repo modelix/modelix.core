@@ -20,7 +20,7 @@ import java.io.BufferedReader
 import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
-import java.util.*
+import kotlin.collections.HashMap
 
 fun generateId(idStr: String?): Long {
     return try {
@@ -41,26 +41,32 @@ class InMemoryStoreClient : IStoreClient {
     }
 
     private val values: MutableMap<String, String?> = HashMap()
+    private var transactionValues: MutableMap<String, String?>? = null
     private val listeners: MutableMap<String?, MutableSet<IKeyListener>> = HashMap()
 
     @Synchronized
     override fun get(key: String): String? {
-        return values[key]
+        return if (transactionValues?.contains(key) == true) transactionValues!![key] else values[key]
     }
 
     @Synchronized
     override fun getAll(keys: List<String>): List<String?> {
-        return keys.map { values[it] }
+        return keys.map { get(it) }
+    }
+
+    @Synchronized
+    override fun getAll(): Map<String, String?> {
+        return values + (transactionValues ?: emptyMap())
     }
 
     @Synchronized
     override fun getAll(keys: Set<String>): Map<String, String?> {
-        return keys.associateWith { values[it] }
+        return keys.associateWith { get(it) }
     }
 
     @Synchronized
     override fun put(key: String, value: String?, silent: Boolean) {
-        values[key] = value
+        (transactionValues ?: values)[key] = value
         if (!silent) {
             listeners[key]?.toList()?.forEach {
                 try {
@@ -124,6 +130,20 @@ class InMemoryStoreClient : IStoreClient {
 
     @Synchronized
     override fun <T> runTransaction(body: () -> T): T {
-        return body()
+        if (transactionValues == null) {
+            try {
+                transactionValues = HashMap()
+                val result = body()
+                values.putAll(transactionValues!!)
+                return result
+            } finally {
+                transactionValues = null
+            }
+        } else {
+            return body()
+        }
+    }
+
+    override fun close() {
     }
 }

@@ -21,10 +21,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.modelix.model.IKeyListener
 import kotlin.time.Duration.Companion.seconds
 
-interface IStoreClient {
+interface IStoreClient : AutoCloseable {
     operator fun get(key: String): String?
     fun getAll(keys: List<String>): List<String?>
     fun getAll(keys: Set<String>): Map<String, String?>
+    fun getAll(): Map<String, String?>
     fun put(key: String, value: String?, silent: Boolean = false)
     fun putAll(entries: Map<String, String?>, silent: Boolean = false)
     fun listen(key: String, listener: IKeyListener)

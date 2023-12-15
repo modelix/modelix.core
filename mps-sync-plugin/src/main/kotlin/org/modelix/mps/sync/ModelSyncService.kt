@@ -16,6 +16,8 @@ package org.modelix.mps.sync
  */
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
@@ -34,6 +36,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.mps.sync.action.ModelixActionGroup
 import java.net.ConnectException
 import java.net.URL
 
@@ -58,6 +61,10 @@ class ModelSyncService : Disposable {
         println("============================================ Registering builtin languages")
         // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
         ILanguageRepository.default.javaClass
+
+        println("============================================ Registering sync actions")
+        registerSyncActions()
+
         println("============================================ Registration finished")
 
         println("============================================ Sync Service initialized $syncService")
@@ -158,6 +165,23 @@ class ModelSyncService : Disposable {
             if (server == null) return
             println("stopping modelix server")
             server = null
+        }
+    }
+
+    private fun registerSyncActions() {
+        listOf(
+            "jetbrains.mps.ide.actions.ModelActions_ActionGroup",
+            "jetbrains.mps.ide.actions.SolutionActions_ActionGroup",
+        ).forEach {
+            val actionGroup = ActionManager.getInstance().getAction(it)
+            if (actionGroup is DefaultActionGroup) {
+                actionGroup.run {
+                    addSeparator()
+                    add(ModelixActionGroup())
+                }
+            } else {
+                log.error("Action Group $it was not found, thus the UI actions are not registered there.")
+            }
         }
     }
 

@@ -50,4 +50,12 @@
                                 implementation="org.modelix.mps.sync.indicator.CloudIndicator"/>
 
     </extensions>
+    <actions>
+        <action id="org.modelix.mps.sync.action.ModelSyncAction" class="org.modelix.mps.sync.action.ModelSyncAction"
+                text="Model Sync Action"/>
+        <action id="org.modelix.mps.sync.action.ModuleSyncAction"
+                class="org.modelix.mps.sync.action.ModuleSyncAction" text="Solution Sync Action"/>
+        <group id="org.modelix.mps.sync.action.ModelixActionGroup"
+               class="org.modelix.mps.sync.action.ModelixActionGroup" text="Modelix Action Group"/>
+    </actions>
 </idea-plugin>

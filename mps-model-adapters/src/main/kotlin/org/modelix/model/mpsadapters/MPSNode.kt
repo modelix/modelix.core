@@ -23,7 +23,6 @@ import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapterById
 import jetbrains.mps.smodel.adapter.structure.property.SPropertyAdapterById
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapterById
 import org.jetbrains.mps.openapi.language.SContainmentLink
-import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.incremental.DependencyTracking
 import org.modelix.model.api.BuiltinLanguages
@@ -31,6 +30,7 @@ import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
@@ -89,7 +89,8 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
 
     override fun getContainmentLink(): IChildLink {
         DependencyTracking.accessed(MPSNodeDependency(node))
-        return node.containmentLink?.let { MPSChildLink(it) } ?: BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
+        return node.containmentLink?.let { MPSChildLink(it) }
+            ?: BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.reresolve()
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
@@ -161,15 +162,23 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
-        val refLink = when (link) {
-            is MPSReferenceLink -> link.link
-            else -> node.references.find { MPSReferenceLink(it.link).getUID() == link.getUID() }?.link
-                ?: node.concept.referenceLinks.find { MPSReferenceLink(it).getUID() == link.getUID() }
-                ?: SReferenceLinkAdapterById(SReferenceLinkId.deserialize(link.getUID()), "")
+        val targetNode = if (target is MPSNode) {
+            target
+        } else {
+            target?.let { getArea().resolveNode(it.reference) } as MPSNode
         }
+        if (link is MPSReferenceLink) {
+            node.setReferenceTarget(link.link, targetNode.node)
+        } else {
+            val refLink = when (link) {
+                is MPSReferenceLink -> link.link
+                else -> node.references.find { MPSReferenceLink(it.link).getUID() == link.getUID() }?.link
+                    ?: node.concept.referenceLinks.find { MPSReferenceLink(it).getUID() == link.getUID() }
+                    ?: SReferenceLinkAdapterById(SReferenceLinkId.deserialize(link.getUID()), "")
+            }
 
-        val targetNode = target?.let { getArea().resolveNode(it.reference) } as MPSNode
-        node.setReferenceTarget(refLink, targetNode.node)
+            node.setReferenceTarget(refLink, targetNode.node)
+        }
     }
 
     override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {
@@ -212,3 +221,8 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
             ?: SContainmentLinkAdapterById(SContainmentLinkId.deserialize(childLink.getUID()), "")
     }
 }
+
+private fun IConcept.reresolve() = ILanguageRepository.tryResolveConcept(getReference()) ?: this
+private fun IChildLink.reresolve() = getConcept().reresolve().getAllChildLinks().find { it.getUID() == getUID() } ?: this
+private fun IProperty.reresolve() = getConcept().reresolve().getAllProperties().find { it.getUID() == getUID() } ?: this
+private fun IReferenceLink.reresolve() = getConcept().reresolve().getAllReferenceLinks().find { it.getUID() == getUID() } ?: this

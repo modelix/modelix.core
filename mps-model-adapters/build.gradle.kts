@@ -24,11 +24,15 @@ dependencies {
 
 group = "org.modelix.mps"
 
+java {
+    withSourcesJar()
+}
+
 publishing {
     publications {
         create<MavenPublication>("maven") {
             artifactId = "model-adapters"
-            from(components["kotlin"])
+            from(components["java"])
         }
     }
 }

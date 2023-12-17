@@ -19,6 +19,7 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
+import org.modelix.model.api.ITransactionManager
 
 /**
  * An IArea is similar to an IBranch. They both provide transactional access to nodes, but the IBranch can only be used
@@ -27,7 +28,7 @@ import org.modelix.model.api.INodeResolutionScope
  * It's like a unix filesystem with mount points. The model inside an area can also be an MPS model that is not a
  * persistent data structure.
  */
-interface IArea : INodeResolutionScope {
+interface IArea : INodeResolutionScope, ITransactionManager {
     /**
      * The root of an area is not allowed to change
      */
@@ -53,10 +54,10 @@ interface IArea : INodeResolutionScope {
     fun getReference(): IAreaReference
     fun resolveArea(ref: IAreaReference): IArea?
 
-    fun <T> executeRead(f: () -> T): T
-    fun <T> executeWrite(f: () -> T): T
-    fun canRead(): Boolean
-    fun canWrite(): Boolean
+    override fun <T> executeRead(body: () -> T): T
+    override fun <T> executeWrite(body: () -> T): T
+    override fun canRead(): Boolean
+    override fun canWrite(): Boolean
 
     /** bigger numbers are locked first */
     fun getLockOrderingPriority(): Long = 0

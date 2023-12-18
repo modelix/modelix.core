@@ -25,10 +25,10 @@ sleep 5
 
 #CI needs more time
 if [ "${CI}" = "true" ]; then
-  sleep 10
+  sleep 20
 fi
 
-curl -X POST http://127.0.0.1:28101/v2/repositories/ci-test/init
+curl -X POST http://127.0.0.1:28309/v2/repositories/ci-test/init
 
 ./gradlew runSyncTestPush --console=plain --stacktrace
 ./gradlew test --tests 'PushTest'

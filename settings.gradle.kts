@@ -1,13 +1,28 @@
 pluginManagement {
     repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
-        mavenCentral()
+        val modelixRegex = "org\\.modelix.*"
+        mavenLocal {
+            content {
+                includeGroupByRegex(modelixRegex)
+            }
+        }
+        gradlePluginPortal {
+            content {
+                excludeGroupByRegex(modelixRegex)
+            }
+        }
+        maven {
+            url = uri("https://artifacts.itemis.cloud/repository/maven-mps/")
+            content {
+                includeGroupByRegex(modelixRegex)
+            }
+        }
+        mavenCentral {
+            content {
+                excludeGroupByRegex(modelixRegex)
+            }
+        }
     }
-}
-plugins {
-    id("de.fayard.refreshVersions") version "0.60.3"
 }
 
 rootProject.name = "modelix.core"
@@ -15,7 +30,7 @@ rootProject.name = "modelix.core"
 include("authorization")
 include("bulk-model-sync-gradle")
 include("bulk-model-sync-lib")
-include("bulk-model-sync-solution")
+include("bulk-model-sync-mps")
 include("kotlin-utils")
 include("light-model-client")
 include("metamodel-export")

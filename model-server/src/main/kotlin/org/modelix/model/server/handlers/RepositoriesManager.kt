@@ -165,6 +165,7 @@ class RepositoriesManager(val client: LocalModelClient) {
                 mergedVersion.hash
             }
             putVersionHash(branch, mergedHash)
+            ensureRepositoriesAreInList(setOf(branch.repositoryId))
             ensureBranchesAreInList(branch.repositoryId, setOf(branch.branchName))
             result = mergedHash
         }

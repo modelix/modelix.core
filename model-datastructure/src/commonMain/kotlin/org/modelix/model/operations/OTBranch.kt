@@ -33,6 +33,7 @@ class OTBranch(
     private var currentOperations: MutableList<IAppliedOperation> = ArrayList()
     private val completedChanges: MutableList<OpsAndTree> = ArrayList()
     private val id: String = branch.getId()
+    private var inWriteTransaction = false
 
     fun operationApplied(op: IAppliedOperation) {
         check(canWrite()) { "Only allowed inside a write transaction" }
@@ -84,18 +85,20 @@ class OTBranch(
 
     override fun <T> computeWrite(computable: () -> T): T {
         checkNotEDT()
-        return if (canWrite()) {
-            // Already in a transaction. Just append changes to the active one.
-            branch.computeWrite(computable)
-        } else {
-            branch.computeWriteT { t ->
+        return branch.computeWriteT { t ->
+            // canWrite() cannot be used as the condition, because that may statically return true (see TreePointer)
+            if (inWriteTransaction) {
+                computable()
+            } else {
                 try {
+                    inWriteTransaction = true
                     val result = computable()
                     runSynchronized(completedChanges) {
                         completedChanges += OpsAndTree(currentOperations, t.tree)
                     }
                     result
                 } finally {
+                    inWriteTransaction = false
                     currentOperations = ArrayList()
                 }
             }

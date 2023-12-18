@@ -1,7 +1,7 @@
 plugins {
   base
   alias(libs.plugins.node)
-  id("org.jlleitschuh.gradle.ktlint") apply false
+  alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.npm.publish)
 }
 

@@ -1,6 +1,6 @@
 plugins {
     `maven-publish`
-    id("org.jetbrains.kotlin.multiplatform")
+    kotlin("multiplatform")
 }
 
 kotlin {
@@ -8,13 +8,11 @@ kotlin {
     js(IR) {
         browser {}
         nodejs {
-            testTask(
-                Action {
-                    useMocha {
-                        timeout = "30s"
-                    }
-                },
-            )
+            testTask {
+                useMocha {
+                    timeout = "30s"
+                }
+            }
         }
         useCommonJs()
     }

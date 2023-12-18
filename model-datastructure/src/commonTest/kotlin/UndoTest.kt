@@ -36,6 +36,30 @@ class UndoTest {
 
     @Test
     fun undo_random() {
+        /*
+            digraph G {
+              1 [label="id=1"]
+              2 [label="id=2\nv[0]"]
+              3 [label="id=3\nv[1]"]
+              4 [label="id=4\nv[2]"]
+              undo [label="id=5\nversion_1_1u\n>>undo v[1]<<"]
+              version_0_1 [label="id=30064771077\nversion_0_1"]
+              version_2_1 [label="id=30064771078\nversion_2_1"]
+
+              2 -> 1
+              3 -> 1
+              4 -> 1
+              undo -> 3
+              version_0_1 -> 2
+              version_0_1 -> 3
+              version_2_1 -> 3
+              version_2_1 -> 4
+              version_0_1_1u -> version_0_1
+              version_0_1_1u -> undo
+              version_2_1_1u -> undo
+              version_2_1_1u -> version_2_1
+            }
+         */
         val idGenerator = IdGenerator.newInstance(7)
         val versionIdGenerator = IdGenerator.newInstance(0)
         val store = ObjectStoreCache(MapBaseStore())

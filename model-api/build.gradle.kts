@@ -1,6 +1,6 @@
 plugins {
-    id("maven-publish")
-    id("org.jetbrains.kotlin.multiplatform")
+    `maven-publish`
+    kotlin("multiplatform")
     kotlin("plugin.serialization")
 }
 

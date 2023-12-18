@@ -5,12 +5,7 @@ plugins {
     java
 
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm")
-}
-
-repositories {
-    // Use Maven Central for resolving dependencies.
-    mavenCentral()
+    kotlin("jvm")
 }
 
 dependencies {

@@ -3,11 +3,11 @@ import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTra
 
 plugins {
     application
-    id("com.diffplug.spotless")
     `maven-publish`
-    id("com.adarshr.test-logger") version "4.0.0"
-    id("org.jetbrains.kotlin.jvm")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.test.logger)
+    alias(libs.plugins.shadow)
+    kotlin("jvm")
     kotlin("plugin.serialization")
 }
 

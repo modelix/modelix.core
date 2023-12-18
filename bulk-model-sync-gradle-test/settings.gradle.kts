@@ -16,22 +16,58 @@
 
 pluginManagement {
     val modelixCoreVersion: String = file("../version.txt").readText()
+    val modelixRegex = "org\\.modelix.*"
     plugins {
         id("org.modelix.bulk-model-sync") version modelixCoreVersion
         id("org.modelix.model-api-gen") version modelixCoreVersion
     }
     repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
-        mavenCentral()
+        mavenLocal {
+            content {
+                includeGroupByRegex(modelixRegex)
+            }
+        }
+        gradlePluginPortal {
+            content {
+                excludeGroupByRegex(modelixRegex)
+            }
+        }
+        maven {
+            url = uri("https://artifacts.itemis.cloud/repository/maven-mps/")
+            content {
+                includeGroupByRegex(modelixRegex)
+            }
+        }
+        mavenCentral {
+            content {
+                excludeGroupByRegex(modelixRegex)
+            }
+        }
     }
     dependencyResolutionManagement {
         repositories {
-            mavenLocal()
-            gradlePluginPortal()
-            maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
-            mavenCentral()
+            mavenLocal {
+                content {
+                    includeGroupByRegex(modelixRegex)
+                }
+            }
+            gradlePluginPortal {
+                content {
+                    excludeGroupByRegex(modelixRegex)
+                }
+            }
+            maven {
+                url = uri("https://artifacts.itemis.cloud/repository/maven-mps/")
+                content {
+                    includeGroupByRegex(modelixRegex)
+                    includeGroup("com.jetbrains")
+                }
+            }
+            mavenCentral {
+                content {
+                    excludeGroupByRegex(modelixRegex)
+                }
+            }
         }
         versionCatalogs {
             create("libs") {

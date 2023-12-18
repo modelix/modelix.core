@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.intellij") version "1.16.1"
+    kotlin("jvm")
+    alias(libs.plugins.intellij)
 }
 
 val mpsToIdeaMap = mapOf(

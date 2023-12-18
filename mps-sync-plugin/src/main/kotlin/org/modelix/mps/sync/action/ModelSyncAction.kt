@@ -38,6 +38,6 @@ class ModelSyncAction : AnAction {
 
     override fun actionPerformed(event: AnActionEvent) {
         val model = event.getData(CONTEXT_MODEL)!!
-        ModelSynchronizer().sync(model)
+        ModelSynchronizer().addModel(model)
     }
 }

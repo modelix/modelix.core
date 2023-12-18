@@ -38,6 +38,6 @@ class ModuleSyncAction : AnAction {
 
     override fun actionPerformed(event: AnActionEvent) {
         val module = event.getData(CONTEXT_MODULE)!!
-        ModuleSynchronizer().sync(module)
+        ModuleSynchronizer().addModule(module)
     }
 }

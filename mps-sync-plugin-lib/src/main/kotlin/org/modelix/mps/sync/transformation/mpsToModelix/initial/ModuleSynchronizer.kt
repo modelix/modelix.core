@@ -16,13 +16,138 @@
 
 package org.modelix.mps.sync.transformation.mpsToModelix.initial
 
+import com.jetbrains.rd.util.firstOrNull
+import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.DevKit
+import jetbrains.mps.project.Solution
+import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.ChildLinkFromName
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
+import org.modelix.model.api.getNode
+import org.modelix.model.api.getRootNode
+import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.runIfAlone
+import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleSynchronizer {
+class ModuleSynchronizer(
+    private val branch: IBranch,
+    private val nodeMap: MpsToModelixMap,
+    private val isSynchronizing: AtomicReference<Boolean>,
+) {
 
-    fun sync(module: SModule) {
-        println("Hello World")
+    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, isSynchronizing)
+
+    fun addModule(module: SModule) {
+        isSynchronizing.runIfAlone {
+            branch.runWriteT {
+                val rootNode = branch.getRootNode()
+                val cloudModule = rootNode.addNewChild(
+                    ChildLinkFromName("modules"),
+                    -1,
+                    BuiltinLanguages.MPSRepositoryConcepts.Module,
+                )
+
+                nodeMap.put(module, cloudModule.nodeIdAsLong())
+
+                synchronizeModuleProperties(cloudModule, module)
+                // synchronize dependencies
+                module.declaredDependencies.forEach { addDependency(module, it) }
+                // synchronize models
+                module.models.forEach { modelSynchronizer.addModel(it) }
+            }
+        }
+    }
+
+    private fun synchronizeModuleProperties(cloudModule: INode, module: SModule) {
+        cloudModule.setPropertyValue(
+            BuiltinLanguages.MPSRepositoryConcepts.Module.id,
+            module.moduleId.toString(),
+        )
+        cloudModule.setPropertyValue(
+            BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion,
+            ((module as? AbstractModule)?.moduleDescriptor?.moduleVersion ?: 0).toString(),
+        )
+
+        cloudModule.setPropertyValue(
+            BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS,
+            (
+                if (module is DevKit || module !is AbstractModule) {
+                    false
+                } else {
+                    module.moduleDescriptor?.compileInMPS ?: false
+                }
+                ).toString(),
+        )
+
+        cloudModule.setPropertyValue(
+            BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
+            module.moduleName,
+        )
+    }
+
+    fun addDependency(module: SModule, dependency: SDependency) {
+        isSynchronizing.runIfAlone {
+            val moduleModelixId = nodeMap[module]!!
+            val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
+
+            val moduleReference = dependency.targetModule
+            val moduleId = moduleReference.moduleId
+
+            val isExplicit = if (module is Solution) {
+                module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
+            } else {
+                module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
+            }
+
+            val version = (module as? Solution)?.let {
+                it.moduleDescriptor.dependencyVersions.filter { dependencyVersion -> dependencyVersion.key == moduleReference }
+                    .firstOrNull()?.value
+            } ?: 0
+
+            branch.runWriteT {
+                val cloudModule = branch.getNode(moduleModelixId)
+                val cloudDependency =
+                    cloudModule.addNewChild(dependencies, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
+
+                nodeMap.put(moduleReference, cloudDependency.nodeIdAsLong())
+
+                // warning: might be fragile, because we synchronize the properties by hand
+                cloudDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
+                    dependency.isReexport.toString(),
+                )
+
+                cloudDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
+                    moduleReference.moduleId.toString(),
+                )
+
+                cloudDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name,
+                    moduleReference.moduleName,
+                )
+
+                cloudDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit,
+                    isExplicit.toString(),
+                )
+
+                cloudDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version,
+                    version.toString(),
+                )
+
+                cloudDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.scope,
+                    dependency.scope.toString(),
+                )
+            }
+        }
     }
 }

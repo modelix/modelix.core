@@ -42,7 +42,8 @@ class ModuleSynchronizer(
     private val isSynchronizing: SyncBarrier,
 ) {
 
-    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, isSynchronizing)
+    private val modelSynchronizer =
+        ModelSynchronizer(branch, nodeMap, isSynchronizing, postponeReferenceResolution = true)
 
     fun addModule(module: SModule) {
         isSynchronizing.runIfAlone {
@@ -61,9 +62,9 @@ class ModuleSynchronizer(
                     // synchronize dependencies
                     module.declaredDependencies.forEach { addDependencyUnprotected(module, it) }
                     // synchronize models
-                    // TODO fixme: we must sync the models in the inverse order in which they import each other, otherwise there will be missing references between the models... Beware that there may be loops in the modelImport chain...
-                    // TODO fixme: the only way to tackle this challenge would be to implement ResolvableReferences that can be resolved after all models are uploaded to model server. Then, we have to individually sync those references to modelix. Similar to how we use ResolvableReferences when downloading models and nodes from model server (see SNodeFactory.resolveReferences method)
                     module.models.forEach { modelSynchronizer.addModelUnprotected(it) }
+                    // resolve cross-model references
+                    modelSynchronizer.resolveCrossModelReferences()
                 }
 
                 // register change listener

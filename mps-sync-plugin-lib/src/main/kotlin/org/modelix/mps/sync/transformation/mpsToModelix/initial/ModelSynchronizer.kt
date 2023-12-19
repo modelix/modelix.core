@@ -39,9 +39,20 @@ class ModelSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
     private val isSynchronizing: SyncBarrier,
+    postponeReferenceResolution: Boolean = false,
 ) {
 
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, isSynchronizing)
+    private val nodeSynchronizer = if (postponeReferenceResolution) {
+        NodeSynchronizer(branch, nodeMap, isSynchronizing, mutableListOf())
+    } else {
+        NodeSynchronizer(branch, nodeMap, isSynchronizing)
+    }
+
+    private val resolvableModelImports = if (postponeReferenceResolution) {
+        mutableListOf<CloudResolvableModelImport>()
+    } else {
+        null
+    }
 
     fun addModel(model: SModel) {
         isSynchronizing.runIfAlone {
@@ -98,8 +109,16 @@ class ModelSynchronizer(
     }
 
     private fun addModelImportUnprotected(model: SModel, importedModelReference: SModelReference) {
-        val modelixId = nodeMap[model]!!
         val targetModel = importedModelReference.resolve(model.repository)
+        if (resolvableModelImports != null) {
+            resolvableModelImports.add(CloudResolvableModelImport(model, targetModel))
+        } else {
+            addModelImportToCloud(model, targetModel)
+        }
+    }
+
+    private fun addModelImportToCloud(source: SModel, targetModel: SModel) {
+        val modelixId = nodeMap[source]!!
 
         val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
         val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
@@ -108,7 +127,8 @@ class ModelSynchronizer(
             val cloudParentNode = branch.getNode(modelixId)
             val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
 
-            nodeMap.put(importedModelReference, cloudModelReference.nodeIdAsLong())
+            // TODO fixme: might be fragile. What happens if we import the model in more than one places? Then we'll use the same targetModel.reference, but different modelixIds to it. Meaning, the newly created modelix ID will always override the older ones in the nodeMap.
+            nodeMap.put(targetModel.reference, cloudModelReference.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the fields and properties by hand
             val targetModelModelixId = nodeMap[targetModel]!!
@@ -203,4 +223,23 @@ class ModelSynchronizer(
         model.addChangeListener(nodeChangeListener)
         (model as? SModelInternal)?.addModelListener(ModelChangeListener(branch, nodeMap, isSynchronizing))
     }
+
+    private fun resolveModelImportsUnprotected() {
+        resolvableModelImports?.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
+        resolvableModelImports?.clear()
+    }
+
+    fun resolveCrossModelReferences() {
+        resolveModelImportsUnprotected()
+
+        // resolve (cross-model) references
+        nodeSynchronizer.resolveReferencesUnprotected()
+        nodeSynchronizer.clearResolvableReferences()
+    }
 }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+data class CloudResolvableModelImport(
+    val sourceModel: SModel,
+    val targetModel: SModel,
+)

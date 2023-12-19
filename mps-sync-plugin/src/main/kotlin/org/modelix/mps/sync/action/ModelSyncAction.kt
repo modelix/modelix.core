@@ -45,6 +45,7 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!!
+            // TODO fixme: warn the user if the model imports another model that is not on the model server yet
             ModelSynchronizer(
                 ReplicatedModelRegistry.instance.model?.getBranch()!!,
                 MpsToModelixMap.instance,

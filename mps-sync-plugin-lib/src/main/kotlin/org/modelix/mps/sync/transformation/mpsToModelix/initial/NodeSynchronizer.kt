@@ -26,6 +26,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
+import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.data.NodeData
@@ -42,6 +43,7 @@ class NodeSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
     private val isSynchronizing: SyncBarrier,
+    private val resolvableReferences: MutableList<CloudResolvableReference>? = null,
 ) {
 
     fun addNode(node: SNode) {
@@ -85,6 +87,55 @@ class NodeSynchronizer(
                 synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
             }
         }
+    }
+
+    private fun synchronizeNodeToCloud(
+        mpsConcept: SConcept,
+        mpsNode: SNode,
+        cloudNode: INode,
+    ) {
+        // synchronize properties
+        mpsConcept.properties.forEach {
+            val mpsValue = mpsNode.getProperty(it)
+            val modelixProperty = PropertyFromName(it.name)
+            cloudNode.setPropertyValue(modelixProperty, mpsValue)
+        }
+        // save MPS Node ID explicitly
+        val mpsNodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
+        cloudNode.setPropertyValue(mpsNodeIdProperty, mpsNode.nodeId.toString())
+
+        // synchronize references
+        mpsConcept.referenceLinks.forEach {
+            val modelixReferenceLink = MPSReferenceLink(it)
+            val mpsTargetNode = mpsNode.getReferenceTarget(it)
+            if (resolvableReferences != null) {
+                resolvableReferences.add(CloudResolvableReference(cloudNode, modelixReferenceLink, mpsTargetNode))
+            } else {
+                setReferenceInTheCloud(cloudNode, modelixReferenceLink, mpsTargetNode)
+            }
+        }
+
+        // synchronize children
+        mpsConcept.containmentLinks.forEach { containmentLink ->
+            mpsNode.getChildren(containmentLink).forEach { mpsChild ->
+                val childLink = MPSChildLink(containmentLink)
+                val mpsChildConcept = mpsChild.concept
+                val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
+
+                // save the modelix ID and the SNode in the map
+                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
+
+                synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
+            }
+        }
+    }
+
+    private fun setReferenceInTheCloud(cloudNode: INode, modelixReferenceLink: IReferenceLink, mpsTargetNode: SNode?) {
+        val cloudTargetNode = mpsTargetNode?.let {
+            val targetNodeId = nodeMap[mpsTargetNode]!!
+            branch.getNode(targetNodeId)
+        }
+        cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
     }
 
     fun setProperty(mpsProperty: SProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) =
@@ -131,44 +182,21 @@ class NodeSynchronizer(
         }
     }
 
-    private fun synchronizeNodeToCloud(
-        mpsConcept: SConcept,
-        mpsNode: SNode,
-        cloudNode: INode,
-    ) {
-        // synchronize properties
-        mpsConcept.properties.forEach {
-            val mpsValue = mpsNode.getProperty(it)
-            val modelixProperty = PropertyFromName(it.name)
-            cloudNode.setPropertyValue(modelixProperty, mpsValue)
-        }
-        // save MPS Node ID explicitly
-        val mpsNodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
-        cloudNode.setPropertyValue(mpsNodeIdProperty, mpsNode.nodeId.toString())
-
-        // synchronize references
-        mpsConcept.referenceLinks.forEach {
-            val modelixReferenceLink = MPSReferenceLink(it)
-            val mpsTargetNode = mpsNode.getReferenceTarget(it)
-            val cloudTargetNode = mpsTargetNode?.let {
-                val targetNodeId = nodeMap[mpsTargetNode]!!
-                branch.getNode(targetNodeId)
-            }
-            cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
-        }
-
-        // synchronize children
-        mpsConcept.containmentLinks.forEach { containmentLink ->
-            mpsNode.getChildren(containmentLink).forEach { mpsChild ->
-                val childLink = MPSChildLink(containmentLink)
-                val mpsChildConcept = mpsChild.concept
-                val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
-
-                // save the modelix ID and the SNode in the map
-                nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
-
-                synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
-            }
+    fun resolveReferencesUnprotected() {
+        branch.runWriteT {
+            resolvableReferences?.forEach { setReferenceInTheCloud(it.sourceNode, it.referenceLink, it.mpsTargetNode) }
         }
     }
+
+    fun clearResolvableReferences() = resolvableReferences?.clear()
 }
+
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "2024.1",
+)
+data class CloudResolvableReference(
+    val sourceNode: INode,
+    val referenceLink: IReferenceLink,
+    val mpsTargetNode: SNode?,
+)

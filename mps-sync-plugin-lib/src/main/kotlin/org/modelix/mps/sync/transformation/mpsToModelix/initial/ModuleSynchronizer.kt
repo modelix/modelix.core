@@ -61,6 +61,8 @@ class ModuleSynchronizer(
                     // synchronize dependencies
                     module.declaredDependencies.forEach { addDependencyUnprotected(module, it) }
                     // synchronize models
+                    // TODO fixme: we must sync the models in the inverse order in which they import each other, otherwise there will be missing references between the models... Beware that there may be loops in the modelImport chain...
+                    // TODO fixme: the only way to tackle this challenge would be to implement ResolvableReferences that can be resolved after all models are uploaded to model server. Then, we have to individually sync those references to modelix. Similar to how we use ResolvableReferences when downloading models and nodes from model server (see SNodeFactory.resolveReferences method)
                     module.models.forEach { modelSynchronizer.addModelUnprotected(it) }
                 }
 
@@ -80,15 +82,11 @@ class ModuleSynchronizer(
             ((module as? AbstractModule)?.moduleDescriptor?.moduleVersion ?: 0).toString(),
         )
 
+        val compileInMPS =
+            module is AbstractModule && module !is DevKit && module.moduleDescriptor?.compileInMPS == true
         cloudModule.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS,
-            (
-                if (module is DevKit || module !is AbstractModule) {
-                    false
-                } else {
-                    module.moduleDescriptor?.compileInMPS ?: false
-                }
-                ).toString(),
+            compileInMPS.toString(),
         )
 
         cloudModule.setPropertyValue(
@@ -108,18 +106,6 @@ class ModuleSynchronizer(
         val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
 
         val moduleReference = dependency.targetModule
-        val moduleId = moduleReference.moduleId
-
-        val isExplicit = if (module is Solution) {
-            module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
-        } else {
-            module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
-        }
-
-        val version = (module as? Solution)?.let {
-            it.moduleDescriptor.dependencyVersions.filter { dependencyVersion -> dependencyVersion.key == moduleReference }
-                .firstOrNull()?.value
-        } ?: 0
 
         branch.runWriteT {
             val cloudModule = branch.getNode(moduleModelixId)
@@ -144,11 +130,21 @@ class ModuleSynchronizer(
                 moduleReference.moduleName,
             )
 
+            val moduleId = moduleReference.moduleId
+            val isExplicit = if (module is Solution) {
+                module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
+            } else {
+                module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
+            }
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit,
                 isExplicit.toString(),
             )
 
+            val version = (module as? Solution)?.let {
+                it.moduleDescriptor.dependencyVersions.filter { dependencyVersion -> dependencyVersion.key == moduleReference }
+                    .firstOrNull()?.value
+            } ?: 0
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version,
                 version.toString(),

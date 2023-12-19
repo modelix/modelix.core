@@ -1,6 +1,7 @@
 .gradle/
 /build/
 /*/build/
+/*/ignite/
 .DS_Store
 .gradletasknamecache
 .idea/

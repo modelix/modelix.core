@@ -56,11 +56,11 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.loadDump
+import org.modelix.model.server.store.writeDump
 import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.io.FileReader
-import java.io.FileWriter
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.time.Duration
@@ -111,18 +111,16 @@ object Main {
                 }
                 storeClient = InMemoryStoreClient()
                 if (cmdLineArgs.dumpInName != null) {
-                    val file = File(cmdLineArgs.dumpInName)
-                    val keys = storeClient.load(FileReader(file))
-                    println(
-                        "Values loaded from " + file.absolutePath + " (" + keys + ")",
-                    )
+                    val file = File(cmdLineArgs.dumpInName!!)
+                    val keys = storeClient.loadDump(file)
+                    println("Values loaded from " + file.absolutePath + " (" + keys + ")")
                 }
                 if (cmdLineArgs.dumpOutName != null) {
                     Runtime.getRuntime()
                         .addShutdownHook(
                             DumpOutThread(
                                 storeClient,
-                                cmdLineArgs.dumpOutName,
+                                cmdLineArgs.dumpOutName ?: "dump",
                             ),
                         )
                 }
@@ -243,24 +241,14 @@ object Main {
         }
     }
 
-    private class DumpOutThread internal constructor(inMemoryStoreClient: InMemoryStoreClient, dumpName: String?) :
+    private class DumpOutThread internal constructor(storeClient: IStoreClient, dumpName: String) :
         Thread(
             Runnable {
-                var fw: FileWriter? = null
                 try {
-                    fw = FileWriter(File(dumpName))
-                    inMemoryStoreClient.dump(fw!!)
+                    storeClient.writeDump(File(dumpName))
                     println("[Saved memory store into $dumpName]")
                 } catch (e: IOException) {
                     e.printStackTrace()
-                } finally {
-                    if (fw != null) {
-                        try {
-                            fw!!.close()
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                        }
-                    }
                 }
             },
         )

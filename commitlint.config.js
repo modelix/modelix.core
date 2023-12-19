@@ -32,4 +32,7 @@ module.exports = {
     // No need to restrict the body line length. That only gives issues with URLs etc.
     "body-max-line-length": [0, 'always']
   },
+  ignores: [
+    (message) => message.includes('skip-lint')
+  ],
 };

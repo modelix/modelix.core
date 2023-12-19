@@ -21,7 +21,10 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.ReplicatedModelRegistry
+import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
+import org.modelix.mps.sync.util.SyncBarrier
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleSyncAction : AnAction {
@@ -38,6 +41,10 @@ class ModuleSyncAction : AnAction {
 
     override fun actionPerformed(event: AnActionEvent) {
         val module = event.getData(CONTEXT_MODULE)!!
-        ModuleSynchronizer().addModule(module)
+        ModuleSynchronizer(
+            ReplicatedModelRegistry.instance.model?.getBranch()!!,
+            MpsToModelixMap.instance,
+            SyncBarrier.instance,
+        ).addModule(module)
     }
 }

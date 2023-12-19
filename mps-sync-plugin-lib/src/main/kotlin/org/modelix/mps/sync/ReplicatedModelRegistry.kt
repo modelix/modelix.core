@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.util
+package org.modelix.mps.sync
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import java.util.concurrent.atomic.AtomicReference
+import org.modelix.model.client2.ReplicatedModel
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun AtomicReference<Boolean>.runIfAlone(
-    handleThrowable: ((Throwable) -> Unit) = { throw it },
-    callback: (() -> Unit),
-) {
-    if (this.get()) {
-        return
-    } else {
-        try {
-            this.set(true)
-            callback()
-        } catch (t: Throwable) {
-            handleThrowable(t)
-        } finally {
-            this.set(false)
-        }
+class ReplicatedModelRegistry private constructor() {
+
+    companion object {
+        val instance = ReplicatedModelRegistry()
     }
+
+    var model: ReplicatedModel? = null
 }

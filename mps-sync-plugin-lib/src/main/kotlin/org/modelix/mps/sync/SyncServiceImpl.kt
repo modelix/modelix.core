@@ -21,9 +21,9 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.incremental.TreeChangeVisitor
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
+import org.modelix.mps.sync.util.SyncBarrier
 import java.net.ConnectException
 import java.net.URL
-import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SyncServiceImpl : SyncService {
@@ -85,10 +85,29 @@ class SyncServiceImpl : SyncService {
             replicatedModel = client.getReplicatedModel(branchReference)
             replicatedModel.start()
 
-            val isSynchronizing = AtomicReference<Boolean>()
-            val nodeMap = MpsToModelixMap()
+            /**
+             * TODO fixme:
+             * (1) How to propagate replicated model to other places of code?
+             * (2) How to know to which replicated model we want to upload? (E.g. when connecting to multiple model servers?)
+             * (3) How to replace the outdated replicated models that are already used from the registry?
+             *
+             * Possible answers:
+             * (1) via the registry
+             * (2) Base the selection on the parent project and the active model server connections we have. E.g. let the user select to which model server they want to upload the changes and so they get the corresponding replicated model.
+             * (3) We don't. We have to make sure that the places always have the latest replicated models from the registry. E.g. if we disconnect from the model server then we remove the replicated model (and thus break the registered event handlers), otherwise the event handlers as for the replicated model from the registry (based on some identifying metainfo for example, so to know which replicated model they need).
+             */
+            ReplicatedModelRegistry.instance.model = replicatedModel
+
+            val isSynchronizing = SyncBarrier.instance
+            val nodeMap = MpsToModelixMap.instance
             // transform the model
-            ITreeToSTreeTransformer(replicatedModel, targetProject, languageRepository, isSynchronizing, nodeMap)
+            ITreeToSTreeTransformer(
+                replicatedModel.getBranch(),
+                targetProject,
+                languageRepository,
+                isSynchronizing,
+                nodeMap,
+            )
                 .transform(model)
             bindingImpl = BindingImpl(replicatedModel, targetProject, languageRepository, isSynchronizing, nodeMap)
         }
@@ -346,7 +365,7 @@ class BindingImpl(
     val replicatedModel: ReplicatedModel,
     project: MPSProject,
     languageRepository: MPSLanguageRepository,
-    isSynchronizing: AtomicReference<Boolean>,
+    isSynchronizing: SyncBarrier,
     nodeMap: MpsToModelixMap,
 ) : IBinding {
 

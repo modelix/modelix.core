@@ -28,14 +28,14 @@ import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import java.util.concurrent.atomic.AtomicReference
+import org.modelix.mps.sync.util.SyncBarrier
 
 // TODO some methods need some testing
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleChangeListener(
     branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-    isSynchronizing: AtomicReference<Boolean>,
+    isSynchronizing: SyncBarrier,
 ) : SModuleListener {
 
     private val moduleSynchronizer = ModuleSynchronizer(branch, nodeMap, isSynchronizing)

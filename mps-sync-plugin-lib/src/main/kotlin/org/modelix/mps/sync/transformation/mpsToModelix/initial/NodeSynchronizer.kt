@@ -34,52 +34,55 @@ import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.util.SyncBarrier
 import org.modelix.mps.sync.util.nodeIdAsLong
-import org.modelix.mps.sync.util.runIfAlone
-import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-    private val isSynchronizing: AtomicReference<Boolean>,
+    private val isSynchronizing: SyncBarrier,
 ) {
 
     fun addNode(node: SNode) {
         isSynchronizing.runIfAlone {
-            val parentNodeId = if (node.parent != null) {
-                nodeMap[node.parent]!!
+            addNodeUnprotected(node)
+        }
+    }
+
+    fun addNodeUnprotected(node: SNode) {
+        val parentNodeId = if (node.parent != null) {
+            nodeMap[node.parent]!!
+        } else {
+            nodeMap[node.model]!!
+        }
+
+        val containmentLink = node.containmentLink
+        val childLink: IChildLink = if (containmentLink == null) {
+            if (node.parent == null) {
+                BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
             } else {
-                nodeMap[node.model]!!
+                throw IllegalStateException("Containment link of $node is null, thus node may not get synchronized to modelix")
             }
+        } else {
+            MPSChildLink(containmentLink)
+        }
 
-            val containmentLink = node.containmentLink
-            val childLink: IChildLink = if (containmentLink == null) {
-                if (node.parent == null) {
-                    BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
-                } else {
-                    throw IllegalStateException("Containment link of $node is null, thus node may not get synchronized to modelix")
-                }
+        val nodeId = nodeMap[node]
+        val mpsConcept = node.concept
+
+        val childExists = nodeId != null
+        branch.runWriteT { transaction ->
+            if (childExists) {
+                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
             } else {
-                MPSChildLink(containmentLink)
-            }
+                val cloudParentNode = branch.getNode(parentNodeId)
+                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
 
-            val nodeId = nodeMap[node]
-            val mpsConcept = node.concept
+                // save the modelix ID and the SNode in the map
+                nodeMap.put(node, cloudChildNode.nodeIdAsLong())
 
-            val childExists = nodeId != null
-            branch.runWriteT { transaction ->
-                if (childExists) {
-                    transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
-                } else {
-                    val cloudParentNode = branch.getNode(parentNodeId)
-                    val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
-
-                    // save the modelix ID and the SNode in the map
-                    nodeMap.put(node, cloudChildNode.nodeIdAsLong())
-
-                    synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
-                }
+                synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
             }
         }
     }

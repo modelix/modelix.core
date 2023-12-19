@@ -30,47 +30,47 @@ import org.modelix.model.api.getNode
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
+import org.modelix.mps.sync.util.SyncBarrier
 import org.modelix.mps.sync.util.nodeIdAsLong
-import org.modelix.mps.sync.util.runIfAlone
-import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-    private val isSynchronizing: AtomicReference<Boolean>,
+    private val isSynchronizing: SyncBarrier,
 ) {
 
     private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, isSynchronizing)
 
     fun addModel(model: SModel) {
+        isSynchronizing.runIfAlone {
+            addModelUnprotected(model)
+        }
+    }
+
+    fun addModelUnprotected(model: SModel) {
         require(model is SModelDescriptorStub) { "Model $model is not an SModelDescriptorStub" }
 
-        isSynchronizing.runIfAlone {
-            val moduleModelixId = nodeMap[model.module]!!
-            val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
+        val moduleModelixId = nodeMap[model.module]!!
+        val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
-            branch.runWriteT {
-                val cloudModule = branch.getNode(moduleModelixId)
-                val cloudModel = cloudModule.addNewChild(models, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
+        branch.runWriteT {
+            val cloudModule = branch.getNode(moduleModelixId)
+            val cloudModel = cloudModule.addNewChild(models, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
 
-                nodeMap.put(model, cloudModel.nodeIdAsLong())
+            nodeMap.put(model, cloudModel.nodeIdAsLong())
 
-                // TODO the called methods will not work, because we've wrapped them in isSynchronizing block!
-                // TODO check all call hierarchies and implement *Unprotected methods, where we do not check isSynchronizing
+            synchronizeModelProperties(cloudModel, model)
+            // synchronize root nodes
+            model.rootNodes.forEach { nodeSynchronizer.addNodeUnprotected(it) }
+            // synchronize model imports
+            model.modelImports.forEach { addModelImportUnprotected(model, it) }
+            // synchronize language dependencies
+            model.importedLanguageIds().forEach { addLanguageDependencyUnprotected(model, it) }
+            // synchronize devKits
+            model.importedDevkits().forEach { addDevKitDependencyUnprotected(model, it) }
 
-                synchronizeModelProperties(cloudModel, model)
-                // synchronize root nodes
-                model.rootNodes.forEach { nodeSynchronizer.addNode(it) }
-                // synchronize model imports
-                model.modelImports.forEach { addModelImport(model, it) }
-                // synchronize language dependencies
-                model.importedLanguageIds().forEach { addLanguageDependency(model, it) }
-                // synchronize devKits
-                model.importedDevkits().forEach { addDevKitDependency(model, it) }
-
-                registerChangeListeners(model)
-            }
+            registerChangeListeners(model)
         }
     }
 
@@ -90,96 +90,108 @@ class ModelSynchronizer(
 
     fun addModelImport(model: SModel, importedModelReference: SModelReference) {
         isSynchronizing.runIfAlone {
-            val modelixId = nodeMap[model]!!
-            val targetModel = importedModelReference.resolve(model.repository)
+            addModelImportUnprotected(model, importedModelReference)
+        }
+    }
 
-            val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
-            val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
+    private fun addModelImportUnprotected(model: SModel, importedModelReference: SModelReference) {
+        val modelixId = nodeMap[model]!!
+        val targetModel = importedModelReference.resolve(model.repository)
 
-            branch.runWriteT {
-                val cloudParentNode = branch.getNode(modelixId)
-                val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
+        val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
+        val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
 
-                nodeMap.put(importedModelReference, cloudModelReference.nodeIdAsLong())
+        branch.runWriteT {
+            val cloudParentNode = branch.getNode(modelixId)
+            val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
 
-                // warning: might be fragile, because we synchronize the fields and properties by hand
-                val targetModelModelixId = nodeMap[targetModel]!!
-                val cloudTargetModel = branch.getNode(targetModelModelixId)
-                cloudModelReference.setReferenceTarget(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
-                    cloudTargetModel,
-                )
-            }
+            nodeMap.put(importedModelReference, cloudModelReference.nodeIdAsLong())
+
+            // warning: might be fragile, because we synchronize the fields and properties by hand
+            val targetModelModelixId = nodeMap[targetModel]!!
+            val cloudTargetModel = branch.getNode(targetModelModelixId)
+            cloudModelReference.setReferenceTarget(
+                BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
+                cloudTargetModel,
+            )
         }
     }
 
     fun addLanguageDependency(model: SModel, language: SLanguage) {
         isSynchronizing.runIfAlone {
-            val modelixId = nodeMap[model]!!
+            addLanguageDependencyUnprotected(model, language)
+        }
+    }
 
-            val languageModuleReference = language.sourceModuleReference
-            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
+    private fun addLanguageDependencyUnprotected(model: SModel, language: SLanguage) {
+        val modelixId = nodeMap[model]!!
 
-            branch.runWriteT {
-                val cloudNode = branch.getNode(modelixId)
-                val cloudLanguageDependency =
-                    cloudNode.addNewChild(
-                        childLink,
-                        -1,
-                        BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
-                    )
+        val languageModuleReference = language.sourceModuleReference
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
-                // TODO we might have to find a different traceability between the SingleLanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading Languages from the cloud)
-                nodeMap.put(languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
-
-                // warning: might be fragile, because we synchronize the properties by hand
-                cloudLanguageDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                    languageModuleReference?.moduleName,
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            val cloudLanguageDependency =
+                cloudNode.addNewChild(
+                    childLink,
+                    -1,
+                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
                 )
 
-                cloudLanguageDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                    languageModuleReference?.moduleId.toString(),
-                )
+            // TODO we might have to find a different traceability between the SingleLanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading Languages from the cloud)
+            nodeMap.put(languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
 
-                cloudLanguageDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
-                    model.module.getUsedLanguageVersion(language).toString(),
-                )
-            }
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                languageModuleReference?.moduleName,
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                languageModuleReference?.moduleId.toString(),
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                model.module.getUsedLanguageVersion(language).toString(),
+            )
         }
     }
 
     fun addDevKitDependency(model: SModel, devKit: SModuleReference) {
         isSynchronizing.runIfAlone {
-            val modelixId = nodeMap[model]!!
+            addDevKitDependencyUnprotected(model, devKit)
+        }
+    }
 
-            val repository = model.repository
-            val devKitModuleId = devKit.moduleId
-            val devKitModule = repository.getModule(devKitModuleId)
+    private fun addDevKitDependencyUnprotected(model: SModel, devKit: SModuleReference) {
+        val modelixId = nodeMap[model]!!
 
-            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
+        val repository = model.repository
+        val devKitModuleId = devKit.moduleId
+        val devKitModule = repository.getModule(devKitModuleId)
 
-            branch.runWriteT {
-                val cloudNode = branch.getNode(modelixId)
-                val cloudDevKitDependency =
-                    cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
-                // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading DevKits from the cloud)
-                nodeMap.put(devKit, cloudDevKitDependency.nodeIdAsLong())
+        branch.runWriteT {
+            val cloudNode = branch.getNode(modelixId)
+            val cloudDevKitDependency =
+                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
 
-                // warning: might be fragile, because we synchronize the properties by hand
-                cloudDevKitDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                    devKitModule?.moduleName,
-                )
+            // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading DevKits from the cloud)
+            nodeMap.put(devKit, cloudDevKitDependency.nodeIdAsLong())
 
-                cloudDevKitDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                    devKitModule?.moduleId.toString(),
-                )
-            }
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudDevKitDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                devKitModule?.moduleName,
+            )
+
+            cloudDevKitDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                devKitModule?.moduleId.toString(),
+            )
         }
     }
 

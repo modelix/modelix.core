@@ -39,6 +39,7 @@ import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
+import org.modelix.mps.sync.util.SyncBarrier
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.isDevKitDependency
 import org.modelix.mps.sync.util.isModel
@@ -47,15 +48,13 @@ import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.isModuleDependency
 import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
-import org.modelix.mps.sync.util.runIfAlone
-import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class TreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
     private val project: MPSProject,
     private val languageRepository: MPSLanguageRepository,
-    private val isSynchronizing: AtomicReference<Boolean>,
+    private val isSynchronizing: SyncBarrier,
     private val nodeMap: MpsToModelixMap,
 ) : ITreeChangeVisitorEx {
 

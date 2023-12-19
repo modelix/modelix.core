@@ -25,13 +25,13 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import java.util.concurrent.atomic.AtomicReference
+import org.modelix.mps.sync.util.SyncBarrier
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeChangeListener(
     branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-    isSynchronizing: AtomicReference<Boolean>,
+    isSynchronizing: SyncBarrier,
 ) : SNodeChangeListener {
 
     private val synchronizer = NodeSynchronizer(branch, nodeMap, isSynchronizing)

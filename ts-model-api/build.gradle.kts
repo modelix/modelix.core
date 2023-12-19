@@ -1,12 +1,11 @@
-import com.github.gradle.node.npm.task.NpmTask
-
 plugins {
   base
   alias(libs.plugins.node)
   alias(libs.plugins.ktlint) apply false
+  alias(libs.plugins.npm.publish)
 }
 
-tasks.named("npm_run_build") {
+val npmRunBuild = tasks.named("npm_run_build") {
   inputs.dir("src")
   inputs.file("package.json")
   inputs.file("package-lock.json")
@@ -38,24 +37,49 @@ val patchKotlinExternals = tasks.create("patchKotlinExternals") {
   }
 }
 
-tasks.named("assemble") {
+tasks.assemble {
   dependsOn("npm_run_build")
   dependsOn("npm_run_generateKotlin")
   dependsOn(patchKotlinExternals)
+}
+
+tasks.check {
+  dependsOn("npm_run_lint")
 }
 
 tasks.named("npm_run_generateKotlin") {
   finalizedBy(patchKotlinExternals)
 }
 
-val updateVersion = tasks.register<NpmTask>("updateVersion") {
-  args.set(listOf("version", "$version"))
+// To copy the files is a workaround for https://github.com/mpetuska/npm-publish/issues/87
+// With `NpmPackage.files` we cannot copy the "dist" directory into `destinationDir`.
+// We can only either copy the files from "dist" directly into `destinationDir`
+// or copy all files from `projectDir` into `destinationDir`.
+val copyBuildTypeScriptForPackaging = tasks.create<Copy>("copyBuildTypeScriptForPackaging") {
+  dependsOn(npmRunBuild)
+  from(projectDir)
+  include("dist")
+  into(layout.buildDirectory.dir("typeScriptForPackaging"))
 }
 
-tasks.named("npm_publish") {
-  dependsOn(updateVersion)
-}
-
-tasks.named("publish") {
-  dependsOn("npm_publish")
+npmPublish {
+  registries {
+    register("itemis-npm-open") {
+      uri.set("https://artifacts.itemis.cloud/repository/npm-open")
+      System.getenv("NODE_AUTH_TOKEN").takeIf { !it.isNullOrBlank() }?.let {
+        authToken.set(it)
+      }
+    }
+  }
+  packages {
+    create("js") {
+      packageJsonTemplateFile.set(projectDir.resolve("package.json"))
+      packageJson {
+        version.set("${project.version}")
+      }
+      files {
+        setFrom(copyBuildTypeScriptForPackaging.outputs)
+      }
+    }
+  }
 }

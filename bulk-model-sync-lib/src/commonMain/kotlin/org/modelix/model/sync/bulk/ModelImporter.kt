@@ -51,7 +51,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
     // updated to the constructor with two arguments.
     constructor(root: INode) : this(root, false)
 
-    private fun doAndPotentiallyContinueOnErrors(block: () -> Unit) {
+    private inline fun doAndPotentiallyContinueOnErrors(block: () -> Unit) {
         try {
             block()
         } catch (e: Exception) {
@@ -70,34 +70,38 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
      */
     @JvmName("importData")
     fun import(data: ModelData) {
-        logImportSize(data.root, logger)
-        logger.info { "Building indices for import..." }
-        originalIdToExisting.clear()
-        postponedReferences.clear()
-        nodesToRemove.clear()
-        numExpectedNodes = countExpectedNodes(data.root)
-        currentNodeProgress = 0
-        buildExistingIndex(root)
+        INodeResolutionScope.runWithAdditionalScope(root.getArea()) {
+            logImportSize(data.root, logger)
+            logger.info { "Building indices for import..." }
+            originalIdToExisting.clear()
+            postponedReferences.clear()
+            nodesToRemove.clear()
+            numExpectedNodes = countExpectedNodes(data.root)
+            currentNodeProgress = 0
+            buildExistingIndex(root)
 
-        logger.info { "Importing nodes..." }
-        data.root.originalId()?.let { originalIdToExisting[it] = root }
-        syncNode(root, data.root)
+            logger.info { "Importing nodes..." }
+            data.root.originalId()?.let { originalIdToExisting[it] = root }
+            syncNode(root, data.root)
 
-        logger.info { "Synchronizing references..." }
-        postponedReferences.forEach {
-            doAndPotentiallyContinueOnErrors {
-                it.invoke()
+            logger.info { "Synchronizing references..." }
+            postponedReferences.forEach {
+                doAndPotentiallyContinueOnErrors {
+                    it.invoke()
+                }
             }
-        }
 
-        logger.info { "Removing extra nodes..." }
-        nodesToRemove.forEach {
-            doAndPotentiallyContinueOnErrors {
-                it.remove()
+            logger.info { "Removing extra nodes..." }
+            nodesToRemove.forEach {
+                doAndPotentiallyContinueOnErrors {
+                    if (it.isValid) { // if it's invalid then it's already removed
+                        it.remove()
+                    }
+                }
             }
-        }
 
-        logger.info { "Synchronization finished." }
+            logger.info { "Synchronization finished." }
+        }
     }
 
     private fun countExpectedNodes(data: NodeData): Int =
@@ -110,9 +114,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
         doAndPotentiallyContinueOnErrors {
             syncProperties(node, data)
             syncChildren(node, data)
-            INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
-                syncReferences(node, data)
-            }
+            syncReferences(node, data)
         }
     }
 
@@ -121,6 +123,17 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
         for (role in allRoles) {
             val expectedNodes = data.children.filter { it.role == role }
             val existingNodes = node.getChildren(role).toList()
+
+            // optimization that uses the bulk operation .addNewChildren
+            if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {
+                node.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } }).zip(expectedNodes).forEach { (newChild, expected) ->
+                    val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
+                    newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                    originalIdToExisting[expectedId] = newChild
+                    syncNode(newChild, expected)
+                }
+                continue
+            }
 
             // optimization for when there is no change in the child list
             // size check first to avoid querying the original ID

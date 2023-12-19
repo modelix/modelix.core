@@ -77,6 +77,20 @@ class OTWriteTransaction(
         apply(AddNewChildOp(PositionInRole(parentId, role, index_), childId, concept))
     }
 
+    override fun addNewChildren(
+        parentId: Long,
+        role: String?,
+        index: Int,
+        childIds: LongArray,
+        concepts: Array<IConceptReference?>,
+    ) {
+        var index_ = index
+        if (index_ == -1) {
+            index_ = getChildren(parentId, role).count()
+        }
+        apply(AddNewChildrenOp(PositionInRole(parentId, role, index_), childIds, concepts))
+    }
+
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?) {
         return addNewChild(parentId, role, index, childId, concept?.getReference())
     }
@@ -97,6 +111,21 @@ class OTWriteTransaction(
             childId
         } catch (dni: DuplicateNodeId) {
             addNewChild(parentId, role, index, concept)
+        }
+    }
+
+    override fun addNewChildren(
+        parentId: Long,
+        role: String?,
+        index: Int,
+        concepts: Array<IConceptReference?>,
+    ): LongArray {
+        return try {
+            val childIds = concepts.map { idGenerator.generate() }.toLongArray()
+            addNewChildren(parentId, role, index, childIds, concepts)
+            childIds
+        } catch (dni: DuplicateNodeId) {
+            addNewChildren(parentId, role, index, concepts)
         }
     }
 

@@ -329,7 +329,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
 //        }
 
         val history = LinearHistory(baseVersionHash).load(version)
-        val bulkQuery = BulkQuery(store)
+        val bulkQuery = store.newBulkQuery()
         var v1 = baseVersion
         for (v2 in history) {
             v2.operations // include them in the result
@@ -346,7 +346,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
                     override fun visitChangesOnly(): Boolean = false
                     override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
                         changedNodeIds += key
-                        if (value != null) bulkQuery.query(value, {})
+                        if (value != null) bulkQuery.get(value)
                     }
 
                     override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
@@ -359,14 +359,14 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
                         newValue: KVEntryReference<CPNode>?,
                     ) {
                         changedNodeIds += key
-                        if (newValue != null) bulkQuery.query(newValue, {})
+                        if (newValue != null) bulkQuery.get(newValue)
                     }
                 },
                 bulkQuery,
             )
             v1 = v2
         }
-        bulkQuery.process()
+        (bulkQuery as? BulkQuery)?.process()
     }
     val oldEntries: Map<String, String?> = trackAccessedEntries(keyValueStore) { store ->
         if (baseVersionHash == null) return@trackAccessedEntries
@@ -376,16 +376,16 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
         baseVersion.operations
 
         val oldTree = baseVersion.getTree()
-        val bulkQuery = BulkQuery(store)
+        val bulkQuery = store.newBulkQuery()
 
         val nodesMap = oldTree.nodesMap!!
         changedNodeIds.forEach { changedNodeId ->
             nodesMap.get(changedNodeId, 0, bulkQuery).onSuccess { nodeRef: KVEntryReference<CPNode>? ->
-                if (nodeRef != null) bulkQuery.query(nodeRef) { a: CPNode? -> }
+                if (nodeRef != null) bulkQuery.get(nodeRef)
             }
         }
 
-        bulkQuery.process()
+        (bulkQuery as? BulkQuery)?.process()
     }
     return oldAndNewEntries - oldEntries.keys
 }
@@ -399,6 +399,10 @@ private fun trackAccessedEntries(store: IKeyValueStore, body: (IDeserializingKey
 
 private class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
     val accessedEntries: MutableMap<String, String?> = HashMap()
+
+    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore): IBulkQuery {
+        return store.newBulkQuery(deserializingCache)
+    }
 
     override fun get(key: String): String? {
         val value = store.get(key)

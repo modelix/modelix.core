@@ -60,6 +60,8 @@ interface IModelClientV2 {
 
     suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
 
+    suspend fun pullIfExists(branch: BranchReference): IVersion?
+
     suspend fun pullHash(branch: BranchReference): String
 
     /**

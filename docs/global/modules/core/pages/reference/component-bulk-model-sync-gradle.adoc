@@ -132,10 +132,12 @@ mpsBuild {
 |`repositoryId`
 |String
 |Id of the target/source model-server repository.
+If the repository does not exist on the model-server, it will be created including a master branch.
 
 |`branchName`
 |String
 |Name of the target/source model-server branch.
+If the target branch does not exist on the model-server, it will be created.
 
 |`revision`
 |String

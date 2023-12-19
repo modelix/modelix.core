@@ -18,12 +18,16 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
 import io.ktor.http.contentType
@@ -175,18 +179,38 @@ class ModelClientV2(
         require(baseVersion is CLVersion?)
         version.write()
         val objects = version.computeDelta(baseVersion)
+        HashUtil.checkObjectHashes(objects)
+        val delta = if (objects.size > 1000) {
+            // large HTTP requests and large Json objects don't scale well
+            uploadObjects(branch.repositoryId, objects.asSequence().map { it.key to it.value })
+            VersionDelta(version.getContentHash(), null)
+        } else {
+            VersionDelta(version.getContentHash(), null, objectsMap = objects)
+        }
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
             contentType(ContentType.Application.Json)
-            val body = VersionDelta(version.getContentHash(), null, objectsMap = objects)
-            body.checkObjectHashes()
-            setBody(body)
+            setBody(delta)
         }
         val mergedVersionDelta = response.body<VersionDelta>()
         return createVersion(version, mergedVersionDelta)
+    }
+
+    private suspend fun uploadObjects(repository: RepositoryId, objects: Sequence<Pair<String, String>>) {
+        LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
+        objects.chunked(100_000).forEach { chunk ->
+            httpClient.put {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash("repositories", repository.id, "objects")
+                }
+                contentType(ContentType.Text.Plain)
+                setBody(chunk.flatMap { it.toList() }.joinToString("\n"))
+            }
+        }
     }
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
@@ -202,6 +226,24 @@ class ModelClientV2(
         }
         val receivedVersion = createVersion(lastKnownVersion, response.body())
         LOG.debug { "${clientId.toString(16)}.pull($branch, $lastKnownVersion) -> $receivedVersion" }
+        return receivedVersion
+    }
+
+    override suspend fun pullIfExists(branch: BranchReference): IVersion? {
+        val response = httpClient.get {
+            expectSuccess = false
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
+            }
+        }
+
+        val receivedVersion = when (response.status) {
+            HttpStatusCode.NotFound -> null
+            HttpStatusCode.OK -> createVersion(null, response.body())
+            else -> throw ResponseException(response, response.bodyAsText())
+        }
+        LOG.debug { "${clientId.toString(16)}.pullIfExists($branch) -> $receivedVersion" }
         return receivedVersion
     }
 
@@ -376,7 +418,11 @@ fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.ass
  */
 suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode) -> T): T {
     val client = this
-    val baseVersion = client.pull(branchRef, null)
+    val baseVersion = client.pullIfExists(branchRef)
+        ?: branchRef.repositoryId.getBranchReference()
+            .takeIf { it != branchRef }
+            ?.let { client.pullIfExists(it) } // master branch
+        ?: client.initRepository(branchRef.repositoryId)
     val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (client as ModelClientV2).store)
     val result = branch.computeWrite {
         body(branch.getRootNode())

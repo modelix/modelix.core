@@ -148,12 +148,12 @@ class NodeSynchronizer(
 
         // synchronize references
         mpsConcept.referenceLinks.forEach {
-            val mpsTargetNode = mpsNode.getReferenceTarget(it)!!
-            val targetNodeId = nodeMap[mpsTargetNode]!!
-
             val modelixReferenceLink = MPSReferenceLink(it)
-            val cloudTargetNode = branch.getNode(targetNodeId)
-
+            val mpsTargetNode = mpsNode.getReferenceTarget(it)
+            val cloudTargetNode = mpsTargetNode?.let {
+                val targetNodeId = nodeMap[mpsTargetNode]!!
+                branch.getNode(targetNodeId)
+            }
             cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
         }
 

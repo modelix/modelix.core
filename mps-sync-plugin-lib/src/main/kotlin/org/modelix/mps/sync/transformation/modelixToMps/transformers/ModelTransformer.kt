@@ -56,10 +56,13 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
 
         lateinit var sModel: EditableSModel
         mpsWriteAction {
-            sModel = module.createModel(name, modelId) as EditableSModel
-            sModel.save()
+            val modelDoesNotExist = module.getModel(modelId) == null
+            if (modelDoesNotExist) {
+                sModel = module.createModel(name, modelId) as EditableSModel
+                sModel.save()
+                nodeMap.put(sModel, iNode.nodeIdAsLong())
+            }
         }
-        nodeMap.put(sModel, iNode.nodeIdAsLong())
 
         // register model imports
         iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)

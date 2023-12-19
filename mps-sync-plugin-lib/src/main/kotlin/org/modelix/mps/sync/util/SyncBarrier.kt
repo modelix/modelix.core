@@ -26,22 +26,22 @@ class SyncBarrier {
         val instance = SyncBarrier()
     }
 
-    private val barrier = AtomicReference<Boolean>(false)
+    private val isSynchronizing = AtomicReference(false)
 
     fun runIfAlone(
         handleThrowable: ((Throwable) -> Unit) = { throw it },
         callback: (() -> Unit),
     ) {
-        if (barrier.get()) {
+        if (isSynchronizing.get()) {
             return
         } else {
             try {
-                barrier.set(true)
+                isSynchronizing.set(true)
                 callback()
             } catch (t: Throwable) {
                 handleThrowable(t)
             } finally {
-                barrier.set(false)
+                isSynchronizing.set(false)
             }
         }
     }

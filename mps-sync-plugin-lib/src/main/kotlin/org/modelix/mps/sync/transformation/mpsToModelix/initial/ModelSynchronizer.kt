@@ -27,6 +27,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
+import org.modelix.mps.sync.mps.util.runReadBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
@@ -60,15 +61,17 @@ class ModelSynchronizer(
 
             nodeMap.put(model, cloudModel.nodeIdAsLong())
 
-            synchronizeModelProperties(cloudModel, model)
-            // synchronize root nodes
-            model.rootNodes.forEach { nodeSynchronizer.addNodeUnprotected(it) }
-            // synchronize model imports
-            model.modelImports.forEach { addModelImportUnprotected(model, it) }
-            // synchronize language dependencies
-            model.importedLanguageIds().forEach { addLanguageDependencyUnprotected(model, it) }
-            // synchronize devKits
-            model.importedDevkits().forEach { addDevKitDependencyUnprotected(model, it) }
+            model.repository.modelAccess.runReadBlocking {
+                synchronizeModelProperties(cloudModel, model)
+                // synchronize root nodes
+                model.rootNodes.forEach { nodeSynchronizer.addNodeUnprotected(it) }
+                // synchronize model imports
+                model.modelImports.forEach { addModelImportUnprotected(model, it) }
+                // synchronize language dependencies
+                model.importedLanguageIds().forEach { addLanguageDependencyUnprotected(model, it) }
+                // synchronize devKits
+                model.importedDevkits().forEach { addDevKitDependencyUnprotected(model, it) }
+            }
 
             registerChangeListeners(model)
         }

@@ -19,6 +19,7 @@ package org.modelix.mps.sync.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
+import com.intellij.openapi.diagnostic.logger
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ReplicatedModelRegistry
@@ -35,16 +36,22 @@ class ModelSyncAction : AnAction {
         fun create() = ModelSyncAction("Synchronize model to server")
     }
 
+    private val logger = logger<ModelSyncAction>()
+
     constructor() : super()
 
     constructor(text: String) : super(text)
 
     override fun actionPerformed(event: AnActionEvent) {
-        val model = event.getData(CONTEXT_MODEL)!!
-        ModelSynchronizer(
-            ReplicatedModelRegistry.instance.model?.getBranch()!!,
-            MpsToModelixMap.instance,
-            SyncBarrier.instance,
-        ).addModel(model)
+        try {
+            val model = event.getData(CONTEXT_MODEL)!!
+            ModelSynchronizer(
+                ReplicatedModelRegistry.instance.model?.getBranch()!!,
+                MpsToModelixMap.instance,
+                SyncBarrier.instance,
+            ).addModel(model)
+        } catch (ex: Exception) {
+            logger.error("Model sync error occurred", ex)
+        }
     }
 }

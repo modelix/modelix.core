@@ -19,6 +19,7 @@ package org.modelix.mps.sync.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
+import com.intellij.openapi.diagnostic.logger
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ReplicatedModelRegistry
@@ -35,16 +36,22 @@ class ModuleSyncAction : AnAction {
         fun create() = ModuleSyncAction("Synchronize module to server")
     }
 
+    private val logger = logger<ModuleSyncAction>()
+
     constructor() : super()
 
     constructor(text: String) : super(text)
 
     override fun actionPerformed(event: AnActionEvent) {
-        val module = event.getData(CONTEXT_MODULE)!!
-        ModuleSynchronizer(
-            ReplicatedModelRegistry.instance.model?.getBranch()!!,
-            MpsToModelixMap.instance,
-            SyncBarrier.instance,
-        ).addModule(module)
+        try {
+            val module = event.getData(CONTEXT_MODULE)!!
+            ModuleSynchronizer(
+                ReplicatedModelRegistry.instance.model?.getBranch()!!,
+                MpsToModelixMap.instance,
+                SyncBarrier.instance,
+            ).addModule(module)
+        } catch (ex: Exception) {
+            logger.error("Module sync error occurred", ex)
+        }
     }
 }

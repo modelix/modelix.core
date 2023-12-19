@@ -29,6 +29,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
+import org.modelix.mps.sync.mps.util.runReadBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
 import org.modelix.mps.sync.util.SyncBarrier
@@ -55,11 +56,14 @@ class ModuleSynchronizer(
 
                 nodeMap.put(module, cloudModule.nodeIdAsLong())
 
-                synchronizeModuleProperties(cloudModule, module)
-                // synchronize dependencies
-                module.declaredDependencies.forEach { addDependencyUnprotected(module, it) }
-                // synchronize models
-                module.models.forEach { modelSynchronizer.addModelUnprotected(it) }
+                module.repository!!.modelAccess.runReadBlocking {
+                    synchronizeModuleProperties(cloudModule, module)
+                    // synchronize dependencies
+                    module.declaredDependencies.forEach { addDependencyUnprotected(module, it) }
+                    // synchronize models
+                    module.models.forEach { modelSynchronizer.addModelUnprotected(it) }
+                }
+
                 // register change listener
                 module.addModuleListener(ModuleChangeListener(branch, nodeMap, isSynchronizing))
             }

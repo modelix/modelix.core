@@ -24,6 +24,7 @@ import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.ObjectNotLoadedException
 import org.modelix.model.lazy.runWrite
 import org.modelix.model.lazy.writeToMap
+import org.modelix.model.persistent.ReadOnlyMapBasedStore
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -151,6 +152,63 @@ class PartialLoadingTest {
         // access to all other nodes should still be possible
         loadedNodes.forEach {
             v1.getTree().getProperty(it, "name")
+        }
+    }
+
+    @Test
+    fun can_load_model_parts() {
+        val idGenerator = IdGenerator.newInstance(101)
+        val initialTree = CLTree.builder(NonCachingObjectStore(DummyKeyValueStore())).build()
+
+        val v0 = CLVersion.createRegularVersion(
+            id = idGenerator.generate(),
+            tree = initialTree,
+            author = null,
+            baseVersion = null,
+            operations = emptyArray(),
+        )
+        val v0objects = v0.dataRef.writeToMap()
+        assertEquals(5, v0objects.size) // CPVersion, CPTree, CPHamtSingle, CPHamtLeaf, CPNode
+
+        val v1a = v0.runWrite(idGenerator, null) { t ->
+            val gen = RandomTreeChangeGenerator(idGenerator, Random(87545))
+                .growingOperationsOnly()
+                .withoutMove()
+            repeat(100) { gen.applyRandomChange(t, null) }
+            t.addNewChild(ITree.ROOT_ID, "children", -1, null as IConceptReference?)
+        }
+
+        val v1objects = v1a.dataRef.writeToMap()
+        val allObjects = v0objects + v1objects
+        assertEquals(v1objects.size + v0objects.size, allObjects.size) // no duplicate entries
+
+        val subtrees = v1a.getTree().getAllChildren(ITree.ROOT_ID).toList()
+        assertEquals(5, subtrees.size)
+
+        val subtreesToLoad = subtrees.take(2)
+        val loadedNodes: List<Long> = subtrees.take(2).flatMap { v1a.getTree().getDescendantIds(it, true).toList() }
+        val unloadedNodes: List<Long> = subtrees.drop(2).flatMap { v1a.getTree().getDescendantIds(it, true).toList() }
+
+        val v1b = CLVersion.loadFromHash(v1a.getContentHash(), NonCachingObjectStore(DummyKeyValueStore()))
+        val loadFrom = NonCachingObjectStore(ReadOnlyMapBasedStore(allObjects)).newBulkQuery()
+        v1b.dataRef.loadObject(loadFrom).onSuccess { it!!.treeHash!!.loadObject(loadFrom) }
+        subtreesToLoad.forEach { v1b.getTree().loadSubtree(it, loadFrom) }
+
+        // all unloaded nodes shouldn't be accessible anymore
+        unloadedNodes.forEach {
+            assertFailsWith(ObjectNotLoadedException::class) {
+                v1b.getTree().getProperty(it, "name")
+            }
+            assertFailsWith(ObjectNotLoadedException::class) {
+                // .containsNode doesn't read the node itself, but just the objects of the map that stores the nodes.
+                // An efficient unload also unloads the objects of the map.
+                v1b.getTree().containsNode(it)
+            }
+        }
+
+        // access to all other nodes should still be possible
+        loadedNodes.forEach {
+            v1b.getTree().getProperty(it, "name")
         }
     }
 }

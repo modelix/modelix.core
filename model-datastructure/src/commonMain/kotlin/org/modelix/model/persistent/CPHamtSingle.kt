@@ -80,6 +80,17 @@ class CPHamtSingle(
         }
     }
 
+    override fun loadEntry(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CPNode?> {
+        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
+        return if (maskBits(key, shift) == bits) {
+            child.loadObject(bulkQuery).mapBulk {
+                it?.loadEntry(key, shift + numLevels * BITS_PER_LEVEL, bulkQuery) ?: bulkQuery.constant(null)
+            }
+        } else {
+            throw IllegalArgumentException("key is not part of this subtree")
+        }
+    }
+
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {

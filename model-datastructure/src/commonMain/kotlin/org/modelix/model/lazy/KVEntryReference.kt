@@ -72,16 +72,21 @@ class KVEntryReference<out E : IKVValue> private constructor(
                 ?.let { deserializer.type.safeCast(it) }
                 ?.also { written = true }
         } else {
-            load(bulkQuery)
+            loadRecursive(bulkQuery)
         }
     }
 
-    fun load(bulkQuery: IBulkQuery) {
-        if (loadedObject == null) {
-            bulkQuery.get(this).onSuccess { obj ->
+    fun loadRecursive(bulkQuery: IBulkQuery) {
+        loadObject(bulkQuery).onSuccess { obj ->
+            obj?.getReferencedEntries()?.forEach { it.loadRecursive(bulkQuery) }
+        }
+    }
+
+    fun loadObject(bulkQuery: IBulkQuery): IBulkQuery.Value<E?> {
+        return loadedObject?.let { bulkQuery.constant(it) } ?: bulkQuery.get(this).also {
+            it.onSuccess { obj ->
                 loadedObject = obj ?: throw NoSuchElementException("Entry not found for hash: $hash")
                 written = true
-                obj.getReferencedEntries().forEach { it.load(bulkQuery) }
             }
         }
     }
@@ -179,7 +184,7 @@ fun <T : IKVValue> T.wasDeserialized() = also {
 }
 
 fun KVEntryReference<*>.load(objects: Map<String, String>) {
-    load(ReadOnlyMapBasedStore(objects).let { it.newBulkQuery(NonCachingObjectStore(it)) })
+    loadRecursive(ReadOnlyMapBasedStore(objects).let { it.newBulkQuery(NonCachingObjectStore(it)) })
 }
 
 fun KVEntryReference<*>.writeToMap(): Map<String, String> {

@@ -44,7 +44,7 @@ class CPHamtInternal(
                 childRef.load(bulkQuery, reusableHamtNode.getChildRef(i))
             }
         } else {
-            children.forEach { it.load(bulkQuery) }
+            children.forEach { it.loadRecursive(bulkQuery) }
         }
     }
 
@@ -115,6 +115,15 @@ class CPHamtInternal(
             }
         }?.unloadedValue
         return UnloadResult(unloadedValue, children.all { it.getValueIfLoaded() == null })
+    }
+
+    override fun loadEntry(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CPNode?> {
+        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
+        return getChildRef(indexFromKey(key, shift))
+            ?.loadObject(bulkQuery)
+            ?.mapBulk {
+                it?.loadEntry(key, shift + BITS_PER_LEVEL, bulkQuery) ?: bulkQuery.constant(null)
+            } ?: bulkQuery.constant(null)
     }
 
     protected fun getChild(logicalIndex: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode?> {

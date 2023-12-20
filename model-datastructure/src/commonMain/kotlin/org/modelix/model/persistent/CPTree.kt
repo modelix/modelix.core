@@ -56,6 +56,17 @@ class CPTree(
         }
     }
 
+    fun loadSubtree(nodeId: Long, bulkQuery: IBulkQuery) {
+        idToHash.loadObject(bulkQuery).onSuccess {
+            it?.loadEntry(nodeId, bulkQuery)?.onSuccess {
+                if (it == null) return@onSuccess
+                for (childId in it.childrenIdArray) {
+                    loadSubtree(childId, bulkQuery)
+                }
+            }
+        }
+    }
+
     companion object {
         /**
          * Since version 3 the UID of concept members is stored instead of the name

@@ -97,6 +97,16 @@ class CLTree(val dataRef: KVEntryReference<CPTree>, val store: IDeserializingKey
         dataRef.getValueIfLoaded()?.unloadSubtree(nodeId)
     }
 
+    fun loadSubtree(nodeId: Long) {
+        loadSubtree(nodeId, store.newBulkQuery())
+    }
+
+    fun loadSubtree(nodeId: Long, bulkQuery: IBulkQuery) {
+        dataRef.loadObject(bulkQuery).onSuccess {
+            it?.loadSubtree(nodeId, bulkQuery)
+        }
+    }
+
     protected fun storeElement(node: CPNode, id2hash: CPHamtNode): CPHamtNode {
         val data = node
         var newMap = id2hash.put(node.id, data.ref(), store)

@@ -69,9 +69,10 @@ sealed class CPHamtNode : IKVValue {
     fun getIfLoaded(key: Long, shift: Int): KVEntryReference<CPNode>? {
         return get(key, shift, IBulkQuery.NULL).execute()
     }
-
     fun unloadEntry(key: Long): UnloadResult = unloadEntry(key, 0)
     abstract fun unloadEntry(key: Long, shift: Int): UnloadResult
+    fun loadEntry(key: Long, bulkQuery: IBulkQuery) = loadEntry(key, 0, bulkQuery)
+    abstract fun loadEntry(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CPNode?>
 
     fun get(key: Long, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> = get(key, 0, bulkQuery)
 

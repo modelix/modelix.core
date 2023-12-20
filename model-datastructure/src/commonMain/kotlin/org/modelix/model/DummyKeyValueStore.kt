@@ -32,7 +32,7 @@ class DummyKeyValueStore : IKeyValueStore {
     }
 
     override fun get(key: String): String? {
-        throw ObjectNotLoadedException("key")
+        throw ObjectNotLoadedException(key)
     }
 
     override fun put(key: String, value: String?) {

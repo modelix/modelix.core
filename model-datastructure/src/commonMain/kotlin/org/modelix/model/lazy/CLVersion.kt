@@ -127,8 +127,12 @@ class CLVersion(val dataRef: KVEntryReference<CPVersion>, val store: IDeserializ
         dataRef.load(objects)
     }
 
-    fun load(reusableData: CLVersion, bulkQuery: IBulkQuery) {
-        dataRef.load(bulkQuery, reusableData.dataRef)
+    fun load(reusableData: CLVersion?) {
+        load(store.newBulkQuery(), reusableData)
+    }
+
+    fun load(bulkQuery: IBulkQuery, reusableData: CLVersion?) {
+        dataRef.load(bulkQuery, reusableData?.dataRef)
     }
 
     override fun equals(other: Any?): Boolean {

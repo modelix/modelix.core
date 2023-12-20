@@ -105,6 +105,12 @@ class CPHamtInternal(
         }
     }
 
+    override fun unloadEntry(key: Long, shift: Int): CPNode? {
+        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
+        return getChild(indexFromKey(key, shift), IBulkQuery.NULL).execute()
+            ?.unloadEntry(key, shift + BITS_PER_LEVEL)
+    }
+
     protected fun getChild(logicalIndex: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode?> {
         val childHash = getChildRef(logicalIndex)
         return if (childHash == null) {

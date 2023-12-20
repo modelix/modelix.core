@@ -44,6 +44,15 @@ class CPTree(
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(idToHash)
 
+    fun unloadSubtree(nodeId: Long) {
+        val unloadedNode = idToHash.getValueIfLoaded()?.unloadEntry(nodeId)
+        if (unloadedNode != null) {
+            for (childId in unloadedNode.childrenIdArray) {
+                unloadSubtree(childId)
+            }
+        }
+    }
+
     companion object {
         /**
          * Since version 3 the UID of concept members is stored instead of the name

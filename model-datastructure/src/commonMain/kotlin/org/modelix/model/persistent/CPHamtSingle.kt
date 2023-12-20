@@ -71,6 +71,15 @@ class CPHamtSingle(
         }
     }
 
+    override fun unloadEntry(key: Long, shift: Int): CPNode? {
+        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
+        return if (maskBits(key, shift) == bits) {
+            child.getValueIfLoaded()?.unloadEntry(key, shift + numLevels * BITS_PER_LEVEL)
+        } else {
+            null
+        }
+    }
+
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {

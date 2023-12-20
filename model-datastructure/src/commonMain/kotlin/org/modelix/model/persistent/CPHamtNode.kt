@@ -19,6 +19,7 @@ import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonBulkQuery
+import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.ref
 import org.modelix.model.lazy.wasDeserialized
 import org.modelix.model.persistent.SerializationUtil.intFromHex
@@ -64,6 +65,13 @@ sealed class CPHamtNode : IKVValue {
     fun remove(element: CPNode, store: IDeserializingKeyValueStore): CPHamtNode? {
         return remove(element.id, store)
     }
+
+    fun getIfLoaded(key: Long, shift: Int): KVEntryReference<CPNode>? {
+        return get(key, shift, IBulkQuery.NULL).execute()
+    }
+
+    fun unloadEntry(key: Long): CPNode? = unloadEntry(key, 0)
+    abstract fun unloadEntry(key: Long, shift: Int): CPNode?
 
     fun get(key: Long, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> = get(key, 0, bulkQuery)
 

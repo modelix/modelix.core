@@ -73,6 +73,11 @@ class CPHamtLeaf(
         return bulkQuery.constant(if (key == this.key) value else null)
     }
 
+    override fun unloadEntry(key: Long, shift: Int): CPNode? {
+        require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
+        return value.getValueIfLoaded()?.also { value.unload() }
+    }
+
     override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>?) -> Unit): IBulkQuery.Value<Unit> {
         return bulkQuery.constant(visitor(key, value))
     }

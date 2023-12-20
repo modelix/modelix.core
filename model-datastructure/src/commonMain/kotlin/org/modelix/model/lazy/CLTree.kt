@@ -93,6 +93,10 @@ class CLTree(val dataRef: KVEntryReference<CPTree>, val store: IDeserializingKey
     val nodesMap: CPHamtNode?
         get() = data.idToHash.getValue(store)
 
+    fun unloadSubtree(nodeId: Long) {
+        dataRef.getValueIfLoaded()?.unloadSubtree(nodeId)
+    }
+
     protected fun storeElement(node: CPNode, id2hash: CPHamtNode): CPHamtNode {
         val data = node
         var newMap = id2hash.put(node.id, data.ref(), store)
@@ -290,6 +294,11 @@ class CLTree(val dataRef: KVEntryReference<CPTree>, val store: IDeserializingKey
     override fun getDescendants(root: Long, includeSelf: Boolean): Iterable<CLNode> {
         val parent = resolveElement(root)
         return getDescendants(parent!!, store.newBulkQuery(), includeSelf).execute().map { CLNode(this, it) }
+    }
+
+    fun getDescendantIds(root: Long, includeSelf: Boolean): Sequence<Long> {
+        val parent = resolveElement(root)
+        return getDescendants(parent!!, store.newBulkQuery(), includeSelf).execute().asSequence().map { it.id }
     }
 
     override fun getDescendants(rootIds: Iterable<Long>, includeSelf: Boolean): Iterable<CLNode> {

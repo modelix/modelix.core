@@ -45,11 +45,14 @@ class CPTree(
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(idToHash)
 
     fun unloadSubtree(nodeId: Long) {
-        val unloadedNode = idToHash.getValueIfLoaded()?.unloadEntry(nodeId)
-        if (unloadedNode != null) {
-            for (childId in unloadedNode.childrenIdArray) {
+        val unloadResult = (idToHash.getValueIfLoaded() ?: return).unloadEntry(nodeId)
+        if (unloadResult.unloadedValue != null) {
+            for (childId in unloadResult.unloadedValue.childrenIdArray) {
                 unloadSubtree(childId)
             }
+        }
+        if (unloadResult.wasLastLoadedEntry) {
+            idToHash.unload()
         }
     }
 

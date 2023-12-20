@@ -70,8 +70,8 @@ sealed class CPHamtNode : IKVValue {
         return get(key, shift, IBulkQuery.NULL).execute()
     }
 
-    fun unloadEntry(key: Long): CPNode? = unloadEntry(key, 0)
-    abstract fun unloadEntry(key: Long, shift: Int): CPNode?
+    fun unloadEntry(key: Long): UnloadResult = unloadEntry(key, 0)
+    abstract fun unloadEntry(key: Long, shift: Int): UnloadResult
 
     fun get(key: Long, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> = get(key, 0, bulkQuery)
 
@@ -87,6 +87,8 @@ sealed class CPHamtNode : IKVValue {
         fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?)
         fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>?, newValue: KVEntryReference<CPNode>?)
     }
+
+    class UnloadResult(val unloadedValue: CPNode?, val wasLastLoadedEntry: Boolean)
 
     companion object {
         const val BITS_PER_LEVEL = 5

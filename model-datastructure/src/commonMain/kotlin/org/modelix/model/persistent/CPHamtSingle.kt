@@ -71,12 +71,12 @@ class CPHamtSingle(
         }
     }
 
-    override fun unloadEntry(key: Long, shift: Int): CPNode? {
+    override fun unloadEntry(key: Long, shift: Int): UnloadResult {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         return if (maskBits(key, shift) == bits) {
-            child.getValueIfLoaded()?.unloadEntry(key, shift + numLevels * BITS_PER_LEVEL)
+            child.getValueIfLoaded()?.unloadEntry(key, shift + numLevels * BITS_PER_LEVEL) ?: UnloadResult(null, true)
         } else {
-            null
+            throw IllegalArgumentException("key is not part of this subtree")
         }
     }
 

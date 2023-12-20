@@ -141,6 +141,11 @@ class PartialLoadingTest {
             assertFailsWith(ObjectNotLoadedException::class) {
                 v1.getTree().getProperty(it, "name")
             }
+            assertFailsWith(ObjectNotLoadedException::class) {
+                // .containsNode doesn't read the node itself, but just the objects of the map that stores the nodes.
+                // An efficient unload also unloads the objects of the map.
+                v1.getTree().containsNode(it)
+            }
         }
 
         // access to all other nodes should still be possible

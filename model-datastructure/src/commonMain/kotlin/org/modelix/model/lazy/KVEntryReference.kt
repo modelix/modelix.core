@@ -92,6 +92,7 @@ class KVEntryReference<out E : IKVValue> private constructor(
     }
 
     fun unload() {
+        // TODO this can cause unexpected ObjectNotLoadedException
         check(written) { "Call write() first" }
         loadedObject = null
     }

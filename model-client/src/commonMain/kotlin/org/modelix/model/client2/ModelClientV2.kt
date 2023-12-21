@@ -56,6 +56,7 @@ import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class ModelClientV2(
@@ -338,6 +339,8 @@ abstract class ModelClientV2Builder {
     protected var baseUrl: String = "https://localhost/model/v2"
     protected var authTokenProvider: (() -> String?)? = null
     protected var userId: String? = null
+    protected var connectTimeout: Duration = 1.seconds
+    protected var requestTimeout: Duration = 30.seconds
 
     fun build(): ModelClientV2 {
         return ModelClientV2(
@@ -367,6 +370,16 @@ abstract class ModelClientV2Builder {
         return this
     }
 
+    fun connectTimeout(timeout: Duration): ModelClientV2Builder {
+        this.connectTimeout = timeout
+        return this
+    }
+
+    fun requestTimeout(timeout: Duration): ModelClientV2Builder {
+        this.requestTimeout = timeout
+        return this
+    }
+
     protected open fun configureHttpClient(config: HttpClientConfig<*>) {
         config.apply {
             expectSuccess = true
@@ -375,8 +388,8 @@ abstract class ModelClientV2Builder {
                 json()
             }
             install(HttpTimeout) {
-                connectTimeoutMillis = 1.seconds.inWholeMilliseconds
-                requestTimeoutMillis = 30.seconds.inWholeMilliseconds
+                connectTimeoutMillis = connectTimeout.inWholeMilliseconds
+                requestTimeoutMillis = requestTimeout.inWholeMilliseconds
             }
             install(HttpRequestRetry) {
                 retryOnExceptionOrServerErrors(maxRetries = 3)

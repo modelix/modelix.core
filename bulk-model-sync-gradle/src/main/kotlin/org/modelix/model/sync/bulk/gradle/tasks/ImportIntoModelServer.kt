@@ -40,6 +40,7 @@ import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.importFilesAsRootChildren
 import org.modelix.model.sync.bulk.isModuleIncluded
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.minutes
 
 abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : DefaultTask() {
 
@@ -78,7 +79,12 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
         val repoId = RepositoryId(repositoryId.get())
 
         val branchRef = ModelFacade.createBranchReference(repoId, branchName.get())
-        val client = ModelClientV2.builder().url(url.get()).build()
+        val client = ModelClientV2.builder()
+            .url(url.get())
+            // Processing large chunks of data on import might take some time. Therefore, extend the request timeout to
+            // let the model-server do the import.
+            .requestTimeout(5.minutes)
+            .build()
         val files = inputDir.listFiles()?.filter {
             it.extension == "json" && isModuleIncluded(it.nameWithoutExtension, includedModules.get(), includedModulePrefixes.get())
         }

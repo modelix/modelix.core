@@ -58,7 +58,7 @@ tasks.named("npm_run_generateKotlin") {
 val copyBuildTypeScriptForPackaging = tasks.create<Copy>("copyBuildTypeScriptForPackaging") {
   dependsOn(npmRunBuild)
   from(projectDir)
-  include("dist")
+  include("dist/**")
   into(layout.buildDirectory.dir("typeScriptForPackaging"))
 }
 

@@ -85,7 +85,14 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondText(storeClient.generateId("clientId").toString())
         }
         get("server-id") {
-            call.respondText(repositoriesManager.getServerId())
+            // Currently, the server ID is initialized in KeyValueLikeModelServer eagerly on startup.
+            // Should KeyValueLikeModelServer be removed or change,
+            // RepositoriesManager#maybeInitAndGetSeverId will initialize the server ID lazily on the first request.
+            //
+            // Functionally, it does not matter if the server ID is created eagerly or lazily,
+            // as long as the same server ID is returned from the same server.
+            val serverId = repositoriesManager.maybeInitAndGetSeverId()
+            call.respondText(serverId)
         }
         get("user-id") {
             call.respondText(call.getUserName() ?: call.request.origin.remoteHost)

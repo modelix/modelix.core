@@ -143,6 +143,10 @@ If the target branch does not exist on the model-server, it will be created.
 |String
 |Source model-server revision. Can be used instead of `repositoryId` and `branchName`. Only available in ServerSource.
 
+|`requestTimeoutSeconds`
+|Integer
+|The request timeout measured in seconds to apply when performing HTTP requests towards the model-server. Default: 5 minutes
+
 |===
 
 == Example

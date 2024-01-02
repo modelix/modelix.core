@@ -106,6 +106,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.revision.set(serverSource.revision)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.requestTimeoutSeconds.set(serverSource.requestTimeoutSeconds)
         }
         return exportFromModelServer
     }
@@ -160,6 +161,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
             it.continueOnError.set(syncDirection.continueOnError)
+            it.requestTimeoutSeconds.set(serverTarget.requestTimeoutSeconds)
         }
 
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {

@@ -40,6 +40,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.isModuleIncluded
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : DefaultTask() {
 
@@ -67,10 +68,14 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
 
+    @Input
+    val requestTimeoutSeconds: Property<Int> = of.property(Int::class.java)
+
     @TaskAction
     fun export() {
         val modelClient = ModelClientV2PlatformSpecificBuilder()
             .url(url.get())
+            .requestTimeout(requestTimeoutSeconds.get().seconds)
             .build()
         modelClient.use { client ->
             runBlocking { client.init() }

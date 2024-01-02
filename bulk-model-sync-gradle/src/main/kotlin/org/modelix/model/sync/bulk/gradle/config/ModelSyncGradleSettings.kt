@@ -130,10 +130,13 @@ data class LocalTarget(
     }
 }
 
+private const val DEFAULT_REQUEST_TIMEOUT_SECONDS = 5 * 60
+
 sealed interface ServerEndpoint : SyncEndpoint {
     var url: String?
     var repositoryId: String?
     var branchName: String?
+    var requestTimeoutSeconds: Int
 
     override fun getValidationErrors(): List<String> {
         val errors = mutableListOf<String>()
@@ -148,6 +151,7 @@ data class ServerSource(
     override var url: String? = null,
     override var repositoryId: String? = null,
     override var branchName: String? = null,
+    override var requestTimeoutSeconds: Int = DEFAULT_REQUEST_TIMEOUT_SECONDS,
     var revision: String? = null,
 ) : ServerEndpoint {
     override fun getValidationErrors(): List<String> {
@@ -179,6 +183,7 @@ data class ServerTarget(
     override var url: String? = null,
     override var repositoryId: String? = null,
     override var branchName: String? = null,
+    override var requestTimeoutSeconds: Int = DEFAULT_REQUEST_TIMEOUT_SECONDS,
 ) : ServerEndpoint {
     override fun getValidationErrors(): List<String> {
         val errors = mutableListOf<String>()

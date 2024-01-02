@@ -44,7 +44,16 @@ class RepositoriesManager(val client: LocalModelClient) {
         return client.store.generateId("$KEY_PREFIX:${repositoryId.id}:clientId")
     }
 
-    fun getServerId(): String {
+    /**
+     * Used to retrieve the server ID. If needed, the server ID is created and stored.
+     *
+     * If a server ID was not created yet, it is generated and saved in the database.
+     * It gets stored under the current and all legacy database keys.
+     *
+     * If the server ID was created previously but is only stored under a legacy database key,
+     * it also gets stored under the current and all legacy database keys.
+     */
+    fun maybeInitAndGetSeverId(): String {
         return store.runTransaction {
             var serverId = store[SERVER_ID_KEY]
             if (serverId == null) {

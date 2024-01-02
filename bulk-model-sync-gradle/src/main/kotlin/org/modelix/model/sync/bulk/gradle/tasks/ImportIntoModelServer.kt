@@ -91,16 +91,19 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
         if (files.isNullOrEmpty()) error("no json files found for included modules")
 
         runBlocking {
+            logger.info("Initializing client...")
             client.init()
+            logger.info("Importing...")
             client.runWrite(branchRef) { rootNode ->
                 rootNode.runBulkUpdate {
                     logger.info("Got root node: {}", rootNode)
-                    logger.info("Importing...")
+                    logger.info("Calculating diff...")
                     ModelImporter(rootNode, continueOnError.get()).importFilesAsRootChildren(files)
-                    logger.info("Import finished")
                 }
+                logger.info("Sending diff to server...")
             }
         }
+        logger.info("Import finished.")
     }
 }
 

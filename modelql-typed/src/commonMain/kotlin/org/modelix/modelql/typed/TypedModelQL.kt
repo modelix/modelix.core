@@ -168,8 +168,9 @@ object TypedModelQL {
         return input.map { referenceOrNull(it, link) }
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun <SourceT : ITypedNode, TargetT : ITypedNode> setReference(input: IMonoStep<SourceT>, link: ITypedReferenceLink<TargetT>, target: IMonoStep<TargetT?>?): IMonoStep<SourceT> {
-        val targetOrNull = target?.untyped() ?: nullMono<INode>()
+        val targetOrNull = target?.untyped() ?: nullMono<String>() as IMonoStep<INode?> // cast is necessary since nullMono<INode> cannot be serialized
         input.untyped().setReference(link.untyped(), targetOrNull)
         return input
     }

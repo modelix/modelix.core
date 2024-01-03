@@ -225,26 +225,26 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 }
                 route("objects") {
                     put {
-                        var writtenEntries = 0
-                        withContext(Dispatchers.IO) {
-                            var isKey = true
-                            var key = ""
-                            call.receiveStream().bufferedReader().lineSequence().forEach { line ->
-                                if (isKey) {
-                                    key = line
-                                } else {
-                                    val value = line
+                        val writtenEntries = withContext(Dispatchers.IO) {
+                            val entries = call.receiveStream().bufferedReader().use { reader ->
+                                reader.lineSequence().windowed(2, 2).map {
+                                    val key = it[0]
+                                    val value = it[1]
+
                                     require(HashUtil.isSha256(key)) {
                                         "This API cannot be used to store other entries than serialized objects." +
                                             " The key is expected to be a SHA256 hash over the value: $key -> $value"
                                     }
                                     val expectedKey = HashUtil.sha256(value)
                                     require(expectedKey == key) { "Hash mismatch. Expected $expectedKey, but $key was provided. Value: $value" }
-                                    storeClient.put(key, value, true)
-                                    writtenEntries++
-                                }
-                                isKey = !isKey
+
+                                    key to value
+                                }.toMap()
                             }
+
+                            storeClient.putAll(entries, true)
+
+                            entries.size
                         }
                         call.respondText("$writtenEntries objects received")
                     }

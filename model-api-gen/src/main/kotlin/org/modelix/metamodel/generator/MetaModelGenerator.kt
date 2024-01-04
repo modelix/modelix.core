@@ -100,29 +100,7 @@ class MetaModelGenerator(
     }
 
     fun generateRegistrationHelper(classFqName: String, languages: IProcessedLanguageSet) {
-        generateRegistrationHelper(classFqName, languages as ProcessedLanguageSet)
-    }
-
-    internal fun generateRegistrationHelper(classFqName: String, languages: ProcessedLanguageSet) {
-        require(classFqName.contains(".")) { "The name of the registrationHelper does not contain a dot. Use a fully qualified name." }
-        val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
-        val cls = TypeSpec.objectBuilder(typeName)
-            .addProperty(
-                PropertySpec.builder("languages", List::class.parameterizedBy(GeneratedLanguage::class))
-                    .initializer(
-                        "listOf(" + languages.getLanguages().map { it.generatedClassName() }
-                            .joinToString(", ") { it.canonicalName } + ")",
-                    )
-                    .build(),
-            )
-            .addFunction(FunSpec.builder("registerAll").addStatement("""languages.forEach { it.register() }""").build())
-            .build()
-
-        FileSpec.builder(typeName.packageName, typeName.simpleName)
-            .addFileComment(HEADER_COMMENT)
-            .addType(cls)
-            .build()
-            .write()
+        RegistrationHelperGenerator(classFqName, languages as ProcessedLanguageSet, this).generateFile()
     }
 
     private fun generateConceptMetaPropertiesInterface(languages: IProcessedLanguageSet) {
@@ -983,7 +961,7 @@ class MetaModelGenerator(
     private fun ProcessedConcept.conceptWrapperInterfaceClass() =
         ClassName(language.name, nameConfig.typedConcept(name))
 
-    private fun ProcessedLanguage.generatedClassName() = ClassName(name, nameConfig.languageClass(name))
+    internal fun ProcessedLanguage.generatedClassName() = ClassName(name, nameConfig.languageClass(name))
     private fun ProcessedConcept.nodeWrapperInterfaceName() = nameConfig.typedNode(name)
     private fun ProcessedConcept.nodeWrapperImplName() = nameConfig.typedNodeImpl(name)
     private fun ProcessedConcept.conceptObjectName() = nameConfig.untypedConcept(name)

@@ -103,40 +103,13 @@ class MetaModelGenerator(
         RegistrationHelperGenerator(classFqName, languages as ProcessedLanguageSet, this).generateFile()
     }
 
-    private fun generateConceptMetaPropertiesInterface(languages: IProcessedLanguageSet) {
-        val fqName = checkNotNull(conceptPropertiesInterfaceName)
-        require(fqName.contains(".")) { "The name of the concept properties interface does not contain a dot. Use a fully qualified name." }
-        val interfaceName = ClassName(fqName.substringBeforeLast("."), fqName.substringAfterLast("."))
-        val metaPropertiesInterface = TypeSpec.interfaceBuilder(interfaceName)
-            .generateMetaProperties(languages as ProcessedLanguageSet)
-            .build()
-
-        FileSpec.builder(interfaceName.packageName, interfaceName.simpleName)
-            .addFileComment(HEADER_COMMENT)
-            .addType(metaPropertiesInterface)
-            .build()
-            .write()
-    }
-
-    private fun TypeSpec.Builder.generateMetaProperties(languages: ProcessedLanguageSet): TypeSpec.Builder {
-        val nullGetter = FunSpec.getterBuilder().addCode("return null").build()
-        languages.getConceptMetaProperties().forEach {
-            addProperty(
-                PropertySpec.builder(it, String::class.asTypeName().copy(nullable = true))
-                    .getter(nullGetter)
-                    .build(),
-            )
-        }
-        return this
-    }
-
     fun generate(languages: IProcessedLanguageSet) {
         generate(languages as ProcessedLanguageSet)
     }
 
     private fun generate(languages: ProcessedLanguageSet) {
         if (conceptPropertiesInterfaceName != null) {
-            generateConceptMetaPropertiesInterface(languages)
+            MetaPropertiesInterfaceGenerator(languages, outputDir, conceptPropertiesInterfaceName).generateFile()
         }
 
         for (language in languages.getLanguages()) {

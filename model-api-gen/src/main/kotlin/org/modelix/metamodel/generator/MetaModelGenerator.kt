@@ -19,7 +19,6 @@ import com.squareup.kotlinpoet.withIndent
 import org.modelix.metamodel.ChildListAccessor
 import org.modelix.metamodel.GeneratedChildListLink
 import org.modelix.metamodel.GeneratedConcept
-import org.modelix.metamodel.GeneratedLanguage
 import org.modelix.metamodel.GeneratedMandatorySingleChildLink
 import org.modelix.metamodel.GeneratedProperty
 import org.modelix.metamodel.GeneratedReferenceLink
@@ -114,11 +113,7 @@ class MetaModelGenerator(
 
         for (language in languages.getLanguages()) {
             language.packageDir().toFile().listFiles()?.filter { it.isFile }?.forEach { it.delete() }
-            val builder =
-                FileSpec.builder(language.generatedClassName().packageName, language.generatedClassName().simpleName)
-            val file = builder.addFileComment(HEADER_COMMENT)
-                .addType(generateLanguage(language)).build()
-            file.write()
+            LanguageFileGenerator(language, this).generateFile()
 
             for (enum in language.getEnums()) {
                 EnumFileGenerator(enum, outputDir).generateFile()
@@ -131,29 +126,6 @@ class MetaModelGenerator(
                 }
             }
         }
-    }
-
-    private fun generateLanguage(language: ProcessedLanguage): TypeSpec {
-        val builder = TypeSpec.objectBuilder(language.generatedClassName())
-        val conceptNamesList = language.getConcepts()
-            .joinToString(", ") { it.name }
-        builder.addFunction(
-            FunSpec.builder("getConcepts")
-                .returns(List::class.asClassName().parameterizedBy(IConcept::class.asTypeName()))
-                .addModifiers(KModifier.OVERRIDE)
-                .addCode(language.getConcepts().map { it.conceptObjectType() }.toListLiteralCodeBlock())
-                .build(),
-        )
-        builder.superclass(GeneratedLanguage::class)
-        builder.addSuperclassConstructorParameter("\"${language.name}\"")
-        for (concept in language.getConcepts()) {
-            builder.addProperty(
-                PropertySpec.builder(concept.name, concept.conceptWrapperInterfaceType())
-                    .initializer("%T", concept.conceptWrapperInterfaceClass())
-                    .build(),
-            )
-        }
-        return builder.build()
     }
 
     private fun generateConceptFile(concept: ProcessedConcept) {
@@ -928,10 +900,10 @@ class MetaModelGenerator(
         }.build()
     }
 
-    private fun ProcessedConcept.conceptWrapperInterfaceType() =
+    internal fun ProcessedConcept.conceptWrapperInterfaceType() =
         conceptWrapperInterfaceClass().parameterizedBy(nodeWrapperInterfaceType())
 
-    private fun ProcessedConcept.conceptWrapperInterfaceClass() =
+    internal fun ProcessedConcept.conceptWrapperInterfaceClass() =
         ClassName(language.name, nameConfig.typedConcept(name))
 
     internal fun ProcessedLanguage.generatedClassName() = ClassName(name, nameConfig.languageClass(name))
@@ -943,7 +915,7 @@ class MetaModelGenerator(
     // private fun ProcessedConcept.conceptWrapperInterfaceName() = nameConfig.conceptWrapperInterfaceName(name)
 
     // private fun ProcessedConcept.getConceptFqName() = language.name + "." + name
-    private fun ProcessedConcept.conceptObjectType() = ClassName(language.name, conceptObjectName())
+    internal fun ProcessedConcept.conceptObjectType() = ClassName(language.name, conceptObjectName())
     private fun ProcessedConcept.nodeWrapperImplType() = ClassName(language.name, nodeWrapperImplName())
     private fun ProcessedConcept.nodeWrapperInterfaceType() = ClassName(language.name, nodeWrapperInterfaceName())
 
@@ -973,7 +945,7 @@ class MetaModelGenerator(
     }
 }
 
-private fun List<TypeName>.toListLiteralCodeBlock(): CodeBlock {
+internal fun List<TypeName>.toListLiteralCodeBlock(): CodeBlock {
     val list = this
     return CodeBlock.builder().apply {
         add("return listOf(\n")

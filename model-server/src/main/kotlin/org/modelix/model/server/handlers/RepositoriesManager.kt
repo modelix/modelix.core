@@ -13,6 +13,11 @@
  */
 package org.modelix.model.server.handlers
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.VersionMerger
@@ -25,12 +30,14 @@ import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
 import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
+import java.lang.ref.SoftReference
 import java.util.UUID
 
 class RepositoriesManager(val client: LocalModelClient) {
@@ -200,18 +207,35 @@ class RepositoriesManager(val client: LocalModelClient) {
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
-    private val deltaCache = LRUMap<Pair<String, String?>, Lazy<Map<String, String>>>(10)
-    fun computeDelta(versionHash: String, baseVersionHash: String?): Map<String, String> {
-        return runSynchronized(deltaCache) {
-            deltaCache.getOrPut(versionHash to baseVersionHash) {
-                // lazy { ... } allows to run the computation without locking deltaCache
-                lazy {
-                    val version = CLVersion(versionHash, client.storeCache)
-                    val baseVersion = baseVersionHash?.let { CLVersion(it, client.storeCache) }
-                    version.computeDelta(baseVersion)
+    private val deltaCache = LRUMap<Pair<String, String?>, SoftReference<Lazy<Map<String, String>>>>(10)
+    fun computeDelta(versionHash: String, baseVersionHash: String?): Flow<Pair<String, String>> {
+        if (versionHash == baseVersionHash) return emptyFlow()
+        if (baseVersionHash == null) {
+            // no need to cache anything if there is no delta computation happening
+            return flow {
+                suspend fun emitObjects(entry: KVEntryReference<*>) {
+                    emit(entry.getHash() to client.get(entry.getHash())!!)
+                    for (referencedEntry in entry.getValue(client.storeCache).getReferencedEntries()) {
+                        emitObjects(referencedEntry)
+                    }
                 }
+
+                emit(versionHash to client.get(versionHash)!!)
+                val version = CLVersion(versionHash, client.storeCache)
+                emitObjects(version.treeHash!!)
             }
-        }.value
+        }
+
+        return runSynchronized(deltaCache) {
+            val key = versionHash to baseVersionHash
+            deltaCache.get(key)?.get() ?: lazy {
+                // lazy { ... } allows to run the computation without locking deltaCache
+                // SoftReference because deltas can be very large
+                val version = CLVersion(versionHash, client.storeCache)
+                val baseVersion = CLVersion(baseVersionHash, client.storeCache)
+                version.computeDelta(baseVersion)
+            }.also { deltaCache[key] = SoftReference(it) }
+        }.value.entries.asFlow().map { it.toPair() }
     }
 
     private fun branchKey(branch: BranchReference): String {

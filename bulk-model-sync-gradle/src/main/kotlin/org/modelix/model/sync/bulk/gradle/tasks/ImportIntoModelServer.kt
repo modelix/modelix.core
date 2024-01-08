@@ -28,8 +28,6 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
-import org.modelix.model.api.ILanguage
-import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.client2.ModelClientV2
@@ -58,9 +56,6 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
     val url: Property<String> = of.property(String::class.java)
 
     @Input
-    val registeredLanguages: SetProperty<ILanguage> = of.setProperty(ILanguage::class.java)
-
-    @Input
     val includedModules: SetProperty<String> = of.setProperty(String::class.java)
 
     @Input
@@ -74,10 +69,6 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
 
     @TaskAction
     fun import() {
-        registeredLanguages.get().forEach {
-            ILanguageRepository.default.registerLanguage(it)
-        }
-
         val inputDir = inputDir.get().asFile
         val repoId = RepositoryId(repositoryId.get())
 

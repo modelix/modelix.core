@@ -26,6 +26,8 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.serialization.json)
+                api(libs.kotlin.coroutines.core)
+                api(libs.ktor.serialization)
 //                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
 
 //                implementation("io.ktor:ktor-client-core:$ktorVersion")

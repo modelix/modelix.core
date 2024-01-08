@@ -398,7 +398,7 @@ private fun trackAccessedEntries(store: IKeyValueStore, body: (IDeserializingKey
 }
 
 private class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
-    val accessedEntries: MutableMap<String, String?> = HashMap()
+    val accessedEntries: MutableMap<String, String?> = LinkedHashMap()
 
     override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore): IBulkQuery {
         return store.newBulkQuery(deserializingCache)

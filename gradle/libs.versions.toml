@@ -73,6 +73,7 @@ ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", v
 ktor-client-js = { group = "io.ktor", name = "ktor-client-js", version.ref = "ktor" }
 ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
 
+ktor-serialization = { group = "io.ktor", name = "ktor-serialization", version.ref = "ktor" }
 ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "23.0.3" }

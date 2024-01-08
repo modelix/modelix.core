@@ -63,10 +63,6 @@ This means that only a minimal amount of write operations is used to update the 
 |Action<LocalTarget>
 |Defines a local target (MPS).
 
-|`registerLanguage`
-|ILanguage
-|Registers the given language and all of its concepts for the synchronisation process.
-
 |`includeModule`
 |String
 |Includes the module specified by the given fully qualified name in the synchronisation process.

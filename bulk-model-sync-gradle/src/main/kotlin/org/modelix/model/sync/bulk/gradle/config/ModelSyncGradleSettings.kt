@@ -17,6 +17,7 @@
 package org.modelix.model.sync.bulk.gradle.config
 
 import org.gradle.api.Action
+import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.api.ILanguage
 import java.io.File
 
@@ -40,7 +41,6 @@ data class SyncDirection(
     internal var source: SyncEndpoint? = null,
     internal var target: SyncEndpoint? = null,
     internal val includedModules: Set<String> = mutableSetOf(),
-    internal val registeredLanguages: Set<ILanguage> = mutableSetOf(),
     internal val includedModulePrefixes: Set<String> = mutableSetOf(),
     internal var continueOnError: Boolean = false,
 ) {
@@ -76,9 +76,9 @@ data class SyncDirection(
         (includedModulePrefixes as MutableSet).add(prefix)
     }
 
-    fun registerLanguage(language: ILanguage) {
-        (registeredLanguages as MutableSet).add(language)
-    }
+    @Deprecated("Registering languages is not necessary. This call can be safely removed.", ReplaceWith(""))
+    @DeprecationInfo(since = "2024-01-08")
+    fun registerLanguage(language: ILanguage) {}
 
     fun enableContinueOnError(state: Boolean) {
         continueOnError = state

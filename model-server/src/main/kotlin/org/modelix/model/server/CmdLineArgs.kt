@@ -21,6 +21,9 @@ internal class CmdLineArgs {
     @Parameter(names = ["-inmemory"], description = "Use in-memory storage", converter = BooleanConverter::class)
     var inmemory = false
 
+    @Parameter(names = ["--local-persistence"], description = "Use ignite with local disk persistence", converter = BooleanConverter::class)
+    var localPersistence = false
+
     @Parameter(names = ["-dumpout"], description = "Dump in memory storage", converter = StringConverter::class)
     var dumpOutName: String? = null
 

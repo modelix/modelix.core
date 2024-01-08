@@ -466,12 +466,18 @@ class MetaModelGenerator(
                             )
                             val returnType = IMonoStep::class.asTypeName().parameterizedBy(targetType)
                             val receiverType = IMonoStep::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
+                            val conceptParameter = ParameterSpec.builder("concept", ITypedConcept::class.asTypeName()).apply {
+                                if (!feature.type.resolved.abstract) {
+                                    defaultValue("%T", feature.type.resolved.conceptWrapperInterfaceClass())
+                                }
+                            }.build()
+
                             if (feature.multiple) {
                                 addFunction(
                                     FunSpec.builder(feature.adderMethodName())
                                         .returns(returnType)
                                         .receiver(receiverType)
-                                        .addParameter("concept", ITypedConcept::class.asTypeName())
+                                        .addParameter(conceptParameter)
                                         .addParameter(
                                             ParameterSpec.builder("index", Int::class.asTypeName())
                                                 .defaultValue("-1")
@@ -490,7 +496,7 @@ class MetaModelGenerator(
                                     FunSpec.builder(feature.setterName())
                                         .returns(returnType)
                                         .receiver(receiverType)
-                                        .addParameter("concept", ITypedConcept::class.asTypeName())
+                                        .addParameter(conceptParameter)
                                         .addStatement(
                                             "return %T.setChild(this, %T.%N, concept)",
                                             TypedModelQL::class.asTypeName(),

@@ -26,6 +26,10 @@ import jetbrains.mps.baseLanguage.C_StaticMethodDeclaration
 import jetbrains.mps.baseLanguage.C_VariableReference
 import jetbrains.mps.baseLanguage.ClassConcept
 import jetbrains.mps.baseLanguage.StaticMethodDeclaration
+import jetbrains.mps.core.xml.C_XmlComment
+import jetbrains.mps.core.xml.C_XmlCommentLine
+import jetbrains.mps.core.xml.C_XmlDocument
+import jetbrains.mps.core.xml.C_XmlFile
 import jetbrains.mps.lang.editor.imageGen.C_ImageGenerator
 import jetbrains.mps.lang.editor.imageGen.ImageGenerator
 import org.modelix.apigen.test.ApigenTestLanguages
@@ -131,6 +135,12 @@ class TypedModelQLTest {
             rootNode.addNewChild("imageGen", -1, C_ImageGenerator.untyped())
                 .typed<ImageGenerator>()
                 .apply { node = cls1 }
+
+            // Example for single non-abstract child
+            rootNode.addNewChild("xmlFile", -1, C_XmlFile.untyped())
+
+            // Example for mulitple non-abstract child
+            rootNode.addNewChild("xmlComment", -1, C_XmlComment.untyped())
         }
     }
 
@@ -369,5 +379,23 @@ class TypedModelQLTest {
         }
         assertNotNull(actual)
         assertTrue(actual.instanceOf(C_MinusExpression))
+    }
+
+    @Test
+    fun `set child - default concept`() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+        client.query { root ->
+            root.descendants().ofConcept(C_XmlFile)
+                .first()
+                .setDocument()
+        }
+
+        val actual = client.query { root ->
+            root.descendants().ofConcept(C_XmlFile)
+                .first()
+                .document
+        }
+
+        assertTrue { actual.instanceOf(C_XmlDocument) }
     }
 }

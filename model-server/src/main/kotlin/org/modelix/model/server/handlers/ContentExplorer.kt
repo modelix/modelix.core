@@ -112,19 +112,24 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 )
             }
             get<Paths.getNodeIdForVersionHash> {
-                val id = call.parameters["nodeId"]!!.toLong()
-                var found: PNodeAdapter? = null
-                for (node in rootNodes) {
-                    val candidate = PNodeAdapter(id, node.branch).takeIf { it.isValid }
-                    if (candidate != null) {
-                        found = candidate
-                        break
-                    }
+                val id = call.parameters["nodeId"]?.toLongOrNull()
+                    ?: return@get call.respondText("node id not found", status = HttpStatusCode.NotFound)
+
+                val versionHash = call.parameters["versionHash"]
+                    ?: return@get call.respondText("version hash not found", status = HttpStatusCode.NotFound)
+
+                val version = try {
+                    CLVersion.loadFromHash(versionHash, client.storeCache)
+                } catch (ex: RuntimeException) {
+                    return@get call.respondText("version not found", status = HttpStatusCode.NotFound)
                 }
-                if (found == null) {
-                    call.respondText("node id not found", status = HttpStatusCode.NotFound)
+
+                val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
+
+                if (node != null) {
+                    call.respondHtml { body { nodeInspector(node) } }
                 } else {
-                    call.respondHtml { body { nodeInspector(found) } }
+                    call.respondText("node id not found", status = HttpStatusCode.NotFound)
                 }
             }
         }

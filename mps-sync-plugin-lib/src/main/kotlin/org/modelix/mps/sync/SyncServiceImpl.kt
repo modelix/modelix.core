@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.client2.ModelClientV2
@@ -17,6 +18,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.RepositoryChangeListener
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
 import org.modelix.mps.sync.util.SyncBarrier
@@ -30,8 +32,10 @@ class SyncServiceImpl : SyncService {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     val activeClients = mutableSetOf<ModelClientV2>()
+    private val replicatedModelByBranchReference = mutableMapOf<BranchReference, ReplicatedModel>()
+    private val changeListenerByReplicatedModel = mutableMapOf<ReplicatedModel, IBranchListener>()
 
-    private lateinit var replicatedModel: ReplicatedModel
+    private var projectWithChangeListener: Pair<MPSProject, RepositoryChangeListener>? = null
 
     init {
         logger.info("============================================ Registering builtin languages")
@@ -88,12 +92,26 @@ class SyncServiceImpl : SyncService {
         model: INode,
         callback: (() -> Unit)?,
     ): IBinding {
+        if (replicatedModelByBranchReference.containsKey(branchReference)) {
+            // TODO fixme we have to return a binding / bunch of bindings...
+            return object : IBinding {
+                override fun activate(callback: Runnable?) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun deactivate(callback: Runnable?) {
+                    TODO("Not yet implemented")
+                }
+            }
+        }
+
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         runBlocking(coroutineScope.coroutineContext) {
             // TODO how to handle multiple replicated models at the same time?
-            replicatedModel = client.getReplicatedModel(branchReference)
+            val replicatedModel = client.getReplicatedModel(branchReference)
             // TODO when and how to dispose the replicated model and everything that depends on it?
             replicatedModel.start()
+            replicatedModelByBranchReference[branchReference] = replicatedModel
 
             /**
              * TODO fixme:
@@ -124,15 +142,18 @@ class SyncServiceImpl : SyncService {
                 BindingsRegistry.instance,
             ).transform(model)
 
-            // register change listener on replicated model
-            // TODO fixme avoid the double-registration of the same listener...
-            registerReplicatedModelChangeListener(
-                replicatedModel,
-                targetProject,
-                languageRepository,
-                isSynchronizing,
-                nodeMap,
-            )
+            // register replicated model change listener
+            val listener =
+                ModelixBranchListener(replicatedModel, targetProject, languageRepository, isSynchronizing, nodeMap)
+            replicatedModel.getBranch().addListener(listener)
+            changeListenerByReplicatedModel[replicatedModel] = listener
+
+            // register MPS project change listener
+            if (projectWithChangeListener == null) {
+                val repositoryChangeListener = RepositoryChangeListener()
+                targetProject.repository.addRepositoryListener(repositoryChangeListener)
+                projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
+            }
         }
 
         // trigger callback after activation
@@ -151,6 +172,7 @@ class SyncServiceImpl : SyncService {
     }
 
     override fun setActiveMpsProject(mpsProject: MPSProject) {
+        resetProjectWithChangeListener()
         ActiveMpsProjectInjector.activeProject = mpsProject
     }
 
@@ -161,6 +183,9 @@ class SyncServiceImpl : SyncService {
     override fun dispose() {
         // cancel all running coroutines
         coroutineScope.cancel()
+        // unregister change listeners
+        resetProjectWithChangeListener()
+        changeListenerByReplicatedModel.forEach { it.key.getBranch().removeListener(it.value) }
         // dispose the clients
         activeClients.forEach { it.close() }
         // dispose all bindings
@@ -176,14 +201,12 @@ class SyncServiceImpl : SyncService {
         return mpsLanguageRepo
     }
 
-    private fun registerReplicatedModelChangeListener(
-        replicatedModel: ReplicatedModel,
-        project: MPSProject,
-        languageRepository: MPSLanguageRepository,
-        isSynchronizing: SyncBarrier,
-        nodeMap: MpsToModelixMap,
-    ) {
-        val listener = ModelixBranchListener(replicatedModel, project, languageRepository, isSynchronizing, nodeMap)
-        replicatedModel.getBranch().addListener(listener)
+    private fun resetProjectWithChangeListener() {
+        projectWithChangeListener?.let {
+            val project = it.first
+            val listener = it.second
+            project.repository.removeRepositoryListener(listener)
+            projectWithChangeListener = null
+        }
     }
 }

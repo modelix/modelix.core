@@ -78,6 +78,7 @@ class ModuleBinding(
         logger.info("Binding for module $moduleId is deactivated.")
 
         // delete module
+        // TODO is it going to delete it from the cloud as well?
         module.dispose()
         nodeMap.remove(module)
 

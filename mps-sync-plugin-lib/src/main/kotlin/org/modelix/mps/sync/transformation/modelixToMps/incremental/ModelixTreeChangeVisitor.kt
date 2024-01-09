@@ -50,7 +50,7 @@ import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class TreeChangeVisitor(
+class ModelixTreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
     private val project: MPSProject,
     private val languageRepository: MPSLanguageRepository,

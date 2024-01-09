@@ -23,7 +23,7 @@ import org.modelix.model.api.ITree
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.transformation.MpsToModelixMap
-import org.modelix.mps.sync.transformation.modelixToMps.incremental.TreeChangeVisitor
+import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeChangeVisitor
 import org.modelix.mps.sync.util.SyncBarrier
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -38,7 +38,7 @@ class ModelixBranchListener(
         if (oldTree != null) {
             newTree.visitChanges(
                 oldTree,
-                TreeChangeVisitor(replicatedModel, project, languageRepository, isSynchronizing, nodeMap),
+                ModelixTreeChangeVisitor(replicatedModel, project, languageRepository, isSynchronizing, nodeMap),
             )
         }
     }

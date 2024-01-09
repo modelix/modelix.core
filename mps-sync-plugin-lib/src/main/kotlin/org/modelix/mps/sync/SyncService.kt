@@ -7,6 +7,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
+import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 interface SyncService {
@@ -15,14 +16,20 @@ interface SyncService {
         client: ModelClientV2,
         branchReference: BranchReference,
         model: INode,
-        afterActivate: (() -> Unit)?,
+        callback: (() -> Unit)?,
     ): IBinding
+
+    suspend fun connectModelServer(serverURL: URL, jwt: String, callback: (() -> Unit)?): ModelClientV2
+
+    fun disconnectModelServer(client: ModelClientV2, callback: (() -> Unit)?): Unit
 
     fun setActiveMpsProject(mpsProject: MPSProject)
 
     fun getModelBindings(): Set<ModelBinding>
 
     fun getModuleBindings(): Set<ModuleBinding>
+
+    fun dispose()
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

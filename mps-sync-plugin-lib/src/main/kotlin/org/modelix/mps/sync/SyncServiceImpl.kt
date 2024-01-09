@@ -40,9 +40,10 @@ class SyncServiceImpl : SyncService {
     }
 
     // todo add afterActivate to allow async refresh
-    suspend fun connectToModelServer(
+    override suspend fun connectModelServer(
         serverURL: URL,
         jwt: String,
+        callback: (() -> Unit)?,
     ): ModelClientV2 {
         // avoid reconnect to existing server
         val client = activeClients.find { it.baseUrl == serverURL.toString() }
@@ -65,20 +66,27 @@ class SyncServiceImpl : SyncService {
         }
         logger.info("Connection to $serverURL successful")
         activeClients.add(modelClientV2)
+
+        callback?.invoke()
+
         return modelClientV2
     }
 
-    fun disconnectModelServer(client: ModelClientV2) {
+    override fun disconnectModelServer(
+        client: ModelClientV2,
+        callback: (() -> Unit)?,
+    ) {
         // TODO what shall happen with the bindings if we disconnect from model server?
         activeClients.remove(client)
         client.close()
+        callback?.invoke()
     }
 
     override suspend fun bindModel(
         client: ModelClientV2,
         branchReference: BranchReference,
         model: INode,
-        afterActivate: (() -> Unit)?,
+        callback: (() -> Unit)?,
     ): IBinding {
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         runBlocking(coroutineScope.coroutineContext) {
@@ -128,7 +136,7 @@ class SyncServiceImpl : SyncService {
         }
 
         // trigger callback after activation
-        afterActivate?.invoke()
+        callback?.invoke()
 
         // TODO fixme we have to return a binding / bunch of bindings...
         return object : IBinding {
@@ -150,7 +158,7 @@ class SyncServiceImpl : SyncService {
 
     override fun getModuleBindings() = BindingsRegistry.instance.getModuleBindings()
 
-    fun dispose() {
+    override fun dispose() {
         // cancel all running coroutines
         coroutineScope.cancel()
         // dispose the clients

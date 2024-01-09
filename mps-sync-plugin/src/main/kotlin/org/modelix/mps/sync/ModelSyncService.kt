@@ -63,25 +63,23 @@ class ModelSyncService : Disposable {
     fun connectModelServer(
         url: String,
         jwt: String,
-        afterActivate: (() -> Unit)?,
+        callback: (() -> Unit)?,
     ) {
         coroutineScope.launch {
             logger.info("Connection to server: $url with JWT $jwt")
-            syncService.connectToModelServer(URL(url), jwt)
+            syncService.connectModelServer(URL(url), jwt, callback)
             logger.info("Connected to server: $url with JWT $jwt")
-            afterActivate?.invoke()
         }
     }
 
     fun disconnectServer(
         modelClient: ModelClientV2,
-        afterActivate: (() -> Unit)?,
+        callback: (() -> Unit)?,
     ) {
         coroutineScope.launch {
             logger.info("disconnecting to server: ${modelClient.baseUrl}")
-            syncService.disconnectModelServer(modelClient)
+            syncService.disconnectModelServer(modelClient, callback)
             logger.info("disconnected server: ${modelClient.baseUrl}")
-            afterActivate?.invoke()
         }
     }
 
@@ -90,7 +88,7 @@ class ModelSyncService : Disposable {
         branchName: String,
         model: INode,
         repositoryID: String,
-        afterActivate: (() -> Unit)?,
+        callback: (() -> Unit)?,
     ) {
         coroutineScope.launch {
             try {
@@ -98,7 +96,7 @@ class ModelSyncService : Disposable {
                     client,
                     BranchReference(RepositoryId(repositoryID), branchName),
                     model,
-                    afterActivate,
+                    callback,
                 )
                 existingBindings.add(newBinding)
             } catch (e: ConnectException) {
@@ -108,8 +106,6 @@ class ModelSyncService : Disposable {
             } catch (e: Exception) {
                 logger.warn("Pokemon Exception Catching: ${e.message} / ${e.cause}")
             }
-            // actual correct place to call after activate
-            afterActivate?.invoke()
         }
     }
 

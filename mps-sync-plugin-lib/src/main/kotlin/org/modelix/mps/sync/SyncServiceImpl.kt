@@ -8,18 +8,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
-import org.modelix.model.api.ITree
-import org.modelix.model.api.getNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.transformation.MpsToModelixMap
-import org.modelix.mps.sync.transformation.modelixToMps.incremental.TreeChangeVisitor
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
 import org.modelix.mps.sync.util.SyncBarrier
 import java.net.ConnectException
@@ -30,8 +28,8 @@ class SyncServiceImpl : SyncService {
 
     private var log: Logger = logger<SyncServiceImpl>()
 
-    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
-    var clientBindingMap: MutableMap<ModelClientV2, MutableList<BindingImpl>> = mutableMapOf()
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    val activeClients = mutableSetOf<ModelClientV2>()
 
     private lateinit var replicatedModel: ReplicatedModel
 
@@ -41,7 +39,7 @@ class SyncServiceImpl : SyncService {
         jwt: String,
     ): ModelClientV2 {
         // avoid reconnect to existing server
-        val client = clientBindingMap.keys.find { it.baseUrl == serverURL.toString() }
+        val client = activeClients.find { it.baseUrl == serverURL.toString() }
         client?.let {
             log.info("Using already existing connection to $serverURL")
             return it
@@ -60,13 +58,13 @@ class SyncServiceImpl : SyncService {
             }
         }
         log.info("Connection to $serverURL successful")
-        clientBindingMap[modelClientV2] = mutableListOf()
+        activeClients.add(modelClientV2)
         return modelClientV2
     }
 
     fun disconnectModelServer(client: ModelClientV2) {
-        clientBindingMap[client]?.forEach { it.deactivate() }
-        clientBindingMap.remove(client)
+        // TODO what shall happen with the bindings if we disconnect from model server?
+        activeClients.remove(client)
         client.close()
     }
 
@@ -74,15 +72,13 @@ class SyncServiceImpl : SyncService {
         client: ModelClientV2,
         branchReference: BranchReference,
         model: INode,
-        targetProject: MPSProject,
-        languageRepository: MPSLanguageRepository,
         afterActivate: (() -> Unit)?,
     ): IBinding {
-        lateinit var bindingImpl: BindingImpl
-
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         runBlocking(coroutineScope.coroutineContext) {
+            // TOOD how to handle multiple replicated models at the same time?
             replicatedModel = client.getReplicatedModel(branchReference)
+            // TODO when and how to dispose the replicated model and everything that depends on it?
             replicatedModel.start()
 
             /**
@@ -100,6 +96,10 @@ class SyncServiceImpl : SyncService {
 
             val isSynchronizing = SyncBarrier.instance
             val nodeMap = MpsToModelixMap.instance
+
+            val targetProject = ActiveMpsProjectInjector.activeProject!!
+            val languageRepository = registerLanguages(targetProject)
+
             // transform the model
             ITreeToSTreeTransformer(
                 replicatedModel.getBranch(),
@@ -107,287 +107,69 @@ class SyncServiceImpl : SyncService {
                 languageRepository,
                 isSynchronizing,
                 nodeMap,
+                BindingsRegistry.instance,
+            ).transform(model)
+
+            // register change listener on replicated model
+            // TODO fixme avoid the double-registration of the same listener...
+            registerReplicatedModelChangeListener(
+                replicatedModel,
+                targetProject,
+                languageRepository,
+                isSynchronizing,
+                nodeMap,
             )
-                .transform(model)
-            bindingImpl = BindingImpl(replicatedModel, targetProject, languageRepository, isSynchronizing, nodeMap)
         }
+
         // trigger callback after activation
         afterActivate?.invoke()
 
-        // remember the new binding
-        clientBindingMap[client]!!.add(bindingImpl)
+        // TODO fixme we have to return a binding / bunch of bindings...
+        return object : IBinding {
+            override fun activate(callback: Runnable?) {
+                TODO("Not yet implemented")
+            }
 
-        return bindingImpl
+            override fun deactivate(callback: Runnable?) {
+                TODO("Not yet implemented")
+            }
+        }
     }
+
+    override fun setActiveMpsProject(mpsProject: MPSProject) {
+        ActiveMpsProjectInjector.activeProject = mpsProject
+    }
+
+    override fun getModelBindings() = BindingsRegistry.instance.getModelBindings()
+
+    override fun getModuleBindings() = BindingsRegistry.instance.getModuleBindings()
 
     fun dispose() {
         // cancel all running coroutines
         coroutineScope.cancel()
-        // dispose the bindings
-        clientBindingMap.values.forEach { it: MutableList<BindingImpl> -> it.forEach { it2 -> it2.deactivate() } }
         // dispose the clients
-        clientBindingMap.keys.forEach { it: ModelClientV2 -> it.close() }
+        activeClients.forEach { it.close() }
+        // dispose all bindings
+        val bindingsRegistry = BindingsRegistry.instance
+        bindingsRegistry.getModuleBindings().forEach { it.deactivate() }
+        bindingsRegistry.getModelBindings().forEach { it.deactivate() }
     }
 
-    fun removeServerConnectionAndAllBindings(serverURL: URL) {
-        val foundClient = clientBindingMap.keys.find { it.baseUrl.equals(serverURL) } ?: return
-
-        // TODO do a proper binding removal here?
-        clientBindingMap[foundClient]!!.forEach { it.deactivate() }
-
-        foundClient.close()
-
-        clientBindingMap.remove(foundClient)
+    private fun registerLanguages(project: MPSProject): MPSLanguageRepository {
+        val repository = project.repository
+        val mpsLanguageRepo = MPSLanguageRepository(repository)
+        ILanguageRepository.register(mpsLanguageRepo)
+        return mpsLanguageRepo
     }
 
-    @Deprecated("TODO: remove this method")
-    override fun moveNode(nodeId: String) {
-        val branch = replicatedModel.getBranch()
-
-        /*
-        // move scheduling child from one Lecture to another
-        val nodeId = 17179869198L
-        val childNode = branch.getNode(nodeId)
-        var childLink: IChildLink? = null
-        branch.runReadT {
-            childLink = childNode.getContainmentLink()
-        }
-
-        // delete old schedule
-        val parentNode = branch.getNode(17179869190)
-        branch.runWrite {
-            parentNode.getChildren(childLink!!).forEach { it.remove() }
-        }
-
-        // add new schedule
-        val parentNodeId = parentNode.nodeIdAsLong()
-        branch.runWriteT { transaction ->
-            transaction.moveChild(parentNodeId, childLink?.getSimpleName(), -1, nodeId)
-        }
-         */
-
-        /*
-        // move a LectureList from model root to a child node
-        val lectureListToMoveNodeId = nodeId.toLong()
-        val newParentNodeId = 17179869190
-        branch.runWriteT { transaction ->
-            transaction.moveChild(newParentNodeId, "sublecturelist", -1, lectureListToMoveNodeId)
-        }
-         */
-
-        /*
-        // move a LectureList from childNode to model root
-        val lectureListToMoveNodeId = nodeId.toLong()
-        val modelNodeId = 17179869185
-        branch.runWriteT { transaction ->
-            transaction.moveChild(modelNodeId, null, -1, lectureListToMoveNodeId)
-        }
-         */
-
-        /*
-        // delete model
-        branch.runWrite{
-            branch.getNode(17179869185).remove()
-        }
-         */
-
-        /*
-        // delete module
-        branch.runWrite {
-            branch.getNode(4294967309).remove()
-        }
-         */
-
-        /*
-        // move LectureList (root node) to a new model
-        val lectureListNodeId = 17179869188
-        val newModelId = nodeId.toLong()
-        branch.runWriteT { transaction ->
-            transaction.moveChild(newModelId, null, -1, lectureListNodeId)
-        }
-         */
-
-        /*
-        // create new model in the cloud
-        branch.runWriteT {
-            val cloudModuleId = 4294967309L
-            val cloudModule = branch.getNode(cloudModuleId)
-            val cloudModel = cloudModule.addNewChild(
-                BuiltinLanguages.MPSRepositoryConcepts.Module.models,
-                -1,
-                BuiltinLanguages.MPSRepositoryConcepts.Model,
-            )
-
-            cloudModel.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.Model.id,
-                "r:ce161c54-ea76-40a6-a31d-9d7cd01fecf2",
-            )
-            cloudModel.setPropertyValue(
-                BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
-                "University.Schedule.modelserver.backend.hellooworld",
-            )
-        }
-         */
-
-        // create new module in the cloud
-        branch.runWriteT {
-            val rootNode = branch.getNode(1)
-            val cloudModel = rootNode.addNewChild(
-                "modules",
-                -1,
-                BuiltinLanguages.MPSRepositoryConcepts.Module,
-            )
-
-            cloudModel.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.Module.id,
-                "a04444a1-c8a4-48e8-a940-32a70d0f9cfe",
-            )
-            cloudModel.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion,
-                "0",
-            )
-            cloudModel.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS,
-                "true",
-            )
-            cloudModel.setPropertyValue(
-                BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
-                "University.Schedule.modelserver.backend.box2",
-            )
-        }
-
-        /*
-        // model import from new model to old one
-        branch.runWriteT {
-            val newModelId = nodeId.toLong()
-            val oldModelId = 17179869185
-
-            val newModel = branch.getNode(newModelId)
-            val modelImport = newModel.addNewChild(
-                BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports,
-                -1,
-                BuiltinLanguages.MPSRepositoryConcepts.ModelReference,
-            )
-
-            val oldModel = branch.getNode(oldModelId)
-            modelImport.setReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model, oldModel)
-        }
-         */
-
-        /*
-        // add language dependency
-        branch.runWriteT {
-            val modelId = nodeId.toLong()
-            val model = branch.getNode(modelId)
-            val cloudLanguageDependency =
-                model.addNewChild(
-                    BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages,
-                    -1,
-                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
-                )
-
-            // warning: might be fragile, because we synchronize the properties by hand
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                "University.Schedule",
-            )
-
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                "96533389-8d4c-46f2-b150-8d89155f7fca",
-            )
-
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
-                "0",
-            )
-        }
-         */
-
-        /*
-        // add devkit dependency
-        branch.runWriteT {
-            val modelId = nodeId.toLong()
-            val model = branch.getNode(modelId)
-            val cloudLanguageDependency =
-                model.addNewChild(
-                    BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages,
-                    -1,
-                    BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency,
-                )
-
-            // warning: might be fragile, because we synchronize the properties by hand
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                "University.Schedule.Devkit",
-            )
-
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                "3f0b14cf-38db-4a9e-ae9e-6c078c16c2da",
-            )
-        }
-         */
-
-        /*
-        // add module dependency
-        branch.runWriteT {
-            val moduleId = nodeId.toLong()
-            val module = branch.getNode(moduleId)
-            val cloudDependency =
-                module.addNewChild(
-                    BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies,
-                    -1,
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency,
-                )
-
-            cloudDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
-                "false",
-            )
-
-            cloudDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
-                "a04444a1-c8a4-48e8-a940-32a70d0e8bfc",
-            )
-
-            cloudDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name,
-                "University.Schedule.modelserver.backend.sandbox",
-            )
-        }
-         */
-    }
-}
-
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class BindingImpl(
-    val replicatedModel: ReplicatedModel,
-    project: MPSProject,
-    languageRepository: MPSLanguageRepository,
-    isSynchronizing: SyncBarrier,
-    nodeMap: MpsToModelixMap,
-) : IBinding {
-
-    init {
-        replicatedModel.getBranch().addListener(object : IBranchListener {
-            override fun treeChanged(oldTree: ITree?, newTree: ITree) {
-                if (oldTree != null) {
-                    newTree.visitChanges(
-                        oldTree,
-                        TreeChangeVisitor(replicatedModel, project, languageRepository, isSynchronizing, nodeMap),
-                    )
-                }
-            }
-        })
-    }
-
-    override fun activate(callback: Runnable?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun deactivate(callback: Runnable?) {
-        // TODO unregister Model/Module/NodeChangeListeners?
-        replicatedModel.dispose()
+    private fun registerReplicatedModelChangeListener(
+        replicatedModel: ReplicatedModel,
+        project: MPSProject,
+        languageRepository: MPSLanguageRepository,
+        isSynchronizing: SyncBarrier,
+        nodeMap: MpsToModelixMap,
+    ) {
+        val listener = ModelixBranchListener(replicatedModel, project, languageRepository, isSynchronizing, nodeMap)
+        replicatedModel.getBranch().addListener(listener)
     }
 }

@@ -17,21 +17,22 @@
 package org.modelix.mps.sync.transformation.modelixToMps.initial
 
 import com.intellij.openapi.diagnostic.logger
+import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
-import jetbrains.mps.smodel.SModelInternal
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.transformation.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
-import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
-import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
-import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
 import org.modelix.mps.sync.util.SyncBarrier
 import org.modelix.mps.sync.util.isModel
 import org.modelix.mps.sync.util.isModule
@@ -44,6 +45,7 @@ class ITreeToSTreeTransformer(
     mpsLanguageRepository: MPSLanguageRepository,
     private val isSynchronizing: SyncBarrier,
     private val nodeMap: MpsToModelixMap,
+    private val bindingsRegistry: BindingsRegistry,
 ) {
 
     private val logger = logger<ITreeToSTreeTransformer>()
@@ -57,12 +59,10 @@ class ITreeToSTreeTransformer(
             try {
                 // TODO use coroutines instead of big-bang eager loading?
                 branch.runReadT {
-                    val root = branch.getNode(entryPoint.nodeIdAsLong())
+                    val nodeId = entryPoint.nodeIdAsLong()
+                    val root = branch.getNode(nodeId)
 
-                    logger.info("--- PRINTING TREE ---")
-                    traverse(root, 1) { }
-
-                    logger.info("--- FILTERING MODULES AND MODELS ---")
+                    logger.info("--- Transforming modules and models in modelix Node $nodeId ---")
                     traverse(root, 1) {
                         if (it.isModule()) {
                             moduleTransformer.transformToModule(it)
@@ -71,10 +71,10 @@ class ITreeToSTreeTransformer(
                         }
                     }
 
-                    logger.info("--- RESOLVING MODEL IMPORTS ---")
+                    logger.info("--- Resolving model imports ---")
                     modelTransformer.resolveModelImports(project.repository)
 
-                    logger.info("--- TRANSFORMING NODES ---")
+                    logger.info("--- Transforming nodes ---")
                     traverse(root, 1) {
                         val isNotModuleOrModel = !(it.isModule() || it.isModel())
                         if (isNotModuleOrModel) {
@@ -82,19 +82,20 @@ class ITreeToSTreeTransformer(
                         }
                     }
 
-                    logger.info("--- RESOLVING REFERENCES ---")
+                    logger.info("--- Resolving references ---")
                     nodeTransformer.resolveReferences()
 
-                    logger.info("--- REGISTER LISTENERS, AKA \"ACTIVATE BINDINGS\"")
+                    logger.info("--- Registering model and module bindings ---")
                     nodeMap.models.forEach {
-                        val nodeChangeListener = NodeChangeListener(branch, nodeMap, isSynchronizing)
-                        it.addChangeListener(nodeChangeListener)
-
-                        val modelChangeListener = ModelChangeListener(branch, nodeMap, isSynchronizing)
-                        (it as SModelInternal).addModelListener(modelChangeListener)
+                        val model = it as SModelBase
+                        val binding =
+                            ModelBinding(model, branch, nodeMap, isSynchronizing, project.modelAccess, bindingsRegistry)
+                        bindingsRegistry.addModelBinding(binding)
                     }
                     nodeMap.modules.forEach {
-                        it.addModuleListener(ModuleChangeListener(branch, nodeMap, isSynchronizing))
+                        val module = it as AbstractModule
+                        val binding = ModuleBinding(module, branch, nodeMap, isSynchronizing, bindingsRegistry)
+                        bindingsRegistry.addModuleBinding(binding)
                     }
                 }
             } catch (ex: Exception) {

@@ -51,10 +51,14 @@
 
     </extensions>
     <actions>
-        <action id="org.modelix.mps.sync.action.ModelSyncAction" class="org.modelix.mps.sync.action.ModelSyncAction"
-                text="Model Sync Action"/>
+        <action id="org.modelix.mps.sync.action.ModelSyncAction"
+                class="org.modelix.mps.sync.action.ModelSyncAction" text="Model Sync Action"/>
         <action id="org.modelix.mps.sync.action.ModuleSyncAction"
-                class="org.modelix.mps.sync.action.ModuleSyncAction" text="Solution Sync Action"/>
+                class="org.modelix.mps.sync.action.ModuleSyncAction" text="Module Sync Action"/>
+        <action id="org.modelix.mps.sync.action.UnbindModelAction"
+                class="org.modelix.mps.sync.action.UnbindModelAction" text="Unbind Model Action"/>
+        <action id="org.modelix.mps.sync.action.UnbindModuleAction"
+                class="org.modelix.mps.sync.action.UnbindModuleAction" text="Unbind Module Action"/>
         <group id="org.modelix.mps.sync.action.ModelixActionGroup"
                class="org.modelix.mps.sync.action.ModelixActionGroup" text="Modelix Action Group"/>
     </actions>

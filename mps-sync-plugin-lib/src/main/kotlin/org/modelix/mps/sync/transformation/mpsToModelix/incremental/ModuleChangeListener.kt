@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
+import jetbrains.mps.extapi.model.SModelBase
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -42,9 +43,11 @@ class ModuleChangeListener(
     private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, isSynchronizing)
     private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, isSynchronizing)
 
-    override fun modelAdded(module: SModule, model: SModel) = modelSynchronizer.addModel(model)
+    override fun modelAdded(module: SModule, model: SModel) = modelSynchronizer.addModel(model as SModelBase)
 
     override fun modelRemoved(module: SModule, reference: SModelReference) {
+        // TODO test if it is called after modelChangeListener.beforeModelDisposed to make sure that everything is deleted correctly
+
         /*nodeSynchronizer.nodeRemoved(
             parentNodeIdProducer = { nodeMap[module]!! },
             childNodeIdProducer = { nodeMap[reference.modelId]!! }

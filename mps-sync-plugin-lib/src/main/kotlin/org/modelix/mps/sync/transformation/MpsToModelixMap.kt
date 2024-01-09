@@ -52,12 +52,16 @@ class MpsToModelixMap {
     private val sModelReferenceToModelixId = mutableMapOf<SModelReference, Long>()
     private val modelixIdToSModelReference = mutableMapOf<Long, SModelReference>()
 
+    private val objectsRelatedToAModel = mutableMapOf<SModel, MutableSet<Any>>()
+    private val objectsRelatedToAModule = mutableMapOf<SModule, MutableSet<Any>>()
+
     val models = modelixIdToSModel.values
     val modules = modelixIdToSModule.values
 
     fun put(node: SNode, modelixId: Long) {
         sNodeToModelixId[node] = modelixId
         modelixIdToSNode[modelixId] = node
+        node.model?.let { putObjRelatedToAModel(it, node) }
     }
 
     fun put(model: SModel, modelixId: Long) {
@@ -67,22 +71,43 @@ class MpsToModelixMap {
         val modelId = model.modelId
         sModelIdToModelixId[modelId] = modelixId
         modelixIdToSModelId[modelixId] = modelId
+
+        putObjRelatedToAModel(model, model)
     }
 
     fun put(module: SModule, modelixId: Long) {
         sModuleToModelixId[module] = modelixId
         modelixIdToSModule[modelixId] = module
+
+        putObjRelatedToAModule(module, module)
     }
 
-    fun put(moduleReference: SModuleReference, modelixId: Long) {
+    fun put(moduleReference: SModuleReference, modelixId: Long, sourceModule: SModule) {
         sModuleReferenceToModelixId[moduleReference] = modelixId
         modelixIdToSModuleReference[modelixId] = moduleReference
+
+        putObjRelatedToAModule(sourceModule, moduleReference)
     }
 
-    fun put(modelReference: SModelReference, modelixId: Long) {
+    fun put(moduleReference: SModuleReference, modelixId: Long, sourceModel: SModel) {
+        sModuleReferenceToModelixId[moduleReference] = modelixId
+        modelixIdToSModuleReference[modelixId] = moduleReference
+
+        putObjRelatedToAModel(sourceModel, moduleReference)
+    }
+
+    fun put(modelReference: SModelReference, modelixId: Long, sourceModel: SModel) {
         sModelReferenceToModelixId[modelReference] = modelixId
         modelixIdToSModelReference[modelixId] = modelReference
+
+        putObjRelatedToAModel(sourceModel, modelReference)
     }
+
+    private fun putObjRelatedToAModel(model: SModel, obj: Any?) =
+        objectsRelatedToAModel.computeIfAbsent(model) { mutableSetOf() }.add(obj!!)
+
+    private fun putObjRelatedToAModule(module: SModule, obj: Any?) =
+        objectsRelatedToAModule.computeIfAbsent(module) { mutableSetOf() }.add(obj!!)
 
     operator fun get(node: SNode?) = sNodeToModelixId[node]
 
@@ -108,11 +133,42 @@ class MpsToModelixMap {
 
     fun remove(modelixId: Long) {
         modelixIdToSNode.remove(modelixId)?.let { sNodeToModelixId.remove(it) }
-        modelixIdToSModel.remove(modelixId)?.let { sModelIdToModelixId.remove(it.modelId) }
+        modelixIdToSModel.remove(modelixId)?.let {
+            sModelToModelixId.remove(it)
+            remove(it)
+        }
         modelixIdToSModelId.remove(modelixId)?.let { sModelIdToModelixId.remove(it) }
-        modelixIdToSModule.remove(modelixId)?.let { sModuleToModelixId.remove(it) }
-        modelixIdToSModuleReference.remove(modelixId)?.let { sModuleReferenceToModelixId.remove(it) }
         modelixIdToSModelReference.remove(modelixId)?.let { sModelReferenceToModelixId.remove(it) }
+        modelixIdToSModule.remove(modelixId)?.let {
+            sModuleToModelixId.remove(it)
+            remove(it)
+        }
+        modelixIdToSModuleReference.remove(modelixId)?.let { sModuleReferenceToModelixId.remove(it) }
+    }
+
+    fun remove(model: SModel) {
+        sModelToModelixId.remove(model)?.let { modelixIdToSModel.remove(it) }
+        sModelIdToModelixId.remove(model.modelId)?.let { modelixIdToSModelId.remove(it) }
+        objectsRelatedToAModel.remove(model)?.forEach {
+            if (it is SModuleReference) {
+                sModuleReferenceToModelixId.remove(it)?.let { id -> modelixIdToSModuleReference.remove(id) }
+            } else if (it is SModelReference) {
+                sModelReferenceToModelixId.remove(it)?.let { modelixId -> modelixIdToSModelReference.remove(modelixId) }
+            } else if (it is SNode) {
+                sNodeToModelixId.remove(it)?.let { modelixId -> modelixIdToSNode.remove(modelixId) }
+            }
+        }
+    }
+
+    fun remove(module: SModule) {
+        sModuleToModelixId.remove(module)?.let { modelixIdToSModule.remove(it) }
+        objectsRelatedToAModule.remove(module)?.forEach {
+            if (it is SModuleReference) {
+                sModuleReferenceToModelixId.remove(it)?.let { id -> modelixIdToSModuleReference.remove(id) }
+            } else if (it is SModel) {
+                remove(it)
+            }
+        }
     }
 
     fun isMappedToMps(modelixId: Long?) =

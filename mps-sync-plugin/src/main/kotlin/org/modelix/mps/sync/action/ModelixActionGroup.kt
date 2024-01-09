@@ -32,14 +32,14 @@ class ModelixActionGroup() : ActionGroup("Modelix Actions", "", CloudIcons.PLUGI
     override fun getChildren(event: AnActionEvent?): Array<AnAction> {
         val model = event?.getData(ModelSyncAction.CONTEXT_MODEL)
         if (model != null) {
-            return arrayOf(ModelSyncAction.create())
+            return arrayOf(ModelSyncAction.create(), UnbindModelAction.create())
         }
 
         val module = event?.getData(ModuleSyncAction.CONTEXT_MODULE)
         if (module != null) {
-            return arrayOf(ModuleSyncAction.create())
+            return arrayOf(ModuleSyncAction.create(), UnbindModuleAction.create())
         }
 
-        return arrayOf(ModelSyncAction.create(), ModuleSyncAction.create())
+        return emptyArray()
     }
 }

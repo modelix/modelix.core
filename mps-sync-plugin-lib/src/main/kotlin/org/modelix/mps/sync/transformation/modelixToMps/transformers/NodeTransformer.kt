@@ -99,17 +99,22 @@ class NodeTransformer(
             if (!onlyAddToParentModel) {
                 parentModule.models.forEach {
                     it.addLanguageImport(sLanguage, languageVersion)
+                    // TODO this might not work, because if more than one models/modules point to the same Language, then the modelix ID will be always overwritten by the last Node (SingleLanguageDependency) that points to this Language
+                    // TODO we might have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
+                    // TODO store the moduleReference together with the model, because this composite key should be unique --> when deleting the moduleReference figure out the model as well and look for this composite key
+                    nodeMap.put(languageModuleReference!!, iNode.nodeIdAsLong(), it)
                 }
             } else {
                 val modelNodeId = iNode.getModel()?.nodeIdAsLong()
                 val parentModel = nodeMap.getModel(modelNodeId)!!
                 parentModel.addLanguageImport(sLanguage, languageVersion)
+
+                // TODO this might not work, because if more than one models/modules point to the same Language, then the modelix ID will be always overwritten by the last Node (SingleLanguageDependency) that points to this Language
+                // TODO we might have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
+                // TODO store the moduleReference together with the model, because this composite key should be unique --> when deleting the moduleReference figure out the model as well and look for this composite key
+                nodeMap.put(languageModuleReference!!, iNode.nodeIdAsLong(), parentModel)
             }
         }
-
-        // TODO this might not work, because if more than one models/modules point to the same Language, then the modelix ID will be always overwritten by the last Node (SingleLanguageDependency) that points to this Language
-        // TODO we might have to find a different traceability between the LanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing LanguageDependencies in the cloud)
-        nodeMap.put(languageModuleReference!!, iNode.nodeIdAsLong())
     }
 
     fun transformDevKitDependency(
@@ -131,17 +136,22 @@ class NodeTransformer(
             if (!onlyAddToParentModel) {
                 parentModule.models.forEach {
                     it.addDevKit(devKitModuleReference!!)
+                    // TODO this might not work, because if more than one models/modules point to the same DevKit, then the modelix ID will be always overwritten by the last Node (DevkitDependency) that points to this devkit
+                    // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing DevKitDependencies in the cloud)
+                    // TODO store the moduleReference together with the model, because this composite key should be unique --> when deleting the moduleReference figure out the model as well and look for this composite key
+                    nodeMap.put(devKitModuleReference!!, iNode.nodeIdAsLong(), it)
                 }
             } else {
                 val modelNodeId = iNode.getModel()?.nodeIdAsLong()
                 val parentModel = nodeMap.getModel(modelNodeId)!!
                 parentModel.addDevKit(devKitModuleReference!!)
+
+                // TODO this might not work, because if more than one models/modules point to the same DevKit, then the modelix ID will be always overwritten by the last Node (DevkitDependency) that points to this devkit
+                // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing DevKitDependencies in the cloud)
+                // TODO store the moduleReference together with the model, because this composite key should be unique --> when deleting the moduleReference figure out the model as well and look for this composite key
+                nodeMap.put(devKitModuleReference!!, iNode.nodeIdAsLong(), parentModel)
             }
         }
-
-        // TODO this might not work, because if more than one models/modules point to the same DevKit, then the modelix ID will be always overwritten by the last Node (DevkitDependency) that points to this devkit
-        // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ModelChangeListener, when adding/removing DevKitDependencies in the cloud)
-        nodeMap.put(devKitModuleReference!!, iNode.nodeIdAsLong())
     }
 
     fun resolveReferences(mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking) =

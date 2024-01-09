@@ -69,6 +69,6 @@ class ModuleTransformer(private val project: MPSProject, private val nodeMap: Mp
             parentModule.addDependency(moduleReference, reexport)
         }
 
-        nodeMap.put(moduleReference, iNode.nodeIdAsLong())
+        nodeMap.put(moduleReference, iNode.nodeIdAsLong(), parentModule)
     }
 }

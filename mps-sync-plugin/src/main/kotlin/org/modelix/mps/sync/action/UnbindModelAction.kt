@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2024.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,18 @@ import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.ReplicatedModelRegistry
-import org.modelix.mps.sync.transformation.MpsToModelixMap
-import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
-import org.modelix.mps.sync.util.SyncBarrier
+import org.modelix.mps.sync.bindings.BindingsRegistry
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelSyncAction : AnAction {
+class UnbindModelAction : AnAction {
 
     companion object {
         val CONTEXT_MODEL = DataKey.create<SModel>("MPS_Context_SModel")
 
-        fun create() = ModelSyncAction("Synchronize model to server")
+        fun create() = UnbindModelAction("Unbind model")
     }
 
-    private val logger = logger<ModelSyncAction>()
+    private val logger = logger<UnbindModelAction>()
 
     constructor() : super()
 
@@ -46,14 +43,9 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-            // TODO fixme: warn the user if the model imports another model that is not on the model server yet
-            ModelSynchronizer(
-                ReplicatedModelRegistry.instance.model?.getBranch()!!,
-                MpsToModelixMap.instance,
-                SyncBarrier.instance,
-            ).addModel(model)
+            BindingsRegistry.instance.getModelBinding(model)?.deactivate()
         } catch (ex: Exception) {
-            logger.error("Model sync error occurred", ex)
+            logger.error("Model unbind error occurred", ex)
         }
     }
 }

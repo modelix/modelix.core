@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.transformation.mpsToModelix.initial
 
 import com.jetbrains.rd.util.firstOrNull
+import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.Solution
@@ -29,9 +30,10 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
+import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.util.runReadBlocking
 import org.modelix.mps.sync.transformation.MpsToModelixMap
-import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
 import org.modelix.mps.sync.util.SyncBarrier
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -45,7 +47,7 @@ class ModuleSynchronizer(
     private val modelSynchronizer =
         ModelSynchronizer(branch, nodeMap, isSynchronizing, postponeReferenceResolution = true)
 
-    fun addModule(module: SModule) {
+    fun addModule(module: AbstractModule) {
         isSynchronizing.runIfAlone {
             branch.runWriteT {
                 val rootNode = branch.getRootNode()
@@ -62,13 +64,16 @@ class ModuleSynchronizer(
                     // synchronize dependencies
                     module.declaredDependencies.forEach { addDependencyUnprotected(module, it) }
                     // synchronize models
-                    module.models.forEach { modelSynchronizer.addModelUnprotected(it) }
+                    module.models.forEach { modelSynchronizer.addModelUnprotected(it as SModelBase) }
                     // resolve cross-model references
                     modelSynchronizer.resolveCrossModelReferences()
                 }
 
-                // register change listener
-                module.addModuleListener(ModuleChangeListener(branch, nodeMap, isSynchronizing))
+                // register binding
+                val bindingsRegistry = BindingsRegistry.instance
+                val binding = ModuleBinding(module, branch, nodeMap, isSynchronizing, bindingsRegistry)
+                bindingsRegistry.addModuleBinding(binding)
+                binding.activate()
             }
         }
     }
@@ -113,7 +118,7 @@ class ModuleSynchronizer(
             val cloudDependency =
                 cloudModule.addNewChild(dependencies, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
 
-            nodeMap.put(moduleReference, cloudDependency.nodeIdAsLong())
+            nodeMap.put(moduleReference, cloudDependency.nodeIdAsLong(), module)
 
             // warning: might be fragile, because we synchronize the properties by hand
             cloudDependency.setPropertyValue(

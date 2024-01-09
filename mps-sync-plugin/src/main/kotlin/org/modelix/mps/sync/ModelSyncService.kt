@@ -22,7 +22,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import io.ktor.client.plugins.ClientRequestException
-import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +33,6 @@ import org.modelix.model.api.runSynchronized
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.mps.sync.action.ModelixActionGroup
 import java.net.ConnectException
@@ -97,23 +95,17 @@ class ModelSyncService : Disposable {
 
     fun bindProject(
         client: ModelClientV2,
-        theProject: MPSProject,
         branchName: String,
-        modelName: String,
         model: INode,
         repositoryID: String,
         afterActivate: (() -> Unit)?,
     ) {
         coroutineScope.launch {
-            log.info("Binding model $modelName to project: $theProject")
             try {
-                val languageRepository = registerLanguages(theProject)
                 val newBinding = syncService.bindModel(
                     client,
                     BranchReference(RepositoryId(repositoryID), branchName),
                     model,
-                    theProject,
-                    languageRepository,
                     afterActivate,
                 )
                 existingBindings.add(newBinding)
@@ -129,14 +121,8 @@ class ModelSyncService : Disposable {
         }
     }
 
-    private fun registerLanguages(project: MPSProject): MPSLanguageRepository {
-        val repository = project.repository
-        val mpsLanguageRepo = MPSLanguageRepository(repository)
-        ILanguageRepository.register(mpsLanguageRepo)
-        return mpsLanguageRepo
-    }
-
     fun deactivateBinding(binding: IBinding) {
+        // TODO deactivate all bindings when switching projects!!!
         binding.deactivate()
         existingBindings.remove(binding)
     }
@@ -184,7 +170,4 @@ class ModelSyncService : Disposable {
             }
         }
     }
-
-    @Deprecated("TODO: remove this method")
-    fun moveNode(nodeId: String) = syncService.moveNode(nodeId)
 }

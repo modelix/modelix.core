@@ -25,7 +25,6 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
-import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
@@ -40,13 +39,14 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.mps.sync.BindingImpl
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.ModelSyncService
 import org.modelix.mps.sync.icons.CloudIcons
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
+import java.awt.event.ItemEvent
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
@@ -161,6 +161,12 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val projectCB: ComboBox<Project> = ComboBox<Project>()
             projectCB.model = openProjectModel
             projectCB.renderer = CustomCellRenderer()
+            projectCB.addItemListener {
+                if (it.stateChange == ItemEvent.SELECTED) {
+                    ActiveMpsProjectInjector.activeProject = ProjectHelper.fromIdeaProject(it.item as Project)!!
+                }
+            }
+
             targetPanel.add(JLabel("Target Project:"))
             targetPanel.add(projectCB)
             inputBox.add(targetPanel)
@@ -191,11 +197,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val bindButton = JButton("Bind Selected")
             bindButton.addActionListener { _: ActionEvent? ->
                 if (existingConnectionsModel.size > 0) {
+                    log.info("Binding model $modelName to project: ${ActiveMpsProjectInjector.activeProject}")
                     modelSyncService.bindProject(
                         existingConnectionsModel.selectedItem as ModelClientV2,
-                        ProjectHelper.fromIdeaProject(openProjectModel.selectedItem as Project)!!,
                         branchName.text,
-                        modelName.text,
                         modelModel.selectedItem as INode,
                         repositoryName.text,
                         ::triggerRefresh,
@@ -219,16 +224,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 // todo
             }
             bindingsPanel.add(unbindButton)
-
-            // TODO remove TextField and Button that were used only for test purposes (shouldn't be in the plugin)
-            val nodeId = JBTextField(20)
-            val moveButton = JButton("Don't press me")
-            moveButton.background = JBColor.RED
-            moveButton.addActionListener { _: ActionEvent? ->
-                modelSyncService.moveNode(nodeId.text)
-            }
-            bindingsPanel.add(moveButton)
-            bindingsPanel.add(nodeId)
 
             inputBox.add(bindingsPanel)
             return inputBox
@@ -263,7 +258,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         fun populateConnectionsCB() {
             existingConnectionsModel.removeAllElements()
-            existingConnectionsModel.addAll(modelSyncService.syncService.clientBindingMap.keys)
+            existingConnectionsModel.addAll(modelSyncService.syncService.activeClients)
             if (existingConnectionsModel.size > 0) {
                 existingConnectionsModel.selectedItem = existingConnectionsModel.getElementAt(0)
             }
@@ -287,7 +282,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
-                    val branches = (existingConnectionsModel.selectedItem as ModelClientV2).listBranches(repoModel.selectedItem as RepositoryId)
+                    val branches =
+                        (existingConnectionsModel.selectedItem as ModelClientV2).listBranches(repoModel.selectedItem as RepositoryId)
                     branchModel.addAll(branches)
                     if (branchModel.size > 0) {
                         branchModel.selectedItem = branchModel.getElementAt(0)
@@ -301,7 +297,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             modelModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
-                    val branch = (existingConnectionsModel.selectedItem as ModelClientV2).getReplicatedModel(branchModel.selectedItem as BranchReference).start()
+                    val branch =
+                        (existingConnectionsModel.selectedItem as ModelClientV2).getReplicatedModel(branchModel.selectedItem as BranchReference)
+                            .start()
                     branch.runRead {
                         val children = branch.getRootNode().allChildren
                         modelModel.addAll(children.toList())
@@ -330,16 +328,16 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             isSelected: Boolean,
             cellHasFocus: Boolean,
         ): Component {
-            var item = value ?: return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-            when (item) {
-                is Project -> item = item.name
-                is BindingImpl -> item = "Repo: ? | Branch: ${item.replicatedModel.branchRef}"
-                is ModelClientV2 -> item = item.baseUrl
-                is RepositoryId -> item = item.toString()
-                is BranchReference -> item = item.branchName
-                is INode -> item = "$item" // (${item.concept.toString()})
+            val formatted = when (value) {
+                is Project -> value.name
+                is IBinding -> value.toString()
+                is ModelClientV2 -> value.baseUrl
+                is RepositoryId -> value.toString()
+                is BranchReference -> value.branchName
+                is INode -> value.toString()
+                else -> return super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus)
             }
-            return super.getListCellRendererComponent(list, item, index, isSelected, cellHasFocus)
+            return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
         }
     }
 }

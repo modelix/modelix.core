@@ -20,6 +20,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.diagnostic.logger
+import jetbrains.mps.project.AbstractModule
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ReplicatedModelRegistry
@@ -44,7 +45,7 @@ class ModuleSyncAction : AnAction {
 
     override fun actionPerformed(event: AnActionEvent) {
         try {
-            val module = event.getData(CONTEXT_MODULE)!!
+            val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
             ModuleSynchronizer(
                 ReplicatedModelRegistry.instance.model?.getBranch()!!,
                 MpsToModelixMap.instance,

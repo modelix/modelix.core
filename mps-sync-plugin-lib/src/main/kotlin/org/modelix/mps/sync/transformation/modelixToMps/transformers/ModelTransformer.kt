@@ -99,7 +99,7 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
             mpsWriteAction {
                 ModelImports(it.source).addModelImport(modelImport)
             }
-            nodeMap.put(modelImport, it.modelReferenceNodeId)
+            nodeMap.put(modelImport, it.modelReferenceNodeId, it.source)
         }
     }
 

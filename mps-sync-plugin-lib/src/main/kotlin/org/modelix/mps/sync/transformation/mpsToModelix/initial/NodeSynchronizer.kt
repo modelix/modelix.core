@@ -161,6 +161,8 @@ class NodeSynchronizer(
                 val cloudChildNode = branch.getNode(nodeId)
                 cloudParentNode.removeChild(cloudChildNode)
             }
+
+            nodeMap.remove(nodeId)
         }
     }
 

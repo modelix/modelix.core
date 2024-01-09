@@ -54,6 +54,24 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
+  /v2/repositories/{repository}/objects:
+    put:
+      operationId: putRepositoryObjects
+      parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "200":
+          $ref: '#/components/responses/200json'
   /v2/repositories/{repository}/branches:
     get:
       operationId: getRepositoryBranches

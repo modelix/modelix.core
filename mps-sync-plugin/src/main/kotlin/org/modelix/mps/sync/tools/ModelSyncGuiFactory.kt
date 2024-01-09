@@ -100,14 +100,12 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
             toolWindow.setIcon(CloudIcons.ROOT_ICON)
-            contentPanel.setLayout(FlowLayout())
-            contentPanel.add(getInputBox(toolWindow))
+            contentPanel.layout = FlowLayout()
+            contentPanel.add(createInputBox())
             triggerRefresh()
         }
 
-        private fun getInputBox(toolWindow: ToolWindow): Box {
-            // todo: yes i know this is bad code. its for debugging only...
-
+        private fun createInputBox(): Box {
             val inputBox = Box.createVerticalBox()
 
             val urlPanel = JPanel()
@@ -137,7 +135,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(JSeparator())
 
             val connectionsPanel = JPanel()
-            val existingConnectionsCB: ComboBox<ModelClientV2> = ComboBox<ModelClientV2>()
+            val existingConnectionsCB = ComboBox<ModelClientV2>()
             existingConnectionsCB.model = existingConnectionsModel
             existingConnectionsCB.renderer = CustomCellRenderer()
             connectionsPanel.add(JLabel("Existing Conn.:"))
@@ -158,7 +156,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(JSeparator())
 
             val targetPanel = JPanel()
-            val projectCB: ComboBox<Project> = ComboBox<Project>()
+            val projectCB = ComboBox<Project>()
             projectCB.model = openProjectModel
             projectCB.renderer = CustomCellRenderer()
             projectCB.addItemListener {
@@ -172,7 +170,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(targetPanel)
 
             val repoPanel = JPanel()
-            val repoCB: ComboBox<RepositoryId> = ComboBox<RepositoryId>()
+            val repoCB = ComboBox<RepositoryId>()
             repoCB.model = repoModel
             repoCB.renderer = CustomCellRenderer()
             repoPanel.add(JLabel("Remote Repo:   "))
@@ -180,7 +178,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(repoPanel)
 
             val branchPanel = JPanel()
-            val branchCB: ComboBox<BranchReference> = ComboBox<BranchReference>()
+            val branchCB = ComboBox<BranchReference>()
             branchCB.model = branchModel
             branchCB.renderer = CustomCellRenderer()
             branchPanel.add(JLabel("Remote Branch: "))
@@ -188,7 +186,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(branchPanel)
 
             val modelPanel = JPanel()
-            val modelCB: ComboBox<INode> = ComboBox<INode>()
+            val modelCB = ComboBox<INode>()
             modelCB.model = modelModel
             modelCB.renderer = CustomCellRenderer()
             modelPanel.add(JLabel("Remote Model:  "))
@@ -213,19 +211,22 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(JSeparator())
 
             val bindingsPanel = JPanel()
-            val existingBindingCB: ComboBox<IBinding> = ComboBox<IBinding>()
+            val existingBindingCB = ComboBox<IBinding>()
             existingBindingCB.model = existingBindingModel
             existingBindingCB.renderer = CustomCellRenderer()
             bindingsPanel.add(JLabel("Bindings:      "))
             bindingsPanel.add(existingBindingCB)
 
             val unbindButton = JButton("Unbind Selected")
-            unbindButton.addActionListener { _: ActionEvent? ->
-                // todo
+            unbindButton.addActionListener {
+                existingBindingCB.selectedItem?.let {
+                    (it as IBinding).deactivate()
+                    existingBindingCB.removeItem(it)
+                }
             }
             bindingsPanel.add(unbindButton)
-
             inputBox.add(bindingsPanel)
+
             return inputBox
         }
 

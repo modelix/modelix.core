@@ -24,6 +24,12 @@ class CPHamtLeaf(
     val key: Long,
     val value: KVEntryReference<CPNode>,
 ) : CPHamtNode() {
+
+    override fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?) {
+        val reusableLeaf = reusableCandidate?.getValueIfLoaded() as? CPHamtLeaf
+        value.load(bulkQuery, reusableLeaf?.value)
+    }
+
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(value)
 
     override fun serialize(): String {
@@ -65,6 +71,16 @@ class CPHamtLeaf(
     override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
         return bulkQuery.constant(if (key == this.key) value else null)
+    }
+
+    override fun unloadEntry(key: Long, shift: Int): UnloadResult {
+        require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
+        return UnloadResult(value.getValueIfLoaded()?.also { value.unload() }, true)
+    }
+
+    override fun loadEntry(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CPNode?> {
+        require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
+        return if (key == this.key) value.loadObject(bulkQuery) else bulkQuery.constant(null)
     }
 
     override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>?) -> Unit): IBulkQuery.Value<Unit> {

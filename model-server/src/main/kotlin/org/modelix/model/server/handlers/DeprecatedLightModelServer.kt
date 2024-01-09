@@ -229,7 +229,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
                 call.respond(HttpStatusCode.NotFound, "version not found: $baseVersionHash")
                 return@post
             }
-            val baseVersion = CLVersion(baseVersionData, getStore())
+            val baseVersion = CLVersion.loadFromHash(baseVersionHash, getStore())
             val mergedVersion = applyUpdate(baseVersion, updateData, repositoryId, getUserName())
             respondVersion(mergedVersion, baseVersion)
         }

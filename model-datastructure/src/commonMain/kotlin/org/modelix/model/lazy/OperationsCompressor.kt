@@ -36,7 +36,7 @@ class OperationsCompressor(val resultTree: CLTree) {
     fun compressOperations(ops: Array<IOperation>): Array<IOperation> {
         if (ops.size <= CLVersion.INLINED_OPS_LIMIT) return ops
 
-        val resultTreeRef = KVEntryReference(resultTree.data)
+        val resultTreeRef = resultTree.dataRef
         val compressedOps: MutableList<IOperation> = ArrayList()
         val createdNodes: MutableSet<Long> = HashSet()
 

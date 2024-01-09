@@ -21,9 +21,13 @@ import kotlin.jvm.Synchronized
 /**
  * Not thread safe
  */
-class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
+class BulkQuery(override val store: IDeserializingKeyValueStore) : IBulkQuery {
     companion object {
         val BATCH_SIZE = 5000
+
+        fun runNewQuery(store: IDeserializingKeyValueStore, body: (BulkQuery) -> Unit) {
+            BulkQuery(store).also(body).process()
+        }
     }
 
     private var queue: MutableList<Pair<KVEntryReference<IKVValue>, (IKVValue?) -> Unit>> = ArrayList()
@@ -109,7 +113,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
     }
 
     inner class Value<T> : IBulkQuery.Value<T> {
-        private var handlers: MutableList<(T) -> Unit>? = ArrayList()
+        private var handlers: Array<(T) -> Unit> = emptyArray()
         private var value: T? = null
         private var done = false
 
@@ -124,10 +128,10 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
             check(!done) { "Value is already set" }
             this.value = value
             done = true
-            for (handler in handlers!!) {
+            for (handler in handlers) {
                 handler(value)
             }
-            handlers = null
+            handlers = emptyArray()
         }
 
         @Synchronized
@@ -135,7 +139,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
             if (done) {
                 handler(value as T)
             } else {
-                handlers!!.add(handler)
+                handlers += handler
             }
         }
 

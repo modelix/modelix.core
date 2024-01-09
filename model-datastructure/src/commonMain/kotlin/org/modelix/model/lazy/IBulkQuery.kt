@@ -16,8 +16,10 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.persistent.IKVValue
+import org.modelix.model.persistent.ReadOnlyMapBasedStore
 
-interface IBulkQuery {
+sealed interface IBulkQuery {
+    val store: IDeserializingKeyValueStore
     fun <I, O> map(input_: Iterable<I>, f: (I) -> Value<O>): Value<List<O>>
     fun <T> constant(value: T): Value<T>
     operator fun <T : IKVValue> get(hash: KVEntryReference<T>): Value<T?>
@@ -26,5 +28,9 @@ interface IBulkQuery {
         fun <R> mapBulk(handler: (T) -> Value<R>): Value<R>
         fun <R> map(handler: (T) -> R): Value<R>
         fun onSuccess(handler: (T) -> Unit)
+    }
+
+    companion object {
+        val NULL: IBulkQuery = NonBulkQuery(NonCachingObjectStore(ReadOnlyMapBasedStore(emptyMap())))
     }
 }

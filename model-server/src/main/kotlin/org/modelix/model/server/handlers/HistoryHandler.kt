@@ -108,7 +108,12 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch doesn't exist: $repositoryAndBranch")
         val branch = OTBranch(PBranch(version.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.runWriteT { t ->
-            t.applyOperation(RevertToOp(KVEntryReference(from!!, DESERIALIZER), KVEntryReference(to!!, DESERIALIZER)))
+            t.applyOperation(
+                RevertToOp(
+                    KVEntryReference.fromHash(from!!, DESERIALIZER),
+                    KVEntryReference.fromHash(to!!, DESERIALIZER),
+                ),
+            )
         }
         val (ops, tree) = branch.operationsAndTree
         val newVersion = createRegularVersion(

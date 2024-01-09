@@ -15,6 +15,7 @@
 
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.ref
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
@@ -59,7 +60,7 @@ class HamtTest {
         }
     }
 
-    private fun createEntry(id: Long) = KVEntryReference(createNode(id))
+    private fun createEntry(id: Long) = createNode(id).ref()
 
     private fun createNode(id: Long) = CPNode.create(
         id,

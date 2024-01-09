@@ -22,7 +22,6 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.OTBranch
@@ -74,7 +73,7 @@ class RevertTest {
     }
 
     fun revert(latestKnownVersion: CLVersion, versionToRevertTo: CLVersion, idGenerator: IIdGenerator): CLVersion {
-        val revertOp = RevertToOp(KVEntryReference(latestKnownVersion.data!!), KVEntryReference(versionToRevertTo.data!!))
+        val revertOp = RevertToOp(latestKnownVersion.dataRef, versionToRevertTo.dataRef)
         val branch = OTBranch(PBranch(latestKnownVersion.tree, idGenerator), idGenerator, latestKnownVersion.store)
         branch.runWriteT { t ->
             (t as OTWriteTransaction).apply(revertOp)

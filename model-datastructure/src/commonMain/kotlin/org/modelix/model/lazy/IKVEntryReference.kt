@@ -15,9 +15,27 @@ package org.modelix.model.lazy
 
 import org.modelix.model.persistent.IKVValue
 
-interface IKVEntryReference<out E : IKVValue> {
+@Deprecated("use KVEntryReference", ReplaceWith("KVEntryReference<E>"))
+sealed interface IKVEntryReference<out E : IKVValue> {
     fun getHash(): String
     fun getValue(store: IDeserializingKeyValueStore): E
     fun getDeserializer(): (String) -> E
     fun write(store: IDeserializingKeyValueStore)
+    fun visitAll(bulkQuery: IBulkQuery, visitor: (String, IKVValue) -> Unit)
+}
+
+fun IKVEntryReference<*>.descendants(includeSelf: Boolean, store: IDeserializingKeyValueStore): Sequence<IKVEntryReference<*>> {
+    return if (includeSelf) {
+        sequenceOf(this) + descendants(false, store)
+    } else {
+        getValue(store).getReferencedEntries().asSequence().flatMap { descendants(true, store) }
+    }
+}
+
+fun IKVEntryReference<*>.serializedEntry(store: IDeserializingKeyValueStore): Pair<String, String> {
+    return getHash() to getValue(store).serialize()
+}
+
+fun IKVValue.serializedEntry(): Pair<String, String> {
+    return hash to serialize()
 }

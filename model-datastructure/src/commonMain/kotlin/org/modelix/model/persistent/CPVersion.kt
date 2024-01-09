@@ -15,7 +15,9 @@
 
 package org.modelix.model.persistent
 
+import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.wasDeserialized
 import org.modelix.model.operations.IOperation
 import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
@@ -38,7 +40,7 @@ class CPVersion(
     numberOfOperations: Int,
 ) : IKVValue {
     private val logger = mu.KotlinLogging.logger {}
-    override var isWritten: Boolean = false
+    override var ref: KVEntryReference<IKVValue>? = null
 
     val id: Long
     val time: String?
@@ -59,6 +61,12 @@ class CPVersion(
     val operations: Array<IOperation>?
     val operationsHash: KVEntryReference<CPOperationsList>?
     val numberOfOperations: Int
+
+    override fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?) {
+        treeHash?.load(bulkQuery, (reusableCandidate?.getValueIfLoaded() as? CPVersion)?.treeHash)
+        // history and operations are not loaded by default
+    }
+
     override fun serialize(): String {
         val opsPart: String = operationsHash?.getHash()
             ?: if (operations!!.isEmpty()) {
@@ -92,15 +100,15 @@ class CPVersion(
 
     override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
 
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
+    override fun getDeserializer() = DESERIALIZER
 
     companion object {
-        val DESERIALIZER: (String) -> CPVersion = { deserialize(it) }
+        val DESERIALIZER = KVEntryReference.IDeserializer.create(CPVersion::class, ::deserialize)
 
         fun deserialize(input: String): CPVersion {
             try {
                 val parts = input.split(Separators.LEVEL1).toTypedArray()
-                if (parts.size == 9) {
+                if (parts.size == 9) { // merge
                     var opsHash: String? = null
                     var ops: Array<IOperation>? = null
                     if (HashUtil.isSha256(parts[8])) {
@@ -115,19 +123,34 @@ class CPVersion(
                         longFromHex(parts[0]),
                         unescape(parts[1]),
                         unescape(parts[2]),
-                        treeHash = emptyStringAsNull(parts[3])?.let { KVEntryReference(it, CPTree.DESERIALIZER) },
+                        treeHash = emptyStringAsNull(parts[3])?.let {
+                            KVEntryReference.fromHash(
+                                it,
+                                CPTree.DESERIALIZER,
+                            )
+                        },
                         previousVersion = null,
                         originalVersion = null,
-                        baseVersion = emptyStringAsNull(parts[4])?.let { KVEntryReference(it, DESERIALIZER) },
-                        mergedVersion1 = emptyStringAsNull(parts[5])?.let { KVEntryReference(it, DESERIALIZER) },
-                        mergedVersion2 = emptyStringAsNull(parts[6])?.let { KVEntryReference(it, DESERIALIZER) },
+                        baseVersion = emptyStringAsNull(parts[4])?.let { KVEntryReference.fromHash(it, DESERIALIZER) },
+                        mergedVersion1 = emptyStringAsNull(parts[5])?.let {
+                            KVEntryReference.fromHash(
+                                it,
+                                DESERIALIZER,
+                            )
+                        },
+                        mergedVersion2 = emptyStringAsNull(parts[6])?.let {
+                            KVEntryReference.fromHash(
+                                it,
+                                DESERIALIZER,
+                            )
+                        },
                         operations = ops,
-                        operationsHash = opsHash?.let { KVEntryReference(it, CPOperationsList.DESERIALIZER) },
+                        operationsHash = opsHash?.let { KVEntryReference.fromHash(it, CPOperationsList.DESERIALIZER) },
                         numberOfOperations = parts[7].toInt(),
                     )
-                    data.isWritten = true
+                    data.wasDeserialized()
                     return data
-                } else {
+                } else { // regular version
                     var opsHash: String? = null
                     var ops: Array<IOperation>? = null
                     if (HashUtil.isSha256(parts[5])) {
@@ -143,17 +166,36 @@ class CPVersion(
                         id = longFromHex(parts[0]),
                         time = unescape(parts[1]),
                         author = unescape(parts[2]),
-                        treeHash = emptyStringAsNull(parts[3])?.let { KVEntryReference(it, CPTree.DESERIALIZER) },
-                        previousVersion = emptyStringAsNull(parts[4])?.let { KVEntryReference(it, DESERIALIZER) },
-                        originalVersion = if (parts.size > 7) emptyStringAsNull(parts[7])?.let { KVEntryReference(it, DESERIALIZER) } else null,
+                        treeHash = emptyStringAsNull(parts[3])?.let {
+                            KVEntryReference.fromHash(
+                                it,
+                                CPTree.DESERIALIZER,
+                            )
+                        },
+                        previousVersion = emptyStringAsNull(parts[4])?.let {
+                            KVEntryReference.fromHash(
+                                it,
+                                DESERIALIZER,
+                            )
+                        },
+                        originalVersion = if (parts.size > 7) {
+                            emptyStringAsNull(parts[7])?.let {
+                                KVEntryReference.fromHash(
+                                    it,
+                                    DESERIALIZER,
+                                )
+                            }
+                        } else {
+                            null
+                        },
                         baseVersion = null,
                         mergedVersion1 = null,
                         mergedVersion2 = null,
                         ops,
-                        opsHash?.let { KVEntryReference(it, CPOperationsList.DESERIALIZER) },
+                        opsHash?.let { KVEntryReference.fromHash(it, CPOperationsList.DESERIALIZER) },
                         numOps,
                     )
-                    data.isWritten = true
+                    data.wasDeserialized()
                     return data
                 }
             } catch (ex: Exception) {

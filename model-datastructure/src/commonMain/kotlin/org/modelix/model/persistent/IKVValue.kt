@@ -13,15 +13,19 @@
  */
 package org.modelix.model.persistent
 
+import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
 
 /**
  * Serializable object that can be stored in a key value store
  */
 interface IKVValue {
-    var isWritten: Boolean
+    var ref: KVEntryReference<IKVValue>?
     fun serialize(): String
     val hash: String
-    fun getDeserializer(): (String) -> IKVValue
+    fun getDeserializer(): KVEntryReference.IDeserializer<*>
     fun getReferencedEntries(): List<KVEntryReference<IKVValue>>
+    fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?)
 }
+
+fun <T : IKVValue> T.getUpcastedDeserializer() = getDeserializer() as KVEntryReference.IDeserializer<T>

@@ -19,7 +19,9 @@ import org.modelix.model.lazy.COWArrays.copy
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.removeAt
 import org.modelix.model.lazy.COWArrays.set
+import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.wasDeserialized
 import org.modelix.model.persistent.CPNodeRef.Companion.fromString
 import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
@@ -39,7 +41,11 @@ class CPNode private constructor(
     val referenceTargets: Array<CPNodeRef>,
 ) : IKVValue {
 
-    override var isWritten: Boolean = false
+    override fun load(bulkQuery: IBulkQuery, reusableCandidate: KVEntryReference<*>?) {
+        // doesn't contain references that need loading
+    }
+
+    override var ref: KVEntryReference<IKVValue>? = null
 
     override fun serialize(): String {
         val sb = StringBuilder()
@@ -180,11 +186,11 @@ class CPNode private constructor(
             }
         }
     }
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
+    override fun getDeserializer(): KVEntryReference.IDeserializer<CPNode> = DESERIALIZER
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf()
 
     companion object {
-        val DESERIALIZER = { s: String -> deserialize(s) }
+        val DESERIALIZER = KVEntryReference.IDeserializer.create(CPNode::class, ::deserialize)
 
         @JvmStatic
         fun create(
@@ -248,7 +254,7 @@ class CPNode private constructor(
                     references.map { unescape(it[0])!! }.toTypedArray(),
                     references.map { fromString(unescape(it[1])!!) }.toTypedArray(),
                 )
-                data.isWritten = true
+                data.wasDeserialized()
                 data
             } catch (ex: Exception) {
                 throw RuntimeException("Failed to deserialize $input", ex)

@@ -19,12 +19,15 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.modelix.model.IKeyListener
+import java.io.File
+import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
-interface IStoreClient {
+interface IStoreClient : AutoCloseable {
     operator fun get(key: String): String?
     fun getAll(keys: List<String>): List<String?>
     fun getAll(keys: Set<String>): Map<String, String?>
+    fun getAll(): Map<String, String?>
     fun put(key: String, value: String?, silent: Boolean = false)
     fun putAll(entries: Map<String, String?>, silent: Boolean = false)
     fun listen(key: String, listener: IKeyListener)
@@ -78,4 +81,31 @@ suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: St
         if (!handlerCalled) result = storeClient[key]
     }
     return result
+}
+
+fun IStoreClient.loadDump(file: File): Int {
+    var n = 0
+    file.useLines { lines ->
+        val entries = lines.associate { line ->
+            val parts = line.split("#".toRegex(), limit = 2)
+            n++
+            parts[0] to parts[1]
+        }
+        putAll(entries, silent = true)
+    }
+    return n
+}
+
+@Synchronized
+@Throws(IOException::class)
+fun IStoreClient.writeDump(file: File) {
+    file.writer().use { writer ->
+        for ((key, value) in getAll()) {
+            if (value == null) continue
+            writer.append(key)
+            writer.append("#")
+            writer.append(value)
+            writer.append("\n")
+        }
+    }
 }

@@ -815,35 +815,35 @@ class ConflictResolutionTest : TreeTestBase() {
             operations = opsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )
     }
+}
 
-    fun assertSameTree(tree1: ITree, tree2: ITree) {
-        tree2.visitChanges(
-            tree1,
-            object : ITreeChangeVisitorEx {
-                override fun containmentChanged(nodeId: Long) {
-                    fail("containmentChanged ${nodeId.toString(16)}")
-                }
+fun assertSameTree(tree1: ITree, tree2: ITree) {
+    tree2.visitChanges(
+        tree1,
+        object : ITreeChangeVisitorEx {
+            override fun containmentChanged(nodeId: Long) {
+                fail("containmentChanged ${nodeId.toString(16)}")
+            }
 
-                override fun childrenChanged(nodeId: Long, role: String?) {
-                    fail("childrenChanged ${nodeId.toString(16)}, $role")
-                }
+            override fun childrenChanged(nodeId: Long, role: String?) {
+                fail("childrenChanged ${nodeId.toString(16)}, $role")
+            }
 
-                override fun referenceChanged(nodeId: Long, role: String) {
-                    fail("referenceChanged ${nodeId.toString(16)}, $role")
-                }
+            override fun referenceChanged(nodeId: Long, role: String) {
+                fail("referenceChanged ${nodeId.toString(16)}, $role")
+            }
 
-                override fun propertyChanged(nodeId: Long, role: String) {
-                    fail("propertyChanged ${nodeId.toString(16)}, $role")
-                }
+            override fun propertyChanged(nodeId: Long, role: String) {
+                fail("propertyChanged ${nodeId.toString(16)}, $role")
+            }
 
-                override fun nodeRemoved(nodeId: Long) {
-                    fail("nodeRemoved ${nodeId.toString(16)}")
-                }
+            override fun nodeRemoved(nodeId: Long) {
+                fail("nodeRemoved ${nodeId.toString(16)}")
+            }
 
-                override fun nodeAdded(nodeId: Long) {
-                    fail("nodeAdded nodeId")
-                }
-            },
-        )
-    }
+            override fun nodeAdded(nodeId: Long) {
+                fail("nodeAdded nodeId")
+            }
+        },
+    )
 }

@@ -4,11 +4,11 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
     application
-    id("com.diffplug.spotless")
     `maven-publish`
-    id("com.adarshr.test-logger") version "4.0.0"
-    id("org.jetbrains.kotlin.jvm")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.test.logger)
+    alias(libs.plugins.shadow)
+    kotlin("jvm")
     kotlin("plugin.serialization")
     alias(libs.plugins.openapi.generator)
 }
@@ -66,6 +66,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.cucumber.java)
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.kotlin.coroutines.test)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
 }

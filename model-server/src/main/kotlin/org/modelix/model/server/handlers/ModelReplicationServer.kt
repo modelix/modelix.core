@@ -20,17 +20,21 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveStream
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.webSocket
 import io.ktor.util.pipeline.PipelineContext
 import io.ktor.websocket.send
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.api.public.Paths
@@ -45,6 +49,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
@@ -79,10 +84,14 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondText(storeClient.generateId("clientId").toString())
         }
         get<Paths.getServerId> {
-            call.respondText(repositoriesManager.getServerId())
-        }
-        get<Paths.getServerId> {
-            call.respondText(repositoriesManager.getServerId())
+            // Currently, the server ID is initialized in KeyValueLikeModelServer eagerly on startup.
+            // Should KeyValueLikeModelServer be removed or change,
+            // RepositoriesManager#maybeInitAndGetSeverId will initialize the server ID lazily on the first request.
+            //
+            // Functionally, it does not matter if the server ID is created eagerly or lazily,
+            // as long as the same server ID is returned from the same server.
+            val serverId = repositoriesManager.maybeInitAndGetSeverId()
+            call.respondText(serverId)
         }
         get<Paths.getUserId> {
             call.respondText(call.getUserName() ?: call.request.origin.remoteHost)
@@ -265,6 +274,33 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             val branch = TreePointer(initialTree)
             ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
         }
+
+//        route("objects") {
+//            put {
+//                val writtenEntries = withContext(Dispatchers.IO) {
+//                    val entries = call.receiveStream().bufferedReader().use { reader ->
+//                        reader.lineSequence().windowed(2, 2).map {
+//                            val key = it[0]
+//                            val value = it[1]
+//
+//                            require(HashUtil.isSha256(key)) {
+//                                "This API cannot be used to store other entries than serialized objects." +
+//                                    " The key is expected to be a SHA256 hash over the value: $key -> $value"
+//                            }
+//                            val expectedKey = HashUtil.sha256(value)
+//                            require(expectedKey == key) { "Hash mismatch. Expected $expectedKey, but $key was provided. Value: $value" }
+//
+//                            key to value
+//                        }.toMap()
+//                    }
+//
+//                    storeClient.putAll(entries, true)
+//
+//                    entries.size
+//                }
+//                call.respondText("$writtenEntries objects received")
+//            }
+//        }
 
         get<Paths.getVersionHash> {
             // TODO versions should be stored inside a repository with permission checks.

@@ -29,7 +29,21 @@ jobs:
       - name: Use tag as version
         run: echo "${GITHUB_REF#refs/*/}" > version.txt
       - name: Build and Publish Artifacts
-        run: ./gradlew --build-cache build publish -PciBuild=true -Partifacts.itemis.cloud.user=${{secrets.ARTIFACTS_ITEMIS_CLOUD_USER}} -Partifacts.itemis.cloud.pw=${{secrets.ARTIFACTS_ITEMIS_CLOUD_PW}} -Pgpr.user=${{ github.actor }} -Pgpr.key=${{ secrets.GITHUB_TOKEN }} -Pgpr.universalkey=${{ secrets.GHP_UNIVERSAL_PUBLISH_TOKEN }}
+        # We run gradle with --info to debug the ongoing random publishing
+        # issues. Gradle would log upload retries on info level:
+        # https://github.com/gradle/gradle/blob/2e843f089f969940e505e69eb0742ed4fbf67993/platforms/software/dependency-management/src/main/java/org/gradle/api/internal/artifacts/repositories/transport/NetworkOperationBackOffAndRetry.java#L64
+        # Maybe retries are the source of our duplicate publication attempts.
+        run: >-
+          ./gradlew --build-cache build publish
+          --info
+          -PciBuild=true
+          -Partifacts.itemis.cloud.user=${{ secrets.ARTIFACTS_ITEMIS_CLOUD_USER }}
+          -Partifacts.itemis.cloud.pw=${{ secrets.ARTIFACTS_ITEMIS_CLOUD_PW }}
+          -Pgpr.user=${{ github.actor }}
+          -Pgpr.key=${{ secrets.GITHUB_TOKEN }}
+          -Pgpr.universalkey=${{ secrets.GHP_UNIVERSAL_PUBLISH_TOKEN }}
+          -Porg.gradle.internal.http.connectionTimeout=180000
+          -Porg.gradle.internal.http.socketTimeout=180000
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTS_ITEMIS_CLOUD_NPM_TOKEN }}
       - name: Set up QEMU

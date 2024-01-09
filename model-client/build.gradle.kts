@@ -2,11 +2,11 @@ import dev.petuska.npm.publish.task.NpmPackTask
 
 plugins {
     `maven-publish`
-    id("org.jetbrains.kotlin.multiplatform")
-    id("com.diffplug.spotless")
+    kotlin("multiplatform")
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.npm.publish)
     `java-library`
     jacoco
-    alias(libs.plugins.npm.publish)
 }
 
 java {

@@ -63,10 +63,6 @@ This means that only a minimal amount of write operations is used to update the 
 |Action<LocalTarget>
 |Defines a local target (MPS).
 
-|`registerLanguage`
-|ILanguage
-|Registers the given language and all of its concepts for the synchronisation process.
-
 |`includeModule`
 |String
 |Includes the module specified by the given fully qualified name in the synchronisation process.
@@ -132,14 +128,20 @@ mpsBuild {
 |`repositoryId`
 |String
 |Id of the target/source model-server repository.
+If the repository does not exist on the model-server, it will be created including a master branch.
 
 |`branchName`
 |String
 |Name of the target/source model-server branch.
+If the target branch does not exist on the model-server, it will be created.
 
 |`revision`
 |String
 |Source model-server revision. Can be used instead of `repositoryId` and `branchName`. Only available in ServerSource.
+
+|`requestTimeoutSeconds`
+|Integer
+|The request timeout measured in seconds to apply when performing HTTP requests towards the model-server. Default: 5 minutes
 
 |===
 
@@ -169,3 +171,8 @@ modelSync {
 --
 
 Generated Gradle task to perform synchronization: `runSyncPushToMyServer`.
+
+== Logging
+
+The plugin uses the normal Gradle logging.
+In case progress or debug information is required, run Gradle with `--info` or `--debug` command line arguments.

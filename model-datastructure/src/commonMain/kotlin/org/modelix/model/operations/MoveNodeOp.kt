@@ -38,10 +38,6 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
         return "MoveNodeOp ${childId.toString(16)}->$targetPosition"
     }
 
-    override fun toCode(): String {
-        return """t.moveChild(0x${targetPosition.nodeId.toString(16)}, "${targetPosition.role}", ${targetPosition.index}, 0x${childId.toString(16)})"""
-    }
-
     inner class Applied(val sourcePosition: PositionInRole) : AbstractOperation.Applied(), IAppliedOperation {
         override fun getOriginalOp() = this@MoveNodeOp
 

@@ -16,11 +16,7 @@ package org.modelix.model.server.store
 
 import org.modelix.model.IKeyListener
 import org.slf4j.LoggerFactory
-import java.io.BufferedReader
-import java.io.FileReader
-import java.io.FileWriter
-import java.io.IOException
-import java.util.*
+import kotlin.collections.HashMap
 
 fun generateId(idStr: String?): Long {
     return try {
@@ -41,54 +37,57 @@ class InMemoryStoreClient : IStoreClient {
     }
 
     private val values: MutableMap<String, String?> = HashMap()
-    private val listeners: MutableMap<String?, MutableSet<IKeyListener>> = HashMap()
+    private var transactionValues: MutableMap<String, String?>? = null
+    private val changeNotifier = ChangeNotifier(this)
+    private val pendingChangeMessages = PendingChangeMessages(changeNotifier::notifyListeners)
 
     @Synchronized
     override fun get(key: String): String? {
-        return values[key]
+        return if (transactionValues?.contains(key) == true) transactionValues!![key] else values[key]
     }
 
     @Synchronized
     override fun getAll(keys: List<String>): List<String?> {
-        return keys.map { values[it] }
+        return keys.map { get(it) }
+    }
+
+    @Synchronized
+    override fun getAll(): Map<String, String?> {
+        return values + (transactionValues ?: emptyMap())
     }
 
     @Synchronized
     override fun getAll(keys: Set<String>): Map<String, String?> {
-        return keys.associateWith { values[it] }
+        return keys.associateWith { get(it) }
     }
 
     @Synchronized
     override fun put(key: String, value: String?, silent: Boolean) {
-        values[key] = value
-        if (!silent) {
-            listeners[key]?.toList()?.forEach {
-                try {
-                    it.changed(key, value)
-                } catch (ex: Exception) {
-                    println(ex.message)
-                    ex.printStackTrace()
-                    LOG.error("Failed to notify listeners after put '$key' = '$value'", ex)
-                }
+        runTransaction {
+            (transactionValues ?: values)[key] = value
+            if (!silent) {
+                pendingChangeMessages.entryChanged(key)
             }
         }
     }
 
     @Synchronized
     override fun putAll(entries: Map<String, String?>, silent: Boolean) {
-        for ((key, value) in entries) {
-            put(key, value, silent)
+        runTransaction {
+            for ((key, value) in entries) {
+                put(key, value, silent)
+            }
         }
     }
 
     @Synchronized
     override fun listen(key: String, listener: IKeyListener) {
-        listeners.getOrPut(key) { LinkedHashSet() }.add(listener)
+        changeNotifier.addListener(key, listener)
     }
 
     @Synchronized
     override fun removeListener(key: String, listener: IKeyListener) {
-        listeners[key]?.remove(listener)
+        changeNotifier.removeListener(key, listener)
     }
 
     @Synchronized
@@ -99,31 +98,22 @@ class InMemoryStoreClient : IStoreClient {
     }
 
     @Synchronized
-    @Throws(IOException::class)
-    fun dump(fileWriter: FileWriter) {
-        for (key in values.keys) {
-            fileWriter.append(key)
-            fileWriter.append("#")
-            fileWriter.append(values[key])
-            fileWriter.append("\n")
+    override fun <T> runTransaction(body: () -> T): T {
+        if (transactionValues == null) {
+            try {
+                transactionValues = HashMap()
+                val result = body()
+                values.putAll(transactionValues!!)
+                return result
+            } finally {
+                transactionValues = null
+                pendingChangeMessages.flushChangeMessages()
+            }
+        } else {
+            return body()
         }
     }
 
-    @Synchronized
-    fun load(fileReader: FileReader?): Int {
-        val br = BufferedReader(fileReader)
-        val n = intArrayOf(0)
-        br.lines()
-            .forEach { line: String ->
-                val parts = line.split("#".toRegex(), limit = 2).toTypedArray()
-                values[parts[0]] = parts[1]
-                n[0]++
-            }
-        return n[0]
-    }
-
-    @Synchronized
-    override fun <T> runTransaction(body: () -> T): T {
-        return body()
+    override fun close() {
     }
 }

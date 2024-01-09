@@ -76,6 +76,15 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
     val storeClient: IStoreClient get() = repositoriesManager.client.store
 
     fun init(application: Application) {
+        // Functionally, it does not matter if the server ID
+        // is created eagerly on startup or lazily on the first request,
+        // as long as the same server ID is returned from the same server.
+        //
+        // The server ID is initialized eagerly because adding special conditions in the affected
+        // request to initialize it lazily, would make the code less robust.
+        // Each change in the logic of RepositoriesManager#maybeInitAndGetSeverId would need
+        // the special conditions in the affected requests to be updated.
+        repositoriesManager.maybeInitAndGetSeverId()
         application.apply {
             modelServerModule()
         }

@@ -21,14 +21,8 @@ fi
 
 ./gradlew runModelServer --console=plain &
 MODEL_SERVER_PID=$!
-sleep 5
 
-#CI needs more time
-if [ "${CI}" = "true" ]; then
-  sleep 10
-fi
-
-curl -X POST http://127.0.0.1:28309/v2/repositories/ci-test/init
+curl -X GET --retry 30 --retry-connrefused --retry-delay 1 http://localhost:28309/health
 
 ./gradlew runSyncTestPush --console=plain --stacktrace
 ./gradlew test --tests 'PushTest'

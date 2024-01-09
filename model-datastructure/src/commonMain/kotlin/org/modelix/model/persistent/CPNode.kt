@@ -44,23 +44,23 @@ class CPNode private constructor(
     override fun serialize(): String {
         val sb = StringBuilder()
         sb.append(longToHex(id))
-        sb.append("/")
+        sb.append(Separators.LEVEL1)
         sb.append(escape(concept))
-        sb.append("/")
+        sb.append(Separators.LEVEL1)
         sb.append(longToHex(parentId))
-        sb.append("/")
+        sb.append(Separators.LEVEL1)
         sb.append(escape(roleInParent))
-        sb.append("/")
-        sb.append(if (childrenIds.isEmpty()) "" else childrenIds.joinToString(",") { longToHex(it) })
-        sb.append("/")
+        sb.append(Separators.LEVEL1)
+        sb.append(if (childrenIds.isEmpty()) "" else childrenIds.joinToString(Separators.LEVEL2) { longToHex(it) })
+        sb.append(Separators.LEVEL1)
         propertyRoles.forEachIndexed { index, role ->
-            if (index != 0) sb.append(",")
-            sb.append(escape(role)).append("=").append(escape(propertyValues[index]))
+            if (index != 0) sb.append(Separators.LEVEL2)
+            sb.append(escape(role)).append(Separators.MAPPING).append(escape(propertyValues[index]))
         }
-        sb.append("/")
+        sb.append(Separators.LEVEL1)
         referenceRoles.forEachIndexed { index, role ->
-            if (index != 0) sb.append(",")
-            sb.append(escape(role)).append("=").append(escape(referenceTargets[index].toString()))
+            if (index != 0) sb.append(Separators.LEVEL2)
+            sb.append(escape(role)).append(Separators.MAPPING).append(escape(referenceTargets[index].toString()))
         }
         return sb.toString()
     }
@@ -227,11 +227,11 @@ class CPNode private constructor(
         @JvmStatic
         fun deserialize(input: String): CPNode {
             return try {
-                val parts = input.split("/")
-                val properties = parts[5].split(",")
+                val parts = input.split(Separators.LEVEL1)
+                val properties = parts[5].split(Separators.LEVEL2)
                     .filter { it.isNotEmpty() }
                     .map { it.split("=") }
-                val references = parts[6].split(",")
+                val references = parts[6].split(Separators.LEVEL2)
                     .filter { it.isNotEmpty() }
                     .map { it.split("=") }
                 val propertyRoles = properties.map { unescape(it[0])!! }
@@ -242,7 +242,7 @@ class CPNode private constructor(
                     unescape(parts[1]),
                     longFromHex(parts[2]),
                     unescape(parts[3]),
-                    parts[4].split(",").filter { it.isNotEmpty() }.map { longFromHex(it) }.toLongArray(),
+                    parts[4].split(Separators.LEVEL2).filter { it.isNotEmpty() }.map { longFromHex(it) }.toLongArray(),
                     propertiesWithoutNull.map { it.first }.toTypedArray(),
                     propertiesWithoutNull.map { it.second!! }.toTypedArray(),
                     references.map { unescape(it[0])!! }.toTypedArray(),

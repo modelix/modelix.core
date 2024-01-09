@@ -106,6 +106,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.revision.set(serverSource.revision)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.requestTimeoutSeconds.set(serverSource.requestTimeoutSeconds)
         }
         return exportFromModelServer
     }
@@ -151,7 +152,6 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         val importIntoModelServer = project.tasks.register(importTaskName, ImportIntoModelServer::class.java) {
             it.dependsOn(previousTask)
             it.inputDir.set(jsonDir)
-            it.registeredLanguages.set(syncDirection.registeredLanguages)
             val serverTarget = syncDirection.target as ServerTarget
 
             it.url.set(serverTarget.url)
@@ -160,6 +160,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
             it.continueOnError.set(syncDirection.continueOnError)
+            it.requestTimeoutSeconds.set(serverTarget.requestTimeoutSeconds)
         }
 
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {

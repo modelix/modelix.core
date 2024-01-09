@@ -19,8 +19,8 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PBranch
-import org.modelix.model.api.PNodeReference
 import kotlin.random.Random
 
 class RandomTreeChangeGenerator(private val idGenerator: IIdGenerator, private val rand: Random) {
@@ -67,7 +67,7 @@ class RandomTreeChangeGenerator(private val idGenerator: IIdGenerator, private v
         val targetId = TreeTestUtil(t.tree, rand).randomNodeWithoutRoot
         if (sourceId != 0L && targetId != 0L) {
             val role = referenceRoles[rand.nextInt(referenceRoles.size)]
-            t.setReferenceTarget(sourceId, role, PNodeReference(targetId, ""))
+            t.setReferenceTarget(sourceId, role, LocalPNodeReference(targetId))
         }
     }
     val moveOp: (IWriteTransaction, ExpectedTreeData?) -> Unit = { t, expectedTree ->

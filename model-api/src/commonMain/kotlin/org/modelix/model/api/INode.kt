@@ -117,6 +117,10 @@ interface INode {
         return addNewChild(role, index, concept?.resolve())
     }
 
+    fun addNewChildren(role: String?, index: Int, concepts: List<IConceptReference?>): List<INode> {
+        return concepts.map { addNewChild(role, index, it) }
+    }
+
     /**
      * Removes the given node from this node's children.
      *

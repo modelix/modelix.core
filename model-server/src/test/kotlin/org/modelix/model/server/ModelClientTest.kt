@@ -32,6 +32,7 @@ import org.modelix.model.server.store.LocalModelClient
 import java.util.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
@@ -54,8 +55,7 @@ class ModelClientTest {
         val numKeys = numListenersPerClient * 2
 
         val rand = Random(67845)
-        val url = "http://localhost/"
-        val clients = (0 until numClients).map { RestWebModelClient(baseUrl = url, providedClient = client) }
+        val clients = (0 until numClients).map { createModelClient() }
         val listeners: MutableList<Listener> = ArrayList()
         val expected: MutableMap<String, String> = HashMap()
         for (client in clients.withIndex()) {
@@ -107,6 +107,20 @@ class ModelClientTest {
         for (client in clients) {
             client.dispose()
         }
+    }
+
+    @Test
+    fun `can retrieve server id initially`() = runTest {
+        val modelClient = createModelClient()
+
+        val serverId = modelClient.get("server-id")
+
+        assertNotNull(serverId)
+    }
+
+    private fun ApplicationTestBuilder.createModelClient(): RestWebModelClient {
+        val url = "http://localhost/"
+        return RestWebModelClient(baseUrl = url, providedClient = client)
     }
 
     inner class Listener(var key: String, private val client: RestWebModelClient, val clientIndex: Int, val listenerIndex: Int) : IKeyListener {

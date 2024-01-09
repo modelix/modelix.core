@@ -19,35 +19,38 @@ package org.modelix.mps.sync.listeners
 import com.intellij.ide.plugins.DynamicPluginListener
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MPSSynchronizationDynamicPluginListener : DynamicPluginListener {
+
+    private val logger = logger<MPSSynchronizationDynamicPluginListener>()
+
     override fun beforePluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        println("============================================ before load")
+        logger.info("============================================ before load")
         super.beforePluginLoaded(pluginDescriptor)
     }
 
     override fun beforePluginUnload(pluginDescriptor: IdeaPluginDescriptor, isUpdate: Boolean) {
-        println("============================================ before unload")
-
+        logger.info("============================================ before unload")
         super.beforePluginUnload(pluginDescriptor, isUpdate)
     }
 
     override fun checkUnloadPlugin(pluginDescriptor: IdeaPluginDescriptor) {
-        println("============================================ check unload")
+        logger.info("============================================ check unload")
         super.checkUnloadPlugin(pluginDescriptor)
     }
 
     override fun pluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        println("============================================ loaded")
+        logger.info("============================================ loaded")
         super.pluginLoaded(pluginDescriptor)
         service<ModelSyncService>().ensureStarted()
     }
 
     override fun pluginUnloaded(pluginDescriptor: IdeaPluginDescriptor, isUpdate: Boolean) {
-        println("============================================ unloaded")
+        logger.info("============================================ unloaded")
         super.pluginUnloaded(pluginDescriptor, isUpdate)
     }
 }

@@ -19,7 +19,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import io.ktor.client.plugins.ClientRequestException
 import jetbrains.mps.smodel.MPSModuleRepository
@@ -27,7 +26,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.client2.ModelClientV2
@@ -42,31 +40,25 @@ import java.net.URL
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable {
 
-    private var log: Logger = logger<ModelSyncService>()
+    private val logger = logger<ModelSyncService>()
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
-    var syncService: SyncServiceImpl
-    private var existingBindings = mutableListOf<IBinding>()
+    private val existingBindings = mutableListOf<IBinding>()
     private var server: String? = null
-
-    fun getBindingList(): List<IBinding> {
-        return existingBindings.toMutableList()
-    }
+    val syncService: SyncServiceImpl
 
     init {
-        println("============================================ ModelSyncService init")
+        logger.info("============================================ ModelSyncService init")
         syncService = SyncServiceImpl()
 
-        println("============================================ Registering builtin languages")
-        // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
-        ILanguageRepository.default.javaClass
-
-        println("============================================ Registering sync actions")
+        logger.info("============================================ Registering sync actions")
         registerSyncActions()
 
-        println("============================================ Registration finished")
+        logger.info("============================================ Registration finished")
 
-        println("============================================ Sync Service initialized $syncService")
+        logger.info("============================================ Sync Service initialized $syncService")
     }
+
+    fun getBindingList() = existingBindings.toList()
 
     fun connectModelServer(
         url: String,
@@ -74,9 +66,9 @@ class ModelSyncService : Disposable {
         afterActivate: (() -> Unit)?,
     ) {
         coroutineScope.launch {
-            log.info("Connection to server: $url with JWT $jwt")
+            logger.info("Connection to server: $url with JWT $jwt")
             syncService.connectToModelServer(URL(url), jwt)
-            log.info("Connected to server: $url with JWT $jwt")
+            logger.info("Connected to server: $url with JWT $jwt")
             afterActivate?.invoke()
         }
     }
@@ -86,9 +78,9 @@ class ModelSyncService : Disposable {
         afterActivate: (() -> Unit)?,
     ) {
         coroutineScope.launch {
-            log.info("disconnecting to server: ${modelClient.baseUrl}")
+            logger.info("disconnecting to server: ${modelClient.baseUrl}")
             syncService.disconnectModelServer(modelClient)
-            log.info("disconnected server: ${modelClient.baseUrl}")
+            logger.info("disconnected server: ${modelClient.baseUrl}")
             afterActivate?.invoke()
         }
     }
@@ -110,11 +102,11 @@ class ModelSyncService : Disposable {
                 )
                 existingBindings.add(newBinding)
             } catch (e: ConnectException) {
-                log.warn("Unable to connect: ${e.message} / ${e.cause}")
+                logger.warn("Unable to connect: ${e.message} / ${e.cause}")
             } catch (e: ClientRequestException) {
-                log.warn("Illegal request: ${e.message} / ${e.cause}")
+                logger.warn("Illegal request: ${e.message} / ${e.cause}")
             } catch (e: Exception) {
-                log.warn("Pokemon Exception Catching: ${e.message} / ${e.cause}")
+                logger.warn("Pokemon Exception Catching: ${e.message} / ${e.cause}")
             }
             // actual correct place to call after activate
             afterActivate?.invoke()
@@ -128,28 +120,28 @@ class ModelSyncService : Disposable {
     }
 
     fun ensureStarted() {
-        println("============================================  ensureStarted")
+        logger.info("============================================  ensureStarted")
 
         runSynchronized(this) {
-            log.info("starting modelix synchronization plugin")
+            logger.info("starting modelix synchronization plugin")
             if (server != null) return
 
             val rootNodeProvider: () -> INode? = { MPSModuleRepository.getInstance()?.let { MPSRepositoryAsNode(it) } }
-            log.info("rootNodeProvider: $rootNodeProvider")
+            logger.info("rootNodeProvider: $rootNodeProvider")
         }
     }
 
     override fun dispose() {
-        println("============================================  dispose")
+        logger.info("============================================  dispose")
         syncService.dispose()
         ensureStopped()
     }
 
     private fun ensureStopped() {
-        println("============================================  ensureStopped")
+        logger.info("============================================  ensureStopped")
         runSynchronized(this) {
             if (server == null) return
-            println("stopping modelix server")
+            logger.info("stopping modelix server")
             server = null
         }
     }
@@ -166,7 +158,7 @@ class ModelSyncService : Disposable {
                     add(ModelixActionGroup())
                 }
             } else {
-                log.error("Action Group $it was not found, thus the UI actions are not registered there.")
+                logger.error("Action Group $it was not found, thus the UI actions are not registered there.")
             }
         }
     }

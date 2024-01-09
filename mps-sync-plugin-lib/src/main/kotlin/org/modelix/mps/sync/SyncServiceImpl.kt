@@ -26,12 +26,18 @@ import java.net.URL
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SyncServiceImpl : SyncService {
 
-    private var log: Logger = logger<SyncServiceImpl>()
+    private val logger: Logger = logger<SyncServiceImpl>()
 
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     val activeClients = mutableSetOf<ModelClientV2>()
 
     private lateinit var replicatedModel: ReplicatedModel
+
+    init {
+        logger.info("============================================ Registering builtin languages")
+        // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
+        ILanguageRepository.default.javaClass
+    }
 
     // todo add afterActivate to allow async refresh
     suspend fun connectToModelServer(
@@ -41,7 +47,7 @@ class SyncServiceImpl : SyncService {
         // avoid reconnect to existing server
         val client = activeClients.find { it.baseUrl == serverURL.toString() }
         client?.let {
-            log.info("Using already existing connection to $serverURL")
+            logger.info("Using already existing connection to $serverURL")
             return it
         }
 
@@ -50,14 +56,14 @@ class SyncServiceImpl : SyncService {
 
         runBlocking(coroutineScope.coroutineContext) {
             try {
-                log.info("Connecting to $serverURL")
+                logger.info("Connecting to $serverURL")
                 modelClientV2.init()
             } catch (e: ConnectException) {
-                log.warn("Unable to connect: ${e.message} / ${e.cause}")
+                logger.warn("Unable to connect: ${e.message} / ${e.cause}")
                 throw e
             }
         }
-        log.info("Connection to $serverURL successful")
+        logger.info("Connection to $serverURL successful")
         activeClients.add(modelClientV2)
         return modelClientV2
     }
@@ -76,7 +82,7 @@ class SyncServiceImpl : SyncService {
     ): IBinding {
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         runBlocking(coroutineScope.coroutineContext) {
-            // TOOD how to handle multiple replicated models at the same time?
+            // TODO how to handle multiple replicated models at the same time?
             replicatedModel = client.getReplicatedModel(branchReference)
             // TODO when and how to dispose the replicated model and everything that depends on it?
             replicatedModel.start()

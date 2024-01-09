@@ -1,0 +1,253 @@
+# WARNING - EXPERIMENTAL
+# This file was auto generated from the existing API using an IntelliJ plugin,
+# see https://www.jetbrains.com/help/idea/openapi.html#generate_openapi
+#
+# Manual changes were done for this 'spec' to work in-place with the
+# model-server for now. A lot of changes were done and are still necessary
+# to make this OpenAPI a viable artifact. It will most likely be split
+# into multiple OpenAPI files.
+#
+# This API is currently used in the ContentExplorer
+
+openapi: "3.0.3"
+info:
+  title: "model-server content browser API"
+  description: "modelix content browser API"
+  version: "1.0.0"
+servers:
+  - url: '/'
+    description: model-server
+paths:
+  /:
+    get:
+      operationId: getIndex
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+  /content:
+    get:
+      operationId: getContent
+      responses:
+        "302":
+          description: "Found <br> Redirect"
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                Example#1:
+                  value: "../repos/"
+  /content/{versionHash}:
+    get:
+      operationId: getVersionHash
+      parameters:
+        - name: versionHash
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "400":
+          $ref: '#/components/responses/400'
+    post:
+      operationId: postVersionHash
+      parameters:
+        - name: versionHash
+          in: "path"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: "#/components/schemas/ContentExplorerExpandedNodes"
+        required: true
+      responses:
+        "400":
+          $ref: '#/components/responses/400'
+        "200":
+          $ref: '#/components/responses/200'
+  /content/{versionHash}/{nodeId}:
+    get:
+      operationId: getNodeIdForVersionHash
+      parameters:
+        - name: nodeId
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: versionHash
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          $ref: '#/components/responses/404'
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/Function2"
+  /repos:
+    get:
+      operationId: getRepos
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+  /history:
+    get:
+      operationId: getHistory
+      responses:
+        "302":
+          description: "Found <br> Redirect"
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                Example#1:
+                  value: "../repos/"
+  /history/{repoId}/{branch}:
+    get:
+      operationId: getRepoAndBranch
+      parameters:
+        - name: repoId
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: "query"
+          required: false
+          schema:
+            type: string
+        - name: skip
+          in: "query"
+          required: false
+          schema:
+            type: string
+        - name: head
+          in: "query"
+          required: false
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+  /history/{repoId}/{branch}/revert:
+    post:
+      operationId: revertBranch
+      parameters:
+        - name: repoId
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: from
+          in: "query"
+          required: false
+          schema:
+            type: string
+        - name: to
+          in: "query"
+          required: false
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "302":
+          description: "Found <br> Redirect"
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                Example#1:
+                  value: "."
+components:
+  responses:
+    "200":
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string
+    "200json":
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: string
+    "400":
+      description: "Bad Request"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "401":
+      description: "Unauthorized"
+      content:
+        text/plain:
+          schema:
+            type: string
+    403:
+      description: "Forbidden"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "404":
+      description: "Not Found"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "500":
+      description: "Internal Server Error"
+      content:
+        text/plain:
+          schema:
+            type: string
+  schemas:
+    ContentExplorerExpandedNodes:
+      type: object
+      properties:
+        expandedNodeIds:
+          type: array
+          items:
+            type: string
+        expandAll:
+          type: boolean
+      required:
+        - "expandedNodeIds"
+    Function1:
+      type: object
+      properties: {}
+    Function2:
+      type: object

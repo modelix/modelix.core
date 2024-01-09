@@ -23,6 +23,7 @@ module.exports = {
         "mps-model-adapters",
         "mps-model-server",
         "mps-model-server-plugin",
+        "openapi",
         "ts-model-api",
         "vue-model-api",
       ],

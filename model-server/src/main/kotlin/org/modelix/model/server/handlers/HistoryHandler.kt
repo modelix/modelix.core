@@ -4,9 +4,9 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.request.receiveParameters
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
 import io.ktor.server.response.respondRedirect
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -33,6 +33,7 @@ import kotlinx.html.th
 import kotlinx.html.thead
 import kotlinx.html.tr
 import kotlinx.html.ul
+import org.modelix.api.html.Paths
 import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
@@ -58,10 +59,10 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
 
     fun init(application: Application) {
         application.routing {
-            get("/history/") {
+            get<Paths.getHistory> {
                 call.respondRedirect("../repos/")
             }
-            get("/history/{repoId}/{branch}/") {
+            get<Paths.getRepoAndBranch> {
                 val repositoryId = RepositoryId(call.parameters["repoId"]!!)
                 val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
                 val params = call.request.queryParameters
@@ -84,7 +85,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                 }
             }
             requiresPermission("history".asResource(), KeycloakScope.WRITE) {
-                post("/history/{repoId}/{branch}/revert") {
+                post<Paths.revertBranch> {
                     val repositoryId = RepositoryId(call.parameters["repoId"]!!)
                     val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
                     val params = call.receiveParameters()

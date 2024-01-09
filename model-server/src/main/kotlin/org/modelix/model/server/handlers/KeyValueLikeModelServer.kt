@@ -21,10 +21,10 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.request.receiveText
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
+import io.ktor.server.resources.put
 import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.put
 import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
 import kotlinx.html.br
@@ -33,6 +33,7 @@ import kotlinx.html.h1
 import kotlinx.html.span
 import org.json.JSONArray
 import org.json.JSONObject
+import org.modelix.api.public.Paths
 import org.modelix.authorization.EPermissionType
 import org.modelix.authorization.KeycloakResourceType
 import org.modelix.authorization.KeycloakScope
@@ -91,14 +92,14 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
 
     private fun Application.modelServerModule() {
         routing {
-            get("/health") {
+            get<Paths.getHealth> {
                 if (isHealthy()) {
                     call.respondText(text = "healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
                 } else {
                     call.respondText(text = "not healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.InternalServerError)
                 }
             }
-            get("/headers") {
+            get<Paths.getHeaders> {
                 val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
                 call.respondHtmlTemplate(PageWithMenuBar("headers", ".")) {
                     bodyContent {
@@ -115,14 +116,13 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                 }
             }
             requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.READ) {
-                get("/get/{key}") {
+                get<Paths.getKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
                     val value = storeClient[key]
                     respondValue(key, value)
                 }
-
-                get("/poll/{key}") {
+                get<Paths.pollKeyGet> {
                     val key: String = call.parameters["key"]!!
                     val lastKnownValue = call.request.queryParameters["lastKnownValue"]
                     checkKeyPermission(key, EPermissionType.READ)
@@ -130,23 +130,22 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     respondValue(key, newValue)
                 }
 
-                get("/getEmail") {
+                get<Paths.getEmailGet> {
                     call.respondText(call.getUserName() ?: "<no email>")
                 }
-
-                post("/counter/{key}") {
+                post<Paths.counterKeyPost> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.WRITE)
                     val value = storeClient.generateId(key)
                     call.respondText(text = value.toString())
                 }
 
-                get("/getRecursively/{key}") {
+                get<Paths.getRecursivelyKeyGet> {
                     val key = call.parameters["key"]!!
                     call.respondText(collect(key).toString(2), contentType = ContentType.Application.Json)
                 }
 
-                put("/put/{key}") {
+                put<Paths.putKeyPut> {
                     val key = call.parameters["key"]!!
                     val value = call.receiveText()
                     try {
@@ -157,7 +156,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     }
                 }
 
-                put("/putAll") {
+                put<Paths.putAllPut> {
                     val jsonStr = call.receiveText()
                     val json = JSONArray(jsonStr)
                     var entries: MutableMap<String, String?> = LinkedHashMap()
@@ -176,7 +175,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     }
                 }
 
-                put("/getAll") {
+                put<Paths.getAllPut> {
                     // PUT is used, because a GET is not allowed to have a request body that changes the result of the
                     // request. It would be legal for an HTTP proxy to cache all /getAll requests and ignore the body.
                     val reqJsonStr = call.receiveText()

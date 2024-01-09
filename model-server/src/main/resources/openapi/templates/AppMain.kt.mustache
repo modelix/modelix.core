@@ -1,0 +1,24 @@
+package {{packageName}}
+
+import io.ktor.server.application.*
+import io.ktor.http.*
+{{#featureResources}}
+import io.ktor.server.resources.*
+{{/featureResources}}
+
+import io.ktor.server.routing.*
+
+fun Application.main() {
+{{#generateApis}}
+    install(Routing) {
+    {{#apiInfo}}
+    {{#apis}}
+    {{#operations}}
+        {{classname}}()
+    {{/operations}}
+    {{/apis}}
+    {{/apiInfo}}
+    }
+
+{{/generateApis}}
+}

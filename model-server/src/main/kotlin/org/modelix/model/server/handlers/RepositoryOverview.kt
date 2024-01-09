@@ -4,7 +4,7 @@ import io.ktor.http.encodeURLPathPart
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.html.respondHtmlTemplate
-import io.ktor.server.routing.get
+import io.ktor.server.resources.get
 import io.ktor.server.routing.routing
 import kotlinx.html.FlowContent
 import kotlinx.html.FlowOrInteractiveOrPhrasingContent
@@ -20,13 +20,14 @@ import kotlinx.html.th
 import kotlinx.html.thead
 import kotlinx.html.title
 import kotlinx.html.tr
+import org.modelix.api.html.Paths
 import org.modelix.model.server.templates.PageWithMenuBar
 
 class RepositoryOverview(private val repoManager: RepositoriesManager) {
 
     fun init(application: Application) {
         application.routing {
-            get("/repos/") {
+            get<Paths.getRepos> {
                 call.respondHtmlTemplate(PageWithMenuBar("repos/", "..")) {
                     headContent { title("Repositories") }
                     bodyContent { buildMainPage() }

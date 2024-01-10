@@ -239,7 +239,7 @@ object Main {
                             call.respondText("SwaggerUI is disabled")
                         }
                     } else {
-                        // we only serve the public API to the outside via swagger UI
+                        // we serve the public API to the outside via swagger UI
                         swaggerUI(path = "swagger", swaggerFile = ResourceUtils.getFile("api/model-server.yaml").path.toString())
                     }
                 }

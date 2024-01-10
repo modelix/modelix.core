@@ -117,10 +117,21 @@ val cucumber = task("cucumber") {
     }
 }
 
+// copies the openAPI specifications from the api folder into a resource
+// folder so that they are packaged and deployed with the model-server
 tasks.register<Copy>("copyApis") {
     from("../api/")
     include("*.yaml")
-    into(project.layout.projectDirectory.dir("src/main/resources/api"))
+    into(project.layout.projectDirectory.dir("build/openapi/src/main/resources/api"))
+    sourceSets["main"].resources.srcDir("build/openapi/src/main/resources/")
+}
+
+tasks.named("runKtlintCheckOverMainSourceSet") {
+    dependsOn("copyApis")
+}
+
+tasks.named("compileKotlin") {
+    dependsOn("copyApis")
 }
 
 tasks.named("build") {

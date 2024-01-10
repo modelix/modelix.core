@@ -30,7 +30,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.nodeIdAsLong
@@ -99,7 +99,7 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
             mpsWriteAction {
                 ModelImports(it.source).addModelImport(modelImport)
             }
-            nodeMap.put(modelImport, it.modelReferenceNodeId, it.source)
+            nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)
         }
     }
 

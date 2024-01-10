@@ -24,7 +24,7 @@ import jetbrains.mps.extapi.model.SModelBase
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ReplicatedModelRegistry
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.util.SyncBarrier
 

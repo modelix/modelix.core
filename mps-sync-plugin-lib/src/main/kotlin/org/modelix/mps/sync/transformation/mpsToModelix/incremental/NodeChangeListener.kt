@@ -23,7 +23,7 @@ import org.jetbrains.mps.openapi.event.SReferenceChangeEvent
 import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 import org.modelix.mps.sync.util.SyncBarrier
 

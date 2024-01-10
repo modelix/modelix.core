@@ -33,7 +33,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.util.runReadBlocking
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.SyncBarrier
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -118,7 +118,7 @@ class ModuleSynchronizer(
             val cloudDependency =
                 cloudModule.addNewChild(dependencies, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
 
-            nodeMap.put(moduleReference, cloudDependency.nodeIdAsLong(), module)
+            nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the properties by hand
             cloudDependency.setPropertyValue(

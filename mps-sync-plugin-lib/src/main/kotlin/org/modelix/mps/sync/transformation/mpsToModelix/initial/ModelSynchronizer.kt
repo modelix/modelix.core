@@ -30,7 +30,7 @@ import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.util.runReadBlocking
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.SyncBarrier
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -140,10 +140,9 @@ class ModelSynchronizer(
             val cloudParentNode = branch.getNode(modelixId)
             val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
 
-            // TODO fixme: might be fragile. What happens if we import the model in more than one places? Then we'll use the same targetModel.reference, but different modelixIds to it. Meaning, the newly created modelix ID will always override the older ones in the nodeMap.
-            nodeMap.put(targetModel.reference, cloudModelReference.nodeIdAsLong(), source)
+            nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the fields and properties by hand
+            // warning: might be fragile, because we synchronize the fields by hand
             val targetModelModelixId = nodeMap[targetModel]!!
             val cloudTargetModel = branch.getNode(targetModelModelixId)
             cloudModelReference.setReferenceTarget(
@@ -174,9 +173,7 @@ class ModelSynchronizer(
                     BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
                 )
 
-            // TODO we might have to find a different traceability between the SingleLanguageDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading Languages from the cloud)
-            // TODO store the moduleReference together with the model, because this composite key should be unique --> when deleting the moduleReference figure out the model as well and look for this composite key
-            nodeMap.put(languageModuleReference, cloudLanguageDependency.nodeIdAsLong(), model)
+            nodeMap.put(model, languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the properties by hand
             cloudLanguageDependency.setPropertyValue(
@@ -215,10 +212,7 @@ class ModelSynchronizer(
             val cloudNode = branch.getNode(modelixId)
             val cloudDevKitDependency =
                 cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
-
-            // TODO we might have to find a different traceability between the DevKitDependency and the ModuleReference, so it works in the inverse direction too (in the ITreeToSTreeTransformer, when downloading DevKits from the cloud)
-            // TODO store the moduleReference together with the model, because this composite key should be unique --> when deleting the moduleReference figure out the model as well and look for this composite key
-            nodeMap.put(devKit, cloudDevKitDependency.nodeIdAsLong(), model)
+            nodeMap.put(model, devKit, cloudDevKitDependency.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the properties by hand
             cloudDevKitDependency.setPropertyValue(

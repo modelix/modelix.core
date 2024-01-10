@@ -31,7 +31,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.bindings.ModelBinding
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 import org.modelix.mps.sync.util.SyncBarrier
@@ -54,7 +54,7 @@ class ModelChangeListener(
     // TODO might not work, we have to test it
     override fun importRemoved(event: SModelImportEvent) = nodeSynchronizer.removeNode(
         parentNodeIdProducer = { nodeMap[event.model]!! },
-        childNodeIdProducer = { nodeMap[event.modelUID]!! },
+        childNodeIdProducer = { nodeMap[event.model, event.modelUID]!! },
     )
 
     override fun languageAdded(event: SModelLanguageEvent) =
@@ -62,7 +62,7 @@ class ModelChangeListener(
 
     override fun languageRemoved(event: SModelLanguageEvent) = nodeSynchronizer.removeNode(
         parentNodeIdProducer = { nodeMap[event.model]!! },
-        childNodeIdProducer = { nodeMap[event.eventLanguage.sourceModuleReference]!! },
+        childNodeIdProducer = { nodeMap[event.model, event.eventLanguage.sourceModuleReference]!! },
     )
 
     override fun devkitAdded(event: SModelDevKitEvent) =
@@ -70,7 +70,7 @@ class ModelChangeListener(
 
     override fun devkitRemoved(event: SModelDevKitEvent) = nodeSynchronizer.removeNode(
         parentNodeIdProducer = { nodeMap[event.model]!! },
-        childNodeIdProducer = { nodeMap[event.devkitNamespace]!! },
+        childNodeIdProducer = { nodeMap[event.model, event.devkitNamespace]!! },
     )
 
     @Deprecated("Deprecated in Java")

@@ -25,7 +25,7 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
@@ -48,10 +48,12 @@ class ModuleChangeListener(
     override fun modelRemoved(module: SModule, reference: SModelReference) {
         // TODO test if it is called after modelChangeListener.beforeModelDisposed to make sure that everything is deleted correctly
 
-        /*nodeSynchronizer.nodeRemoved(
+        /*
+        nodeSynchronizer.removeNode(
             parentNodeIdProducer = { nodeMap[module]!! },
             childNodeIdProducer = { nodeMap[reference.modelId]!! }
-            )*/
+            )
+         */
     }
 
     // TODO might not work, we have to test it
@@ -61,7 +63,7 @@ class ModuleChangeListener(
     // TODO might not work, we have to test it
     override fun dependencyRemoved(module: SModule, dependency: SDependency) = nodeSynchronizer.removeNode(
         parentNodeIdProducer = { nodeMap[module]!! },
-        childNodeIdProducer = { nodeMap[dependency.targetModule]!! },
+        childNodeIdProducer = { nodeMap[module, dependency.targetModule]!! },
     )
 
     override fun languageAdded(module: SModule, language: SLanguage) {}

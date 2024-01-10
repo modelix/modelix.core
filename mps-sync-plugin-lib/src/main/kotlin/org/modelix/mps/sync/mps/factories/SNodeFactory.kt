@@ -34,7 +34,7 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
 

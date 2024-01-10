@@ -24,7 +24,7 @@ import jetbrains.mps.project.AbstractModule
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ReplicatedModelRegistry
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.util.SyncBarrier
 

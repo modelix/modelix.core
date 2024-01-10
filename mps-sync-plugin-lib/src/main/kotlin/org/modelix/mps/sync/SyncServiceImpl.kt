@@ -19,7 +19,7 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.RepositoryChangeListener
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
 import org.modelix.mps.sync.util.SyncBarrier
 import java.net.ConnectException

@@ -26,7 +26,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.factories.SolutionProducer
 import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -69,6 +69,6 @@ class ModuleTransformer(private val project: MPSProject, private val nodeMap: Mp
             parentModule.addDependency(moduleReference, reexport)
         }
 
-        nodeMap.put(moduleReference, iNode.nodeIdAsLong(), parentModule)
+        nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
     }
 }

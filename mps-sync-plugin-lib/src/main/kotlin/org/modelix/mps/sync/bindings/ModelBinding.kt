@@ -24,7 +24,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.util.runWriteActionCommandBlocking
-import org.modelix.mps.sync.transformation.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
 import org.modelix.mps.sync.util.SyncBarrier

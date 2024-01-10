@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeAliasSpec
@@ -463,6 +464,48 @@ class MetaModelGenerator(
                                     )
                                     .build(),
                             )
+                            val returnType = IMonoStep::class.asTypeName().parameterizedBy(targetType)
+                            val receiverType = IMonoStep::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
+                            val conceptParameter = ParameterSpec.builder("concept", ITypedConcept::class.asTypeName()).apply {
+                                if (!feature.type.resolved.abstract) {
+                                    defaultValue("%T", feature.type.resolved.conceptWrapperInterfaceClass())
+                                }
+                            }.build()
+
+                            if (feature.multiple) {
+                                addFunction(
+                                    FunSpec.builder(feature.adderMethodName())
+                                        .returns(returnType)
+                                        .receiver(receiverType)
+                                        .addParameter(conceptParameter)
+                                        .addParameter(
+                                            ParameterSpec.builder("index", Int::class.asTypeName())
+                                                .defaultValue("-1")
+                                                .build(),
+                                        )
+                                        .addStatement(
+                                            "return %T.addNewChild(this, %T.%N, index, concept)",
+                                            TypedModelQL::class.asTypeName(),
+                                            concept.conceptObjectType(),
+                                            feature.generatedName,
+                                        )
+                                        .build(),
+                                )
+                            } else {
+                                addFunction(
+                                    FunSpec.builder(feature.setterName())
+                                        .returns(returnType)
+                                        .receiver(receiverType)
+                                        .addParameter(conceptParameter)
+                                        .addStatement(
+                                            "return %T.setChild(this, %T.%N, concept)",
+                                            TypedModelQL::class.asTypeName(),
+                                            concept.conceptObjectType(),
+                                            feature.generatedName,
+                                        )
+                                        .build(),
+                                )
+                            }
                         }
 
                         is ProcessedReferenceLink -> {
@@ -504,6 +547,26 @@ class MetaModelGenerator(
                                         .build(),
                                 )
                             }
+
+                            val inputStepType = IMonoStep::class.asTypeName()
+                                .parameterizedBy(concept.nodeWrapperInterfaceType())
+                            addFunction(
+                                FunSpec.builder(feature.setterName())
+                                    .returns(inputStepType)
+                                    .receiver(inputStepType)
+                                    .addParameter(
+                                        "target",
+                                        IMonoStep::class.asTypeName().parameterizedBy(targetType)
+                                            .let { if (feature.optional) it.copy(nullable = true) else it },
+                                    )
+                                    .addStatement(
+                                        "return %T.setReference(this, %T.%N, target)",
+                                        TypedModelQL::class.asTypeName(),
+                                        concept.conceptWrapperInterfaceClass(),
+                                        feature.generatedName,
+                                    )
+                                    .build(),
+                            )
                         }
                     }
                 }

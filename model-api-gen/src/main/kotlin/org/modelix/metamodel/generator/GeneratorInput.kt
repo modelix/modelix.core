@@ -302,7 +302,10 @@ internal sealed class ProcessedLink(name: String, uid: String?, optional: Boolea
 }
 
 internal class ProcessedChildLink(name: String, uid: String?, optional: Boolean, var multiple: Boolean, type: ProcessedConceptReference, deprecationMessage: String?) :
-    ProcessedLink(name, uid, optional, type, deprecationMessage)
+    ProcessedLink(name, uid, optional, type, deprecationMessage) {
+
+    fun adderMethodName() = "addTo" + generatedName.take(1).uppercase() + generatedName.drop(1)
+}
 
 internal class ProcessedReferenceLink(name: String, uid: String?, optional: Boolean, type: ProcessedConceptReference, deprecationMessage: String?) :
     ProcessedLink(name, uid, optional, type, deprecationMessage)

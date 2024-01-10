@@ -120,11 +120,15 @@ val cucumber = task("cucumber") {
 tasks.register<Copy>("copyApis") {
     from("../api/")
     include("*.yaml")
-    into(project.layout.projectDirectory.dir("api"))
+    into(project.layout.projectDirectory.dir("src/main/resources/api"))
 }
 
 tasks.named("build") {
     dependsOn("cucumber")
+    dependsOn("copyApis")
+}
+
+tasks.named("processResources") {
     dependsOn("copyApis")
 }
 

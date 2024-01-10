@@ -13,6 +13,7 @@ import kotlinx.html.head
 import kotlinx.html.img
 import kotlinx.html.link
 import kotlinx.html.style
+import kotlinx.html.title
 
 class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HTML> {
 
@@ -21,6 +22,7 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
 
     override fun HTML.apply() {
         head {
+            title("Model-Server Home")
             link("$baseUrl/public/modelix-base.css", rel = "stylesheet")
             link("$baseUrl/public/menu-bar.css", rel = "stylesheet")
             insert(headContent)

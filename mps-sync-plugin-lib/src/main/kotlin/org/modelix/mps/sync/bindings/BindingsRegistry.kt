@@ -20,6 +20,9 @@ import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.IBinding
+import java.util.stream.Stream
+import kotlin.streams.toList
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class BindingsRegistry private constructor() {
@@ -28,13 +31,13 @@ class BindingsRegistry private constructor() {
         val instance = BindingsRegistry()
     }
 
-    private val modelBindingsByModule = mutableMapOf<SModule, MutableSet<ModelBinding>>()
-    private val moduleBindings = mutableSetOf<ModuleBinding>()
+    private val modelBindingsByModule = mutableMapOf<SModule, MutableList<ModelBinding>>()
+    private val moduleBindings = mutableListOf<ModuleBinding>()
 
-    private val modelBindings = modelBindingsByModule.values.flatten().toCollection(mutableSetOf()).toSet()
+    private val modelBindings = modelBindingsByModule.values.flatten().toCollection(mutableListOf()).toList()
 
     fun addModelBinding(binding: ModelBinding) =
-        modelBindingsByModule.computeIfAbsent(binding.model.module!!) { mutableSetOf() }.add(binding)
+        modelBindingsByModule.computeIfAbsent(binding.model.module!!) { mutableListOf() }.add(binding)
 
     fun addModuleBinding(binding: ModuleBinding) = moduleBindings.add(binding)
 
@@ -42,13 +45,14 @@ class BindingsRegistry private constructor() {
 
     fun removeModuleBinding(binding: ModuleBinding) = moduleBindings.remove(binding)
 
-    fun getModelBindings(): Set<ModelBinding> = modelBindings
+    fun getModelBindings(): List<ModelBinding> = modelBindings
 
     fun getModelBindings(module: SModule): Set<ModelBinding>? = modelBindingsByModule[module]?.toSet()
 
-    fun getModuleBindings(): Set<ModuleBinding> = moduleBindings
+    fun getModuleBindings(): List<ModuleBinding> = moduleBindings
 
     fun getModelBinding(model: SModelBase) = modelBindings.find { it.model == model }
 
     fun getModuleBinding(module: AbstractModule) = moduleBindings.find { it.module == module }
+    fun getAllBindings(): List<IBinding> = Stream.concat(modelBindings.stream(), moduleBindings.stream()).toList()
 }

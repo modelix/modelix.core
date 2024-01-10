@@ -36,7 +36,7 @@
 
         <toolWindow id="Modelix Model Synchronization" secondary="true"
                     icon="org.modelix.mps.sync.icons.CloudIcons.PLUGIN_ICON" anchor="right"
-                    factoryClass="org.modelix.mps.sync.tools.ModelSyncGuiFactory"/>
+                    factoryClass="org.modelix.mps.sync.gui.ModelSyncGuiFactory"/>
 
         <!-- service to handle storage of cloud details via project settings, aka .mps/modelix.xml -->
         <projectService

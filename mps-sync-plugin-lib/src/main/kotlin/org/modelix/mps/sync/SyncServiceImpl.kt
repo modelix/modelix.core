@@ -91,22 +91,13 @@ class SyncServiceImpl : SyncService {
         branchReference: BranchReference,
         model: INode,
         callback: (() -> Unit)?,
-    ): IBinding {
+    ): List<IBinding> {
         if (replicatedModelByBranchReference.containsKey(branchReference)) {
-            // TODO fixme we have to return a binding / bunch of bindings...
-            return object : IBinding {
-                override fun activate(callback: Runnable?) {
-                    TODO("Not yet implemented")
-                }
-
-                override fun deactivate(callback: Runnable?) {
-                    TODO("Not yet implemented")
-                }
-            }
+            return emptyList()
         }
 
         // set up a client, a replicated model and an implementation of a binding (to MPS)
-        runBlocking(coroutineScope.coroutineContext) {
+        val bindings = runBlocking(coroutineScope.coroutineContext) {
             // TODO how to handle multiple replicated models at the same time?
             val replicatedModel = client.getReplicatedModel(branchReference)
             // TODO when and how to dispose the replicated model and everything that depends on it?
@@ -133,7 +124,7 @@ class SyncServiceImpl : SyncService {
             val languageRepository = registerLanguages(targetProject)
 
             // transform the model
-            ITreeToSTreeTransformer(
+            val bindings = ITreeToSTreeTransformer(
                 replicatedModel.getBranch(),
                 targetProject,
                 languageRepository,
@@ -154,21 +145,14 @@ class SyncServiceImpl : SyncService {
                 targetProject.repository.addRepositoryListener(repositoryChangeListener)
                 projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
             }
+
+            bindings
         }
 
         // trigger callback after activation
         callback?.invoke()
 
-        // TODO fixme we have to return a binding / bunch of bindings...
-        return object : IBinding {
-            override fun activate(callback: Runnable?) {
-                TODO("Not yet implemented")
-            }
-
-            override fun deactivate(callback: Runnable?) {
-                TODO("Not yet implemented")
-            }
-        }
+        return bindings
     }
 
     override fun setActiveMpsProject(mpsProject: MPSProject) {

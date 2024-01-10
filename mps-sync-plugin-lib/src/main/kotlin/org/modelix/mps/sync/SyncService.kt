@@ -16,18 +16,18 @@ interface SyncService {
         client: ModelClientV2,
         branchReference: BranchReference,
         model: INode,
-        callback: (() -> Unit)?,
-    ): IBinding
+        callback: (() -> Unit)? = null,
+    ): List<IBinding>
 
-    suspend fun connectModelServer(serverURL: URL, jwt: String, callback: (() -> Unit)?): ModelClientV2
+    suspend fun connectModelServer(serverURL: URL, jwt: String, callback: (() -> Unit)? = null): ModelClientV2
 
-    fun disconnectModelServer(client: ModelClientV2, callback: (() -> Unit)?): Unit
+    fun disconnectModelServer(client: ModelClientV2, callback: (() -> Unit)? = null)
 
     fun setActiveMpsProject(mpsProject: MPSProject)
 
-    fun getModelBindings(): Set<ModelBinding>
+    fun getModelBindings(): List<ModelBinding>
 
-    fun getModuleBindings(): Set<ModuleBinding>
+    fun getModuleBindings(): List<ModuleBinding>
 
     fun dispose()
 }
@@ -36,5 +36,8 @@ interface SyncService {
 interface IBinding {
 
     fun activate(callback: Runnable? = null)
+
     fun deactivate(callback: Runnable? = null)
+
+    fun name(): String
 }

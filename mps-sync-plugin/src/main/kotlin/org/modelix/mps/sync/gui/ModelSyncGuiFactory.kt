@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.tools
+package org.modelix.mps.sync.gui
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -47,6 +46,9 @@ import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ItemEvent
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
@@ -59,9 +61,10 @@ import javax.swing.JSeparator
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
-    private var log: Logger = logger<ModelSyncGuiFactory>()
+    private val log = logger<ModelSyncGuiFactory>()
     private lateinit var toolWindowContent: ModelSyncGui
     private lateinit var content: Content
+    private lateinit var refresherTaskFuture: ScheduledFuture<*>
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         log.info("-------------------------------------------- createToolWindowContent")
@@ -69,33 +72,36 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         toolWindowContent = ModelSyncGui(toolWindow)
         content = ContentFactory.SERVICE.getInstance().createContent(toolWindowContent.contentPanel, "", false)
         toolWindow.contentManager.addContent(content)
+        refresherTaskFuture = toolWindowContent.refresherTaskFuture
     }
 
     override fun dispose() {
         log.info("-------------------------------------------- disposing ModelSyncGuiFactory")
+        refresherTaskFuture.cancel(true)
         content.dispose()
     }
 
-    private class ModelSyncGui(toolWindow: ToolWindow) {
+    class ModelSyncGui(toolWindow: ToolWindow) {
 
-        private var log: Logger = logger<ModelSyncGui>()
+        private val log = logger<ModelSyncGui>()
+
         val contentPanel = JPanel()
-        private val iconLabel = JLabel()
+        val refresherTaskFuture: ScheduledFuture<*>
 
         // the actual intelliJ service handling the synchronization
-        val modelSyncService = service<ModelSyncService>()
-        var serverURL: JBTextField = JBTextField(20)
-        var repositoryName: JBTextField = JBTextField(20)
-        var branchName: JBTextField = JBTextField(20)
-        var modelName: JBTextField = JBTextField(20)
-        var jwt: JBTextField = JBTextField(20)
+        private val modelSyncService = service<ModelSyncService>()
+        private var serverURL = JBTextField(20)
+        private var repositoryName = JBTextField(20)
+        private var branchName = JBTextField(20)
+        private var modelName = JBTextField(20)
+        private var jwt = JBTextField(20)
 
-        var openProjectModel: DefaultComboBoxModel<Project> = DefaultComboBoxModel<Project>()
-        var existingConnectionsModel: DefaultComboBoxModel<ModelClientV2> = DefaultComboBoxModel<ModelClientV2>()
-        var existingBindingModel: DefaultComboBoxModel<IBinding> = DefaultComboBoxModel<IBinding>()
-        var repoModel: DefaultComboBoxModel<RepositoryId> = DefaultComboBoxModel<RepositoryId>()
-        var branchModel: DefaultComboBoxModel<BranchReference> = DefaultComboBoxModel<BranchReference>()
-        var modelModel: DefaultComboBoxModel<INode> = DefaultComboBoxModel<INode>()
+        private var openProjectModel = DefaultComboBoxModel<Project>()
+        private var existingConnectionsModel = DefaultComboBoxModel<ModelClientV2>()
+        private var existingBindingModel = DefaultComboBoxModel<IBinding>()
+        private var repoModel = DefaultComboBoxModel<RepositoryId>()
+        private var branchModel = DefaultComboBoxModel<BranchReference>()
+        private var modelModel = DefaultComboBoxModel<INode>()
 
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
@@ -103,6 +109,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             contentPanel.layout = FlowLayout()
             contentPanel.add(createInputBox())
             triggerRefresh()
+            refresherTaskFuture = Executors.newScheduledThreadPool(1)
+                .scheduleAtFixedRate(BindingsComboBoxRefresher(this), 3, 3, TimeUnit.SECONDS)
         }
 
         private fun createInputBox(): Box {
@@ -201,7 +209,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                         branchName.text,
                         modelModel.selectedItem as INode,
                         repositoryName.text,
-                        ::triggerRefresh,
                     )
                 }
             }
@@ -230,16 +237,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             return inputBox
         }
 
-        private fun afterBind() {
-            log.info("-------------------------------------------- ModelSyncGui afterBind")
-            populateBindingCB()
-        }
-
         private fun triggerRefresh() {
             populateProjectsCB()
             populateConnectionsCB()
             populateRepoCB()
-            populateBindingCB()
 
             // TODO fixme: hardcoded values
             serverURL.text = "http://127.0.0.1:28101/v2"
@@ -249,7 +250,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwt.text = ""
         }
 
-        fun populateProjectsCB() {
+        private fun populateProjectsCB() {
             openProjectModel.removeAllElements()
             openProjectModel.addAll(ProjectManager.getInstance().openProjects.toMutableList())
             if (openProjectModel.size > 0) {
@@ -257,7 +258,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        fun populateConnectionsCB() {
+        private fun populateConnectionsCB() {
             existingConnectionsModel.removeAllElements()
             existingConnectionsModel.addAll(modelSyncService.syncService.activeClients)
             if (existingConnectionsModel.size > 0) {
@@ -265,7 +266,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        fun populateRepoCB() {
+        private fun populateRepoCB() {
             repoModel.removeAllElements()
             if (existingConnectionsModel.size != 0) {
                 val item = existingConnectionsModel.selectedItem as ModelClientV2
@@ -279,7 +280,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        fun populateBranchCB() {
+        private fun populateBranchCB() {
             branchModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
@@ -294,7 +295,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        fun populateModelCB() {
+        private fun populateModelCB() {
             modelModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
@@ -312,9 +313,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        fun populateBindingCB() {
+        fun populateBindingCB(bindings: List<IBinding>) {
             existingBindingModel.removeAllElements()
-            existingBindingModel.addAll(modelSyncService.getBindingList())
+            existingBindingModel.addAll(bindings)
             if (existingBindingModel.size > 0) {
                 existingBindingModel.selectedItem = existingBindingModel.getElementAt(0)
             }

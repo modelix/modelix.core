@@ -214,8 +214,11 @@ class MpsToModelixMap {
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class ModelWithModelReference(private val model: SModel, private val modelReference: SModelReference)
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class ModelWithModuleReference(private val model: SModel, private val moduleReference: SModuleReference)
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class ModuleWithModuleReference(private val module: SModule, private val moduleReference: SModuleReference)

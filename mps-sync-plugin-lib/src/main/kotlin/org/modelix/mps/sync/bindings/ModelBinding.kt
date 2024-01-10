@@ -98,5 +98,5 @@ class ModelBinding(
         bindingsRegistry.removeModelBinding(this)
     }
 
-    override fun toString() = "Binding of Model \"${model.name}\" in Module \"${model.module?.moduleName}\"."
+    override fun name() = "Binding of Model \"${model.name}\" in Module \"${model.module?.moduleName}\"."
 }

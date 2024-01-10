@@ -20,12 +20,12 @@ import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
-import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
@@ -54,7 +54,9 @@ class ITreeToSTreeTransformer(
     private val modelTransformer = ModelTransformer(project.modelAccess, nodeMap)
     private val moduleTransformer = ModuleTransformer(project, nodeMap)
 
-    fun transform(entryPoint: INode): SNode? {
+    fun transform(entryPoint: INode): List<IBinding> {
+        val bindings = mutableListOf<IBinding>()
+
         isSynchronizing.runIfAlone {
             try {
                 // TODO use coroutines instead of big-bang eager loading?
@@ -91,11 +93,13 @@ class ITreeToSTreeTransformer(
                         val binding =
                             ModelBinding(model, branch, nodeMap, isSynchronizing, project.modelAccess, bindingsRegistry)
                         bindingsRegistry.addModelBinding(binding)
+                        bindings.add(binding)
                     }
                     nodeMap.modules.forEach {
                         val module = it as AbstractModule
                         val binding = ModuleBinding(module, branch, nodeMap, isSynchronizing, bindingsRegistry)
                         bindingsRegistry.addModuleBinding(binding)
+                        bindings.add(binding)
                     }
                 }
             } catch (ex: Exception) {
@@ -104,7 +108,7 @@ class ITreeToSTreeTransformer(
             }
         }
 
-        return null
+        return bindings
     }
 
     private fun traverse(parent: INode, level: Int, processNode: (INode) -> Unit) {

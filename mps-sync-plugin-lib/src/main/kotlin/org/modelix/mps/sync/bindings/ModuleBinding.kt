@@ -89,5 +89,5 @@ class ModuleBinding(
         bindingsRegistry.removeModuleBinding(this)
     }
 
-    override fun toString() = "Binding of Module \"${module.moduleName}\"."
+    override fun name() = "Binding of Module \"${module.moduleName}\"."
 }

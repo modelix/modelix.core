@@ -58,12 +58,10 @@ class ModelSyncService : Disposable {
         logger.info("============================================ Sync Service initialized $syncService")
     }
 
-    fun getBindingList() = existingBindings.toList()
-
     fun connectModelServer(
         url: String,
         jwt: String,
-        callback: (() -> Unit)?,
+        callback: (() -> Unit),
     ) {
         coroutineScope.launch {
             logger.info("Connection to server: $url with JWT $jwt")
@@ -74,7 +72,7 @@ class ModelSyncService : Disposable {
 
     fun disconnectServer(
         modelClient: ModelClientV2,
-        callback: (() -> Unit)?,
+        callback: (() -> Unit),
     ) {
         coroutineScope.launch {
             logger.info("disconnecting to server: ${modelClient.baseUrl}")
@@ -88,17 +86,15 @@ class ModelSyncService : Disposable {
         branchName: String,
         model: INode,
         repositoryID: String,
-        callback: (() -> Unit)?,
     ) {
         coroutineScope.launch {
             try {
-                val newBinding = syncService.bindModel(
+                val bindings = syncService.bindModel(
                     client,
                     BranchReference(RepositoryId(repositoryID), branchName),
                     model,
-                    callback,
                 )
-                existingBindings.add(newBinding)
+                existingBindings.addAll(bindings)
             } catch (e: ConnectException) {
                 logger.warn("Unable to connect: ${e.message} / ${e.cause}")
             } catch (e: ClientRequestException) {

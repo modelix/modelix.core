@@ -117,8 +117,15 @@ val cucumber = task("cucumber") {
     }
 }
 
+tasks.register<Copy>("copyApis") {
+    from("../api/")
+    include("*.yaml")
+    into(project.layout.projectDirectory.dir("api"))
+}
+
 tasks.named("build") {
     dependsOn("cucumber")
+    dependsOn("copyApis")
 }
 
 task("copyLibs", Sync::class) {

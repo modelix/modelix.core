@@ -239,7 +239,7 @@ object Main {
                         }
                     } else {
                         // we only serve the public API to the outside via swagger UI
-                        swaggerUI(path = "swagger", swaggerFile = "../api/model-server.yaml")
+                        swaggerUI(path = "swagger", swaggerFile = "api/model-server.yaml")
                     }
                 }
             }

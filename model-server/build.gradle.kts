@@ -122,8 +122,8 @@ val cucumber = task("cucumber") {
 tasks.register<Copy>("copyApis") {
     from("../api/")
     include("*.yaml")
-    into(project.layout.projectDirectory.dir("build/openapi/src/main/resources/api"))
-    sourceSets["main"].resources.srcDir("build/openapi/src/main/resources/")
+    into(project.layout.buildDirectory.dir("openapi/src/main/resources/api"))
+    sourceSets["main"].resources.srcDir(project.layout.buildDirectory.dir("openapi/src/main/resources/"))
 }
 
 tasks.named("runKtlintCheckOverMainSourceSet") {

@@ -20,11 +20,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class SyncBarrier {
-
-    companion object {
-        val instance = SyncBarrier()
-    }
+object SyncBarrier {
 
     private val isSynchronizing = AtomicReference(false)
 

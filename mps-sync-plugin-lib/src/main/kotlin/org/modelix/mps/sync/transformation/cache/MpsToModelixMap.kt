@@ -28,11 +28,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 
 // use with caution, otherwise this cache may cause memory leaks
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class MpsToModelixMap {
-
-    companion object {
-        val instance = MpsToModelixMap()
-    }
+object MpsToModelixMap {
 
     // WARNING: if you add a new Map here, please also add it to the `remove` and `isMappedToMps` methods below
 

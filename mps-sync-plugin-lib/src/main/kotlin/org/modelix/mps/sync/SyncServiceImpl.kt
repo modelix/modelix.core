@@ -118,9 +118,6 @@ class SyncServiceImpl : SyncService {
              */
             ReplicatedModelRegistry.instance.model = replicatedModel
 
-            val isSynchronizing = SyncBarrier.instance
-            val nodeMap = MpsToModelixMap.instance
-
             val targetProject = ActiveMpsProjectInjector.activeMpsProject!!
             val languageRepository = registerLanguages(targetProject)
 
@@ -129,21 +126,27 @@ class SyncServiceImpl : SyncService {
                 replicatedModel.getBranch(),
                 targetProject,
                 languageRepository,
-                isSynchronizing,
-                nodeMap,
+                SyncBarrier,
+                MpsToModelixMap,
                 BindingsRegistry.instance,
             ).transform(model)
 
             // register replicated model change listener
             val listener =
-                ModelixBranchListener(replicatedModel, targetProject, languageRepository, isSynchronizing, nodeMap)
+                ModelixBranchListener(
+                    replicatedModel,
+                    targetProject,
+                    languageRepository,
+                    SyncBarrier,
+                    MpsToModelixMap,
+                )
             replicatedModel.getBranch().addListener(listener)
             changeListenerByReplicatedModel[replicatedModel] = listener
 
             // register MPS project change listener
             if (projectWithChangeListener == null) {
                 val repositoryChangeListener =
-                    RepositoryChangeListener(replicatedModel.getBranch(), nodeMap, isSynchronizing)
+                    RepositoryChangeListener(replicatedModel.getBranch(), MpsToModelixMap, SyncBarrier)
                 targetProject.repository.addRepositoryListener(repositoryChangeListener)
                 projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
             }

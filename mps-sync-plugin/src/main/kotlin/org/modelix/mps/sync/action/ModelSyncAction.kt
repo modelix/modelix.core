@@ -49,8 +49,8 @@ class ModelSyncAction : AnAction {
             // TODO fixme: warn the user if the model imports another model that is not on the model server yet
             ModelSynchronizer(
                 ReplicatedModelRegistry.instance.model?.getBranch()!!,
-                MpsToModelixMap.instance,
-                SyncBarrier.instance,
+                MpsToModelixMap,
+                SyncBarrier,
             ).addModel(model)
         } catch (ex: Exception) {
             logger.error("Model sync error occurred", ex)

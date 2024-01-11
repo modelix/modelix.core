@@ -48,8 +48,8 @@ class ModuleSyncAction : AnAction {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
             ModuleSynchronizer(
                 ReplicatedModelRegistry.instance.model?.getBranch()!!,
-                MpsToModelixMap.instance,
-                SyncBarrier.instance,
+                MpsToModelixMap,
+                SyncBarrier,
             ).addModule(module)
         } catch (ex: Exception) {
             logger.error("Module sync error occurred", ex)

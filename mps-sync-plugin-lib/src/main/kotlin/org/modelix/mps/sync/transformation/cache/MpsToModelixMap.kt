@@ -22,6 +22,7 @@ import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
@@ -40,9 +41,6 @@ class MpsToModelixMap {
 
     private val modelToModelixId = mutableMapOf<SModel, Long>()
     private val modelixIdToModel = mutableMapOf<Long, SModel>()
-
-    private val modelIdToModelixId = mutableMapOf<SModelId, Long>()
-    private val modelixIdToModelId = mutableMapOf<Long, SModelId>()
 
     private val moduleToModelixId = mutableMapOf<SModule, Long>()
     private val modelixIdToModule = mutableMapOf<Long, SModule>()
@@ -65,16 +63,13 @@ class MpsToModelixMap {
     fun put(node: SNode, modelixId: Long) {
         nodeToModelixId[node] = modelixId
         modelixIdToNode[modelixId] = node
+
         node.model?.let { putObjRelatedToAModel(it, node) }
     }
 
     fun put(model: SModel, modelixId: Long) {
         modelToModelixId[model] = modelixId
         modelixIdToModel[modelixId] = model
-
-        val modelId = model.modelId
-        modelIdToModelixId[modelId] = modelixId
-        modelixIdToModelId[modelixId] = modelId
 
         putObjRelatedToAModel(model, model)
     }
@@ -120,9 +115,13 @@ class MpsToModelixMap {
 
     operator fun get(model: SModel?) = modelToModelixId[model]
 
-    operator fun get(modelId: SModelId?) = modelIdToModelixId[modelId]
+    operator fun get(modelId: SModelId?) =
+        modelToModelixId.filter { it.key.modelId == modelId }.map { it.value }.firstOrNull()
 
     operator fun get(module: SModule?) = moduleToModelixId[module]
+
+    operator fun get(moduleId: SModuleId?) =
+        moduleToModelixId.filter { it.key.moduleId == moduleId }.map { it.value }.firstOrNull()
 
     operator fun get(sourceModel: SModel, moduleReference: SModuleReference) =
         modelWithOutgoingModuleReferenceToModelixId[ModelWithModuleReference(sourceModel, moduleReference)]
@@ -148,24 +147,19 @@ class MpsToModelixMap {
             modelToModelixId.remove(it)
             remove(it)
         }
-        modelixIdToModelId.remove(modelixId)?.let { modelIdToModelixId.remove(it) }
         modelixIdToModelWithOutgoingModelReference.remove(modelixId)
             ?.let { modelWithOutgoingModelReferenceToModelixId.remove(it) }
         modelixIdToModelWithOutgoingModuleReference.remove(modelixId)
             ?.let { modelWithOutgoingModuleReferenceToModelixId.remove(it) }
 
         // is related to module
-        modelixIdToModule.remove(modelixId)?.let {
-            moduleToModelixId.remove(it)
-            remove(it)
-        }
+        modelixIdToModule.remove(modelixId)?.let { remove(it) }
         modelixIdToModuleWithOutgoingModuleReference.remove(modelixId)
             ?.let { moduleWithOutgoingModuleReferenceToModelixId.remove(it) }
     }
 
     fun remove(model: SModel) {
         modelToModelixId.remove(model)?.let { modelixIdToModel.remove(it) }
-        modelIdToModelixId.remove(model.modelId)?.let { modelixIdToModelId.remove(it) }
         objectsRelatedToAModel.remove(model)?.forEach {
             when (it) {
                 is SModuleReference -> {
@@ -204,7 +198,6 @@ class MpsToModelixMap {
         val idMaps = arrayOf(
             modelixIdToNode,
             modelixIdToModel,
-            modelixIdToModelId,
             modelixIdToModule,
             modelixIdToModuleWithOutgoingModuleReference,
             modelixIdToModelWithOutgoingModuleReference,

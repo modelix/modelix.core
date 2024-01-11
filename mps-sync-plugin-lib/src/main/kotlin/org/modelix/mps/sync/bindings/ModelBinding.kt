@@ -18,7 +18,7 @@ package org.modelix.mps.sync.bindings
 
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
-import jetbrains.mps.extapi.module.SModuleBase
+import jetbrains.mps.model.ModelDeleteHelper
 import org.jetbrains.mps.openapi.module.ModelAccess
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -28,6 +28,7 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
 import org.modelix.mps.sync.util.SyncBarrier
+import java.util.concurrent.atomic.AtomicBoolean
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelBinding(
@@ -41,7 +42,6 @@ class ModelBinding(
 
     private val logger = logger<ModelBinding>()
 
-    private val modelId = model.modelId
     private val modelChangeListener = ModelChangeListener(branch, nodeMap, isSynchronizing, this)
     private val nodeChangeListener = NodeChangeListener(branch, nodeMap, isSynchronizing)
 
@@ -49,7 +49,7 @@ class ModelBinding(
     private var isActivated = false
 
     override fun activate(callback: Runnable?) {
-        check(!isDisposed) { "Model binding of $modelId is disposed." }
+        check(!isDisposed) { "${name()} is disposed." }
         if (isActivated) {
             return
         }
@@ -59,46 +59,71 @@ class ModelBinding(
         model.addModelListener(modelChangeListener)
 
         isActivated = true
-        logger.info("Binding for model $modelId is activated.")
+        logger.info("${name()} is activated.")
 
         callback?.run()
     }
 
-    override fun deactivate(callback: Runnable?) {
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?) {
         if (isDisposed) {
             return
-        }
-
-        // remove from module
-        val parentModule = model.module
-        check(parentModule is SModuleBase) { "Parent Module ${parentModule?.moduleId} of Model $modelId is not an SModuleBase." }
-        // TODO test if removing the model from the module was successful before deleting the model. Otherwise the module's modelDeleted event listener will be invoked.
-        modelAccess.runWriteActionCommandBlocking {
-            parentModule.unregisterModel(model)
-            model.module = null
         }
 
         // unregister listeners
         model.removeChangeListener(nodeChangeListener)
         model.removeModelListener(modelChangeListener)
 
-        isDisposed = true
-        isActivated = false
-
-        logger.info("Binding for model $modelId is deactivated.")
+        val parentModule = model.module!!
+        if (removeFromServer) {
+            // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
+            bindingsRegistry.removeModelBinding(parentModule, this)
+        }
 
         // delete model
-        model.detach()
-        nodeMap.remove(model)
+        val mpsActionCompleted = AtomicBoolean()
+        modelAccess.runWriteActionCommandBlocking {
+            try {
+                if (!removeFromServer) {
+                    // to delete the files locally
+                    // otherwise, MPS has to take care of triggering ModelDeleteHelper(model).delete() to delete the model
+                    ModelDeleteHelper(model).delete()
+                }
+                mpsActionCompleted.set(true)
+            } catch (ex: Exception) {
+                logger.error("Exception occurred while deactivating ${name()}.", ex)
+                // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                // TODO testme
+                bindingsRegistry.addModelBinding(this)
+                throw ex
+            }
+        }
 
-        logger.info("Model is removed.")
+        if (mpsActionCompleted.get()) {
+            bindingsRegistry.removeModelBinding(parentModule, this)
 
-        callback?.run()
+            if (!removeFromServer) {
+                // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
+                nodeMap.remove(model)
+            }
 
-        bindingsRegistry.removeModelBinding(this)
+            isDisposed = true
+            isActivated = false
+
+            logger.info(
+                "${name()} is deactivated and model is removed locally${
+                    if (removeFromServer) {
+                        " and from server"
+                    } else {
+                        ""
+                    }
+                }.",
+            )
+
+            callback?.run()
+        }
     }
 
-    override fun name() = "Binding of Model \"${model.name}\" in Module \"${model.module?.moduleName}\""
+    override fun name() = "Binding of Model \"${model.name}\""
 
     override fun toString() = name()
 }

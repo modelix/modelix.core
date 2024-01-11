@@ -30,8 +30,11 @@ fun ModelAccess.runReadBlocking(callback: Runnable) = runBlocking(this::runReadA
 fun ModelAccess.runWriteActionCommandBlocking(callback: Runnable) =
     runBlocking(this::runWriteAction) { latch ->
         this.executeCommand {
-            callback.run()
-            latch.countDown()
+            try {
+                callback.run()
+            } finally {
+                latch.countDown()
+            }
         }
     }
 
@@ -39,8 +42,11 @@ fun ModelAccess.runWriteActionCommandBlocking(callback: Runnable) =
 fun ModelAccess.runWriteActionInEDTBlocking(callback: Runnable) =
     runBlocking(this::runWriteAction) { latch ->
         this.executeCommandInEDT {
-            callback.run()
-            latch.countDown()
+            try {
+                callback.run()
+            } finally {
+                latch.countDown()
+            }
         }
     }
 

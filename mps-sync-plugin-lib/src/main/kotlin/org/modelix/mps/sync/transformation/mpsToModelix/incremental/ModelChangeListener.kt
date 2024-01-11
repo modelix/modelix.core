@@ -40,7 +40,7 @@ import org.modelix.mps.sync.util.SyncBarrier
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelChangeListener(
     branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
+    nodeMap: MpsToModelixMap,
     isSynchronizing: SyncBarrier,
     private val binding: ModelBinding,
 ) : SModelListener {
@@ -53,35 +53,36 @@ class ModelChangeListener(
 
     // TODO might not work, we have to test it
     override fun importRemoved(event: SModelImportEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { nodeMap[event.model]!! },
-        childNodeIdProducer = { nodeMap[event.model, event.modelUID]!! },
+        parentNodeIdProducer = { it[event.model]!! },
+        childNodeIdProducer = { it[event.model, event.modelUID]!! },
     )
 
     override fun languageAdded(event: SModelLanguageEvent) =
         modelSynchronizer.addLanguageDependency(event.model, event.eventLanguage)
 
     override fun languageRemoved(event: SModelLanguageEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { nodeMap[event.model]!! },
-        childNodeIdProducer = { nodeMap[event.model, event.eventLanguage.sourceModuleReference]!! },
+        parentNodeIdProducer = { it[event.model]!! },
+        childNodeIdProducer = { it[event.model, event.eventLanguage.sourceModuleReference]!! },
     )
 
     override fun devkitAdded(event: SModelDevKitEvent) =
         modelSynchronizer.addDevKitDependency(event.model, event.devkitNamespace)
 
     override fun devkitRemoved(event: SModelDevKitEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { nodeMap[event.model]!! },
-        childNodeIdProducer = { nodeMap[event.model, event.devkitNamespace]!! },
+        parentNodeIdProducer = { it[event.model]!! },
+        childNodeIdProducer = { it[event.model, event.devkitNamespace]!! },
     )
 
     @Deprecated("Deprecated in Java")
     override fun rootAdded(event: SModelRootEvent) = nodeSynchronizer.addNode(event.root)
 
     override fun modelRenamed(event: SModelRenamedEvent) =
-        nodeSynchronizer.setProperty(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, event.newName) {
-            nodeMap[event.model]!!
-        }
+        nodeSynchronizer.setProperty(
+            BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
+            event.newName,
+        ) { it[event.model]!! }
 
-    override fun beforeModelDisposed(model: SModel) = binding.deactivate()
+    override fun beforeModelDisposed(model: SModel) = binding.deactivate(removeFromServer = true)
 
     @Deprecated("Deprecated in Java")
     override fun rootRemoved(event: SModelRootEvent) {

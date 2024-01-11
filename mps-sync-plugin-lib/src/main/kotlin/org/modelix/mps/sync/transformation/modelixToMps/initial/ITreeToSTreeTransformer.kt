@@ -97,7 +97,14 @@ class ITreeToSTreeTransformer(
                     }
                     nodeMap.modules.forEach {
                         val module = it as AbstractModule
-                        val binding = ModuleBinding(module, branch, nodeMap, isSynchronizing, bindingsRegistry)
+                        val binding = ModuleBinding(
+                            module,
+                            branch,
+                            nodeMap,
+                            isSynchronizing,
+                            project.modelAccess,
+                            bindingsRegistry,
+                        )
                         bindingsRegistry.addModuleBinding(binding)
                         bindings.add(binding)
                     }

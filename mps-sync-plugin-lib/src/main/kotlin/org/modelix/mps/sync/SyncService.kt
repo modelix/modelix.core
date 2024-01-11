@@ -37,7 +37,7 @@ interface IBinding {
 
     fun activate(callback: Runnable? = null)
 
-    fun deactivate(callback: Runnable? = null)
+    fun deactivate(removeFromServer: Boolean, callback: Runnable? = null)
 
     fun name(): String
 }

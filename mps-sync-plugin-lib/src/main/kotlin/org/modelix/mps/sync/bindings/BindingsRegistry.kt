@@ -18,6 +18,7 @@ package org.modelix.mps.sync.bindings
 
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
+import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
@@ -31,28 +32,38 @@ class BindingsRegistry private constructor() {
         val instance = BindingsRegistry()
     }
 
-    private val modelBindingsByModule = mutableMapOf<SModule, MutableList<ModelBinding>>()
-    private val moduleBindings = mutableListOf<ModuleBinding>()
-
-    private val modelBindings = modelBindingsByModule.values.flatten().toCollection(mutableListOf()).toList()
+    private val modelBindingsByModule = mutableMapOf<SModule, LinkedHashSet<ModelBinding>>()
+    private val moduleBindings = LinkedHashSet<ModuleBinding>()
 
     fun addModelBinding(binding: ModelBinding) =
-        modelBindingsByModule.computeIfAbsent(binding.model.module!!) { mutableListOf() }.add(binding)
+        modelBindingsByModule.computeIfAbsent(binding.model.module!!) { LinkedHashSet() }.add(binding)
 
     fun addModuleBinding(binding: ModuleBinding) = moduleBindings.add(binding)
 
-    fun removeModelBinding(binding: ModelBinding) = modelBindingsByModule[binding.model.module]?.remove(binding)
+    fun removeModelBinding(module: SModule, binding: ModelBinding) = modelBindingsByModule[module]?.remove(binding)
 
-    fun removeModuleBinding(binding: ModuleBinding) = moduleBindings.remove(binding)
+    fun removeModuleBinding(binding: ModuleBinding) {
+        val module = binding.module
+        check(
+            modelBindingsByModule.getOrDefault(module, LinkedHashSet()).isEmpty(),
+        ) { "$binding cannot be removed, because not all of its model' bindings have been removed." }
 
-    fun getModelBindings(): List<ModelBinding> = modelBindings
+        modelBindingsByModule.remove(module)
+        moduleBindings.remove(binding)
+    }
+
+    fun getModelBindings(): List<ModelBinding> =
+        modelBindingsByModule.values.flatten().toCollection(mutableListOf()).toList()
 
     fun getModelBindings(module: SModule): Set<ModelBinding>? = modelBindingsByModule[module]?.toSet()
 
-    fun getModuleBindings(): List<ModuleBinding> = moduleBindings
+    fun getModuleBindings(): List<ModuleBinding> = moduleBindings.toList()
 
-    fun getModelBinding(model: SModelBase) = modelBindings.find { it.model == model }
+    fun getModelBinding(model: SModelBase) = getModelBindings().find { it.model == model }
+
+    fun getModelBinding(modelId: SModelId) = getModelBindings().find { it.model.modelId == modelId }
 
     fun getModuleBinding(module: AbstractModule) = moduleBindings.find { it.module == module }
-    fun getAllBindings(): List<IBinding> = Stream.concat(modelBindings.stream(), moduleBindings.stream()).toList()
+
+    fun getAllBindings(): List<IBinding> = Stream.concat(getModelBindings().stream(), moduleBindings.stream()).toList()
 }

@@ -227,7 +227,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val unbindButton = JButton("Unbind Selected")
             unbindButton.addActionListener {
                 existingBindingCB.selectedItem?.let {
-                    (it as IBinding).deactivate()
+                    (it as IBinding).deactivate(removeFromServer = false)
                     existingBindingCB.removeItem(it)
                 }
             }

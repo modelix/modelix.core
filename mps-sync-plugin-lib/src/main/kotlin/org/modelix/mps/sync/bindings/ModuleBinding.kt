@@ -17,13 +17,18 @@
 package org.modelix.mps.sync.bindings
 
 import com.intellij.openapi.diagnostic.logger
+import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
+import org.jetbrains.mps.openapi.module.ModelAccess
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.util.runWriteActionCommandBlocking
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
 import org.modelix.mps.sync.util.SyncBarrier
+import java.util.concurrent.atomic.AtomicBoolean
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleBinding(
@@ -31,19 +36,19 @@ class ModuleBinding(
     branch: IBranch,
     private val nodeMap: MpsToModelixMap,
     isSynchronizing: SyncBarrier,
+    private val modelAccess: ModelAccess,
     private val bindingsRegistry: BindingsRegistry,
 ) : IBinding {
 
     private val logger = logger<ModelBinding>()
 
-    private val moduleId = module.moduleId
     private val changeListener = ModuleChangeListener(branch, nodeMap, isSynchronizing)
 
     private var isDisposed = false
     private var isActivated = false
 
     override fun activate(callback: Runnable?) {
-        check(!isDisposed) { "Module binding of $moduleId is disposed." }
+        check(!isDisposed) { "${name()} is disposed." }
         if (isActivated) {
             return
         }
@@ -56,12 +61,12 @@ class ModuleBinding(
 
         isActivated = true
 
-        logger.info("Binding for module $moduleId is activated.")
+        logger.info("${name()} is activated.")
 
         callback?.run()
     }
 
-    override fun deactivate(callback: Runnable?) {
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?) {
         if (isDisposed) {
             return
         }
@@ -70,23 +75,51 @@ class ModuleBinding(
         module.removeModuleListener(changeListener)
 
         // deactivate child models' bindings
-        bindingsRegistry.getModelBindings(module)?.forEach { it.deactivate() }
+        bindingsRegistry.getModelBindings(module)?.forEach { it.deactivate(removeFromServer) }
 
-        isDisposed = true
-        isActivated = false
-
-        logger.info("Binding for module $moduleId is deactivated.")
+        // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
+        bindingsRegistry.removeModuleBinding(this)
 
         // delete module
-        // TODO is it going to delete it from the cloud as well?
-        module.dispose()
-        nodeMap.remove(module)
+        val mpsActionCompleted = AtomicBoolean()
+        modelAccess.runWriteActionCommandBlocking {
+            try {
+                if (!removeFromServer) {
+                    // if we just delete it locally, then we have to call ModuleDeleteHelper manually.
+                    // otherwise, MPS will call us via the event-handler chain starting from ModuleDeleteHelper.deleteModules --> RepositoryChangeListener --> moduleListener.deactivate(removeFromServer = true)
+                    ModuleDeleteHelper(ActiveMpsProjectInjector.activeProject!!).deleteModules(
+                        listOf(module),
+                        false,
+                        true,
+                    )
+                }
+                mpsActionCompleted.set(true)
+            } catch (ex: Exception) {
+                logger.error("Exception occurred while deactivating ${name()}.", ex)
+                // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                bindingsRegistry.addModuleBinding(this)
+                throw ex
+            }
+        }
 
-        logger.info("Module is removed.")
+        if (mpsActionCompleted.get()) {
+            nodeMap.remove(module)
 
-        callback?.run()
+            isDisposed = true
+            isActivated = false
 
-        bindingsRegistry.removeModuleBinding(this)
+            logger.info(
+                "${name()} is deactivated and module is removed locally${
+                    if (removeFromServer) {
+                        " and from server"
+                    } else {
+                        ""
+                    }
+                }.",
+            )
+
+            callback?.run()
+        }
     }
 
     override fun name() = "Binding of Module \"${module.moduleName}\""

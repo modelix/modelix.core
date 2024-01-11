@@ -141,7 +141,8 @@ class SyncServiceImpl : SyncService {
 
             // register MPS project change listener
             if (projectWithChangeListener == null) {
-                val repositoryChangeListener = RepositoryChangeListener()
+                val repositoryChangeListener =
+                    RepositoryChangeListener(replicatedModel.getBranch(), nodeMap, isSynchronizing)
                 targetProject.repository.addRepositoryListener(repositoryChangeListener)
                 projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
             }
@@ -174,8 +175,8 @@ class SyncServiceImpl : SyncService {
         activeClients.forEach { it.close() }
         // dispose all bindings
         val bindingsRegistry = BindingsRegistry.instance
-        bindingsRegistry.getModuleBindings().forEach { it.deactivate() }
-        bindingsRegistry.getModelBindings().forEach { it.deactivate() }
+        bindingsRegistry.getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
+        bindingsRegistry.getModelBindings().forEach { it.deactivate(removeFromServer = false) }
     }
 
     private fun registerLanguages(project: MPSProject): MPSLanguageRepository {

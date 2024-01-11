@@ -21,7 +21,6 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.ktor.client.plugins.ClientRequestException
-import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,8 +30,8 @@ import org.modelix.model.api.runSynchronized
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.mps.sync.action.ModelixActionGroup
+import org.modelix.mps.sync.bindings.ModuleBinding
 import java.net.ConnectException
 import java.net.URL
 
@@ -42,7 +41,6 @@ class ModelSyncService : Disposable {
 
     private val logger = logger<ModelSyncService>()
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
-    private val existingBindings = mutableListOf<IBinding>()
     private var server: String? = null
     val syncService: SyncServiceImpl
 
@@ -94,7 +92,12 @@ class ModelSyncService : Disposable {
                     BranchReference(RepositoryId(repositoryID), branchName),
                     model,
                 )
-                existingBindings.addAll(bindings)
+                // activate bindings
+                bindings.forEach {
+                    if (it is ModuleBinding) {
+                        it.activate()
+                    }
+                }
             } catch (e: ConnectException) {
                 logger.warn("Unable to connect: ${e.message} / ${e.cause}")
             } catch (e: ClientRequestException) {
@@ -105,22 +108,8 @@ class ModelSyncService : Disposable {
         }
     }
 
-    fun deactivateBinding(binding: IBinding) {
-        // TODO deactivate all bindings when switching projects!!!
-        binding.deactivate()
-        existingBindings.remove(binding)
-    }
-
     fun ensureStarted() {
         logger.info("============================================  ensureStarted")
-
-        runSynchronized(this) {
-            logger.info("starting modelix synchronization plugin")
-            if (server != null) return
-
-            val rootNodeProvider: () -> INode? = { MPSModuleRepository.getInstance()?.let { MPSRepositoryAsNode(it) } }
-            logger.info("rootNodeProvider: $rootNodeProvider")
-        }
     }
 
     override fun dispose() {

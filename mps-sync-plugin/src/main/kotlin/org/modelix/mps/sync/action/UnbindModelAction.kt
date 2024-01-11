@@ -43,7 +43,7 @@ class UnbindModelAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-            BindingsRegistry.instance.getModelBinding(model)?.deactivate()
+            BindingsRegistry.instance.getModelBinding(model)?.deactivate(removeFromServer = false)
         } catch (ex: Exception) {
             logger.error("Model unbind error occurred", ex)
         }

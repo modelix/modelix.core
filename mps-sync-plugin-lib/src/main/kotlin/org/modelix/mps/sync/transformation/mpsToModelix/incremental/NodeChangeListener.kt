@@ -30,7 +30,7 @@ import org.modelix.mps.sync.util.SyncBarrier
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeChangeListener(
     branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
+    nodeMap: MpsToModelixMap,
     isSynchronizing: SyncBarrier,
 ) : SNodeChangeListener {
 
@@ -41,23 +41,23 @@ class NodeChangeListener(
     override fun nodeRemoved(event: SNodeRemoveEvent) = synchronizer.removeNode(
         parentNodeIdProducer = {
             if (event.isRoot) {
-                nodeMap[event.model]!!
+                it[event.model]!!
             } else {
-                nodeMap[event.parent!!]!!
+                it[event.parent!!]!!
             }
         },
-        childNodeIdProducer = { nodeMap[event.child]!! },
+        childNodeIdProducer = { it[event.child]!! },
     )
 
     override fun propertyChanged(event: SPropertyChangeEvent) =
-        synchronizer.setProperty(event.property, event.newValue) { nodeMap[event.node]!! }
+        synchronizer.setProperty(event.property, event.newValue) { it[event.node]!! }
 
     override fun referenceChanged(event: SReferenceChangeEvent) {
         // TODO fix me: it does not work correctly, if event.newValue.targetNode points to a node that is in a different model, that has not been synced yet to model server...
         synchronizer.setReference(
             event.associationLink,
-            sourceNodeIdProducer = { nodeMap[event.node]!! },
-            targetNodeIdProducer = { event.newValue?.targetNode?.let { nodeMap[it] } },
+            sourceNodeIdProducer = { it[event.node]!! },
+            targetNodeIdProducer = { nodesMap -> event.newValue?.targetNode?.let { nodesMap[it] } },
         )
     }
 }

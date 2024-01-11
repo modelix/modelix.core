@@ -19,12 +19,31 @@ package org.modelix.mps.sync.mps
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.ITree
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.util.SyncBarrier
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class RepositoryChangeListener : SRepositoryListenerBase() {
+class RepositoryChangeListener(
+    branch: IBranch,
+    nodeMap: MpsToModelixMap,
+    isSynchronizing: SyncBarrier,
+) : SRepositoryListenerBase() {
+
+    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, isSynchronizing)
 
     override fun moduleRemoved(module: SModuleReference) {
-        BindingsRegistry.instance.getModuleBindings().find { it.module.moduleId == module.moduleId }?.deactivate()
+        // TODO fixme, when closing MPS, then it invokes this method for all modules and as a result, if the module binding exists, then the module will be deleted.
+        val binding = BindingsRegistry.instance.getModuleBindings().find { it.module.moduleId == module.moduleId }
+        if (binding != null) {
+            nodeSynchronizer.removeNode(
+                parentNodeIdProducer = { ITree.ROOT_ID },
+                childNodeIdProducer = { it[module.moduleId]!! },
+            )
+            binding.deactivate(removeFromServer = true)
+        }
     }
 }

@@ -32,6 +32,7 @@ import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.util.runReadBlocking
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.SyncBarrier
@@ -71,7 +72,9 @@ class ModuleSynchronizer(
 
                 // register binding
                 val bindingsRegistry = BindingsRegistry.instance
-                val binding = ModuleBinding(module, branch, nodeMap, isSynchronizing, bindingsRegistry)
+                val mpsProject = ActiveMpsProjectInjector.activeProject!!
+                val binding =
+                    ModuleBinding(module, branch, nodeMap, isSynchronizing, mpsProject.modelAccess, bindingsRegistry)
                 bindingsRegistry.addModuleBinding(binding)
                 binding.activate()
             }

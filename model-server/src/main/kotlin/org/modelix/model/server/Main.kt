@@ -63,6 +63,7 @@ import org.modelix.model.server.store.loadDump
 import org.modelix.model.server.store.writeDump
 import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
+import org.springframework.util.ResourceUtils
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
@@ -238,8 +239,8 @@ object Main {
                             call.respondText("SwaggerUI is disabled")
                         }
                     } else {
-                        // we only serve the public API to the outside via swagger UI
-                        swaggerUI(path = "swagger", swaggerFile = "../api/model-server.yaml")
+                        // we serve the public API to the outside via swagger UI
+                        swaggerUI(path = "swagger", swaggerFile = ResourceUtils.getFile("api/model-server.yaml").path.toString())
                     }
                 }
             }

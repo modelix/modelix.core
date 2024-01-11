@@ -2,6 +2,7 @@ package org.modelix.mps.sync
 
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.Project
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -120,7 +121,7 @@ class SyncServiceImpl : SyncService {
             val isSynchronizing = SyncBarrier.instance
             val nodeMap = MpsToModelixMap.instance
 
-            val targetProject = ActiveMpsProjectInjector.activeProject!!
+            val targetProject = ActiveMpsProjectInjector.activeMpsProject!!
             val languageRepository = registerLanguages(targetProject)
 
             // transform the model
@@ -156,9 +157,9 @@ class SyncServiceImpl : SyncService {
         return bindings
     }
 
-    override fun setActiveMpsProject(mpsProject: MPSProject) {
+    override fun setActiveProject(project: Project) {
         resetProjectWithChangeListener()
-        ActiveMpsProjectInjector.activeProject = mpsProject
+        ActiveMpsProjectInjector.setActiveProject(project)
     }
 
     override fun getModelBindings() = BindingsRegistry.instance.getModelBindings()

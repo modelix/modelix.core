@@ -26,6 +26,7 @@ import org.jetbrains.mps.openapi.module.SModuleListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
@@ -47,6 +48,10 @@ class ModuleChangeListener(
     override fun modelAdded(module: SModule, model: SModel) = modelSynchronizer.addModel(model as SModelBase)
 
     override fun modelRemoved(module: SModule, reference: SModelReference) {
+        if (ApplicationLifecycleTracker.applicationClosing) {
+            return
+        }
+
         val modelId = reference.modelId
         val binding = BindingsRegistry.instance.getModelBinding(modelId)
         // if binding is not found, it means the model should be removed (see ModelBinding's deactivate method)

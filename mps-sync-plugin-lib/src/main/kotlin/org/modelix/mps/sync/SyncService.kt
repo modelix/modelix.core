@@ -1,6 +1,6 @@
 package org.modelix.mps.sync
 
-import jetbrains.mps.project.MPSProject
+import com.intellij.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.INode
 import org.modelix.model.client2.ModelClientV2
@@ -23,7 +23,7 @@ interface SyncService {
 
     fun disconnectModelServer(client: ModelClientV2, callback: (() -> Unit)? = null)
 
-    fun setActiveMpsProject(mpsProject: MPSProject)
+    fun setActiveProject(project: Project)
 
     fun getModelBindings(): List<ModelBinding>
 

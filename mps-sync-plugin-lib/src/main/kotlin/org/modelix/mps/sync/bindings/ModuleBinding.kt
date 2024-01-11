@@ -87,7 +87,7 @@ class ModuleBinding(
                 if (!removeFromServer) {
                     // if we just delete it locally, then we have to call ModuleDeleteHelper manually.
                     // otherwise, MPS will call us via the event-handler chain starting from ModuleDeleteHelper.deleteModules --> RepositoryChangeListener --> moduleListener.deactivate(removeFromServer = true)
-                    ModuleDeleteHelper(ActiveMpsProjectInjector.activeProject!!).deleteModules(
+                    ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!).deleteModules(
                         listOf(module),
                         false,
                         true,

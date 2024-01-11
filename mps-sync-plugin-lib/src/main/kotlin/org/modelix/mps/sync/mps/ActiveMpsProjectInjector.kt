@@ -16,10 +16,43 @@
 
 package org.modelix.mps.sync.mps
 
+import com.intellij.ide.AppLifecycleListener
+import com.intellij.openapi.project.Project
+import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object ActiveMpsProjectInjector {
-    var activeProject: MPSProject? = null
+    var activeMpsProject: MPSProject? = null
+        private set
+
+    var activeIdeaProject: Project? = null
+        private set
+
+    fun setActiveProject(project: Project) {
+        if (activeIdeaProject != project) {
+            activeIdeaProject = project
+            subscribeForApplicationClosing(activeIdeaProject!!)
+            activeMpsProject = ProjectHelper.fromIdeaProject(activeIdeaProject)
+        }
+    }
+
+    private fun subscribeForApplicationClosing(project: Project) {
+        /**
+         * Subscribe for application closing event and do not delete the modules and models in that case.
+         * Explanation: when closing MPS, MPS unregisters all modules from the repository then it calls the
+         * moduleRemoved and modelRemoved methods after the module was unregistered. At that point of time,
+         * it might happen that the binding is still living, but we do not want to remove the module/model from
+         * the server.
+         */
+        project.messageBus.connect().subscribe(
+            AppLifecycleListener.TOPIC,
+            object : AppLifecycleListener {
+                override fun appWillBeClosed(isRestart: Boolean) {
+                    ApplicationLifecycleTracker.applicationClosing = true
+                }
+            },
+        )
+    }
 }

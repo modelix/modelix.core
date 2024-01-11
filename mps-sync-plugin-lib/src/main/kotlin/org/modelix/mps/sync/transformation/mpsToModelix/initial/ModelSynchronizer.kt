@@ -85,7 +85,7 @@ class ModelSynchronizer(
             }
 
             // register binding
-            val mpsProject = ActiveMpsProjectInjector.activeProject!!
+            val mpsProject = ActiveMpsProjectInjector.activeMpsProject!!
             val bindingsRegistry = BindingsRegistry.instance
             binding = ModelBinding(
                 model,

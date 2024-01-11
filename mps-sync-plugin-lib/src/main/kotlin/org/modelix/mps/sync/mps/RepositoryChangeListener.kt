@@ -36,7 +36,10 @@ class RepositoryChangeListener(
     private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, isSynchronizing)
 
     override fun moduleRemoved(module: SModuleReference) {
-        // TODO fixme, when closing MPS, then it invokes this method for all modules and as a result, if the module binding exists, then the module will be deleted.
+        if (ApplicationLifecycleTracker.applicationClosing) {
+            return
+        }
+
         val binding = BindingsRegistry.instance.getModuleBindings().find { it.module.moduleId == module.moduleId }
         if (binding != null) {
             nodeSynchronizer.removeNode(

@@ -72,7 +72,7 @@ class ModuleSynchronizer(
 
                 // register binding
                 val bindingsRegistry = BindingsRegistry.instance
-                val mpsProject = ActiveMpsProjectInjector.activeProject!!
+                val mpsProject = ActiveMpsProjectInjector.activeMpsProject!!
                 val binding =
                     ModuleBinding(module, branch, nodeMap, isSynchronizing, mpsProject.modelAccess, bindingsRegistry)
                 bindingsRegistry.addModuleBinding(binding)

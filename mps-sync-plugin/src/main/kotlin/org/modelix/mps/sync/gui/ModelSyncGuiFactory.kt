@@ -27,7 +27,6 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
-import jetbrains.mps.ide.project.ProjectHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -169,7 +168,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             projectCB.renderer = CustomCellRenderer()
             projectCB.addItemListener {
                 if (it.stateChange == ItemEvent.SELECTED) {
-                    ActiveMpsProjectInjector.activeProject = ProjectHelper.fromIdeaProject(it.item as Project)!!
+                    ActiveMpsProjectInjector.setActiveProject(it.item as Project)
                 }
             }
 
@@ -203,7 +202,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val bindButton = JButton("Bind Selected")
             bindButton.addActionListener { _: ActionEvent? ->
                 if (existingConnectionsModel.size > 0) {
-                    log.info("Binding model $modelName to project: ${ActiveMpsProjectInjector.activeProject}")
+                    log.info("Binding model $modelName to project: ${ActiveMpsProjectInjector.activeMpsProject}")
                     modelSyncService.bindProject(
                         existingConnectionsModel.selectedItem as ModelClientV2,
                         branchName.text,

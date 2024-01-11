@@ -31,6 +31,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
@@ -82,7 +83,11 @@ class ModelChangeListener(
             event.newName,
         ) { it[event.model]!! }
 
-    override fun beforeModelDisposed(model: SModel) = binding.deactivate(removeFromServer = true)
+    override fun beforeModelDisposed(model: SModel) {
+        if (!ApplicationLifecycleTracker.applicationClosing) {
+            binding.deactivate(removeFromServer = true)
+        }
+    }
 
     @Deprecated("Deprecated in Java")
     override fun rootRemoved(event: SModelRootEvent) {

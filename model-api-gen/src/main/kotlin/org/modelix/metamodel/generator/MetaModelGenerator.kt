@@ -5,7 +5,6 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
@@ -17,14 +16,9 @@ import org.modelix.metamodel.GeneratedChildListLink
 import org.modelix.metamodel.GeneratedMandatorySingleChildLink
 import org.modelix.metamodel.GeneratedReferenceLink
 import org.modelix.metamodel.GeneratedSingleChildLink
-import org.modelix.metamodel.ITypedConcept
 import org.modelix.model.data.EnumPropertyType
 import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
-import org.modelix.modelql.core.IFluxStep
-import org.modelix.modelql.core.IMonoStep
-import org.modelix.modelql.core.IProducingStep
-import org.modelix.modelql.typed.TypedModelQL
 import java.nio.file.Path
 
 class MetaModelGenerator(
@@ -53,10 +47,6 @@ class MetaModelGenerator(
             else -> { throw RuntimeException("Unexpected property type: $type") }
         }
         return if (!optional || alwaysUseNonNullableProperties) nonNullableType else nonNullableType.copy(nullable = true)
-    }
-
-    private fun FileSpec.write() {
-        writeTo(outputDir)
     }
 
     private fun ProcessedLanguage.packageDir(): Path {
@@ -94,203 +84,10 @@ class MetaModelGenerator(
             for (concept in language.getConcepts()) {
                 ConceptFileGenerator(concept, this).generateFile()
                 if (modelqlOutputDir != null && concept.getOwnRoles().isNotEmpty()) {
-                    generateModelQLFile(concept)
+                    ModelQLFileGenerator(concept, this).generateFile()
                 }
             }
         }
-    }
-
-    private fun generateModelQLFile(concept: ProcessedConcept) {
-        FileSpec.builder("org.modelix.modelql.gen." + concept.language.name, concept.name)
-            .addFileComment(HEADER_COMMENT)
-            .apply {
-                for (feature in concept.getOwnRoles()) {
-                    val receiverType = Iterable::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
-                    when (feature) {
-                        is ProcessedProperty -> {
-                            for (stepType in listOf(IMonoStep::class.asTypeName(), IFluxStep::class.asTypeName())) {
-                                val inputType = stepType.parameterizedBy(concept.nodeWrapperInterfaceType())
-                                val outputElementType = when (feature.type) {
-                                    is EnumPropertyType -> String::class.asTypeName().copy(nullable = true)
-                                    is PrimitivePropertyType -> feature.asKotlinType()
-                                }
-                                val outputType = stepType.parameterizedBy(outputElementType)
-                                val functionName = when (val type = feature.type) {
-                                    is EnumPropertyType -> "rawProperty"
-                                    is PrimitivePropertyType -> when (type.primitive) {
-                                        Primitive.STRING -> "stringProperty"
-                                        Primitive.BOOLEAN -> "booleanProperty"
-                                        Primitive.INT -> "intProperty"
-                                    }
-                                }
-                                addProperty(
-                                    PropertySpec.builder(feature.generatedName, outputType)
-                                        .receiver(inputType)
-                                        .getter(
-                                            FunSpec.getterBuilder()
-                                                .addStatement(
-                                                    "return %T.%N(this, %T.%N)",
-                                                    TypedModelQL::class.asTypeName(),
-                                                    functionName,
-                                                    concept.conceptWrapperInterfaceClass(),
-                                                    feature.generatedName,
-                                                )
-                                                .build(),
-                                        )
-                                        .build(),
-                                )
-                            }
-
-                            val inputStepType = IMonoStep::class.asTypeName()
-                                .parameterizedBy(concept.nodeWrapperInterfaceType())
-                            addFunction(
-                                FunSpec.builder(feature.setterName())
-                                    .returns(inputStepType)
-                                    .receiver(inputStepType)
-                                    .addParameter("value", IMonoStep::class.asTypeName().parameterizedBy(feature.asKotlinType()))
-                                    .addStatement(
-                                        "return %T.setProperty(this, %T.%N, value)",
-                                        TypedModelQL::class.asTypeName(),
-                                        concept.conceptWrapperInterfaceClass(),
-                                        feature.generatedName,
-                                    )
-                                    .build(),
-                            )
-                        }
-
-                        is ProcessedChildLink -> {
-                            val targetType = feature.type.resolved.nodeWrapperInterfaceType()
-
-                            val inputStepType = (if (feature.multiple) IProducingStep::class else IMonoStep::class).asTypeName()
-                            val outputStepType = (if (feature.multiple) IFluxStep::class else IMonoStep::class).asTypeName()
-                            val inputType = inputStepType.parameterizedBy(concept.nodeWrapperInterfaceType())
-                            val isOptionalSingle = feature.optional && !feature.multiple
-                            val outputType = outputStepType.parameterizedBy(
-                                targetType.copy(nullable = isOptionalSingle),
-                            )
-                            addProperty(
-                                PropertySpec.builder(feature.generatedName, outputType)
-                                    .receiver(inputType)
-                                    .getter(
-                                        FunSpec.getterBuilder()
-                                            .addStatement(
-                                                "return %T.children(this, %T.%N)",
-                                                TypedModelQL::class.asTypeName(),
-                                                concept.conceptWrapperInterfaceClass(),
-                                                feature.generatedName,
-                                            )
-                                            .build(),
-                                    )
-                                    .build(),
-                            )
-                            val returnType = IMonoStep::class.asTypeName().parameterizedBy(targetType)
-                            val receiverType = IMonoStep::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
-                            val conceptParameter = ParameterSpec.builder("concept", ITypedConcept::class.asTypeName()).apply {
-                                if (!feature.type.resolved.abstract) {
-                                    defaultValue("%T", feature.type.resolved.conceptWrapperInterfaceClass())
-                                }
-                            }.build()
-
-                            if (feature.multiple) {
-                                addFunction(
-                                    FunSpec.builder(feature.adderMethodName())
-                                        .returns(returnType)
-                                        .receiver(receiverType)
-                                        .addParameter(conceptParameter)
-                                        .addParameter(
-                                            ParameterSpec.builder("index", Int::class.asTypeName())
-                                                .defaultValue("-1")
-                                                .build(),
-                                        )
-                                        .addStatement(
-                                            "return %T.addNewChild(this, %T.%N, index, concept)",
-                                            TypedModelQL::class.asTypeName(),
-                                            concept.conceptObjectType(),
-                                            feature.generatedName,
-                                        )
-                                        .build(),
-                                )
-                            } else {
-                                addFunction(
-                                    FunSpec.builder(feature.setterName())
-                                        .returns(returnType)
-                                        .receiver(receiverType)
-                                        .addParameter(conceptParameter)
-                                        .addStatement(
-                                            "return %T.setChild(this, %T.%N, concept)",
-                                            TypedModelQL::class.asTypeName(),
-                                            concept.conceptObjectType(),
-                                            feature.generatedName,
-                                        )
-                                        .build(),
-                                )
-                            }
-                        }
-
-                        is ProcessedReferenceLink -> {
-                            val targetType =
-                                feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
-
-                            for (stepType in listOf(IMonoStep::class.asTypeName(), IFluxStep::class.asTypeName())) {
-                                val inputType = stepType.parameterizedBy(concept.nodeWrapperInterfaceType())
-                                val outputType = stepType.parameterizedBy(targetType.copy(nullable = false))
-                                val outputTypeNullable = stepType.parameterizedBy(targetType.copy(nullable = true))
-                                addProperty(
-                                    PropertySpec.builder(feature.generatedName, outputType)
-                                        .receiver(inputType)
-                                        .getter(
-                                            FunSpec.getterBuilder()
-                                                .addStatement(
-                                                    "return %T.reference(this, %T.%N)",
-                                                    TypedModelQL::class.asTypeName(),
-                                                    concept.conceptWrapperInterfaceClass(),
-                                                    feature.generatedName,
-                                                )
-                                                .build(),
-                                        )
-                                        .build(),
-                                )
-                                addProperty(
-                                    PropertySpec.builder(feature.generatedName + "_orNull", outputTypeNullable)
-                                        .receiver(inputType)
-                                        .getter(
-                                            FunSpec.getterBuilder()
-                                                .addStatement(
-                                                    "return %T.referenceOrNull(this, %T.%N)",
-                                                    TypedModelQL::class.asTypeName(),
-                                                    concept.conceptWrapperInterfaceClass(),
-                                                    feature.generatedName,
-                                                )
-                                                .build(),
-                                        )
-                                        .build(),
-                                )
-                            }
-
-                            val inputStepType = IMonoStep::class.asTypeName()
-                                .parameterizedBy(concept.nodeWrapperInterfaceType())
-                            addFunction(
-                                FunSpec.builder(feature.setterName())
-                                    .returns(inputStepType)
-                                    .receiver(inputStepType)
-                                    .addParameter(
-                                        "target",
-                                        IMonoStep::class.asTypeName().parameterizedBy(targetType)
-                                            .let { if (feature.optional) it.copy(nullable = true) else it },
-                                    )
-                                    .addStatement(
-                                        "return %T.setReference(this, %T.%N, target)",
-                                        TypedModelQL::class.asTypeName(),
-                                        concept.conceptWrapperInterfaceClass(),
-                                        feature.generatedName,
-                                    )
-                                    .build(),
-                            )
-                        }
-                    }
-                }
-            }
-            .build().writeTo(modelqlOutputDir!!)
     }
 
     internal fun ProcessedConcept.conceptWrapperInterfaceType() =

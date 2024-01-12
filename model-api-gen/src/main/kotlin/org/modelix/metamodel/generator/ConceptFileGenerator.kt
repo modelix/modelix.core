@@ -25,14 +25,26 @@ import com.squareup.kotlinpoet.TypeAliasSpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asTypeName
 import org.modelix.model.api.INode
+import java.nio.file.Path
 
-internal class ConceptFileGenerator(private val concept: ProcessedConcept, private val generator: MetaModelGenerator) {
+internal class ConceptFileGenerator(
+    private val concept: ProcessedConcept,
+    private val outputDir: Path,
+    override val nameConfig: NameConfig,
+    private val conceptPropertiesInferfaceName: String?,
+    private val alwaysUseNonNullableProperties: Boolean,
+) : NameConfigBasedGenerator(nameConfig) {
 
     fun generateFile() {
-        val conceptObject = ConceptObjectGenerator(concept, generator).generate()
-        val conceptWrapperInterface = ConceptWrapperInterfaceGenerator(concept, generator).generate()
-        val nodeWrapperInterface = NodeWrapperInterfaceGenerator(concept, generator).generate()
-        val nodeWrapperImpl = NodeWrapperImplGenerator(concept, generator).generate()
+        val conceptObject = ConceptObjectGenerator(concept, nameConfig).generate()
+        val conceptWrapperInterface = ConceptWrapperInterfaceGenerator(
+            concept,
+            nameConfig,
+            conceptPropertiesInferfaceName,
+            alwaysUseNonNullableProperties,
+        ).generate()
+        val nodeWrapperInterface = NodeWrapperInterfaceGenerator(concept, nameConfig, alwaysUseNonNullableProperties).generate()
+        val nodeWrapperImpl = NodeWrapperImplGenerator(concept, nameConfig, alwaysUseNonNullableProperties).generate()
 
         val typeAliasSpec = TypeAliasSpec.builder(concept.conceptTypeAliasName(), concept.conceptWrapperInterfaceType()).build()
 
@@ -44,7 +56,7 @@ internal class ConceptFileGenerator(private val concept: ProcessedConcept, priva
             addType(nodeWrapperInterface)
             addType(nodeWrapperImpl)
             addConceptFeatureShortcuts()
-        }.writeTo(generator.outputDir)
+        }.writeTo(outputDir)
     }
 
     private fun FileSpec.Builder.addConceptFeatureShortcuts() {
@@ -165,7 +177,7 @@ internal class ConceptFileGenerator(private val concept: ProcessedConcept, priva
         feature: ProcessedProperty,
         receiverType: ParameterizedTypeName,
     ) {
-        val returnType = List::class.asTypeName().parameterizedBy(feature.asKotlinType())
+        val returnType = List::class.asTypeName().parameterizedBy(feature.asKotlinType(alwaysUseNonNullableProperties))
         val getterSpec = FunSpec.getterBuilder().runBuild {
             addStatement("return map { it.%N }", feature.generatedName)
         }
@@ -175,9 +187,4 @@ internal class ConceptFileGenerator(private val concept: ProcessedConcept, priva
         }
         addProperty(propertySpec)
     }
-
-    private fun ProcessedConcept.conceptTypeAliasName() = generator.run { conceptTypeAliasName() }
-    private fun ProcessedConcept.conceptWrapperInterfaceType() = generator.run { conceptWrapperInterfaceType() }
-    private fun ProcessedConcept.nodeWrapperInterfaceType() = generator.run { nodeWrapperInterfaceType() }
-    private fun ProcessedProperty.asKotlinType() = generator.run { asKotlinType() }
 }

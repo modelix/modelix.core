@@ -23,15 +23,17 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import org.modelix.metamodel.GeneratedLanguage
+import java.nio.file.Path
 
 internal class RegistrationHelperGenerator(
     private val classFqName: String,
     private val languages: ProcessedLanguageSet,
-    private val generator: MetaModelGenerator,
-) {
+    private val outputDir: Path,
+    override val nameConfig: NameConfig,
+) : NameConfigBasedGenerator(nameConfig) {
 
     fun generateFile() {
-        generateSpec().writeTo(generator.outputDir)
+        generateSpec().writeTo(outputDir)
     }
 
     private fun generateSpec(): FileSpec {
@@ -69,6 +71,4 @@ internal class RegistrationHelperGenerator(
             addType(registrationHelperClass)
         }
     }
-
-    private fun ProcessedLanguage.generatedClassName(): ClassName = generator.run { generatedClassName() }
 }

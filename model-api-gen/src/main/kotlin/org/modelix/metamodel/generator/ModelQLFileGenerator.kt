@@ -32,16 +32,21 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.typed.TypedModelQL
+import java.nio.file.Path
 
-internal class ModelQLFileGenerator(private val concept: ProcessedConcept, private val generator: MetaModelGenerator) {
+internal class ModelQLFileGenerator(
+    private val concept: ProcessedConcept,
+    private val outputDir: Path,
+    override val nameConfig: NameConfig,
+    private val alwaysUseNonNullableProperties: Boolean,
+) : NameConfigBasedGenerator(nameConfig) {
 
     companion object {
         private const val PACKAGE_PREFIX = "org.modelix.modelql.gen."
     }
 
     fun generateFile() {
-        requireNotNull(generator.modelqlOutputDir)
-        buildModelQLFileSpec().writeTo(generator.modelqlOutputDir)
+        buildModelQLFileSpec().writeTo(outputDir)
     }
 
     private fun buildModelQLFileSpec(): FileSpec {
@@ -220,7 +225,8 @@ internal class ModelQLFileGenerator(private val concept: ProcessedConcept, priva
         val inputStepType = IMonoStep::class.asTypeName()
             .parameterizedBy(concept.nodeWrapperInterfaceType())
 
-        val parameterType = IMonoStep::class.asTypeName().parameterizedBy(feature.asKotlinType())
+        val parameterType = IMonoStep::class.asTypeName()
+            .parameterizedBy(feature.asKotlinType(alwaysUseNonNullableProperties))
 
         val setterSpec = FunSpec.builder(feature.setterName()).runBuild {
             returns(inputStepType)
@@ -244,7 +250,7 @@ internal class ModelQLFileGenerator(private val concept: ProcessedConcept, priva
         val inputType = stepType.parameterizedBy(concept.nodeWrapperInterfaceType())
         val outputElementType = when (property.type) {
             is EnumPropertyType -> String::class.asTypeName().copy(nullable = true)
-            is PrimitivePropertyType -> property.asKotlinType()
+            is PrimitivePropertyType -> property.asKotlinType(alwaysUseNonNullableProperties)
         }
         val outputType = stepType.parameterizedBy(outputElementType)
         val functionName = when (val type = property.type) {
@@ -272,9 +278,4 @@ internal class ModelQLFileGenerator(private val concept: ProcessedConcept, priva
 
         addProperty(propertySpec)
     }
-
-    private fun ProcessedConcept.nodeWrapperInterfaceType() = generator.run { nodeWrapperInterfaceType() }
-    private fun ProcessedConcept.conceptWrapperInterfaceClass() = generator.run { conceptWrapperInterfaceClass() }
-    private fun ProcessedConcept.conceptObjectType() = generator.run { conceptObjectType() }
-    private fun ProcessedProperty.asKotlinType() = generator.run { asKotlinType() }
 }

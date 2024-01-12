@@ -17,7 +17,6 @@
 package org.modelix.metamodel.generator
 
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -33,7 +32,13 @@ import org.modelix.metamodel.ITypedConcept
 import org.modelix.model.api.IConcept
 import kotlin.reflect.KClass
 
-internal class ConceptWrapperInterfaceGenerator(private val concept: ProcessedConcept, private val generator: MetaModelGenerator) {
+internal class ConceptWrapperInterfaceGenerator(
+    private val concept: ProcessedConcept,
+    override val nameConfig: NameConfig,
+    private val conceptPropertiesInterfaceName: String?,
+    private val alwaysUseNonNullableProperties: Boolean,
+) : NameConfigBasedGenerator(nameConfig) {
+
     fun generate(): TypeSpec {
         val nodeT = TypeVariableName("NodeT", concept.nodeWrapperInterfaceType(), variance = KModifier.OUT)
 
@@ -77,7 +82,7 @@ internal class ConceptWrapperInterfaceGenerator(private val concept: ProcessedCo
     }
 
     private fun TypeSpec.Builder.addConceptMetaPropertiesIfNecessary() {
-        if (generator.conceptPropertiesInterfaceName == null) return
+        if (conceptPropertiesInterfaceName == null) return
 
         concept.metaProperties.forEach { (key, value) ->
             val propertySpec = PropertySpec.builder(key, String::class.asTypeName()).runBuild {
@@ -110,7 +115,8 @@ internal class ConceptWrapperInterfaceGenerator(private val concept: ProcessedCo
     private fun TypeSpec.Builder.addConceptWrapperInterfaceProperty(feature: ProcessedProperty) {
         val propertySpec = PropertySpec.builder(
             name = feature.generatedName,
-            type = GeneratedProperty::class.asClassName().parameterizedBy(feature.asKotlinType()),
+            type = GeneratedProperty::class.asClassName()
+                .parameterizedBy(feature.asKotlinType(alwaysUseNonNullableProperties)),
         ).runBuild {
             val getterSpec = FunSpec.getterBuilder().runBuild {
                 addCode(feature.returnKotlinRef())
@@ -128,22 +134,10 @@ internal class ConceptWrapperInterfaceGenerator(private val concept: ProcessedCo
             addSuperinterface(extended.conceptWrapperInterfaceClass().parameterizedBy(nodeT))
         }
 
-        val conceptPropertiesInterfaceName = generator.conceptPropertiesInterfaceName
-
         if (conceptPropertiesInterfaceName != null && concept.extends.isEmpty()) {
             val pckgName = conceptPropertiesInterfaceName.substringBeforeLast(".")
             val interfaceName = conceptPropertiesInterfaceName.substringAfterLast(".")
             addSuperinterface(ClassName(pckgName, interfaceName))
         }
     }
-
-    private fun ProcessedProperty.asKotlinType() = generator.run { asKotlinType() }
-    private fun ProcessedConcept.conceptObjectType() = generator.run { conceptObjectType() }
-    private fun ProcessedConcept.conceptWrapperInterfaceType() = generator.run { conceptWrapperInterfaceType() }
-    private fun ProcessedConcept.nodeWrapperInterfaceType() = generator.run { nodeWrapperInterfaceType() }
-    private fun ProcessedConcept.conceptWrapperInterfaceClass() = generator.run { conceptWrapperInterfaceClass() }
-
-    private fun ProcessedRole.returnKotlinRef() = CodeBlock.of("return %T.%N", concept.conceptObjectType(), generatedName)
-    private fun ProcessedChildLink.generatedChildLinkType() = generator.run { generatedChildLinkType() }
-    private fun ProcessedReferenceLink.generatedReferenceLinkType() = generator.run { generatedReferenceLinkType() }
 }

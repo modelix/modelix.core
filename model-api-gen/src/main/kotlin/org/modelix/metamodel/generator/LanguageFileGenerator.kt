@@ -26,14 +26,20 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import org.modelix.metamodel.GeneratedLanguage
 import org.modelix.model.api.IConcept
+import java.nio.file.Path
 
-internal class LanguageFileGenerator(private val language: ProcessedLanguage, private val generator: MetaModelGenerator) {
+internal class LanguageFileGenerator(
+    private val language: ProcessedLanguage,
+    private val outputDir: Path,
+    override val nameConfig: NameConfig,
+) : NameConfigBasedGenerator(nameConfig) {
+
     fun generateFile() {
         val fileSpec = FileSpec.builder(language.generatedClassName().packageName, language.generatedClassName().simpleName).runBuild {
             addFileComment(MetaModelGenerator.HEADER_COMMENT)
             addType(generateLanguage())
         }
-        fileSpec.writeTo(generator.outputDir)
+        fileSpec.writeTo(outputDir)
     }
 
     private fun generateLanguage(): TypeSpec {
@@ -56,9 +62,4 @@ internal class LanguageFileGenerator(private val language: ProcessedLanguage, pr
             }
         }
     }
-
-    private fun ProcessedLanguage.generatedClassName() = generator.run { generatedClassName() }
-    private fun ProcessedConcept.conceptObjectType() = generator.run { conceptObjectType() }
-    private fun ProcessedConcept.conceptWrapperInterfaceType() = generator.run { conceptWrapperInterfaceType() }
-    private fun ProcessedConcept.conceptWrapperInterfaceClass() = generator.run { conceptWrapperInterfaceClass() }
 }

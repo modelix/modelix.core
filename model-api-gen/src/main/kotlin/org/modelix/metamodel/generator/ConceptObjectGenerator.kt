@@ -43,7 +43,12 @@ import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
 import kotlin.reflect.KClass
 
-internal class ConceptObjectGenerator(private val concept: ProcessedConcept, private val generator: MetaModelGenerator) {
+internal class ConceptObjectGenerator(
+    private val concept: ProcessedConcept,
+    override val nameConfig: NameConfig,
+    private val alwaysUseNonNullableProperties: Boolean = true,
+) : NameConfigBasedGenerator(nameConfig) {
+
     fun generate(): TypeSpec {
         val superclassType = GeneratedConcept::class.asTypeName().parameterizedBy(
             concept.nodeWrapperInterfaceType(),
@@ -114,7 +119,9 @@ internal class ConceptObjectGenerator(private val concept: ProcessedConcept, pri
     private fun TypeSpec.Builder.addConceptObjectProperty(property: ProcessedProperty) {
         val serializer = getSerializerTypeName(property)
 
-        val propertyType = GeneratedProperty::class.asClassName().parameterizedBy(property.asKotlinType())
+        val propertyType = GeneratedProperty::class.asClassName()
+            .parameterizedBy(property.asKotlinType(alwaysUseNonNullableProperties))
+
         val propertySpec = PropertySpec.builder(property.generatedName, propertyType).runBuild {
             addConceptPropertyInitializer(property, serializer)
         }
@@ -135,8 +142,8 @@ internal class ConceptObjectGenerator(private val concept: ProcessedConcept, pri
                     property.originalName,
                     property.uid,
                     serializer,
-                    property.asKotlinType(),
-                    property.asKotlinType(),
+                    property.asKotlinType(alwaysUseNonNullableProperties),
+                    property.asKotlinType(alwaysUseNonNullableProperties),
                 )
             } else {
                 initializer(
@@ -146,7 +153,7 @@ internal class ConceptObjectGenerator(private val concept: ProcessedConcept, pri
                     property.originalName,
                     property.uid,
                     serializer,
-                    property.asKotlinType(),
+                    property.asKotlinType(alwaysUseNonNullableProperties),
                 )
             }
         } else {
@@ -160,7 +167,7 @@ internal class ConceptObjectGenerator(private val concept: ProcessedConcept, pri
     }
 
     private fun getSerializerTypeName(property: ProcessedProperty) = (
-        if (!property.optional || generator.alwaysUseNonNullableProperties) {
+        if (!property.optional || alwaysUseNonNullableProperties) {
             when (property.type) {
                 is PrimitivePropertyType -> when ((property.type as PrimitivePropertyType).primitive) {
                     Primitive.STRING -> MandatoryStringPropertySerializer::class
@@ -244,16 +251,4 @@ internal class ConceptObjectGenerator(private val concept: ProcessedConcept, pri
         }
         addFunction(funSpec)
     }
-
-    private fun ProcessedLanguage.generatedClassName() = generator.run { generatedClassName() }
-    private fun ProcessedConcept.conceptWrapperInterfaceType() = generator.run { conceptWrapperInterfaceType() }
-    private fun ProcessedConcept.nodeWrapperInterfaceType() = generator.run { nodeWrapperInterfaceType() }
-    private fun ProcessedProperty.asKotlinType() = generator.run { asKotlinType() }
-    private fun ProcessedConcept.conceptObjectName() = generator.run { conceptObjectName() }
-    private fun ProcessedConcept.conceptObjectType() = generator.run { conceptObjectType() }
-    private fun ProcessedConcept.conceptWrapperInterfaceClass() = generator.run { conceptWrapperInterfaceClass() }
-    private fun ProcessedConcept.nodeWrapperImplType() = generator.run { nodeWrapperImplType() }
-
-    private fun ProcessedChildLink.generatedChildLinkType() = generator.run { generatedChildLinkType() }
-    private fun ProcessedReferenceLink.generatedReferenceLinkType() = generator.run { generatedReferenceLinkType() }
 }

@@ -35,7 +35,12 @@ import org.modelix.metamodel.TypedNodeImpl
 import org.modelix.metamodel.TypedPropertyAccessor
 import org.modelix.model.api.INode
 
-internal class NodeWrapperImplGenerator(private val concept: ProcessedConcept, private val generator: MetaModelGenerator) {
+internal class NodeWrapperImplGenerator(
+    private val concept: ProcessedConcept,
+    override val nameConfig: NameConfig,
+    private val alwaysUseNonNullableProperties: Boolean,
+) : NameConfigBasedGenerator(nameConfig) {
+
     fun generate(): TypeSpec {
         val constructorSpec = FunSpec.constructorBuilder().runBuild {
             addParameter("_node", INode::class)
@@ -175,7 +180,10 @@ internal class NodeWrapperImplGenerator(private val concept: ProcessedConcept, p
     }
 
     private fun TypeSpec.Builder.addRegularProperty(feature: ProcessedProperty) {
-        val propertySpec = PropertySpec.builder(feature.generatedName, feature.asKotlinType()).runBuild {
+        val propertySpec = PropertySpec.builder(
+            name = feature.generatedName,
+            type = feature.asKotlinType(alwaysUseNonNullableProperties),
+        ).runBuild {
             addModifiers(KModifier.OVERRIDE)
             mutable(true)
             delegate(
@@ -231,12 +239,4 @@ internal class NodeWrapperImplGenerator(private val concept: ProcessedConcept, p
 
         addProperty(propertySpec)
     }
-
-    private fun ProcessedConcept.conceptWrapperInterfaceType() = generator.run { conceptWrapperInterfaceType() }
-    private fun ProcessedConcept.nodeWrapperInterfaceType() = generator.run { nodeWrapperInterfaceType() }
-    private fun ProcessedConcept.conceptObjectType() = generator.run { conceptObjectType() }
-    private fun ProcessedConcept.conceptWrapperInterfaceClass() = generator.run { conceptWrapperInterfaceClass() }
-    private fun ProcessedConcept.nodeWrapperImplType() = generator.run { nodeWrapperImplType() }
-
-    private fun ProcessedProperty.asKotlinType() = generator.run { asKotlinType() }
 }

@@ -26,7 +26,11 @@ import org.modelix.metamodel.ITypedNode
 import org.modelix.metamodel.SingleChildAccessor
 import org.modelix.model.api.INode
 
-internal class NodeWrapperInterfaceGenerator(private val concept: ProcessedConcept, private val generator: MetaModelGenerator) {
+internal class NodeWrapperInterfaceGenerator(
+    private val concept: ProcessedConcept,
+    override val nameConfig: NameConfig,
+    private val alwaysUseNonNullableProperties: Boolean,
+) : NameConfigBasedGenerator(nameConfig) {
 
     fun generate(): TypeSpec {
         return TypeSpec.interfaceBuilder(concept.nodeWrapperInterfaceType()).runBuild {
@@ -125,7 +129,7 @@ internal class NodeWrapperInterfaceGenerator(private val concept: ProcessedConce
     private fun TypeSpec.Builder.addRegularProperty(feature: ProcessedProperty) {
         val propertySpec = PropertySpec.builder(
             name = feature.generatedName,
-            type = feature.asKotlinType(),
+            type = feature.asKotlinType(alwaysUseNonNullableProperties),
         ).runBuild {
             addDeprecationIfNecessary(feature)
             mutable(true)
@@ -133,7 +137,4 @@ internal class NodeWrapperInterfaceGenerator(private val concept: ProcessedConce
 
         addProperty(propertySpec)
     }
-
-    private fun ProcessedConcept.nodeWrapperInterfaceType() = generator.run { nodeWrapperInterfaceType() }
-    private fun ProcessedProperty.asKotlinType() = generator.run { asKotlinType() }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.metamodel.generator
+package org.modelix.metamodel.generator.internal
 
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
@@ -33,6 +33,13 @@ import org.modelix.metamodel.RawReferenceAccessor
 import org.modelix.metamodel.SingleChildAccessor
 import org.modelix.metamodel.TypedNodeImpl
 import org.modelix.metamodel.TypedPropertyAccessor
+import org.modelix.metamodel.generator.NameConfig
+import org.modelix.metamodel.generator.ProcessedChildLink
+import org.modelix.metamodel.generator.ProcessedConcept
+import org.modelix.metamodel.generator.ProcessedProperty
+import org.modelix.metamodel.generator.ProcessedReferenceLink
+import org.modelix.metamodel.generator.ProcessedRole
+import org.modelix.metamodel.generator.runBuild
 import org.modelix.model.api.INode
 
 internal class NodeWrapperImplGenerator(

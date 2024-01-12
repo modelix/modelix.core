@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.metamodel.generator
+package org.modelix.metamodel.generator.internal
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -35,6 +35,13 @@ import org.modelix.metamodel.OptionalBooleanPropertySerializer
 import org.modelix.metamodel.OptionalEnumSerializer
 import org.modelix.metamodel.OptionalIntPropertySerializer
 import org.modelix.metamodel.OptionalStringPropertySerializer
+import org.modelix.metamodel.generator.NameConfig
+import org.modelix.metamodel.generator.ProcessedChildLink
+import org.modelix.metamodel.generator.ProcessedConcept
+import org.modelix.metamodel.generator.ProcessedProperty
+import org.modelix.metamodel.generator.ProcessedReferenceLink
+import org.modelix.metamodel.generator.runBuild
+import org.modelix.metamodel.generator.toListLiteralCodeBlock
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.ILanguage
 import org.modelix.model.api.INode

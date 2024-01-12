@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.metamodel.generator
+package org.modelix.metamodel.generator.internal
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
@@ -29,6 +29,13 @@ import org.modelix.metamodel.GeneratedProperty
 import org.modelix.metamodel.IConceptOfTypedNode
 import org.modelix.metamodel.INonAbstractConcept
 import org.modelix.metamodel.ITypedConcept
+import org.modelix.metamodel.generator.NameConfig
+import org.modelix.metamodel.generator.ProcessedChildLink
+import org.modelix.metamodel.generator.ProcessedConcept
+import org.modelix.metamodel.generator.ProcessedProperty
+import org.modelix.metamodel.generator.ProcessedReferenceLink
+import org.modelix.metamodel.generator.addDeprecationIfNecessary
+import org.modelix.metamodel.generator.runBuild
 import org.modelix.model.api.IConcept
 import kotlin.reflect.KClass
 

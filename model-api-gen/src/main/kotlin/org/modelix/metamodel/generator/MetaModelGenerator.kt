@@ -8,6 +8,12 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.withIndent
+import org.modelix.metamodel.generator.internal.ConceptFileGenerator
+import org.modelix.metamodel.generator.internal.EnumFileGenerator
+import org.modelix.metamodel.generator.internal.LanguageFileGenerator
+import org.modelix.metamodel.generator.internal.MetaPropertiesInterfaceGenerator
+import org.modelix.metamodel.generator.internal.ModelQLFileGenerator
+import org.modelix.metamodel.generator.internal.RegistrationHelperGenerator
 import java.nio.file.Path
 
 class MetaModelGenerator(

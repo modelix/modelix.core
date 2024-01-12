@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.metamodel.generator
+package org.modelix.metamodel.generator.internal
 
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -25,6 +25,11 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import org.modelix.metamodel.GeneratedLanguage
+import org.modelix.metamodel.generator.MetaModelGenerator
+import org.modelix.metamodel.generator.NameConfig
+import org.modelix.metamodel.generator.ProcessedLanguage
+import org.modelix.metamodel.generator.runBuild
+import org.modelix.metamodel.generator.toListLiteralCodeBlock
 import org.modelix.model.api.IConcept
 import java.nio.file.Path
 

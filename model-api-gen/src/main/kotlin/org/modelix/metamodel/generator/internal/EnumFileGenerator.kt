@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.metamodel.generator
+package org.modelix.metamodel.generator.internal
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -25,6 +25,11 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 import org.modelix.metamodel.IPropertyValueEnum
+import org.modelix.metamodel.generator.MetaModelGenerator
+import org.modelix.metamodel.generator.ProcessedEnum
+import org.modelix.metamodel.generator.ProcessedEnumMember
+import org.modelix.metamodel.generator.addDeprecationIfNecessary
+import org.modelix.metamodel.generator.runBuild
 import java.nio.file.Path
 
 internal class EnumFileGenerator(private val enum: ProcessedEnum, private val outputDir: Path) {

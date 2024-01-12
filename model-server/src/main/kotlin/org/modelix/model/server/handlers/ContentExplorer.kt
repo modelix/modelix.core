@@ -37,7 +37,6 @@ import kotlinx.html.tr
 import kotlinx.html.ul
 import kotlinx.html.unsafe
 import org.modelix.api.html.Paths
-import org.modelix.model.ModelFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
@@ -49,19 +48,6 @@ import org.modelix.model.server.templates.PageWithMenuBar
 import kotlin.collections.set
 
 class ContentExplorer(private val client: IModelClient, private val repoManager: RepositoriesManager) {
-
-    private val rootNodes: List<PNodeAdapter>
-        get() {
-            val nodeList = mutableListOf<PNodeAdapter>()
-
-            for (repoId in repoManager.getRepositories()) {
-                val branchRef = repoId.getBranchReference()
-                val version = ModelFacade.loadCurrentVersion(client, branchRef) ?: continue
-                val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(version.getTree()))
-                nodeList.add(rootNode)
-            }
-            return nodeList
-        }
 
     fun init(application: Application) {
         application.routing {

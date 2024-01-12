@@ -75,28 +75,28 @@ internal class ConceptFileGenerator(
     }
 
     private fun FileSpec.Builder.addConceptReferences(
-        feature: ProcessedReferenceLink,
+        referenceLink: ProcessedReferenceLink,
         receiverType: ParameterizedTypeName,
     ) {
-        val targetType = feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
+        val targetType = referenceLink.type.resolved.nodeWrapperInterfaceType().copy(nullable = referenceLink.optional)
         val rawTargetType = INode::class.asTypeName().copy(nullable = true)
 
-        addRegularConceptReference(feature, targetType, receiverType)
-        addOrNullConceptReference(feature, targetType, receiverType)
-        addRawConceptReference(feature, rawTargetType, receiverType)
+        addRegularConceptReference(referenceLink, targetType, receiverType)
+        addOrNullConceptReference(referenceLink, targetType, receiverType)
+        addRawConceptReference(referenceLink, rawTargetType, receiverType)
     }
 
     private fun FileSpec.Builder.addRawConceptReference(
-        feature: ProcessedRole,
+        referenceLink: ProcessedReferenceLink,
         rawTargetType: TypeName,
         receiverType: ParameterizedTypeName,
     ) {
         val refType = List::class.asTypeName().parameterizedBy(rawTargetType)
         val getterSpec = FunSpec.getterBuilder().runBuild {
-            addStatement("return map { it.%N }", "raw_" + feature.generatedName)
+            addStatement("return map { it.%N }", "raw_" + referenceLink.generatedName)
         }
 
-        val propertySpec = PropertySpec.builder("raw_" + feature.generatedName, refType).runBuild {
+        val propertySpec = PropertySpec.builder("raw_" + referenceLink.generatedName, refType).runBuild {
             receiver(receiverType)
             getter(getterSpec)
         }
@@ -104,17 +104,17 @@ internal class ConceptFileGenerator(
     }
 
     private fun FileSpec.Builder.addOrNullConceptReference(
-        feature: ProcessedRole,
+        referenceLink: ProcessedReferenceLink,
         targetType: TypeName,
         receiverType: ParameterizedTypeName,
     ) {
         val refType = List::class.asTypeName().parameterizedBy(targetType.copy(nullable = true))
 
         val getterSpec = FunSpec.getterBuilder().runBuild {
-            addStatement("return map { it.%N }", feature.generatedName + "_orNull")
+            addStatement("return map { it.%N }", referenceLink.generatedName + "_orNull")
         }
 
-        val propertySpec = PropertySpec.builder(feature.generatedName + "_orNull", refType).runBuild {
+        val propertySpec = PropertySpec.builder(referenceLink.generatedName + "_orNull", refType).runBuild {
             receiver(receiverType)
             getter(getterSpec)
         }
@@ -122,17 +122,17 @@ internal class ConceptFileGenerator(
     }
 
     private fun FileSpec.Builder.addRegularConceptReference(
-        feature: ProcessedRole,
+        referenceLink: ProcessedReferenceLink,
         targetType: TypeName,
         receiverType: ParameterizedTypeName,
     ) {
         val refType = List::class.asTypeName().parameterizedBy(targetType)
 
         val getterSpec = FunSpec.getterBuilder().runBuild {
-            addStatement("return map { it.%N }", feature.generatedName)
+            addStatement("return map { it.%N }", referenceLink.generatedName)
         }
 
-        val propertySpec = PropertySpec.builder(feature.generatedName, refType).runBuild {
+        val propertySpec = PropertySpec.builder(referenceLink.generatedName, refType).runBuild {
             receiver(receiverType)
             getter(getterSpec)
         }
@@ -140,16 +140,16 @@ internal class ConceptFileGenerator(
     }
 
     private fun FileSpec.Builder.addConceptChildLink(
-        feature: ProcessedChildLink,
+        childLink: ProcessedChildLink,
         receiverType: ParameterizedTypeName,
     ) {
-        val targetType = feature.type.resolved.nodeWrapperInterfaceType()
+        val targetType = childLink.type.resolved.nodeWrapperInterfaceType()
         val returnType = List::class.asTypeName().parameterizedBy(targetType)
         val getterSpec = FunSpec.getterBuilder().runBuild {
-            addStatement("return flatMap { it.%N }", feature.generatedName)
+            addStatement("return flatMap { it.%N }", childLink.generatedName)
         }
 
-        val propertySpec = PropertySpec.builder(feature.generatedName, returnType).runBuild {
+        val propertySpec = PropertySpec.builder(childLink.generatedName, returnType).runBuild {
             receiver(receiverType)
             getter(getterSpec)
         }
@@ -157,16 +157,16 @@ internal class ConceptFileGenerator(
     }
 
     private fun FileSpec.Builder.addRawConceptProperty(
-        feature: ProcessedProperty,
+        property: ProcessedProperty,
         receiverType: ParameterizedTypeName,
     ) {
         val returnType = List::class.asTypeName().parameterizedBy(String::class.asTypeName().copy(nullable = true))
 
         val getterSpec = FunSpec.getterBuilder().runBuild {
-            addStatement("return map { it.%N }", "raw_" + feature.generatedName)
+            addStatement("return map { it.%N }", "raw_" + property.generatedName)
         }
 
-        val propertySpec = PropertySpec.builder("raw_" + feature.generatedName, returnType).runBuild {
+        val propertySpec = PropertySpec.builder("raw_" + property.generatedName, returnType).runBuild {
             receiver(receiverType)
             getter(getterSpec)
         }
@@ -174,14 +174,14 @@ internal class ConceptFileGenerator(
     }
 
     private fun FileSpec.Builder.addRegularConceptProperty(
-        feature: ProcessedProperty,
+        property: ProcessedProperty,
         receiverType: ParameterizedTypeName,
     ) {
-        val returnType = List::class.asTypeName().parameterizedBy(feature.asKotlinType(alwaysUseNonNullableProperties))
+        val returnType = List::class.asTypeName().parameterizedBy(property.asKotlinType(alwaysUseNonNullableProperties))
         val getterSpec = FunSpec.getterBuilder().runBuild {
-            addStatement("return map { it.%N }", feature.generatedName)
+            addStatement("return map { it.%N }", property.generatedName)
         }
-        val propertySpec = PropertySpec.builder(feature.generatedName, returnType).runBuild {
+        val propertySpec = PropertySpec.builder(property.generatedName, returnType).runBuild {
             receiver(receiverType)
             getter(getterSpec)
         }

@@ -63,22 +63,22 @@ internal class NodeWrapperInterfaceGenerator(
         }
     }
 
-    private fun TypeSpec.Builder.addRawReference(feature: ProcessedRole) {
+    private fun TypeSpec.Builder.addRawReference(referenceLink: ProcessedReferenceLink) {
         val propertySpec = PropertySpec.builder(
-            name = "raw_" + feature.generatedName,
+            name = "raw_" + referenceLink.generatedName,
             type = INode::class.asTypeName().copy(nullable = true),
         ).runBuild {
-            addDeprecationIfNecessary(feature)
+            addDeprecationIfNecessary(referenceLink)
             mutable(true)
         }
 
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addOrNullRefernce(feature: ProcessedReferenceLink) {
+    private fun TypeSpec.Builder.addOrNullRefernce(referenceLink: ProcessedReferenceLink) {
         val propertySpec = PropertySpec.builder(
-            name = feature.generatedName + "_orNull",
-            type = feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = true),
+            name = referenceLink.generatedName + "_orNull",
+            type = referenceLink.type.resolved.nodeWrapperInterfaceType().copy(nullable = true),
         ).runBuild {
             mutable(false)
         }
@@ -86,52 +86,52 @@ internal class NodeWrapperInterfaceGenerator(
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addRegularReference(feature: ProcessedReferenceLink) {
+    private fun TypeSpec.Builder.addRegularReference(referenceLink: ProcessedReferenceLink) {
         val propertySpec = PropertySpec.builder(
-            name = feature.generatedName,
-            type = feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional),
+            name = referenceLink.generatedName,
+            type = referenceLink.type.resolved.nodeWrapperInterfaceType().copy(nullable = referenceLink.optional),
         ).runBuild {
-            addDeprecationIfNecessary(feature)
+            addDeprecationIfNecessary(referenceLink)
             mutable(true)
         }
 
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addChildLink(feature: ProcessedChildLink) {
+    private fun TypeSpec.Builder.addChildLink(childLink: ProcessedChildLink) {
         // TODO resolve link.type and ensure it exists
         val accessorSubclass = when {
-            feature.multiple -> ChildListAccessor::class
+            childLink.multiple -> ChildListAccessor::class
             else -> SingleChildAccessor::class
         }
 
-        val type = accessorSubclass.asClassName().parameterizedBy(feature.type.resolved.nodeWrapperInterfaceType())
+        val type = accessorSubclass.asClassName().parameterizedBy(childLink.type.resolved.nodeWrapperInterfaceType())
 
-        val propertySpec = PropertySpec.builder(feature.generatedName, type).runBuild {
-            addDeprecationIfNecessary(feature)
+        val propertySpec = PropertySpec.builder(childLink.generatedName, type).runBuild {
+            addDeprecationIfNecessary(childLink)
         }
 
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addRawProperty(feature: ProcessedRole) {
+    private fun TypeSpec.Builder.addRawProperty(property: ProcessedProperty) {
         val propertySpec = PropertySpec.builder(
-            name = "raw_" + feature.generatedName,
+            name = "raw_" + property.generatedName,
             type = String::class.asTypeName().copy(nullable = true),
         ).runBuild {
-            addDeprecationIfNecessary(feature)
+            addDeprecationIfNecessary(property)
             mutable(true)
         }
 
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addRegularProperty(feature: ProcessedProperty) {
+    private fun TypeSpec.Builder.addRegularProperty(property: ProcessedProperty) {
         val propertySpec = PropertySpec.builder(
-            name = feature.generatedName,
-            type = feature.asKotlinType(alwaysUseNonNullableProperties),
+            name = property.generatedName,
+            type = property.asKotlinType(alwaysUseNonNullableProperties),
         ).runBuild {
-            addDeprecationIfNecessary(feature)
+            addDeprecationIfNecessary(property)
             mutable(true)
         }
 

@@ -93,10 +93,10 @@ internal class NodeWrapperImplGenerator(
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addOrNullReference(feature: ProcessedReferenceLink) {
+    private fun TypeSpec.Builder.addOrNullReference(referenceLink: ProcessedReferenceLink) {
         val propertySpec = PropertySpec.builder(
-            name = feature.generatedName + "_orNull",
-            type = feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = true),
+            name = referenceLink.generatedName + "_orNull",
+            type = referenceLink.type.resolved.nodeWrapperInterfaceType().copy(nullable = true),
         ).runBuild {
             addModifiers(KModifier.OVERRIDE)
             mutable(false)
@@ -104,25 +104,25 @@ internal class NodeWrapperImplGenerator(
                 """%T(%N(), %T.%N, %T::class)""",
                 OptionalReferenceAccessor::class.asTypeName(),
                 ITypedNode::unwrap.name,
-                feature.concept.conceptObjectType(),
-                feature.generatedName,
-                feature.type.resolved.nodeWrapperInterfaceType(),
+                referenceLink.concept.conceptObjectType(),
+                referenceLink.generatedName,
+                referenceLink.type.resolved.nodeWrapperInterfaceType(),
             )
         }
 
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addRegularReference(feature: ProcessedReferenceLink) {
-        val accessorClass = if (feature.optional) {
+    private fun TypeSpec.Builder.addRegularReference(referenceLink: ProcessedReferenceLink) {
+        val accessorClass = if (referenceLink.optional) {
             OptionalReferenceAccessor::class
         } else {
             MandatoryReferenceAccessor::class
         }
 
         val propertySpec = PropertySpec.builder(
-            name = feature.generatedName,
-            type = feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional),
+            name = referenceLink.generatedName,
+            type = referenceLink.type.resolved.nodeWrapperInterfaceType().copy(nullable = referenceLink.optional),
         ).runBuild {
             addModifiers(KModifier.OVERRIDE)
             mutable(true)
@@ -130,41 +130,41 @@ internal class NodeWrapperImplGenerator(
                 """%T(%N(), %T.%N, %T::class)""",
                 accessorClass.asTypeName(),
                 ITypedNode::unwrap.name,
-                feature.concept.conceptObjectType(),
-                feature.generatedName,
-                feature.type.resolved.nodeWrapperInterfaceType(),
+                referenceLink.concept.conceptObjectType(),
+                referenceLink.generatedName,
+                referenceLink.type.resolved.nodeWrapperInterfaceType(),
             )
         }
 
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addChildLink(feature: ProcessedChildLink) {
+    private fun TypeSpec.Builder.addChildLink(childLink: ProcessedChildLink) {
         // TODO resolve link.type and ensure it exists
         val accessorSubclass = when {
-            feature.multiple -> ChildListAccessor::class
+            childLink.multiple -> ChildListAccessor::class
             else -> SingleChildAccessor::class
         }
-        val type = accessorSubclass.asClassName().parameterizedBy(feature.type.resolved.nodeWrapperInterfaceType())
+        val type = accessorSubclass.asClassName().parameterizedBy(childLink.type.resolved.nodeWrapperInterfaceType())
 
-        val propertySpec = PropertySpec.builder(feature.generatedName, type).runBuild {
+        val propertySpec = PropertySpec.builder(childLink.generatedName, type).runBuild {
             addModifiers(KModifier.OVERRIDE)
             initializer(
                 """%T(%N(), %T.%N, %T, %T::class)""",
                 accessorSubclass.asTypeName(),
                 ITypedNode::unwrap.name,
-                feature.concept.conceptObjectType(),
-                feature.generatedName,
-                feature.type.resolved.conceptObjectType(),
-                feature.type.resolved.nodeWrapperInterfaceType(),
+                childLink.concept.conceptObjectType(),
+                childLink.generatedName,
+                childLink.type.resolved.conceptObjectType(),
+                childLink.type.resolved.nodeWrapperInterfaceType(),
             )
         }
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addRawProperty(feature: ProcessedRole) {
+    private fun TypeSpec.Builder.addRawProperty(property: ProcessedProperty) {
         val propertySpec = PropertySpec.builder(
-            "raw_" + feature.generatedName,
+            "raw_" + property.generatedName,
             String::class.asTypeName().copy(nullable = true),
         ).runBuild {
             addModifiers(KModifier.OVERRIDE)
@@ -172,25 +172,25 @@ internal class NodeWrapperImplGenerator(
             delegate(
                 """%T(unwrap(), %T.%N.untyped())""",
                 RawPropertyAccessor::class.asTypeName(),
-                feature.concept.conceptObjectType(),
-                feature.generatedName,
+                property.concept.conceptObjectType(),
+                property.generatedName,
             )
         }
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addRegularProperty(feature: ProcessedProperty) {
+    private fun TypeSpec.Builder.addRegularProperty(property: ProcessedProperty) {
         val propertySpec = PropertySpec.builder(
-            name = feature.generatedName,
-            type = feature.asKotlinType(alwaysUseNonNullableProperties),
+            name = property.generatedName,
+            type = property.asKotlinType(alwaysUseNonNullableProperties),
         ).runBuild {
             addModifiers(KModifier.OVERRIDE)
             mutable(true)
             delegate(
                 """%T(unwrap(), %T.%N)""",
                 TypedPropertyAccessor::class.asTypeName(),
-                feature.concept.conceptObjectType(),
-                feature.generatedName,
+                property.concept.conceptObjectType(),
+                property.generatedName,
             )
         }
 

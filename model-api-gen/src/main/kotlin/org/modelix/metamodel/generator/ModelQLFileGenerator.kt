@@ -99,19 +99,19 @@ internal class ModelQLFileGenerator(
     }
 
     private fun FileSpec.Builder.addReferenceGettersForStepType(
-        feature: ProcessedReferenceLink,
+        referenceLink: ProcessedReferenceLink,
         stepType: ClassName,
     ) {
-        val targetType = feature.type.resolved.nodeWrapperInterfaceType().copy(nullable = feature.optional)
+        val targetType = referenceLink.type.resolved.nodeWrapperInterfaceType().copy(nullable = referenceLink.optional)
         val inputType = stepType.parameterizedBy(concept.nodeWrapperInterfaceType())
         val outputType = stepType.parameterizedBy(targetType.copy(nullable = false))
         val outputTypeNullable = stepType.parameterizedBy(targetType.copy(nullable = true))
-        addRegularReferenceGetter(feature, inputType, outputType)
-        addOrNullReferenceGetter(feature, inputType, outputTypeNullable)
+        addRegularReferenceGetter(referenceLink, inputType, outputType)
+        addOrNullReferenceGetter(referenceLink, inputType, outputTypeNullable)
     }
 
     private fun FileSpec.Builder.addOrNullReferenceGetter(
-        feature: ProcessedReferenceLink,
+        referenceLink: ProcessedReferenceLink,
         inputType: ParameterizedTypeName,
         outputType: ParameterizedTypeName,
     ) {
@@ -120,11 +120,11 @@ internal class ModelQLFileGenerator(
                 "return %T.referenceOrNull(this, %T.%N)",
                 TypedModelQL::class.asTypeName(),
                 concept.conceptWrapperInterfaceClass(),
-                feature.generatedName,
+                referenceLink.generatedName,
             )
         }
 
-        val propertySpec = PropertySpec.builder(feature.generatedName + "_orNull", outputType).runBuild {
+        val propertySpec = PropertySpec.builder(referenceLink.generatedName + "_orNull", outputType).runBuild {
             receiver(inputType)
             getter(getterImpl)
         }
@@ -133,7 +133,7 @@ internal class ModelQLFileGenerator(
     }
 
     private fun FileSpec.Builder.addRegularReferenceGetter(
-        feature: ProcessedReferenceLink,
+        referenceLink: ProcessedReferenceLink,
         inputType: ParameterizedTypeName,
         outputType: ParameterizedTypeName,
     ) {
@@ -142,11 +142,11 @@ internal class ModelQLFileGenerator(
                 "return %T.reference(this, %T.%N)",
                 TypedModelQL::class.asTypeName(),
                 concept.conceptWrapperInterfaceClass(),
-                feature.generatedName,
+                referenceLink.generatedName,
             )
         }
 
-        val propertySpec = PropertySpec.builder(feature.generatedName, outputType).runBuild {
+        val propertySpec = PropertySpec.builder(referenceLink.generatedName, outputType).runBuild {
             receiver(inputType)
             getter(getterImpl)
         }
@@ -221,14 +221,14 @@ internal class ModelQLFileGenerator(
         addProperty(propertySpec)
     }
 
-    private fun FileSpec.Builder.addPropertySetter(feature: ProcessedProperty) {
+    private fun FileSpec.Builder.addPropertySetter(property: ProcessedProperty) {
         val inputStepType = IMonoStep::class.asTypeName()
             .parameterizedBy(concept.nodeWrapperInterfaceType())
 
         val parameterType = IMonoStep::class.asTypeName()
-            .parameterizedBy(feature.asKotlinType(alwaysUseNonNullableProperties))
+            .parameterizedBy(property.asKotlinType(alwaysUseNonNullableProperties))
 
-        val setterSpec = FunSpec.builder(feature.setterName()).runBuild {
+        val setterSpec = FunSpec.builder(property.setterName()).runBuild {
             returns(inputStepType)
             receiver(inputStepType)
             addParameter("value", parameterType)
@@ -236,7 +236,7 @@ internal class ModelQLFileGenerator(
                 "return %T.setProperty(this, %T.%N, value)",
                 TypedModelQL::class.asTypeName(),
                 concept.conceptWrapperInterfaceClass(),
-                feature.generatedName,
+                property.generatedName,
             )
         }
 

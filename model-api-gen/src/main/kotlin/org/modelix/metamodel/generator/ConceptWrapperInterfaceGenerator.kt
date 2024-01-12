@@ -94,35 +94,35 @@ internal class ConceptWrapperInterfaceGenerator(
         }
     }
 
-    private fun TypeSpec.Builder.addConceptWrapperInterfaceReferenceLink(feature: ProcessedReferenceLink) {
-        val propertySpec = PropertySpec.builder(feature.generatedName, feature.generatedReferenceLinkType()).runBuild {
-            getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
-            addDeprecationIfNecessary(feature)
+    private fun TypeSpec.Builder.addConceptWrapperInterfaceReferenceLink(referenceLink: ProcessedReferenceLink) {
+        val propertySpec = PropertySpec.builder(referenceLink.generatedName, referenceLink.generatedReferenceLinkType()).runBuild {
+            getter(FunSpec.getterBuilder().addCode(referenceLink.returnKotlinRef()).build())
+            addDeprecationIfNecessary(referenceLink)
         }
 
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addConceptWrapperInterfaceChildLink(feature: ProcessedChildLink) {
-        val propertySpec = PropertySpec.builder(feature.generatedName, feature.generatedChildLinkType()).runBuild {
-            getter(FunSpec.getterBuilder().addCode(feature.returnKotlinRef()).build())
-            addDeprecationIfNecessary(feature)
+    private fun TypeSpec.Builder.addConceptWrapperInterfaceChildLink(childLink: ProcessedChildLink) {
+        val propertySpec = PropertySpec.builder(childLink.generatedName, childLink.generatedChildLinkType()).runBuild {
+            getter(FunSpec.getterBuilder().addCode(childLink.returnKotlinRef()).build())
+            addDeprecationIfNecessary(childLink)
         }
 
         addProperty(propertySpec)
     }
 
-    private fun TypeSpec.Builder.addConceptWrapperInterfaceProperty(feature: ProcessedProperty) {
+    private fun TypeSpec.Builder.addConceptWrapperInterfaceProperty(property: ProcessedProperty) {
         val propertySpec = PropertySpec.builder(
-            name = feature.generatedName,
+            name = property.generatedName,
             type = GeneratedProperty::class.asClassName()
-                .parameterizedBy(feature.asKotlinType(alwaysUseNonNullableProperties)),
+                .parameterizedBy(property.asKotlinType(alwaysUseNonNullableProperties)),
         ).runBuild {
             val getterSpec = FunSpec.getterBuilder().runBuild {
-                addCode(feature.returnKotlinRef())
+                addCode(property.returnKotlinRef())
             }
             getter(getterSpec)
-            addDeprecationIfNecessary(feature)
+            addDeprecationIfNecessary(property)
         }
 
         addProperty(propertySpec)

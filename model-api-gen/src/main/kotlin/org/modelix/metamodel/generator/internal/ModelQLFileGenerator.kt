@@ -43,20 +43,16 @@ import java.nio.file.Path
 
 internal class ModelQLFileGenerator(
     private val concept: ProcessedConcept,
-    private val outputDir: Path,
+    override val outputDir: Path,
     override val nameConfig: NameConfig,
     private val alwaysUseNonNullableProperties: Boolean,
-) : NameConfigBasedGenerator(nameConfig) {
+) : NameConfigBasedGenerator(nameConfig), FileGenerator {
 
     companion object {
         private const val PACKAGE_PREFIX = "org.modelix.modelql.gen."
     }
 
-    fun generateFile() {
-        buildModelQLFileSpec().writeTo(outputDir)
-    }
-
-    private fun buildModelQLFileSpec(): FileSpec {
+    override fun generateFileSpec(): FileSpec {
         return FileSpec.builder(PACKAGE_PREFIX + concept.language.name, concept.name).runBuild {
             addFileComment(MetaModelGenerator.HEADER_COMMENT)
             for (feature in concept.getOwnRoles()) {

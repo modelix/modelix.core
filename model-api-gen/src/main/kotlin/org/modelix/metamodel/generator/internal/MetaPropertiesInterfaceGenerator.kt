@@ -29,15 +29,11 @@ import java.nio.file.Path
 
 internal class MetaPropertiesInterfaceGenerator(
     private val languages: ProcessedLanguageSet,
-    private val outputDir: Path,
+    override val outputDir: Path,
     private val fqInterfaceName: String,
-) {
+) : FileGenerator {
 
-    fun generateFile() {
-        generateConceptMetaPropertiesInterface().writeTo(outputDir)
-    }
-
-    private fun generateConceptMetaPropertiesInterface(): FileSpec {
+    override fun generateFileSpec(): FileSpec {
         require(fqInterfaceName.contains(".")) { "The name of the concept properties interface does not contain a dot. Use a fully qualified name." }
         val interfaceName = ClassName(fqInterfaceName.substringBeforeLast("."), fqInterfaceName.substringAfterLast("."))
 

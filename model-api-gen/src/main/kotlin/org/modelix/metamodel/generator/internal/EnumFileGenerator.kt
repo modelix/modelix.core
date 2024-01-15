@@ -32,15 +32,14 @@ import org.modelix.metamodel.generator.addDeprecationIfNecessary
 import org.modelix.metamodel.generator.runBuild
 import java.nio.file.Path
 
-internal class EnumFileGenerator(private val enum: ProcessedEnum, private val outputDir: Path) {
+internal class EnumFileGenerator(
+    private val enum: ProcessedEnum,
+    override val outputDir: Path,
+) : FileGenerator {
 
     private val enumType = ClassName(enum.language.name, enum.name)
 
-    fun generateFile() {
-        buildEnumFileSpec().writeTo(outputDir)
-    }
-
-    private fun buildEnumFileSpec(): FileSpec {
+    override fun generateFileSpec(): FileSpec {
         val generatedEnum = TypeSpec.enumBuilder(enum.name).runBuild {
             addDeprecationIfNecessary(enum)
             addPrimaryConstructor()

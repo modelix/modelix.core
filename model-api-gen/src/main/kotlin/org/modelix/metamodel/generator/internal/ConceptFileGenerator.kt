@@ -36,18 +36,18 @@ import java.nio.file.Path
 
 internal class ConceptFileGenerator(
     private val concept: ProcessedConcept,
-    private val outputDir: Path,
+    override val outputDir: Path,
     override val nameConfig: NameConfig,
-    private val conceptPropertiesInferfaceName: String?,
+    private val conceptPropertiesInterfaceName: String?,
     private val alwaysUseNonNullableProperties: Boolean,
-) : NameConfigBasedGenerator(nameConfig) {
+) : NameConfigBasedGenerator(nameConfig), FileGenerator {
 
-    fun generateFile() {
+    override fun generateFileSpec(): FileSpec {
         val conceptObject = ConceptObjectGenerator(concept, nameConfig).generate()
         val conceptWrapperInterface = ConceptWrapperInterfaceGenerator(
             concept,
             nameConfig,
-            conceptPropertiesInferfaceName,
+            conceptPropertiesInterfaceName,
             alwaysUseNonNullableProperties,
         ).generate()
         val nodeWrapperInterface = NodeWrapperInterfaceGenerator(concept, nameConfig, alwaysUseNonNullableProperties).generate()
@@ -55,7 +55,7 @@ internal class ConceptFileGenerator(
 
         val typeAliasSpec = TypeAliasSpec.builder(concept.conceptTypeAliasName(), concept.conceptWrapperInterfaceType()).build()
 
-        FileSpec.builder(concept.language.name, concept.name).runBuild {
+        return FileSpec.builder(concept.language.name, concept.name).runBuild {
             addFileComment(MetaModelGenerator.HEADER_COMMENT)
             addType(conceptObject)
             addTypeAlias(typeAliasSpec)
@@ -63,7 +63,7 @@ internal class ConceptFileGenerator(
             addType(nodeWrapperInterface)
             addType(nodeWrapperImpl)
             addConceptFeatureShortcuts()
-        }.writeTo(outputDir)
+        }
     }
 
     private fun FileSpec.Builder.addConceptFeatureShortcuts() {

@@ -35,16 +35,18 @@ import java.nio.file.Path
 
 internal class LanguageFileGenerator(
     private val language: ProcessedLanguage,
-    private val outputDir: Path,
+    override val outputDir: Path,
     override val nameConfig: NameConfig,
-) : NameConfigBasedGenerator(nameConfig) {
+) : NameConfigBasedGenerator(nameConfig), FileGenerator {
 
-    fun generateFile() {
-        val fileSpec = FileSpec.builder(language.generatedClassName().packageName, language.generatedClassName().simpleName).runBuild {
+    override fun generateFileSpec(): FileSpec {
+        return FileSpec.builder(
+            packageName = language.generatedClassName().packageName,
+            fileName = language.generatedClassName().simpleName,
+        ).runBuild {
             addFileComment(MetaModelGenerator.HEADER_COMMENT)
             addType(generateLanguage())
         }
-        fileSpec.writeTo(outputDir)
     }
 
     private fun generateLanguage(): TypeSpec {

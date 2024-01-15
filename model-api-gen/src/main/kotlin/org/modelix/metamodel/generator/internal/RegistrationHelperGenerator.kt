@@ -32,15 +32,11 @@ import java.nio.file.Path
 internal class RegistrationHelperGenerator(
     private val classFqName: String,
     private val languages: ProcessedLanguageSet,
-    private val outputDir: Path,
+    override val outputDir: Path,
     override val nameConfig: NameConfig,
-) : NameConfigBasedGenerator(nameConfig) {
+) : NameConfigBasedGenerator(nameConfig), FileGenerator {
 
-    fun generateFile() {
-        generateSpec().writeTo(outputDir)
-    }
-
-    private fun generateSpec(): FileSpec {
+    override fun generateFileSpec(): FileSpec {
         require(classFqName.contains(".")) { "The name of the registrationHelper does not contain a dot. Use a fully qualified name." }
         val typeName = ClassName(classFqName.substringBeforeLast("."), classFqName.substringAfterLast("."))
 

@@ -89,18 +89,18 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         // the actual intelliJ service handling the synchronization
         private val modelSyncService = service<ModelSyncService>()
-        private var serverURL = JBTextField(20)
-        private var repositoryName = JBTextField(20)
-        private var branchName = JBTextField(20)
-        private var modelName = JBTextField(20)
-        private var jwt = JBTextField(20)
+        private val serverURL = JBTextField(20)
+        private val repositoryName = JBTextField(20)
+        private val branchName = JBTextField(20)
+        private val modelName = JBTextField(20)
+        private val jwt = JBTextField(20)
 
-        private var openProjectModel = DefaultComboBoxModel<Project>()
-        private var existingConnectionsModel = DefaultComboBoxModel<ModelClientV2>()
-        private var existingBindingModel = DefaultComboBoxModel<IBinding>()
-        private var repoModel = DefaultComboBoxModel<RepositoryId>()
-        private var branchModel = DefaultComboBoxModel<BranchReference>()
-        private var modelModel = DefaultComboBoxModel<INode>()
+        private val openProjectModel = DefaultComboBoxModel<Project>()
+        private val existingConnectionsModel = DefaultComboBoxModel<ModelClientV2>()
+        private val existingBindingModel = DefaultComboBoxModel<IBinding>()
+        private val repoModel = DefaultComboBoxModel<RepositoryId>()
+        private val branchModel = DefaultComboBoxModel<BranchReference>()
+        private val modelModel = DefaultComboBoxModel<INode>()
 
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
@@ -110,6 +110,13 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             triggerRefresh()
             refresherTaskFuture = Executors.newScheduledThreadPool(1)
                 .scheduleAtFixedRate(BindingsComboBoxRefresher(this), 3, 3, TimeUnit.SECONDS)
+
+            // TODO fixme: hardcoded values
+            serverURL.text = "http://127.0.0.1:28101/v2"
+            repositoryName.text = "courses"
+            branchName.text = "master"
+            modelName.text = "University.Schedule.modelserver.backend.sandbox"
+            jwt.text = ""
         }
 
         private fun createInputBox(): Box {
@@ -240,13 +247,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             populateProjectsCB()
             populateConnectionsCB()
             populateRepoCB()
-
-            // TODO fixme: hardcoded values
-            serverURL.text = "http://127.0.0.1:28101/v2"
-            repositoryName.text = "courses"
-            branchName.text = "master"
-            modelName.text = "University.Schedule.modelserver.backend.sandbox"
-            jwt.text = ""
         }
 
         private fun populateProjectsCB() {

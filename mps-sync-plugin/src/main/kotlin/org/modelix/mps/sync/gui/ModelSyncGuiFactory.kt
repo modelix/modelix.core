@@ -31,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
@@ -82,6 +83,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
     class ModelSyncGui(toolWindow: ToolWindow) {
 
+        companion object {
+            private const val COMBOBOX_CHANGED_COMMAND = "comboBoxChanged"
+        }
+
         private val log = logger<ModelSyncGui>()
 
         val contentPanel = JPanel()
@@ -100,7 +105,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val existingBindingModel = DefaultComboBoxModel<IBinding>()
         private val repoModel = DefaultComboBoxModel<RepositoryId>()
         private val branchModel = DefaultComboBoxModel<BranchReference>()
-        private val modelModel = DefaultComboBoxModel<INode>()
+
+        // TODO rename to module and at all other places too (because it's a module instead of a model)
+        private val modelModel = DefaultComboBoxModel<INodeWithName>()
 
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
@@ -187,6 +194,11 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val repoCB = ComboBox<RepositoryId>()
             repoCB.model = repoModel
             repoCB.renderer = CustomCellRenderer()
+            repoCB.addActionListener {
+                if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
+                    populateBranchCB()
+                }
+            }
             repoPanel.add(JLabel("Remote Repo:   "))
             repoPanel.add(repoCB)
             inputBox.add(repoPanel)
@@ -195,12 +207,17 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val branchCB = ComboBox<BranchReference>()
             branchCB.model = branchModel
             branchCB.renderer = CustomCellRenderer()
+            branchCB.addActionListener {
+                if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
+                    populateModelCB()
+                }
+            }
             branchPanel.add(JLabel("Remote Branch: "))
             branchPanel.add(branchCB)
             inputBox.add(branchPanel)
 
             val modelPanel = JPanel()
-            val modelCB = ComboBox<INode>()
+            val modelCB = ComboBox<INodeWithName>()
             modelCB.model = modelModel
             modelCB.renderer = CustomCellRenderer()
             modelPanel.add(JLabel("Remote Model:  "))
@@ -212,9 +229,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     log.info("Binding model $modelName to project: ${ActiveMpsProjectInjector.activeMpsProject}")
                     modelSyncService.bindProject(
                         existingConnectionsModel.selectedItem as ModelClientV2,
-                        branchName.text,
-                        modelModel.selectedItem as INode,
-                        repositoryName.text,
+                        (branchModel.selectedItem as BranchReference).branchName,
+                        (modelModel.selectedItem as INodeWithName).node,
+                        (repoModel.selectedItem as RepositoryId).id,
                     )
                 }
             }
@@ -266,10 +283,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun populateRepoCB() {
-            repoModel.removeAllElements()
             if (existingConnectionsModel.size != 0) {
                 val item = existingConnectionsModel.selectedItem as ModelClientV2
                 CoroutineScope(Dispatchers.Default).launch {
+                    repoModel.removeAllElements()
                     repoModel.addAll(item.listRepositories())
                     if (repoModel.size > 0) {
                         repoModel.selectedItem = repoModel.getElementAt(0)
@@ -280,11 +297,11 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun populateBranchCB() {
-            branchModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
                     val branches =
                         (existingConnectionsModel.selectedItem as ModelClientV2).listBranches(repoModel.selectedItem as RepositoryId)
+                    branchModel.removeAllElements()
                     branchModel.addAll(branches)
                     if (branchModel.size > 0) {
                         branchModel.selectedItem = branchModel.getElementAt(0)
@@ -295,14 +312,18 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun populateModelCB() {
-            modelModel.removeAllElements()
             if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
                     val branch =
                         (existingConnectionsModel.selectedItem as ModelClientV2).getReplicatedModel(branchModel.selectedItem as BranchReference)
                             .start()
                     branch.runRead {
-                        val children = branch.getRootNode().allChildren
+                        modelModel.removeAllElements()
+                        val children = branch.getRootNode().allChildren.map {
+                            val name = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+                                ?: it.toString()
+                            INodeWithName(it, name)
+                        }
                         modelModel.addAll(children.toList())
                     }
                     if (modelModel.size > 0) {
@@ -335,10 +356,12 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 is ModelClientV2 -> value.baseUrl
                 is RepositoryId -> value.toString()
                 is BranchReference -> value.branchName
-                is INode -> value.toString()
+                is INodeWithName -> value.name
                 else -> return super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus)
             }
             return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
         }
     }
 }
+
+data class INodeWithName(val node: INode, val name: String)

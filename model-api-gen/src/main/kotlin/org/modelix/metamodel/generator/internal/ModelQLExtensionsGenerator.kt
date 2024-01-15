@@ -41,7 +41,7 @@ import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.typed.TypedModelQL
 import java.nio.file.Path
 
-internal class ModelQLFileGenerator(
+internal class ModelQLExtensionsGenerator(
     private val concept: ProcessedConcept,
     override val outputDir: Path,
     override val nameConfig: NameConfig,

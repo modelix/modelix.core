@@ -1,0 +1,40 @@
+services:
+  model-server:
+    image: modelix/model-server:latest
+    container_name: model-server-monitoring
+    ports:
+      - 28101:28101
+#    path to a dump
+#    volumes:
+#      - /home/nkoester/git/modelix/modelix.samples/model-server/courses.modelserver.dump:/courses.modelserver.dump
+#    command: [ "-inmemory", "-dumpin", "/courses.modelserver.dump" ]
+    command: [ "-inmemory" ]
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prom_data:/prometheus
+
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    ports:
+      - 3001:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/model-server-dashboard.json
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources/
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards/
+volumes:
+  prom_data:

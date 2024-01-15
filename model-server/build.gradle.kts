@@ -70,6 +70,9 @@ dependencies {
     testImplementation(libs.jsoup)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
+
+    implementation("io.ktor:ktor-server-metrics-micrometer:2.3.7")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.12.2")
 }
 
 tasks.test {

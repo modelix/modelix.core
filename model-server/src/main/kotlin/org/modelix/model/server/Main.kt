@@ -24,6 +24,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.http.content.resources
 import io.ktor.server.http.content.static
+import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -31,6 +32,7 @@ import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.resources.Resources
+import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.routing.Routing
@@ -39,6 +41,16 @@ import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
+import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics
+import io.micrometer.core.instrument.binder.system.UptimeMetrics
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import kotlinx.html.a
 import kotlinx.html.h1
 import kotlinx.html.li
@@ -161,6 +173,7 @@ object Main {
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
             val modelReplicationServer = ModelReplicationServer(repositoriesManager)
+            val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
             val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port) {
                 install(Routing)
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
@@ -185,6 +198,26 @@ object Main {
                     allowMethod(HttpMethod.Put)
                     allowMethod(HttpMethod.Post)
                 }
+                install(MicrometerMetrics) {
+                    registry = appMicrometerRegistry
+                    distributionStatisticConfig = DistributionStatisticConfig.Builder()
+                        .percentilesHistogram(true)
+                        .maximumExpectedValue(Duration.ofSeconds(20).toNanos().toDouble())
+                        .serviceLevelObjectives(
+                            Duration.ofMillis(100).toNanos().toDouble(),
+                            Duration.ofMillis(500).toNanos().toDouble(),
+                        )
+                        .build()
+                    meterBinders = listOf(
+                        ClassLoaderMetrics(),
+                        JvmMemoryMetrics(),
+                        JvmGcMetrics(),
+                        ProcessorMetrics(),
+                        JvmThreadMetrics(),
+                        FileDescriptorMetrics(),
+                        UptimeMetrics(),
+                    )
+                }
 
                 modelServer.init(this)
                 historyHandler.init(this)
@@ -193,6 +226,10 @@ object Main {
                 jsonModelServer.init(this)
                 modelReplicationServer.init(this)
                 routing {
+                    get("/metrics") {
+                        call.respond(appMicrometerRegistry.scrape())
+                    }
+
                     static("/public") {
                         resources("public")
                     }

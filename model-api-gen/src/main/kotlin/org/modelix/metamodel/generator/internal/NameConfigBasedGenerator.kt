@@ -37,6 +37,10 @@ import org.modelix.model.data.EnumPropertyType
 import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
 
+/**
+ * Base class for generators using [NameConfig].
+ * Acts as single source of truth for functions needed in multiple internal generators.
+ */
 internal abstract class NameConfigBasedGenerator(open val nameConfig: NameConfig) {
     protected fun ProcessedConcept.conceptWrapperInterfaceType() =
         conceptWrapperInterfaceClass().parameterizedBy(nodeWrapperInterfaceType())

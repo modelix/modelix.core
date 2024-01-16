@@ -59,7 +59,7 @@ paths:
             type: string
       requestBody:
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: "#/components/schemas/ContentExplorerExpandedNodes"
         required: true
@@ -244,8 +244,6 @@ components:
             type: string
         expandAll:
           type: boolean
-      required:
-        - "expandedNodeIds"
     Function1:
       type: object
       properties: {}

@@ -19,7 +19,7 @@ import java.nio.file.Path
 class MetaModelGenerator(
     private val outputDir: Path,
     private val nameConfig: NameConfig = NameConfig(),
-    private val modelqlOutputDir: Path? = null,
+    private val modelQlOutputDir: Path? = null,
     private val conceptPropertiesInterfaceName: String? = null,
     private val alwaysUseNonNullableProperties: Boolean = true,
 ) {
@@ -73,10 +73,10 @@ class MetaModelGenerator(
                     conceptPropertiesInterfaceName,
                     alwaysUseNonNullableProperties,
                 ).generateFile()
-                if (modelqlOutputDir != null && concept.getOwnRoles().isNotEmpty()) {
+                if (modelQlOutputDir != null && concept.getOwnRoles().isNotEmpty()) {
                     ModelQLExtensionsGenerator(
                         concept,
-                        modelqlOutputDir,
+                        modelQlOutputDir,
                         nameConfig,
                         alwaysUseNonNullableProperties,
                     ).generateFile()

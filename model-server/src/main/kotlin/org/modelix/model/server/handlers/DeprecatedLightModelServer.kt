@@ -163,7 +163,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             val oldVersion = CLVersion.loadFromHash(versionHash, getStore())
             respondVersion(version, oldVersion)
         }
-        webSocket("/{repositoryId}/ws") {
+        webSocket("/json/{repositoryId}/ws") {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val userId = call.getUserName()
 

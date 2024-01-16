@@ -14,6 +14,7 @@
 
 package org.modelix.model.server
 
+import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -40,6 +41,7 @@ import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.fail
 
 class JsonAPITest {
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
@@ -59,6 +61,18 @@ class JsonAPITest {
         val response = client.post("/json/$repoId/init")
         assertEquals(HttpStatusCode.OK, response.status)
         assertEmptyVersion(JSONObject(response.bodyAsText()))
+    }
+
+    @Test
+    fun connectToWebsocket() = runTest {
+        val client = createClient {
+            install(io.ktor.client.plugins.websocket.WebSockets)
+        }
+        try {
+            client.webSocketSession("ws://localhost/json/$repoId/ws")
+        } catch (e: Exception) {
+            fail("Could not connect to WebSocket", e)
+        }
     }
 
     private fun assertEmptyVersion(json: JSONObject) {

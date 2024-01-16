@@ -107,7 +107,7 @@ paths:
         "404":
           $ref: '#/components/responses/404'
         "200":
-          description: OK
+          $ref: '#/components/responses/versionDelta'
 #          content:
 #            '*/*':
 #              schema:
@@ -137,11 +137,7 @@ paths:
 #        required: true
       responses:
         "200":
-          $ref: '#/components/responses/200'
-#          content:
-#            '*/*':
-#              schema:
-#                type: object
+          $ref: '#/components/responses/versionDelta'
   /v2/repositories/{repository}/branches/{branch}/hash:
     get:
       operationId: getRepositoryBranchHash
@@ -247,11 +243,7 @@ paths:
         "500":
           $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
+          $ref: '#/components/responses/versionDelta'
   /v2/repositories/{repository}/branches/{branch}/pollHash:
     get:
       operationId: pollRepositoryBranchHash
@@ -321,11 +313,7 @@ paths:
         "500":
           $ref: '#/components/responses/500'
         "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
+          $ref: '#/components/responses/versionDelta'
   /v2/repositories/{repository}/versions/{versionHash}:
     get:
       operationId: getRepositoryVersionHash
@@ -414,11 +402,7 @@ paths:
         "404":
           $ref: '#/components/responses/404'
         "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
+          $ref: '#/components/responses/versionDelta'
   /v2/versions/{versionHash}/history/{oldestVersionHash}:
     get:
       operationId: getOldestVersionHashForVersion
@@ -599,7 +583,18 @@ components:
         text/plain:
           schema:
             type: string
-
+    "versionDelta":
+      description: OK
+      content:
+        'application/x-modelix-objects':
+          schema:
+            type: string
+        'application/json':
+          schema:
+            type: object
+        'text/plain':
+          schema:
+            type: string
   schemas:
     VersionDelta:
       title: VersionDelta

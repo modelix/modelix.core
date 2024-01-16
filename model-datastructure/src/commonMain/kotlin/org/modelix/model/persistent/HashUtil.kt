@@ -40,14 +40,17 @@ object HashUtil {
 
     fun checkObjectHashes(entries: Map<String, String?>) {
         for (entry in entries) {
-            val value = entry.value ?: continue
-            if (!isSha256(entry.key)) continue
-            val computedHash = sha256(value)
-            val providedHash = entry.key
-            require(computedHash == providedHash) {
-                val bytes = value.encodeToByteArray(throwOnInvalidSequence = true)
-                "Provided hash $providedHash doesn't match the computed hash $computedHash for value: $value\n    Value as ByteArray$bytes"
-            }
+            checkObjectHash(entry.key, entry.value)
+        }
+    }
+
+    fun checkObjectHash(providedHash: String, value: String?) {
+        if (value == null) return
+        if (!isSha256(providedHash)) return
+        val computedHash = sha256(value)
+        require(computedHash == providedHash) {
+            val bytes = value.encodeToByteArray(throwOnInvalidSequence = true)
+            "Provided hash $providedHash doesn't match the computed hash $computedHash for value: $value\n    Value as ByteArray$bytes"
         }
     }
 }

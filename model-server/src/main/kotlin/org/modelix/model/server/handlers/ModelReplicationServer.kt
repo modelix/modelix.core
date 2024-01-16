@@ -14,19 +14,22 @@
 
 package org.modelix.model.server.handlers
 
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
+import io.ktor.server.request.acceptItems
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveStream
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
+import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
+import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.webSocket
@@ -34,6 +37,11 @@ import io.ktor.util.pipeline.PipelineContext
 import io.ktor.websocket.send
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onEmpty
+import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -51,6 +59,8 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.v2.VersionDelta
+import org.modelix.model.server.api.v2.VersionDeltaStream
+import org.modelix.model.server.api.v2.toMap
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.server.ModelQLServer
@@ -207,7 +217,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                     val delta = VersionDelta(
                         newVersionHash,
                         lastVersionHash,
-                        objectsMap = repositoriesManager.computeDelta(newVersionHash, lastVersionHash),
+                        objectsMap = repositoriesManager.computeDelta(newVersionHash, lastVersionHash).toMap(),
                     )
                     delta.checkObjectHashes()
                     send(Json.encodeToString(delta))
@@ -323,12 +333,61 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
     }
 
     private suspend fun ApplicationCall.respondDelta(versionHash: String, baseVersionHash: String?) {
+        val expectedTypes = request.acceptItems().map { ContentType.parse(it.value) }
+        return if (expectedTypes.any { it.match(VersionDeltaStream.CONTENT_TYPE) }) {
+            respondDeltaAsObjectStream(versionHash, baseVersionHash, false)
+        } else if (expectedTypes.any { it.match(ContentType.Application.Json) }) {
+            respondDeltaAsJson(versionHash, baseVersionHash)
+        } else {
+            respondDeltaAsObjectStream(versionHash, baseVersionHash, true)
+        }
+    }
+
+    private suspend fun ApplicationCall.respondDeltaAsJson(versionHash: String, baseVersionHash: String?) {
         val delta = VersionDelta(
             versionHash,
             baseVersionHash,
-            objectsMap = repositoriesManager.computeDelta(versionHash, baseVersionHash),
+            objectsMap = repositoriesManager.computeDelta(versionHash, baseVersionHash).toMap(),
         )
         delta.checkObjectHashes()
         respond(delta)
     }
+
+    private suspend fun ApplicationCall.respondDeltaAsObjectStream(versionHash: String, baseVersionHash: String?, plainText: Boolean) {
+        respondTextWriter(contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE) {
+            repositoriesManager.computeDelta(versionHash, baseVersionHash)
+                .checkObjectHashes()
+                .flatten()
+                .withSeparator("\n")
+                .onEmpty { emit(versionHash) }
+                .withIndex()
+                .collect {
+                    if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
+                    append(it.value)
+                }
+        }
+    }
+}
+
+private fun <T> Flow<Pair<T, T>>.flatten() = flow<T> {
+    collect {
+        emit(it.first)
+        emit(it.second)
+    }
+}
+
+private fun Flow<String>.withSeparator(separator: String) = flow {
+    var first = true
+    collect {
+        if (first) {
+            first = false
+        } else {
+            emit(separator)
+        }
+        emit(it)
+    }
+}
+
+private fun <V : String?> Flow<Pair<String, V>>.checkObjectHashes(): Flow<Pair<String, V>> {
+    return onEach { HashUtil.checkObjectHash(it.first, it.second) }
 }

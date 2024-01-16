@@ -130,6 +130,8 @@ object Main {
                             ),
                         )
                 }
+            } else if (cmdLineArgs.localPersistence) {
+                storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile, inmemory = true)
             } else {
                 storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile)
                 if (cmdLineArgs.schemaInit) {

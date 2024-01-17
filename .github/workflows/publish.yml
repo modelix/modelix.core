@@ -28,13 +28,26 @@ jobs:
         uses: gradle/gradle-build-action@v2
       - name: Use tag as version
         run: echo "${GITHUB_REF#refs/*/}" > version.txt
-      - name: Build and Publish Artifacts
+        # Perform the build in a separate call to avoid trying to publish
+        # something where the build already failed partially. This could happen
+        # due to the use of the --continue flag in the publish step.
+      - name: Build
+        run: >-
+          ./gradlew --build-cache build
+          --info
+          -PciBuild=true
+      - name: Publish
         # We run gradle with --info to debug the ongoing random publishing
         # issues. Gradle would log upload retries on info level:
         # https://github.com/gradle/gradle/blob/2e843f089f969940e505e69eb0742ed4fbf67993/platforms/software/dependency-management/src/main/java/org/gradle/api/internal/artifacts/repositories/transport/NetworkOperationBackOffAndRetry.java#L64
         # Maybe retries are the source of our duplicate publication attempts.
+        #
+        # We use --continue to work around the commonly seen 403 issues.
+        # Usually, the artifact that cannot be uploaded is strangely already
+        # in the repo. As the result, by ignoring the exception, we should end
+        # up with a working release in most cases.
         run: >-
-          ./gradlew --build-cache build publish
+          ./gradlew --build-cache publish
           --info
           -PciBuild=true
           -Partifacts.itemis.cloud.user=${{ secrets.ARTIFACTS_ITEMIS_CLOUD_USER }}

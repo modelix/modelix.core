@@ -48,6 +48,7 @@ jobs:
         # up with a working release in most cases.
         run: >-
           ./gradlew --build-cache publish
+          --continue
           --info
           -PciBuild=true
           -Partifacts.itemis.cloud.user=${{ secrets.ARTIFACTS_ITEMIS_CLOUD_USER }}

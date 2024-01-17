@@ -28,7 +28,7 @@ jobs:
         run: |
           cd build/dokka
           latestVersion=$(for n in *; do printf '%s\n' "$n"; done | sort -V | grep -E "^[0-9]+\.[0-9]+" | tail -n1)
-          if [[ -z "${latestVersion}" ]]; then
+          if [[ -n "${latestVersion}" ]]; then
             ln -sf ${latestVersion} latest
           fi
       - name: Publish to GitHub Pages

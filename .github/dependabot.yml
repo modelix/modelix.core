@@ -10,3 +10,8 @@ updates:
     directory: "/model-server"
     schedule:
       interval: "daily"
+  - package-ecosystem: "github-actions"
+    open-pull-requests-limit: 20
+    directory: "/"
+    schedule:
+      interval: "daily"

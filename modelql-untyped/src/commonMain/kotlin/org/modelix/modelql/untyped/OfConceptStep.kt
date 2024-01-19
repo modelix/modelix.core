@@ -36,7 +36,7 @@ class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?,
     override fun createFlow(input: StepFlow<INode?>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.filter {
             val value = it.value
-            value != null && conceptUIDs.contains(value.concept?.getUID())
+            value != null && conceptUIDs.contains(value.getConceptReference()?.getUID())
         } as StepFlow<INode>
     }
 

@@ -10,3 +10,35 @@ updates:
     directory: "/model-server"
     schedule:
       interval: "daily"
+  - package-ecosystem: "github-actions"
+    open-pull-requests-limit: 20
+    directory: "/"
+    schedule:
+      interval: "daily"
+  # We use the default versioning strategy for npm (increase for apps and widen for libraries),
+  # so that clients are free to select an appropriate version from the allowed range, when they use one of the libraries.
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 20
+    directory: "/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 20
+    directory: "/ts-model-api"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 20
+    directory: "/vue-model-api"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 20
+    directory: "/model-api-gen-gradle-test/typescript-generation"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 20
+    directory: "/model-api-gen-gradle-test/vue-integration"
+    schedule:
+      interval: "daily"

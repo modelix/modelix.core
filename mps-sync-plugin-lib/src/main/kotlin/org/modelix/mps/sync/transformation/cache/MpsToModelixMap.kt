@@ -101,8 +101,11 @@ object MpsToModelixMap {
         putObjRelatedToAModel(sourceModel, modelReference)
     }
 
-    private fun putObjRelatedToAModel(model: SModel, obj: Any?) =
+    private fun putObjRelatedToAModel(model: SModel, obj: Any?) {
         objectsRelatedToAModel.computeIfAbsent(model) { mutableSetOf() }.add(obj!!)
+        // just in case, the model has not been tracked yet. E.g. @descriptor models that are created locally but were not synchronized to the model server.
+        putObjRelatedToAModule(model.module, model)
+    }
 
     private fun putObjRelatedToAModule(module: SModule, obj: Any?) =
         objectsRelatedToAModule.computeIfAbsent(module) { mutableSetOf() }.add(obj!!)

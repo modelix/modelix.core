@@ -165,6 +165,14 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             call.respondDelta(initialVersion.getContentHash(), null)
         }
 
+        post<Paths.deleteRepository> {
+            fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
+            fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
+
+            repositoriesManager.removeRepository(repositoryId())
+            call.respond(HttpStatusCode.OK)
+        }
+
         post<Paths.postRepositoryBranch> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()

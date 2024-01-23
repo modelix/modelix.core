@@ -314,6 +314,18 @@ paths:
           $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/versionDelta'
+  /v2/repositories/{repository}/delete:
+    post:
+      operationId: deleteRepository
+      parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
   /v2/repositories/{repository}/versions/{versionHash}:
     get:
       operationId: getRepositoryVersionHash

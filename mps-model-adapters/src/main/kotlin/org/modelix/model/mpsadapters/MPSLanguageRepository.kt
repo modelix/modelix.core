@@ -45,9 +45,7 @@ class MPSLanguageRepository(val repository: SRepository) : ILanguageRepository {
 
         val conceptId = try {
             SConceptId.deserialize(uid.substring(4))
-        } catch (e: NumberFormatException) {
-            return null
-        } ?: return null // in case the id cannot be parsed
+        } catch (e: NumberFormatException) { return null } ?: return null // in case the id cannot be parsed
 
         val conceptDescriptor = ConceptRegistry.getInstance().getConceptDescriptor(conceptId)
 

@@ -26,6 +26,7 @@ class CPTree(
     override var isWritten: Boolean = false
 
     override fun serialize(): String {
+        // TODO version bump required for the new operations BulkUpdateOp and AddNewChildrenOp
         val pv = if (usesRoleIds) PERSISTENCE_VERSION else NAMED_BASED_PERSISTENCE_VERSION
         return "$id/$pv/${idToHash.getHash()}"
     }
@@ -46,7 +47,7 @@ class CPTree(
 
         @JvmStatic
         fun deserialize(input: String): CPTree {
-            val parts = input.split("/")
+            val parts = input.split(Separators.LEVEL1)
             val treeId = parts[0]
             val persistenceVersion = parts[1].toInt()
             if (persistenceVersion != PERSISTENCE_VERSION && persistenceVersion != NAMED_BASED_PERSISTENCE_VERSION) {

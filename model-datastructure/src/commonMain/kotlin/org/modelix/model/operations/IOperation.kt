@@ -24,6 +24,5 @@ import org.modelix.model.persistent.IKVValue
 interface IOperation {
     fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation
     fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend
-    fun toCode(): String
     fun getReferencedEntries(): List<KVEntryReference<IKVValue>>
 }

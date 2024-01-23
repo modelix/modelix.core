@@ -18,6 +18,8 @@ package org.modelix.model.server
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.resources.Resources
+import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.ktor.server.websocket.WebSockets
@@ -75,6 +77,8 @@ class ReplicatedRepositoryTest {
                 json()
             }
             install(WebSockets)
+            install(Resources)
+            install(IgnoreTrailingSlash)
             val repositoriesManager = RepositoriesManager(LocalModelClient(InMemoryStoreClient()))
             ModelReplicationServer(repositoriesManager).init(this)
             KeyValueLikeModelServer(repositoriesManager).init(this)

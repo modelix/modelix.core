@@ -17,6 +17,8 @@ import io.ktor.client.HttpClient
 import io.ktor.server.testing.testApplication
 import jetbrains.mps.baseLanguage.C_ClassConcept
 import jetbrains.mps.baseLanguage.C_IntegerType
+import jetbrains.mps.baseLanguage.C_MinusExpression
+import jetbrains.mps.baseLanguage.C_ParameterDeclaration
 import jetbrains.mps.baseLanguage.C_PlusExpression
 import jetbrains.mps.baseLanguage.C_PublicVisibility
 import jetbrains.mps.baseLanguage.C_ReturnStatement
@@ -24,8 +26,16 @@ import jetbrains.mps.baseLanguage.C_StaticMethodDeclaration
 import jetbrains.mps.baseLanguage.C_VariableReference
 import jetbrains.mps.baseLanguage.ClassConcept
 import jetbrains.mps.baseLanguage.StaticMethodDeclaration
+import jetbrains.mps.core.xml.C_XmlComment
+import jetbrains.mps.core.xml.C_XmlCommentLine
+import jetbrains.mps.core.xml.C_XmlDocument
+import jetbrains.mps.core.xml.C_XmlFile
+import jetbrains.mps.lang.editor.imageGen.C_ImageGenerator
+import jetbrains.mps.lang.editor.imageGen.ImageGenerator
 import org.modelix.apigen.test.ApigenTestLanguages
+import org.modelix.metamodel.instanceOf
 import org.modelix.metamodel.typed
+import org.modelix.metamodel.untyped
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
@@ -33,25 +43,45 @@ import org.modelix.model.api.resolve
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
-import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.light.LightModelServer
 import org.modelix.modelql.client.ModelQLClient
+import org.modelix.modelql.core.asMono
 import org.modelix.modelql.core.count
+import org.modelix.modelql.core.equalTo
 import org.modelix.modelql.core.filter
+import org.modelix.modelql.core.first
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.toSet
 import org.modelix.modelql.core.zip
+import org.modelix.modelql.gen.jetbrains.mps.baseLanguage.addToMember
+import org.modelix.modelql.gen.jetbrains.mps.baseLanguage.expression
 import org.modelix.modelql.gen.jetbrains.mps.baseLanguage.member
 import org.modelix.modelql.gen.jetbrains.mps.baseLanguage.parameter
+import org.modelix.modelql.gen.jetbrains.mps.baseLanguage.setExpression
+import org.modelix.modelql.gen.jetbrains.mps.baseLanguage.setVariableDeclaration
 import org.modelix.modelql.gen.jetbrains.mps.baseLanguage.variableDeclaration
 import org.modelix.modelql.gen.jetbrains.mps.baseLanguage.visibility
+import org.modelix.modelql.gen.jetbrains.mps.core.xml.addToLines
+import org.modelix.modelql.gen.jetbrains.mps.core.xml.document
+import org.modelix.modelql.gen.jetbrains.mps.core.xml.lines
+import org.modelix.modelql.gen.jetbrains.mps.core.xml.setDocument
 import org.modelix.modelql.gen.jetbrains.mps.lang.core.name
+import org.modelix.modelql.gen.jetbrains.mps.lang.core.setName
+import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.node
+import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.node_orNull
+import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.setNode
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.conceptReference
+import org.modelix.modelql.untyped.descendants
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class TypedModelQLTest {
     private lateinit var branch: IBranch
@@ -68,7 +98,7 @@ class TypedModelQLTest {
     @BeforeTest
     fun setup() {
         ApigenTestLanguages.registerAll()
-        val tree = CLTree(ObjectStoreCache(MapBaseStore()))
+        val tree = CLTree(ObjectStoreCache(MapBasedStore()))
         branch = PBranch(tree, IdGenerator.getInstance(1))
         val rootNode = branch.getRootNode()
         branch.runWrite {
@@ -101,6 +131,16 @@ class TypedModelQLTest {
                     }
                 }
             }
+            // Example for optional reference
+            rootNode.addNewChild("imageGen", -1, C_ImageGenerator.untyped())
+                .typed<ImageGenerator>()
+                .apply { node = cls1 }
+
+            // Example for single non-abstract child
+            rootNode.addNewChild("xmlFile", -1, C_XmlFile.untyped())
+
+            // Example for mulitple non-abstract child
+            rootNode.addNewChild("xmlComment", -1, C_XmlComment.untyped())
         }
     }
 
@@ -131,7 +171,7 @@ class TypedModelQLTest {
     }
 
     @Test
-    fun testReferences() = runTest { httpClient ->
+    fun `get references`() = runTest { httpClient ->
         val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val usedVariables: Set<String> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
@@ -147,7 +187,7 @@ class TypedModelQLTest {
     }
 
     @Test
-    fun testReferencesFqName() = runTest { httpClient ->
+    fun `get references - fqName`() = runTest { httpClient ->
         val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val usedVariables: Set<String> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
@@ -170,7 +210,7 @@ class TypedModelQLTest {
     }
 
     @Test
-    fun testNodeSerialization() = runTest { httpClient ->
+    fun `node serialization`() = runTest { httpClient ->
         val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result: List<StaticMethodDeclaration> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
@@ -184,7 +224,7 @@ class TypedModelQLTest {
     }
 
     @Test
-    fun returnTypedNode() = runTest { httpClient ->
+    fun `return typed node`() = runTest { httpClient ->
         val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
         val result: List<StaticMethodDeclaration> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
@@ -194,5 +234,168 @@ class TypedModelQLTest {
                 .toList()
         }
         assertEquals("plus", branch.computeRead { result[0].name })
+    }
+
+    @Test
+    fun `set property`() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+        val expected = "myRenamedMethod"
+        client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .first()
+                .setName(expected.asMono())
+        }
+        val actual = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .first()
+        }
+        assertEquals(expected, actual.name)
+    }
+
+    @Test
+    fun `set reference`() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+
+        val oldValue = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .descendants()
+                .ofConcept(C_ParameterDeclaration)
+                .first()
+                .name
+        }
+        val expected = "b"
+        client.query { root ->
+            val descendants = root.children("classes").ofConcept(C_ClassConcept)
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .descendants()
+
+            val target = descendants.ofConcept(C_ParameterDeclaration)
+                .filter { it.name.equalTo(expected) }
+                .first()
+
+            descendants.ofConcept(C_VariableReference)
+                .first()
+                .setVariableDeclaration(target)
+        }
+
+        val actual = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .descendants()
+                .ofConcept(C_VariableReference)
+                .first()
+        }
+        assertNotEquals(expected, oldValue)
+        assertEquals(expected, actual.variableDeclaration.name)
+    }
+
+    @Test
+    fun `set reference - null`() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+        val oldValue = client.query { root ->
+            root.children("imageGen").ofConcept(C_ImageGenerator).first().node
+        }
+
+        client.query { root ->
+            root.children("imageGen").ofConcept(C_ImageGenerator).first().setNode(null)
+        }
+
+        val actual = client.query { root ->
+            root.children("imageGen").ofConcept(C_ImageGenerator).first().node_orNull
+        }
+        assertNotNull(oldValue)
+        assertNull(actual)
+    }
+
+    @Test
+    fun `add new child`() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+
+        val oldNumChildren = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .first()
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .count()
+        }
+
+        client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .first()
+                .addToMember(C_StaticMethodDeclaration)
+        }
+
+        val children = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .first()
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .toList()
+        }
+
+        assertEquals(oldNumChildren + 1, children.size)
+        assertEquals(C_StaticMethodDeclaration.untyped().getUID(), children.last().untyped().concept?.getUID())
+    }
+
+    @Test
+    fun `add new child - default concept`() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+        client.query { root ->
+            root.descendants().ofConcept(C_XmlComment)
+                .first()
+                .addToLines()
+        }
+
+        val actual = client.query { root ->
+            root.descendants().ofConcept(C_XmlComment)
+                .first()
+                .lines
+                .first()
+        }
+
+        assertTrue { actual.instanceOf(C_XmlCommentLine) }
+    }
+
+    @Test
+    fun `set child`() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+
+        client.query { root ->
+            root.descendants().ofConcept(C_ReturnStatement)
+                .first()
+                .setExpression(C_MinusExpression)
+        }
+
+        val actual = client.query { root ->
+            root.descendants().ofConcept(C_ReturnStatement).first().expression
+        }
+        assertNotNull(actual)
+        assertTrue(actual.instanceOf(C_MinusExpression))
+    }
+
+    @Test
+    fun `set child - default concept`() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+        client.query { root ->
+            root.descendants().ofConcept(C_XmlFile)
+                .first()
+                .setDocument()
+        }
+
+        val actual = client.query { root ->
+            root.descendants().ofConcept(C_XmlFile)
+                .first()
+                .document
+        }
+
+        assertTrue { actual.instanceOf(C_XmlDocument) }
     }
 }

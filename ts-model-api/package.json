@@ -28,7 +28,6 @@
     "clean": "shx rm -rf dist/ .*cache *.log",
     "lint": "npm run lint:debug -- --config tslint.prod.json",
     "lint:debug": "tslint --project tsconfig.json --format stylish",
-    "prepublishOnly": "npm run lint && npm run build",
     "test": "shx echo 'Write your own tests'",
     "ts": "tsc",
     "watch": "tsc --watch",
@@ -47,9 +46,5 @@
   "engines": {
     "node": ">= 10.18.1",
     "npm": ">= 6.13.4"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://artifacts.itemis.cloud/repository/npm-open/"
   }
 }

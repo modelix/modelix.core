@@ -16,6 +16,9 @@
 
 package org.modelix.model.sync.bulk
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
 import org.modelix.model.data.ModelData
 import java.io.File
 
@@ -35,8 +38,11 @@ fun ModelImporter.import(jsonFile: File) {
     import(data)
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun ModelImporter.importFilesAsRootChildren(files: Collection<File>) {
-    val models = files.map { ModelData.fromJson(it.readText()) }
+    val models: List<ModelData> = files.map {
+        Json.decodeFromStream(it.inputStream())
+    }
     import(mergeModelData(models))
 }
 

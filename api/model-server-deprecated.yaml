@@ -1,0 +1,215 @@
+# WARNING - EXPERIMENTAL
+# This file was auto generated from the existing API using an IntelliJ plugin,
+# see https://www.jetbrains.com/help/idea/openapi.html#generate_openapi
+#
+# Manual changes were done for this 'spec' to work in-place with the
+# model-server for now. A lot of changes were done and are still necessary
+# to make this OpenAPI a viable artifact. It will most likely be split
+# into multiple OpenAPI files.
+
+openapi: "3.0.3"
+info:
+  title: "model-server deprecated API"
+  description: "modelix deprecated API"
+  version: "1.0.0"
+servers:
+  - url: '/'
+    description: model-server
+paths:
+  /json:
+    get:
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+  /json/{repositoryId}:
+    get:
+      parameters:
+        - name: repositoryId
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+  /json/{repositoryId}/{versionHash}:
+    get:
+      parameters:
+        - name: versionHash
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: repositoryId
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+  /json/{repositoryId}/{versionHash}/poll:
+    get:
+      parameters:
+        - name: repositoryId
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: versionHash
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+  /json/{repositoryId}/{versionHash}/update:
+    post:
+      parameters:
+        - name: repositoryId
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: versionHash
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: string
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "200":
+          $ref: '#/components/responses/200json'
+  /json/{repositoryId}/init:
+    post:
+      parameters:
+        - name: repositoryId
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+  /json/{repositoryId}/ws:
+    get:
+      parameters:
+        - name: repositoryId
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: Connection
+          in: "header"
+          required: true
+          description: "Websocket Connection parameter"
+          schema:
+            type: string
+        - name: Upgrade
+          in: "header"
+          required: true
+          description: "Websocket Upgrade parameter"
+          schema:
+            type: string
+        - name: Sec-WebSocket-Key
+          in: "header"
+          required: true
+          description: "Websocket Sec-WebSocket-Key parameter"
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "101":
+          description: "Switching Protocols"
+          headers:
+            Connection:
+              required: true
+              schema:
+                type: string
+            Upgrade:
+              required: true
+              schema:
+                type: string
+            Sec-WebSocket-Accept:
+              required: true
+              schema:
+                type: string
+  /json/generate-ids:
+    post:
+      parameters:
+        - name: quantity
+          in: "query"
+          required: false
+          schema:
+            type: integer
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "200":
+          $ref: '#/components/responses/200json'
+
+components:
+  responses:
+    "200":
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string
+    "200json":
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: string
+    "400":
+      description: "Bad Request"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "401":
+      description: "Unauthorized"
+      content:
+        text/plain:
+          schema:
+            type: string
+    403:
+      description: "Forbidden"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "404":
+      description: "Not Found"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "500":
+      description: "Internal Server Error"
+      content:
+        text/plain:
+          schema:
+            type: string

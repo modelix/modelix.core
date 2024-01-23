@@ -19,11 +19,11 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.request.receiveText
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.webSocket
@@ -43,6 +43,7 @@ import kotlinx.html.title
 import kotlinx.html.tr
 import org.json.JSONArray
 import org.json.JSONObject
+import org.modelix.api.deprecated.Paths
 import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
@@ -78,7 +79,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         application.apply {
             routing {
                 requiresPermission("model-json-api".asResource(), KeycloakScope.READ) {
-                    route("/json") {
+                    route("/") {
                         initRouting()
                     }
                 }
@@ -92,7 +93,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
     }
 
     private fun Route.initRouting() {
-        get("/") {
+        get<Paths.jsonGet> {
             call.respondHtmlTemplate(PageWithMenuBar("json/", ".."), status = HttpStatusCode.OK) {
                 headContent {
                     title("JSON API")
@@ -141,20 +142,20 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
                 }
             }
         }
-        get("/{repositoryId}/") {
+        get<Paths.jsonRepositoryIdGet> {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val versionHash = client.asyncStore?.get(repositoryId.getBranchKey())!!
             // TODO 404 if it doesn't exist
             val version = CLVersion.loadFromHash(versionHash, getStore())
             respondVersion(version)
         }
-        get("/{repositoryId}/{versionHash}/") {
+        get<Paths.jsonRepositoryIdVersionHashGet> {
             val versionHash = call.parameters["versionHash"]!!
             // TODO 404 if it doesn't exist
             val version = CLVersion.loadFromHash(versionHash, getStore())
             respondVersion(version)
         }
-        get("/{repositoryId}/{versionHash}/poll") {
+        get<Paths.jsonRepositoryIdVersionHashPollGet> {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val versionHash = call.parameters["versionHash"]!!
             val newValue = pollEntry(client.store, repositoryId.getBranchKey(), versionHash)
@@ -162,7 +163,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             val oldVersion = CLVersion.loadFromHash(versionHash, getStore())
             respondVersion(version, oldVersion)
         }
-        webSocket("/{repositoryId}/ws") {
+        webSocket("/json/{repositoryId}/ws") {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val userId = call.getUserName()
 
@@ -204,7 +205,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
                 client.removeListener(repositoryId.getBranchKey(), listener)
             }
         }
-        post("/{repositoryId}/init") {
+        post<Paths.jsonRepositoryIdInitPost> {
             // TODO error if it already exists
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val newTree = CLTree.builder(getStore()).repositoryId(repositoryId).build()
@@ -220,7 +221,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             client.asyncStore!!.put(repositoryId.getBranchKey(), newVersion.hash)
             respondVersion(newVersion)
         }
-        post("/{repositoryId}/{versionHash}/update") {
+        post<Paths.jsonRepositoryIdVersionHashUpdatePost> {
             val updateData = JSONArray(call.receiveText())
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
             val baseVersionHash = call.parameters["versionHash"]!!
@@ -233,7 +234,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             val mergedVersion = applyUpdate(baseVersion, updateData, repositoryId, getUserName())
             respondVersion(mergedVersion, baseVersion)
         }
-        post("/generate-ids") {
+        post<Paths.jsonGenerateIdsPost> {
             val quantity = call.request.queryParameters["quantity"]?.toInt() ?: 1000
             val ids = (client.idGenerator as IdGenerator).generate(quantity)
             respondJson(

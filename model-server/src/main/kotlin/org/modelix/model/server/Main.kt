@@ -29,7 +29,10 @@ import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
+import io.ktor.server.plugins.swagger.swaggerUI
+import io.ktor.server.resources.Resources
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
@@ -56,11 +59,12 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.loadDump
+import org.modelix.model.server.store.writeDump
 import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
+import org.springframework.util.ResourceUtils
 import java.io.File
-import java.io.FileReader
-import java.io.FileWriter
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.time.Duration
@@ -88,6 +92,8 @@ object Main {
         LOG.info("Path to JDBC configuration file: " + cmdLineArgs.jdbcConfFile)
         LOG.info("Schema initialization: " + cmdLineArgs.schemaInit)
         LOG.info("Set values: " + cmdLineArgs.setValues)
+        LOG.info("Disable Swagger-UI: " + cmdLineArgs.noSwaggerUi)
+
         if (cmdLineArgs.dumpOutName != null && !cmdLineArgs.inmemory) {
             throw RuntimeException("For now dumps are supported only with the inmemory option")
         }
@@ -111,21 +117,21 @@ object Main {
                 }
                 storeClient = InMemoryStoreClient()
                 if (cmdLineArgs.dumpInName != null) {
-                    val file = File(cmdLineArgs.dumpInName)
-                    val keys = storeClient.load(FileReader(file))
-                    println(
-                        "Values loaded from " + file.absolutePath + " (" + keys + ")",
-                    )
+                    val file = File(cmdLineArgs.dumpInName!!)
+                    val keys = storeClient.loadDump(file)
+                    println("Values loaded from " + file.absolutePath + " (" + keys + ")")
                 }
                 if (cmdLineArgs.dumpOutName != null) {
                     Runtime.getRuntime()
                         .addShutdownHook(
                             DumpOutThread(
                                 storeClient,
-                                cmdLineArgs.dumpOutName,
+                                cmdLineArgs.dumpOutName ?: "dump",
                             ),
                         )
                 }
+            } else if (cmdLineArgs.localPersistence) {
+                storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile, inmemory = true)
             } else {
                 storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile)
                 if (cmdLineArgs.schemaInit) {
@@ -159,6 +165,9 @@ object Main {
                 install(Routing)
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)
+                install(Resources)
+                // https://opensource.zalando.com/restful-api-guidelines/#136
+                install(IgnoreTrailingSlash)
                 install(WebSockets) {
                     pingPeriod = Duration.ofSeconds(30)
                     timeout = Duration.ofSeconds(30)
@@ -219,10 +228,21 @@ object Main {
                                     li {
                                         a("user") { +"View JWT token and permissions" }
                                     }
+                                    li {
+                                        a("swagger") { +"SwaggerUI" }
+                                    }
                                 }
                             }
                         }
                         call.respondText("Model Server")
+                    }
+                    if (cmdLineArgs.noSwaggerUi) {
+                        get("swagger") {
+                            call.respondText("SwaggerUI is disabled")
+                        }
+                    } else {
+                        // we serve the public API to the outside via swagger UI
+                        swaggerUI(path = "swagger", swaggerFile = ResourceUtils.getFile("api/model-server.yaml").path.toString())
                     }
                 }
             }
@@ -243,24 +263,14 @@ object Main {
         }
     }
 
-    private class DumpOutThread internal constructor(inMemoryStoreClient: InMemoryStoreClient, dumpName: String?) :
+    private class DumpOutThread internal constructor(storeClient: IStoreClient, dumpName: String) :
         Thread(
             Runnable {
-                var fw: FileWriter? = null
                 try {
-                    fw = FileWriter(File(dumpName))
-                    inMemoryStoreClient.dump(fw!!)
+                    storeClient.writeDump(File(dumpName))
                     println("[Saved memory store into $dumpName]")
                 } catch (e: IOException) {
                     e.printStackTrace()
-                } finally {
-                    if (fw != null) {
-                        try {
-                            fw!!.close()
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                        }
-                    }
                 }
             },
         )

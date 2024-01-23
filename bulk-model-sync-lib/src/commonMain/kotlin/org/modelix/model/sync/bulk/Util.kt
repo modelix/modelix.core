@@ -20,6 +20,7 @@ import mu.KLogger
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
+import kotlin.math.max
 
 /**
  * Checks if a module is included in the sync.
@@ -28,7 +29,11 @@ import org.modelix.model.data.NodeData
  * @param includedModules collection of included module names
  * @param includedPrefixes collection of included module name prefixes
  */
-fun isModuleIncluded(moduleName: String, includedModules: Collection<String>, includedPrefixes: Collection<String>): Boolean {
+fun isModuleIncluded(
+    moduleName: String,
+    includedModules: Collection<String>,
+    includedPrefixes: Collection<String>,
+): Boolean {
     val includedDirectly = includedModules.contains(moduleName)
     val includedByPrefix = includedPrefixes.any { prefix -> moduleName.startsWith(prefix) }
 
@@ -80,4 +85,34 @@ private fun measureImportSize(data: NodeData, metrics: ImportSizeMetrics = Impor
 
     data.children.forEach { measureImportSize(it, metrics) }
     return metrics
+}
+
+expect fun isTty(): Boolean
+
+class ProgressReporter(
+    private val total: ULong,
+    private val logger: KLogger,
+    private val print: (line: String) -> Unit = ::println,
+    private val isTty: () -> Boolean = ::isTty,
+) {
+
+    // Determine how often to log. For a small number of total nodes, ensure that we log at all. Otherwise,
+    // update progress ever 1% of the total to avoid spamming the output with log lines.
+    private val loggingStepSize = max(1UL, (total.toDouble() / 100).toULong())
+
+    /**
+     * Increments the progress. This function is assumed to be called for every element that's processed.
+     */
+    fun step(current: ULong) {
+        if (isTty()) {
+            // print instead of log, so that the progress line can be overwritten by the carriage return
+            print("\r($current / $total) Synchronizing nodes...                    ")
+        } else {
+            // Report on desired increments or first and last element to ensure users get important start and end
+            // information
+            if ((current % loggingStepSize) == 0UL || current == total || current == 1UL) {
+                logger.info { "($current / $total) Synchronizing nodes..." }
+            }
+        }
+    }
 }

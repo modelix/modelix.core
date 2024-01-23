@@ -1,99 +1,138 @@
 package org.modelix.model
 
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.persistent.CPVersion
 
-/**
- * Was introduced in https://github.com/modelix/modelix/commit/19c74bed5921028af3ac3ee9d997fc1c4203ad44
- * together with the UndoOp. The idea is that an undo should only revert changes if there is no other change that relies
- * on it. In that case the undo should do nothing, to not indirectly undo newer changes.
- * For example, if you added a node and someone else started changing properties on the that node, your undo should not
- * remove the node to not lose the property changes.
- * This requires the versions to be ordered in a way that the undo appears later.
- */
-class LinearHistory(val baseVersionHash: String?) {
-
-    val version2directDescendants: MutableMap<Long, Set<Long>> = HashMap()
-    val versions: MutableMap<Long, CLVersion> = LinkedHashMap()
+class LinearHistory(private val baseVersionHash: String?) {
+    /**
+     * Children indexed by their parent versions.
+     * A version is a parent of a child,
+     * if the [CLVersion.baseVersion], the [CLVersion.getMergedVersion1] or [CLVersion.getMergedVersion2]
+     */
+    private val byVersionChildren = mutableMapOf<CLVersion, MutableSet<CLVersion>>()
 
     /**
-     * @param fromVersions it is assumed that the versions are sorted by the oldest version first. When merging a new
-     *        version into an existing one the new version should appear after the existing one. The resulting order
-     *        will prefer existing versions to new ones, meaning during the conflict resolution the existing changes
-     *        have a higher probability of surviving.
-     * @returns oldest version first
+     * Global roots are versions without parents.
+     * It may be only the version denoted [baseVersionHash]
+     * or many versions, if no base version was specified and versions without a common global root are ordered.
+     */
+    private val globalRoot = mutableSetOf<CLVersion>()
+
+    /**
+     * The distance of a version from its root.
+     * Aka how many children a between the root and a version.
+     */
+    private val byVersionDistanceFromGlobalRoot = mutableMapOf<CLVersion, Int>()
+
+    /**
+     * Returns all versions between the [fromVersions] and a common version.
+     * The common version may be identified by [baseVersionHash].
+     * If no [baseVersionHash] is given, the common version wile be the first version
+     * aka the version without a [CLVersion.baseVersion].
+     *
+     * The order also ensures three properties:
+     * 1. The versions are ordered topologically starting with the versions without parents.
+     * 2. The order is also "monotonic".
+     *    This means adding a version to the set of all versions will never change
+     *    the order of versions that were previously in the history.
+     *    For example, given versions 1, 2 and 3:
+     *      If 1 and 2 are ordered as (1, 2), ordering 1, 2 and 3 will never produce (2, 3, 1).
+     *      3 can come anywhere (respecting the topological ordering), but 2 has to come after 1.
+     * 3. "Close versions are kept together"
+     *    Formally: A version that has only one child (ignoring) should always come before the child.
+     *      Example: 1 <- 2 <- 3 and 1 <- x, then [1, 2, 4, 3] is not allowed,
+     *      because 3 is the only child of 2.
+     *      Valid orders would be (1, x, 3, 4) and (1, x, 2, 3)
+     *    This is relevant for UnduOp and RedoOp.
+     *    See UndoTest.
      */
     fun load(vararg fromVersions: CLVersion): List<CLVersion> {
-        for (fromVersion in fromVersions) {
-            collect(fromVersion)
-        }
+        // Traverse the versions once to index need data:
+        // * Collect all relevant versions.
+        // * Collect the distance to the base for each version.
+        // * Collect the roots of relevant versions.
+        // * Collect the children of each version.
+        indexData(*fromVersions)
 
-        var result: List<Long> = emptyList()
+        // The following algorithm orders the version by
+        // 1. Finding out the roots of so-called subtrees.
+        //    A subtree is a tree of all versions that have the same version as root ancestor.
+        //    A root ancestor of a version is the first ancestor in the chain of ancestors
+        //    that is either a merge or a global root.
+        //    Each version belongs to exactly one root ancestor, and it will be the same (especially future merges).
+        // 2. Sort the roots of subtrees according to their distance (primary) and id (secondary)
+        // 3. Order topologically inside each subtree.
 
-        for (version in versions.values.filter { !it.isMerge() }.sortedBy { it.id }) {
-            val descendantIds = collectAllDescendants(version.id).filter { !versions[it]!!.isMerge() }.sorted().toSet()
-            val idsInResult = result.toHashSet()
-            if (idsInResult.contains(version.id)) {
-                result =
-                    result +
-                    descendantIds.filter { !idsInResult.contains(it) }
-            } else {
-                result =
-                    result.filter { !descendantIds.contains(it) } +
-                    version.id +
-                    result.filter { descendantIds.contains(it) } +
-                    descendantIds.filter { !idsInResult.contains(it) }
+        // Ordering the subtree root first, ensures the order is also "monotonic".
+        // Then ordering the inside subtree ensures "close versions are kept together" without breaking "monotonicity".
+        // Ordering inside a subtree ensures "monotonicity", because a subtree has no merges.
+        // Only a subtrees root can be a merge.
+
+        // Sorting the subtree roots by distance from base ensures topological order.
+        val comparator = compareBy(byVersionDistanceFromGlobalRoot::getValue)
+            // Sorting the subtree roots by distance from base and then by id ensures "monotonic" order.
+            .thenBy(CLVersion::id)
+        val rootsOfSubtreesToVisit = globalRoot + byVersionDistanceFromGlobalRoot.keys.filter(CLVersion::isMerge)
+        val orderedRootsOfSubtree = rootsOfSubtreesToVisit.distinct().sortedWith(comparator)
+
+        val history = orderedRootsOfSubtree.flatMap { rootOfSubtree ->
+            val historyOfSubtree = mutableListOf<CLVersion>()
+            val stack = ArrayDeque<CLVersion>()
+            stack.add(rootOfSubtree)
+            while (stack.isNotEmpty()) {
+                val version = stack.removeLast()
+                historyOfSubtree.add(version)
+                val children = byVersionChildren.getOrElse(version, ::emptyList)
+                val childrenWithoutMerges = children.filterNot(CLVersion::isMerge)
+                // Order so that child with the lowest id is processed first
+                // and comes first in the history.
+                stack.addAll(childrenWithoutMerges.sortedByDescending(CLVersion::id))
             }
+            historyOfSubtree
         }
-        return result.map { versions[it]!! }
+        return history.filterNot(CLVersion::isMerge)
     }
 
-    private fun collectAllDescendants(root: Long): Set<Long> {
-        val result = LinkedHashSet<Long>()
-        var previousSize = 0
-        result += root
-
-        while (previousSize != result.size) {
-            val nextElements = result.asSequence().drop(previousSize).toList()
-            previousSize = result.size
-            for (ancestor in nextElements) {
-                version2directDescendants[ancestor]?.let { result += it }
+    private fun indexData(vararg fromVersions: CLVersion): MutableMap<CLVersion, Int> {
+        val stack = ArrayDeque<CLVersion>()
+        fromVersions.forEach { fromVersion ->
+            if (byVersionDistanceFromGlobalRoot.contains(fromVersion)) {
+                return@forEach
             }
-        }
-
-        return result.drop(1).toSet()
-    }
-
-    private fun collect(root: CLVersion) {
-        if (root.getContentHash() == baseVersionHash) return
-
-        var previousSize = versions.size
-        versions[root.id] = root
-
-        while (previousSize != versions.size) {
-            val nextElements = versions.asSequence().drop(previousSize).map { it.value }.toList()
-            previousSize = versions.size
-
-            for (descendant in nextElements) {
-                val ancestors = if (descendant.isMerge()) {
-                    sequenceOf(
-                        getVersion(descendant.data!!.mergedVersion1!!, descendant.store),
-                        getVersion(descendant.data!!.mergedVersion2!!, descendant.store),
-                    )
+            stack.addLast(fromVersion)
+            while (stack.isNotEmpty()) {
+                val version = stack.last()
+                val parents = version.getParents()
+                // Version is the base version or the first version and therfore a root.
+                if (parents.isEmpty()) {
+                    stack.removeLast()
+                    globalRoot.add(version)
+                    byVersionDistanceFromGlobalRoot[version] = 0
                 } else {
-                    sequenceOf(descendant.baseVersion)
-                }.filterNotNull().filter { it.getContentHash() != baseVersionHash }.toList()
-                for (ancestor in ancestors) {
-                    versions[ancestor.id] = ancestor
-                    version2directDescendants[ancestor.id] = (version2directDescendants[ancestor.id] ?: emptySet()) + setOf(descendant.id)
+                    parents.forEach { parent ->
+                        byVersionChildren.getOrPut(parent, ::mutableSetOf).add(version)
+                    }
+                    val (visitedParents, notVisitedParents) = parents.partition(byVersionDistanceFromGlobalRoot::contains)
+                    // All children where already visited and have their distance known.
+                    if (notVisitedParents.isEmpty()) {
+                        stack.removeLast()
+                        val depth = visitedParents.maxOf { byVersionDistanceFromGlobalRoot[it]!! } + 1
+                        byVersionDistanceFromGlobalRoot[version] = depth
+                        // Children need to be visited
+                    } else {
+                        stack.addAll(notVisitedParents)
+                    }
                 }
             }
         }
+        return byVersionDistanceFromGlobalRoot
     }
 
-    private fun getVersion(hash: KVEntryReference<CPVersion>, store: IDeserializingKeyValueStore): CLVersion {
-        return CLVersion(hash.getValue(store), store)
+    private fun CLVersion.getParents(): List<CLVersion> {
+        val ancestors = if (isMerge()) {
+            listOf(getMergedVersion1()!!, getMergedVersion2()!!)
+        } else {
+            listOfNotNull(baseVersion)
+        }
+        return ancestors.filter { it.getContentHash() != baseVersionHash }
     }
 }

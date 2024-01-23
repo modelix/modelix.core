@@ -16,6 +16,9 @@
 
 package org.modelix.model.sync.bulk
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToStream
 import org.modelix.model.api.INode
 import org.modelix.model.data.ModelData
 import java.io.File
@@ -27,9 +30,11 @@ actual class ModelExporter actual constructor(private val root: INode) {
      *
      * @param outputFile target file of the export
      */
+    @OptIn(ExperimentalSerializationApi::class)
     fun export(outputFile: File) {
-        val modelData = ModelData(root = root.asExported())
         outputFile.parentFile.mkdirs()
-        outputFile.writeText(modelData.toJson())
+
+        val modelData = ModelData(root = root.asExported())
+        Json.encodeToStream(modelData, outputFile.outputStream())
     }
 }

@@ -41,10 +41,6 @@ class DeleteNodeOp(val childId: Long) : AbstractOperation(), IOperationIntend {
         return "DeleteNodeOp ${SerializationUtil.longToHex(childId)}"
     }
 
-    override fun toCode(): String {
-        return """t.deleteNode(0x${childId.toString(16)})"""
-    }
-
     override fun restoreIntend(tree: ITree): List<IOperation> {
         if (!tree.containsNode(childId)) return listOf(NoOp())
         val allChildren = tree.getAllChildren(childId).toList()

@@ -3,11 +3,6 @@ plugins {
     `java-gradle-plugin`
 }
 
-repositories {
-    mavenCentral()
-    mavenLocal()
-}
-
 dependencies {
     implementation(project(":model-client", "jvmRuntimeElements"))
     implementation(project(":bulk-model-sync-lib"))

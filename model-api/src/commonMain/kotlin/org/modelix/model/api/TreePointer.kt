@@ -117,6 +117,27 @@ class TreePointer(private var tree_: ITree, val idGenerator: IIdGenerator = IdGe
         tree = tree.addNewChild(parentId, role, index, childId, concept)
     }
 
+    override fun addNewChildren(
+        parentId: Long,
+        role: String?,
+        index: Int,
+        concepts: Array<IConceptReference?>,
+    ): LongArray {
+        val newIds = concepts.map { idGenerator.generate() }.toLongArray()
+        addNewChildren(parentId, role, index, newIds, concepts)
+        return newIds
+    }
+
+    override fun addNewChildren(
+        parentId: Long,
+        role: String?,
+        index: Int,
+        childIds: LongArray,
+        concepts: Array<IConceptReference?>,
+    ) {
+        tree = tree.addNewChildren(parentId, role, index, childIds, concepts)
+    }
+
     override fun deleteNode(nodeId: Long) {
         tree = tree.deleteNode(nodeId)
     }

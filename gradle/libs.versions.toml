@@ -11,14 +11,18 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 gitVersion = { id = "com.palantir.git-version", version = "3.0.0" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "11.6.1" }
-spotless = { id = "com.diffplug.spotless", version = "6.23.3" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "12.1.0" }
+spotless = { id = "com.diffplug.spotless", version = "6.25.0" }
 tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
 dokka = {id = "org.jetbrains.dokka", version = "1.9.10"}
 node = {id = "com.github.node-gradle.node", version = "7.0.1"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.4" }
-npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.1" }
+npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.2" }
+test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
+shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
+intellij = { id = "org.jetbrains.intellij", version = "1.16.1" }
+openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
 
 [versions]
 kotlin = "1.9.21"
@@ -30,15 +34,16 @@ ignite="2.15.0"
 apacheCxf="3.6.2"
 node="18.17.1"
 modelixBuildtools="1.2.0"
+openapi = "7.2.0"
 
 [libraries]
 
 kotlin-stdlib-common = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-common", version.ref = "kotlin" }
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
-kotlin-serialization-yaml = { group = "com.charleskorn.kaml", name = "kaml", version = "0.55.0" }
+kotlin-serialization-yaml = { group = "com.charleskorn.kaml", name = "kaml", version = "0.56.0" }
 kotlin-logging = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
-kotlin-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version = "0.3.6" }
+kotlin-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version = "0.3.7" }
 kotlin-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version = "0.5.0" }
 
 kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
@@ -57,6 +62,8 @@ ktor-server-sessions = { group = "io.ktor", name = "ktor-server-sessions", versi
 ktor-server-status-pages = { group = "io.ktor", name = "ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
+ktor-server-resources = { group = "io.ktor", name = "ktor-server-resources", version.ref = "ktor" }
+ktor-server-swagger = { group = "io.ktor", name = "ktor-server-swagger", version.ref = "ktor" }
 
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
@@ -66,9 +73,10 @@ ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", v
 ktor-client-js = { group = "io.ktor", name = "ktor-client-js", version.ref = "ktor" }
 ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
 
+ktor-serialization = { group = "io.ktor", name = "ktor-serialization", version.ref = "ktor" }
 ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
-keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "23.0.1" }
+keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "23.0.3" }
 guava = { group = "com.google.guava", name = "guava", version = "32.1.3-jre" }
 modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.2.0" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "1.15.3" }
@@ -86,9 +94,10 @@ ignite-indexing = { group = "org.apache.ignite", name = "ignite-indexing", versi
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.4.14" }
 postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.1" }
 jcommander = { group = "com.beust", name = "jcommander", version = "1.82" }
-cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.14.1" }
+cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.15.0" }
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 xmlunit-core = { group = "org.xmlunit", name = "xmlunit-core", version = "2.9.1"}
+jsoup = { group = "org.jsoup", name = "jsoup", version = "1.17.2" }
 
 apache-cxf-sse = { group = "org.apache.cxf", name = "cxf-rt-rs-sse", version.ref = "apacheCxf" }
 apache-cxf-client = { group = "org.apache.cxf", name = "cxf-rt-rs-client", version.ref = "apacheCxf" }

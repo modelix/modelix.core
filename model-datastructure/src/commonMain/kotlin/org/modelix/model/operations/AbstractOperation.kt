@@ -29,10 +29,6 @@ abstract class AbstractOperation : IOperation {
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf()
 
-    override fun toCode(): String {
-        return ""
-    }
-
     protected fun getNodePosition(tree: ITree, nodeId: Long): PositionInRole {
         val parent = tree.getParent(nodeId)
         val role = tree.getRole(nodeId)

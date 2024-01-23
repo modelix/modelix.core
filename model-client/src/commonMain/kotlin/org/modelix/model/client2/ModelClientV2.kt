@@ -18,20 +18,31 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
 import io.ktor.http.contentType
 import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.api.IIdGenerator
@@ -50,8 +61,11 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.VersionDelta
+import org.modelix.model.server.api.v2.VersionDeltaStream
+import org.modelix.model.server.api.v2.asStream
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class ModelClientV2(
@@ -112,9 +126,9 @@ class ModelClientV2(
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "init")
             }
+            useVersionStreamFormat()
         }
-        val delta = response.body<VersionDelta>()
-        return createVersion(null, delta)
+        return createVersion(null, response.readVersionDelta())
     }
 
     override suspend fun listRepositories(): List<RepositoryId> {
@@ -146,9 +160,9 @@ class ModelClientV2(
                     parameters["lastKnown"] = (baseVersion as CLVersion).getContentHash()
                 }
             }
+            useVersionStreamFormat()
         }
-        val delta = Json.decodeFromString<VersionDelta>(response.bodyAsText())
-        return createVersion(baseVersion as CLVersion?, delta)
+        return createVersion(baseVersion as CLVersion?, response.readVersionDelta())
     }
 
     override suspend fun loadVersion(
@@ -164,9 +178,9 @@ class ModelClientV2(
                     parameters["lastKnown"] = (baseVersion as CLVersion).getContentHash()
                 }
             }
+            useVersionStreamFormat()
         }
-        val delta = Json.decodeFromString<VersionDelta>(response.bodyAsText())
-        return createVersion(baseVersion as CLVersion?, delta)
+        return createVersion(baseVersion as CLVersion?, response.readVersionDelta())
     }
 
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
@@ -175,18 +189,38 @@ class ModelClientV2(
         require(baseVersion is CLVersion?)
         version.write()
         val objects = version.computeDelta(baseVersion)
+        HashUtil.checkObjectHashes(objects)
+        val delta = if (objects.size > 1000) {
+            // large HTTP requests and large Json objects don't scale well
+            uploadObjects(branch.repositoryId, objects.asSequence().map { it.key to it.value })
+            VersionDelta(version.getContentHash(), null)
+        } else {
+            VersionDelta(version.getContentHash(), null, objectsMap = objects)
+        }
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
+            useVersionStreamFormat()
             contentType(ContentType.Application.Json)
-            val body = VersionDelta(version.getContentHash(), null, objectsMap = objects)
-            body.checkObjectHashes()
-            setBody(body)
+            setBody(delta)
         }
-        val mergedVersionDelta = response.body<VersionDelta>()
-        return createVersion(version, mergedVersionDelta)
+        return createVersion(version, response.readVersionDelta())
+    }
+
+    private suspend fun uploadObjects(repository: RepositoryId, objects: Sequence<Pair<String, String>>) {
+        LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
+        objects.chunked(100_000).forEach { chunk ->
+            httpClient.put {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash("repositories", repository.id, "objects")
+                }
+                contentType(ContentType.Text.Plain)
+                setBody(chunk.flatMap { it.toList() }.joinToString("\n"))
+            }
+        }
     }
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
@@ -199,9 +233,29 @@ class ModelClientV2(
                     parameters["lastKnown"] = lastKnownVersion.hash
                 }
             }
+            useVersionStreamFormat()
         }
-        val receivedVersion = createVersion(lastKnownVersion, response.body())
+        val receivedVersion = createVersion(lastKnownVersion, response.readVersionDelta())
         LOG.debug { "${clientId.toString(16)}.pull($branch, $lastKnownVersion) -> $receivedVersion" }
+        return receivedVersion
+    }
+
+    override suspend fun pullIfExists(branch: BranchReference): IVersion? {
+        val response = httpClient.get {
+            expectSuccess = false
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
+            }
+            useVersionStreamFormat()
+        }
+
+        val receivedVersion = when (response.status) {
+            HttpStatusCode.NotFound -> null
+            HttpStatusCode.OK -> createVersion(null, response.readVersionDelta())
+            else -> throw ResponseException(response, response.bodyAsText())
+        }
+        LOG.debug { "${clientId.toString(16)}.pullIfExists($branch) -> $receivedVersion" }
         return receivedVersion
     }
 
@@ -241,8 +295,9 @@ class ModelClientV2(
                     parameters["lastKnown"] = lastKnownVersion.hash
                 }
             }
+            useVersionStreamFormat()
         }
-        val receivedVersion = createVersion(lastKnownVersion, response.body())
+        val receivedVersion = createVersion(lastKnownVersion, response.readVersionDelta())
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
         return receivedVersion
     }
@@ -267,22 +322,76 @@ class ModelClientV2(
         httpClient.close()
     }
 
-    private fun createVersion(baseVersion: CLVersion?, delta: VersionDelta): CLVersion {
+    private suspend fun HttpResponse.readVersionDelta(): VersionDeltaStream {
+        return if (contentType()?.match(VersionDeltaStream.CONTENT_TYPE) == true) {
+            val content = bodyAsChannel()
+            val versionHash = checkNotNull(content.readUTF8Line()) { "No objects received" }
+            val versionObject = content.readUTF8Line()
+            return if (versionObject == null) {
+                VersionDeltaStream(versionHash, emptyFlow())
+            } else {
+                VersionDeltaStream(
+                    versionHash,
+                    flow {
+                        emit(versionHash to versionObject)
+                        while (true) {
+                            val key = content.readUTF8Line() ?: break
+                            val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
+                            emit(key to value)
+                        }
+                    },
+                )
+            }
+        } else {
+            body<VersionDelta>().asStream()
+        }
+    }
+
+    private suspend fun createVersion(baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
+        delta.getObjectsAsFlow().collect {
+            HashUtil.checkObjectHash(it.first, it.second)
+            store.keyValueStore.put(it.first, it.second)
+        }
         return if (baseVersion == null) {
-            CLVersion(
-                delta.versionHash,
-                store.also { it.keyValueStore.putAll(delta.getAllObjects()) },
-            )
-        } else if (delta.versionHash == baseVersion.hash) {
+            CLVersion(delta.versionHash, store)
+        } else if (delta.versionHash == baseVersion.getContentHash()) {
             baseVersion
         } else {
             require(baseVersion.store == store) { "baseVersion was not created by this client" }
-            store.keyValueStore.putAll(delta.getAllObjects())
-            CLVersion(
-                delta.versionHash,
-                baseVersion.store,
-            )
+            CLVersion(delta.versionHash, store)
         }
+    }
+
+    private suspend fun createVersion(baseVersion: CLVersion?, delta: Flow<String>): CLVersion {
+        var firstHash: String? = null
+        var isHash = true
+        var lastHash: String? = null
+        delta.collect {
+            if (isHash) {
+                lastHash = it
+                if (firstHash == null) {
+                    firstHash = it
+                }
+            } else {
+                val value = it
+                store.keyValueStore.put(lastHash!!, value)
+            }
+            isHash = !isHash
+        }
+        val versionHash = checkNotNull(firstHash) { "No objects received" }
+
+        return if (baseVersion == null) {
+            CLVersion(versionHash, store)
+        } else if (versionHash == baseVersion.getContentHash()) {
+            baseVersion
+        } else {
+            require(baseVersion.store == store) { "baseVersion was not created by this client" }
+            CLVersion(versionHash, store)
+        }
+    }
+
+    private fun HttpRequestBuilder.useVersionStreamFormat() {
+        headers.set(HttpHeaders.Accept, VersionDeltaStream.CONTENT_TYPE.toString())
     }
 
     companion object {
@@ -296,6 +405,8 @@ abstract class ModelClientV2Builder {
     protected var baseUrl: String = "https://localhost/model/v2"
     protected var authTokenProvider: (() -> String?)? = null
     protected var userId: String? = null
+    protected var connectTimeout: Duration = 1.seconds
+    protected var requestTimeout: Duration = 30.seconds
 
     fun build(): ModelClientV2 {
         return ModelClientV2(
@@ -325,6 +436,16 @@ abstract class ModelClientV2Builder {
         return this
     }
 
+    fun connectTimeout(timeout: Duration): ModelClientV2Builder {
+        this.connectTimeout = timeout
+        return this
+    }
+
+    fun requestTimeout(timeout: Duration): ModelClientV2Builder {
+        this.requestTimeout = timeout
+        return this
+    }
+
     protected open fun configureHttpClient(config: HttpClientConfig<*>) {
         config.apply {
             expectSuccess = true
@@ -333,8 +454,8 @@ abstract class ModelClientV2Builder {
                 json()
             }
             install(HttpTimeout) {
-                connectTimeoutMillis = 1.seconds.inWholeMilliseconds
-                requestTimeoutMillis = 30.seconds.inWholeMilliseconds
+                connectTimeoutMillis = connectTimeout.inWholeMilliseconds
+                requestTimeoutMillis = requestTimeout.inWholeMilliseconds
             }
             install(HttpRequestRetry) {
                 retryOnExceptionOrServerErrors(maxRetries = 3)
@@ -376,7 +497,11 @@ fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.ass
  */
 suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode) -> T): T {
     val client = this
-    val baseVersion = client.pull(branchRef, null)
+    val baseVersion = client.pullIfExists(branchRef)
+        ?: branchRef.repositoryId.getBranchReference()
+            .takeIf { it != branchRef }
+            ?.let { client.pullIfExists(it) } // master branch
+        ?: client.initRepository(branchRef.repositoryId)
     val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (client as ModelClientV2).store)
     val result = branch.computeWrite {
         body(branch.getRootNode())

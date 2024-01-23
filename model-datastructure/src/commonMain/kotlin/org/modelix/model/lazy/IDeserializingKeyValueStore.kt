@@ -18,6 +18,8 @@ package org.modelix.model.lazy
 import org.modelix.model.IKeyValueStore
 
 interface IDeserializingKeyValueStore {
+    fun newBulkQuery(): IBulkQuery = newBulkQuery(this)
+    fun newBulkQuery(wrapper: IDeserializingKeyValueStore): IBulkQuery = keyValueStore.newBulkQuery(wrapper)
     val keyValueStore: IKeyValueStore
     operator fun <T> get(hash: String, deserializer: (String) -> T): T?
     fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T>

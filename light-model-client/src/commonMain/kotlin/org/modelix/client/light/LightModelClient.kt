@@ -63,7 +63,7 @@ class LightModelClient internal constructor(
     val autoFilterNonLoadedNodes: Boolean,
     val debugName: String = "",
     val modelQLClient: ModelQLClient? = null,
-) : IStateVariableGroup {
+) {
 
     private val nodes = NodesMap<NodeData>(this)
     private val area = Area()
@@ -105,10 +105,6 @@ class LightModelClient internal constructor(
                 }
             }
         }
-    }
-
-    override fun getGroup(): IStateVariableGroup? {
-        return null
     }
 
     fun dispose() {
@@ -904,11 +900,17 @@ fun INode.isLoaded() = isValid
 fun <T : INode> Iterable<T>.filterLoaded() = filter { it.isLoaded() }
 fun <T : INode> Sequence<T>.filterLoaded() = filter { it.isLoaded() }
 
-data class NodeDataDependency(val client: LightModelClient, val id: NodeId) : IStateVariableReference<NodeData> {
+private data class ClientDependency(val client: LightModelClient) : IStateVariableGroup {
+    override fun getGroup(): IStateVariableGroup? {
+        return null
+    }
+}
+
+private data class NodeDataDependency(val client: LightModelClient, val id: NodeId) : IStateVariableReference<NodeData> {
     override fun getGroup(): IStateVariableGroup {
         return client.tryGetParentId(id)
             ?.let { NodeDataDependency(client, it) }
-            ?: client
+            ?: ClientDependency(client)
     }
 
     override fun read(): NodeData {

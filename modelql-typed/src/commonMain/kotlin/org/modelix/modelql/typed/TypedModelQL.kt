@@ -59,12 +59,14 @@ import org.modelix.modelql.core.flatMap
 import org.modelix.modelql.core.inSet
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.mapIfNotNull
+import org.modelix.modelql.core.nullMono
 import org.modelix.modelql.core.orNull
 import org.modelix.modelql.core.stepOutputSerializer
 import org.modelix.modelql.core.toBoolean
 import org.modelix.modelql.core.toInt
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.untyped.UntypedModelQL
+import org.modelix.modelql.untyped.addNewChild
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.conceptReference
 import org.modelix.modelql.untyped.descendants
@@ -75,7 +77,9 @@ import org.modelix.modelql.untyped.ofConcept
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.query
 import org.modelix.modelql.untyped.reference
+import org.modelix.modelql.untyped.remove
 import org.modelix.modelql.untyped.setProperty
+import org.modelix.modelql.untyped.setReference
 import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 
@@ -140,6 +144,17 @@ object TypedModelQL {
         return input.untyped().flatMap { it.children(link.untyped().key()) }.typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
     }
 
+    fun <ParentT : ITypedNode, ChildT : ITypedNode> addNewChild(input: IMonoStep<ParentT>, link: ITypedChildListLink<ChildT>, index: Int = -1, concept: ITypedConcept): IMonoStep<ChildT> {
+        val conceptRef = ConceptReference(concept.untyped().getUID())
+        return input.untyped().addNewChild(link.untyped(), index, conceptRef).typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
+    }
+
+    fun <ParentT : ITypedNode, ChildT : ITypedNode> setChild(input: IMonoStep<ParentT>, link: ITypedSingleChildLink<ChildT>, concept: ITypedConcept): IMonoStep<ChildT> {
+        val conceptRef = ConceptReference(concept.untyped().getUID())
+        input.untyped().children(link.untyped().key()).firstOrNull().mapIfNotNull { it.remove() }
+        return input.untyped().addNewChild(link.untyped(), conceptRef).typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
+    }
+
     fun <SourceT : ITypedNode, TargetT : ITypedNode> reference(input: IMonoStep<SourceT>, link: ITypedReferenceLink<TargetT>): IMonoStep<TargetT> {
         return input.untyped().reference(link.untyped().key()).typedUnsafe<TargetT>(link.getTypedTargetConcept().getInstanceInterface())
     }
@@ -151,6 +166,13 @@ object TypedModelQL {
     }
     fun <SourceT : ITypedNode, TargetT : ITypedNode> referenceOrNull(input: IFluxStep<SourceT>, link: ITypedReferenceLink<TargetT>): IFluxStep<TargetT?> {
         return input.map { referenceOrNull(it, link) }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <SourceT : ITypedNode, TargetT : ITypedNode> setReference(input: IMonoStep<SourceT>, link: ITypedReferenceLink<TargetT>, target: IMonoStep<TargetT?>?): IMonoStep<SourceT> {
+        val targetOrNull = target?.untyped() ?: nullMono<String>() as IMonoStep<INode?> // cast is necessary since nullMono<INode> cannot be serialized
+        input.untyped().setReference(link.untyped(), targetOrNull)
+        return input
     }
 }
 

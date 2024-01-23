@@ -49,12 +49,16 @@ fun INodeReference.resolveInCurrentContext(): INode? {
 }
 
 fun INodeReference.resolveIn(scope: INodeResolutionScope): INode? {
-    if (this is NodeReference) {
-        val deserialized = INodeReferenceSerializer.tryDeserialize(serialized)
-        if (deserialized != null) return deserialized.resolveIn(scope)
+    try {
+        if (this is NodeReference) {
+            val deserialized = INodeReferenceSerializer.tryDeserialize(serialized)
+            if (deserialized != null) return deserialized.resolveIn(scope)
+        }
+        @Suppress("DEPRECATION")
+        return scope.resolveNode(this)
+    } catch (ex: Exception) {
+        throw RuntimeException("Failed to resolve $this", ex)
     }
-    @Suppress("DEPRECATION")
-    return scope.resolveNode(this)
 }
 
 class NodeReferenceKSerializer : KSerializer<INodeReference> {

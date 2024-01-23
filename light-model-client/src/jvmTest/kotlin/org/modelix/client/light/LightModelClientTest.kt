@@ -48,6 +48,7 @@ class LightModelClientTest {
         application {
             installAuthentication(unitTestMode = true)
             install(io.ktor.server.websocket.WebSockets)
+            install(io.ktor.server.resources.Resources)
             val modelClient = LocalModelClient(InMemoryStoreClient())
             localModelClient = modelClient
             DeprecatedLightModelServer(modelClient).init(this)

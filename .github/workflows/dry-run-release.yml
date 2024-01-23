@@ -1,0 +1,45 @@
+name: Dry-Run Release
+on:
+  pull_request:
+
+jobs:
+  lint-commits:
+    name: Lint PR commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v5
+
+  test-release:
+    name: Dry-run semantic-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Checkout branch
+        # Pretend to semantic-release that the PR result is eligible for
+        # building releases because --dry-run still filters for configured
+        # branches.
+        run: git checkout -b main
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Cache Node packages
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: release-${{ hashFiles('package.json') }}-${{ hashFiles('package-lock.json') }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Dry-run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        # We need to convince semantic-release to not pick up some
+        # configuration from the CI environment by removing the variable that
+        # is used for CI detection.
+        run: unset GITHUB_ACTIONS && npx semantic-release --dry-run --ci false

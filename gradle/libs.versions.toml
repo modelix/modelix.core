@@ -12,7 +12,7 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 gitVersion = { id = "com.palantir.git-version", version = "3.0.0" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "12.1.0" }
-spotless = { id = "com.diffplug.spotless", version = "6.24.0" }
+spotless = { id = "com.diffplug.spotless", version = "6.25.0" }
 tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
 dokka = {id = "org.jetbrains.dokka", version = "1.9.10"}

@@ -49,9 +49,7 @@ object BuiltinLanguages {
             uid = "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/5169995583184591161",
             directSuperConcepts = listOf(BaseConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
         }
 
         object NodeAttribute : SimpleConcept(
@@ -60,16 +58,11 @@ object BuiltinLanguages {
             uid = "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/3364660638048049748",
             directSuperConcepts = listOf(Attribute),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
         }
 
         object INamedConcept : SimpleConcept(conceptName = "INamedConcept") {
-            init {
-                addConcept(this)
-            }
-
+            init { addConcept(this) }
             val name by property("ceab5195-25ea-4f22-9b92-103b95ca8c0c/1169194658468/1169194664001")
         }
     }
@@ -83,9 +76,9 @@ object BuiltinLanguages {
         SimpleLanguage("org.modelix.model.repositoryconcepts", uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80") {
 
         override var includedConcepts = arrayOf(
-            Model, Module, Solution, Language, DevKit, Repository, Project,
+            Model, Module, Solution, Language, DevKit, Repository, Project, ProjectModule, ModuleReference,
             ModelReference, LanguageDependency, SingleLanguageDependency, DevkitDependency, ModuleFacet,
-            ModuleDependency, JavaModuleFacet,
+            JavaModuleFacet, ModuleDependency,
         )
 
         object Model : SimpleConcept(
@@ -200,6 +193,7 @@ object BuiltinLanguages {
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903",
             )
+
             val projects = SimpleChildLink(
                 simpleName = "projects",
                 isMultiple = true,
@@ -207,6 +201,7 @@ object BuiltinLanguages {
                 targetConcept = Project,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/7064605579395546636",
             )
+
             val tempModules = SimpleChildLink(
                 simpleName = "tempModules",
                 isMultiple = true,
@@ -230,6 +225,7 @@ object BuiltinLanguages {
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4008363636171860450",
             )
+
             val projectModules = SimpleChildLink(
                 simpleName = "projectModules",
                 isMultiple = true,
@@ -314,9 +310,7 @@ object BuiltinLanguages {
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242403",
             directSuperConcepts = listOf(jetbrains_mps_lang_core.BaseConcept),
         ) {
-            init {
-                addConcept(this)
-            }
+            init { addConcept(this) }
         }
 
         object JavaModuleFacet : SimpleConcept(

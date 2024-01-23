@@ -41,7 +41,6 @@ interface IModelClientV2 {
 
     suspend fun initRepository(repository: RepositoryId): IVersion
     suspend fun listRepositories(): List<RepositoryId>
-    suspend fun deleteRepository(repository: RepositoryId): IVersion
 
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>
 

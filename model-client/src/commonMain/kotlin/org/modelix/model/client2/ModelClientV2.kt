@@ -30,7 +30,6 @@ import io.ktor.http.contentType
 import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.modelix.kotlin.utils.DeprecationInfo
@@ -125,17 +124,6 @@ class ModelClientV2(
                 appendPathSegments("repositories")
             }
         }.bodyAsText().lines().map { RepositoryId(it) }
-    }
-
-    override suspend fun deleteRepository(repository: RepositoryId): IVersion {
-        val response = httpClient.post {
-            url {
-                takeFrom(baseUrl)
-                appendPathSegmentsEncodingSlash("repositories", repository.id, "delete")
-            }
-        }
-        val delta = response.body<VersionDelta>()
-        return createVersion(null, delta)
     }
 
     override suspend fun listBranches(repository: RepositoryId): List<BranchReference> {
@@ -278,8 +266,6 @@ class ModelClientV2(
     override fun close() {
         httpClient.close()
     }
-
-    fun isActive(): Boolean = httpClient.isActive
 
     private fun createVersion(baseVersion: CLVersion?, delta: VersionDelta): CLVersion {
         return if (baseVersion == null) {

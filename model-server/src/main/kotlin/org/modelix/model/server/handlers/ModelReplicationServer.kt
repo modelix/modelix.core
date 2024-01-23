@@ -97,10 +97,6 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                     val initialVersion = repositoriesManager.createRepository(repositoryId(), call.getUserName(), useRoleIds)
                     call.respondDelta(initialVersion.getContentHash(), null)
                 }
-                post("delete") {
-                    repositoriesManager.removeRepository(repositoryId())
-                    call.respond(HttpStatusCode.Accepted)
-                }
                 route("branches") {
                     get {
                         call.respondText(repositoriesManager.getBranchNames(repositoryId()).joinToString("\n"))

@@ -145,8 +145,12 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    fun removeRepository(repository: RepositoryId) {
-        store.runTransaction {
+    fun removeRepository(repository: RepositoryId): Boolean {
+        return store.runTransaction {
+            if (!repositoryExists(repository)) {
+                return@runTransaction false
+            }
+
             for (branchName in getBranchNames(repository)) {
                 putVersionHash(repository.getBranchReference(branchName), null)
             }
@@ -154,6 +158,8 @@ class RepositoriesManager(val client: LocalModelClient) {
             val existingRepositories = getRepositories()
             val remainingRepositories = existingRepositories - repository
             store.put(REPOSITORIES_LIST_KEY, remainingRepositories.joinToString("\n") { it.id })
+
+            true
         }
     }
 

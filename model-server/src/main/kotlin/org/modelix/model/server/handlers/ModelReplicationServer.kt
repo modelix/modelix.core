@@ -170,11 +170,11 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
 
             val repositoryId = repositoryId()
-            if (!repositoriesManager.repositoryExists(repositoryId)) {
-                call.respond(HttpStatusCode.NotFound)
-            } else {
-                repositoriesManager.removeRepository(repositoryId)
+            val foundAndDeleted = repositoriesManager.removeRepository(repositoryId)
+            if (foundAndDeleted) {
                 call.respond(HttpStatusCode.NoContent)
+            } else {
+                call.respond(HttpStatusCode.NotFound)
             }
         }
 

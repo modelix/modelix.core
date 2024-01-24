@@ -35,6 +35,7 @@ apacheCxf="3.6.2"
 node="18.17.1"
 modelixBuildtools="1.2.0"
 openapi = "7.2.0"
+micrometer = "1.12.2"
 
 [libraries]
 
@@ -64,6 +65,7 @@ ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", ver
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
 ktor-server-resources = { group = "io.ktor", name = "ktor-server-resources", version.ref = "ktor" }
 ktor-server-swagger = { group = "io.ktor", name = "ktor-server-swagger", version.ref = "ktor" }
+ktor-server-metrics-micrometer = { group = "io.ktor", name = "ktor-server-metrics-micrometer", version.ref = "ktor" }
 
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
@@ -107,3 +109,5 @@ dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", 
 
 modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gradle", version.ref = "modelixBuildtools"}
 modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}
+
+micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometer"}

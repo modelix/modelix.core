@@ -71,8 +71,8 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
 
-    implementation("io.ktor:ktor-server-metrics-micrometer:2.3.7")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.12.2")
+    implementation(libs.ktor.server.metrics.micrometer)
+    implementation(libs.micrometer.registry.prometheus)
 }
 
 tasks.test {

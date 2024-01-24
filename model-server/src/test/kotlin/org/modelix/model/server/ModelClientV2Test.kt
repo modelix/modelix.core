@@ -173,8 +173,6 @@ class ModelClientV2Test {
         val url = "http://localhost/v2"
         val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
         val repositoryId = RepositoryId(UUID.randomUUID().toString())
-        client.initRepository(repositoryId)
-        client.deleteRepository(repositoryId)
 
         val success = client.deleteRepository(repositoryId)
 

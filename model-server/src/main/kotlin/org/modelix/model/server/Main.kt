@@ -52,8 +52,8 @@ import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.HistoryHandler
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
-import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.MetricsHandler
+import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.RepositoryOverview
 import org.modelix.model.server.store.IStoreClient
@@ -196,7 +196,7 @@ object Main {
                 modelReplicationServer.init(this)
                 metricsHandler.init(this)
                 routing {
-                     static("/public") {
+                    static("/public") {
                         resources("public")
                     }
                     get("/") {

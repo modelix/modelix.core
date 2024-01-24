@@ -43,7 +43,6 @@ class MetricsHandler() {
     val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     fun init(application: Application) {
-
         application.apply {
             install(MicrometerMetrics) {
                 registry = appMicrometerRegistry

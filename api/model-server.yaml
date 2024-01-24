@@ -555,7 +555,7 @@ paths:
           $ref: '#/components/responses/404'
   /metrics:
     get:
-      operationId: getMonitoringData
+      operationId: getMetrics
       responses:
         "200":
           $ref: '#/components/responses/200'

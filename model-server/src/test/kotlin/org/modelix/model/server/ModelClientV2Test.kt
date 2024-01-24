@@ -174,9 +174,8 @@ class ModelClientV2Test {
         val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
         val repositoryId = RepositoryId(UUID.randomUUID().toString())
         client.initRepository(repositoryId)
-
         client.deleteRepository(repositoryId)
-        // repository should not exist here
+
         val success = client.deleteRepository(repositoryId)
 
         assertEquals(false, success)

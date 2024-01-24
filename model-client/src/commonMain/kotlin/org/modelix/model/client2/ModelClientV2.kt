@@ -141,12 +141,17 @@ class ModelClientV2(
     }
 
     override suspend fun deleteRepository(repository: RepositoryId): Boolean {
-        return httpClient.post {
-            url {
-                takeFrom(baseUrl)
-                appendPathSegmentsEncodingSlash("repositories", repository.id, "delete")
-            }
-        }.status == HttpStatusCode.NoContent
+        try {
+            return httpClient.post {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash("repositories", repository.id, "delete")
+                }
+            }.status == HttpStatusCode.NoContent
+        } catch (ex: Exception) {
+            LOG.error(ex) { ex.message }
+            return false
+        }
     }
 
     override suspend fun listBranches(repository: RepositoryId): List<BranchReference> {

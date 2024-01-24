@@ -36,6 +36,7 @@ import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.modelql.core.count
 import org.modelix.modelql.untyped.allChildren
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -153,5 +154,31 @@ class ModelClientV2Test {
         modelClient.setClientProvideUserId(null)
 
         assertEquals("localhost", modelClient.getUserId())
+    }
+
+    @Test
+    fun `newly created repository can be removed`() = runTest {
+        val url = "http://localhost/v2"
+        val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val repositoryId = RepositoryId(UUID.randomUUID().toString())
+        client.initRepository(repositoryId)
+
+        val success = client.deleteRepository(repositoryId)
+
+        assertEquals(true, success)
+    }
+
+    @Test
+    fun `non-existing repository cannot be removed`() = runTest {
+        val url = "http://localhost/v2"
+        val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val repositoryId = RepositoryId(UUID.randomUUID().toString())
+        client.initRepository(repositoryId)
+
+        client.deleteRepository(repositoryId)
+        // repository should not exist here
+        val success = client.deleteRepository(repositoryId)
+
+        assertEquals(false, success)
     }
 }

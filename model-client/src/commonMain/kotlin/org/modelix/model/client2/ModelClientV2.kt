@@ -146,7 +146,7 @@ class ModelClientV2(
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "delete")
             }
-        }.status == HttpStatusCode.OK
+        }.status == HttpStatusCode.NoContent
     }
 
     override suspend fun listBranches(repository: RepositoryId): List<BranchReference> {

@@ -38,9 +38,9 @@ import io.micrometer.prometheus.PrometheusMeterRegistry
 import org.modelix.api.public.Paths
 import java.time.Duration
 
-class MetricsHandler() {
+class MetricsHandler {
 
-    val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    private val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     fun init(application: Application) {
         application.apply {
@@ -48,11 +48,6 @@ class MetricsHandler() {
                 registry = appMicrometerRegistry
                 distributionStatisticConfig = DistributionStatisticConfig.Builder()
                     .percentilesHistogram(true)
-                    .maximumExpectedValue(Duration.ofSeconds(20).toNanos().toDouble())
-                    .serviceLevelObjectives(
-                        Duration.ofMillis(100).toNanos().toDouble(),
-                        Duration.ofMillis(500).toNanos().toDouble(),
-                    )
                     .build()
                 meterBinders = listOf(
                     // jvm

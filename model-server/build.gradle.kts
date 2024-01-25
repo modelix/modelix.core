@@ -9,7 +9,6 @@ plugins {
     alias(libs.plugins.shadow)
     kotlin("jvm")
     kotlin("plugin.serialization")
-    alias(libs.plugins.openapi.generator)
 }
 
 description = "Model Server offering access to model storage"

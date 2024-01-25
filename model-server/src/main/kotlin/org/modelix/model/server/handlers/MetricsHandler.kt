@@ -35,8 +35,7 @@ import io.micrometer.core.instrument.binder.system.UptimeMetrics
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
-import org.modelix.api.public.Paths
-import java.time.Duration
+import org.modelix.api.operative.Paths
 
 class MetricsHandler {
 

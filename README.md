@@ -28,6 +28,14 @@ $ pre-commit install
 pre-commit installed at .git/hooks/pre-commit
 ```
 
+Some checks use by pre-commit are implemented by JavaScript components.
+Therefore, it's necessary to have the required packages installed via:
+
+```console
+$ npm install
+added 72 packages, removed 98 packages, changed 203 packages, and audited 654 packages in 3s
+...
+```
 
 # Authors
 

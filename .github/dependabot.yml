@@ -24,11 +24,15 @@ updates:
       interval: "daily"
     commit-message:
       prefix: "build(deps)"
+      prefix-development: "build(deps)"
   - package-ecosystem: "npm"
     open-pull-requests-limit: 20
     directory: "/ts-model-api"
     schedule:
       interval: "daily"
+    commit-message:
+      prefix: "build(deps)"
+      prefix-development: "build(deps)"
   - package-ecosystem: "npm"
     open-pull-requests-limit: 20
     directory: "/vue-model-api"
@@ -36,6 +40,7 @@ updates:
       interval: "daily"
     commit-message:
       prefix: "build(deps)"
+      prefix-development: "build(deps)"
   - package-ecosystem: "npm"
     open-pull-requests-limit: 20
     directory: "/model-api-gen-gradle-test/typescript-generation"
@@ -43,6 +48,7 @@ updates:
       interval: "daily"
     commit-message:
       prefix: "build(deps)"
+      prefix-development: "build(deps)"
   - package-ecosystem: "npm"
     open-pull-requests-limit: 20
     directory: "/model-api-gen-gradle-test/vue-integration"
@@ -50,3 +56,4 @@ updates:
       interval: "daily"
     commit-message:
       prefix: "build(deps)"
+      prefix-development: "build(deps)"

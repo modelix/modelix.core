@@ -76,15 +76,23 @@ class RepositoriesManager(val client: LocalModelClient) {
     }
 
     fun getRepositories(): Set<RepositoryId> {
-        return store[REPOSITORIES_LIST_KEY]?.lines()?.map { RepositoryId(it) }?.toSet() ?: emptySet()
+        val repositoriesList = store[REPOSITORIES_LIST_KEY]
+        val emptyRepositoriesList = repositoriesList.isNullOrBlank()
+        return if (emptyRepositoriesList) {
+            emptySet()
+        } else {
+            repositoriesList!!.lines().map { RepositoryId(it) }.toSet()
+        }
     }
+
+    fun repositoryExists(repositoryId: RepositoryId) = getRepositories().contains(repositoryId)
 
     fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true): CLVersion {
         var initialVersion: CLVersion? = null
         store.runTransaction {
             val masterBranch = repositoryId.getBranchReference()
+            if (repositoryExists(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
             val existingRepositories = getRepositories()
-            if (existingRepositories.contains(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
             store.put(REPOSITORIES_LIST_KEY, (existingRepositories + repositoryId).joinToString("\n") { it.id }, false)
             store.put(branchListKey(repositoryId), masterBranch.branchName, false)
             initialVersion = CLVersion.createRegularVersion(
@@ -137,8 +145,12 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    fun removeRepository(repository: RepositoryId) {
-        store.runTransaction {
+    fun removeRepository(repository: RepositoryId): Boolean {
+        return store.runTransaction {
+            if (!repositoryExists(repository)) {
+                return@runTransaction false
+            }
+
             for (branchName in getBranchNames(repository)) {
                 putVersionHash(repository.getBranchReference(branchName), null)
             }
@@ -146,6 +158,8 @@ class RepositoriesManager(val client: LocalModelClient) {
             val existingRepositories = getRepositories()
             val remainingRepositories = existingRepositories - repository
             store.put(REPOSITORIES_LIST_KEY, remainingRepositories.joinToString("\n") { it.id })
+
+            true
         }
     }
 

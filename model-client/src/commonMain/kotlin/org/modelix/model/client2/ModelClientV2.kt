@@ -140,6 +140,20 @@ class ModelClientV2(
         }.bodyAsText().lines().map { RepositoryId(it) }
     }
 
+    override suspend fun deleteRepository(repository: RepositoryId): Boolean {
+        try {
+            return httpClient.post {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash("repositories", repository.id, "delete")
+                }
+            }.status == HttpStatusCode.NoContent
+        } catch (ex: Exception) {
+            LOG.error(ex) { ex.message }
+            return false
+        }
+    }
+
     override suspend fun listBranches(repository: RepositoryId): List<BranchReference> {
         return httpClient.get {
             url {

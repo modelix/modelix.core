@@ -41,7 +41,7 @@ interface IModelClientV2 {
 
     suspend fun initRepository(repository: RepositoryId): IVersion
     suspend fun listRepositories(): List<RepositoryId>
-
+    suspend fun deleteRepository(repository: RepositoryId): Boolean
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>
 
     @Deprecated("repository ID is required for permission checks")

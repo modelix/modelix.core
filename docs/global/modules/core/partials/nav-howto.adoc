@@ -3,3 +3,4 @@
 * xref:core:howto/usage-light-model-client.adoc[]
 * xref:core:howto/testing-against-model-api.adoc[]
 * xref:core:howto/modelql.adoc[]
+* xref:core:howto/modelql-writing.adoc[]

@@ -164,8 +164,10 @@ class ModelClientV2Test {
         client.initRepository(repositoryId)
 
         val success = client.deleteRepository(repositoryId)
+        val containsRepository = client.listRepositories().contains(repositoryId)
 
         assertEquals(true, success)
+        assertEquals(false, containsRepository)
     }
 
     @Test
@@ -175,7 +177,9 @@ class ModelClientV2Test {
         val repositoryId = RepositoryId(UUID.randomUUID().toString())
 
         val success = client.deleteRepository(repositoryId)
+        val containsRepository = client.listRepositories().contains(repositoryId)
 
         assertEquals(false, success)
+        assertEquals(false, containsRepository)
     }
 }

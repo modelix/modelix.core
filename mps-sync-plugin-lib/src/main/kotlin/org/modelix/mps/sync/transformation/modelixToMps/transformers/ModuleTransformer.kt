@@ -31,9 +31,8 @@ import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleTransformer(private val project: MPSProject, private val nodeMap: MpsToModelixMap) {
+class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQueue: SyncQueue, project: MPSProject) {
 
-    @OptIn(UnstableModelixFeature::class)
     private val solutionProducer = SolutionProducer(project)
 
     fun transformToModule(iNode: INode) {
@@ -45,7 +44,7 @@ class ModuleTransformer(private val project: MPSProject, private val nodeMap: Mp
         check(name != null) { "Module's ($iNode) name is null" }
 
         var sModule: AbstractModule? = null
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
         }
         nodeMap.put(sModule!!, iNode.nodeIdAsLong())
@@ -65,7 +64,7 @@ class ModuleTransformer(private val project: MPSProject, private val nodeMap: Mp
         val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
 
         val moduleReference = ModuleReference(moduleName, moduleId)
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             parentModule.addDependency(moduleReference, reexport)
         }
 

@@ -24,18 +24,24 @@ import org.modelix.model.api.ITree
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class RepositoryChangeListener(branch: IBranch, nodeMap: MpsToModelixMap) : SRepositoryListenerBase() {
+class RepositoryChangeListener(
+    branch: IBranch,
+    nodeMap: MpsToModelixMap,
+    private val bindingsRegistry: BindingsRegistry,
+    private val syncQueue: SyncQueue,
+) : SRepositoryListenerBase() {
 
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap)
+    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
 
     override fun moduleRemoved(module: SModuleReference) {
         if (ApplicationLifecycleTracker.applicationClosing) {
             return
         }
 
-        val binding = BindingsRegistry.instance.getModuleBindings().find { it.module.moduleId == module.moduleId }
+        val binding = bindingsRegistry.getModuleBindings().find { it.module.moduleId == module.moduleId }
         if (binding != null) {
             nodeSynchronizer.removeNode(
                 parentNodeIdProducer = { ITree.ROOT_ID },

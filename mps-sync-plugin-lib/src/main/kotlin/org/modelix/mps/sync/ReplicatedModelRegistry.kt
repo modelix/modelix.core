@@ -20,11 +20,6 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client2.ReplicatedModel
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ReplicatedModelRegistry private constructor() {
-
-    companion object {
-        val instance = ReplicatedModelRegistry()
-    }
-
+object ReplicatedModelRegistry {
     var model: ReplicatedModel? = null
 }

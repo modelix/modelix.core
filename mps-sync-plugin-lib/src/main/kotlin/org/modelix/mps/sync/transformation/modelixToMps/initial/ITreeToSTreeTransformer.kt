@@ -46,18 +46,19 @@ class ITreeToSTreeTransformer(
     mpsLanguageRepository: MPSLanguageRepository,
     private val nodeMap: MpsToModelixMap,
     private val bindingsRegistry: BindingsRegistry,
+    private val syncQueue: SyncQueue,
 ) {
 
     private val logger = logger<ITreeToSTreeTransformer>()
 
-    private val nodeTransformer = NodeTransformer(nodeMap, mpsLanguageRepository)
-    private val modelTransformer = ModelTransformer(nodeMap)
-    private val moduleTransformer = ModuleTransformer(project, nodeMap)
+    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, mpsLanguageRepository)
+    private val modelTransformer = ModelTransformer(nodeMap, syncQueue)
+    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
 
     fun transform(entryPoint: INode): List<IBinding> {
         val bindings = mutableListOf<IBinding>()
 
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             try {
                 branch.runReadT {
                     val nodeId = entryPoint.nodeIdAsLong()
@@ -89,13 +90,13 @@ class ITreeToSTreeTransformer(
                     logger.info("--- Registering model and module bindings ---")
                     nodeMap.models.forEach {
                         val model = it as SModelBase
-                        val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry)
+                        val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
                         bindingsRegistry.addModelBinding(binding)
                         bindings.add(binding)
                     }
                     nodeMap.modules.forEach {
                         val module = it as AbstractModule
-                        val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry)
+                        val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
                         bindingsRegistry.addModuleBinding(binding)
                         bindings.add(binding)
                     }

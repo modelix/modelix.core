@@ -40,10 +40,14 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class NodeTransformer(private val nodeMap: MpsToModelixMap, mpsLanguageRepository: MPSLanguageRepository) {
+class NodeTransformer(
+    private val nodeMap: MpsToModelixMap,
+    private val syncQueue: SyncQueue,
+    mpsLanguageRepository: MPSLanguageRepository,
+) {
 
     private val logger = logger<NodeTransformer>()
-    private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap)
+    private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue)
 
     fun transformToNode(iNode: INode) {
         if (iNode.isDevKitDependency()) {
@@ -70,7 +74,7 @@ class NodeTransformer(private val nodeMap: MpsToModelixMap, mpsLanguageRepositor
     }
 
     fun transformLanguageDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val moduleId = iNode.getModule()?.nodeIdAsLong()
             val parentModule = nodeMap.getModule(moduleId)!!
             val dependentModule = getDependentModule(iNode, parentModule)
@@ -97,7 +101,7 @@ class NodeTransformer(private val nodeMap: MpsToModelixMap, mpsLanguageRepositor
     }
 
     fun transformDevKitDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val moduleId = iNode.getModule()?.nodeIdAsLong()
             val parentModule = nodeMap.getModule(moduleId)!!
             val dependentModule = getDependentModule(iNode, parentModule)

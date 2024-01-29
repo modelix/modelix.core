@@ -30,22 +30,26 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.util.SyncQueue
 
 // TODO some methods need some testing
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelChangeListener(
     branch: IBranch,
     nodeMap: MpsToModelixMap,
+    bindingsRegistry: BindingsRegistry,
+    syncQueue: SyncQueue,
     private val binding: ModelBinding,
 ) : SModelListener {
 
-    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap)
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap)
+    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
+    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
 
     // TODO might not work, we have to test it
     override fun importAdded(event: SModelImportEvent) = modelSynchronizer.addModelImport(event.model, event.modelUID)

@@ -25,14 +25,16 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeChangeListener(
     branch: IBranch,
     nodeMap: MpsToModelixMap,
+    syncQueue: SyncQueue,
 ) : SNodeChangeListener {
 
-    private val synchronizer = NodeSynchronizer(branch, nodeMap)
+    private val synchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
 
     override fun nodeAdded(event: SNodeAddEvent) = synchronizer.addNode(event.child)
 

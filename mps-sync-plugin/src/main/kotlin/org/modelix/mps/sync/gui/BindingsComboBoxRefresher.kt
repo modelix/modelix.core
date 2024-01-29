@@ -30,7 +30,7 @@ class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGu
     override fun run() {
         // TODO test how much this class slows down the execution
         // TODO test if the comparison returns false only if there is a difference in the list/set of bindings
-        val latestBindings = BindingsRegistry.instance.getAllBindings()
+        val latestBindings = BindingsRegistry.getAllBindings()
         if (existingBindings != latestBindings) {
             existingBindings = latestBindings
             val sorted = existingBindings.sortedWith(bindingsComparator)

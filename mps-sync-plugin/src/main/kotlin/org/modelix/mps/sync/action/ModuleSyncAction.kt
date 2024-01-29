@@ -24,8 +24,10 @@ import jetbrains.mps.project.AbstractModule
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ReplicatedModelRegistry
+import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
+import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleSyncAction : AnAction {
@@ -45,10 +47,8 @@ class ModuleSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-            ModuleSynchronizer(
-                ReplicatedModelRegistry.instance.model?.getBranch()!!,
-                MpsToModelixMap,
-            ).addModule(module)
+            val branch = ReplicatedModelRegistry.model!!.getBranch()
+            ModuleSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModule(module)
         } catch (ex: Exception) {
             logger.error("Module sync error occurred", ex)
         }

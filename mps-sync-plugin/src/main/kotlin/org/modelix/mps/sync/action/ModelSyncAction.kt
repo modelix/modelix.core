@@ -24,8 +24,10 @@ import jetbrains.mps.extapi.model.SModelBase
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.ReplicatedModelRegistry
+import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
+import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncAction : AnAction {
@@ -45,11 +47,9 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
+            val branch = ReplicatedModelRegistry.model!!.getBranch()
             // TODO fixme: warn the user if the model imports another model that is not on the model server yet
-            ModelSynchronizer(
-                ReplicatedModelRegistry.instance.model?.getBranch()!!,
-                MpsToModelixMap,
-            ).addModelAndActivate(model)
+            ModelSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModelAndActivate(model)
         } catch (ex: Exception) {
             logger.error("Model sync error occurred", ex)
         }

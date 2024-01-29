@@ -27,7 +27,6 @@ import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeL
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
 import org.modelix.mps.sync.util.SyncLockType
 import org.modelix.mps.sync.util.SyncQueue
-import java.util.concurrent.atomic.AtomicBoolean
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelBinding(
@@ -35,12 +34,13 @@ class ModelBinding(
     branch: IBranch,
     private val nodeMap: MpsToModelixMap,
     private val bindingsRegistry: BindingsRegistry,
+    private val syncQueue: SyncQueue,
 ) : IBinding {
 
     private val logger = logger<ModelBinding>()
 
-    private val modelChangeListener = ModelChangeListener(branch, nodeMap, this)
-    private val nodeChangeListener = NodeChangeListener(branch, nodeMap)
+    private val modelChangeListener = ModelChangeListener(branch, nodeMap, bindingsRegistry, syncQueue, this)
+    private val nodeChangeListener = NodeChangeListener(branch, nodeMap, syncQueue)
 
     private var isDisposed = false
     private var isActivated = false
@@ -77,15 +77,13 @@ class ModelBinding(
         }
 
         // delete model
-        val mpsActionCompleted = AtomicBoolean()
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             try {
                 if (!removeFromServer) {
                     // to delete the files locally
                     // otherwise, MPS has to take care of triggering ModelDeleteHelper(model).delete() to delete the model
                     ModelDeleteHelper(model).delete()
                 }
-                mpsActionCompleted.set(true)
             } catch (ex: Exception) {
                 logger.error("Exception occurred while deactivating ${name()}.", ex)
                 // if any error occurs, then we put the binding back to let the rest of the application know that it exists
@@ -94,29 +92,27 @@ class ModelBinding(
             }
         }
 
-        if (mpsActionCompleted.get()) {
-            bindingsRegistry.removeModelBinding(parentModule, this)
+        bindingsRegistry.removeModelBinding(parentModule, this)
 
-            if (!removeFromServer) {
-                // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
-                nodeMap.remove(model)
-            }
-
-            isDisposed = true
-            isActivated = false
-
-            logger.info(
-                "${name()} is deactivated and model is removed locally${
-                    if (removeFromServer) {
-                        " and from server"
-                    } else {
-                        ""
-                    }
-                }.",
-            )
-
-            callback?.run()
+        if (!removeFromServer) {
+            // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
+            nodeMap.remove(model)
         }
+
+        isDisposed = true
+        isActivated = false
+
+        logger.info(
+            "${name()} is deactivated and model is removed locally${
+                if (removeFromServer) {
+                    " and from server"
+                } else {
+                    ""
+                }
+            }.",
+        )
+
+        callback?.run()
     }
 
     override fun name() = "Binding of Model \"${model.name}\""

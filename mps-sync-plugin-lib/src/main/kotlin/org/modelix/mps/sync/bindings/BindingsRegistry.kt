@@ -26,11 +26,7 @@ import java.util.stream.Stream
 import kotlin.streams.toList
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class BindingsRegistry private constructor() {
-
-    companion object {
-        val instance = BindingsRegistry()
-    }
+object BindingsRegistry {
 
     private val modelBindingsByModule = mutableMapOf<SModule, LinkedHashSet<ModelBinding>>()
     private val moduleBindings = LinkedHashSet<ModuleBinding>()

@@ -27,8 +27,7 @@ object ActiveMpsProjectInjector {
     var activeMpsProject: MPSProject? = null
         private set
 
-    var activeIdeaProject: Project? = null
-        private set
+    private var activeIdeaProject: Project? = null
 
     fun setActiveProject(project: Project) {
         if (activeIdeaProject != project) {

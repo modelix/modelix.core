@@ -31,17 +31,20 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.util.SyncQueue
 
 // TODO some methods need some testing
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleChangeListener(
     branch: IBranch,
     nodeMap: MpsToModelixMap,
+    private val bindingsRegistry: BindingsRegistry,
+    private val syncQueue: SyncQueue,
 ) : SModuleListener {
 
-    private val moduleSynchronizer = ModuleSynchronizer(branch, nodeMap)
-    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap)
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap)
+    private val moduleSynchronizer = ModuleSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
+    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
+    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
 
     override fun modelAdded(module: SModule, model: SModel) = modelSynchronizer.addModelAndActivate(model as SModelBase)
 
@@ -51,7 +54,7 @@ class ModuleChangeListener(
         }
 
         val modelId = reference.modelId
-        val binding = BindingsRegistry.instance.getModelBinding(modelId)
+        val binding = bindingsRegistry.getModelBinding(modelId)
         // if binding is not found, it means the model should be removed (see ModelBinding's deactivate method)
         if (binding == null) {
             nodeSynchronizer.removeNode(

@@ -36,7 +36,7 @@ import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelTransformer(private val nodeMap: MpsToModelixMap) {
+class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQueue: SyncQueue) {
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
     fun transformToModel(iNode: INode) {
@@ -52,7 +52,7 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap) {
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val modelDoesNotExist = module.getModel(modelId) == null
             if (modelDoesNotExist) {
                 sModel = module.createModel(name, modelId) as EditableSModel
@@ -90,7 +90,7 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap) {
             val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
-            SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+            syncQueue.enqueue(SyncLockType.MPS_WRITE) {
                 ModelImports(it.source).addModelImport(modelImport)
             }
             nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)

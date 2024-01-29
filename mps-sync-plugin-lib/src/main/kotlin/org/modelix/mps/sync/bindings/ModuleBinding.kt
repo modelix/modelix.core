@@ -27,7 +27,6 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
 import org.modelix.mps.sync.util.SyncLockType
 import org.modelix.mps.sync.util.SyncQueue
-import java.util.concurrent.atomic.AtomicBoolean
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleBinding(
@@ -35,11 +34,12 @@ class ModuleBinding(
     branch: IBranch,
     private val nodeMap: MpsToModelixMap,
     private val bindingsRegistry: BindingsRegistry,
+    private val syncQueue: SyncQueue,
 ) : IBinding {
 
     private val logger = logger<ModelBinding>()
 
-    private val changeListener = ModuleChangeListener(branch, nodeMap)
+    private val changeListener = ModuleChangeListener(branch, nodeMap, bindingsRegistry, syncQueue)
 
     private var isDisposed = false
     private var isActivated = false
@@ -78,8 +78,7 @@ class ModuleBinding(
         bindingsRegistry.removeModuleBinding(this)
 
         // delete module
-        val mpsActionCompleted = AtomicBoolean()
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             try {
                 if (!removeFromServer) {
                     // if we just delete it locally, then we have to call ModuleDeleteHelper manually.
@@ -87,7 +86,6 @@ class ModuleBinding(
                     ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!)
                         .deleteModules(listOf(module), false, true)
                 }
-                mpsActionCompleted.set(true)
             } catch (ex: Exception) {
                 logger.error("Exception occurred while deactivating ${name()}.", ex)
                 // if any error occurs, then we put the binding back to let the rest of the application know that it exists
@@ -96,24 +94,22 @@ class ModuleBinding(
             }
         }
 
-        if (mpsActionCompleted.get()) {
-            nodeMap.remove(module)
+        nodeMap.remove(module)
 
-            isDisposed = true
-            isActivated = false
+        isDisposed = true
+        isActivated = false
 
-            logger.info(
-                "${name()} is deactivated and module is removed locally${
-                    if (removeFromServer) {
-                        " and from server"
-                    } else {
-                        ""
-                    }
-                }.",
-            )
+        logger.info(
+            "${name()} is deactivated and module is removed locally${
+                if (removeFromServer) {
+                    " and from server"
+                } else {
+                    ""
+                }
+            }.",
+        )
 
-            callback?.run()
-        }
+        callback?.run()
     }
 
     override fun name() = "Binding of Module \"${module.moduleName}\""

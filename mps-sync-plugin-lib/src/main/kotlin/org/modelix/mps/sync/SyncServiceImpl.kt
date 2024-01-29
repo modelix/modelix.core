@@ -23,11 +23,17 @@ import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.RepositoryChangeListener
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
+import org.modelix.mps.sync.util.SyncQueue
 import java.net.ConnectException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class SyncServiceImpl : SyncService {
+class SyncServiceImpl(
+    private val nodeMap: MpsToModelixMap = MpsToModelixMap,
+    private val bindingsRegistry: BindingsRegistry = BindingsRegistry,
+    private val syncQueue: SyncQueue = SyncQueue,
+    private val mpsProjectInjector: ActiveMpsProjectInjector = ActiveMpsProjectInjector,
+) : SyncService {
 
     private val logger: Logger = logger<SyncServiceImpl>()
 
@@ -116,28 +122,30 @@ class SyncServiceImpl : SyncService {
              * (2) Base the selection on the parent project and the active model server connections we have. E.g. let the user select to which model server they want to upload the changes and so they get the corresponding replicated model.
              * (3) We don't. We have to make sure that the places always have the latest replicated models from the registry. E.g. if we disconnect from the model server then we remove the replicated model (and thus break the registered event handlers), otherwise the event handlers as for the replicated model from the registry (based on some identifying metainfo for example, so to know which replicated model they need).
              */
-            ReplicatedModelRegistry.instance.model = replicatedModel
+            ReplicatedModelRegistry.model = replicatedModel
+            val branch = replicatedModel.getBranch()
 
-            val targetProject = ActiveMpsProjectInjector.activeMpsProject!!
+            val targetProject = mpsProjectInjector.activeMpsProject!!
             val languageRepository = registerLanguages(targetProject)
 
             // transform the model
             val bindings = ITreeToSTreeTransformer(
-                replicatedModel.getBranch(),
+                branch,
                 targetProject,
                 languageRepository,
-                MpsToModelixMap,
-                BindingsRegistry.instance,
+                nodeMap,
+                bindingsRegistry,
+                syncQueue,
             ).transform(model)
 
             // register replicated model change listener
-            val listener = ModelixBranchListener(replicatedModel, targetProject, languageRepository, MpsToModelixMap)
-            replicatedModel.getBranch().addListener(listener)
+            val listener = ModelixBranchListener(replicatedModel, targetProject, languageRepository, nodeMap, syncQueue)
+            branch.addListener(listener)
             changeListenerByReplicatedModel[replicatedModel] = listener
 
             // register MPS project change listener
             if (projectWithChangeListener == null) {
-                val repositoryChangeListener = RepositoryChangeListener(replicatedModel.getBranch(), MpsToModelixMap)
+                val repositoryChangeListener = RepositoryChangeListener(branch, nodeMap, bindingsRegistry, syncQueue)
                 targetProject.repository.addRepositoryListener(repositoryChangeListener)
                 projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
             }
@@ -153,12 +161,12 @@ class SyncServiceImpl : SyncService {
 
     override fun setActiveProject(project: Project) {
         resetProjectWithChangeListener()
-        ActiveMpsProjectInjector.setActiveProject(project)
+        mpsProjectInjector.setActiveProject(project)
     }
 
-    override fun getModelBindings() = BindingsRegistry.instance.getModelBindings()
+    override fun getModelBindings() = bindingsRegistry.getModelBindings()
 
-    override fun getModuleBindings() = BindingsRegistry.instance.getModuleBindings()
+    override fun getModuleBindings() = bindingsRegistry.getModuleBindings()
 
     override fun dispose() {
         // cancel all running coroutines
@@ -170,7 +178,6 @@ class SyncServiceImpl : SyncService {
         // dispose the clients
         activeClients.forEach { it.close() }
         // dispose all bindings
-        val bindingsRegistry = BindingsRegistry.instance
         bindingsRegistry.getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
         bindingsRegistry.getModelBindings().forEach { it.deactivate(removeFromServer = false) }
     }

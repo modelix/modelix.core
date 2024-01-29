@@ -43,11 +43,12 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 class NodeSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
+    private val syncQueue: SyncQueue,
     private val resolvableReferences: MutableList<CloudResolvableReference>? = null,
 ) {
 
     fun addNode(node: SNode) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val parentNodeId = if (node.parent != null) {
                 nodeMap[node.parent]!!
             } else {
@@ -138,7 +139,7 @@ class NodeSynchronizer(
         setProperty(MPSProperty(mpsProperty), newValue, sourceNodeIdProducer)
 
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val nodeId = sourceNodeIdProducer.invoke(nodeMap)
             branch.runWriteT {
                 val cloudNode = branch.getNode(nodeId)
@@ -148,7 +149,7 @@ class NodeSynchronizer(
     }
 
     fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
             val nodeId = childNodeIdProducer.invoke(nodeMap)
 
@@ -168,7 +169,7 @@ class NodeSynchronizer(
         sourceNodeIdProducer: (MpsToModelixMap) -> Long,
         targetNodeIdProducer: (MpsToModelixMap) -> Long?,
     ) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val sourceNodeId = sourceNodeIdProducer.invoke(nodeMap)
             val targetNodeId = targetNodeIdProducer.invoke(nodeMap)
             val reference = MPSReferenceLink(mpsReferenceLink)

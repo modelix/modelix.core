@@ -28,7 +28,6 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.SyncLockType
 import org.modelix.mps.sync.util.SyncQueue
@@ -38,13 +37,15 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 class ModelSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
+    private val bindingsRegistry: BindingsRegistry,
+    private val syncQueue: SyncQueue,
     postponeReferenceResolution: Boolean = false,
 ) {
 
     private val nodeSynchronizer = if (postponeReferenceResolution) {
-        NodeSynchronizer(branch, nodeMap, mutableListOf())
+        NodeSynchronizer(branch, nodeMap, syncQueue, mutableListOf())
     } else {
-        NodeSynchronizer(branch, nodeMap)
+        NodeSynchronizer(branch, nodeMap, syncQueue)
     }
 
     private val resolvableModelImports = if (postponeReferenceResolution) {
@@ -61,7 +62,7 @@ class ModelSynchronizer(
     fun addModel(model: SModelBase): ModelBinding {
         var binding: ModelBinding? = null
 
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val moduleModelixId = nodeMap[model.module]!!
             val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
@@ -71,7 +72,7 @@ class ModelSynchronizer(
 
                 nodeMap.put(model, cloudModel.nodeIdAsLong())
 
-                SyncQueue.enqueue(SyncLockType.MPS_READ) {
+                syncQueue.enqueue(SyncLockType.MPS_READ) {
                     synchronizeModelProperties(cloudModel, model)
                     // synchronize root nodes
                     model.rootNodes.forEach { nodeSynchronizer.addNode(it) }
@@ -84,9 +85,7 @@ class ModelSynchronizer(
                 }
 
                 // register binding
-                val mpsProject = ActiveMpsProjectInjector.activeMpsProject!!
-                val bindingsRegistry = BindingsRegistry.instance
-                binding = ModelBinding(model, branch, nodeMap, BindingsRegistry.instance)
+                binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
                 bindingsRegistry.addModelBinding(binding!!)
             }
         }
@@ -109,7 +108,7 @@ class ModelSynchronizer(
     }
 
     fun addModelImport(model: SModel, importedModelReference: SModelReference) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val targetModel = importedModelReference.resolve(model.repository)
             if (resolvableModelImports != null) {
                 resolvableModelImports.add(CloudResolvableModelImport(model, targetModel))
@@ -142,7 +141,7 @@ class ModelSynchronizer(
     }
 
     fun addLanguageDependency(model: SModel, language: SLanguage) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val modelixId = nodeMap[model]!!
 
             val languageModuleReference = language.sourceModuleReference
@@ -179,7 +178,7 @@ class ModelSynchronizer(
     }
 
     fun addDevKitDependency(model: SModel, devKit: SModuleReference) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val modelixId = nodeMap[model]!!
 
             val repository = model.repository

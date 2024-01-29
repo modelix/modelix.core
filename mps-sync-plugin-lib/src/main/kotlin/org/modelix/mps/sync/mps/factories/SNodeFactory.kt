@@ -42,6 +42,7 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 class SNodeFactory(
     private val conceptRepository: MPSLanguageRepository,
     private val nodeMap: MpsToModelixMap,
+    private val syncQueue: SyncQueue,
 ) {
 
     private val resolvableReferences = mutableListOf<ResolvableReference>()
@@ -77,7 +78,7 @@ class SNodeFactory(
         val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
         val isRootNode = concept.isRootable && modelIsTheParent
 
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             if (isRootNode) {
                 model?.addRootNode(sNode)
             } else {
@@ -117,7 +118,7 @@ class SNodeFactory(
             val property = PropertyFromName(it.name)
             val value = source.getPropertyValue(property)
 
-            SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+            syncQueue.enqueue(SyncLockType.MPS_WRITE) {
                 target.setProperty(it, value)
             }
         }
@@ -143,7 +144,7 @@ class SNodeFactory(
             val source = it.source
             val reference = it.reference
             val target = nodeMap.getNode(it.targetNodeId)
-            SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+            syncQueue.enqueue(SyncLockType.MPS_WRITE) {
                 source.setReferenceTarget(reference, target)
             }
         }

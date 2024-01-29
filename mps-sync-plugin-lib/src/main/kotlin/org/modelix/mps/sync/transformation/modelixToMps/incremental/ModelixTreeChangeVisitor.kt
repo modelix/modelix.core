@@ -53,14 +53,15 @@ class ModelixTreeChangeVisitor(
     private val project: MPSProject,
     private val languageRepository: MPSLanguageRepository,
     private val nodeMap: MpsToModelixMap,
+    private val syncQueue: SyncQueue,
 ) : ITreeChangeVisitorEx {
 
-    private val nodeTransformer = NodeTransformer(nodeMap, languageRepository)
-    private val modelTransformer = ModelTransformer(nodeMap)
-    private val moduleTransformer = ModuleTransformer(project, nodeMap)
+    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, languageRepository)
+    private val modelTransformer = ModelTransformer(nodeMap, syncQueue)
+    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
 
     override fun referenceChanged(nodeId: Long, role: String) {
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val sNode = nodeMap.getNode(nodeId)!!
             val sReferenceLink = sNode.concept.referenceLinks.find { it.name == role }
 
@@ -78,10 +79,10 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun propertyChanged(nodeId: Long, role: String) {
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val sNode = nodeMap.getNode(nodeId)!!
             var sProperty: SProperty? = null
-            SyncQueue.enqueue(SyncLockType.MPS_READ) {
+            syncQueue.enqueue(SyncLockType.MPS_READ) {
                 sProperty = sNode.concept.properties.find { it.name == role }
             }
 
@@ -95,7 +96,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeRemoved(nodeId: Long) {
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
                 it.delete()
@@ -122,7 +123,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeAdded(nodeId: Long) {
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val iNode = getBranch().getNode(nodeId)
 
             getBranch().runRead {
@@ -149,7 +150,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun childrenChanged(nodeId: Long, role: String?) {
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             modelTransformer.resolveModelImports(languageRepository.repository)
             modelTransformer.clearResolvableModelImports()
 
@@ -159,7 +160,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun containmentChanged(nodeId: Long) {
-        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val iNode = getBranch().getNode(nodeId)
             var newParentId: Long? = null
             getBranch().runRead {

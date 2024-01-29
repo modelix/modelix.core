@@ -41,12 +41,15 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 class ModuleSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
+    private val bindingsRegistry: BindingsRegistry,
+    private val syncQueue: SyncQueue,
 ) {
 
-    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, postponeReferenceResolution = true)
+    private val modelSynchronizer =
+        ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue, postponeReferenceResolution = true)
 
     fun addModule(module: AbstractModule) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             branch.runWriteT {
                 val rootNode = branch.getRootNode()
                 val cloudModule = rootNode.addNewChild(
@@ -57,7 +60,7 @@ class ModuleSynchronizer(
 
                 nodeMap.put(module, cloudModule.nodeIdAsLong())
 
-                SyncQueue.enqueue(SyncLockType.MPS_READ) {
+                syncQueue.enqueue(SyncLockType.MPS_READ) {
                     synchronizeModuleProperties(cloudModule, module)
                     // synchronize dependencies
                     module.declaredDependencies.forEach { addDependency(module, it) }
@@ -68,8 +71,7 @@ class ModuleSynchronizer(
                 }
 
                 // register binding
-                val bindingsRegistry = BindingsRegistry.instance
-                val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry)
+                val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
                 bindingsRegistry.addModuleBinding(binding)
                 binding.activate()
             }
@@ -100,7 +102,7 @@ class ModuleSynchronizer(
     }
 
     fun addDependency(module: SModule, dependency: SDependency) {
-        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(SyncLockType.CUSTOM) {
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
 

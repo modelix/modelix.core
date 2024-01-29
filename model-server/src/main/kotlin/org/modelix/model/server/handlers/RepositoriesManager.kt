@@ -85,7 +85,7 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    fun repositoryExists(repositoryId: RepositoryId) = getRepositories().contains(repositoryId)
+    private fun repositoryExists(repositoryId: RepositoryId) = getRepositories().contains(repositoryId)
 
     fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true): CLVersion {
         var initialVersion: CLVersion? = null

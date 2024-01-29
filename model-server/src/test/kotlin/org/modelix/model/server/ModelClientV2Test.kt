@@ -39,6 +39,8 @@ import org.modelix.modelql.untyped.allChildren
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ModelClientV2Test {
 
@@ -164,8 +166,10 @@ class ModelClientV2Test {
         client.initRepository(repositoryId)
 
         val success = client.deleteRepository(repositoryId)
+        val containsRepository = client.listRepositories().contains(repositoryId)
 
-        assertEquals(true, success)
+        assertTrue(success)
+        assertFalse(containsRepository)
     }
 
     @Test
@@ -175,7 +179,9 @@ class ModelClientV2Test {
         val repositoryId = RepositoryId(UUID.randomUUID().toString())
 
         val success = client.deleteRepository(repositoryId)
+        val containsRepository = client.listRepositories().contains(repositoryId)
 
-        assertEquals(false, success)
+        assertFalse(success)
+        assertFalse(containsRepository)
     }
 }

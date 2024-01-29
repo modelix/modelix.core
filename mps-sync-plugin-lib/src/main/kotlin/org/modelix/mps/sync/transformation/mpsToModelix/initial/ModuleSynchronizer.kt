@@ -49,32 +49,28 @@ class ModuleSynchronizer(
         ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue, postponeReferenceResolution = true)
 
     fun addModule(module: AbstractModule) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
-            branch.runWriteT {
-                val rootNode = branch.getRootNode()
-                val cloudModule = rootNode.addNewChild(
-                    ChildLinkFromName("modules"),
-                    -1,
-                    BuiltinLanguages.MPSRepositoryConcepts.Module,
-                )
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
+            val rootNode = branch.getRootNode()
+            val cloudModule = rootNode.addNewChild(
+                ChildLinkFromName("modules"),
+                -1,
+                BuiltinLanguages.MPSRepositoryConcepts.Module,
+            )
 
-                nodeMap.put(module, cloudModule.nodeIdAsLong())
+            nodeMap.put(module, cloudModule.nodeIdAsLong())
 
-                syncQueue.enqueueBlocking(SyncLockType.MPS_READ) {
-                    synchronizeModuleProperties(cloudModule, module)
-                    // synchronize dependencies
-                    module.declaredDependencies.forEach { addDependency(module, it) }
-                    // synchronize models
-                    module.models.forEach { modelSynchronizer.addModel(it as SModelBase) }
-                    // resolve cross-model references
-                    modelSynchronizer.resolveCrossModelReferences()
-                }
+            synchronizeModuleProperties(cloudModule, module)
+            // synchronize dependencies
+            module.declaredDependencies.forEach { addDependency(module, it) }
+            // synchronize models
+            module.models.forEach { modelSynchronizer.addModel(it as SModelBase) }
+            // resolve cross-model references
+            modelSynchronizer.resolveCrossModelReferences()
 
-                // register binding
-                val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
-                bindingsRegistry.addModuleBinding(binding)
-                binding.activate()
-            }
+            // register binding
+            val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
+            bindingsRegistry.addModuleBinding(binding)
+            binding.activate()
         }
     }
 
@@ -102,60 +98,57 @@ class ModuleSynchronizer(
     }
 
     fun addDependency(module: SModule, dependency: SDependency) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
-
             val moduleReference = dependency.targetModule
 
-            branch.runWriteT {
-                val cloudModule = branch.getNode(moduleModelixId)
-                val cloudDependency =
-                    cloudModule.addNewChild(dependencies, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
+            val cloudModule = branch.getNode(moduleModelixId)
+            val cloudDependency =
+                cloudModule.addNewChild(dependencies, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
 
-                nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
+            nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
 
-                // warning: might be fragile, because we synchronize the properties by hand
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
-                    dependency.isReexport.toString(),
-                )
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
+                dependency.isReexport.toString(),
+            )
 
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
-                    moduleReference.moduleId.toString(),
-                )
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
+                moduleReference.moduleId.toString(),
+            )
 
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name,
-                    moduleReference.moduleName,
-                )
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name,
+                moduleReference.moduleName,
+            )
 
-                val moduleId = moduleReference.moduleId
-                val isExplicit = if (module is Solution) {
-                    module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
-                } else {
-                    module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
-                }
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit,
-                    isExplicit.toString(),
-                )
-
-                val version = (module as? Solution)?.let {
-                    it.moduleDescriptor.dependencyVersions.filter { dependencyVersion -> dependencyVersion.key == moduleReference }
-                        .firstOrNull()?.value
-                } ?: 0
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version,
-                    version.toString(),
-                )
-
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.scope,
-                    dependency.scope.toString(),
-                )
+            val moduleId = moduleReference.moduleId
+            val isExplicit = if (module is Solution) {
+                module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
+            } else {
+                module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
             }
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit,
+                isExplicit.toString(),
+            )
+
+            val version = (module as? Solution)?.let {
+                it.moduleDescriptor.dependencyVersions.filter { dependencyVersion -> dependencyVersion.key == moduleReference }
+                    .firstOrNull()?.value
+            } ?: 0
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version,
+                version.toString(),
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.scope,
+                dependency.scope.toString(),
+            )
         }
     }
 }

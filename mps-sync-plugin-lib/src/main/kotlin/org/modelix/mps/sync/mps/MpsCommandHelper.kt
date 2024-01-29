@@ -30,6 +30,7 @@ object MpsCommandHelper {
             try {
                 runnable.run()
             } catch (t: Throwable) {
+                t.printStackTrace()
                 propagatedException = t
             }
         }

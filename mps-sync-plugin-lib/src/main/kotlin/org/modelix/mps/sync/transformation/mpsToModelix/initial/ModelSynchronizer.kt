@@ -62,32 +62,28 @@ class ModelSynchronizer(
     fun addModel(model: SModelBase): ModelBinding {
         var binding: ModelBinding? = null
 
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
             val moduleModelixId = nodeMap[model.module]!!
             val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
-            branch.runWriteT {
-                val cloudModule = branch.getNode(moduleModelixId)
-                val cloudModel = cloudModule.addNewChild(models, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
+            val cloudModule = branch.getNode(moduleModelixId)
+            val cloudModel = cloudModule.addNewChild(models, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
 
-                nodeMap.put(model, cloudModel.nodeIdAsLong())
+            nodeMap.put(model, cloudModel.nodeIdAsLong())
 
-                syncQueue.enqueueBlocking(SyncLockType.MPS_READ) {
-                    synchronizeModelProperties(cloudModel, model)
-                    // synchronize root nodes
-                    model.rootNodes.forEach { nodeSynchronizer.addNode(it) }
-                    // synchronize model imports
-                    model.modelImports.forEach { addModelImport(model, it) }
-                    // synchronize language dependencies
-                    model.importedLanguageIds().forEach { addLanguageDependency(model, it) }
-                    // synchronize devKits
-                    model.importedDevkits().forEach { addDevKitDependency(model, it) }
-                }
+            synchronizeModelProperties(cloudModel, model)
+            // synchronize root nodes
+            model.rootNodes.forEach { nodeSynchronizer.addNode(it) }
+            // synchronize model imports
+            model.modelImports.forEach { addModelImport(model, it) }
+            // synchronize language dependencies
+            model.importedLanguageIds().forEach { addLanguageDependency(model, it) }
+            // synchronize devKits
+            model.importedDevkits().forEach { addDevKitDependency(model, it) }
 
-                // register binding
-                binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
-                bindingsRegistry.addModelBinding(binding!!)
-            }
+            // register binding
+            binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
+            bindingsRegistry.addModelBinding(binding!!)
         }
 
         return binding!!
@@ -108,7 +104,7 @@ class ModelSynchronizer(
     }
 
     fun addModelImport(model: SModel, importedModelReference: SModelReference) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_READ)) {
             val targetModel = importedModelReference.resolve(model.repository)
             if (resolvableModelImports != null) {
                 resolvableModelImports.add(CloudResolvableModelImport(model, targetModel))
@@ -124,7 +120,7 @@ class ModelSynchronizer(
         val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
         val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
 
-        branch.runWriteT {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
             val cloudParentNode = branch.getNode(modelixId)
             val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
 
@@ -141,44 +137,42 @@ class ModelSynchronizer(
     }
 
     fun addLanguageDependency(model: SModel, language: SLanguage) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
             val modelixId = nodeMap[model]!!
 
             val languageModuleReference = language.sourceModuleReference
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
-            branch.runWriteT {
-                val cloudNode = branch.getNode(modelixId)
-                val cloudLanguageDependency =
-                    cloudNode.addNewChild(
-                        childLink,
-                        -1,
-                        BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
-                    )
-
-                nodeMap.put(model, languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
-
-                // warning: might be fragile, because we synchronize the properties by hand
-                cloudLanguageDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                    languageModuleReference?.moduleName,
+            val cloudNode = branch.getNode(modelixId)
+            val cloudLanguageDependency =
+                cloudNode.addNewChild(
+                    childLink,
+                    -1,
+                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
                 )
 
-                cloudLanguageDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                    languageModuleReference?.moduleId.toString(),
-                )
+            nodeMap.put(model, languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
 
-                cloudLanguageDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
-                    model.module.getUsedLanguageVersion(language).toString(),
-                )
-            }
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                languageModuleReference?.moduleName,
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                languageModuleReference?.moduleId.toString(),
+            )
+
+            cloudLanguageDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                model.module.getUsedLanguageVersion(language).toString(),
+            )
         }
     }
 
     fun addDevKitDependency(model: SModel, devKit: SModuleReference) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
             val modelixId = nodeMap[model]!!
 
             val repository = model.repository
@@ -187,23 +181,21 @@ class ModelSynchronizer(
 
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
-            branch.runWriteT {
-                val cloudNode = branch.getNode(modelixId)
-                val cloudDevKitDependency =
-                    cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
-                nodeMap.put(model, devKit, cloudDevKitDependency.nodeIdAsLong())
+            val cloudNode = branch.getNode(modelixId)
+            val cloudDevKitDependency =
+                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
+            nodeMap.put(model, devKit, cloudDevKitDependency.nodeIdAsLong())
 
-                // warning: might be fragile, because we synchronize the properties by hand
-                cloudDevKitDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                    devKitModule?.moduleName,
-                )
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudDevKitDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                devKitModule?.moduleName,
+            )
 
-                cloudDevKitDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                    devKitModule?.moduleId.toString(),
-                )
-            }
+            cloudDevKitDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                devKitModule?.moduleId.toString(),
+            )
         }
     }
 
@@ -216,7 +208,7 @@ class ModelSynchronizer(
         resolveModelImports()
 
         // resolve (cross-model) references
-        nodeSynchronizer.resolveReferencesUnprotected()
+        nodeSynchronizer.resolveReferences()
         nodeSynchronizer.clearResolvableReferences()
     }
 }

@@ -74,7 +74,7 @@ class NodeTransformer(
     }
 
     fun transformLanguageDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
             val moduleId = iNode.getModule()?.nodeIdAsLong()
             val parentModule = nodeMap.getModule(moduleId)!!
             val dependentModule = getDependentModule(iNode, parentModule)
@@ -101,7 +101,7 @@ class NodeTransformer(
     }
 
     fun transformDevKitDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
             val moduleId = iNode.getModule()?.nodeIdAsLong()
             val parentModule = nodeMap.getModule(moduleId)!!
             val dependentModule = getDependentModule(iNode, parentModule)

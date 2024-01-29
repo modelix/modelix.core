@@ -48,7 +48,7 @@ class NodeSynchronizer(
 ) {
 
     fun addNode(node: SNode) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
             val parentNodeId = if (node.parent != null) {
                 nodeMap[node.parent]!!
             } else {
@@ -66,23 +66,14 @@ class NodeSynchronizer(
                 MPSChildLink(containmentLink)
             }
 
-            val nodeId = nodeMap[node]
             val mpsConcept = node.concept
+            val cloudParentNode = branch.getNode(parentNodeId)
+            val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
 
-            val childExists = nodeId != null
-            branch.runWriteT { transaction ->
-                if (childExists) {
-                    transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
-                } else {
-                    val cloudParentNode = branch.getNode(parentNodeId)
-                    val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+            // save the modelix ID and the SNode in the map
+            nodeMap.put(node, cloudChildNode.nodeIdAsLong())
 
-                    // save the modelix ID and the SNode in the map
-                    nodeMap.put(node, cloudChildNode.nodeIdAsLong())
-
-                    synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
-                }
-            }
+            synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
         }
     }
 
@@ -139,25 +130,21 @@ class NodeSynchronizer(
         setProperty(MPSProperty(mpsProperty), newValue, sourceNodeIdProducer)
 
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE)) {
             val nodeId = sourceNodeIdProducer.invoke(nodeMap)
-            branch.runWriteT {
-                val cloudNode = branch.getNode(nodeId)
-                cloudNode.setPropertyValue(property, newValue)
-            }
+            val cloudNode = branch.getNode(nodeId)
+            cloudNode.setPropertyValue(property, newValue)
         }
     }
 
     fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE)) {
             val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
             val nodeId = childNodeIdProducer.invoke(nodeMap)
 
-            branch.runWriteT {
-                val cloudParentNode = branch.getNode(parentNodeId)
-                val cloudChildNode = branch.getNode(nodeId)
-                cloudParentNode.removeChild(cloudChildNode)
-            }
+            val cloudParentNode = branch.getNode(parentNodeId)
+            val cloudChildNode = branch.getNode(nodeId)
+            cloudParentNode.removeChild(cloudChildNode)
 
             nodeMap.remove(nodeId)
         }
@@ -168,21 +155,19 @@ class NodeSynchronizer(
         sourceNodeIdProducer: (MpsToModelixMap) -> Long,
         targetNodeIdProducer: (MpsToModelixMap) -> Long?,
     ) {
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
             val sourceNodeId = sourceNodeIdProducer.invoke(nodeMap)
             val targetNodeId = targetNodeIdProducer.invoke(nodeMap)
             val reference = MPSReferenceLink(mpsReferenceLink)
 
-            branch.runWriteT {
-                val cloudNode = branch.getNode(sourceNodeId)
-                val target = if (targetNodeId == null) null else branch.getNode(targetNodeId)
-                cloudNode.setReferenceTarget(reference, target)
-            }
+            val cloudNode = branch.getNode(sourceNodeId)
+            val target = if (targetNodeId == null) null else branch.getNode(targetNodeId)
+            cloudNode.setReferenceTarget(reference, target)
         }
     }
 
-    fun resolveReferencesUnprotected() {
-        branch.runWriteT {
+    fun resolveReferences() {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE)) {
             resolvableReferences?.forEach { setReferenceInTheCloud(it.sourceNode, it.referenceLink, it.mpsTargetNode) }
         }
     }

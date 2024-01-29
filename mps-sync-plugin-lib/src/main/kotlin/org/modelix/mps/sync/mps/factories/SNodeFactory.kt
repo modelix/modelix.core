@@ -78,7 +78,7 @@ class SNodeFactory(
         val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
         val isRootNode = concept.isRootable && modelIsTheParent
 
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MODELIX_READ, SyncLockType.MPS_WRITE)) {
             if (isRootNode) {
                 model?.addRootNode(sNode)
             } else {
@@ -118,7 +118,7 @@ class SNodeFactory(
             val property = PropertyFromName(it.name)
             val value = source.getPropertyValue(property)
 
-            syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+            syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE)) {
                 target.setProperty(it, value)
             }
         }
@@ -131,8 +131,6 @@ class SNodeFactory(
 
             val sReferenceLink = (it.first as MPSReferenceLink).link
             val reference = SReferenceLinkAdapter2(sReferenceLink.id, sReferenceLink.name)
-
-            // TODO what about those references whose target is outside of the model?
             val targetNodeId = it.second.nodeIdAsLong()
 
             resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
@@ -140,7 +138,7 @@ class SNodeFactory(
     }
 
     fun resolveReferences() {
-        syncQueue.enqueueBlocking(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE)) {
             resolvableReferences.forEach {
                 val source = it.source
                 val reference = it.reference

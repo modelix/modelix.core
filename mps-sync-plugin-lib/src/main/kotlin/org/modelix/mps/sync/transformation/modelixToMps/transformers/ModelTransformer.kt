@@ -52,7 +52,7 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        syncQueue.enqueueBlocking(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
             val modelDoesNotExist = module.getModel(modelId) == null
             if (modelDoesNotExist) {
                 sModel = module.createModel(name, modelId) as EditableSModel
@@ -90,7 +90,7 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
             val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
-            syncQueue.enqueueBlocking(SyncLockType.MPS_WRITE) {
+            syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE)) {
                 ModelImports(it.source).addModelImport(modelImport)
             }
             nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)

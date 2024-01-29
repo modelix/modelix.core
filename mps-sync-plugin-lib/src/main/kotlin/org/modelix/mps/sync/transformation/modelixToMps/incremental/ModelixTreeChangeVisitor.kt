@@ -22,11 +22,7 @@ import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
-import org.jetbrains.mps.openapi.language.SContainmentLink
-import org.jetbrains.mps.openapi.language.SProperty
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.INode
-import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
@@ -61,17 +57,13 @@ class ModelixTreeChangeVisitor(
     private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
 
     override fun referenceChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
             val sNode = nodeMap.getNode(nodeId)!!
             val sReferenceLink = sNode.concept.referenceLinks.find { it.name == role }
 
-            val iNode = getBranch().getNode(nodeId)
-            var iReferenceLink: IReferenceLink?
-            var targetINode: INode? = null
-            getBranch().runRead {
-                iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }
-                targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
-            }
+            val iNode = getNode(nodeId)
+            val iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }
+            val targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
             val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
 
             sNode.setReferenceTarget(sReferenceLink!!, targetSNode)
@@ -79,24 +71,20 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun propertyChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
             val sNode = nodeMap.getNode(nodeId)!!
-            var sProperty: SProperty? = null
-            syncQueue.enqueue(SyncLockType.MPS_READ) {
-                sProperty = sNode.concept.properties.find { it.name == role }
-            }
+            val sProperty = sNode.concept.properties.find { it.name == role }
 
-            val iNode = getBranch().getNode(nodeId)
+            val iNode = getNode(nodeId)
             val iProperty = PropertyFromName(role)
-            var value: String? = null
-            getBranch().runRead { value = iNode.getPropertyValue(iProperty) }
+            val value = iNode.getPropertyValue(iProperty)
 
             sNode.setProperty(sProperty!!, value)
         }
     }
 
     override fun nodeRemoved(nodeId: Long) {
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE)) {
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
                 it.delete()
@@ -123,34 +111,31 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeAdded(nodeId: Long) {
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
-            val iNode = getBranch().getNode(nodeId)
-
-            getBranch().runRead {
-                if (iNode.isModule()) {
-                    moduleTransformer.transformToModule(iNode)
-                } else if (iNode.isModuleDependency()) {
-                    val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
-                    val parentModule = nodeMap.getModule(moduleNodeId)!!
-                    require(parentModule is AbstractModule) { "Parent Module ($moduleNodeId) of INode (${iNode.nodeIdAsLong()}) is not an AbstractModule." }
-                    moduleTransformer.transformModuleDependency(iNode, parentModule)
-                } else if (iNode.isModel()) {
-                    modelTransformer.transformToModel(iNode)
-                } else if (iNode.isModelImport()) {
-                    modelTransformer.transformModelImport(iNode)
-                } else if (iNode.isSingleLanguageDependency()) {
-                    nodeTransformer.transformLanguageDependency(iNode, true)
-                } else if (iNode.isDevKitDependency()) {
-                    nodeTransformer.transformDevKitDependency(iNode, true)
-                } else {
-                    nodeTransformer.transformToNode(iNode)
-                }
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
+            val iNode = getNode(nodeId)
+            if (iNode.isModule()) {
+                moduleTransformer.transformToModule(iNode)
+            } else if (iNode.isModuleDependency()) {
+                val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
+                val parentModule = nodeMap.getModule(moduleNodeId)!!
+                require(parentModule is AbstractModule) { "Parent Module ($moduleNodeId) of INode (${iNode.nodeIdAsLong()}) is not an AbstractModule." }
+                moduleTransformer.transformModuleDependency(iNode, parentModule)
+            } else if (iNode.isModel()) {
+                modelTransformer.transformToModel(iNode)
+            } else if (iNode.isModelImport()) {
+                modelTransformer.transformModelImport(iNode)
+            } else if (iNode.isSingleLanguageDependency()) {
+                nodeTransformer.transformLanguageDependency(iNode, true)
+            } else if (iNode.isDevKitDependency()) {
+                nodeTransformer.transformDevKitDependency(iNode, true)
+            } else {
+                nodeTransformer.transformToNode(iNode)
             }
         }
     }
 
     override fun childrenChanged(nodeId: Long, role: String?) {
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE)) {
             modelTransformer.resolveModelImports(languageRepository.repository)
             modelTransformer.clearResolvableModelImports()
 
@@ -160,23 +145,16 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun containmentChanged(nodeId: Long) {
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
-            val iNode = getBranch().getNode(nodeId)
-            var newParentId: Long? = null
-            getBranch().runRead {
-                newParentId = iNode.parent?.nodeIdAsLong()
-            }
+        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
+            val iNode = getNode(nodeId)
+            val newParentId = iNode.parent?.nodeIdAsLong()
 
             val sNode = nodeMap.getNode(nodeId)
             if (sNode != null) {
                 val newParentNode = nodeMap.getNode(newParentId)
                 if (newParentNode != null) {
-                    var containment: SContainmentLink? = null
-                    getBranch().runRead {
-                        containment =
-                            newParentNode.concept.containmentLinks.find {
-                                it.name == iNode.getContainmentLink()!!.getSimpleName()
-                            }
+                    val containment = newParentNode.concept.containmentLinks.find {
+                        it.name == iNode.getContainmentLink()!!.getSimpleName()
                     }
                     // remove from old parent
                     sNode.parent?.removeChild(sNode)
@@ -215,7 +193,5 @@ class ModelixTreeChangeVisitor(
         }
     }
 
-    private fun handleThrowable(t: Throwable) = t.printStackTrace()
-
-    private fun getBranch() = replicatedModel.getBranch()
+    private fun getNode(nodeId: Long) = replicatedModel.getBranch().getNode(nodeId)
 }

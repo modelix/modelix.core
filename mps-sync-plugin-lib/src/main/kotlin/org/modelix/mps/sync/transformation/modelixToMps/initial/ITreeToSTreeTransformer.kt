@@ -58,53 +58,51 @@ class ITreeToSTreeTransformer(
     fun transform(entryPoint: INode): List<IBinding> {
         val bindings = mutableListOf<IBinding>()
 
-        syncQueue.enqueue(SyncLockType.CUSTOM) {
-            try {
-                branch.runReadT {
-                    val nodeId = entryPoint.nodeIdAsLong()
-                    val root = branch.getNode(nodeId)
+        try {
+            syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MODELIX_READ)) {
+                val nodeId = entryPoint.nodeIdAsLong()
+                val root = branch.getNode(nodeId)
 
-                    logger.info("--- Transforming modules and models in modelix Node $nodeId ---")
-                    traverse(root, 1) {
-                        if (it.isModule()) {
-                            moduleTransformer.transformToModule(it)
-                        } else if (it.isModel()) {
-                            modelTransformer.transformToModel(it)
-                        }
-                    }
-
-                    logger.info("--- Resolving model imports ---")
-                    modelTransformer.resolveModelImports(project.repository)
-
-                    logger.info("--- Transforming nodes ---")
-                    traverse(root, 1) {
-                        val isNotModuleOrModel = !(it.isModule() || it.isModel())
-                        if (isNotModuleOrModel) {
-                            nodeTransformer.transformToNode(it)
-                        }
-                    }
-
-                    logger.info("--- Resolving references ---")
-                    nodeTransformer.resolveReferences()
-
-                    logger.info("--- Registering model and module bindings ---")
-                    nodeMap.models.forEach {
-                        val model = it as SModelBase
-                        val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
-                        bindingsRegistry.addModelBinding(binding)
-                        bindings.add(binding)
-                    }
-                    nodeMap.modules.forEach {
-                        val module = it as AbstractModule
-                        val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
-                        bindingsRegistry.addModuleBinding(binding)
-                        bindings.add(binding)
+                logger.info("--- Transforming modules and models in modelix Node $nodeId ---")
+                traverse(root, 1) {
+                    if (it.isModule()) {
+                        moduleTransformer.transformToModule(it)
+                    } else if (it.isModel()) {
+                        modelTransformer.transformToModel(it)
                     }
                 }
-            } catch (ex: Exception) {
-                logger.error("$javaClass exploded")
-                ex.printStackTrace()
+
+                logger.info("--- Resolving model imports ---")
+                modelTransformer.resolveModelImports(project.repository)
+
+                logger.info("--- Transforming nodes ---")
+                traverse(root, 1) {
+                    val isNotModuleOrModel = !(it.isModule() || it.isModel())
+                    if (isNotModuleOrModel) {
+                        nodeTransformer.transformToNode(it)
+                    }
+                }
+
+                logger.info("--- Resolving references ---")
+                nodeTransformer.resolveReferences()
+
+                logger.info("--- Registering model and module bindings ---")
+                nodeMap.models.forEach {
+                    val model = it as SModelBase
+                    val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
+                    bindingsRegistry.addModelBinding(binding)
+                    bindings.add(binding)
+                }
+                nodeMap.modules.forEach {
+                    val module = it as AbstractModule
+                    val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
+                    bindingsRegistry.addModuleBinding(binding)
+                    bindings.add(binding)
+                }
             }
+        } catch (ex: Exception) {
+            logger.error("$javaClass exploded")
+            ex.printStackTrace()
         }
 
         return bindings

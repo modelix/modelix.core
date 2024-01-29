@@ -16,8 +16,10 @@
 
 package org.modelix.mps.sync.util
 
+import com.intellij.util.containers.headTail
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client.SharedExecutors
+import org.modelix.mps.sync.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -34,11 +36,11 @@ object SyncQueue {
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
 
     // TODO handle errors that may occur while action execution
-    fun enqueue(requiredLock: SyncLockType, action: Runnable) {
-        enqueue(SyncTask(requiredLock, action))
+    fun enqueue(requiredLocks: LinkedHashSet<SyncLockType>, action: Runnable) {
+        enqueue(SyncTask(requiredLocks, action))
     }
 
-    fun enqueueBlocking(requiredLock: SyncLockType, action: Runnable) {
+    fun enqueueBlocking(requiredLocks: LinkedHashSet<SyncLockType>, action: Runnable) {
         val barrier = CountDownLatch(1)
 
         // TODO test what happens with the original thread if Task throws an exception.
@@ -50,7 +52,7 @@ object SyncQueue {
             barrier.countDown()
             throwable?.let { throw throwable }
         }
-        val task = SyncTask(requiredLock, action, openBarrierCallback)
+        val task = SyncTask(requiredLocks, action, openBarrierCallback)
 
         // submit the task
         enqueue(task)
@@ -75,7 +77,18 @@ object SyncQueue {
     private fun doFlush() {
         while (!tasks.isEmpty()) {
             val task = tasks.poll()
-            runWithLock(task.requiredLock, task.actionBody)
+            runWithLocks(task.requiredLocks, task.actionBody)
+        }
+    }
+
+    private fun runWithLocks(locks: LinkedHashSet<SyncLockType>, runnable: Runnable) {
+        val lockHeadAndTail = locks.toList().headTail()
+        val lockHead = lockHeadAndTail.first
+        runWithLock(lockHead, runnable)
+
+        val lockTail = lockHeadAndTail.second
+        if (lockTail.isNotEmpty()) {
+            runWithLocks(LinkedHashSet(lockTail), runnable)
         }
     }
 
@@ -83,13 +96,15 @@ object SyncQueue {
         when (lock) {
             SyncLockType.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
             SyncLockType.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
+            SyncLockType.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runReadT { runnable.run() }
+            SyncLockType.MODELIX_WRITE -> ReplicatedModelRegistry.model!!.getBranch().runWriteT { runnable.run() }
             SyncLockType.CUSTOM -> runnable.run()
         }
     }
 }
 
 data class SyncTask(
-    val requiredLock: SyncLockType,
+    val requiredLocks: LinkedHashSet<SyncLockType>,
     private val action: Runnable,
     private val followupCallback: ((Throwable?) -> Unit)? = null,
 ) {
@@ -110,5 +125,7 @@ data class SyncTask(
 enum class SyncLockType {
     MPS_READ,
     MPS_WRITE,
+    MODELIX_READ,
+    MODELIX_WRITE,
     CUSTOM,
 }

@@ -44,7 +44,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         check(name != null) { "Module's ($iNode) name is null" }
 
         var sModule: AbstractModule? = null
-        syncQueue.enqueueBlocking(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE)) {
             sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
         }
         nodeMap.put(sModule!!, iNode.nodeIdAsLong())
@@ -64,7 +64,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
 
         val moduleReference = ModuleReference(moduleName, moduleId)
-        syncQueue.enqueueBlocking(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE)) {
             parentModule.addDependency(moduleReference, reexport)
         }
 

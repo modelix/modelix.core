@@ -38,6 +38,7 @@ import org.modelix.model.api.remove
 import org.modelix.model.api.resolve
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.asMono
+import org.modelix.modelql.core.callQuery
 import org.modelix.modelql.core.count
 import org.modelix.modelql.core.equalTo
 import org.modelix.modelql.core.filter
@@ -63,6 +64,7 @@ import org.modelix.modelql.gen.jetbrains.mps.lang.core.setName
 import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.node
 import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.node_orNull
 import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.setNode
+import org.modelix.modelql.untyped.buildMonoQuery
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.conceptReference
 import org.modelix.modelql.untyped.descendants
@@ -359,5 +361,19 @@ abstract class TypedModelQLTest {
         }
 
         assertTrue { actual.instanceOf(C_XmlDocument) }
+    }
+
+    @Test
+    fun `buildQuery and callQuery can be separated`() = runTest { client ->
+        val query = buildMonoQuery { node ->
+            node.map { it.name }
+        }
+        val result = client.query { root ->
+            root.descendants()
+                .ofConcept(C_StaticMethodDeclaration)
+                .first()
+                .callQuery { query }
+        }
+        assertEquals("plus", result)
     }
 }

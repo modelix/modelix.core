@@ -153,12 +153,11 @@ class NodeSynchronizer(
             val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
             val nodeId = childNodeIdProducer.invoke(nodeMap)
 
-            // TODO uncomment me
-            /*branch.runWriteT {
+            branch.runWriteT {
                 val cloudParentNode = branch.getNode(parentNodeId)
                 val cloudChildNode = branch.getNode(nodeId)
                 cloudParentNode.removeChild(cloudChildNode)
-            }*/
+            }
 
             nodeMap.remove(nodeId)
         }

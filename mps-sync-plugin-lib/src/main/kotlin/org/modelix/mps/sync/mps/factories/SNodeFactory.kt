@@ -140,11 +140,11 @@ class SNodeFactory(
     }
 
     fun resolveReferences() {
-        resolvableReferences.forEach {
-            val source = it.source
-            val reference = it.reference
-            val target = nodeMap.getNode(it.targetNodeId)
-            syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueueBlocking(SyncLockType.MPS_WRITE) {
+            resolvableReferences.forEach {
+                val source = it.source
+                val reference = it.reference
+                val target = nodeMap.getNode(it.targetNodeId)
                 source.setReferenceTarget(reference, target)
             }
         }

@@ -78,7 +78,7 @@ class ModuleBinding(
         bindingsRegistry.removeModuleBinding(this)
 
         // delete module
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueueBlocking(SyncLockType.MPS_WRITE) {
             try {
                 if (!removeFromServer) {
                     // if we just delete it locally, then we have to call ModuleDeleteHelper manually.

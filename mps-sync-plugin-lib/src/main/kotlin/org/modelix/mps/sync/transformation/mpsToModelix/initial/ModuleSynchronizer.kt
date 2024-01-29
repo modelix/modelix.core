@@ -60,7 +60,7 @@ class ModuleSynchronizer(
 
                 nodeMap.put(module, cloudModule.nodeIdAsLong())
 
-                syncQueue.enqueue(SyncLockType.MPS_READ) {
+                syncQueue.enqueueBlocking(SyncLockType.MPS_READ) {
                     synchronizeModuleProperties(cloudModule, module)
                     // synchronize dependencies
                     module.declaredDependencies.forEach { addDependency(module, it) }

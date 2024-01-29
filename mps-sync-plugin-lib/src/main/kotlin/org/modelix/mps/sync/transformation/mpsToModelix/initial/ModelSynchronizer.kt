@@ -72,7 +72,7 @@ class ModelSynchronizer(
 
                 nodeMap.put(model, cloudModel.nodeIdAsLong())
 
-                syncQueue.enqueue(SyncLockType.MPS_READ) {
+                syncQueue.enqueueBlocking(SyncLockType.MPS_READ) {
                     synchronizeModelProperties(cloudModel, model)
                     // synchronize root nodes
                     model.rootNodes.forEach { nodeSynchronizer.addNode(it) }

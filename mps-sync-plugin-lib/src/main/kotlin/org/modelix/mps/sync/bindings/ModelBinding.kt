@@ -77,7 +77,7 @@ class ModelBinding(
         }
 
         // delete model
-        syncQueue.enqueue(SyncLockType.MPS_WRITE) {
+        syncQueue.enqueueBlocking(SyncLockType.MPS_WRITE) {
             try {
                 if (!removeFromServer) {
                     // to delete the files locally

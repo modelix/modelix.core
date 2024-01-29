@@ -21,6 +21,7 @@ import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CountDownLatch
 
 // TODO although SyncQueue is singleton, pass it on to the classes just like the nodeMap (just in case we do not want to have it as a singleton)
 // TODO do the same refactoring for all other singleton classes, so the classes where they are used can be unit-tested more easily
@@ -37,7 +38,28 @@ object SyncQueue {
         enqueue(SyncTask(requiredLock, action))
     }
 
-    fun enqueue(task: SyncTask) {
+    fun enqueueBlocking(requiredLock: SyncLockType, action: Runnable) {
+        val barrier = CountDownLatch(1)
+
+        // TODO test what happens with the original thread if Task throws an exception.
+        // I.e. does that thread on MPS gets blocked and prevents MPS from closing?
+        // Or MPS can close and the exception throws outside to the caller place?
+        // Besides, it should prevent the thread from running further if an exception had occurred.
+        val openBarrierCallback: ((Throwable?) -> Unit) = { throwable: Throwable? ->
+            // open the barrier
+            barrier.countDown()
+            throwable?.let { throw throwable }
+        }
+        val task = SyncTask(requiredLock, action, openBarrierCallback)
+
+        // submit the task
+        enqueue(task)
+
+        // wait for completion
+        barrier.await()
+    }
+
+    private fun enqueue(task: SyncTask) {
         tasks.add(task)
         scheduleFlush()
     }
@@ -52,20 +74,38 @@ object SyncQueue {
 
     private fun doFlush() {
         while (!tasks.isEmpty()) {
-            val head = tasks.poll()
-            runWithLock(head.requiredLock, head.action)
+            val task = tasks.poll()
+            runWithLock(task.requiredLock, task.actionBody)
         }
     }
 
-    private fun runWithLock(lock: SyncLockType, runnable: Runnable) =
+    private fun runWithLock(lock: SyncLockType, runnable: Runnable) {
         when (lock) {
             SyncLockType.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
             SyncLockType.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
             SyncLockType.CUSTOM -> runnable.run()
         }
+    }
 }
 
-data class SyncTask(val requiredLock: SyncLockType, val action: Runnable)
+data class SyncTask(
+    val requiredLock: SyncLockType,
+    private val action: Runnable,
+    private val followupCallback: ((Throwable?) -> Unit)? = null,
+) {
+    val actionBody = Runnable {
+        try {
+            action.run()
+            followupCallback?.invoke(null)
+        } catch (t: Throwable) {
+            if (followupCallback == null) {
+                throw t
+            } else {
+                followupCallback.invoke(t)
+            }
+        }
+    }
+}
 
 enum class SyncLockType {
     MPS_READ,

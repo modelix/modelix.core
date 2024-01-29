@@ -33,7 +33,8 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
-import org.modelix.mps.sync.util.SyncBarrier
+import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.isModel
 import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.nodeIdAsLong
@@ -43,23 +44,21 @@ class ITreeToSTreeTransformer(
     private val branch: IBranch,
     private val project: MPSProject,
     mpsLanguageRepository: MPSLanguageRepository,
-    private val isSynchronizing: SyncBarrier,
     private val nodeMap: MpsToModelixMap,
     private val bindingsRegistry: BindingsRegistry,
 ) {
 
     private val logger = logger<ITreeToSTreeTransformer>()
 
-    private val nodeTransformer = NodeTransformer(project.modelAccess, nodeMap, mpsLanguageRepository)
-    private val modelTransformer = ModelTransformer(project.modelAccess, nodeMap)
+    private val nodeTransformer = NodeTransformer(nodeMap, mpsLanguageRepository)
+    private val modelTransformer = ModelTransformer(nodeMap)
     private val moduleTransformer = ModuleTransformer(project, nodeMap)
 
     fun transform(entryPoint: INode): List<IBinding> {
         val bindings = mutableListOf<IBinding>()
 
-        isSynchronizing.runIfAlone {
+        SyncQueue.enqueue(SyncLockType.CUSTOM) {
             try {
-                // TODO use coroutines instead of big-bang eager loading?
                 branch.runReadT {
                     val nodeId = entryPoint.nodeIdAsLong()
                     val root = branch.getNode(nodeId)
@@ -90,21 +89,13 @@ class ITreeToSTreeTransformer(
                     logger.info("--- Registering model and module bindings ---")
                     nodeMap.models.forEach {
                         val model = it as SModelBase
-                        val binding =
-                            ModelBinding(model, branch, nodeMap, isSynchronizing, project.modelAccess, bindingsRegistry)
+                        val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry)
                         bindingsRegistry.addModelBinding(binding)
                         bindings.add(binding)
                     }
                     nodeMap.modules.forEach {
                         val module = it as AbstractModule
-                        val binding = ModuleBinding(
-                            module,
-                            branch,
-                            nodeMap,
-                            isSynchronizing,
-                            project.modelAccess,
-                            bindingsRegistry,
-                        )
+                        val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry)
                         bindingsRegistry.addModuleBinding(binding)
                         bindings.add(binding)
                     }

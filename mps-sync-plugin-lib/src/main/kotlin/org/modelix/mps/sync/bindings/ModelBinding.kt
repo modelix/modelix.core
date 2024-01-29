@@ -19,15 +19,14 @@ package org.modelix.mps.sync.bindings
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.model.ModelDeleteHelper
-import org.jetbrains.mps.openapi.module.ModelAccess
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.mps.util.runWriteActionCommandBlocking
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
-import org.modelix.mps.sync.util.SyncBarrier
+import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -35,15 +34,13 @@ class ModelBinding(
     val model: SModelBase,
     branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-    isSynchronizing: SyncBarrier,
-    private val modelAccess: ModelAccess,
     private val bindingsRegistry: BindingsRegistry,
 ) : IBinding {
 
     private val logger = logger<ModelBinding>()
 
-    private val modelChangeListener = ModelChangeListener(branch, nodeMap, isSynchronizing, this)
-    private val nodeChangeListener = NodeChangeListener(branch, nodeMap, isSynchronizing)
+    private val modelChangeListener = ModelChangeListener(branch, nodeMap, this)
+    private val nodeChangeListener = NodeChangeListener(branch, nodeMap)
 
     private var isDisposed = false
     private var isActivated = false
@@ -81,7 +78,7 @@ class ModelBinding(
 
         // delete model
         val mpsActionCompleted = AtomicBoolean()
-        modelAccess.runWriteActionCommandBlocking {
+        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
             try {
                 if (!removeFromServer) {
                     // to delete the files locally
@@ -92,7 +89,6 @@ class ModelBinding(
             } catch (ex: Exception) {
                 logger.error("Exception occurred while deactivating ${name()}.", ex)
                 // if any error occurs, then we put the binding back to let the rest of the application know that it exists
-                // TODO testme
                 bindingsRegistry.addModelBinding(this)
                 throw ex
             }

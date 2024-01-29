@@ -31,7 +31,6 @@ import jetbrains.mps.smodel.GeneralModuleFactory
 import jetbrains.mps.vfs.IFile
 import jetbrains.mps.vfs.VFSManager
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
 import java.io.File
 
 // TODO hacky solution. A nicer one could be: https://github.com/JetBrains/MPS/blob/master/workbench/mps-platform/jetbrains.mps.ide.platform/source_gen/jetbrains/mps/project/modules/SolutionProducer.java
@@ -75,10 +74,8 @@ class SolutionProducer(private val project: MPSProject) {
         project.addModule(solution)
 
         if (solution.repository == null) {
-            project.modelAccess.runWriteInEDTBlocking {
-                // this might be a silly workaround...
-                solution.attach(project.repository)
-            }
+            // this might be a silly workaround...
+            solution.attach(project.repository)
         }
         check(solution.repository != null) { "The solution should be in a repo, so also the model will be in a repo and syncReference will not crash" }
 

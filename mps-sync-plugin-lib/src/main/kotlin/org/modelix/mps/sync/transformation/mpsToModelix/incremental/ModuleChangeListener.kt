@@ -31,21 +31,19 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import org.modelix.mps.sync.util.SyncBarrier
 
 // TODO some methods need some testing
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleChangeListener(
     branch: IBranch,
     nodeMap: MpsToModelixMap,
-    isSynchronizing: SyncBarrier,
 ) : SModuleListener {
 
-    private val moduleSynchronizer = ModuleSynchronizer(branch, nodeMap, isSynchronizing)
-    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, isSynchronizing)
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, isSynchronizing)
+    private val moduleSynchronizer = ModuleSynchronizer(branch, nodeMap)
+    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap)
+    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap)
 
-    override fun modelAdded(module: SModule, model: SModel) = modelSynchronizer.addModel(model as SModelBase)
+    override fun modelAdded(module: SModule, model: SModel) = modelSynchronizer.addModelAndActivate(model as SModelBase)
 
     override fun modelRemoved(module: SModule, reference: SModelReference) {
         if (ApplicationLifecycleTracker.applicationClosing) {

@@ -25,8 +25,9 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.factories.SolutionProducer
-import org.modelix.mps.sync.mps.util.runWriteInEDTBlocking
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -43,19 +44,18 @@ class ModuleTransformer(private val project: MPSProject, private val nodeMap: Mp
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Module's ($iNode) name is null" }
 
-        val sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
-        nodeMap.put(sModule, iNode.nodeIdAsLong())
+        var sModule: AbstractModule? = null
+        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+            sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
+        }
+        nodeMap.put(sModule!!, iNode.nodeIdAsLong())
 
         iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).forEach {
-            transformModuleDependency(it, sModule)
+            transformModuleDependency(it, sModule!!)
         }
     }
 
-    fun transformModuleDependency(
-        iNode: INode,
-        parentModule: AbstractModule,
-        mpsWriteAction: ((Runnable) -> Unit) = project.modelAccess::runWriteInEDTBlocking,
-    ) {
+    fun transformModuleDependency(iNode: INode, parentModule: AbstractModule) {
         val reexport = (
             iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
                 ?: "false"
@@ -65,7 +65,7 @@ class ModuleTransformer(private val project: MPSProject, private val nodeMap: Mp
         val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
 
         val moduleReference = ModuleReference(moduleName, moduleId)
-        mpsWriteAction {
+        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
             parentModule.addDependency(moduleReference, reexport)
         }
 

@@ -24,21 +24,19 @@ import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeChangeVisitor
-import org.modelix.mps.sync.util.SyncBarrier
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelixBranchListener(
     private val replicatedModel: ReplicatedModel,
     private val project: MPSProject,
     private val languageRepository: MPSLanguageRepository,
-    private val isSynchronizing: SyncBarrier,
     private val nodeMap: MpsToModelixMap,
 ) : IBranchListener {
     override fun treeChanged(oldTree: ITree?, newTree: ITree) {
         if (oldTree != null) {
             newTree.visitChanges(
                 oldTree,
-                ModelixTreeChangeVisitor(replicatedModel, project, languageRepository, isSynchronizing, nodeMap),
+                ModelixTreeChangeVisitor(replicatedModel, project, languageRepository, nodeMap),
             )
         }
     }

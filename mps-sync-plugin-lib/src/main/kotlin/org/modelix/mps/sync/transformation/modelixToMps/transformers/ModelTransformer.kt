@@ -21,7 +21,6 @@ import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.SModelReference
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
-import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -29,20 +28,18 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.util.createModel
-import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap: MpsToModelixMap) {
+class ModelTransformer(private val nodeMap: MpsToModelixMap) {
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
-    fun transformToModel(
-        iNode: INode,
-        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
-    ) {
+    fun transformToModel(iNode: INode) {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Model's ($iNode) name is null" }
 
@@ -55,7 +52,7 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        mpsWriteAction {
+        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
             val modelDoesNotExist = module.getModel(modelId) == null
             if (modelDoesNotExist) {
                 sModel = module.createModel(name, modelId) as EditableSModel
@@ -83,10 +80,7 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
         )
     }
 
-    fun resolveModelImports(
-        repository: SRepository,
-        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
-    ) {
+    fun resolveModelImports(repository: SRepository) {
         resolvableModelImports.forEach {
             val id = PersistenceFacade.getInstance().createModelId(it.targetModelId)
             val targetModel = (nodeMap.getModel(it.targetModelModelixId) ?: repository.getModel(id))!!
@@ -96,7 +90,7 @@ class ModelTransformer(private val modelAccess: ModelAccess, private val nodeMap
             val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
-            mpsWriteAction {
+            SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
                 ModelImports(it.source).addModelImport(modelImport)
             }
             nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)

@@ -21,9 +21,7 @@ import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
-import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.module.SModule
-import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
@@ -31,26 +29,21 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.factories.SNodeFactory
 import org.modelix.mps.sync.mps.util.addDevKit
 import org.modelix.mps.sync.mps.util.addLanguageImport
-import org.modelix.mps.sync.mps.util.runReadBlocking
-import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.isDevKitDependency
 import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class NodeTransformer(
-    private val modelAccess: ModelAccess,
-    private val nodeMap: MpsToModelixMap,
-    mpsLanguageRepository: MPSLanguageRepository,
-) {
+class NodeTransformer(private val nodeMap: MpsToModelixMap, mpsLanguageRepository: MPSLanguageRepository) {
 
     private val logger = logger<NodeTransformer>()
-    private val nodeFactory = SNodeFactory(mpsLanguageRepository, modelAccess, nodeMap)
+    private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap)
 
     fun transformToNode(iNode: INode) {
         if (iNode.isDevKitDependency()) {
@@ -76,84 +69,62 @@ class NodeTransformer(
         }
     }
 
-    fun transformLanguageDependency(
-        iNode: INode,
-        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
-        onlyAddToParentModel: Boolean = false,
-    ) {
-        val moduleId = iNode.getModule()?.nodeIdAsLong()
-        val parentModule = nodeMap.getModule(moduleId)!!
-        val dependentModule = getDependentModule(iNode, parentModule)
+    fun transformLanguageDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
+        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+            val moduleId = iNode.getModule()?.nodeIdAsLong()
+            val parentModule = nodeMap.getModule(moduleId)!!
+            val dependentModule = getDependentModule(iNode, parentModule)
 
-        var languageModuleReference: SModuleReference? = null
-        modelAccess.runReadBlocking {
-            languageModuleReference = (dependentModule as Language).moduleReference
-        }
-        val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference!!)
-        val version =
-            iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)
+            val languageModuleReference = (dependentModule as Language).moduleReference
+            val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference)
+            val version =
+                iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)
 
-        // modelix does not store to which model the dependency belongs, thus adding it to all of them
-        mpsWriteAction {
+            // modelix does not store to which model the dependency belongs, thus adding it to all of them
             val languageVersion = version!!.toInt()
             if (!onlyAddToParentModel) {
                 parentModule.models.forEach {
                     it.addLanguageImport(sLanguage, languageVersion)
-                    nodeMap.put(it, languageModuleReference!!, iNode.nodeIdAsLong())
+                    nodeMap.put(it, languageModuleReference, iNode.nodeIdAsLong())
                 }
             } else {
                 val modelNodeId = iNode.getModel()?.nodeIdAsLong()
                 val parentModel = nodeMap.getModel(modelNodeId)!!
                 parentModel.addLanguageImport(sLanguage, languageVersion)
-                nodeMap.put(parentModel, languageModuleReference!!, iNode.nodeIdAsLong())
+                nodeMap.put(parentModel, languageModuleReference, iNode.nodeIdAsLong())
             }
         }
     }
 
-    fun transformDevKitDependency(
-        iNode: INode,
-        mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking,
-        onlyAddToParentModel: Boolean = false,
-    ) {
-        val moduleId = iNode.getModule()?.nodeIdAsLong()
-        val parentModule = nodeMap.getModule(moduleId)!!
-        val dependentModule = getDependentModule(iNode, parentModule)
+    fun transformDevKitDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
+        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+            val moduleId = iNode.getModule()?.nodeIdAsLong()
+            val parentModule = nodeMap.getModule(moduleId)!!
+            val dependentModule = getDependentModule(iNode, parentModule)
 
-        var devKitModuleReference: SModuleReference? = null
-        modelAccess.runReadBlocking {
-            devKitModuleReference = (dependentModule as DevKit).moduleReference
-        }
+            val devKitModuleReference = (dependentModule as DevKit).moduleReference
 
-        // modelix does not store to which model the dependency belongs, thus adding it to all of them
-        mpsWriteAction {
+            // modelix does not store to which model the dependency belongs, thus adding it to all of them
             if (!onlyAddToParentModel) {
                 parentModule.models.forEach {
-                    it.addDevKit(devKitModuleReference!!)
-                    nodeMap.put(it, devKitModuleReference!!, iNode.nodeIdAsLong())
+                    it.addDevKit(devKitModuleReference)
+                    nodeMap.put(it, devKitModuleReference, iNode.nodeIdAsLong())
                 }
             } else {
                 val modelNodeId = iNode.getModel()?.nodeIdAsLong()
                 val parentModel = nodeMap.getModel(modelNodeId)!!
-                parentModel.addDevKit(devKitModuleReference!!)
-                nodeMap.put(parentModel, devKitModuleReference!!, iNode.nodeIdAsLong())
+                parentModel.addDevKit(devKitModuleReference)
+                nodeMap.put(parentModel, devKitModuleReference, iNode.nodeIdAsLong())
             }
         }
     }
 
-    fun resolveReferences(mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking) =
-        nodeFactory.resolveReferences(mpsWriteAction)
+    fun resolveReferences() = nodeFactory.resolveReferences()
 
     fun clearResolvableReferences() = nodeFactory.clearResolvableReferences()
 
     private fun getDependentModule(iNode: INode, parentModule: SModule): SModule {
-        val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
-        val dependentModule = uuid?.let {
-            val reference = AtomicReference<SModule>()
-            modelAccess.runReadAction {
-                reference.set(parentModule.repository?.getModule(ModuleId.regular(UUID.fromString(it))))
-            }
-            reference.get()
-        }!!
-        return dependentModule
+        val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)!!
+        return parentModule.repository?.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
     }
 }

@@ -35,56 +35,52 @@ import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncBarrier
+import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-    private val isSynchronizing: SyncBarrier,
     private val resolvableReferences: MutableList<CloudResolvableReference>? = null,
 ) {
 
     fun addNode(node: SNode) {
-        isSynchronizing.runIfAlone {
-            addNodeUnprotected(node)
-        }
-    }
-
-    fun addNodeUnprotected(node: SNode) {
-        val parentNodeId = if (node.parent != null) {
-            nodeMap[node.parent]!!
-        } else {
-            nodeMap[node.model]!!
-        }
-
-        val containmentLink = node.containmentLink
-        val childLink: IChildLink = if (containmentLink == null) {
-            if (node.parent == null) {
-                BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
+        SyncQueue.enqueue(SyncLockType.CUSTOM) {
+            val parentNodeId = if (node.parent != null) {
+                nodeMap[node.parent]!!
             } else {
-                throw IllegalStateException("Containment link of $node is null, thus node may not get synchronized to modelix")
+                nodeMap[node.model]!!
             }
-        } else {
-            MPSChildLink(containmentLink)
-        }
 
-        val nodeId = nodeMap[node]
-        val mpsConcept = node.concept
-
-        val childExists = nodeId != null
-        branch.runWriteT { transaction ->
-            if (childExists) {
-                transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
+            val containmentLink = node.containmentLink
+            val childLink: IChildLink = if (containmentLink == null) {
+                if (node.parent == null) {
+                    BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
+                } else {
+                    throw IllegalStateException("Containment link of $node is null, thus node may not get synchronized to modelix")
+                }
             } else {
-                val cloudParentNode = branch.getNode(parentNodeId)
-                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+                MPSChildLink(containmentLink)
+            }
 
-                // save the modelix ID and the SNode in the map
-                nodeMap.put(node, cloudChildNode.nodeIdAsLong())
+            val nodeId = nodeMap[node]
+            val mpsConcept = node.concept
 
-                synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
+            val childExists = nodeId != null
+            branch.runWriteT { transaction ->
+                if (childExists) {
+                    transaction.moveChild(parentNodeId, childLink.getSimpleName(), -1, nodeId!!)
+                } else {
+                    val cloudParentNode = branch.getNode(parentNodeId)
+                    val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+
+                    // save the modelix ID and the SNode in the map
+                    nodeMap.put(node, cloudChildNode.nodeIdAsLong())
+
+                    synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
+                }
             }
         }
     }
@@ -142,7 +138,7 @@ class NodeSynchronizer(
         setProperty(MPSProperty(mpsProperty), newValue, sourceNodeIdProducer)
 
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
-        isSynchronizing.runIfAlone {
+        SyncQueue.enqueue(SyncLockType.CUSTOM) {
             val nodeId = sourceNodeIdProducer.invoke(nodeMap)
             branch.runWriteT {
                 val cloudNode = branch.getNode(nodeId)
@@ -152,7 +148,7 @@ class NodeSynchronizer(
     }
 
     fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {
-        isSynchronizing.runIfAlone {
+        SyncQueue.enqueue(SyncLockType.CUSTOM) {
             val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
             val nodeId = childNodeIdProducer.invoke(nodeMap)
 
@@ -172,7 +168,7 @@ class NodeSynchronizer(
         sourceNodeIdProducer: (MpsToModelixMap) -> Long,
         targetNodeIdProducer: (MpsToModelixMap) -> Long?,
     ) {
-        isSynchronizing.runIfAlone {
+        SyncQueue.enqueue(SyncLockType.CUSTOM) {
             val sourceNodeId = sourceNodeIdProducer.invoke(nodeMap)
             val targetNodeId = targetNodeIdProducer.invoke(nodeMap)
             val reference = MPSReferenceLink(mpsReferenceLink)

@@ -12,6 +12,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
+import org.modelix.model.client.SharedExecutors
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
@@ -22,7 +23,6 @@ import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.RepositoryChangeListener
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
-import org.modelix.mps.sync.util.SyncBarrier
 import java.net.ConnectException
 import java.net.URL
 
@@ -126,27 +126,18 @@ class SyncServiceImpl : SyncService {
                 replicatedModel.getBranch(),
                 targetProject,
                 languageRepository,
-                SyncBarrier,
                 MpsToModelixMap,
                 BindingsRegistry.instance,
             ).transform(model)
 
             // register replicated model change listener
-            val listener =
-                ModelixBranchListener(
-                    replicatedModel,
-                    targetProject,
-                    languageRepository,
-                    SyncBarrier,
-                    MpsToModelixMap,
-                )
+            val listener = ModelixBranchListener(replicatedModel, targetProject, languageRepository, MpsToModelixMap)
             replicatedModel.getBranch().addListener(listener)
             changeListenerByReplicatedModel[replicatedModel] = listener
 
             // register MPS project change listener
             if (projectWithChangeListener == null) {
-                val repositoryChangeListener =
-                    RepositoryChangeListener(replicatedModel.getBranch(), MpsToModelixMap, SyncBarrier)
+                val repositoryChangeListener = RepositoryChangeListener(replicatedModel.getBranch(), MpsToModelixMap)
                 targetProject.repository.addRepositoryListener(repositoryChangeListener)
                 projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
             }
@@ -172,6 +163,7 @@ class SyncServiceImpl : SyncService {
     override fun dispose() {
         // cancel all running coroutines
         coroutineScope.cancel()
+        SharedExecutors.shutdownAll()
         // unregister change listeners
         resetProjectWithChangeListener()
         changeListenerByReplicatedModel.forEach { it.key.getBranch().removeListener(it.value) }

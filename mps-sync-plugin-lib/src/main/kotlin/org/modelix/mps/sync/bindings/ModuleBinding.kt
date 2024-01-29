@@ -19,15 +19,14 @@ package org.modelix.mps.sync.bindings
 import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
-import org.jetbrains.mps.openapi.module.ModelAccess
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.util.runWriteActionCommandBlocking
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
-import org.modelix.mps.sync.util.SyncBarrier
+import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -35,14 +34,12 @@ class ModuleBinding(
     val module: AbstractModule,
     branch: IBranch,
     private val nodeMap: MpsToModelixMap,
-    isSynchronizing: SyncBarrier,
-    private val modelAccess: ModelAccess,
     private val bindingsRegistry: BindingsRegistry,
 ) : IBinding {
 
     private val logger = logger<ModelBinding>()
 
-    private val changeListener = ModuleChangeListener(branch, nodeMap, isSynchronizing)
+    private val changeListener = ModuleChangeListener(branch, nodeMap)
 
     private var isDisposed = false
     private var isActivated = false
@@ -82,16 +79,13 @@ class ModuleBinding(
 
         // delete module
         val mpsActionCompleted = AtomicBoolean()
-        modelAccess.runWriteActionCommandBlocking {
+        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
             try {
                 if (!removeFromServer) {
                     // if we just delete it locally, then we have to call ModuleDeleteHelper manually.
                     // otherwise, MPS will call us via the event-handler chain starting from ModuleDeleteHelper.deleteModules --> RepositoryChangeListener --> moduleListener.deactivate(removeFromServer = true)
-                    ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!).deleteModules(
-                        listOf(module),
-                        false,
-                        true,
-                    )
+                    ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!)
+                        .deleteModules(listOf(module), false, true)
                 }
                 mpsActionCompleted.set(true)
             } catch (ex: Exception) {

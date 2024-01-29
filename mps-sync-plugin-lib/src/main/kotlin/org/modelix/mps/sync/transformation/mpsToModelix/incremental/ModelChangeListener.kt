@@ -35,19 +35,17 @@ import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import org.modelix.mps.sync.util.SyncBarrier
 
 // TODO some methods need some testing
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelChangeListener(
     branch: IBranch,
     nodeMap: MpsToModelixMap,
-    isSynchronizing: SyncBarrier,
     private val binding: ModelBinding,
 ) : SModelListener {
 
-    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, isSynchronizing)
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, isSynchronizing)
+    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap)
+    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap)
 
     // TODO might not work, we have to test it
     override fun importAdded(event: SModelImportEvent) = modelSynchronizer.addModelImport(event.model, event.modelUID)

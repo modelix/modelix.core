@@ -25,7 +25,6 @@ import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeId
-import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -33,15 +32,15 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSReferenceLink
-import org.modelix.mps.sync.mps.util.runWriteActionInEDTBlocking
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SNodeFactory(
     private val conceptRepository: MPSLanguageRepository,
-    private val modelAccess: ModelAccess,
     private val nodeMap: MpsToModelixMap,
 ) {
 
@@ -78,18 +77,16 @@ class SNodeFactory(
         val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
         val isRootNode = concept.isRootable && modelIsTheParent
 
-        if (isRootNode) {
-            modelAccess.runWriteActionInEDTBlocking {
+        SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
+            if (isRootNode) {
                 model?.addRootNode(sNode)
-            }
-        } else {
-            val parentNodeId = parent?.nodeIdAsLong()
-            val parentNode = nodeMap.getNode(parentNodeId)
-            check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
+            } else {
+                val parentNodeId = parent?.nodeIdAsLong()
+                val parentNode = nodeMap.getNode(parentNodeId)
+                check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
 
-            val role = iNode.getContainmentLink()
-            val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
-            modelAccess.runWriteActionInEDTBlocking {
+                val role = iNode.getContainmentLink()
+                val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
                 parentNode.addChild(containmentLink, sNode)
             }
         }
@@ -120,7 +117,7 @@ class SNodeFactory(
             val property = PropertyFromName(it.name)
             val value = source.getPropertyValue(property)
 
-            modelAccess.runWriteActionInEDTBlocking {
+            SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
                 target.setProperty(it, value)
             }
         }
@@ -141,12 +138,12 @@ class SNodeFactory(
         }
     }
 
-    fun resolveReferences(mpsWriteAction: ((Runnable) -> Unit) = modelAccess::runWriteActionInEDTBlocking) {
+    fun resolveReferences() {
         resolvableReferences.forEach {
             val source = it.source
             val reference = it.reference
             val target = nodeMap.getNode(it.targetNodeId)
-            mpsWriteAction {
+            SyncQueue.enqueue(SyncLockType.MPS_WRITE) {
                 source.setReferenceTarget(reference, target)
             }
         }

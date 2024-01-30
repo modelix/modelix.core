@@ -27,7 +27,6 @@ pluginManagement {
 
 rootProject.name = "modelix.core"
 
-include("api")
 include("authorization")
 include("bulk-model-sync-gradle")
 include("bulk-model-sync-lib")

@@ -30,7 +30,7 @@ import org.modelix.mps.sync.mps.factories.SNodeFactory
 import org.modelix.mps.sync.mps.util.addDevKit
 import org.modelix.mps.sync.mps.util.addLanguageImport
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
@@ -74,7 +74,7 @@ class NodeTransformer(
     }
 
     fun transformLanguageDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
-        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
             val moduleId = iNode.getModule()?.nodeIdAsLong()
             val parentModule = nodeMap.getModule(moduleId)!!
             val dependentModule = getDependentModule(iNode, parentModule)
@@ -101,7 +101,7 @@ class NodeTransformer(
     }
 
     fun transformDevKitDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
-        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
             val moduleId = iNode.getModule()?.nodeIdAsLong()
             val parentModule = nodeMap.getModule(moduleId)!!
             val dependentModule = getDependentModule(iNode, parentModule)

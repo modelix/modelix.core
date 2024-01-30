@@ -33,7 +33,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -49,7 +49,7 @@ class ModuleSynchronizer(
         ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue, postponeReferenceResolution = true)
 
     fun addModule(module: AbstractModule) {
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ)) {
             val rootNode = branch.getRootNode()
             val cloudModule = rootNode.addNewChild(
                 ChildLinkFromName("modules"),
@@ -98,7 +98,7 @@ class ModuleSynchronizer(
     }
 
     fun addDependency(module: SModule, dependency: SDependency) {
-        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ)) {
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
             val moduleReference = dependency.targetModule

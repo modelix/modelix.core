@@ -29,7 +29,7 @@ import org.modelix.model.api.getNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -62,7 +62,7 @@ class ModelSynchronizer(
     fun addModel(model: SModelBase): ModelBinding {
         var binding: ModelBinding? = null
 
-        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ)) {
             val moduleModelixId = nodeMap[model.module]!!
             val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
@@ -104,7 +104,7 @@ class ModelSynchronizer(
     }
 
     fun addModelImport(model: SModel, importedModelReference: SModelReference) {
-        syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ)) {
             val targetModel = importedModelReference.resolve(model.repository)
             if (resolvableModelImports != null) {
                 resolvableModelImports.add(CloudResolvableModelImport(model, targetModel))
@@ -120,7 +120,7 @@ class ModelSynchronizer(
         val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
         val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
 
-        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ)) {
             val cloudParentNode = branch.getNode(modelixId)
             val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
 
@@ -137,7 +137,7 @@ class ModelSynchronizer(
     }
 
     fun addLanguageDependency(model: SModel, language: SLanguage) {
-        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ)) {
             val modelixId = nodeMap[model]!!
 
             val languageModuleReference = language.sourceModuleReference
@@ -172,7 +172,7 @@ class ModelSynchronizer(
     }
 
     fun addDevKitDependency(model: SModel, devKit: SModuleReference) {
-        syncQueue.enqueue(linkedSetOf(SyncLockType.MODELIX_WRITE, SyncLockType.MPS_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ)) {
             val modelixId = nodeMap[model]!!
 
             val repository = model.repository

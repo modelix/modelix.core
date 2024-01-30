@@ -33,7 +33,7 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
@@ -78,7 +78,7 @@ class SNodeFactory(
         val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
         val isRootNode = concept.isRootable && modelIsTheParent
 
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE, SyncLockType.MODELIX_READ)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
             if (isRootNode) {
                 model?.addRootNode(sNode)
             } else {
@@ -118,7 +118,7 @@ class SNodeFactory(
             val property = PropertyFromName(it.name)
             val value = source.getPropertyValue(property)
 
-            syncQueue.enqueue(linkedSetOf(SyncLockType.MPS_WRITE)) {
+            syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
                 target.setProperty(it, value)
             }
         }
@@ -138,7 +138,7 @@ class SNodeFactory(
     }
 
     fun resolveReferences() {
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
             resolvableReferences.forEach {
                 val source = it.source
                 val reference = it.reference

@@ -25,7 +25,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
-import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -77,7 +77,7 @@ class ModelBinding(
         }
 
         // delete model
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
             try {
                 if (!removeFromServer) {
                     // to delete the files locally

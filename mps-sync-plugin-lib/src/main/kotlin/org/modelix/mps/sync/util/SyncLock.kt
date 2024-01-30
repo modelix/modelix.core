@@ -19,7 +19,7 @@ package org.modelix.mps.sync.util
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-enum class SyncLockType {
+enum class SyncLock {
     MPS_WRITE,
     MPS_READ,
     MODELIX_WRITE,
@@ -28,44 +28,44 @@ enum class SyncLockType {
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class SnycLockTypeComparator : Comparator<SyncLockType> {
+class SnycLockComparator : Comparator<SyncLock> {
 
     /**
      * Order of locks is important, because MPS executes the action on a separate thread, where the Modelix transactions might not be available.
      * Lock priority order: MPS_WRITE > MPS_READ > MODELIX_WRITE > MODELIX_READ > CUSTOM
      */
-    override fun compare(p0: SyncLockType, p1: SyncLockType) =
-        if (p0 == SyncLockType.MPS_WRITE) {
+    override fun compare(p0: SyncLock, p1: SyncLock) =
+        if (p0 == SyncLock.MPS_WRITE) {
             if (p0 == p1) {
                 0
             } else {
                 -1
             }
-        } else if (p0 == SyncLockType.MPS_READ) {
-            if (p1 == SyncLockType.MPS_WRITE) {
+        } else if (p0 == SyncLock.MPS_READ) {
+            if (p1 == SyncLock.MPS_WRITE) {
                 1
             } else if (p0 == p1) {
                 0
             } else {
                 -1
             }
-        } else if (p0 == SyncLockType.MODELIX_WRITE) {
-            if (p1 == SyncLockType.MPS_READ || p1 == SyncLockType.MPS_WRITE) {
+        } else if (p0 == SyncLock.MODELIX_WRITE) {
+            if (p1 == SyncLock.MPS_READ || p1 == SyncLock.MPS_WRITE) {
                 1
             } else if (p0 == p1) {
                 0
             } else {
                 -1
             }
-        } else if (p0 == SyncLockType.MODELIX_READ) {
-            if (p1 == SyncLockType.CUSTOM) {
+        } else if (p0 == SyncLock.MODELIX_READ) {
+            if (p1 == SyncLock.CUSTOM) {
                 -1
             } else if (p0 == p1) {
                 0
             } else {
                 1
             }
-        } else if (p0 == SyncLockType.CUSTOM) {
+        } else if (p0 == SyncLock.CUSTOM) {
             if (p0 == p1) {
                 0
             } else {

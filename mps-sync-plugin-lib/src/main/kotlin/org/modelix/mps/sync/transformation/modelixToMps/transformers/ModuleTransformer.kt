@@ -26,7 +26,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.factories.SolutionProducer
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLockType
+import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
@@ -44,7 +44,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         check(name != null) { "Module's ($iNode) name is null" }
 
         var sModule: AbstractModule? = null
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
             sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
         }
         nodeMap.put(sModule!!, iNode.nodeIdAsLong())
@@ -64,7 +64,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
 
         val moduleReference = ModuleReference(moduleName, moduleId)
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLockType.MPS_WRITE)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
             parentModule.addDependency(moduleReference, reexport)
         }
 

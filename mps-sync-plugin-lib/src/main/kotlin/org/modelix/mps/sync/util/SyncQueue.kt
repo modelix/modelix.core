@@ -36,11 +36,11 @@ object SyncQueue {
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
 
     // TODO handle errors that may occur while action execution
-    fun enqueue(requiredLocks: LinkedHashSet<SyncLockType>, action: Runnable) {
+    fun enqueue(requiredLocks: LinkedHashSet<SyncLock>, action: Runnable) {
         enqueue(SyncTask(requiredLocks, action))
     }
 
-    fun enqueueBlocking(requiredLocks: LinkedHashSet<SyncLockType>, action: Runnable) {
+    fun enqueueBlocking(requiredLocks: LinkedHashSet<SyncLock>, action: Runnable) {
         val barrier = CountDownLatch(1)
 
         // TODO test what happens with the original thread if Task throws an exception.
@@ -81,7 +81,7 @@ object SyncQueue {
         }
     }
 
-    private fun runWithLocks(locks: LinkedHashSet<SyncLockType>, runnable: Runnable) {
+    private fun runWithLocks(locks: LinkedHashSet<SyncLock>, runnable: Runnable) {
         if (locks.isEmpty()) {
             runnable.run()
         } else {
@@ -94,24 +94,24 @@ object SyncQueue {
         }
     }
 
-    private fun runWithLock(lock: SyncLockType, runnable: () -> Unit) {
+    private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
         when (lock) {
-            SyncLockType.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
-            SyncLockType.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
-            SyncLockType.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runRead(runnable)
-            SyncLockType.MODELIX_WRITE -> ReplicatedModelRegistry.model!!.getBranch().runWrite(runnable)
-            SyncLockType.CUSTOM -> runnable.invoke()
+            SyncLock.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
+            SyncLock.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
+            SyncLock.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runRead(runnable)
+            SyncLock.MODELIX_WRITE -> ReplicatedModelRegistry.model!!.getBranch().runWrite(runnable)
+            SyncLock.CUSTOM -> runnable.invoke()
         }
     }
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 private data class SyncTask(
-    val requiredLocks: LinkedHashSet<SyncLockType>,
+    val requiredLocks: LinkedHashSet<SyncLock>,
     private val action: Runnable,
     private val followupCallback: ((Throwable?) -> Unit)? = null,
 ) {
-    val sortedLocks = LinkedHashSet<SyncLockType>(requiredLocks.sortedWith(SnycLockTypeComparator()))
+    val sortedLocks = LinkedHashSet<SyncLock>(requiredLocks.sortedWith(SnycLockComparator()))
 
     val actionBody = Runnable {
         try {

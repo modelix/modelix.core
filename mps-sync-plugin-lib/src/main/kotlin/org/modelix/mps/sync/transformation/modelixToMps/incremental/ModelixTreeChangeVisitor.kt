@@ -57,7 +57,7 @@ class ModelixTreeChangeVisitor(
     private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
 
     override fun referenceChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), true) {
             val sNode = nodeMap.getNode(nodeId)!!
             val sReferenceLink = sNode.concept.referenceLinks.find { it.name == role }
 
@@ -71,7 +71,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun propertyChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), true) {
             val sNode = nodeMap.getNode(nodeId)!!
             val sProperty = sNode.concept.properties.find { it.name == role }
 
@@ -84,7 +84,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeRemoved(nodeId: Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), true) {
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
                 it.delete()
@@ -111,7 +111,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeAdded(nodeId: Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), true) {
             val iNode = getNode(nodeId)
             if (iNode.isModule()) {
                 moduleTransformer.transformToModule(iNode)
@@ -135,7 +135,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun childrenChanged(nodeId: Long, role: String?) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), true) {
             modelTransformer.resolveModelImports(languageRepository.repository)
             modelTransformer.clearResolvableModelImports()
 
@@ -145,7 +145,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun containmentChanged(nodeId: Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), true) {
             val iNode = getNode(nodeId)
             val newParentId = iNode.parent?.nodeIdAsLong()
 

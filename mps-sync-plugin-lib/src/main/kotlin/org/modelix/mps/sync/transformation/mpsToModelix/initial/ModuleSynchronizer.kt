@@ -98,7 +98,7 @@ class ModuleSynchronizer(
     }
 
     fun addDependency(module: SModule, dependency: SDependency) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
             val moduleReference = dependency.targetModule

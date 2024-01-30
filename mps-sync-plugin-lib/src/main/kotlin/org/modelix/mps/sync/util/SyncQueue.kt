@@ -17,68 +17,82 @@
 package org.modelix.mps.sync.util
 
 import com.intellij.util.containers.headTail
+import jetbrains.mps.util.containers.ConcurrentHashSet
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Future
 
-// TODO although SyncQueue is singleton, pass it on to the classes just like the nodeMap (just in case we do not want to have it as a singleton)
-// TODO do the same refactoring for all other singleton classes, so the classes where they are used can be unit-tested more easily
-
-// TODO How to avoid ping-pong changes, because this condition will almost never be true, thanks to flushing the tasks on SharedExecutors.FIXED (i.e. they will be always on a separate thread compared to where the change listeners are running)?
-// TODO ping-pong changes = a change coming from modelix triggers a change in MPS that triggers a cloud sync that triggers a change back here.
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object SyncQueue {
 
+    private val activeSyncThreads = ConcurrentHashSet<Thread>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
 
-    // TODO handle errors that may occur while action execution
-    fun enqueue(requiredLocks: LinkedHashSet<SyncLock>, action: Runnable) {
-        enqueue(SyncTask(requiredLocks, action))
+    fun enqueue(requiredLocks: LinkedHashSet<SyncLock>, checkExecutionThread: Boolean = false, action: Runnable) {
+        enqueue(SyncTask(requiredLocks, action), checkExecutionThread)
     }
 
-    fun enqueueBlocking(requiredLocks: LinkedHashSet<SyncLock>, action: Runnable) {
-        val barrier = CountDownLatch(1)
-
-        // TODO test what happens with the original thread if Task throws an exception.
-        // I.e. does that thread on MPS gets blocked and prevents MPS from closing?
-        // Or MPS can close and the exception throws outside to the caller place?
-        // Besides, it should prevent the thread from running further if an exception had occurred.
-        val openBarrierCallback: ((Throwable?) -> Unit) = { throwable: Throwable? ->
-            // open the barrier
-            barrier.countDown()
-            throwable?.let { throw throwable }
-        }
-        val task = SyncTask(requiredLocks, action, openBarrierCallback)
-
+    fun enqueueBlocking(
+        requiredLocks: LinkedHashSet<SyncLock>,
+        checkExecutionThread: Boolean = false,
+        action: Runnable,
+    ) {
         // submit the task
-        enqueue(task)
+        val future = enqueue(SyncTask(requiredLocks, action), checkExecutionThread)
 
-        // wait for completion
-        barrier.await()
+        // wait for completion (will throw exception if task threw exception; otherwise returns upon successful completion)
+        future.get()
     }
 
-    private fun enqueue(task: SyncTask) {
+    private fun enqueue(task: SyncTask, checkExecutionThread: Boolean): Future<*> {
+        /**
+         * If we have to check the execution thread, then do not schedule Task if it is initiated on a Thread that is
+         * running a synchronization. This might be a symptom of a "Table tennis" (ping-pong) effect in which a change
+         * in MPS triggers a change in Modelix which triggers a change in MPS again via the *ChangeListener and
+         * ModelixTreeChangeVisitor chains registered in MPS and in Modelix, respectively.
+         *
+         * Because the SyncTasks are executed on separate threads by the ExecutorService (see SharedExecutors.FIXED),
+         * there is a very little chance of missing an intended change on other side. With other words: there is very
+         * little chance that it makes sense that on the same thread two SyncTasks occur.
+         *
+         * WARNING: This might be tricky to refactor, if we change to coroutines instead of Threads in the future.
+         */
+        if (checkExecutionThread && activeSyncThreads.contains(Thread.currentThread())) {
+            val future = CompletableFuture<Unit?>()
+            future.complete(null)
+            return future
+        }
+
         tasks.add(task)
-        scheduleFlush()
+        return scheduleFlush()
     }
 
-    private fun scheduleFlush() {
+    private fun scheduleFlush(): Future<*> {
         // TODO maybe refactor to coroutines, because they are more idiomatic in kotlin
         // TODO don't forget to shut them down in SyncServiceImpl.dispose (or remove the old shutdown there)
-        SharedExecutors.FIXED.submit {
+        return SharedExecutors.FIXED.submit {
+            // TODO test what happens if an exception is thrown?
+            // TODO does it fly outside to the enqueue method?
+            // TODO do we continue executing the other tasks?
+            // TODO is only that task going to be aborted that threw the exception?
             doFlush()
         }
     }
 
     private fun doFlush() {
+        activeSyncThreads.add(Thread.currentThread())
+
         while (!tasks.isEmpty()) {
             val task = tasks.poll()
-            runWithLocks(task.sortedLocks, task.actionBody)
+            runWithLocks(task.sortedLocks, task.action)
         }
+
+        activeSyncThreads.remove(Thread.currentThread())
     }
 
     private fun runWithLocks(locks: LinkedHashSet<SyncLock>, runnable: Runnable) {
@@ -87,6 +101,7 @@ object SyncQueue {
         } else {
             val lockHeadAndTail = locks.toList().headTail()
             val lockHead = lockHeadAndTail.first
+
             runWithLock(lockHead) {
                 val lockTail = lockHeadAndTail.second
                 runWithLocks(LinkedHashSet(lockTail), runnable)
@@ -95,34 +110,36 @@ object SyncQueue {
     }
 
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
+        val runnableWithRegisteredThread = {
+            val wasAddedHere = activeSyncThreads.add(Thread.currentThread())
+            try {
+                runnable.invoke()
+            } finally {
+                if (wasAddedHere) {
+                    // do not remove threads that were registered somewhere else (i.e. above in the SyncQueue class)
+                    activeSyncThreads.remove(Thread.currentThread())
+                }
+            }
+        }
+
         when (lock) {
-            SyncLock.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
-            SyncLock.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
-            SyncLock.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runRead(runnable)
-            SyncLock.MODELIX_WRITE -> ReplicatedModelRegistry.model!!.getBranch().runWrite(runnable)
-            SyncLock.CUSTOM -> runnable.invoke()
+            SyncLock.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnableWithRegisteredThread)
+            SyncLock.MPS_READ ->
+                ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnableWithRegisteredThread)
+
+            SyncLock.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runRead(runnableWithRegisteredThread)
+            SyncLock.MODELIX_WRITE ->
+                ReplicatedModelRegistry.model!!.getBranch().runWrite(runnableWithRegisteredThread)
+
+            SyncLock.CUSTOM -> runnableWithRegisteredThread.invoke()
         }
     }
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 private data class SyncTask(
-    val requiredLocks: LinkedHashSet<SyncLock>,
-    private val action: Runnable,
-    private val followupCallback: ((Throwable?) -> Unit)? = null,
+    private val requiredLocks: LinkedHashSet<SyncLock>,
+    val action: Runnable,
 ) {
     val sortedLocks = LinkedHashSet<SyncLock>(requiredLocks.sortedWith(SnycLockComparator()))
-
-    val actionBody = Runnable {
-        try {
-            action.run()
-            followupCallback?.invoke(null)
-        } catch (t: Throwable) {
-            if (followupCallback == null) {
-                throw t
-            } else {
-                followupCallback.invoke(t)
-            }
-        }
-    }
 }

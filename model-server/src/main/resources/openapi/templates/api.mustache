@@ -4,7 +4,6 @@ package {{apiPackage}}
 import com.google.gson.Gson
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
 import io.ktor.server.response.*
 {{#featureResources}}
 import {{packageName}}.Paths
@@ -26,11 +25,6 @@ fun Route.{{classname}}() {
     val empty = mutableMapOf<String, Any?>()
 
 {{#operation}}
-    {{#hasAuthMethods}}
-        {{#authMethods}}
-    authenticate("{{{name}}}") {
-        {{/authMethods}}
-    {{/hasAuthMethods}}
     {{^featureResources}}
     route("{{path}}") {
         {{#lambda.lowercase}}{{httpMethod}}{{/lambda.lowercase}} {
@@ -43,9 +37,6 @@ fun Route.{{classname}}() {
         {{#lambda.indented_8}}{{>libraries/ktor/_api_body}}{{/lambda.indented_8}}
     }
     {{/featureResources}}
-    {{#hasAuthMethods}}
-    }
-    {{/hasAuthMethods}}
 
 {{/operation}}
 }

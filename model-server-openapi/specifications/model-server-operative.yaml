@@ -1,0 +1,36 @@
+# WARNING - EXPERIMENTAL
+# This file was auto generated from the existing API using an IntelliJ plugin,
+# see https://www.jetbrains.com/help/idea/openapi.html#generate_openapi
+#
+# Manual changes were done for this 'spec' to work in-place with the
+# model-server for now. A lot of changes were done and are still necessary
+# to make this OpenAPI a viable artifact. It will most likely be split
+# into multiple OpenAPI files.
+
+openapi: "3.0.3"
+
+info:
+  title: "model-server operative API"
+  description: "modelix operative API"
+  version: "1.0.0"
+
+servers:
+  - url: '/'
+    description: model-server
+
+paths:
+  /metrics:
+    get:
+      operationId: getMetrics
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+
+components:
+  responses:
+    "200":
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string

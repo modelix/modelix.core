@@ -70,6 +70,9 @@ dependencies {
     testImplementation(libs.jsoup)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
+
+    implementation(libs.ktor.server.metrics.micrometer)
+    implementation(libs.micrometer.registry.prometheus)
 }
 
 tasks.test {
@@ -121,7 +124,7 @@ val cucumber = task("cucumber") {
 // copies the openAPI specifications from the api folder into a resource
 // folder so that they are packaged and deployed with the model-server
 tasks.register<Copy>("copyApis") {
-    from("../api/")
+    from(project.layout.projectDirectory.dir("../model-server-openapi/specifications"))
     include("*.yaml")
     into(project.layout.buildDirectory.dir("openapi/src/main/resources/api"))
     sourceSets["main"].resources.srcDir(project.layout.buildDirectory.dir("openapi/src/main/resources/"))
@@ -221,6 +224,7 @@ val openAPIgenerationPath = "${project.layout.buildDirectory.get()}/generated/op
 // are used to generate corresponding packages
 val openApiFiles = listOf(
     "public" to "model-server",
+    "operative" to "model-server-operative",
     "light" to "model-server-light",
     "html" to "model-server-html",
     "deprecated" to "model-server-deprecated",
@@ -235,7 +239,7 @@ openApiFiles.forEach {
         // we let the Gradle OpenAPI generator plugin build data classes and API interfaces based on the provided
         // OpenAPI specification. That way, the code is forced to stay in sync with the API specification.
         generatorName.set("kotlin-server")
-        inputSpec.set(layout.projectDirectory.file("../api/${it.second}.yaml").toString())
+        inputSpec.set(layout.projectDirectory.dir("../model-server-openapi/specifications").file("${it.second}.yaml").toString())
         outputDir.set(outputPath)
         packageName.set(targetPackageName)
         apiPackage.set(targetPackageName)
@@ -244,7 +248,7 @@ openApiFiles.forEach {
         // are generated. additionally we patch the used serialization framework as the `ktor` plugin
         // uses a different one than we do in the model-server. The templates are based on
         // https://github.com/OpenAPITools/openapi-generator/tree/809b3331a95b3c3b7bcf025d16ae09dc0682cd69/modules/openapi-generator/src/main/resources/kotlin-server
-        templateDir.set("$projectDir/src/main/resources/openapi/templates")
+        templateDir.set("${layout.projectDirectory.dir("src/main/resources/openapi/templates")}")
         configOptions.set(
             mapOf(
                 // we use the ktor generator to generate server side resources and model (i.e. data classes)

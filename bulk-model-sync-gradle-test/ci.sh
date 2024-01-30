@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -e
+set -x
 
 cd "$(dirname "$0")"
 
@@ -19,8 +20,11 @@ if [ "${CI}" != "true" ]; then
   }
 fi
 
-./gradlew runModelServer --console=plain &
+cd ..
+./gradlew :model-server:run --console=plain --args="-inmemory -port 28309" &
 MODEL_SERVER_PID=$!
+
+cd "$(dirname "$0")"
 
 curl -X GET --retry 30 --retry-connrefused --retry-delay 1 http://localhost:28309/health
 

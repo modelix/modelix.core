@@ -77,37 +77,42 @@ object SyncQueue {
     private fun doFlush() {
         while (!tasks.isEmpty()) {
             val task = tasks.poll()
-            runWithLocks(task.requiredLocks, task.actionBody)
+            runWithLocks(task.sortedLocks, task.actionBody)
         }
     }
 
     private fun runWithLocks(locks: LinkedHashSet<SyncLockType>, runnable: Runnable) {
-        val lockHeadAndTail = locks.toList().headTail()
-        val lockHead = lockHeadAndTail.first
-        runWithLock(lockHead, runnable)
-
-        val lockTail = lockHeadAndTail.second
-        if (lockTail.isNotEmpty()) {
-            runWithLocks(LinkedHashSet(lockTail), runnable)
+        if (locks.isEmpty()) {
+            runnable.run()
+        } else {
+            val lockHeadAndTail = locks.toList().headTail()
+            val lockHead = lockHeadAndTail.first
+            runWithLock(lockHead) {
+                val lockTail = lockHeadAndTail.second
+                runWithLocks(LinkedHashSet(lockTail), runnable)
+            }
         }
     }
 
-    private fun runWithLock(lock: SyncLockType, runnable: Runnable) {
+    private fun runWithLock(lock: SyncLockType, runnable: () -> Unit) {
         when (lock) {
             SyncLockType.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
             SyncLockType.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
-            SyncLockType.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runReadT { runnable.run() }
-            SyncLockType.MODELIX_WRITE -> ReplicatedModelRegistry.model!!.getBranch().runWriteT { runnable.run() }
-            SyncLockType.CUSTOM -> runnable.run()
+            SyncLockType.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runRead(runnable)
+            SyncLockType.MODELIX_WRITE -> ReplicatedModelRegistry.model!!.getBranch().runWrite(runnable)
+            SyncLockType.CUSTOM -> runnable.invoke()
         }
     }
 }
 
-data class SyncTask(
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+private data class SyncTask(
     val requiredLocks: LinkedHashSet<SyncLockType>,
     private val action: Runnable,
     private val followupCallback: ((Throwable?) -> Unit)? = null,
 ) {
+    val sortedLocks = LinkedHashSet<SyncLockType>(requiredLocks.sortedWith(SnycLockTypeComparator()))
+
     val actionBody = Runnable {
         try {
             action.run()
@@ -120,12 +125,4 @@ data class SyncTask(
             }
         }
     }
-}
-
-enum class SyncLockType {
-    MPS_READ,
-    MPS_WRITE,
-    MODELIX_READ,
-    MODELIX_WRITE,
-    CUSTOM,
 }

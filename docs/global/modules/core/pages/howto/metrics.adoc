@@ -1,4 +1,4 @@
-= Metrics on `model-server`
+= Use Metrics Endpoint to Monitor a `model-server`
 :navtitle: `Monitoring/Metrics`
 
 image::metrics.png[Sample of a Grafana dashboard based on the exposed metrics by the `model-server`]

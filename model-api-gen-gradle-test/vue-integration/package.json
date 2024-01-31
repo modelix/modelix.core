@@ -7,8 +7,8 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "prettier": "3.0.3",
-    "ts-jest": "^29.1.1"
+    "prettier": "3.2.4",
+    "ts-jest": "^29.1.2"
   },
   "overrides": {
     "@modelix/model-client": "file:../../model-client/build/npmDevPackage/model-client.tgz",

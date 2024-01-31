@@ -137,7 +137,21 @@ class ModelClientV2(
                 takeFrom(baseUrl)
                 appendPathSegments("repositories")
             }
-        }.bodyAsText().lines().map { RepositoryId(it) }
+        }.bodyAsText().lines().filter { it.isNotEmpty() }.map { RepositoryId(it) }
+    }
+
+    override suspend fun deleteRepository(repository: RepositoryId): Boolean {
+        try {
+            return httpClient.post {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash("repositories", repository.id, "delete")
+                }
+            }.status == HttpStatusCode.NoContent
+        } catch (ex: Exception) {
+            LOG.error(ex) { ex.message }
+            return false
+        }
     }
 
     override suspend fun listBranches(repository: RepositoryId): List<BranchReference> {
@@ -146,7 +160,7 @@ class ModelClientV2(
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "branches")
             }
-        }.bodyAsText().lines().map { repository.getBranchReference(it) }
+        }.bodyAsText().lines().filter { it.isNotEmpty() }.map { repository.getBranchReference(it) }
     }
 
     @Deprecated("repository ID is required for permission checks")

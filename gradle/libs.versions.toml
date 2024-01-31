@@ -35,6 +35,7 @@ apacheCxf="3.6.2"
 node="18.17.1"
 modelixBuildtools="1.2.0"
 openapi = "7.2.0"
+micrometer = "1.12.2"
 
 [libraries]
 
@@ -64,6 +65,7 @@ ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", ver
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }
 ktor-server-resources = { group = "io.ktor", name = "ktor-server-resources", version.ref = "ktor" }
 ktor-server-swagger = { group = "io.ktor", name = "ktor-server-swagger", version.ref = "ktor" }
+ktor-server-metrics-micrometer = { group = "io.ktor", name = "ktor-server-metrics-micrometer", version.ref = "ktor" }
 
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
@@ -78,6 +80,10 @@ ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlin
 
 keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "23.0.3" }
 guava = { group = "com.google.guava", name = "guava", version = "32.1.3-jre" }
+org-json = { group = "org.json", name = "json", version = "20231013" }
+google-oauth-client = { group = "com.google.oauth-client", name = "google-oauth-client", version = "1.34.1" }
+google-oauth-clientjetty = { group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1" }
+
 modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.2.0" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "1.15.3" }
 vavr = { group = "io.vavr", name = "vavr", version = "0.10.4" }
@@ -107,3 +113,5 @@ dokka-versioning = { group = "org.jetbrains.dokka", name = "versioning-plugin", 
 
 modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gradle", version.ref = "modelixBuildtools"}
 modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}
+
+micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometer"}

@@ -323,8 +323,17 @@ fun INode.resolveProperty(role: String): IProperty {
         ?: throw RuntimeException("Property '$role' not found in concept ${c.getLongName()}")
 }
 
+/**
+ * Attempts to resolve the child link.
+ * @return resolved child link
+ *         or null, if this concept has no child link or an exception was thrown during concept resolution
+ */
 fun INode.tryResolveChildLink(role: String): IChildLink? {
-    val c = this.concept ?: return null
+    val c = try {
+        this.concept ?: return null
+    } catch (e: RuntimeException) {
+        return null
+    }
     val allLinks = c.getAllChildLinks()
     return allLinks.find { it.key(this) == role }
         ?: allLinks.find { it.getSimpleName() == role }
@@ -334,8 +343,18 @@ fun INode.resolveChildLinkOrFallback(role: String?): IChildLink {
     if (role == null) return NullChildLink
     return tryResolveChildLink(role) ?: IChildLink.fromName(role)
 }
+
+/**
+ * Attempts to resolve the reference link.
+ * @return resolved reference link
+ *         or null, if this node has no reference link or an exception was thrown during concept resolution
+ */
 fun INode.tryResolveReferenceLink(role: String): IReferenceLink? {
-    val c = this.concept ?: return null
+    val c = try {
+        this.concept ?: return null
+    } catch (e: RuntimeException) {
+        return null
+    }
     val allLinks = c.getAllReferenceLinks()
     return allLinks.find { it.key(this) == role }
         ?: allLinks.find { it.getSimpleName() == role }
@@ -344,8 +363,18 @@ fun INode.tryResolveReferenceLink(role: String): IReferenceLink? {
 fun INode.resolveReferenceLinkOrFallback(role: String): IReferenceLink {
     return tryResolveReferenceLink(role) ?: IReferenceLink.fromName(role)
 }
+
+/**
+ * Attempts to resolve the property.
+ * @return resolved property
+ *         or null, if this node has no concept or an exception was thrown during concept resolution
+ */
 fun INode.tryResolveProperty(role: String): IProperty? {
-    val c = this.concept ?: return null
+    val c = try {
+        this.concept ?: return null
+    } catch (e: RuntimeException) {
+        return null
+    }
     val allLinks = c.getAllProperties()
     return allLinks.find { it.key(this) == role }
         ?: allLinks.find { it.getSimpleName() == role }

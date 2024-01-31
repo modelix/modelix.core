@@ -226,7 +226,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val bindButton = JButton("Bind Selected")
             bindButton.addActionListener { _: ActionEvent? ->
                 if (existingConnectionsModel.size > 0) {
-                    log.info("Binding model $modelName to project: ${ActiveMpsProjectInjector.activeMpsProject}")
+                    log.info("Binding model ${modelName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}")
                     modelSyncService.bindProject(
                         existingConnectionsModel.selectedItem as ModelClientV2,
                         (branchModel.selectedItem as BranchReference).branchName,

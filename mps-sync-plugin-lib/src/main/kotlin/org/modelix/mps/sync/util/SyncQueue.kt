@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.util
 
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.containers.headTail
 import jetbrains.mps.util.containers.ConcurrentHashSet
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -29,6 +30,8 @@ import java.util.concurrent.Future
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object SyncQueue {
+
+    private val logger = logger<SyncQueue>()
 
     private val activeSyncThreads = ConcurrentHashSet<Thread>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
@@ -73,13 +76,11 @@ object SyncQueue {
     }
 
     private fun scheduleFlush(): Future<*> {
-        // TODO maybe refactor to coroutines, because they are more idiomatic in kotlin
-        // TODO don't forget to shut them down in SyncServiceImpl.dispose (or remove the old shutdown there)
+        /**
+         * TODO maybe refactor to coroutines, because they are more idiomatic in kotlin. Don't forget to shut them down
+         * in SyncServiceImpl.dispose (or remove the old shutdown there)
+         */
         return SharedExecutors.FIXED.submit {
-            // TODO test what happens if an exception is thrown?
-            // TODO does it fly outside to the enqueue method?
-            // TODO do we continue executing the other tasks?
-            // TODO is only that task going to be aborted that threw the exception?
             doFlush()
         }
     }
@@ -111,13 +112,18 @@ object SyncQueue {
 
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
         val runnableWithRegisteredThread = {
-            val wasAddedHere = activeSyncThreads.add(Thread.currentThread())
+            val currentThread = Thread.currentThread()
+            val wasAddedHere = activeSyncThreads.add(currentThread)
+
             try {
                 runnable.invoke()
+            } catch (t: Throwable) {
+                logger.error("Exception in task on $currentThread, Thread ID ${currentThread.id}", t)
+                throw t
             } finally {
                 if (wasAddedHere) {
                     // do not remove threads that were registered somewhere else (i.e. above in the SyncQueue class)
-                    activeSyncThreads.remove(Thread.currentThread())
+                    activeSyncThreads.remove(currentThread)
                 }
             }
         }

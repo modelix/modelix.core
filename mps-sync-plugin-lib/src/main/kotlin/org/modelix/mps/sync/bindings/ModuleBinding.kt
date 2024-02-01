@@ -27,6 +27,7 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
 import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleBinding(
@@ -42,6 +43,7 @@ class ModuleBinding(
     private val changeListener = ModuleChangeListener(branch, nodeMap, bindingsRegistry, syncQueue)
 
     private var isDisposed = false
+    private var beingDisposed = false
     private var isActivated = false
 
     override fun activate(callback: Runnable?) {
@@ -64,9 +66,11 @@ class ModuleBinding(
     }
 
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?) {
-        if (isDisposed) {
+        if (isDisposed || beingDisposed) {
             return
         }
+
+        beingDisposed = true
 
         // unregister listener
         module.removeModuleListener(changeListener)
@@ -77,8 +81,10 @@ class ModuleBinding(
         // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
         bindingsRegistry.removeModuleBinding(this)
 
+        val barrier = CompletableFuture<Boolean>()
+
         // delete module
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
             try {
                 if (!removeFromServer) {
                     // if we just delete it locally, then we have to call ModuleDeleteHelper manually.
@@ -91,25 +97,33 @@ class ModuleBinding(
                 // if any error occurs, then we put the binding back to let the rest of the application know that it exists
                 bindingsRegistry.addModuleBinding(this)
                 throw ex
+            } finally {
+                barrier.complete(true)
             }
         }
 
-        nodeMap.remove(module)
+        // continue this task only after previous was finished
+        syncQueue.enqueue(linkedSetOf(SyncLock.CUSTOM)) {
+            barrier.get()
 
-        isDisposed = true
-        isActivated = false
+            nodeMap.remove(module)
 
-        logger.info(
-            "${name()} is deactivated and module is removed locally${
-                if (removeFromServer) {
-                    " and from server"
-                } else {
-                    ""
-                }
-            }.",
-        )
+            isDisposed = true
+            beingDisposed = false
+            isActivated = false
 
-        callback?.run()
+            logger.info(
+                "${name()} is deactivated and module is removed locally${
+                    if (removeFromServer) {
+                        " and from server"
+                    } else {
+                        ""
+                    }
+                }.",
+            )
+
+            callback?.run()
+        }
     }
 
     override fun name() = "Binding of Module \"${module.moduleName}\""

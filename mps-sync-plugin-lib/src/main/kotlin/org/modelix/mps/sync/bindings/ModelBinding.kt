@@ -27,6 +27,7 @@ import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeL
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
 import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelBinding(
@@ -43,6 +44,7 @@ class ModelBinding(
     private val nodeChangeListener = NodeChangeListener(branch, nodeMap, syncQueue)
 
     private var isDisposed = false
+    private var beingDisposed = false
     private var isActivated = false
 
     override fun activate(callback: Runnable?) {
@@ -62,9 +64,10 @@ class ModelBinding(
     }
 
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?) {
-        if (isDisposed) {
+        if (isDisposed || beingDisposed) {
             return
         }
+        beingDisposed = true
 
         // unregister listeners
         model.removeChangeListener(nodeChangeListener)
@@ -76,8 +79,10 @@ class ModelBinding(
             bindingsRegistry.removeModelBinding(parentModule, this)
         }
 
+        val barrier = CompletableFuture<Boolean>()
+
         // delete model
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
             try {
                 if (!removeFromServer) {
                     // to delete the files locally
@@ -89,30 +94,38 @@ class ModelBinding(
                 // if any error occurs, then we put the binding back to let the rest of the application know that it exists
                 bindingsRegistry.addModelBinding(this)
                 throw ex
+            } finally {
+                barrier.complete(true)
             }
         }
 
-        bindingsRegistry.removeModelBinding(parentModule, this)
+        // continue this task only after previous was finished
+        syncQueue.enqueue(linkedSetOf(SyncLock.CUSTOM)) {
+            barrier.get()
 
-        if (!removeFromServer) {
-            // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
-            nodeMap.remove(model)
+            bindingsRegistry.removeModelBinding(parentModule, this)
+
+            if (!removeFromServer) {
+                // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
+                nodeMap.remove(model)
+            }
+
+            isDisposed = true
+            beingDisposed = false
+            isActivated = false
+
+            logger.info(
+                "${name()} is deactivated and model is removed locally${
+                    if (removeFromServer) {
+                        " and from server"
+                    } else {
+                        ""
+                    }
+                }.",
+            )
+
+            callback?.run()
         }
-
-        isDisposed = true
-        isActivated = false
-
-        logger.info(
-            "${name()} is deactivated and model is removed locally${
-                if (removeFromServer) {
-                    " and from server"
-                } else {
-                    ""
-                }
-            }.",
-        )
-
-        callback?.run()
     }
 
     override fun name() = "Binding of Model \"${model.name}\""

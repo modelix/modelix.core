@@ -28,17 +28,7 @@ import org.modelix.model.api.ILanguageRepository
 
 class MPSLanguageRepository(val repository: SRepository) : ILanguageRepository {
 
-    private val concepts = mutableMapOf<String, MPSConcept>()
-
-    init {
-        LanguageRegistry.getInstance(repository).withAvailableLanguages { language ->
-            language.identity.concepts.forEach {
-                val mpsConcept = MPSConcept(it)
-                val id = mpsConcept.getUID()
-                concepts[id] = mpsConcept
-            }
-        }
-    }
+    fun getConcept(uid: String): SAbstractConcept? = (resolveConcept(uid) as? MPSConcept)?.concept
 
     override fun resolveConcept(uid: String): IConcept? {
         if (!uid.startsWith("mps:")) return null
@@ -54,9 +44,13 @@ class MPSLanguageRepository(val repository: SRepository) : ILanguageRepository {
         return MPSConcept(MetaAdapterFactory.getAbstractConcept(conceptDescriptor))
     }
 
-    fun getConcept(uid: String): SAbstractConcept? = concepts[uid]?.concept
-
-    override fun getAllConcepts(): List<IConcept> = concepts.values.toMutableList()
+    override fun getAllConcepts(): List<IConcept> {
+        val result = mutableListOf<IConcept>()
+        LanguageRegistry.getInstance(repository).withAvailableLanguages { language ->
+            result.addAll(language.identity.concepts.map { MPSConcept(it) }.toList())
+        }
+        return result
+    }
 
     override fun getPriority(): Int = 1000
 

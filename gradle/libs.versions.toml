@@ -17,7 +17,7 @@ tasktree = { id = "com.dorongold.task-tree", version = "2.1.1" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
 dokka = {id = "org.jetbrains.dokka", version = "1.9.10"}
 node = {id = "com.github.node-gradle.node", version = "7.0.1"}
-detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.4" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.5" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.2" }
 test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }

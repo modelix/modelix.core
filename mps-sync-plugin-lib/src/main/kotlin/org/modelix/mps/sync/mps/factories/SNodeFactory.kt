@@ -114,12 +114,12 @@ class SNodeFactory(
     }
 
     private fun setProperties(source: INode, target: SNode) {
-        target.concept.properties.forEach {
-            val property = PropertyFromName(it.name)
+        target.concept.properties.forEach { sProperty ->
+            val property = PropertyFromName(sProperty.name)
             val value = source.getPropertyValue(property)
 
             syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
-                target.setProperty(it, value)
+                target.setProperty(sProperty, value)
             }
         }
     }

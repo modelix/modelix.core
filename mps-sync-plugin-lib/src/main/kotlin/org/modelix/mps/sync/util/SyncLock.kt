@@ -24,7 +24,7 @@ enum class SyncLock {
     MPS_READ,
     MODELIX_WRITE,
     MODELIX_READ,
-    CUSTOM,
+    NONE,
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -58,14 +58,14 @@ class SnycLockComparator : Comparator<SyncLock> {
                 -1
             }
         } else if (p0 == SyncLock.MODELIX_READ) {
-            if (p1 == SyncLock.CUSTOM) {
+            if (p1 == SyncLock.NONE) {
                 -1
             } else if (p0 == p1) {
                 0
             } else {
                 1
             }
-        } else if (p0 == SyncLock.CUSTOM) {
+        } else if (p0 == SyncLock.NONE) {
             if (p0 == p1) {
                 0
             } else {

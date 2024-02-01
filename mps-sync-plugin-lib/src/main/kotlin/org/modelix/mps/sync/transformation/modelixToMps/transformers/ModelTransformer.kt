@@ -90,8 +90,9 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
             val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
+            val sourceModel = it.source
             syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
-                ModelImports(it.source).addModelImport(modelImport)
+                ModelImports(sourceModel).addModelImport(modelImport)
             }
             nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)
         }

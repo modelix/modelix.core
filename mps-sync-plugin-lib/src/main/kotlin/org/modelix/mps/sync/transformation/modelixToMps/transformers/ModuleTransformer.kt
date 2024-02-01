@@ -46,6 +46,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         var sModule: AbstractModule? = null
         syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
             sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
+            sModule // ignored
         }
         nodeMap.put(sModule!!, iNode.nodeIdAsLong())
 

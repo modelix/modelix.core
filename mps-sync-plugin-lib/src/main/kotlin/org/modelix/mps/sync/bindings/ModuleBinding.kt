@@ -27,7 +27,6 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
 import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
-import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleBinding(
@@ -81,8 +80,6 @@ class ModuleBinding(
         // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
         bindingsRegistry.removeModuleBinding(this)
 
-        val barrier = CompletableFuture<Boolean>()
-
         // delete module
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
             try {
@@ -97,15 +94,8 @@ class ModuleBinding(
                 // if any error occurs, then we put the binding back to let the rest of the application know that it exists
                 bindingsRegistry.addModuleBinding(this)
                 throw ex
-            } finally {
-                barrier.complete(true)
             }
-        }
-
-        // continue this task only after previous was finished
-        syncQueue.enqueue(linkedSetOf(SyncLock.CUSTOM)) {
-            barrier.get()
-
+        }.continueWith(linkedSetOf(SyncLock.NONE)) {
             nodeMap.remove(module)
 
             isDisposed = true

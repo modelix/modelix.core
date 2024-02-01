@@ -27,7 +27,6 @@ import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeL
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
 import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
-import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelBinding(
@@ -79,8 +78,6 @@ class ModelBinding(
             bindingsRegistry.removeModelBinding(parentModule, this)
         }
 
-        val barrier = CompletableFuture<Boolean>()
-
         // delete model
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
             try {
@@ -94,15 +91,8 @@ class ModelBinding(
                 // if any error occurs, then we put the binding back to let the rest of the application know that it exists
                 bindingsRegistry.addModelBinding(this)
                 throw ex
-            } finally {
-                barrier.complete(true)
             }
-        }
-
-        // continue this task only after previous was finished
-        syncQueue.enqueue(linkedSetOf(SyncLock.CUSTOM)) {
-            barrier.get()
-
+        }.continueWith(linkedSetOf(SyncLock.NONE)) {
             bindingsRegistry.removeModelBinding(parentModule, this)
 
             if (!removeFromServer) {

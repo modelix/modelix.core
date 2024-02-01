@@ -26,14 +26,14 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.ContinuableSyncTask
 import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSynchronizer(
@@ -57,17 +57,13 @@ class ModelSynchronizer(
     }
 
     fun addModelAndActivate(model: SModelBase) {
-        val bindingFuture = addModel(model)
-
-        // to avoid blocking the caller thread
-        syncQueue.enqueue(linkedSetOf(SyncLock.CUSTOM)) {
-            bindingFuture.get().activate()
-        }
+        addModel(model)
+            .continueWith(linkedSetOf(SyncLock.NONE)) {
+                (it as IBinding).activate()
+            }
     }
 
-    fun addModel(model: SModelBase): Future<ModelBinding> {
-        val future = CompletableFuture<ModelBinding>()
-
+    fun addModel(model: SModelBase): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
             val moduleModelixId = nodeMap[model.module]!!
             val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
@@ -91,11 +87,8 @@ class ModelSynchronizer(
             val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
             bindingsRegistry.addModelBinding(binding)
 
-            future.complete(binding)
+            binding
         }
-
-        return future
-    }
 
     private fun synchronizeModelProperties(cloudModel: INode, model: SModel) {
         cloudModel.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id, model.modelId.toString())

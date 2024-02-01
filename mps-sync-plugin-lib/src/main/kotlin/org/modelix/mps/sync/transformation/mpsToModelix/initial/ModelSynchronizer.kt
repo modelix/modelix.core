@@ -32,6 +32,8 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSynchronizer(
@@ -55,12 +57,16 @@ class ModelSynchronizer(
     }
 
     fun addModelAndActivate(model: SModelBase) {
-        val binding = addModel(model)
-        binding.activate()
+        val bindingFuture = addModel(model)
+
+        // to avoid blocking the caller thread
+        syncQueue.enqueue(linkedSetOf(SyncLock.CUSTOM)) {
+            bindingFuture.get().activate()
+        }
     }
 
-    fun addModel(model: SModelBase): ModelBinding {
-        var binding: ModelBinding? = null
+    fun addModel(model: SModelBase): Future<ModelBinding> {
+        val future = CompletableFuture<ModelBinding>()
 
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
             val moduleModelixId = nodeMap[model.module]!!
@@ -82,11 +88,13 @@ class ModelSynchronizer(
             model.importedDevkits().forEach { addDevKitDependency(model, it) }
 
             // register binding
-            binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
-            bindingsRegistry.addModelBinding(binding!!)
+            val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
+            bindingsRegistry.addModelBinding(binding)
+
+            future.complete(binding)
         }
 
-        return binding!!
+        return future
     }
 
     private fun synchronizeModelProperties(cloudModel: INode, model: SModel) {

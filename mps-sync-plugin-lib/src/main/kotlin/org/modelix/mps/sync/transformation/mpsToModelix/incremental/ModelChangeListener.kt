@@ -88,6 +88,8 @@ class ModelChangeListener(
         }
     }
 
+    override fun getPriority(): SModelListener.SModelListenerPriority = SModelListener.SModelListenerPriority.CLIENT
+
     @Deprecated("Deprecated in Java")
     override fun rootAdded(event: SModelRootEvent) {
         // duplicate of SNodeChangeListener.nodeAdded
@@ -97,8 +99,6 @@ class ModelChangeListener(
     override fun rootRemoved(event: SModelRootEvent) {
         // duplicate of SNodeChangeListener.nodeRemoved
     }
-
-    override fun getPriority(): SModelListener.SModelListenerPriority = SModelListener.SModelListenerPriority.CLIENT
 
     override fun propertyChanged(event: SModelPropertyEvent) {
         // duplicate of SNodeChangeListener.propertyChanged

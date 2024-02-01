@@ -26,7 +26,7 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.ILanguageRepository
 
-class MPSLanguageRepository(val repository: SRepository) : ILanguageRepository {
+data class MPSLanguageRepository(val repository: SRepository) : ILanguageRepository {
 
     fun getConcept(uid: String): SAbstractConcept? = (resolveConcept(uid) as? MPSConcept)?.concept
 
@@ -53,15 +53,4 @@ class MPSLanguageRepository(val repository: SRepository) : ILanguageRepository {
     }
 
     override fun getPriority(): Int = 1000
-
-    override fun equals(other: Any?) =
-        if (this === other) {
-            true
-        } else if (javaClass != other?.javaClass) {
-            false
-        } else {
-            repository == (other as MPSLanguageRepository).repository
-        }
-
-    override fun hashCode() = repository.hashCode()
 }

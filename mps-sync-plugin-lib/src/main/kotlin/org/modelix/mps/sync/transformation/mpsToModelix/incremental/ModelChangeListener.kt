@@ -76,9 +76,6 @@ class ModelChangeListener(
         childNodeIdProducer = { it[event.model, event.devkitNamespace]!! },
     )
 
-    @Deprecated("Deprecated in Java")
-    override fun rootAdded(event: SModelRootEvent) = nodeSynchronizer.addNode(event.root)
-
     override fun modelRenamed(event: SModelRenamedEvent) =
         nodeSynchronizer.setProperty(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
@@ -89,6 +86,11 @@ class ModelChangeListener(
         if (!ApplicationLifecycleTracker.applicationClosing) {
             binding.deactivate(removeFromServer = true)
         }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun rootAdded(event: SModelRootEvent) {
+        // duplicate of SNodeChangeListener.nodeAdded
     }
 
     @Deprecated("Deprecated in Java")

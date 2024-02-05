@@ -20,6 +20,7 @@ import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
@@ -29,6 +30,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode
+import org.modelix.model.api.IProperty
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
@@ -67,6 +69,9 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val requestTimeoutSeconds: Property<Int> = of.property(Int::class.java)
 
+    @Input
+    val metaProperties: MapProperty<String, String> = of.mapProperty(String::class.java, String::class.java)
+
     @TaskAction
     fun import() {
         val inputDir = inputDir.get().asFile
@@ -91,6 +96,11 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
                     logger.info("Got root node: {}", rootNode)
                     logger.info("Calculating diff...")
                     ModelImporter(rootNode, continueOnError.get()).importFilesAsRootChildren(files)
+
+                    logger.info("Setting meta properties...")
+                    for ((key, value) in metaProperties.get()) {
+                        rootNode.setPropertyValue(IProperty.fromName(key), value)
+                    }
                 }
                 logger.info("Sending diff to server...")
             }

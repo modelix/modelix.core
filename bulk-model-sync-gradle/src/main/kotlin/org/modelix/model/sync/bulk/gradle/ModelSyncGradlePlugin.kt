@@ -161,6 +161,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
             it.continueOnError.set(syncDirection.continueOnError)
             it.requestTimeoutSeconds.set(serverTarget.requestTimeoutSeconds)
+            it.metaProperties.set(serverTarget.metaProperties)
         }
 
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {

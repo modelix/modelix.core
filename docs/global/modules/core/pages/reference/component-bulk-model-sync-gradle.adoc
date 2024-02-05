@@ -137,11 +137,19 @@ If the target branch does not exist on the model-server, it will be created.
 
 |`revision`
 |String
-|Source model-server revision. Can be used instead of `repositoryId` and `branchName`. Only available in ServerSource.
+|Source model-server revision. Can be used instead of `repositoryId` and `branchName`.
+Only available in ServerSource.
 
 |`requestTimeoutSeconds`
 |Integer
-|The request timeout measured in seconds to apply when performing HTTP requests towards the model-server. Default: 5 minutes
+|The request timeout measured in seconds to apply when performing HTTP requests towards the model-server.
+Default: 5 minutes
+
+|`metaProperties`
+|MutableMap<String, String>
+|Custom properties that will be attached to the root node.
+The mapping is `propertyName -> propertyValue`.
+Only available in ServerTarget.
 
 |===
 

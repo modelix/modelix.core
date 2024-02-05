@@ -23,8 +23,13 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.RoleAccessContext
 import org.modelix.model.area.IArea
+import org.modelix.modelql.core.IFluxStep
+import org.modelix.modelql.core.IFluxUnboundQuery
 import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.IMonoUnboundQuery
+import org.modelix.modelql.core.IQueryBuilderContext
 import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.UnboundQuery
@@ -32,6 +37,7 @@ import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.castToInstance
 import org.modelix.modelql.core.modelqlVersion
 import org.modelix.modelql.untyped.UntypedModelQL
+import org.modelix.modelql.untyped.buildFluxQuery
 import org.modelix.modelql.untyped.query
 
 class ModelQLClient(val url: String, val client: HttpClient, includedSerializersModule: SerializersModule = UntypedModelQL.serializersModule) {
@@ -53,6 +59,18 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
     fun getArea(): IArea = ModelQLArea(this)
 
     suspend fun <R> query(body: (IMonoStep<INode>) -> IMonoStep<R>): R = rootNode.query(body)
+
+    fun <In, Out> buildMonoQuery(body: (IMonoStep<In>) -> IMonoStep<Out>): IMonoUnboundQuery<In, Out> {
+        return RoleAccessContext.runWith(rootNode.usesRoleIds()) {
+            org.modelix.modelql.core.buildMonoQuery { body(it) }
+        }
+    }
+
+    fun <In, Out> buildFluxQuery(body: IQueryBuilderContext<In, Out>.(IMonoStep<In>) -> IFluxStep<Out>): IFluxUnboundQuery<In, Out> {
+        return RoleAccessContext.runWith(rootNode.usesRoleIds()) {
+            org.modelix.modelql.core.buildFluxQuery { body(it) }
+        }
+    }
 
     suspend fun <T> runQuery(query: IUnboundQuery<INode, T, *>): T {
         return deserialize(queryAsJson(query.castToInstance()), query)

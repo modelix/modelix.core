@@ -64,7 +64,6 @@ import org.modelix.modelql.gen.jetbrains.mps.lang.core.setName
 import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.node
 import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.node_orNull
 import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.setNode
-import org.modelix.modelql.untyped.buildMonoQuery
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.conceptReference
 import org.modelix.modelql.untyped.descendants
@@ -365,7 +364,7 @@ abstract class TypedModelQLTest {
 
     @Test
     fun `buildQuery and callQuery can be separated`() = runTest { client ->
-        val query = buildMonoQuery { node ->
+        val query = client.buildMonoQuery { node ->
             node.map { it.name }
         }
         val result = client.query { root ->

@@ -29,7 +29,7 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
       - name: Configure the project version
         env:
           IS_PR: ${{ github.event_name == 'pull_request' }}

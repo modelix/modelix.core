@@ -38,7 +38,6 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronize
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 import org.modelix.mps.sync.util.SyncQueue
 
-// TODO some methods need some testing
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelChangeListener(
     branch: IBranch,
@@ -51,10 +50,8 @@ class ModelChangeListener(
     private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
     private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
 
-    // TODO might not work, we have to test it
     override fun importAdded(event: SModelImportEvent) = modelSynchronizer.addModelImport(event.model, event.modelUID)
 
-    // TODO might not work, we have to test it
     override fun importRemoved(event: SModelImportEvent) = nodeSynchronizer.removeNode(
         parentNodeIdProducer = { it[event.model]!! },
         childNodeIdProducer = { it[event.model, event.modelUID]!! },

@@ -24,20 +24,24 @@ import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.getNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
+import org.modelix.mps.sync.util.nodeIdAsLong
 
-// TODO some methods need some testing
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleChangeListener(
-    branch: IBranch,
-    nodeMap: MpsToModelixMap,
+    private val branch: IBranch,
+    private val nodeMap: MpsToModelixMap,
     private val bindingsRegistry: BindingsRegistry,
     private val syncQueue: SyncQueue,
 ) : SModuleListener {
@@ -64,22 +68,52 @@ class ModuleChangeListener(
         }
     }
 
-    // TODO might not work, we have to test it
-    override fun dependencyAdded(module: SModule, dependency: SDependency) =
-        moduleSynchronizer.addDependency(module, dependency)
+    override fun moduleChanged(module: SModule) {
+        // calculate the difference in dependencies between the SModule's INode and what is in the SModule.declaredDependencies
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
+            val actualDependencies = module.declaredDependencies
 
-    // TODO might not work, we have to test it
-    override fun dependencyRemoved(module: SModule, dependency: SDependency) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { it[module]!! },
-        childNodeIdProducer = { it[module, dependency.targetModule]!! },
-    )
+            val iModuleNodeId = nodeMap[module]!!
+            val iModule = branch.getNode(iModuleNodeId)
+            val lastKnownDependencies = iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
+
+            val addedDependencies = actualDependencies.filter { sDependency ->
+                lastKnownDependencies.none { dependencyINode ->
+                    ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == sDependency.targetModule.moduleId
+                }
+            }
+            addedDependencies.forEach { dependency -> moduleSynchronizer.runAddDependencyAction(module, dependency) }
+
+            val removedDependencies = lastKnownDependencies.filter { dependencyINode ->
+                val targetModuleIdAccordingToModelix =
+                    ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode)
+                actualDependencies.none { sDependency ->
+                    targetModuleIdAccordingToModelix == sDependency.targetModule.moduleId
+                }
+            }
+            removedDependencies.forEach { dependencyINode ->
+                nodeSynchronizer.runRemoveNodeAction(
+                    parentNodeIdProducer = { it[module]!! },
+                    childNodeIdProducer = { dependencyINode.nodeIdAsLong() },
+                )
+            }
+        }
+    }
+
+    override fun dependencyAdded(module: SModule, dependency: SDependency) {
+        // handled by moduleChanged, because this method is never called
+    }
+
+    override fun dependencyRemoved(module: SModule, dependency: SDependency) {
+        // handled by moduleChanged, because this method is never called
+    }
+
+    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) {
+        // duplicate of SModelListener.modelRenamed
+    }
 
     override fun languageAdded(module: SModule, language: SLanguage) {}
     override fun languageRemoved(module: SModule, language: SLanguage) {}
     override fun beforeModelRemoved(module: SModule, model: SModel) {}
     override fun beforeModelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
-    override fun moduleChanged(module: SModule) {}
-    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) {
-        // duplicate of SModelListener.modelRenamed
-    }
 }

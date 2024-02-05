@@ -139,15 +139,25 @@ class NodeSynchronizer(
 
     fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), true) {
-            val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
-            val nodeId = childNodeIdProducer.invoke(nodeMap)
-
-            val cloudParentNode = branch.getNode(parentNodeId)
-            val cloudChildNode = branch.getNode(nodeId)
-            cloudParentNode.removeChild(cloudChildNode)
-
-            nodeMap.remove(nodeId)
+            runRemoveNodeAction(parentNodeIdProducer, childNodeIdProducer)
         }
+    }
+
+    /**
+     * WARNING: call this method only in a SyncTask, otherwise the necessary Modelix write transaction is missing
+     */
+    fun runRemoveNodeAction(
+        parentNodeIdProducer: (MpsToModelixMap) -> Long,
+        childNodeIdProducer: (MpsToModelixMap) -> Long,
+    ) {
+        val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
+        val nodeId = childNodeIdProducer.invoke(nodeMap)
+
+        val cloudParentNode = branch.getNode(parentNodeId)
+        val cloudChildNode = branch.getNode(nodeId)
+        cloudParentNode.removeChild(cloudChildNode)
+
+        nodeMap.remove(nodeId)
     }
 
     fun setReference(

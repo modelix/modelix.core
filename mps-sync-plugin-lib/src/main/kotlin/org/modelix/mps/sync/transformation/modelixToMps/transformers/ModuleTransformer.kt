@@ -20,6 +20,7 @@ import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.structure.modules.ModuleReference
+import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -32,6 +33,13 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQueue: SyncQueue, project: MPSProject) {
+
+    companion object {
+        fun getTargetModuleIdFromModuleDependency(moduleDependency: INode): SModuleId {
+            val uuid = moduleDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)!!
+            return PersistenceFacade.getInstance().createModuleId(uuid)
+        }
+    }
 
     private val solutionProducer = SolutionProducer(project)
 
@@ -60,10 +68,9 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
             iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
                 ?: "false"
             ).toBoolean()
-        val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)!!
-        val moduleId = PersistenceFacade.getInstance().createModuleId(uuid)
-        val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
 
+        val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
+        val moduleId = getTargetModuleIdFromModuleDependency(iNode)
         val moduleReference = ModuleReference(moduleName, moduleId)
         syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
             parentModule.addDependency(moduleReference, reexport)

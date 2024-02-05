@@ -69,13 +69,25 @@ class ModuleChangeListener(
     }
 
     override fun moduleChanged(module: SModule) {
-        // calculate the difference in dependencies between the SModule's INode and what is in the SModule.declaredDependencies
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
-            val actualDependencies = module.declaredDependencies
-
             val iModuleNodeId = nodeMap[module]!!
             val iModule = branch.getNode(iModuleNodeId)
+
+            // check if name is the same
+            val nameProperty = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
+            val iName = iModule.getPropertyValue(nameProperty)
+            val actualName = module.moduleName!!
+            if (actualName != iName) {
+                nodeSynchronizer.runSetPropertyAction(
+                    nameProperty,
+                    actualName,
+                    sourceNodeIdProducer = { iModuleNodeId },
+                )
+            }
+
+            // calculate the difference in dependencies between the SModule's INode and what is in the SModule.declaredDependencies
             val lastKnownDependencies = iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
+            val actualDependencies = module.declaredDependencies
 
             val addedDependencies = actualDependencies.filter { sDependency ->
                 lastKnownDependencies.none { dependencyINode ->

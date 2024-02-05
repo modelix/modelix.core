@@ -131,10 +131,17 @@ class NodeSynchronizer(
 
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), true) {
-            val nodeId = sourceNodeIdProducer.invoke(nodeMap)
-            val cloudNode = branch.getNode(nodeId)
-            cloudNode.setPropertyValue(property, newValue)
+            runSetPropertyAction(property, newValue, sourceNodeIdProducer)
         }
+    }
+
+    /**
+     * WARNING: call this method only in a SyncTask, otherwise the necessary Modelix write transaction is missing
+     */
+    fun runSetPropertyAction(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
+        val nodeId = sourceNodeIdProducer.invoke(nodeMap)
+        val cloudNode = branch.getNode(nodeId)
+        cloudNode.setPropertyValue(property, newValue)
     }
 
     fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {

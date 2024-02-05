@@ -33,8 +33,9 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.getModel
-import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.isDevKitDependency
+import org.modelix.mps.sync.util.isModel
+import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
@@ -43,7 +44,7 @@ import java.util.UUID
 class NodeTransformer(
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
-    mpsLanguageRepository: MPSLanguageRepository,
+    private val mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
     private val logger = logger<NodeTransformer>()
@@ -73,52 +74,58 @@ class NodeTransformer(
         }
     }
 
-    fun transformLanguageDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
+    fun transformLanguageDependency(iNode: INode) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
-            val moduleId = iNode.getModule()?.nodeIdAsLong()
-            val parentModule = nodeMap.getModule(moduleId)!!
-            val dependentModule = getDependentModule(iNode, parentModule)
-
+            val dependentModule = getDependentModule(iNode)
             val languageModuleReference = (dependentModule as Language).moduleReference
             val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference)
-            val version =
-                iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)
+            val languageVersion =
+                iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)!!
+                    .toInt()
 
-            // modelix does not store to which model the dependency belongs, thus adding it to all of them
-            val languageVersion = version!!.toInt()
-            if (!onlyAddToParentModel) {
+            val parent = iNode.parent!!
+            val parentNodeId = parent.nodeIdAsLong()
+            val parentIsModule = parent.isModule()
+            val parentIsModel = parent.isModel()
+
+            if (parentIsModule) {
+                val parentModule = nodeMap.getModule(parentNodeId)!!
                 parentModule.models.forEach {
                     it.addLanguageImport(sLanguage, languageVersion)
                     nodeMap.put(it, languageModuleReference, iNode.nodeIdAsLong())
                 }
-            } else {
-                val modelNodeId = iNode.getModel()?.nodeIdAsLong()
-                val parentModel = nodeMap.getModel(modelNodeId)!!
+            } else if (parentIsModel) {
+                val parentModel = nodeMap.getModel(parentNodeId)!!
                 parentModel.addLanguageImport(sLanguage, languageVersion)
                 nodeMap.put(parentModel, languageModuleReference, iNode.nodeIdAsLong())
+            } else {
+                logger.error("Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus the Language Dependency is not added to the model/module.")
             }
         }
     }
 
-    fun transformDevKitDependency(iNode: INode, onlyAddToParentModel: Boolean = false) {
+    fun transformDevKitDependency(iNode: INode) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
-            val moduleId = iNode.getModule()?.nodeIdAsLong()
-            val parentModule = nodeMap.getModule(moduleId)!!
-            val dependentModule = getDependentModule(iNode, parentModule)
-
+            val dependentModule = getDependentModule(iNode)
             val devKitModuleReference = (dependentModule as DevKit).moduleReference
 
-            // modelix does not store to which model the dependency belongs, thus adding it to all of them
-            if (!onlyAddToParentModel) {
+            val parent = iNode.parent!!
+            val parentNodeId = parent.nodeIdAsLong()
+            val parentIsModule = parent.isModule()
+            val parentIsModel = parent.isModel()
+
+            if (parentIsModule) {
+                val parentModule = nodeMap.getModule(parentNodeId)!!
                 parentModule.models.forEach {
                     it.addDevKit(devKitModuleReference)
                     nodeMap.put(it, devKitModuleReference, iNode.nodeIdAsLong())
                 }
-            } else {
-                val modelNodeId = iNode.getModel()?.nodeIdAsLong()
-                val parentModel = nodeMap.getModel(modelNodeId)!!
+            } else if (parentIsModel) {
+                val parentModel = nodeMap.getModel(parentNodeId)!!
                 parentModel.addDevKit(devKitModuleReference)
                 nodeMap.put(parentModel, devKitModuleReference, iNode.nodeIdAsLong())
+            } else {
+                logger.error("Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus DevKit is not added to the model/module.")
             }
         }
     }
@@ -127,8 +134,8 @@ class NodeTransformer(
 
     fun clearResolvableReferences() = nodeFactory.clearResolvableReferences()
 
-    private fun getDependentModule(iNode: INode, parentModule: SModule): SModule {
+    private fun getDependentModule(iNode: INode): SModule {
         val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)!!
-        return parentModule.repository?.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
+        return mpsLanguageRepository.repository.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
     }
 }

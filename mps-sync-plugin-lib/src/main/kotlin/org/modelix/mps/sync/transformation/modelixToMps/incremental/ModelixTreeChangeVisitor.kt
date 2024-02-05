@@ -125,9 +125,9 @@ class ModelixTreeChangeVisitor(
             } else if (iNode.isModelImport()) {
                 modelTransformer.transformModelImport(iNode)
             } else if (iNode.isSingleLanguageDependency()) {
-                nodeTransformer.transformLanguageDependency(iNode, true)
+                nodeTransformer.transformLanguageDependency(iNode)
             } else if (iNode.isDevKitDependency()) {
-                nodeTransformer.transformDevKitDependency(iNode, true)
+                nodeTransformer.transformDevKitDependency(iNode)
             } else {
                 nodeTransformer.transformToNode(iNode)
             }

@@ -1,5 +1,3 @@
-import type {INodeJS} from "./INodeJS.js";
-
 export type NodeId = string
 
 export interface IModelServerConnection {
@@ -32,7 +30,7 @@ export class ModelService {
     this.versionHash = data.versionHash
     if (data.root !== undefined) this.loadNode(data.root)
     if (data.nodes !== undefined) {
-      for (let node of data.nodes) {
+      for (const node of data.nodes) {
         this.loadNode(node)
       }
     }
@@ -40,10 +38,10 @@ export class ModelService {
 
   private loadNode(nodeData: NodeData): NodeId {
     this.nodes.set(nodeData.nodeId, nodeData)
-    for (let childRole of Object.entries(nodeData.children)) {
-      let children: Array<NodeId | NodeData> = childRole[1] as any
+    for (const childRole of Object.entries(nodeData.children)) {
+      const children: Array<NodeId | NodeData> = childRole[1] as Array<NodeId | NodeData>
       for (let i = 0; i < children.length; i++) {
-        let child = children[i];
+        const child = children[i];
         if (typeof child === "object") {
           children[i] = this.loadNode(child)
         }
@@ -53,7 +51,7 @@ export class ModelService {
   }
 
   public addNewNode(parent: NodeId, role: string, index: number, concept: string) {
-    let body = [<NodeUpdateData>{
+    const body = [<NodeUpdateData>{
       nodeId: this.idGenerator.generate(),
       parent: parent,
       role: role,
@@ -64,7 +62,7 @@ export class ModelService {
   }
 
   public getChildren(parentId: NodeId, role: string): NodeId[] {
-    let parentData = this.nodes.get(parentId)
+    const parentData = this.nodes.get(parentId)
     if (parentData === undefined) return []
     return parentData.children[role]
   }
@@ -75,18 +73,18 @@ export class ModelService {
 
   public getProperty(nodeId: NodeId, role: string): string | undefined {
     console.log("getProperty(" + nodeId + ", " + role + ")")
-    let node = this.nodes.get(nodeId);
+    const node = this.nodes.get(nodeId);
     if (node === undefined) return undefined;
     return node.properties[role];
   }
 
   public setProperty(nodeId: NodeId, role: string, value: string | null | undefined) {
     console.log(`setProperty(${nodeId}, ${role}, ${value})`)
-    let node = this.nodes.get(nodeId);
+    const node = this.nodes.get(nodeId);
     if (node === undefined) return
     if (node.properties[role] === value) return
 
-    let body = [<NodeUpdateData>{
+    const body = [<NodeUpdateData>{
       nodeId: nodeId,
       properties: {
         [role]: value === undefined ? null : value
@@ -181,8 +179,11 @@ interface VersionData {
 
 interface NodeData {
   nodeId: NodeId,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
   references: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
   properties: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
   children: any
 }
 
@@ -192,8 +193,11 @@ interface NodeUpdateData {
   role: string | undefined,
   index: number | undefined,
   concept: string | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
   references: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
   properties: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
   children: any
 }
 
@@ -208,7 +212,7 @@ class IdGenerator {
   }
 
   public generate(): NodeId {
-    let id = this.next++;
+    const id = this.next++;
     if (id > this.last) throw Error("Out of IDs")
     // TODO get new IDs from the server
     return id.toString()

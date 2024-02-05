@@ -1,14 +1,42 @@
 {
-  "extends": "@reallyland/tsconfig",
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "importsNotUsedAsValues": "error",
+    "inlineSources": true,
+    "listEmittedFiles": true,
+    "newLine": "LF",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": true,
+    "removeComments": true,
+    "resolveJsonModule": false,
+    "sourceMap": true,
+    "strict": true,
+    "lib": [
+      "ESNext",
+      "ESNext.Array",
+      "ESNext.AsyncIterable",
+      "ESNext.BigInt",
+      "ESNext.Intl",
+      "ESNext.Symbol"
+    ],
+    "moduleResolution": "Node",
+    "module": "CommonJS",
+    "target": "ES2020",
+    "declaration": true,
+    "declarationMap": true,
     "rootDir": "src",
     "outDir": "dist",
-    "declarationDir": "dist",
-    "noUnusedLocals": false,
-    "module": "CommonJS",
-    "resolveJsonModule": false,
-    "target": "ES2020"
+    "declarationDir": "dist"
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["dist"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "dist"
+  ]
 }

@@ -1,24 +1,48 @@
 {
   "extends": [
-    "@reallyland/tslint-config"
+    "tslint:recommended",
+    "tslint-config-airbnb",
+    "tslint-immutable"
   ],
   "rules": {
-    "object-curly-spacing": false,
-    "quotemark": false,
-    "ordered-imports": false,
+    "align": [
+      true,
+      "members",
+      "parameters",
+      "statements"
+    ],
+    "array-type": false,
     "function-name": false,
+    "import-name": false,
+    "interface-name": false,
+    "no-console": false,
+    "no-debugger": false,
+    "no-duplicate-imports": false,
+    "no-object-literal-type-assertion": false,
+    "object-literal-sort-keys": false,
+    "ordered-imports": false,
+    "strict-boolean-expressions": false,
+    "trailing-comma": false,
+    "quotemark": false,
+    "variable-name": [
+      true,
+      "ban-keywords",
+      "check-format",
+      "allow-leading-underscore",
+      "allow-trailing-underscore",
+      "allow-snake-case"
+    ],
+    "object-curly-spacing": false,
     "prefer-array-literal": false,
     "semicolon": false,
     "max-classes-per-file": false,
     "prefer-const": false,
     "prefer-template": false,
     "no-empty-interface": false,
-    "interface-name": false,
     "ter-arrow-parens": false,
     "no-increment-decrement": false,
     "no-angle-bracket-type-assertion": false,
     "object-literal-shorthand": false,
-    "trailing-comma": false,
     "max-line-length": false
   }
 }

@@ -18,21 +18,26 @@ package org.modelix.mps.sync.gui
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.bindings.BindingRegistryOperation
 import org.modelix.mps.sync.bindings.BindingSortComparator
 import org.modelix.mps.sync.bindings.BindingsRegistry
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGui) : Runnable {
+class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGui) : Thread() {
 
     private val bindingsComparator = BindingSortComparator()
-    private var existingBindings = listOf<IBinding>()
+    private var existingBindings = LinkedHashSet<IBinding>()
 
     override fun run() {
-        // TODO test how much this class slows down the execution
-        // TODO test if the comparison returns false only if there is a difference in the list/set of bindings
-        val latestBindings = BindingsRegistry.getAllBindings()
-        if (existingBindings != latestBindings) {
-            existingBindings = latestBindings
+        while (!isInterrupted) {
+            val bindingWithOperation = BindingsRegistry.bindings.take()
+            val binding = bindingWithOperation.binding
+
+            when (bindingWithOperation.operation) {
+                BindingRegistryOperation.ADD -> existingBindings.add(binding)
+                BindingRegistryOperation.REMOVE -> existingBindings.remove(binding)
+            }
+
             val sorted = existingBindings.sortedWith(bindingsComparator)
             gui.populateBindingCB(sorted)
         }

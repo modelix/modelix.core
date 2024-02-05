@@ -46,9 +46,6 @@ import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ItemEvent
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
@@ -64,7 +61,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     private val log = logger<ModelSyncGuiFactory>()
     private lateinit var toolWindowContent: ModelSyncGui
     private lateinit var content: Content
-    private lateinit var refresherTaskFuture: ScheduledFuture<*>
+    private lateinit var bindingsRefresher: BindingsComboBoxRefresher
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         log.info("-------------------------------------------- createToolWindowContent")
@@ -72,12 +69,12 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         toolWindowContent = ModelSyncGui(toolWindow)
         content = ContentFactory.SERVICE.getInstance().createContent(toolWindowContent.contentPanel, "", false)
         toolWindow.contentManager.addContent(content)
-        refresherTaskFuture = toolWindowContent.refresherTaskFuture
+        bindingsRefresher = toolWindowContent.bindingsRefresher
     }
 
     override fun dispose() {
         log.info("-------------------------------------------- disposing ModelSyncGuiFactory")
-        refresherTaskFuture.cancel(true)
+        bindingsRefresher.interrupt()
         content.dispose()
     }
 
@@ -90,7 +87,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val log = logger<ModelSyncGui>()
 
         val contentPanel = JPanel()
-        val refresherTaskFuture: ScheduledFuture<*>
+        val bindingsRefresher: BindingsComboBoxRefresher
 
         // the actual intelliJ service handling the synchronization
         private val modelSyncService = service<ModelSyncService>()
@@ -112,11 +109,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
             toolWindow.setIcon(CloudIcons.ROOT_ICON)
+            bindingsRefresher = BindingsComboBoxRefresher(this)
             contentPanel.layout = FlowLayout()
             contentPanel.add(createInputBox())
             triggerRefresh()
-            refresherTaskFuture = Executors.newScheduledThreadPool(1)
-                .scheduleAtFixedRate(BindingsComboBoxRefresher(this), 3, 3, TimeUnit.SECONDS)
 
             // TODO fixme: hardcoded values
             serverURL.text = "http://127.0.0.1:28101/v2"
@@ -246,6 +242,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             existingBindingCB.renderer = CustomCellRenderer()
             bindingsPanel.add(JLabel("Bindings:      "))
             bindingsPanel.add(existingBindingCB)
+            bindingsRefresher.start()
 
             val unbindButton = JButton("Unbind Selected")
             unbindButton.addActionListener {

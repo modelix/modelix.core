@@ -22,8 +22,7 @@ import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
-import java.util.stream.Stream
-import kotlin.streams.toList
+import java.util.concurrent.LinkedBlockingQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object BindingsRegistry {
@@ -31,12 +30,22 @@ object BindingsRegistry {
     private val modelBindingsByModule = mutableMapOf<SModule, LinkedHashSet<ModelBinding>>()
     private val moduleBindings = LinkedHashSet<ModuleBinding>()
 
-    fun addModelBinding(binding: ModelBinding) =
+    val bindings = LinkedBlockingQueue<BindingWithOperation>()
+
+    fun addModelBinding(binding: ModelBinding) {
         modelBindingsByModule.computeIfAbsent(binding.model.module!!) { LinkedHashSet() }.add(binding)
+        bindingAdded(binding)
+    }
 
-    fun addModuleBinding(binding: ModuleBinding) = moduleBindings.add(binding)
+    fun addModuleBinding(binding: ModuleBinding) {
+        moduleBindings.add(binding)
+        bindingAdded(binding)
+    }
 
-    fun removeModelBinding(module: SModule, binding: ModelBinding) = modelBindingsByModule[module]?.remove(binding)
+    fun removeModelBinding(module: SModule, binding: ModelBinding) {
+        modelBindingsByModule[module]?.remove(binding)
+        bindingRemoved(binding)
+    }
 
     fun removeModuleBinding(binding: ModuleBinding) {
         val module = binding.module
@@ -46,6 +55,7 @@ object BindingsRegistry {
 
         modelBindingsByModule.remove(module)
         moduleBindings.remove(binding)
+        bindingRemoved(binding)
     }
 
     fun getModelBindings(): List<ModelBinding> =
@@ -61,5 +71,21 @@ object BindingsRegistry {
 
     fun getModuleBinding(module: AbstractModule) = moduleBindings.find { it.module == module }
 
-    fun getAllBindings(): List<IBinding> = Stream.concat(getModelBindings().stream(), moduleBindings.stream()).toList()
+    private fun bindingAdded(binding: IBinding) =
+        bindings.put(BindingWithOperation(binding, BindingRegistryOperation.ADD))
+
+    private fun bindingRemoved(binding: IBinding) =
+        bindings.put(BindingWithOperation(binding, BindingRegistryOperation.REMOVE))
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+data class BindingWithOperation(
+    val binding: IBinding,
+    val operation: BindingRegistryOperation,
+)
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+enum class BindingRegistryOperation {
+    ADD,
+    REMOVE,
 }

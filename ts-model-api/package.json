@@ -34,7 +34,6 @@
     "generateKotlin": "dukat -m \"@modelix/ts-model-api\" -d build/dukat dist/*.d.ts"
   },
   "devDependencies": {
-    "@reallyland/tsconfig": "^2.0.0",
     "@types/node": "^20.11.28",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",

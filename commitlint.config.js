@@ -25,8 +25,6 @@ module.exports = {
         "mps-model-server-plugin",
         "mps-sync-plugin",
         "mps-sync-plugin-lib",
-        "sync-plugin-lib",
-        "mps-sync-lib",
         "openapi",
         "ts-model-api",
         "vue-model-api",

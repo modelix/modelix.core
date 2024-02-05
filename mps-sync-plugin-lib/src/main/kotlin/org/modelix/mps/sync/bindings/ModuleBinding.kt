@@ -27,6 +27,7 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
 import org.modelix.mps.sync.util.SyncLock
 import org.modelix.mps.sync.util.SyncQueue
+import java.util.concurrent.CountDownLatch
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleBinding(
@@ -74,14 +75,22 @@ class ModuleBinding(
         // unregister listener
         module.removeModuleListener(changeListener)
 
-        // deactivate child models' bindings
-        bindingsRegistry.getModelBindings(module)?.forEach { it.deactivate(removeFromServer) }
+        syncQueue.enqueue(linkedSetOf(SyncLock.NONE)) {
+            val modelBindings = bindingsRegistry.getModelBindings(module)
+            val barrier = CountDownLatch(modelBindings?.size ?: 0)
 
-        // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
-        bindingsRegistry.removeModuleBinding(this)
+            // deactivate child models' bindings
+            modelBindings?.forEach {
+                it.deactivate(removeFromServer) { barrier.countDown() }
+            }
 
-        // delete module
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
+            // wait for all model bindings to be deactivated
+            barrier.await()
+
+            // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
+            bindingsRegistry.removeModuleBinding(this)
+        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE)) {
+            // delete module
             try {
                 if (!removeFromServer) {
                     // if we just delete it locally, then we have to call ModuleDeleteHelper manually.
@@ -96,6 +105,8 @@ class ModuleBinding(
                 throw ex
             }
         }.continueWith(linkedSetOf(SyncLock.NONE)) {
+            // deactivate binding
+
             nodeMap.remove(module)
 
             isDisposed = true

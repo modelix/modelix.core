@@ -31,5 +31,6 @@ curl -X GET --retry 30 --retry-connrefused --retry-delay 1 http://localhost:2830
 
 ./gradlew runSyncTestPush --console=plain --stacktrace
 ./gradlew test --tests 'PushTest'
+./gradlew test --tests 'ChangeApplier'
 ./gradlew runSyncTestPull --console=plain --stacktrace
 ./gradlew test --tests 'PullTest'

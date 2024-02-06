@@ -16,25 +16,18 @@
 
 package org.modelix.model.sync.bulk.gradle.test
 
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.xmlunit.builder.Input
 import org.xmlunit.xpath.JAXPXPathEngine
 import java.io.File
-import javax.xml.transform.Source
 import kotlin.test.assertContentEquals
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PullTest {
-    companion object {
-        private lateinit var source: Source
 
-        @JvmStatic
-        @BeforeAll
-        fun initSource() {
-            val localModel = File("build/test-repo/solutions/GraphSolution/models/GraphSolution.example.mps").readText()
-            source = Input.fromString(localModel).build()
-        }
-    }
+    private val localModel = File("build/test-repo/solutions/GraphSolution/models/GraphSolution.example.mps").readText()
+    private val source = Input.fromString(localModel).build()
 
     @Test
     fun `properties were synced to local`() {

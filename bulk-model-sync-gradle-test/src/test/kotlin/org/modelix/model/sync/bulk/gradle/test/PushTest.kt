@@ -1,32 +1,24 @@
 package org.modelix.model.sync.bulk.gradle.test
 
-import GraphLang.L_GraphLang
-import GraphLang.N_Edge
-import GraphLang.N_Node
-import GraphLang._C_UntypedImpl_Edge
-import GraphLang._C_UntypedImpl_Node
-import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
-import org.modelix.metamodel.TypedLanguagesRegistry
-import org.modelix.metamodel.typed
+import org.junit.jupiter.api.TestInstance
 import org.modelix.model.ModelFacade
-import org.modelix.model.api.ConceptReference
-import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
-import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.client2.getReplicatedModel
-import org.modelix.model.client2.runWrite
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
-import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.asExported
 import java.io.File
 import kotlin.test.assertContentEquals
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PushTest {
+    private val url = "http://0.0.0.0:28309/v2"
+    private val branchRef = ModelFacade.createBranchReference(RepositoryId("ci-test"), "master")
+    private val client = ModelClientV2PlatformSpecificBuilder().url(url).build().apply { runBlocking { init() } }
 
     @Test
     fun `nodes were synced to server`() {
@@ -36,15 +28,6 @@ class PushTest {
         val modules = files.map { ModelData.fromJson(it.readText()) }
         val inputModel = ModelData(root = NodeData(children = modules.map { it.root }))
 
-        TypedLanguagesRegistry.register(L_GraphLang)
-        TypedLanguagesRegistry.register(L_jetbrains_mps_lang_core)
-
-        val repoId = RepositoryId("ci-test")
-        val branchName = "master"
-        val url = "http://0.0.0.0:28309/v2"
-
-        val branchRef = ModelFacade.createBranchReference(repoId, branchName)
-        val client = ModelClientV2PlatformSpecificBuilder().url(url).build().apply { runBlocking { init() } }
         val replicatedModel = client.getReplicatedModel(branchRef)
         val branch = runBlocking { replicatedModel.start() }
 
@@ -52,32 +35,5 @@ class PushTest {
             assertContentEquals(inputModel.root.children, branch.getRootNode().allChildren.map { it.asExported() })
         }
         replicatedModel.dispose()
-
-        applyChangesForPullTest(client, branchRef)
-    }
-
-    private fun applyChangesForPullTest(client: IModelClientV2, branchRef: BranchReference) {
-        runBlocking {
-            client.runWrite(branchRef) { rootNode ->
-                val graphNodes = rootNode
-                    .getDescendants(false)
-                    .filter { it.getConceptReference() == ConceptReference(_C_UntypedImpl_Node.getUID()) }
-                    .map { it.typed<N_Node>() }
-                    .toList()
-
-                graphNodes[0].name = "X"
-                graphNodes[1].name = "Y"
-                graphNodes[2].name = "Z"
-
-                val edges = rootNode
-                    .getDescendants(false)
-                    .filter { it.getConceptReference() == ConceptReference(_C_UntypedImpl_Edge.getUID()) }
-                    .map { it.typed<N_Edge>() }
-                    .toList()
-
-                edges[0].source = graphNodes[1]
-                edges[0].target = graphNodes[3]
-            }
-        }
     }
 }

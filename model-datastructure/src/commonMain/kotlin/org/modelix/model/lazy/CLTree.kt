@@ -444,7 +444,7 @@ class CLTree : ITree, IBulkTree {
                     return changesOnly
                 }
 
-                override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
+                override fun entryAdded(key: Long, value: KVEntryReference<CPNode>) {
                     if (visitor is ITreeChangeVisitorEx) {
                         createElement(value, bulkQuery).map { element ->
                             visitor.nodeAdded(element!!.id)
@@ -452,7 +452,7 @@ class CLTree : ITree, IBulkTree {
                     }
                 }
 
-                override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
+                override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>) {
                     if (visitor is ITreeChangeVisitorEx) {
                         oldVersion.createElement(value, bulkQuery).map { element ->
                             visitor.nodeRemoved(element!!.id)
@@ -460,7 +460,7 @@ class CLTree : ITree, IBulkTree {
                     }
                 }
 
-                override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>?, newValue: KVEntryReference<CPNode>?) {
+                override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>) {
                     oldVersion.createElement(oldValue, bulkQuery).map { oldElement ->
                         createElement(newValue, bulkQuery).map { newElement ->
                             if (oldElement!!::class != newElement!!::class) {

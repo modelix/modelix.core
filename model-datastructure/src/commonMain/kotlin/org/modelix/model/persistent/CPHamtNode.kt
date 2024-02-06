@@ -69,14 +69,14 @@ abstract class CPHamtNode : IKVValue {
     abstract fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?>
     abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode?
     abstract fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode?
-    abstract fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>?) -> Unit): IBulkQuery.Value<Unit>
+    abstract fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit>
     abstract fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: IChangeVisitor, bulkQuery: IBulkQuery)
     fun visitChanges(oldNode: CPHamtNode?, visitor: IChangeVisitor, bulkQuery: IBulkQuery) = visitChanges(oldNode, 0, visitor, bulkQuery)
     interface IChangeVisitor {
         fun visitChangesOnly(): Boolean
-        fun entryAdded(key: Long, value: KVEntryReference<CPNode>?)
-        fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?)
-        fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>?, newValue: KVEntryReference<CPNode>?)
+        fun entryAdded(key: Long, value: KVEntryReference<CPNode>)
+        fun entryRemoved(key: Long, value: KVEntryReference<CPNode>)
+        fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>)
     }
 
     companion object {

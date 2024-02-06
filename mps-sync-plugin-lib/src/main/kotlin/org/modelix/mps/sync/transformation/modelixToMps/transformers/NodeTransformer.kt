@@ -26,6 +26,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SNodeFactory
 import org.modelix.mps.sync.mps.util.addDevKit
 import org.modelix.mps.sync.mps.util.addLanguageImport
@@ -44,7 +45,7 @@ import java.util.UUID
 class NodeTransformer(
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
-    private val mpsLanguageRepository: MPSLanguageRepository,
+    mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
     private val logger = logger<NodeTransformer>()
@@ -135,6 +136,7 @@ class NodeTransformer(
 
     private fun getDependentModule(iNode: INode): SModule {
         val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)!!
-        return mpsLanguageRepository.repository.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
+        val activeProject = ActiveMpsProjectInjector.activeMpsProject!!
+        return activeProject.repository.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
     }
 }

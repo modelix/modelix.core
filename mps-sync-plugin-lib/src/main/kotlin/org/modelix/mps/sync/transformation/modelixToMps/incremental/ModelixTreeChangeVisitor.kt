@@ -47,7 +47,7 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 class ModelixTreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
     private val project: MPSProject,
-    private val languageRepository: MPSLanguageRepository,
+    languageRepository: MPSLanguageRepository,
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
 ) : ITreeChangeVisitorEx {
@@ -136,7 +136,7 @@ class ModelixTreeChangeVisitor(
 
     override fun childrenChanged(nodeId: Long, role: String?) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), true) {
-            modelTransformer.resolveModelImports(languageRepository.repository)
+            modelTransformer.resolveModelImports(project.repository)
             modelTransformer.clearResolvableModelImports()
 
             nodeTransformer.resolveReferences()

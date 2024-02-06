@@ -94,6 +94,8 @@ modelSync {
             url = "http://localhost:28309/v2"
             repositoryId = "ci-test"
             branchName = "master"
+            metaProperties["metaKey1"] = "metaValue1"
+            metaProperties["metaKey2"] = "metaValue2"
         }
     }
     direction("testPull") {

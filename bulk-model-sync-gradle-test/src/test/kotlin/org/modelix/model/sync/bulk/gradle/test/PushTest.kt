@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.modelix.model.ModelFacade
+import org.modelix.model.api.IProperty
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.client2.getReplicatedModel
@@ -13,6 +14,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.asExported
 import java.io.File
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PushTest {
@@ -33,6 +35,20 @@ class PushTest {
 
         branch.runRead {
             assertContentEquals(inputModel.root.children, branch.getRootNode().allChildren.map { it.asExported() })
+        }
+        replicatedModel.dispose()
+    }
+
+    @Test
+    fun `meta properties were applied to root node`() {
+        val replicatedModel = client.getReplicatedModel(branchRef)
+        val branch = runBlocking { replicatedModel.start() }
+        branch.runRead {
+            val actual1 = branch.getRootNode().getPropertyValue(IProperty.fromName("metaKey1"))
+            val actual2 = branch.getRootNode().getPropertyValue(IProperty.fromName("metaKey2"))
+
+            assertEquals("metaValue1", actual1)
+            assertEquals("metaValue2", actual2)
         }
         replicatedModel.dispose()
     }

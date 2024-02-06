@@ -21,11 +21,15 @@ import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.smodel.language.ConceptRegistry
 import jetbrains.mps.smodel.language.LanguageRegistry
 import jetbrains.mps.smodel.runtime.illegal.IllegalConceptDescriptor
+import org.jetbrains.mps.openapi.language.SAbstractConcept
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.ILanguageRepository
 
-class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepository {
+data class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepository {
+
+    fun getConcept(uid: String): SAbstractConcept? = (resolveConcept(uid) as? MPSConcept)?.concept
+
     override fun resolveConcept(uid: String): IConcept? {
         if (!uid.startsWith("mps:")) return null
 

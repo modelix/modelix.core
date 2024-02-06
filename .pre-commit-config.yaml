@@ -47,5 +47,5 @@ repos:
           - "eslint-config-prettier@9.1.0"
           - "@typescript-eslint/eslint-plugin@7.0.1"
           - "@typescript-eslint/parser@7.0.1"
-        files: ^vue-model-api/src/
-        'types': [ts]
+        files: ^(vue-model-api)|(ts-model-api)/src/
+        types: [ts]

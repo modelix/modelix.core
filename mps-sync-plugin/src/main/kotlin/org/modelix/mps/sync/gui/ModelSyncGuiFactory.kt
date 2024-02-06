@@ -82,6 +82,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         companion object {
             private const val COMBOBOX_CHANGED_COMMAND = "comboBoxChanged"
+            private const val TEXTFIELD_WIDTH = 20
         }
 
         private val log = logger<ModelSyncGui>()
@@ -91,11 +92,11 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         // the actual intelliJ service handling the synchronization
         private val modelSyncService = service<ModelSyncService>()
-        private val serverURL = JBTextField(20)
-        private val repositoryName = JBTextField(20)
-        private val branchName = JBTextField(20)
-        private val modelName = JBTextField(20)
-        private val jwt = JBTextField(20)
+        private val serverURL = JBTextField(TEXTFIELD_WIDTH)
+        private val repositoryName = JBTextField(TEXTFIELD_WIDTH)
+        private val branchName = JBTextField(TEXTFIELD_WIDTH)
+        private val modelName = JBTextField(TEXTFIELD_WIDTH)
+        private val jwt = JBTextField(TEXTFIELD_WIDTH)
 
         private val openProjectModel = DefaultComboBoxModel<Project>()
         private val existingConnectionsModel = DefaultComboBoxModel<ModelClientV2>()

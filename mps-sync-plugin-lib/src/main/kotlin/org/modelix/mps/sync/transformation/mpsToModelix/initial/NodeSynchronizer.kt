@@ -57,11 +57,8 @@ class NodeSynchronizer(
 
             val containmentLink = node.containmentLink
             val childLink: IChildLink = if (containmentLink == null) {
-                if (node.parent == null) {
-                    BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
-                } else {
-                    throw IllegalStateException("Containment link of $node is null, thus node may not get synchronized to modelix")
-                }
+                check(node.parent != null) { "Containment link of $node is null, thus node may not get synchronized to modelix" }
+                BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
             } else {
                 MPSChildLink(containmentLink)
             }

@@ -68,8 +68,7 @@ class NodeTransformer(
                     }
                 }
             } catch (ex: Exception) {
-                logger.error("$javaClass exploded")
-                ex.printStackTrace()
+                logger.error("Transformation of Node ($iNode) failed.", ex)
             }
         }
     }

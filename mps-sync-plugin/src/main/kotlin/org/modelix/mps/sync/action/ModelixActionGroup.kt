@@ -23,7 +23,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.icons.CloudIcons
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelixActionGroup() : ActionGroup("Modelix Actions", "", CloudIcons.PLUGIN_ICON) {
+class ModelixActionGroup : ActionGroup("Modelix Actions", "", CloudIcons.PLUGIN_ICON) {
 
     init {
         isPopup = true

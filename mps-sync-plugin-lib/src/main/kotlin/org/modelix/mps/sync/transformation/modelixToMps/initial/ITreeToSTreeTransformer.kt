@@ -101,8 +101,7 @@ class ITreeToSTreeTransformer(
                 }
             }
         } catch (ex: Exception) {
-            logger.error("$javaClass exploded")
-            ex.printStackTrace()
+            logger.error("Transformation of Node tree starting from Node $entryPoint failed.", ex)
         }
 
         return bindings

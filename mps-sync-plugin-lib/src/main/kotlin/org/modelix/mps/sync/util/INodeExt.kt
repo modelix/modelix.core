@@ -43,10 +43,9 @@ fun INode.nodeIdAsLong(): Long =
     when (this) {
         is PNodeAdapter -> this.nodeId
         is MPSNode -> {
-            when (val nodeId = this.node.nodeId) {
-                is Regular -> nodeId.id
-                else -> throw IllegalStateException("Unsupported NodeId format: $nodeId")
-            }
+            val nodeId = this.node.nodeId
+            check(nodeId is Regular) { "Unsupported NodeId format: $nodeId" }
+            nodeId.id
         }
 
         else -> throw IllegalStateException("Unsupported INode implementation")

@@ -23,13 +23,15 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object CloudIcons {
 
-    val ROOT_ICON = LetterInSquareIcon("C", 14, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val MODEL_SERVER_ICON = LetterInSquareIcon("S", 14, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val REPOSITORY_ICON = LetterInSquareIcon("R", 14, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val BRANCH_ICON = LetterInSquareIcon("B", 14, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val MODULE_ICON = LetterInSquareIcon("M", 14, 2.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val MODEL_ICON = LetterInSquareIcon("m", 14, 2.0f, 12.0f, JBColor.YELLOW, JBColor.BLACK)
-    val CONNECTION_ON = LetterInSquareIcon("", 14, 2.0f, 12.0f, JBColor.GREEN, JBColor.BLACK)
-    val CONNECTION_OFF = LetterInSquareIcon("", 14, 2.0f, 12.0f, JBColor.RED, JBColor.BLACK)
+    private const val FONT_SIZE = 14
+
+    val ROOT_ICON = LetterInSquareIcon("C", FONT_SIZE, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
+    val MODEL_SERVER_ICON = LetterInSquareIcon("S", FONT_SIZE, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
+    val REPOSITORY_ICON = LetterInSquareIcon("R", FONT_SIZE, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
+    val BRANCH_ICON = LetterInSquareIcon("B", FONT_SIZE, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
+    val MODULE_ICON = LetterInSquareIcon("M", FONT_SIZE, 2.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
+    val MODEL_ICON = LetterInSquareIcon("m", FONT_SIZE, 2.0f, 12.0f, JBColor.YELLOW, JBColor.BLACK)
+    val CONNECTION_ON = LetterInSquareIcon("", FONT_SIZE, 2.0f, 12.0f, JBColor.GREEN, JBColor.BLACK)
+    val CONNECTION_OFF = LetterInSquareIcon("", FONT_SIZE, 2.0f, 12.0f, JBColor.RED, JBColor.BLACK)
     val PLUGIN_ICON = IconLoader.getIcon("/META-INF/pluginIcon.svg", javaClass)
 }

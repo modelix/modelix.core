@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync
+package org.modelix.mps.sync.modelix
 
 import jetbrains.mps.project.MPSProject
 import org.modelix.kotlin.utils.UnstableModelixFeature

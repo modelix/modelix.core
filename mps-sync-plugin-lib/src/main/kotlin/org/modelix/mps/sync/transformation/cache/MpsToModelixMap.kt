@@ -26,11 +26,13 @@ import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
-// use with caution, otherwise this cache may cause memory leaks
+/**
+ * WARNING:
+ * - use with caution, otherwise this cache may cause memory leaks
+ * - if you add a new Map as a field in the class, then please also add it to the `remove` and `isMappedToMps` methods below
+ */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object MpsToModelixMap {
-
-    // WARNING: if you add a new Map here, please also add it to the `remove` and `isMappedToMps` methods below
 
     private val nodeToModelixId = mutableMapOf<SNode, Long>()
     private val modelixIdToNode = mutableMapOf<Long, SNode>()

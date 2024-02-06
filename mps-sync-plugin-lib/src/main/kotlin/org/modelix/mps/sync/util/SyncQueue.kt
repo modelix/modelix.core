@@ -21,7 +21,7 @@ import com.intellij.util.containers.headTail
 import jetbrains.mps.util.containers.ConcurrentHashSet
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client.SharedExecutors
-import org.modelix.mps.sync.ReplicatedModelRegistry
+import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
 import java.util.concurrent.ConcurrentLinkedQueue

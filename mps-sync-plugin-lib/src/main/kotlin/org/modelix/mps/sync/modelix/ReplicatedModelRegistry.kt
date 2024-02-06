@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync
+package org.modelix.mps.sync.modelix
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client2.ReplicatedModel

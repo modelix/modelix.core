@@ -3,7 +3,8 @@
 set -e
 set -x
 
-cd "$(dirname "$0")"
+TEST_DIR="$(dirname "$(readlink -f "$0")")"
+cd "${TEST_DIR}"
 
 (
   cd graph-lang-api
@@ -20,15 +21,16 @@ if [ "${CI}" != "true" ]; then
   }
 fi
 
-cd ..
+cd "${TEST_DIR}/.."
 ./gradlew :model-server:run --console=plain --args="-inmemory -port 28309" &
 MODEL_SERVER_PID=$!
 
-cd "$(dirname "$0")"
+cd "${TEST_DIR}"
 
 curl -X GET --retry 30 --retry-connrefused --retry-delay 1 http://localhost:28309/health
 
 ./gradlew runSyncTestPush --console=plain --stacktrace
 ./gradlew test --tests 'PushTest'
+./gradlew test --tests 'ChangeApplier'
 ./gradlew runSyncTestPull --console=plain --stacktrace
 ./gradlew test --tests 'PullTest'

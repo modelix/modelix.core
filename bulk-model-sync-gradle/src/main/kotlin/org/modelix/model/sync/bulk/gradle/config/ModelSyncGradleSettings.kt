@@ -184,6 +184,7 @@ data class ServerTarget(
     override var repositoryId: String? = null,
     override var branchName: String? = null,
     override var requestTimeoutSeconds: Int = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    val metaProperties: MutableMap<String, String> = mutableMapOf(),
 ) : ServerEndpoint {
     override fun getValidationErrors(): List<String> {
         val errors = mutableListOf<String>()

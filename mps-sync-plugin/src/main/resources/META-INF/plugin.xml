@@ -1,0 +1,65 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin require-restart="false">
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>org.modelix.mps.sync</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Synchronization Between MPS and Model-Servers</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor email="modelix@itemis.de" url="https://modelix.org/">itemis AG</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+    Provides minimal synchronization capabilities to exchange model content between MPS and modelix model-server
+  ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <applicationListeners>
+        <listener
+                class="org.modelix.mps.sync.listeners.MPSSynchronizationDynamicPluginListener"
+                topic="com.intellij.ide.plugins.DynamicPluginListener"/>
+        <listener
+                class="org.modelix.mps.sync.listeners.MPSSynchronizationAppLifecycleListener"
+                topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+
+        <toolWindow id="Modelix Model Synchronization" secondary="true"
+                    icon="org.modelix.mps.sync.icons.CloudIcons.PLUGIN_ICON" anchor="right"
+                    factoryClass="org.modelix.mps.sync.gui.ModelSyncGuiFactory"/>
+
+        <!-- service to handle storage of cloud details via project settings, aka .mps/modelix.xml -->
+        <projectService
+                serviceImplementation="org.modelix.mps.sync.configuration.CloudResourcesConfigurationComponent"/>
+
+        <!-- the actual service in charge of connecting and binding -->
+        <applicationService serviceImplementation="org.modelix.mps.sync.ModelSyncService"/>
+
+        <!-- shows an indicator in the status bar to know the current connection state -->
+        <statusBarWidgetFactory id="CloudStatus"
+                                implementation="org.modelix.mps.sync.indicator.CloudIndicator"/>
+
+    </extensions>
+    <actions>
+        <action id="org.modelix.mps.sync.action.ModelSyncAction"
+                class="org.modelix.mps.sync.action.ModelSyncAction" text="Model Sync Action"/>
+        <action id="org.modelix.mps.sync.action.ModuleSyncAction"
+                class="org.modelix.mps.sync.action.ModuleSyncAction" text="Module Sync Action"/>
+        <action id="org.modelix.mps.sync.action.UnbindModelAction"
+                class="org.modelix.mps.sync.action.UnbindModelAction" text="Unbind Model Action"/>
+        <action id="org.modelix.mps.sync.action.UnbindModuleAction"
+                class="org.modelix.mps.sync.action.UnbindModuleAction" text="Unbind Module Action"/>
+        <group id="org.modelix.mps.sync.action.ModelixActionGroup"
+               class="org.modelix.mps.sync.action.ModelixActionGroup" text="Modelix Action Group"/>
+    </actions>
+</idea-plugin>

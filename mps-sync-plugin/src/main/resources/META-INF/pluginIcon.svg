@@ -1,0 +1,31 @@
+<svg width="13" height="13" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g transform="scale(0.08, 0.08) translate(0, 0)">
+        <line fill="none" stroke="#adeee3" x1="425" y1="250" x2="275" y2="50" id="svg_41" stroke-width="15"/>
+        <line fill="none" stroke="#adeee3" x1="275" y1="50" x2="325" y2="250" id="svg_40" stroke-width="15"/>
+        <line fill="none" stroke="#adeee3" x1="275" y1="50" x2="225" y2="150" id="svg_38" stroke-width="15"/>
+        <line fill="none" stroke="#adeee3" x1="125" y1="150" x2="275" y2="50" id="svg_35" stroke-width="15"/>
+        <ellipse fill="#adeee3" stroke="#adeee3" stroke-width="0" cx="275" cy="50" id="svg_33" rx="25" ry="25"/>
+        <ellipse fill="#6290c3" stroke="#6290c3" stroke-width="0" cx="75" cy="350" id="svg_12" rx="25" ry="25"/>
+        <ellipse fill="#6290c3" stroke="#6290c3" stroke-width="0" cx="175" cy="350" id="svg_13" rx="25" ry="25"/>
+        <ellipse fill="#6290c3" stroke="#6290c3" stroke-width="0" cx="275" cy="350" id="svg_14" rx="25" ry="25"/>
+        <ellipse fill="#6290c3" stroke="#6290c3" stroke-width="0" cx="125" cy="150" id="svg_15" rx="25" ry="25"/>
+        <ellipse fill="#6290c3" stroke="#6290c3" stroke-width="0" cx="225" cy="150" id="svg_16" rx="25" ry="25"/>
+        <line fill="none" stroke="#6290c3" x1="75" y1="350" x2="125" y2="150" id="svg_17" stroke-width="20"/>
+        <line fill="none" stroke="#6290c3" stroke-width="20" x1="125" y1="150" x2="175" y2="350" id="svg_18"/>
+        <line fill="none" stroke="#6290c3" stroke-width="20" x1="225" y1="150" x2="175" y2="350" id="svg_19"/>
+        <line fill="none" stroke="#6290c3" stroke-width="20" x1="275" y1="350" x2="225" y2="150" id="svg_20"/>
+        <ellipse fill="#343434" stroke="#343434" stroke-width="0" cx="375" cy="350" id="svg_23" rx="25" ry="25"/>
+        <ellipse fill="#343434" stroke="#343434" stroke-width="0" cx="325" cy="250" id="svg_24" rx="25" ry="25"/>
+        <ellipse fill="#343434" stroke="#343434" stroke-width="0" cx="425" cy="250" id="svg_25" rx="25" ry="25"/>
+        <ellipse fill="#343434" stroke="#343434" stroke-width="0" cx="325" cy="450" id="svg_26" rx="25" ry="25"/>
+        <ellipse fill="#343434" stroke="#343434" stroke-width="0" cx="425" cy="450" id="svg_27" rx="25" ry="25"/>
+        <line fill="none" stroke="#343434" x1="325" y1="250" x2="375" y2="350" id="svg_28" stroke-width="20"/>
+        <line fill="none" stroke="#343434" x1="425" y1="250" x2="375" y2="350" id="svg_29" stroke-width="20"/>
+        <line fill="none" stroke="#343434" x1="325" y1="450" x2="375" y2="350" id="svg_30" stroke-width="20"/>
+        <line fill="none" stroke="#343434" x1="425" y1="450" x2="375" y2="350" id="svg_31" stroke-width="20"/>
+        <path d="m 304.7184,329.79188 33.14129,-33.1413 99.42777,99.42777 -99.42855,99.42776 -33.1413,-33.14516 42.84697,-42.84464 H 151.98524 l 42.86937,42.84464 -33.1413,33.14516 -99.429309,-99.42854 99.429309,-99.42776 33.1413,33.14131 -42.84773,42.84773 h 195.55847 z"
+              style="fill:#000000;stroke-width:0.772867"/>
+        <path d="m 161.71289,299.9668 -96.113281,96.11132 96.113281,96.11133 29.82617,-29.82812 -41.21094,-41.1875 a 2.3440066,2.3440066 0 0 1 1.65625,-4.00196 h 195.58008 a 2.3440066,2.3440066 0 0 1 1.65821,4.00196 l -41.19141,41.1875 29.82812,29.82812 96.11329,-96.11133 -96.11329,-96.11132 -29.82617,29.82422 41.18946,41.18945 a 2.3440066,2.3440066 0 0 1 -1.65821,4.00195 H 152.00781 a 2.3440066,2.3440066 0 0 1 -1.6582,-4.00195 l 41.18945,-41.18945 z"
+              style="fill:#ffff00;stroke-width:0.772867"/>
+    </g>
+</svg>

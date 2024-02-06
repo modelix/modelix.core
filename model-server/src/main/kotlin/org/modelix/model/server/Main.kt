@@ -245,7 +245,7 @@ object Main {
                         }
                     } else {
                         // we serve the public API to the outside via swagger UI
-                        swaggerUI(path = "swagger", swaggerFile = ResourceUtils.getFile("api/model-server.yaml").path.toString())
+                        swaggerUI(path = "swagger", swaggerFile = ResourceUtils.getFile("api/model-server.yaml").invariantSeparatorsPath)
                     }
                 }
             }

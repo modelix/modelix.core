@@ -186,7 +186,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                         +"Unnamed Node"
                     }
                 }
-                small { +"($node)" }
+                small { +" | ${node.nodeId} | $node" }
                 br { }
                 val conceptRef = node.getConceptReference()
                 small {
@@ -243,6 +243,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 thead {
                     tr {
                         th { +"ReferenceRole" }
+                        th { +"NodeId" }
                         th { +"Value" }
                     }
                 }
@@ -250,6 +251,9 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     for (referenceRole in node.getReferenceRoles()) {
                         tr {
                             td { +referenceRole }
+                            td {
+                                +"${(node.getReferenceTarget(referenceRole) as PNodeAdapter).nodeId}"
+                            }
                             td {
                                 +"${node.getReferenceTarget(referenceRole)}"
                             }

@@ -26,15 +26,9 @@ println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion"
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    api(project(":model-api"))
-
-    implementation(project(":mps-model-adapters"))
-    implementation(project(":mps-sync-plugin-lib"))
-    implementation(project(":model-client", configuration = "jvmRuntimeElements"))
     implementation(project(":model-api", configuration = "jvmRuntimeElements"))
-    implementation(project(":model-datastructure", configuration = "jvmRuntimeElements"))
-
-    implementation(libs.kotlin.reflect)
+    implementation(project(":model-client", configuration = "jvmRuntimeElements"))
+    implementation(project(":mps-sync-plugin-lib"))
 
     // extracting jars from zipped products
     mpsZip("com.jetbrains:mps:$mpsVersion")

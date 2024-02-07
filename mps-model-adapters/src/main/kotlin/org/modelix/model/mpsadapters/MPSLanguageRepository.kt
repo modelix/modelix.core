@@ -28,9 +28,9 @@ import org.modelix.model.api.ILanguageRepository
 
 data class MPSLanguageRepository(private val repository: SRepository) : ILanguageRepository {
 
-    fun getConcept(uid: String): SAbstractConcept? = (resolveConcept(uid) as? MPSConcept)?.concept
+    fun resolveMPSConcept(uid: String): SAbstractConcept? = resolveConcept(uid)?.concept
 
-    override fun resolveConcept(uid: String): IConcept? {
+    override fun resolveConcept(uid: String): MPSConcept? {
         if (!uid.startsWith("mps:")) return null
 
         val conceptId = try {

@@ -373,7 +373,10 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
 
         // record read access on the version data itself
         val baseVersion = CLVersion(baseVersionHash, store)
-        baseVersion.operations
+
+        // The operations may not be available on the client, but then they don't need to be part of the delta anyway.
+        // Ignoring that case should be safe.
+        runCatching { baseVersion.operations }
 
         val oldTree = baseVersion.getTree()
         val bulkQuery = store.newBulkQuery()

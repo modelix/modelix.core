@@ -53,7 +53,7 @@ kotlin {
 //                implementation(libs.guava)
 //                implementation(libs.apache.commons.io)
 //                implementation("org.json:json:20230618")
-//                implementation(libs.trove4j)
+                implementation(libs.trove4j)
                 implementation(libs.apache.commons.collections)
 //
 //                implementation("com.google.oauth-client:google-oauth-client:1.34.1")

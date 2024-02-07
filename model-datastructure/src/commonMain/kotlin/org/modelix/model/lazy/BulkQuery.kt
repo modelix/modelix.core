@@ -53,7 +53,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
         return Value(value)
     }
 
-    fun process() {
+    override fun process() {
         if (processing) {
             throw RuntimeException("Already processing")
         }

@@ -23,7 +23,6 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
@@ -56,8 +55,7 @@ class NodeSynchronizer(
             }
 
             val containmentLink = node.containmentLink
-            val childLink: IChildLink = if (containmentLink == null) {
-                check(node.parent != null) { "Containment link of $node is null, thus node may not get synchronized to modelix" }
+            val childLink = if (containmentLink == null) {
                 BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
             } else {
                 MPSChildLink(containmentLink)

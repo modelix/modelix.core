@@ -13,52 +13,488 @@ info:
   description: "modelix public API"
   version: "1.0.0"
 servers:
-  - url: '/'
+  - url: '/v2'
     description: model-server
+
+# TODO problem json
+
+tags:
+  - name: IDs
+  - name: repository management
+  - name: branch management
+  - name: versions
+    description: TODO what is this?
+  - name: delta access
+    description: Used for incrementally updating a branch or requesting data from a known state.
+  - name: node access
+    description: TODO to be created, does not exist yet
+  - name: object access
+    description: |-
+      Direct access to the key-value store.
+
+      TODO:
+      * What about access to KVs without repo context? Security issue? Removed for now
+  - name: ModelQl access
+  - name: WebSocket access
+  - name: TODO light-model-server API merge?
+
 paths:
-  /v2/server-id:
+
+  /server-id:
     get:
       operationId: getServerId
+      summary: returns the static ID of the server
+      tags:
+        - IDs
       responses:
         "200":
-          $ref: '#/components/responses/200'
-  /v2/user-id:
-    get:
-      operationId: getUserId
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-  /v2/generate-client-id:
+          description: Successful response for requesting the server ID.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerId"
+  /client-id:
     post:
-      operationId: postGenerateClientId
+      operationId: generateClientId
+      summary: Generate a new and unique client ID
+      tags:
+        - IDs
       responses:
-        "200":
-          $ref: '#/components/responses/200'
-  /headers:
-    get:
-      operationId: getHeaders
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-  /health:
-    get:
-      operationId: getHealth
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-        "500":
-          $ref: '#/components/responses/500'
-  /v2/repositories:
+        "201":
+          description: A new client ID was created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientId"
+
+  /repositories:
     get:
       operationId: getRepositories
+      summary: Returns all existing repositories
+      tags:
+        - repository management
+      responses:
+        "200":
+          description: A new client ID was created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepositoryList"
+    post:
+      operationId: initializeRepository
+      summary: Creates a new repository
+      tags:
+        - repository management
+      parameters:
+        - name: useRoleIds
+          in: "query"
+          required: false
+          schema:
+            type: boolean
+            default: true
+      requestBody:
+        description: The new repo to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Repository"
+      responses:
+        "201":
+          description: A new repository was created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repository"
+        "400":
+          description: A repository of the same name already exists
+
+  /repositories/{repository}:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+
+    get:
+      operationId: getRepository
+      tags:
+        - repository management
+      responses:
+        "200":
+          description: The repository exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repository"
+        "404":
+          $ref: "#/components/responses/NoSuchRepository"
+
+    delete:
+      operationId: deleteRepository
+      tags:
+        - repository management
+      responses:
+        "204":
+          description: Repository was deleted
+        "404":
+          $ref: "#/components/responses/NoSuchRepository"
+
+
+  /repositories/{repository}/branches:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+
+    get:
+      operationId: getRepositoryBranches
+      tags:
+        - branch management
+      responses:
+        "200":
+          description: Successful listing of all repository branches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BranchList"
+        "404":
+          $ref: "#/components/responses/NoSuchRepository"
+
+    post:
+      operationId: createBranch
+      tags:
+        - branch management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Branch"
+      responses:
+        "201":
+          description: "Branch created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "404":
+          description: "Repository not found or hash not found"
+        "400":
+          description: "A branch with the given name already exists"
+
+  /repositories/{repository}/branches/{branch}:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/BranchPath"
+
+    get:
+      operationId: getRepositoryBranch
+      tags:
+        - branch management
+      responses:
+        "200":
+          description: "Branch was found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "404":
+          description: Repository or branch does not exist.
+
+    put:
+      operationId: updateBranch
+      summary: Updates an existing branch
+      description: Can be used to let an existing branch point to a new hash.
+      tags:
+        - branch management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Branch"
+      responses:
+        "200":
+          description: Branch updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "400":
+          description: Branch name cannot be changed
+        "404":
+          description: Branch, repository, or hash not found
+
+    delete:
+      operationId: deleteBranch
+      summary: Deletes an existing branch
+      tags:
+        - branch management
+      responses:
+        "204":
+          description: Branch deleted successfully
+        "404":
+          description: Repository or branch do not exist
+
+  /repositories/{repository}/branches/{branch}/delta:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/BranchPath"
+
+    get:
+      operationId: getRepositoryBranch
+      summary: Requests a delta from a branch
+      description: |-
+        If `from` is not specified, this **returns the full branch data**.
+      tags:
+        - delta access
+      parameters:
+        - $ref: "#/components/parameters/FromHashQuery"
+          # TODO do we actually need this mode or is this better suited for websockets?
+        - $ref: "#/components/parameters/PollQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/VersionDelta"
+        "404":
+          description: Repository, branch or `from` hash does not exist.
+
+    # TODO PUT, PATCH or POST?
+    put:
+      operationId: upsertBranch
+      summary: Creates or updates a branch with a delta from an existing state.
+      tags:
+        - delta access
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              type: string
+#              $ref: "#/components/schemas/VersionDelta"
+        required: true
+      responses:
+        "200":
+          $ref: '#/components/responses/VersionDelta'
+
+  /repositories/{repository}/branches/{branch}/hash:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/BranchPath"
+
+    get:
+      operationId: getRepositoryHash
+      summary: Request the current hash from a branch
+      description: |-
+        If `poll` is specified and the branch is in a different state than what is provided here, the endpoint will immediately return the most recent state.
+        Otherwise, of `from` is similar to the remote state, this endpoint will wait up to 25 seconds for a change on the branch.
+      tags:
+        - delta access
+      parameters:
+        - $ref: "#/components/parameters/FromHashQuery"
+          # TODO do we actually need this mode or is this better suited for websockets?
+        - $ref: "#/components/parameters/PollQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/VersionDelta"
+        "404":
+          description: Repository, branch or `from` hash does not exist.
+
+  # TODO specify input and output formats
+  /repositories/{repository}/branches/{branch}/query:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/BranchPath"
+
+    post:
+      operationId: postRepositoryBranchQuery
+      tags:
+        - ModelQl access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+        "500":
+          $ref: '#/components/responses/500'
+
+  /repositories/{repository}/versions/{versionHash}/delta:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/VersionHashPath"
+    get:
+      operationId: getRepositoryVersionHash
+      description: |-
+        If `from` is not specified, this **returns the full version data**.
+      tags:
+        - versions
+        - delta access
+      parameters:
+        - $ref: "#/components/parameters/FromHashQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/VersionDelta"
+        "404":
+          $ref: '#/components/responses/404'
+
+  # TODO specify input and output formats
+  /repositories/{repository}/versions/{versionHash}/query:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/VersionHashPath"
+
+    post:
+      operationId: queryRepositoryVersionHash
+      tags:
+        - ModelQl access
+        - versions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+        "500":
+          $ref: '#/components/responses/500'
+
+  # TODO: is there a good reason that the input format requires the client to provide the key if the key is always the
+  # SHA256 sum of the value?
+  /repositories/{repository}/objects:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+
+    put:
+      operationId: putRepositoryObjects
+      summary: Stores new objects in the key-value store.
+      description: |-
+        This is a PUT endpoint as potentially deduplication of objects occurs.
+      tags:
+        - object access
+      requestBody:
+        required: true
+        content:
+          application/x-modelix-objects:
+            schema:
+              type: string
+              description: Values separated by newlines
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Objects"
+      responses:
+        "200":
+          description: Objects have been accepted and processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStatus'
+        "400":
+          description: Provided data is not valid
+        "404":
+          $ref: "#/components/responses/NoSuchRepository"
+
+    post:
+      operationId: queryRepositoryObjects
+      summary: Queries the collection of objects based on a known set of keys
+      description: |-
+        TODO:
+        * What happens if only a subset of the requested keys cannot be found?
+      tags:
+        - object access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectQuery"
+      responses:
+        "200":
+          description: Found values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Objects"
+            application/x-modelix-objects:
+              schema:
+                type: string
+                description: Values separated by newlines
+        "404":
+          $ref: "#/components/responses/NoSuchRepository"
+
+  /repositories/{repository}/objects/{key}:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: '#/components/parameters/KeyPath'
+
+    get:
+      tags:
+        - object access
+      responses:
+        "200":
+          description: Key was found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: my value
+        "404":
+          $ref: '#/components/responses/404'
+
+    put:
+      tags:
+        - object access
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              example: my value
+      responses:
+        "201":
+          description: Value was stored for the first time.
+        "204":
+          description: Value already existed.
+        "400":
+          description: Value and key do not match.
+        "404":
+          $ref: '#/components/responses/404'
+
+  /repositories/{repository}/versions/{versionHash}/history/{oldestVersionHash}:
+    get:
+      operationId: getOldestVersionHash
+      tags:
+        - TODO remove this?
+      description: not implemented, it seems
       responses:
         "200":
           $ref: '#/components/responses/200'
-  /v2/repositories/{repository}/objects:
-    put:
-      operationId: putRepositoryObjects
       parameters:
         - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: versionHash
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: oldestVersionHash
+          in: "path"
+          required: true
+          schema:
+            type: string
+
+  # TODO what is this?
+  /counter/{key}:
+    post:
+      tags:
+        - TODO remove this?
+      description: |-
+        TODO only used by RestWebModelClient.
+      parameters:
+        - name: key
           in: "path"
           required: true
           schema:
@@ -71,95 +507,82 @@ paths:
         "500":
           $ref: '#/components/responses/500'
         "200":
-          $ref: '#/components/responses/200json'
-  /v2/repositories/{repository}/branches:
+          $ref: '#/components/responses/200'
+
+  /getEmail:
     get:
-      operationId: getRepositoryBranches
+      tags:
+        - TODO remove this?
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+
+  /username:
+    get:
+      operationId: getUserId
+      summary: Returns the username of the currently operating user.
+      description: |-
+        ## TODO
+
+        Seems that the username / ID is used as metadata for versions when editing.
+        Is it required to actually go through the server if it's either the requesting host name or the authentication
+        information that is in any way provided by the client calling this API.
+      tags:
+        - TODO remove this?
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+
+  /getRecursively/{key}:
+    get:
+      tags:
+        - TODO remove this?
       parameters:
-        - name: repository
+        - name: key
           in: "path"
           required: true
           schema:
             type: string
       responses:
         "200":
-          $ref: '#/components/responses/200'
-  /v2/repositories/{repository}/branches/{branch}:
+          $ref: '#/components/responses/200json'
+
+  /poll/{key}:
     get:
-      operationId: getRepositoryBranch
+      tags:
+        - TODO remove this?
+      description: |-
+        TODO: could not find any user in our code
       parameters:
-        - name: lastKnown
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: lastKnownValue
           in: "query"
           required: false
           schema:
             type: string
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: branch
-          in: "path"
-          required: true
-          schema:
-            type: string
       responses:
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/versionDelta'
-#          content:
-#            '*/*':
-#              schema:
-#                $ref: "#/components/schemas/VersionDelta"
-    post:
-      operationId: postRepositoryBranch
-      parameters:
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: branch
-          in: "path"
-          required: true
-          schema:
-            type: string
-# this was autogenerated but will break tests
-# we need to manually design the content to allow
-# type safe access on our APIs
-#      requestBody:
-#        content:
-#          '*/*':
-#            schema:
-#              type: string
-##              $ref: "#/components/schemas/VersionDelta"
-#        required: true
-      responses:
-        "200":
-          $ref: '#/components/responses/versionDelta'
-  /v2/repositories/{repository}/branches/{branch}/hash:
-    get:
-      operationId: getRepositoryBranchHash
-      parameters:
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: branch
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
         "404":
           $ref: '#/components/responses/404'
         "200":
           $ref: '#/components/responses/200'
-  /v2/repositories/{repository}/branches/{branch}/listen:
+
+  /repositories/{repository}/branches/{branch}/listen:
     get:
       operationId: listenRepositoryBranch
+      tags:
+        - WebSocket access
+      description: |-
+        We need to document this differently, maybe using [AsyncAPI](https://www.asyncapi.com).
       parameters:
         - name: lastKnown
           in: "query"
@@ -216,346 +639,44 @@ paths:
               required: true
               schema:
                 type: string
-  /v2/repositories/{repository}/branches/{branch}/poll:
-    get:
-      operationId: pollRepositoryBranch
-      parameters:
-        - name: lastKnown
-          in: "query"
-          required: false
-          schema:
-            type: string
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: branch
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/versionDelta'
-  /v2/repositories/{repository}/branches/{branch}/pollHash:
-    get:
-      operationId: pollRepositoryBranchHash
-      parameters:
-        - name: lastKnown
-          in: "query"
-          required: false
-          schema:
-            type: string
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: branch
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200'
-  /v2/repositories/{repository}/branches/{branch}/query:
-    post:
-      operationId: postRepositoryBranchQuery
-      parameters:
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: branch
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          $ref: '#/components/responses/200json'
-        "500":
-          $ref: '#/components/responses/500'
-  /v2/repositories/{repository}/init:
-    post:
-      operationId: initializeRepository
-      parameters:
-        - name: useRoleIds
-          in: "query"
-          required: false
-          schema:
-            type: string
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/versionDelta'
-  /v2/repositories/{repository}/delete:
-    post:
-      operationId: deleteRepository
-      parameters:
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          $ref: '#/components/responses/204'
-        "404":
-          $ref: '#/components/responses/404'
-  /v2/repositories/{repository}/versions/{versionHash}:
-    get:
-      operationId: getRepositoryVersionHash
-      parameters:
-        - name: lastKnown
-          in: "query"
-          required: false
-          schema:
-            type: string
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-  /v2/repositories/{repository}/versions/{versionHash}/history/{oldestVersionHash}:
-    get:
-      operationId: getOldestVersionHash
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-      parameters:
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: oldestVersionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-  /v2/repositories/{repository}/versions/{versionHash}/query:
-    post:
-      operationId: postRepositoryVersionHashQuery
-      parameters:
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          $ref: '#/components/responses/200json'
-        "500":
-          $ref: '#/components/responses/500'
-
-  /v2/versions/{versionHash}:
-    get:
-      operationId: getVersionHash
-      parameters:
-        - name: lastKnown
-          in: "query"
-          required: false
-          schema:
-            type: string
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/versionDelta'
-  /v2/versions/{versionHash}/history/{oldestVersionHash}:
-    get:
-      operationId: getOldestVersionHashForVersion
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-      parameters:
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: oldestVersionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
-  /counter/{key}:
-    post:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200'
-  /get/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/200'
-  /getAll:
-    put:
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200json'
-  /getEmail:
-    get:
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-  /getRecursively/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          $ref: '#/components/responses/200json'
-  /poll/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: lastKnownValue
-          in: "query"
-          required: false
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/200'
-  /put/{key}:
-    put:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200'
-        "404":
-          $ref: '#/components/responses/404'
-  /putAll:
-    put:
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200'
-        "404":
-          $ref: '#/components/responses/404'
 components:
   responses:
+    NoSuchRepository:
+      description: No repository with the given name exists
+
+    "VersionDelta":
+      description: OK
+      content:
+        'application/json':
+          schema:
+            type: object
+            properties:
+              version_hash:
+                type: string
+              base_version_hash:
+                type: string
+              objects:
+                type: object
+                additionalProperties:
+                  type: string
+            required:
+              - version_hash
+        # TODO document format
+        'application/x-modelix-objects':
+          schema:
+            type: string
+        # TODO document format
+        'text/plain':
+          schema:
+            type: string
+
     "200":
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string
+    "204":
       description: OK
       content:
         text/plain:
@@ -597,31 +718,183 @@ components:
         text/plain:
           schema:
             type: string
-    "versionDelta":
-      description: OK
-      content:
-        'application/x-modelix-objects':
-          schema:
-            type: string
-        'application/json':
-          schema:
-            type: object
-        'text/plain':
-          schema:
-            type: string
+
+  parameters:
+    RepositoryPath:
+      name: repository
+      in: "path"
+      required: true
+      schema:
+        type: string
+    BranchPath:
+      name: branch
+      in: "path"
+      required: true
+      schema:
+        type: string
+    VersionHashPath:
+      name: versionHash
+      in: "path"
+      required: true
+      schema:
+        type: string
+    KeyPath:
+      name: key
+      in: "path"
+      required: true
+      schema:
+        type: string
+        example: DB90A6356B637EA6F90BBBA59ECA8CED9953D7F6D194628824FC38C9CEDB0A56
+    FromHashQuery:
+      name: from_hash
+      description: |-
+        Describes the last known hash of the branch from the perspective of the caller.
+      in: "query"
+      required: false
+      schema:
+        type: string
+    PollQuery:
+      name: poll
+      description: |-
+        If `true`, wait some time for the next change to the branch before responding.
+        If `from` is specified, already made changes not seen before result in responding with these changes immediately.
+        If no change occurred with 25 seconds, this returns the current state of the branch
+      in: "query"
+      required: false
+      schema:
+        type: boolean
+        default: false
+
   schemas:
+    ServerId:
+      type: object
+      properties:
+        id:
+          # TODO document string format
+          type: string
+          example: "f3a4985bd8af4dcdb53f4cf4fabf2d8e"
+          readOnly: true
+      required:
+        - id
+
+    ClientId:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 42
+          readOnly: true
+      required:
+        - id
+
+    Repository:
+      type: object
+      description: A repository is identified by its name.
+      properties:
+        name:
+          type: string
+          example: "aRepo"
+        uses_role_ids:
+          type: boolean
+          readOnly: true
+      required:
+        - name
+
+    RepositoryList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Repository"
+      required:
+        - items
+
+    Branch:
+      type: object
+      properties:
+        name:
+          type: string
+        current_hash:
+          # TODO document format
+          type: string
+          example: 7fQeo*xrdfZuHZtaKhbp0OosarV5tVR8N3pW8JPkl7ZE
+      required:
+        - name
+        - current_hash
+
+    BranchList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Branch"
+      required:
+        - items
+
+    Object:
+      type: object
+      properties:
+        key:
+          type: string
+          example: DB90A6356B637EA6F90BBBA59ECA8CED9953D7F6D194628824FC38C9CEDB0A56
+          description: SHA256 sum of the value
+        value:
+          type: string
+          example: my value
+      required:
+        - key
+        - value
+
+    Objects:
+      type: object
+      properties:
+        objects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Object"
+      required:
+        - objects
+
+    ObjectQuery:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+            description: The keys to return
+            example: DB90A6356B637EA6F90BBBA59ECA8CED9953D7F6D194628824FC38C9CEDB0A56
+      required:
+        - keys
+
+    ObjectStatus:
+      type: object
+      properties:
+        written_entries:
+          type: integer
+          format: int32
+          readOnly: true
+      required:
+        - written_entries
+
     VersionDelta:
       title: VersionDelta
       type: object
+      description: |-
+        If used for writing and `objectsMap` is empty, it is assumed that required objects have been uploaded before and
+        already exist on the server.
       properties:
         versionHash:
-            type: string
+          type: string
         baseVersion:
-            type: string
+          type: string
         objects:
-            $ref: '#/components/schemas/MapItem'
+          $ref: '#/components/schemas/MapItem'
         objectsMap:
-            $ref: '#/components/schemas/MapItem'
+          $ref: '#/components/schemas/MapItem'
       required:
         - versionHash
         - objects

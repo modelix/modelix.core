@@ -49,7 +49,7 @@ class SNodeFactory(
 
     fun createNode(iNode: INode, model: SModel?): SNode {
         val conceptId = iNode.concept?.getUID()!!
-        val concept: SConcept = when (val rawConcept = conceptRepository.getConcept(conceptId)) {
+        val concept: SConcept = when (val rawConcept = conceptRepository.resolveMPSConcept(conceptId)) {
             is SInterfaceConcept -> {
                 MetaAdapterByDeclaration.asInstanceConcept((rawConcept as SAbstractConcept))
             }

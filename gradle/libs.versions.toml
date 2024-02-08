@@ -34,7 +34,7 @@ ignite="2.15.0"
 apacheCxf="3.6.2"
 node="18.17.1"
 modelixBuildtools="1.2.0"
-openapi = "7.2.0"
+openapi = "7.3.0"
 micrometer = "1.12.2"
 
 [libraries]

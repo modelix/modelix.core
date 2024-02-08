@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2023-2024.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.listeners
+package org.modelix.mps.sync.plugin.listeners
 
 import com.intellij.ide.plugins.DynamicPluginListener
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.ModelSyncService
+import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MPSSynchronizationDynamicPluginListener : DynamicPluginListener {

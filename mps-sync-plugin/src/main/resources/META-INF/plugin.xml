@@ -23,10 +23,10 @@
 
     <applicationListeners>
         <listener
-                class="org.modelix.mps.sync.listeners.MPSSynchronizationDynamicPluginListener"
+                class="org.modelix.mps.sync.plugin.listeners.MPSSynchronizationDynamicPluginListener"
                 topic="com.intellij.ide.plugins.DynamicPluginListener"/>
         <listener
-                class="org.modelix.mps.sync.listeners.MPSSynchronizationAppLifecycleListener"
+                class="org.modelix.mps.sync.plugin.listeners.MPSSynchronizationAppLifecycleListener"
                 topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 
@@ -35,31 +35,31 @@
     <extensions defaultExtensionNs="com.intellij">
 
         <toolWindow id="Modelix Model Synchronization" secondary="true"
-                    icon="org.modelix.mps.sync.icons.CloudIcons.PLUGIN_ICON" anchor="right"
-                    factoryClass="org.modelix.mps.sync.gui.ModelSyncGuiFactory"/>
+                    icon="org.modelix.mps.sync.plugin.icons.CloudIcons.PLUGIN_ICON" anchor="right"
+                    factoryClass="org.modelix.mps.sync.plugin.gui.ModelSyncGuiFactory"/>
 
         <!-- service to handle storage of cloud details via project settings, aka .mps/modelix.xml -->
         <projectService
-                serviceImplementation="org.modelix.mps.sync.configuration.CloudResourcesConfigurationComponent"/>
+                serviceImplementation="org.modelix.mps.sync.plugin.configuration.CloudResourcesConfigurationComponent"/>
 
         <!-- the actual service in charge of connecting and binding -->
-        <applicationService serviceImplementation="org.modelix.mps.sync.ModelSyncService"/>
+        <applicationService serviceImplementation="org.modelix.mps.sync.plugin.ModelSyncService"/>
 
         <!-- shows an indicator in the status bar to know the current connection state -->
         <statusBarWidgetFactory id="CloudStatus"
-                                implementation="org.modelix.mps.sync.indicator.CloudIndicator"/>
+                                implementation="org.modelix.mps.sync.plugin.indicator.CloudIndicator"/>
 
     </extensions>
     <actions>
-        <action id="org.modelix.mps.sync.action.ModelSyncAction"
-                class="org.modelix.mps.sync.action.ModelSyncAction" text="Model Sync Action"/>
-        <action id="org.modelix.mps.sync.action.ModuleSyncAction"
-                class="org.modelix.mps.sync.action.ModuleSyncAction" text="Module Sync Action"/>
-        <action id="org.modelix.mps.sync.action.UnbindModelAction"
-                class="org.modelix.mps.sync.action.UnbindModelAction" text="Unbind Model Action"/>
-        <action id="org.modelix.mps.sync.action.UnbindModuleAction"
-                class="org.modelix.mps.sync.action.UnbindModuleAction" text="Unbind Module Action"/>
-        <group id="org.modelix.mps.sync.action.ModelixActionGroup"
-               class="org.modelix.mps.sync.action.ModelixActionGroup" text="Modelix Action Group"/>
+        <action id="org.modelix.mps.sync.plugin.action.ModelSyncAction"
+                class="org.modelix.mps.sync.plugin.action.ModelSyncAction" text="Model Sync Action"/>
+        <action id="org.modelix.mps.sync.plugin.action.ModuleSyncAction"
+                class="org.modelix.mps.sync.plugin.action.ModuleSyncAction" text="Module Sync Action"/>
+        <action id="org.modelix.mps.sync.plugin.action.UnbindModelAction"
+                class="org.modelix.mps.sync.plugin.action.UnbindModelAction" text="Unbind Model Action"/>
+        <action id="org.modelix.mps.sync.plugin.action.UnbindModuleAction"
+                class="org.modelix.mps.sync.plugin.action.UnbindModuleAction" text="Unbind Module Action"/>
+        <group id="org.modelix.mps.sync.plugin.action.ModelixActionGroup"
+               class="org.modelix.mps.sync.plugin.action.ModelixActionGroup" text="Modelix Action Group"/>
     </actions>
 </idea-plugin>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2023-2024.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.gui
+package org.modelix.mps.sync.plugin.gui
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
@@ -39,9 +39,9 @@ import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.ModelSyncService
-import org.modelix.mps.sync.icons.CloudIcons
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.plugin.ModelSyncService
+import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent

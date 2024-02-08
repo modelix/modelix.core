@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.action
+package org.modelix.mps.sync.plugin.action
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.diagnostic.logger
-import jetbrains.mps.project.AbstractModule
-import org.jetbrains.mps.openapi.module.SModule
+import jetbrains.mps.extapi.model.SModelBase
+import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.bindings.BindingsRegistry
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class UnbindModuleAction : AnAction {
+class UnbindModelAction : AnAction {
 
     companion object {
-        val CONTEXT_MODULE = DataKey.create<SModule>("MPS_Context_SModule")
+        val CONTEXT_MODEL = DataKey.create<SModel>("MPS_Context_SModel")
 
-        fun create() = UnbindModuleAction("Unbind module")
+        fun create() = UnbindModelAction("Unbind model")
     }
 
-    private val logger = logger<UnbindModuleAction>()
+    private val logger = logger<UnbindModelAction>()
 
     constructor() : super()
 
@@ -42,10 +42,10 @@ class UnbindModuleAction : AnAction {
 
     override fun actionPerformed(event: AnActionEvent) {
         try {
-            val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-            BindingsRegistry.getModuleBinding(module)?.deactivate(removeFromServer = false)
+            val model = event.getData(CONTEXT_MODEL)!! as SModelBase
+            BindingsRegistry.getModelBinding(model)?.deactivate(removeFromServer = false)
         } catch (ex: Exception) {
-            logger.error("Module unbind error occurred", ex)
+            logger.error("Model unbind error occurred", ex)
         }
     }
 }

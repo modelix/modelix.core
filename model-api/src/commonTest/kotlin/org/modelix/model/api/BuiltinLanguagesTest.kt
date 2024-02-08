@@ -27,4 +27,11 @@ class BuiltinLanguagesTest {
 
         assertEquals(4, properties.size)
     }
+
+    @Test
+    fun childLinksAreAdded() {
+        val childLinks = BuiltinLanguages.MPSRepositoryConcepts.Model.getOwnChildLinks()
+
+        assertEquals(3, childLinks.size)
+    }
 }

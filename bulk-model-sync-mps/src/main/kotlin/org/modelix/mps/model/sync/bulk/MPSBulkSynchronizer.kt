@@ -66,6 +66,7 @@ object MPSBulkSynchronizer {
         val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules"))
         val includedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.prefixes"))
         val inputPath = System.getProperty("modelix.mps.model.sync.bulk.input.path")
+        val continueOnError = System.getProperty("modelix.mps.model.sync.bulk.input.continueOnError", "false").toBoolean()
         val jsonFiles = File(inputPath).listFiles()?.filter {
             it.extension == "json" && isModuleIncluded(it.nameWithoutExtension, includedModuleNames, includedModulePrefixes)
         }
@@ -78,7 +79,7 @@ object MPSBulkSynchronizer {
             access.executeCommand {
                 val repoAsNode = MPSRepositoryAsNode(repository)
                 println("Importing modules...")
-                ModelImporter(repoAsNode).importFilesAsRootChildren(jsonFiles)
+                ModelImporter(repoAsNode, continueOnError).importFilesAsRootChildren(jsonFiles)
                 println("Import finished.")
             }
         }

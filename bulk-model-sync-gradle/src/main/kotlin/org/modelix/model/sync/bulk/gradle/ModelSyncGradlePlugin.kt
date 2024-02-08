@@ -176,10 +176,6 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         previousTask: TaskProvider<*>,
         jsonDir: File,
     ) {
-        if (syncDirection.continueOnError) {
-            println("Continue on error is currently not supported for local targets")
-        }
-
         val localTarget = syncDirection.target as LocalTarget
         val importName = "${syncDirection.name}ImportIntoMps"
         val resolvedDependencies = mpsDependencies.resolvedConfiguration.files
@@ -195,6 +191,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
                 "-Dmodelix.mps.model.sync.bulk.input.modules=${syncDirection.includedModules.joinToString(",")}",
                 "-Dmodelix.mps.model.sync.bulk.input.modules.prefixes=${syncDirection.includedModulePrefixes.joinToString(",")}",
                 "-Dmodelix.mps.model.sync.bulk.repo.path=${localTarget.repositoryDir?.absolutePath}",
+                "-Dmodelix.mps.model.sync.bulk.input.continueOnError=${syncDirection.continueOnError}",
                 "-Xmx${localTarget.mpsHeapSize}",
                 localTarget.mpsDebugPort?.let { "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$it" },
             ),

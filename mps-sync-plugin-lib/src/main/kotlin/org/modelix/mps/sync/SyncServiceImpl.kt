@@ -95,10 +95,10 @@ class SyncServiceImpl(
         callback?.invoke()
     }
 
-    override suspend fun bindModel(
+    override suspend fun bindModule(
         client: ModelClientV2,
         branchReference: BranchReference,
-        model: INode,
+        module: INode,
         callback: (() -> Unit)?,
     ): List<IBinding> {
         if (replicatedModelByBranchReference.containsKey(branchReference)) {
@@ -138,7 +138,7 @@ class SyncServiceImpl(
                 nodeMap,
                 bindingsRegistry,
                 syncQueue,
-            ).transform(model)
+            ).transform(module)
 
             // register replicated model change listener
             val listener = ModelixBranchListener(replicatedModel, targetProject, languageRepository, nodeMap, syncQueue)

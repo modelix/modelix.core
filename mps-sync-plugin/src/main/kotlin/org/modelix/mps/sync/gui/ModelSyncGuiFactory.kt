@@ -95,7 +95,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val serverURL = JBTextField(TEXTFIELD_WIDTH)
         private val repositoryName = JBTextField(TEXTFIELD_WIDTH)
         private val branchName = JBTextField(TEXTFIELD_WIDTH)
-        private val modelName = JBTextField(TEXTFIELD_WIDTH)
+        private val moduleName = JBTextField(TEXTFIELD_WIDTH)
         private val jwt = JBTextField(TEXTFIELD_WIDTH)
 
         private val openProjectModel = DefaultComboBoxModel<Project>()
@@ -104,8 +104,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val repoModel = DefaultComboBoxModel<RepositoryId>()
         private val branchModel = DefaultComboBoxModel<BranchReference>()
 
-        // TODO rename to module and at all other places too (because it's a module instead of a model)
-        private val modelModel = DefaultComboBoxModel<INodeWithName>()
+        private val moduleModel = DefaultComboBoxModel<INodeWithName>()
 
         init {
             log.info("-------------------------------------------- ModelSyncGui init")
@@ -119,7 +118,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             serverURL.text = "http://127.0.0.1:28101/v2"
             repositoryName.text = "courses"
             branchName.text = "master"
-            modelName.text = "University.Schedule.modelserver.backend.sandbox"
+            moduleName.text = "University.Schedule.modelserver.backend.sandbox"
             jwt.text = ""
         }
 
@@ -206,34 +205,34 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchCB.renderer = CustomCellRenderer()
             branchCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
-                    populateModelCB()
+                    populateModuleCB()
                 }
             }
             branchPanel.add(JLabel("Remote Branch: "))
             branchPanel.add(branchCB)
             inputBox.add(branchPanel)
 
-            val modelPanel = JPanel()
-            val modelCB = ComboBox<INodeWithName>()
-            modelCB.model = modelModel
-            modelCB.renderer = CustomCellRenderer()
-            modelPanel.add(JLabel("Remote Model:  "))
-            modelPanel.add(modelCB)
+            val modulePanel = JPanel()
+            val moduleCB = ComboBox<INodeWithName>()
+            moduleCB.model = moduleModel
+            moduleCB.renderer = CustomCellRenderer()
+            modulePanel.add(JLabel("Remote Module:  "))
+            modulePanel.add(moduleCB)
 
             val bindButton = JButton("Bind Selected")
             bindButton.addActionListener { _: ActionEvent? ->
                 if (existingConnectionsModel.size > 0) {
-                    log.info("Binding model ${modelName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}")
-                    modelSyncService.bindProject(
+                    log.info("Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}")
+                    modelSyncService.bindModule(
                         existingConnectionsModel.selectedItem as ModelClientV2,
                         (branchModel.selectedItem as BranchReference).branchName,
-                        (modelModel.selectedItem as INodeWithName).node,
+                        (moduleModel.selectedItem as INodeWithName).node,
                         (repoModel.selectedItem as RepositoryId).id,
                     )
                 }
             }
-            modelPanel.add(bindButton)
-            inputBox.add(modelPanel)
+            modulePanel.add(bindButton)
+            inputBox.add(modulePanel)
 
             inputBox.add(JSeparator())
 
@@ -303,29 +302,29 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     branchModel.addAll(branches)
                     if (branchModel.size > 0) {
                         branchModel.selectedItem = branchModel.getElementAt(0)
-                        populateModelCB()
+                        populateModuleCB()
                     }
                 }
             }
         }
 
-        private fun populateModelCB() {
+        private fun populateModuleCB() {
             if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
                 CoroutineScope(Dispatchers.Default).launch {
                     val branch =
                         (existingConnectionsModel.selectedItem as ModelClientV2).getReplicatedModel(branchModel.selectedItem as BranchReference)
                             .start()
                     branch.runRead {
-                        modelModel.removeAllElements()
+                        moduleModel.removeAllElements()
                         val children = branch.getRootNode().allChildren.map {
                             val name = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
                                 ?: it.toString()
                             INodeWithName(it, name)
                         }
-                        modelModel.addAll(children.toList())
+                        moduleModel.addAll(children.toList())
                     }
-                    if (modelModel.size > 0) {
-                        modelModel.selectedItem = modelModel.getElementAt(0)
+                    if (moduleModel.size > 0) {
+                        moduleModel.selectedItem = moduleModel.getElementAt(0)
                     }
                 }
             }

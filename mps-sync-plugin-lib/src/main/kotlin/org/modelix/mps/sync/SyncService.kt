@@ -12,10 +12,10 @@ import java.net.URL
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 interface SyncService {
 
-    suspend fun bindModel(
+    suspend fun bindModule(
         client: ModelClientV2,
         branchReference: BranchReference,
-        model: INode,
+        module: INode,
         callback: (() -> Unit)? = null,
     ): List<IBinding>
 

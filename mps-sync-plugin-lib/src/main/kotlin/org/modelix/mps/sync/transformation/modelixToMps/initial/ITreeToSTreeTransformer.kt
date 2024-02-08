@@ -86,17 +86,17 @@ class ITreeToSTreeTransformer(
                 logger.info("--- Resolving references ---")
                 nodeTransformer.resolveReferences()
 
-                logger.info("--- Registering model and module bindings ---")
-                nodeMap.models.forEach {
-                    val model = it as SModelBase
-                    val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
-                    bindingsRegistry.addModelBinding(binding)
-                    bindings.add(binding)
-                }
+                logger.info("--- Registering module and model bindings ---")
                 nodeMap.modules.forEach {
                     val module = it as AbstractModule
                     val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
                     bindingsRegistry.addModuleBinding(binding)
+                    bindings.add(binding)
+                }
+                nodeMap.models.forEach {
+                    val model = it as SModelBase
+                    val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
+                    bindingsRegistry.addModelBinding(binding)
                     bindings.add(binding)
                 }
             }

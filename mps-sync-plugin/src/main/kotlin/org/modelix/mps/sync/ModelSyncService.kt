@@ -31,7 +31,6 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.action.ModelixActionGroup
-import org.modelix.mps.sync.bindings.ModuleBinding
 import java.net.ConnectException
 import java.net.URL
 
@@ -79,25 +78,19 @@ class ModelSyncService : Disposable {
         }
     }
 
-    fun bindProject(
+    fun bindModule(
         client: ModelClientV2,
         branchName: String,
-        model: INode,
+        module: INode,
         repositoryID: String,
     ) {
         coroutineScope.launch {
             try {
-                val bindings = syncService.bindModel(
+                syncService.bindModule(
                     client,
                     BranchReference(RepositoryId(repositoryID), branchName),
-                    model,
-                )
-                // activate bindings
-                bindings.forEach {
-                    if (it is ModuleBinding) {
-                        it.activate()
-                    }
-                }
+                    module,
+                ).forEach { it.activate() }
             } catch (e: ConnectException) {
                 logger.warn("Unable to connect: ${e.message} / ${e.cause}")
             } catch (e: ClientRequestException) {

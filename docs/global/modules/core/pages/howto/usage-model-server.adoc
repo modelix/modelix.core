@@ -1,27 +1,203 @@
 = How-To start a local `model-server`
 :navtitle: Start a `model-server`
 
-
 NOTE: If you are interested in a more practical usage of what is presented here, check out the https://github.com/modelix/modelix.samples[samples project^]
 
+== Backends: In Memory vs. Database
 
-- To run the model-server with default configuration run:
-+
+The `model-server` will by default require a database backend.
+While this setup is ideal for deployment, it might not what you need in the beginning.
+The `-jdbcconf` flag allows you to provide a custom jdbc configuration file.
+
+However, during development or to perform tests, it is recommended to start the `model-server` with in-memory storage.
+This can be achieved by adding the `-inmemory` flag to the executable.
+
+
+== Running a `model-server`
+
+The following list gives an overview of the many ways to run a `model-server`:
+
+
+=== 1. Docker
+
+We publish a docker container of the `model-server` over on https://hub.docker.com/r/modelix/model-server/tags[docker hub].
+To run the container, simply call the following:
+
+[source, shell]
+--
+$ docker run --rm -p 28101:28101 modelix/modelix-model:latest -inmemory
+--
+
+
+=== 2. `docker-compose`
+
+To run the `model-server` in memory, you can use:
+
+.Content of `docker-compose.yml`
+[source, yaml]
+--
+name: model-server-run-in-memory
+
+services:
+  model-server:
+    image: modelix/model-server:latest0
+    ports:
+      - 28101:28101
+    command: [ "-inmemory" ]
+--
+
+Run using `docker-compose` via:
+
+[source, shell]
+--
+$ docker-compose up
+--
+
+NOTE: For more integrated examples, have a look at the
+xref:samples:monitoring.adoc[model server]
+monitoring setup in the samples, which starts the `model-server` using `docker-compose`.
+
+For more complex setups, which require a database backend, you can use the following:
+
+.Content of `docker-compose.yml`
+[source, yaml]
+--
+name: model-server-run-database
+
+services:
+    model-server:
+        image: modelix/model-server:4.5.0
+        restart: always
+        healthcheck:
+          test: ["CMD-SHELL", "curl http://localhost:28101/health"]
+          interval: 2s
+          timeout: 3s
+          retries: 10
+        depends_on:
+          model-server-db:
+            condition: service_healthy
+        environment:
+          jdbc_url: jdbc:postgresql://model-server-db:5432/modelix?currentSchema=modelix
+        ports:
+        - 28101:28101
+
+    model-server-db:
+      image: postgres:16
+      environment:
+        POSTGRES_PASSWORD: modelix
+        POSTGRES_DB: modelix
+        POSTGRES_USER: modelix
+        PGDATA: /var/lib/postgresql/data/pgdata
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U modelix -d modelix"]
+        interval: 10s
+        timeout: 3s
+        retries: 10
+      volumes:
+        - model-server-db:/var/lib/postgresql/data
+        - ./init-database.sql:/docker-entrypoint-initdb.d/init-database.sql:z
+
+volumes:
+  model-server-db: {}
+  dashboard-db: {}
+--
+
+.Content of `init-database.sql`
+[source, SQL]
+--
+CREATE SCHEMA modelix;
+GRANT ALL ON SCHEMA modelix TO modelix;
+
+CREATE TABLE modelix.model
+(
+    key character varying NOT NULL,
+    value character varying,
+    reachable boolean,
+    CONSTRAINT kv_pkey PRIMARY KEY (key)
+);
+GRANT ALL ON TABLE modelix.model TO modelix;
+--
+
+Run using `docker-compose` via:
+
+[source, shell]
+--
+$ docker-compose up
+--
+
+
+=== 3. Gradle via Dependency
+
+When using Gradle, you run a `model-server` as in the following minimal working example:
+
+.Content of minimal `build.gradle.kts` to run a `model-server` in memory
+[source, kotlin]
+--
+plugins {
+    application
+}
+
+repositories {
+    mavenCentral()
+    maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+}
+
+dependencies {
+    implementation("org.modelix:model-server:4.6.0")
+}
+
+application {
+    mainClass.set("org.modelix.model.server.Main")
+}
+
+tasks.run.configure {
+    args("-inmemory")
+    // note: you can add other arguments here, e.g.
+    // args("-inmemory", "-dumpin", "/path/to/dump/file.dump")
+}
+--
+
+You can run it simply by running
+
+[source, bash]
+--
+./gradlew run
+--
+
+=== 4. Gradle via Source
+
+Use `git` to check out the modelix core repository from
+
+[source,bash]
+--
+https://github.com/modelix/modelix.core
+--
+
+To run the model-server with default configuration run:
+
 [source,bash]
 --
 [modelix.core] $ ./gradlew model-server:run
 --
 
-- To specify a different jdbc configuration, you can add the `-jdbcconf` arguement:
-+
-[source,bash]
---
-[modelix.core] $ ./gradlew model-server:run --args='-jdbcconf path-to-my-database.properties'
---
+NOTE: You will have to build the project first, which might take some time depending on your hardware.
 
-- During development or to perform tests it is recommended to start the `model-server` with in-memory storage:
-+
+
+[NOTE]
+====
+To give arguments to the gradle run command, you have to add them via the `--args` flag:
+
 [source,bash]
 --
-[modelix.core] $ ./gradlew model-server:run --args='-inmemory'
+./gradlew model-server:run --args='-jdbcconf path-to-my-database.properties -dumpout'
 --
+====
+
+
+=== 5. *In Process* (Kotlin)
+
+This rather advanced version allows you to run the model-server inside your own application.
+You can find an examples of this in these code fragments:
+
+* https://github.com/modelix/modelix.core/blob/main/model-server/src/test/kotlin/org/modelix/model/server/ModelClientV2Test.kt#L48[ModelClientV2Test (modelix core tests)]
+* https://github.com/modelix/modelix.core/blob/main/mps-model-server-plugin/src/main/kotlin/org/modelix/model/server/mps/MPSModelServer.kt#L77C22-L77C38[`MPSModelServer.kt` (Implementation of the 'MPS as Modelix Model Server' plugin)]

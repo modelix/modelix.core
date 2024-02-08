@@ -85,6 +85,9 @@
       <node concept="3F0ifn" id="pSCM1J8BUq" role="3EZMnx">
         <property role="3F0ifm" value="graph:" />
       </node>
+      <node concept="3F0A7n" id="27XSKLmUjrz" role="3EZMnx">
+        <ref role="1NtTu8" to="tpck:h0TrG11" resolve="name" />
+      </node>
       <node concept="3F0ifn" id="pSCM1J8CVd" role="3EZMnx">
         <property role="3F0ifm" value="nodes:" />
         <node concept="pVoyu" id="pSCM1J8CVg" role="3F10Kt">
@@ -119,6 +122,21 @@
         </node>
         <node concept="lj46D" id="pSCM1J8CVx" role="3F10Kt">
           <property role="VOm3f" value="true" />
+        </node>
+      </node>
+      <node concept="3F0ifn" id="27XSKLmUmXu" role="3EZMnx">
+        <property role="3F0ifm" value="related graph:" />
+        <node concept="pVoyu" id="27XSKLmUmXK" role="3F10Kt">
+          <property role="VOm3f" value="true" />
+        </node>
+      </node>
+      <node concept="1iCGBv" id="27XSKLmUmYZ" role="3EZMnx">
+        <ref role="1NtTu8" to="7quj:27XSKLmUjrO" resolve="relatedGraph" />
+        <node concept="1sVBvm" id="27XSKLmUmZ1" role="1sWHZn">
+          <node concept="3F0A7n" id="27XSKLmUmZp" role="2wV5jI">
+            <property role="1Intyy" value="true" />
+            <ref role="1NtTu8" to="tpck:h0TrG11" resolve="name" />
+          </node>
         </node>
       </node>
     </node>

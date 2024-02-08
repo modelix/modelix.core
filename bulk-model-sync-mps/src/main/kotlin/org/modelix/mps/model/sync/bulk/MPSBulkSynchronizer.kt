@@ -19,12 +19,12 @@ package org.modelix.mps.model.sync.bulk
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.ProjectManager
 import jetbrains.mps.ide.project.ProjectHelper
-import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.mpsadapters.MPSModuleAsNode
+import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.ModelImporter
-import org.modelix.model.sync.bulk.import
+import org.modelix.model.sync.bulk.importFilesAsRootChildren
 import org.modelix.model.sync.bulk.isModuleIncluded
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
@@ -66,33 +66,29 @@ object MPSBulkSynchronizer {
         val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules"))
         val includedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.prefixes"))
         val inputPath = System.getProperty("modelix.mps.model.sync.bulk.input.path")
+        val jsonFiles = File(inputPath).listFiles()?.filter {
+            it.extension == "json" && isModuleIncluded(it.nameWithoutExtension, includedModuleNames, includedModulePrefixes)
+        }
+
+        if (jsonFiles.isNullOrEmpty()) error("no json files found for included modules")
+
+        println("Found ${jsonFiles.size} modules to be imported")
         val access = repository.modelAccess
-
         access.runWriteInEDT {
-            val allModules = repository.modules
-            val includedModules: Iterable<SModule> = allModules.filter {
-                isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
-            }
-            val numIncludedModules = includedModules.count()
-
             access.executeCommand {
-                for ((index, module) in includedModules.withIndex()) {
-                    println("Importing module ${index + 1} of $numIncludedModules: '${module.moduleName}'")
-                    val moduleFile = File(inputPath + File.separator + module.moduleName + ".json")
-                    if (moduleFile.exists()) {
-                        val importer = ModelImporter(
-                            MPSModuleAsNode(module),
-                        )
-                        importer.import(moduleFile)
-                    }
-                }
+                val repoAsNode = MPSRepositoryAsNode(repository)
+                println("Importing modules...")
+                ModelImporter(repoAsNode).importFilesAsRootChildren(jsonFiles)
+                println("Import finished.")
             }
         }
 
         ApplicationManager.getApplication().invokeAndWait {
+            println("Persisting changes...")
             repository.modelAccess.runWriteAction {
                 repository.saveAll()
             }
+            println("Changes persisted.")
         }
     }
 

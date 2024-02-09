@@ -43,4 +43,8 @@ data class MPSChildLink(val link: SContainmentLinkAdapter) : IChildLink {
 
     override val isOptional: Boolean
         get() = link.isOptional
+
+    // TODO probably not needed
+    override val isUnordered: Boolean
+        get() = link.isUnordered
 }

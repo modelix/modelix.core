@@ -22,8 +22,10 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.getConcept
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.remove
+import org.modelix.model.api.tryResolveChildLink
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import kotlin.jvm.JvmName
@@ -121,25 +123,53 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
     private fun syncChildren(node: INode, data: NodeData, progressReporter: ProgressReporter) {
         val allRoles = (data.children.map { it.role } + node.allChildren.map { it.roleInParent }).distinct()
         for (role in allRoles) {
-            val expectedNodes = data.children.filter { it.role == role }
-            val existingNodes = node.getChildren(role).toList()
+            syncChildRole(data, role, node, progressReporter)
+        }
+    }
 
-            // optimization that uses the bulk operation .addNewChildren
-            if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {
-                node.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } }).zip(expectedNodes).forEach { (newChild, expected) ->
+    private fun syncChildRole(
+        data: NodeData,
+        role: String?,
+        node: INode,
+        progressReporter: ProgressReporter,
+    ) {
+        val expectedNodes = data.children.filter { it.role == role }
+        val existingNodes = node.getChildren(role).toList()
+
+        // optimization that uses the bulk operation .addNewChildren
+        if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {
+            node.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } })
+                .zip(expectedNodes).forEach { (newChild, expected) ->
                     val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
                     newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
                     originalIdToExisting[expectedId] = newChild
                     syncNode(newChild, expected, progressReporter)
                 }
-                continue
-            }
+            return
+        }
 
+        val isOrdered = if (role == null) {
+            // TODO Olekz test code
+            true
+        } else {
+            // TODO Olekz optemize
+            val concept = node.getConcept()
+            if (concept == null) {
+                // TODO Olekz test code
+                true
+            } else {
+                // TODO Olekz check if is multiple
+                // TODO Olekz bad
+                !node.tryResolveChildLink(role)!!.isUnordered
+            }
+        }
+
+        if (isOrdered) {
             // optimization for when there is no change in the child list
-            // size check first to avoid querying the original ID
+            // size check first to avoiÏord querying the original ID
             if (expectedNodes.size == existingNodes.size && expectedNodes.map { it.originalId() } == existingNodes.map { it.originalId() }) {
                 existingNodes.zip(expectedNodes).forEach { syncNode(it.first, it.second, progressReporter) }
-                continue
+                return
             }
 
             expectedNodes.forEachIndexed { index, expected ->
@@ -155,6 +185,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
                         newChild
                     } else {
                         node.moveChild(role, index, existingNode)
+                        // TODO Olekz Why this?
                         nodesToRemove.remove(existingNode)
                         existingNode
                     }
@@ -167,6 +198,34 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
             }
 
             nodesToRemove += node.getChildren(role).drop(expectedNodes.size)
+        } else {
+            val expectedNodeByNodeIds = expectedNodes.groupBy { it.originalId() }
+            val existingNodesIds = existingNodes.map { it.originalId() }.toSet()
+            val nodeIdsToAdd = expectedNodeByNodeIds.keys - existingNodesIds
+
+            nodeIdsToAdd.forEach { nodeIdToAdd ->
+                val nodesToAddUnchecked = expectedNodeByNodeIds.getValue(nodeIdToAdd)
+                // nodesToAddUnchecked.size will never be 0, because we used groupBy
+                if (nodesToAddUnchecked.size > 1) {
+                    // TODO Olekz test
+                    throw RuntimeException()
+                }
+                val nodeToAdd = nodesToAddUnchecked[0]
+                // TODO Olekz test
+                checkNotNull(nodeIdToAdd) { "Specified node '$nodeToAdd' has no id" }
+                val expectedConcept = nodeToAdd.concept?.let { s -> ConceptReference(s) }
+                val newChild = node.addNewChild(role, -1, expectedConcept)
+                newChild.setPropertyValue(NodeData.idPropertyKey, nodeIdToAdd)
+                // TODO What happens on move?
+                originalIdToExisting[nodeIdToAdd] = newChild
+                // TODO Olekz optimze epxort
+                check(newChild.getConceptReference() == expectedConcept) { "Unexpected concept change" }
+                syncNode(newChild, nodeToAdd, progressReporter)
+            }
+
+            nodesToRemove += existingNodes.filterNot { existingNode ->
+                expectedNodeByNodeIds.keys.contains(existingNode.originalId())
+            }
         }
     }
 

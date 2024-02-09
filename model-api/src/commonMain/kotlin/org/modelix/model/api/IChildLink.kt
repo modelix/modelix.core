@@ -30,6 +30,15 @@ interface IChildLink : ILink {
     companion object {
         fun fromName(name: String): IChildLink = ChildLinkFromName(name)
     }
+
+    /**
+     * // TODO Olekz write why we need it.
+     * // TODO invert and rename "can be ordered".
+     * The order of elements contained by such children can be changed.
+     * The value is undefined for singular links.
+     */
+    val isUnordered
+        get() = false
 }
 
 data class ChildLinkFromName(override val name: String) : LinkFromName(), IChildLink {

@@ -115,3 +115,5 @@ modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gra
 modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}
 
 micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometer"}
+
+mockk = { group = "io.mockk", name = "mockk", version = "1.13.9" }

@@ -49,11 +49,13 @@ runBlocking(CoroutineScope(Dispatchers.Default).coroutineContext){
 
 --
 
-Afterward, we create a repository and replicate it locally (we assume coroutine execution):
+Afterward, we create a repository and replicate it locally into a `ReplicatedModel`.
+This data structure automatically synchronizes its content with the remote.
+We can consequently assume that its data is always correct and up-to-date.
+To ensure this, we need to use read and write transactions whenever we interact with the content, e.g. by adding a new child (we assume coroutine execution):
 
 [source, kotlin]
 --
-
 var rootNode: INode? = null
 // we need to start a read transaction to obtain model content
 replicatedModel.getBranch().getArea().executeRead {
@@ -61,17 +63,16 @@ replicatedModel.getBranch().getArea().executeRead {
     rootNode = replicatedModel.getBranch().getRootNode()
 }
 
-// we need to exit the read transaction before we start a write transaction
+// we need to exit the read before we write
 replicatedModel.getBranch().getArea().executeWrite {
-    val addNewChild: INode? = rootNode?.addNewChild("myRole")
-    println("Added node $addNewChild under parent ${addNewChild?.parent}")
+    val newChild: INode? = rootNode?.addNewChild("myRole")
+    println("Added node $newChild under parent ${newChild?.parent}")
 }
 
-// to get data from the replicated model, we need to start a read transaction
+// we need to start a read transaction again to get model content
 replicatedModel.getBranch().getArea().executeRead {
-    println("All nodes: ${rootNode?.getDescendants(true)?.map { (it as PNodeAdapter).nodeId }}")
+    println("All nodes in repository: ${(rootNode?.getDescendants(true)?.toMutableList().map { (it as PNodeAdapter).nodeId.toString() })}")
 }
-
 --
 
 CAUTION: If you try to access a node that does not exist, an exception is thrown.

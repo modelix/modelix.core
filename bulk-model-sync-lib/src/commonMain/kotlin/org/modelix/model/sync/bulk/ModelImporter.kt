@@ -219,7 +219,7 @@ class ModelImporter(
 
         val toBeRemoved = node.getPropertyRoles().toSet()
             .subtract(nodeData.properties.keys)
-            .filter { it != NodeData.idPropertyKey }
+            .filter { it != NodeData.idPropertyKey && node.getPropertyValue(it) != null }
         toBeRemoved.forEach { node.setPropertyValue(it, null) }
     }
 

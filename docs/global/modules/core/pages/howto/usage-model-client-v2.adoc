@@ -38,7 +38,7 @@ val client = ModelClientV2.builder()
 
 Nearly all operations are interfacing with a remote repository, consequently most operations in the client are https://kotlinlang.org/docs/composing-suspending-functions.html[suspending functions^].
 As a result, we need to use https://kotlinlang.org/docs/coroutines-basics.html[Kotlin Coroutines^] to execute these functions.
-To initialize the client, we can call:
+To initialize the client, we can call (we assume coroutine execution in all following code blocks):
 
 [source, kotlin]
 --
@@ -52,7 +52,18 @@ runBlocking(CoroutineScope(Dispatchers.Default).coroutineContext){
 Afterward, we create a repository and replicate it locally into a `ReplicatedModel`.
 This data structure automatically synchronizes its content with the remote.
 We can consequently assume that its data is always correct and up-to-date.
-To ensure this, we need to use read and write transactions whenever we interact with the content, e.g. by adding a new child (we assume coroutine execution):
+
+[source, kotlin]
+--
+val myRepoId: RepositoryId = RepositoryId("myRepository")
+modelClientV2.initRepository(myRepoId)
+
+val myBranchReference: BranchReference = BranchReference(repositoryId = myRepoId, branchName = RepositoryId.DEFAULT_BRANCH)
+val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(myBranchReference)
+replicatedModel.start()
+--
+
+To ensure that read and write are executed correctly, we need to use read and write transactions whenever we interact with the content, e.g. by adding a new child:
 
 [source, kotlin]
 --

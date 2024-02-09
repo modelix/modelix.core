@@ -1,0 +1,79 @@
+= How-To use the `model-client` v2 (Kotlin)
+:navtitle: Use the `model-client` v2 (Kotlin)
+
+NOTE: In order to use the client, you will need a xref:core:howto/usage-model-server.adoc[running model-server] to connect to.
+
+== Gradle Dependency
+
+To use the `model-client` v2 you have to add the `model-client` library to your dependencies.
+Add the following to your `build.gradle.kts`:
+
+[source,kotlin]
+--
+repositories {
+    mavenLocal {}
+    maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+    // ...
+}
+// ...
+dependencies {
+    implementation("org.modelix:model-client:4.6.0")
+    // ...
+}
+--
+
+
+== Usage
+
+Once set up, creating an instance that loads the entire model from the server can be done like this:
+
+
+[source, kotlin]
+--
+
+val client = ModelClientV2.builder()
+                          .url("http://localhost:28101/v2")
+                          .build()
+--
+
+Nearly all operations are interfacing with a remote repository, consequently most operations in the client are https://kotlinlang.org/docs/composing-suspending-functions.html[suspending functions^].
+As a result, we need to use https://kotlinlang.org/docs/coroutines-basics.html[Kotlin Coroutines^] to execute these functions.
+To initialize the client, we can call:
+
+[source, kotlin]
+--
+// init is a suspend fun, so we use a coroutine
+runBlocking(CoroutineScope(Dispatchers.Default).coroutineContext){
+    client.init()
+}
+
+--
+
+Afterward, we create a repository and replicate it locally (we assume coroutine execution):
+
+[source, kotlin]
+--
+
+var rootNode: INode? = null
+// we need to start a read transaction to obtain model content
+replicatedModel.getBranch().getArea().executeRead {
+    // initial root node after repository initialization has the id 1
+    rootNode = replicatedModel.getBranch().getRootNode()
+}
+
+// we need to exit the read transaction before we start a write transaction
+replicatedModel.getBranch().getArea().executeWrite {
+    val addNewChild: INode? = rootNode?.addNewChild("myRole")
+    println("Added node $addNewChild under parent ${addNewChild?.parent}")
+}
+
+// to get data from the replicated model, we need to start a read transaction
+replicatedModel.getBranch().getArea().executeRead {
+    println("All nodes: ${rootNode?.getDescendants(true)?.map { (it as PNodeAdapter).nodeId }}")
+}
+
+--
+
+CAUTION: If you try to access a node that does not exist, an exception is thrown.
+
+For more information how to deal with `INodes` and the `client`, check the https://api.modelix.org/latest/model-api/index.html[model API] and the https://api.modelix.org/latest/model-client/org.modelix.model.client2/-model-client-v2/index.html[ModelClientV2 API] respectively.

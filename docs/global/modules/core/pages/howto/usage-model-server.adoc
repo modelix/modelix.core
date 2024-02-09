@@ -3,6 +3,8 @@
 
 NOTE: If you are interested in a more practical usage of what is presented here, check out the https://github.com/modelix/modelix.samples[samples project^]
 
+NOTE: To run a light version of the `model-sever`, check out  xref:core:howto/mps-model-server-plugin.adoc[]
+
 == Backends: In Memory vs. Database
 
 The `model-server` will by default require a database backend.
@@ -19,7 +21,7 @@ The following list gives an overview of the many ways to run a `model-server`:
 
 === 1. Docker
 
-We publish a docker container of the `model-server` over on https://hub.docker.com/r/modelix/model-server/tags[docker hub].
+We publish a docker container of the `model-server` over on https://hub.docker.com/r/modelix/model-server/tags[Docker Hub^].
 To run the model-server container with the in memory backend, simply call the following.
 [source, shell]
 --
@@ -51,9 +53,7 @@ Run using `docker-compose` via:
 $ docker-compose up
 --
 
-NOTE: For more integrated examples, have a look at the
-xref:samples:monitoring.adoc[model server]
-monitoring setup in the samples, which starts the `model-server` using `docker-compose`.
+NOTE: For more integrated examples, have a look at the xref:core:howto/metrics.adoc[metrics and monitoring] capabilities, which shows how to start the `model-server` using `docker-compose`.
 
 For more complex setups, which require a database backend, you can use the following:
 
@@ -192,29 +192,10 @@ To give arguments to the gradle run command, you have to add them via the `--arg
 ====
 
 
-=== 5. MPS
-
-You can run a *light version* of the `model-server` directly in MPS via the dedicated *MPS as Modelix Model Server Plugin*, which is published over at the https://plugins.jetbrains.com/plugin/22834-mps-as-modelix-model-server[JetBrains Marketplace].
-
-
-[IMPORTANT]
-====
-A light model-server does not provide the full features as an independent `model-server` instance will.
-More *advanced features* (e.g. xref:core:howto/modelql-writing.adoc[ModelQL], or the xref:core:howto/metrics.adoc[metrics]) and *advanced clients* (e.g. xref:core:howto/modelql.adoc[ModelQLClient]) will not work.
-====
-
-In MPS navigate to File -> Settings -> Plugins (left) -> Marketplace (top) -> search for "modelix model server" -> press install.
-
-image::model-server-plugin-marketplace.png[Installing the MPS model-server plugin]
-
-You can access the light `model-server` via the
-xref:core:reference/component-light-model-client.adoc[light-model-client].
-
-
-=== 6. *In Process* (Kotlin)
+=== 5. *In Process* (Kotlin)
 
 This rather advanced version allows you to run the `model-server` inside your own application.
-You can find an examples of this in these code fragments:
+We primarily use this approach for testing, but theoretically it could be applied elsewhere.
+You can find an examples of this in the following code fragment:
 
 * https://github.com/modelix/modelix.core/blob/main/model-server/src/test/kotlin/org/modelix/model/server/ModelClientV2Test.kt#L48[ModelClientV2Test (modelix core tests)]
-* https://github.com/modelix/modelix.core/blob/main/mps-model-server-plugin/src/main/kotlin/org/modelix/model/server/mps/MPSModelServer.kt#L77C22-L77C38[`MPSModelServer.kt` (Implementation of the 'MPS as Modelix Model Server' plugin)]

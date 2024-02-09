@@ -67,7 +67,9 @@ data class MPSDevKitDependencyAsNode(
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name)) {
+        return if (property.isIdProperty()) {
+            reference.serialize()
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name)) {
             moduleReference.moduleName
         } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)) {
             moduleReference.moduleId.toString()

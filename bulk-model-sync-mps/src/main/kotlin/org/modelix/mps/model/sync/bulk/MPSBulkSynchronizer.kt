@@ -20,6 +20,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.ProjectManager
 import jetbrains.mps.ide.project.ProjectHelper
 import org.jetbrains.mps.openapi.module.SRepository
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.INode
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.sync.bulk.ModelExporter
@@ -78,8 +80,15 @@ object MPSBulkSynchronizer {
         access.runWriteInEDT {
             access.executeCommand {
                 val repoAsNode = MPSRepositoryAsNode(repository)
+
+                // Without the filter MPS would attempt to delete all modules that are not included
+                fun moduleFilter(node: INode): Boolean {
+                    if (node.getConceptReference()?.getUID() != BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()) return true
+                    val moduleName = node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) ?: return false
+                    return isModuleIncluded(moduleName, includedModuleNames, includedModulePrefixes)
+                }
                 println("Importing modules...")
-                ModelImporter(repoAsNode, continueOnError).importFilesAsRootChildren(jsonFiles)
+                ModelImporter(repoAsNode, continueOnError, childFilter = ::moduleFilter).importFilesAsRootChildren(jsonFiles)
                 println("Import finished.")
             }
         }

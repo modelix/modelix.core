@@ -39,7 +39,11 @@ import kotlin.jvm.JvmName
  *
  * @param root the root node to be updated
  */
-class ModelImporter(private val root: INode, private val continueOnError: Boolean) {
+class ModelImporter(
+    private val root: INode,
+    private val continueOnError: Boolean,
+    private val childFilter: (INode) -> Boolean = { true },
+) {
 
     private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
     private val postponedReferences = ArrayList<() -> Unit>()
@@ -123,7 +127,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
         val allRoles = (expectedParent.children.map { it.role } + existingParent.allChildren.map { it.roleInParent }).distinct()
         for (role in allRoles) {
             val expectedNodes = expectedParent.children.filter { it.role == role }
-            val existingNodes = existingParent.getChildren(role).toList()
+            val existingNodes = existingParent.getChildren(role).filter(childFilter).toList()
 
             // optimization that uses the bulk operation .addNewChildren
             if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {

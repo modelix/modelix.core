@@ -6,10 +6,9 @@ NOTE: If you are interested in a more practical usage of what is presented here,
 == Backends: In Memory vs. Database
 
 The `model-server` will by default require a database backend.
-While this setup is ideal for deployment, it might not what you need in the beginning.
 The `-jdbcconf` flag allows you to provide a custom jdbc configuration file.
-
-However, during development or to perform tests, it is recommended to start the `model-server` with in-memory storage.
+While this setup is ideal for deployment, it might not what you need in the beginning.
+During development or to perform tests, it is recommended to start the `model-server` with in-memory storage.
 This can be achieved by adding the `-inmemory` flag to the executable.
 
 
@@ -21,8 +20,7 @@ The following list gives an overview of the many ways to run a `model-server`:
 === 1. Docker
 
 We publish a docker container of the `model-server` over on https://hub.docker.com/r/modelix/model-server/tags[docker hub].
-To run the container, simply call the following:
-
+To run the model-server container with the in memory backend, simply call the following.
 [source, shell]
 --
 $ docker run --rm -p 28101:28101 modelix/modelix-model:latest -inmemory
@@ -31,7 +29,7 @@ $ docker run --rm -p 28101:28101 modelix/modelix-model:latest -inmemory
 
 === 2. `docker-compose`
 
-To run the `model-server` in memory, you can use:
+If you use `docker-compose`, use the following.
 
 .Content of `docker-compose.yml`
 [source, yaml]
@@ -128,7 +126,7 @@ $ docker-compose up
 
 === 3. Gradle via Dependency
 
-When using Gradle, you run a `model-server` as in the following minimal working example:
+When using Gradle, you can run a `model-server` by adding a dependency to `org.modelix:model-server`, as shown in the following minimal working example.
 
 .Content of minimal `build.gradle.kts` to run a `model-server` in memory
 [source, kotlin]
@@ -157,7 +155,7 @@ tasks.run.configure {
 }
 --
 
-You can run it simply by running
+You can start the model-server simply by running
 
 [source, bash]
 --
@@ -194,9 +192,28 @@ To give arguments to the gradle run command, you have to add them via the `--arg
 ====
 
 
-=== 5. *In Process* (Kotlin)
+=== 5. MPS
 
-This rather advanced version allows you to run the model-server inside your own application.
+You can run a *light version* of the `model-server` directly in MPS via the dedicated *MPS as Modelix Model Server Plugin*, which is published over at the https://plugins.jetbrains.com/plugin/22834-mps-as-modelix-model-server[JetBrains Marketplace].
+
+
+[IMPORTANT]
+====
+A light model-server does not provide the full features as an independent `model-server` instance will.
+More *advanced features* (e.g. xref:core:howto/modelql-writing.adoc[ModelQL], or the xref:core:howto/metrics.adoc[metrics]) and *advanced clients* (e.g. xref:core:howto/modelql.adoc[ModelQLClient]) will not work.
+====
+
+In MPS navigate to File -> Settings -> Plugins (left) -> Marketplace (top) -> search for "modelix model server" -> press install.
+
+image::model-server-plugin-marketplace.png[Installing the MPS model-server plugin]
+
+You can access the light `model-server` via the
+xref:core:reference/component-light-model-client.adoc[light-model-client].
+
+
+=== 6. *In Process* (Kotlin)
+
+This rather advanced version allows you to run the `model-server` inside your own application.
 You can find an examples of this in these code fragments:
 
 * https://github.com/modelix/modelix.core/blob/main/model-server/src/test/kotlin/org/modelix/model/server/ModelClientV2Test.kt#L48[ModelClientV2Test (modelix core tests)]

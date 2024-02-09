@@ -55,11 +55,16 @@ We can consequently assume that its data is always correct and up-to-date.
 
 [source, kotlin]
 --
+// create a new repository
 val myRepoId: RepositoryId = RepositoryId("myRepository")
-modelClientV2.initRepository(myRepoId)
+client.initRepository(myRepoId)
 
+// obtain the main branch created by default
 val myBranchReference: BranchReference = BranchReference(repositoryId = myRepoId, branchName = RepositoryId.DEFAULT_BRANCH)
-val replicatedModel: ReplicatedModel = modelClientV2.getReplicatedModel(myBranchReference)
+
+// replicate the branch content
+val replicatedModel: ReplicatedModel = client.getReplicatedModel(myBranchReference)
+// start the continuous replication
 replicatedModel.start()
 --
 
@@ -67,25 +72,34 @@ To ensure that read and write are executed correctly, we need to use read and wr
 
 [source, kotlin]
 --
-var rootNode: INode? = null
-// we need to start a read transaction to obtain model content
-replicatedModel.getBranch().getArea().executeRead {
-    // initial root node after repository initialization has the id 1
-    rootNode = replicatedModel.getBranch().getRootNode()
+// initial root node after repository initialization has the id 1
+val rootNode: INode = replicatedModel.getBranch().getRootNode()
+
+// to create a node we need run a write transaction
+replicatedModel.getBranch().runWrite {
+    val newChild: INode = rootNode.addNewChild("myRole")
+    println("Added node $newChild under parent ${newChild.parent}")
 }
 
-// we need to exit the read before we write
-replicatedModel.getBranch().getArea().executeWrite {
-    val newChild: INode? = rootNode?.addNewChild("myRole")
-    println("Added node $newChild under parent ${newChild?.parent}")
-}
-
-// we need to start a read transaction again to get model content
-replicatedModel.getBranch().getArea().executeRead {
-    println("All nodes in repository: ${(rootNode?.getDescendants(true)?.toMutableList().map { (it as PNodeAdapter).nodeId.toString() })}")
+// to get model content we need a read transaction
+replicatedModel.getBranch().runRead {
+    println("All nodes in repository: ${(rootNode.getDescendants(true).toMutableList())}")
 }
 --
 
+Which will yield the following output:
+
+[source]
+--
+Added node PNode2100000001 under parent PNode1
+All nodes in repository: [PNode1, PNode2100000001]
+--
+
 CAUTION: If you try to access a node that does not exist, an exception is thrown.
+
+Browsing to the `model-sever` content explorer over at http://localhost:28101/repos[] and selecting _Explore Latest Version_ for _myRepository_ you should see this:
+
+image::model-client-v2-sample.png[Result in `model-server` of the above code]
+
 
 For more information how to deal with `INodes` and the `client`, check the https://api.modelix.org/latest/model-api/index.html[model API] and the https://api.modelix.org/latest/model-client/org.modelix.model.client2/-model-client-v2/index.html[ModelClientV2 API] respectively.

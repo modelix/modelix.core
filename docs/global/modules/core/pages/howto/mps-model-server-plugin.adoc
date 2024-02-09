@@ -3,7 +3,6 @@
 
 
 You can run a *light version* of the `model-server` directly in MPS via the dedicated *MPS as Modelix Model Server Plugin*, which is published over at the https://plugins.jetbrains.com/plugin/22834-mps-as-modelix-model-server[JetBrains Marketplace^].
-It always supports the latest MPS versions.
 
 NOTE: More information on the component in general can be found in the xref:core:reference/component-mps-model-server-plugin.adoc[corresponding component reference].
 

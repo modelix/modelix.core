@@ -54,8 +54,7 @@ jobs:
             modelix/modelix-model
           tags: |
             type=raw,value=${{ steps.version.outputs.VERSION }},enable=true
-            type=raw,value=latest,event=tag
-            type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
 
         # Perform the build in a separate call to avoid trying to publish
         # something where the build already failed partially. This could happen

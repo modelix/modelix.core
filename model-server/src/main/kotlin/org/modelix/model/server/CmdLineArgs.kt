@@ -21,6 +21,9 @@ internal class CmdLineArgs {
     @Parameter(names = ["-inmemory", "--inmemory"], description = "Use in-memory storage", converter = BooleanConverter::class)
     var inmemory = false
 
+    @Parameter(names = ["--load-cache-on-start"], description = "Populate the Ignite cache on start. Blocks startup until the cache is warmed up.", converter = BooleanConverter::class)
+    var loadCacheOnStart = false
+
     @Parameter(names = ["--local-persistence"], description = "Use ignite with local disk persistence", converter = BooleanConverter::class)
     var localPersistence = false
 

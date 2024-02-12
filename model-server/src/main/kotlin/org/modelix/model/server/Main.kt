@@ -89,6 +89,7 @@ object Main {
         LOG.info("Max memory (bytes): " + Runtime.getRuntime().maxMemory())
         LOG.info("Server process started")
         LOG.info("In memory: " + cmdLineArgs.inmemory)
+        LOG.info("Load cache on start: " + cmdLineArgs.loadCacheOnStart)
         LOG.info("Path to secret file: " + cmdLineArgs.secretFile)
         LOG.info("Path to JDBC configuration file: " + cmdLineArgs.jdbcConfFile)
         LOG.info("Schema initialization: " + cmdLineArgs.schemaInit)
@@ -132,9 +133,14 @@ object Main {
                         )
                 }
             } else if (cmdLineArgs.localPersistence) {
+                // Loading the cache with an in-memory backend does not make much sense. Therefore, the option is
+                // ignored in this case.
                 storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile, inmemory = true)
             } else {
-                storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile)
+                storeClient = IgniteStoreClient(
+                    cmdLineArgs.jdbcConfFile,
+                    loadCacheOnStart = cmdLineArgs.loadCacheOnStart,
+                )
                 if (cmdLineArgs.schemaInit) {
                     val dataSource: DataSource = Ignition.loadSpringBean<DataSource>(
                         Main::class.java.getResource("ignite.xml"),

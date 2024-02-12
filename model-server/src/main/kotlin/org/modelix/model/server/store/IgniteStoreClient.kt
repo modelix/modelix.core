@@ -28,7 +28,11 @@ import java.util.stream.Collectors
 
 private val LOG = KotlinLogging.logger { }
 
-class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) : IStoreClient, AutoCloseable {
+class IgniteStoreClient(
+    jdbcConfFile: File? = null,
+    inmemory: Boolean = false,
+    loadCacheOnStart: Boolean = false,
+) : IStoreClient, AutoCloseable {
     private val ENTRY_CHANGED_TOPIC = "entryChanged"
     private lateinit var ignite: Ignite
     private val cache: IgniteCache<String, String?>
@@ -70,6 +74,13 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
         }
         ignite = Ignition.start(javaClass.getResource(if (inmemory) "ignite-inmemory.xml" else "ignite.xml"))
         cache = ignite.getOrCreateCache("model")
+        if (loadCacheOnStart) {
+            LOG.info { "Starting to eagerly populate the Ignite cache" }
+            cache.loadCache(null)
+            LOG.info { "Loading Ignite caches finished" }
+        } else {
+            LOG.debug { "Not eagerly populating the Ignite cache" }
+        }
         //        timer.scheduleAtFixedRate(() -> {
         //            System.out.println("stats: " + cache.metrics());
         //        }, 10, 10, TimeUnit.SECONDS);
@@ -154,6 +165,10 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
 
     override fun close() {
         dispose()
+    }
+
+    companion object {
+        private val LOG = mu.KotlinLogging.logger {}
     }
 }
 

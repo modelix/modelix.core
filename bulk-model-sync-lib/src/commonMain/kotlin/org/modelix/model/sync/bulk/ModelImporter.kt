@@ -154,7 +154,12 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
                         originalIdToExisting[expectedId] = newChild
                         newChild
                     } else {
+                        // The existing child node is not only moved to a new index,
+                        // it is potentially moved to a new parent and role.
                         node.moveChild(role, index, existingNode)
+                        // If the old parent and old role synchronized before the move operation,
+                        // the existing child node would have been marked as to be deleted.
+                        // Now that it is used, it should not be deleted.
                         nodesToRemove.remove(existingNode)
                         existingNode
                     }
@@ -166,6 +171,9 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
                 syncNode(childNode, expected, progressReporter)
             }
 
+            // At this point, all n expected children for this role are created and correctly sorted.
+            // This means the first n children are correct.
+            // Any child beyond that is an unexpected child has to be marked for removal.
             nodesToRemove += node.getChildren(role).drop(expectedNodes.size)
         }
     }

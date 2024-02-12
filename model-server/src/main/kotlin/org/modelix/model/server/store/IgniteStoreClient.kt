@@ -33,7 +33,6 @@ class IgniteStoreClient(
     inmemory: Boolean = false,
     loadCacheOnStart: Boolean = false,
 ) : IStoreClient, AutoCloseable {
-    private val ENTRY_CHANGED_TOPIC = "entryChanged"
     private lateinit var ignite: Ignite
     private val cache: IgniteCache<String, String?>
     private val changeNotifier = ChangeNotifier(this)
@@ -169,6 +168,7 @@ class IgniteStoreClient(
 
     companion object {
         private val LOG = mu.KotlinLogging.logger {}
+        private const val ENTRY_CHANGED_TOPIC = "entryChanged"
     }
 }
 

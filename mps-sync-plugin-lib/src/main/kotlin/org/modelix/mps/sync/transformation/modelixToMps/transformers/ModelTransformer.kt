@@ -28,9 +28,10 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.util.createModel
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.nodeIdAsLong
@@ -52,7 +53,7 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val modelDoesNotExist = module.getModel(modelId) == null
             if (modelDoesNotExist) {
                 sModel = module.createModel(name, modelId) as EditableSModel
@@ -91,7 +92,7 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
             val sourceModel = it.source
-            syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
+            syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
                 ModelImports(sourceModel).addModelImport(modelImport)
             }
             nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)

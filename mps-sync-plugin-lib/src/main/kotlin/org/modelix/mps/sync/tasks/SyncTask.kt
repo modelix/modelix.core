@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.util
+package org.modelix.mps.sync.tasks
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.CompletableFuture
@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SyncTask(
     requiredLocks: LinkedHashSet<SyncLock>,
+    val syncDirection: SyncDirection,
     val action: SyncTaskAction,
     val previousTaskResult: Any? = null,
     val result: CompletableFuture<Any?> = CompletableFuture(),
@@ -34,14 +35,15 @@ class ContinuableSyncTask(private val previousTask: SyncTask, private val syncQu
 
     fun continueWith(
         requiredLocks: LinkedHashSet<SyncLock>,
+        syncDirection: SyncDirection,
         checkExecutionThread: Boolean = false,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
-        val result = syncQueue.enqueue(linkedSetOf(SyncLock.NONE)) {
+        val result = SyncQueue.enqueue(linkedSetOf(SyncLock.NONE), syncDirection) {
             // blocking wait for the result of the previous task
             val previousResult = previousTask.result.get()
-            val task = SyncTask(requiredLocks, action, previousResult)
-            syncQueue.enqueue(task, checkExecutionThread)
+            val task = SyncTask(requiredLocks, syncDirection, action, previousResult)
+            SyncQueue.enqueue(task, checkExecutionThread)
 
             task.result.get()
         }

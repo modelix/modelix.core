@@ -28,12 +28,13 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.isDevKitDependency
 import org.modelix.mps.sync.util.isModel
@@ -57,7 +58,7 @@ class ModelixTreeChangeVisitor(
     private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
 
     override fun referenceChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), true) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS, true) {
             val sNode = nodeMap.getNode(nodeId)!!
             val sReferenceLink = sNode.concept.referenceLinks.find { it.name == role }
 
@@ -71,7 +72,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun propertyChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), true) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS, true) {
             val sNode = nodeMap.getNode(nodeId)!!
             val sProperty = sNode.concept.properties.find { it.name == role }
 
@@ -84,7 +85,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeRemoved(nodeId: Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), true) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS, true) {
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
                 it.delete()
@@ -111,7 +112,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeAdded(nodeId: Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), true) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS, true) {
             val iNode = getNode(nodeId)
             if (iNode.isModule()) {
                 moduleTransformer.transformToModule(iNode)
@@ -135,7 +136,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun childrenChanged(nodeId: Long, role: String?) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), true) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS, true) {
             modelTransformer.resolveModelImports(project.repository)
             modelTransformer.clearResolvableModelImports()
 
@@ -145,7 +146,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun containmentChanged(nodeId: Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), true) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS, true) {
             val iNode = getNode(nodeId)
             val newParentId = iNode.parent?.nodeIdAsLong()
 

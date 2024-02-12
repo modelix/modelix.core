@@ -23,9 +23,9 @@ import org.modelix.mps.sync.modelix.ModelixBranchListener
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.RepositoryChangeListener
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
-import org.modelix.mps.sync.util.SyncQueue
 import java.net.ConnectException
 import java.net.URL
 

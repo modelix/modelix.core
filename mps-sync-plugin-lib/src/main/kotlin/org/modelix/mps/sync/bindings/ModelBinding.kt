@@ -22,11 +22,12 @@ import jetbrains.mps.model.ModelDeleteHelper
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelBinding(
@@ -79,7 +80,7 @@ class ModelBinding(
         }
 
         // delete model
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
             try {
                 if (!removeFromServer) {
                     // to delete the files locally
@@ -92,7 +93,7 @@ class ModelBinding(
                 bindingsRegistry.addModelBinding(this)
                 throw ex
             }
-        }.continueWith(linkedSetOf(SyncLock.NONE)) {
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             bindingsRegistry.removeModelBinding(parentModule, this)
 
             if (!removeFromServer) {

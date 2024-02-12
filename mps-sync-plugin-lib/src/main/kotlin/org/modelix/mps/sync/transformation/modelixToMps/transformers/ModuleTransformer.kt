@@ -26,9 +26,10 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.mps.factories.SolutionProducer
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -52,7 +53,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         check(name != null) { "Module's ($iNode) name is null" }
 
         var sModule: AbstractModule? = null
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
             sModule // ignored
         }
@@ -72,7 +73,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
         val moduleId = getTargetModuleIdFromModuleDependency(iNode)
         val moduleReference = ModuleReference(moduleName, moduleId)
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             parentModule.addDependency(moduleReference, reexport)
         }
 

@@ -23,10 +23,11 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 import java.util.concurrent.CountDownLatch
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -75,7 +76,7 @@ class ModuleBinding(
         // unregister listener
         module.removeModuleListener(changeListener)
 
-        syncQueue.enqueue(linkedSetOf(SyncLock.NONE)) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             val modelBindings = bindingsRegistry.getModelBindings(module)
             val barrier = CountDownLatch(modelBindings?.size ?: 0)
 
@@ -89,7 +90,7 @@ class ModuleBinding(
 
             // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
             bindingsRegistry.removeModuleBinding(this)
-        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE)) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
             // delete module
             try {
                 if (!removeFromServer) {
@@ -104,7 +105,7 @@ class ModuleBinding(
                 bindingsRegistry.addModuleBinding(this)
                 throw ex
             }
-        }.continueWith(linkedSetOf(SyncLock.NONE)) {
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             // deactivate binding
 
             nodeMap.remove(module)

@@ -79,7 +79,7 @@ class ModuleChangeListener(
             val iName = iModule.getPropertyValue(nameProperty)
             val actualName = module.moduleName!!
             if (actualName != iName) {
-                nodeSynchronizer.runSetPropertyAction(
+                nodeSynchronizer.setProperty(
                     nameProperty,
                     actualName,
                     sourceNodeIdProducer = { iModuleNodeId },
@@ -95,7 +95,7 @@ class ModuleChangeListener(
                     ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == sDependency.targetModule.moduleId
                 }
             }
-            addedDependencies.forEach { dependency -> moduleSynchronizer.runAddDependencyAction(module, dependency) }
+            addedDependencies.forEach { dependency -> moduleSynchronizer.addDependency(module, dependency) }
 
             val removedDependencies = lastKnownDependencies.filter { dependencyINode ->
                 val targetModuleIdAccordingToModelix =
@@ -105,7 +105,7 @@ class ModuleChangeListener(
                 }
             }
             removedDependencies.forEach { dependencyINode ->
-                nodeSynchronizer.runRemoveNodeAction(
+                nodeSynchronizer.removeNode(
                     parentNodeIdProducer = { it[module]!! },
                     childNodeIdProducer = { dependencyINode.nodeIdAsLong() },
                 )

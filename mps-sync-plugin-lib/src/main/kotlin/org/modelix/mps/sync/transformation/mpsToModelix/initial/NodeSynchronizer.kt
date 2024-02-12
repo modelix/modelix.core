@@ -127,40 +127,23 @@ class NodeSynchronizer(
 
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX, true) {
-            runSetPropertyAction(property, newValue, sourceNodeIdProducer)
+            val nodeId = sourceNodeIdProducer.invoke(nodeMap)
+            val cloudNode = branch.getNode(nodeId)
+            cloudNode.setPropertyValue(property, newValue)
         }
-    }
-
-    /**
-     * WARNING: call this method only in a SyncTask, otherwise the necessary Modelix write transaction is missing
-     */
-    fun runSetPropertyAction(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
-        val nodeId = sourceNodeIdProducer.invoke(nodeMap)
-        val cloudNode = branch.getNode(nodeId)
-        cloudNode.setPropertyValue(property, newValue)
     }
 
     fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX, true) {
-            runRemoveNodeAction(parentNodeIdProducer, childNodeIdProducer)
+            val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
+            val nodeId = childNodeIdProducer.invoke(nodeMap)
+
+            val cloudParentNode = branch.getNode(parentNodeId)
+            val cloudChildNode = branch.getNode(nodeId)
+            cloudParentNode.removeChild(cloudChildNode)
+
+            nodeMap.remove(nodeId)
         }
-    }
-
-    /**
-     * WARNING: call this method only in a SyncTask, otherwise the necessary Modelix write transaction is missing
-     */
-    fun runRemoveNodeAction(
-        parentNodeIdProducer: (MpsToModelixMap) -> Long,
-        childNodeIdProducer: (MpsToModelixMap) -> Long,
-    ) {
-        val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
-        val nodeId = childNodeIdProducer.invoke(nodeMap)
-
-        val cloudParentNode = branch.getNode(parentNodeId)
-        val cloudChildNode = branch.getNode(nodeId)
-        cloudParentNode.removeChild(cloudChildNode)
-
-        nodeMap.remove(nodeId)
     }
 
     fun setReference(

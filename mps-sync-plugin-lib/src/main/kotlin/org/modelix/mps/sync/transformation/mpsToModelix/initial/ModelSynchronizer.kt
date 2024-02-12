@@ -59,7 +59,7 @@ class ModelSynchronizer(
 
     fun addModelAndActivate(model: SModelBase) {
         addModel(model)
-            .continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+            .continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
                 (it as IBinding).activate()
             }
     }

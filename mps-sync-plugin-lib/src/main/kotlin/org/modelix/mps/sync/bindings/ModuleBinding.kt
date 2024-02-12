@@ -105,9 +105,7 @@ class ModuleBinding(
                 bindingsRegistry.addModuleBinding(this)
                 throw ex
             }
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
-            // deactivate binding
-
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
             nodeMap.remove(module)
 
             isDisposed = true

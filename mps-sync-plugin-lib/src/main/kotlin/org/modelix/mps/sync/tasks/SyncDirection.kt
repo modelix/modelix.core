@@ -22,4 +22,5 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 enum class SyncDirection {
     MODELIX_TO_MPS,
     MPS_TO_MODELIX,
+    NONE, // other, non-sync tasks
 }

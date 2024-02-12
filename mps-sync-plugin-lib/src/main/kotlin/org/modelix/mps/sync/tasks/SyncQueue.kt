@@ -68,9 +68,11 @@ object SyncQueue {
          * there is a very little chance of missing an intended change on other side. With other words: there is very
          * little chance that it makes sense that on the same thread two SyncTasks occur.
          */
+        val taskSyncDirection = task.syncDirection
         val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
         val synchronizationInOppositeDirectionIsRunning =
-            runningSyncDirection != null && runningSyncDirection != task.syncDirection
+            taskSyncDirection != SyncDirection.NONE && // non-sync tasks have a green way
+                runningSyncDirection != null && runningSyncDirection != taskSyncDirection // otherwise drop tasks that would run in the opposite direction
 
         if (checkExecutionThread && synchronizationInOppositeDirectionIsRunning) {
             task.result.complete(null)

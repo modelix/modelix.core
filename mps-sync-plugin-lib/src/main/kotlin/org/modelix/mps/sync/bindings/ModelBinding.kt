@@ -93,7 +93,7 @@ class ModelBinding(
                 bindingsRegistry.addModelBinding(this)
                 throw ex
             }
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
             bindingsRegistry.removeModelBinding(parentModule, this)
 
             if (!removeFromServer) {

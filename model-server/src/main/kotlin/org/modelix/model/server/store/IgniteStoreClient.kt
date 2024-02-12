@@ -28,6 +28,15 @@ import java.util.stream.Collectors
 
 private val LOG = KotlinLogging.logger { }
 
+/**
+ * Instantiate an IgniteStoreClient
+ *
+ * @param jdbcConfFile adopt the configuration specified. If it is not specified, configuration
+ *                     from ignite.xml is used
+ * @param inmemory If true, an in-memory backend is used instead of connecting to a JDBC database.
+ * @param loadCacheOnStart If true, the configured Ignite cache is populated eagerly on start. This blocks the current
+ *                         thread until the cache is warmed up.
+ */
 class IgniteStoreClient(
     jdbcConfFile: File? = null,
     inmemory: Boolean = false,
@@ -40,12 +49,6 @@ class IgniteStoreClient(
         ignite.message().send(ENTRY_CHANGED_TOPIC, it)
     }
 
-    /**
-     * Istantiate an IgniteStoreClient
-     *
-     * @param jdbcConfFile adopt the configuration specified. If it is not specified, configuration
-     * from ignite.xml is used
-     */
     init {
         if (jdbcConfFile != null) {
             // Given that systemPropertiesMode is set to 2 (SYSTEM_PROPERTIES_MODE_OVERRIDE) in

@@ -1,4 +1,4 @@
-= How-To run the light `model-server` in MPS as a plugin
+= How-To Run the Light `model-server` in MPS as a Plugin
 :navtitle: mps-model-server-plugin
 
 

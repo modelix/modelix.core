@@ -23,6 +23,7 @@ import org.jetbrains.mps.openapi.event.SReferenceChangeEvent
 import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
+import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
@@ -36,7 +37,7 @@ class NodeChangeListener(
 
     private val synchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
 
-    override fun nodeAdded(event: SNodeAddEvent) = synchronizer.addNode(event.child)
+    override fun nodeAdded(event: SNodeAddEvent) = synchronizer.addNodeAsync(event.child)
 
     override fun nodeRemoved(event: SNodeRemoveEvent) = synchronizer.removeNode(
         parentNodeIdProducer = {
@@ -50,7 +51,7 @@ class NodeChangeListener(
     )
 
     override fun propertyChanged(event: SPropertyChangeEvent) =
-        synchronizer.setProperty(event.property, event.newValue) { it[event.node]!! }
+        synchronizer.setProperty(MPSProperty(event.property), event.newValue) { it[event.node]!! }
 
     override fun referenceChanged(event: SReferenceChangeEvent) {
         // TODO fix me: it does not work correctly, if event.newValue.targetNode points to a node that is in a different model, that has not been synced yet to model server...

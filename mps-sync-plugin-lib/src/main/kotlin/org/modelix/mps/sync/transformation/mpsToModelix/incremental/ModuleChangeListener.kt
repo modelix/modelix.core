@@ -95,7 +95,7 @@ class ModuleChangeListener(
                     ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == sDependency.targetModule.moduleId
                 }
             }
-            addedDependencies.forEach { dependency -> moduleSynchronizer.addDependency(module, dependency) }
+            addedDependencies.forEach { dependency -> moduleSynchronizer.addDependencyAsync(module, dependency) }
 
             val removedDependencies = lastKnownDependencies.filter { dependencyINode ->
                 val targetModuleIdAccordingToModelix =

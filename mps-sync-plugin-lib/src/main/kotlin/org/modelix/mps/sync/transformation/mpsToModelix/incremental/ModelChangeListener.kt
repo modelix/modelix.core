@@ -50,7 +50,7 @@ class ModelChangeListener(
     private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
     private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
 
-    override fun importAdded(event: SModelImportEvent) = modelSynchronizer.addModelImport(event.model, event.modelUID)
+    override fun importAdded(event: SModelImportEvent) = modelSynchronizer.addModelImportAsync(event.model, event.modelUID)
 
     override fun importRemoved(event: SModelImportEvent) = nodeSynchronizer.removeNode(
         parentNodeIdProducer = { it[event.model]!! },
@@ -58,7 +58,7 @@ class ModelChangeListener(
     )
 
     override fun languageAdded(event: SModelLanguageEvent) =
-        modelSynchronizer.addLanguageDependency(event.model, event.eventLanguage)
+        modelSynchronizer.addLanguageDependencyAsync(event.model, event.eventLanguage)
 
     override fun languageRemoved(event: SModelLanguageEvent) = nodeSynchronizer.removeNode(
         parentNodeIdProducer = { it[event.model]!! },
@@ -66,7 +66,7 @@ class ModelChangeListener(
     )
 
     override fun devkitAdded(event: SModelDevKitEvent) =
-        modelSynchronizer.addDevKitDependency(event.model, event.devkitNamespace)
+        modelSynchronizer.addDevKitDependencyAsync(event.model, event.devkitNamespace)
 
     override fun devkitRemoved(event: SModelDevKitEvent) = nodeSynchronizer.removeNode(
         parentNodeIdProducer = { it[event.model]!! },

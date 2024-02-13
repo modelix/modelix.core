@@ -42,7 +42,7 @@ object SyncQueue {
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
         enqueue(task, checkExecutionThread)
-        return ContinuableSyncTask(task, this)
+        return ContinuableSyncTask(task)
     }
 
     fun enqueueBlocking(
@@ -53,7 +53,7 @@ object SyncQueue {
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
         enqueueBlocking(task, checkExecutionThread)
-        return ContinuableSyncTask(task, this)
+        return ContinuableSyncTask(task)
     }
 
     fun enqueue(task: SyncTask, checkExecutionThread: Boolean) {
@@ -68,23 +68,31 @@ object SyncQueue {
          * there is a very little chance of missing an intended change on other side. With other words: there is very
          * little chance that it makes sense that on the same thread two SyncTasks occur.
          */
-        val taskSyncDirection = task.syncDirection
-        val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
-        val synchronizationInOppositeDirectionIsRunning =
-            taskSyncDirection != SyncDirection.NONE && // non-sync tasks have a green way
-                runningSyncDirection != null && runningSyncDirection != taskSyncDirection // otherwise drop tasks that would run in the opposite direction
+        if (checkExecutionThread) {
+            val taskSyncDirection = task.syncDirection
+            val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
 
-        if (checkExecutionThread && synchronizationInOppositeDirectionIsRunning) {
-            task.result.complete(null)
+            val noTaskIsRunning = runningSyncDirection == null
+            val runningTaskDirectionIsTheSame = taskSyncDirection == runningSyncDirection
+            val isNoneDirection = taskSyncDirection == SyncDirection.NONE || runningSyncDirection == SyncDirection.NONE
+            if (noTaskIsRunning || isNoneDirection || runningTaskDirectionIsTheSame) {
+                enqueueAndFlush(task)
+            } else {
+                task.result.complete(null)
+            }
         } else {
-            tasks.add(task)
-            scheduleFlush()
+            enqueueAndFlush(task)
         }
     }
 
-    fun enqueueBlocking(task: SyncTask, checkExecutionThread: Boolean) {
+    private fun enqueueBlocking(task: SyncTask, checkExecutionThread: Boolean) {
         enqueue(task, checkExecutionThread)
         task.result.get()
+    }
+
+    private fun enqueueAndFlush(task: SyncTask) {
+        tasks.add(task)
+        scheduleFlush()
     }
 
     private fun scheduleFlush() {
@@ -95,7 +103,7 @@ object SyncQueue {
 
     private fun doFlush() {
         while (!tasks.isEmpty()) {
-            val task = tasks.poll()
+            val task = tasks.poll() ?: return
             runWithLocks(task.sortedLocks, task)
         }
     }
@@ -112,8 +120,10 @@ object SyncQueue {
 
             runWithLock(lockHead) {
                 val currentThread = Thread.currentThread()
-                val wasAddedHere = activeSyncThreadsWithSyncDirection.containsKey(currentThread)
-                activeSyncThreadsWithSyncDirection[currentThread] = task.syncDirection
+                val wasAddedHere = !activeSyncThreadsWithSyncDirection.containsKey(currentThread)
+                if (wasAddedHere) {
+                    activeSyncThreadsWithSyncDirection[currentThread] = task.syncDirection
+                }
 
                 try {
                     val lockTail = lockHeadAndTail.second

@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.transformation.mpsToModelix.initial
 
 import org.jetbrains.mps.openapi.language.SConcept
-import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -31,7 +30,6 @@ import org.modelix.model.api.getNode
 import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
-import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -47,8 +45,16 @@ class NodeSynchronizer(
     private val resolvableReferences: MutableList<CloudResolvableReference>? = null,
 ) {
 
-    fun addNode(node: SNode) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX, true) {
+    fun addNodeAsync(node: SNode) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { addNodeSync(node) }
+    }
+
+    fun addNodeSync(node: SNode) {
+        syncQueue.enqueueBlocking(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            true,
+        ) {
             val parentNodeId = if (node.parent != null) {
                 nodeMap[node.parent]!!
             } else {
@@ -122,9 +128,6 @@ class NodeSynchronizer(
         cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
     }
 
-    fun setProperty(mpsProperty: SProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) =
-        setProperty(MPSProperty(mpsProperty), newValue, sourceNodeIdProducer)
-
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX, true) {
             val nodeId = sourceNodeIdProducer.invoke(nodeMap)
@@ -162,8 +165,8 @@ class NodeSynchronizer(
         }
     }
 
-    fun resolveReferences() {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX) {
+    fun resolveReferencesSync() {
+        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX) {
             resolvableReferences?.forEach { setReferenceInTheCloud(it.sourceNode, it.referenceLink, it.mpsTargetNode) }
         }
     }

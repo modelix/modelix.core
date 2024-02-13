@@ -31,7 +31,7 @@ class SyncTask(
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ContinuableSyncTask(private val previousTask: SyncTask, private val syncQueue: SyncQueue) {
+class ContinuableSyncTask(private val previousTask: SyncTask) {
 
     fun continueWith(
         requiredLocks: LinkedHashSet<SyncLock>,
@@ -41,7 +41,7 @@ class ContinuableSyncTask(private val previousTask: SyncTask, private val syncQu
     ): ContinuableSyncTask {
         val result = SyncQueue.enqueue(linkedSetOf(SyncLock.NONE), syncDirection) {
             // blocking wait for the result of the previous task
-            val previousResult = previousTask.result.get()
+            val previousResult = getResult()
             val task = SyncTask(requiredLocks, syncDirection, action, previousResult)
             SyncQueue.enqueue(task, checkExecutionThread)
 
@@ -50,6 +50,8 @@ class ContinuableSyncTask(private val previousTask: SyncTask, private val syncQu
 
         return result
     }
+
+    fun getResult() = previousTask.result.get()
 }
 
 typealias SyncTaskAction = (Any?) -> Any?

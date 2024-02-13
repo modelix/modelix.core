@@ -79,7 +79,10 @@ class SNodeFactory(
         val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
         val isRootNode = concept.isRootable && modelIsTheParent
 
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+        syncQueue.enqueueBlocking(
+            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
+            SyncDirection.MODELIX_TO_MPS,
+        ) {
             if (isRootNode) {
                 model?.addRootNode(sNode)
             } else {

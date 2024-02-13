@@ -50,24 +50,19 @@ class ModuleSynchronizer(
         ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue, postponeReferenceResolution = true)
 
     fun addModule(module: AbstractModule) {
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val rootNode = branch.getRootNode()
-            val cloudModule = rootNode.addNewChild(
-                ChildLinkFromName("modules"),
-                -1,
-                BuiltinLanguages.MPSRepositoryConcepts.Module,
-            )
+            val childLink = ChildLinkFromName("modules")
+            val concept = BuiltinLanguages.MPSRepositoryConcepts.Module
+            val cloudModule = rootNode.addNewChild(childLink, -1, concept)
 
             nodeMap.put(module, cloudModule.nodeIdAsLong())
 
             synchronizeModuleProperties(cloudModule, module)
             // synchronize dependencies
-            module.declaredDependencies.forEach { addDependency(module, it) }
+            module.declaredDependencies.forEach { addDependencySync(module, it) }
             // synchronize models
-            module.models.forEach { modelSynchronizer.addModel(it as SModelBase) }
+            module.models.forEach { modelSynchronizer.addModelSync(it as SModelBase) }
             // resolve cross-model references
             modelSynchronizer.resolveCrossModelReferences()
 
@@ -78,7 +73,13 @@ class ModuleSynchronizer(
         }
     }
 
-    fun addDependency(module: SModule, dependency: SDependency) {
+    fun addDependencyAsync(module: SModule, dependency: SDependency) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+            addDependencySync(module, dependency)
+        }
+    }
+
+    private fun addDependencySync(module: SModule, dependency: SDependency) {
         syncQueue.enqueueBlocking(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,

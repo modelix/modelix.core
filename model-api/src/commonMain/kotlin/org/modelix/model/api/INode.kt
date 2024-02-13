@@ -380,6 +380,21 @@ fun INode.tryResolveProperty(role: String): IProperty? {
         ?: allLinks.find { it.getSimpleName() == role }
         ?: allLinks.find { it.getUID() == role }
 }
+
+/**
+ * Resolves whether the child link is ordered or not.
+ *
+ * Assume children to be ordered by default.
+ * Unordered children are the special case that can be declared by setting [[IChildLink.isOrdered]] to `false`.
+ */
+fun INode.isChildRoleOrdered(role: String?): Boolean {
+    return if (role == null) {
+        true
+    } else {
+        this.tryResolveChildLink(role)?.isOrdered ?: true
+    }
+}
+
 fun INode.resolvePropertyOrFallback(role: String): IProperty {
     return tryResolveProperty(role) ?: IProperty.fromName(role)
 }

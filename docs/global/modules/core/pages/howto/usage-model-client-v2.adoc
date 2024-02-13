@@ -30,7 +30,6 @@ Once set up, creating an instance that loads the entire model from the server ca
 
 [source, kotlin]
 --
-
 val client = ModelClientV2.builder()
                           .url("http://localhost:28101/v2")
                           .build()

@@ -8,7 +8,7 @@ NOTE: To run a light version of the `model-sever`, check out  xref:core:howto/mp
 == Backends: In Memory vs. Database
 
 The `model-server` will by default require a database backend.
-The `-jdbcconf` flag allows you to provide a custom jdbc configuration file.
+The `-jdbcconf` flag allows you to provide a custom JDBC configuration file.
 While this setup is ideal for deployment, it might not what you need in the beginning.
 During development or to perform tests, it is recommended to start the `model-server` with in-memory storage.
 This can be achieved by adding the `-inmemory` flag to the executable.
@@ -21,8 +21,8 @@ The following list gives an overview of the many ways to run a `model-server`:
 
 === 1. Docker
 
-We publish a docker container of the `model-server` over on https://hub.docker.com/r/modelix/model-server/tags[Docker Hub^].
-To run the model-server container with the in memory backend, simply call the following.
+We publish a Docker container of the `model-server` over on https://hub.docker.com/r/modelix/model-server/tags[Docker Hub^].
+To run the model-server container with the in-memory backend, simply call the following.
 [source, shell]
 --
 $ docker run --rm -p 28101:28101 modelix/modelix-model:latest -inmemory
@@ -97,7 +97,6 @@ services:
 
 volumes:
   model-server-db: {}
-  dashboard-db: {}
 --
 
 .Content of `init-database.sql`

@@ -1,4 +1,4 @@
-= How-To run the light `model-server` in MPS as plugin
+= How-To run the light `model-server` in MPS as a plugin
 :navtitle: mps-model-server-plugin
 
 
@@ -9,7 +9,7 @@ NOTE: More information on the component in general can be found in the xref:core
 [IMPORTANT]
 ====
 A light model-server does not provide the full features as an independent `model-server` instance will.
-More *advanced features* will not work with this light version (e.g. modelix specific repositories/branches, or the xref:howto/metrics.adoc[metrics]).
+More *advanced features* will not work with this light version (e.g., modelix specific repositories/branches, or the xref:howto/metrics.adoc[metrics]).
 
 If you want the full capabilities of the `model-server`, check out xref:howto/usage-model-api-gen-gradle.adoc[how to start it standalone].
 ====

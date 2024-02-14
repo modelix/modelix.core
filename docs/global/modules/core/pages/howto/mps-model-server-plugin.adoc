@@ -1,0 +1,42 @@
+= How-To Run the Light `model-server` in MPS as a Plugin
+:navtitle: mps-model-server-plugin
+
+
+You can run a *light version* of the `model-server` directly in MPS via the dedicated *MPS as Modelix Model Server Plugin*, which is published over at the https://plugins.jetbrains.com/plugin/22834-mps-as-modelix-model-server[JetBrains Marketplace^].
+
+NOTE: More information on the component in general can be found in the xref:core:reference/component-mps-model-server-plugin.adoc[corresponding component reference].
+
+[IMPORTANT]
+====
+A light model-server does not provide the full features as an independent `model-server` instance will.
+More *advanced features* will not work with this light version (e.g., modelix specific repositories/branches, or the xref:howto/metrics.adoc[metrics]).
+
+If you want the full capabilities of the `model-server`, check out xref:howto/usage-model-api-gen-gradle.adoc[how to start it standalone].
+====
+
+
+== How to Install the Plugin
+
+In MPS navigate to menu:File[Settings > Plugins (left) > Marketplace (top)].
+Search for "modelix model server" and press btn:[Install] and afterwards btn:[Restart IDE].
+
+image::model-server-plugin-marketplace.png[Installing the MPS model-server plugin]
+
+You can access the light `model-server` via the
+xref:reference/component-light-model-client.adoc[light-model-client].
+
+
+== How to Run the Plugin
+
+Once you restart MPS, the light `model-server` will start automatically with MPS.
+There are no graphical user interfaces, but to verify you can check the MPS log for
+
+[source,bash]
+--
+starting modelix server
+--
+
+The `model-server` will run by default on port `48305`.
+You can check the health status over at http://127.0.0.1:48305/health[^].
+
+If you want to find out how connect a client and send queries to the plugin, have a look at the xref:howto/modelql.adoc[ModelQL documentation] or the xref:core:reference/component-mps-model-server-plugin.adoc[component reference].

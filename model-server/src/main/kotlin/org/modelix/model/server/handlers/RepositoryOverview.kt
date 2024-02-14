@@ -9,9 +9,11 @@ import io.ktor.server.routing.routing
 import kotlinx.html.FlowContent
 import kotlinx.html.FlowOrInteractiveOrPhrasingContent
 import kotlinx.html.a
+import kotlinx.html.form
 import kotlinx.html.h1
 import kotlinx.html.i
 import kotlinx.html.p
+import kotlinx.html.postButton
 import kotlinx.html.span
 import kotlinx.html.table
 import kotlinx.html.tbody
@@ -48,7 +50,7 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                         th { +"Repository" }
                         th { +"Branch" }
                         th {
-                            colSpan = "2"
+                            colSpan = "3"
                             +"Actions"
                         }
                     }
@@ -64,6 +66,7 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                         }
                         if (branches.isEmpty()) {
                             tr {
+                                td { }
                                 td { }
                                 td { }
                                 td { }
@@ -84,6 +87,15 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                                             ?: throw RuntimeException("Branch not found: $branch")
                                         a("../content/${latestVersion.getContentHash()}/") {
                                             +"Explore Latest Version"
+                                        }
+                                    }
+                                    td {
+                                        form {
+                                            postButton {
+                                                name = "delete"
+                                                formAction = "../v2/repositories/${branch.repositoryId.id}/delete"
+                                                +"Delete Repository"
+                                            }
                                         }
                                     }
                                 }

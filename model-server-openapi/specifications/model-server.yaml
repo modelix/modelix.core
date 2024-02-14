@@ -25,7 +25,7 @@ tags:
   - name: delta access
     description: Used for incrementally updating a branch or requesting data from a known state.
   - name: node access
-    description: TODO to be created, does not exist yet
+    description: TODO this is a rough sketch
   - name: object access
     description: |-
       Direct access to the key-value store.
@@ -541,6 +541,95 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /repositories/{repository}/branches/{branch}/nodes:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/BranchPath"
+
+    get:
+      operationId: getRepositoryBranchNodes
+      summary: Returns all nodes from a branch
+      tags:
+        - node access
+      responses:
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /repositories/{repository}/branches/{branch}/nodes/{node}:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/BranchPath"
+      - $ref: "#/components/parameters/NodePath"
+
+    get:
+      operationId: getRepositoryBranchNode
+      summary: Returns a single node
+      tags:
+        - node access
+      parameters:
+        - name: depth
+          in: query
+          description: How many levels of children to fetch. Use -1 to fetch everything
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+      responses:
+        200:
+          description: Node was found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        default:
+          $ref: "#/components/responses/Problem"
+
+    put:
+      operationId: updateRepositoryBranchNode
+      summary: Updates or creates a single node
+      tags:
+        - node access
+      responses:
+        200:
+          description: Node was found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        default:
+          $ref: "#/components/responses/Problem"
+
+    delete:
+      operationId: deleteRepositoryBranchNode
+      summary: Deletes a single node
+      tags:
+        - node access
+      responses:
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /repositories/{repository}/branches/{branch}/nodes/{node}/children:
+    parameters:
+      - $ref: "#/components/parameters/RepositoryPath"
+      - $ref: "#/components/parameters/BranchPath"
+      - $ref: "#/components/parameters/NodePath"
+
+    post:
+      operationId: createChildren
+      summary: Adds new children to a node
+      tags:
+        - node access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Node'
+      responses:
+        default:
+          $ref: "#/components/responses/Problem"
+
   /repositories/{repository}/versions/{versionHash}/history/{oldestVersionHash}:
     get:
       operationId: getOldestVersionHash
@@ -820,6 +909,12 @@ components:
       required: true
       schema:
         type: string
+    NodePath:
+      name: node
+      in: "path"
+      required: true
+      schema:
+        type: string
     VersionHashPath:
       name: versionHash
       in: "path"
@@ -994,6 +1089,54 @@ components:
         value2:
           type: string
 
+    ConceptReference:
+      type: string
+
+    Role:
+      type: object
+      description: Depending on the server config, either the name or the UID is available.
+      properties:
+        name:
+          type: string
+          nullable: true
+        roleUid:
+          type: string
+          nullable: true
+
+    # Node access
+    Node:
+      type: object
+      properties:
+        concept:
+          allOf:
+            - $ref: "#/components/schemas/ConceptReference"
+            - nullable: true
+              default: null
+        role:
+          allOf:
+            - $ref: "#/components/schemas/Role"
+            - nullable: true
+              default: null
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Node'
+          default: []
+        childIds:
+          type: array
+          items:
+            type: string
+          default: []
+        properties:
+          type: object
+          additionalProperties: true
+          default: {}
+        references:
+          type: object
+          additionalProperties: true
+          default: {}
+
+    # Errors
     Problem:
       type: object
       properties:

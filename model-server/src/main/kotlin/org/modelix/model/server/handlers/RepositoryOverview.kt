@@ -83,9 +83,7 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                                         buildHistoryLink(branch.repositoryId.id, branch.branchName)
                                     }
                                     td {
-                                        val latestVersion = repoManager.getVersion(branch)
-                                            ?: throw RuntimeException("Branch not found: $branch")
-                                        a("../content/${latestVersion.getContentHash()}/") {
+                                        a("../content/$repository/${branch.branchName}/latest/") {
                                             +"Explore Latest Version"
                                         }
                                     }

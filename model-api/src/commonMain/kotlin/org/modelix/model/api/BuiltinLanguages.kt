@@ -112,6 +112,7 @@ object BuiltinLanguages {
                 simpleName = "rootNodes",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = jetbrains_mps_lang_core.BaseConcept,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900",
             ).also(this::addChildLink)
@@ -120,6 +121,7 @@ object BuiltinLanguages {
                 simpleName = "modelImports",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = ModelReference,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/6402965165736931000",
             ).also(this::addChildLink)
@@ -128,6 +130,7 @@ object BuiltinLanguages {
                 simpleName = "usedLanguages",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = SingleLanguageDependency,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/5381564949800872334",
             ).also(this::addChildLink)
@@ -159,6 +162,7 @@ object BuiltinLanguages {
                 simpleName = "models",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = Model,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898",
             ).also(this::addChildLink)
@@ -167,6 +171,7 @@ object BuiltinLanguages {
                 simpleName = "facets",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = ModuleFacet,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242412",
             ).also(this::addChildLink)
@@ -175,6 +180,7 @@ object BuiltinLanguages {
                 simpleName = "dependencies",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = ModuleDependency,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242425",
             ).also(this::addChildLink)
@@ -183,6 +189,7 @@ object BuiltinLanguages {
                 simpleName = "languageDependencies",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = LanguageDependency,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242439",
             ).also(this::addChildLink)
@@ -223,6 +230,7 @@ object BuiltinLanguages {
                 simpleName = "modules",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903",
             ).also(this::addChildLink)
@@ -231,6 +239,7 @@ object BuiltinLanguages {
                 simpleName = "projects",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = Project,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/7064605579395546636",
             ).also(this::addChildLink)
@@ -239,6 +248,7 @@ object BuiltinLanguages {
                 simpleName = "tempModules",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/8226136427470548682",
             ).also(this::addChildLink)
@@ -255,6 +265,7 @@ object BuiltinLanguages {
                 simpleName = "modules",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4008363636171860450",
             ).also(this::addChildLink)
@@ -263,6 +274,7 @@ object BuiltinLanguages {
                 simpleName = "projectModules",
                 isMultiple = true,
                 isOptional = true,
+                isOrdered = false,
                 targetConcept = ProjectModule,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4201834143491306088",
             ).also(this::addChildLink)

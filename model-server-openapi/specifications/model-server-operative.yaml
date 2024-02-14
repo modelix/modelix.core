@@ -15,10 +15,20 @@ info:
   version: "1.0.0"
 
 servers:
-  - url: '/'
+  - url: '/meta'
     description: model-server
 
 paths:
+  /version:
+    get:
+      operationId: getVersion
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Version"
   /metrics:
     get:
       operationId: getMetrics
@@ -26,7 +36,35 @@ paths:
         "200":
           $ref: '#/components/responses/200'
 
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                enum: ["healthy"]
+        "500":
+          description: not healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                enum: [ "not healthy" ]
+
 components:
+  schemas:
+    Version:
+      type: object
+      properties:
+        version:
+          type: string
+          readOnly: true
+      required:
+        - version
   responses:
     "200":
       description: OK

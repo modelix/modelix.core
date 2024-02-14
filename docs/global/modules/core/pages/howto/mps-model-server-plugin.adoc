@@ -17,7 +17,8 @@ If you want the full capabilities of the `model-server`, check out xref:howto/us
 
 == How to Install the Plugin
 
-In MPS navigate to menu:File[Settings > Plugins (left) > Marketplace (top) > Search for 'modelix model server' > Install > Restart IDE].
+In MPS navigate to menu:File[Settings > Plugins (left) > Marketplace (top)].
+Search for "modelix model server" and press btn:[Install] and afterwards btn:[Restart IDE].
 
 image::model-server-plugin-marketplace.png[Installing the MPS model-server plugin]
 

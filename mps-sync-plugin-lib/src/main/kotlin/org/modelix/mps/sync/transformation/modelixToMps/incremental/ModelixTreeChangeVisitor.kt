@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.incremental
 
+import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.module.SModuleBase
 import jetbrains.mps.model.ModelDeleteHelper
@@ -54,6 +55,8 @@ class ModelixTreeChangeVisitor(
     private val syncQueue: SyncQueue,
 ) : ITreeChangeVisitorEx {
 
+    private val logger = logger<ModelixTreeChangeVisitor>()
+
     private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, languageRepository)
     private val modelTransformer = ModelTransformer(nodeMap, syncQueue)
     private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
@@ -64,15 +67,29 @@ class ModelixTreeChangeVisitor(
             SyncDirection.MODELIX_TO_MPS,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
-            val sNode = nodeMap.getNode(nodeId)!!
+            val sNode = nodeMap.getNode(nodeId)
+            if (sNode == null) {
+                logger.error("Node ($nodeId) is not mapped to MPS yet.")
+                return@enqueue null
+            }
+
             val sReferenceLink = sNode.concept.referenceLinks.find { it.name == role }
+            if (sReferenceLink == null) {
+                logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have reference link called $role.")
+                return@enqueue null
+            }
 
             val iNode = getNode(nodeId)
             val iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }
             val targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
             val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
 
-            sNode.setReferenceTarget(sReferenceLink!!, targetSNode)
+            val oldValue = sNode.getReferenceTarget(sReferenceLink)
+            if (oldValue != targetSNode) {
+                sNode.setReferenceTarget(sReferenceLink, targetSNode)
+            }
+
+            null
         }
     }
 
@@ -82,14 +99,28 @@ class ModelixTreeChangeVisitor(
             SyncDirection.MODELIX_TO_MPS,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
-            val sNode = nodeMap.getNode(nodeId)!!
+            val sNode = nodeMap.getNode(nodeId)
+            if (sNode == null) {
+                logger.error("Node ($nodeId) is not mapped to MPS yet.")
+                return@enqueue null
+            }
+
             val sProperty = sNode.concept.properties.find { it.name == role }
+            if (sProperty == null) {
+                logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have property called $role.")
+                return@enqueue null
+            }
 
             val iNode = getNode(nodeId)
             val iProperty = PropertyFromName(role)
             val value = iNode.getPropertyValue(iProperty)
 
-            sNode.setProperty(sProperty!!, value)
+            val oldValue = sNode.getProperty(sProperty)
+            if (oldValue != value) {
+                sNode.setProperty(sProperty, value)
+            }
+
+            null
         }
     }
 
@@ -103,12 +134,14 @@ class ModelixTreeChangeVisitor(
             sNode?.let {
                 it.delete()
                 nodeMap.remove(nodeId)
+                return@enqueue null
             }
 
             val sModel = nodeMap.getModel(nodeId)
             sModel?.let {
                 ModelDeleteHelper(sModel).delete()
                 nodeMap.remove(nodeId)
+                return@enqueue null
             }
 
             val sModule = nodeMap.getModule(nodeId)
@@ -120,7 +153,14 @@ class ModelixTreeChangeVisitor(
                 }
                 ModuleDeleteHelper(project).deleteModules(listOf(sModule), false, true)
                 nodeMap.remove(nodeId)
+                return@enqueue null
             }
+
+            val isMapped = nodeMap.isMappedToMps(nodeId)
+            // if isMapped == false, then we missed a possible removal case
+            logger.error("Node ($nodeId) was not removed from MPS, because it was not mapped yet (isMapped=$isMapped).")
+
+            null
         }
     }
 
@@ -130,6 +170,12 @@ class ModelixTreeChangeVisitor(
             SyncDirection.MODELIX_TO_MPS,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
+            val isMapped = nodeMap.isMappedToMps(nodeId)
+            if (isMapped) {
+                logger.error("Node ($nodeId) is already mapped to MPS.")
+                return@enqueue null
+            }
+
             val iNode = getNode(nodeId)
             if (iNode.isModule()) {
                 moduleTransformer.transformToModule(iNode)
@@ -149,6 +195,8 @@ class ModelixTreeChangeVisitor(
             } else {
                 nodeTransformer.transformToNode(iNode)
             }
+
+            null
         }
     }
 
@@ -163,6 +211,8 @@ class ModelixTreeChangeVisitor(
 
             nodeTransformer.resolveReferences()
             nodeTransformer.clearResolvableReferences()
+
+            null
         }
     }
 
@@ -173,49 +223,96 @@ class ModelixTreeChangeVisitor(
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             val iNode = getNode(nodeId)
-            val newParentId = iNode.parent?.nodeIdAsLong()
+            val newParent = iNode.parent
+            if (newParent == null) {
+                logger.error("Node ($nodeId)'s new parent is null.")
+                return@enqueue null
+            }
+            val newParentId = newParent.nodeIdAsLong()
+
+            val containmentLink = iNode.getContainmentLink()
+            if (containmentLink == null) {
+                logger.error("Node ($nodeId)'s containment link is null.")
+                return@enqueue null
+            }
 
             val sNode = nodeMap.getNode(nodeId)
-            if (sNode != null) {
+            sNode?.let {
+                // node moved to a new parent node
                 val newParentNode = nodeMap.getNode(newParentId)
-                if (newParentNode != null) {
-                    val containment = newParentNode.concept.containmentLinks.find {
-                        it.name == iNode.getContainmentLink()!!.getSimpleName()
+                newParentNode?.let {
+                    val oldParent = sNode.parent
+                    if (oldParent == newParentNode) {
+                        return@enqueue null
                     }
+
+                    val containmentLinkName = containmentLink.getSimpleName()
+                    val containment = newParentNode.concept.containmentLinks.find { it.name == containmentLinkName }
+                    if (containment == null) {
+                        logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have containment link called $containmentLinkName.")
+                        return@enqueue null
+                    }
+
                     // remove from old parent
-                    sNode.parent?.removeChild(sNode)
+                    oldParent?.removeChild(sNode)
                     sNode.model?.removeRootNode(sNode)
 
                     // add to new parent
-                    newParentNode.addChild(containment!!, sNode)
+                    newParentNode.addChild(containment, sNode)
+                    return@enqueue null
                 }
 
+                // node moved to a new parent model
                 val newParentModel = nodeMap.getModel(newParentId)
-                if (newParentModel != null) {
+                newParentModel?.let {
+                    val parentModel = sNode.model
+                    if (parentModel == newParentModel) {
+                        return@enqueue null
+                    }
+
                     // remove from old parent
-                    sNode.model?.removeRootNode(sNode)
+                    parentModel?.removeRootNode(sNode)
                     sNode.parent?.removeChild(sNode)
 
                     // add to new parent
                     newParentModel.addRootNode(sNode)
+                    return@enqueue null
                 }
-            } else {
-                val sModel = nodeMap.getModel(nodeId)
-                val newParentModule = nodeMap.getModule(newParentId)
-                if (sModel != null && newParentModule != null) {
-                    require(sModel is SModelBase) { "Model ${sModel.modelId} is not an SModelBase" }
 
-                    // remove from old parent
-                    val oldParentModule = sModel.module
-                    require(oldParentModule is SModuleBase) { "Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase" }
-                    oldParentModule.unregisterModel(sModel)
-                    sModel.module = null
-
-                    // add to new parent
-                    require(newParentModule is SModuleBase) { "New parent Module ${newParentModule.moduleId} is not an SModuleBase" }
-                    newParentModule.registerModel(sModel)
-                }
+                logger.error("Node ($nodeId) was neither moved to a new parent node nor to a new parent model, because Modelix Node $newParentId was not mapped to MPS yet.")
+                return@enqueue null
             }
+
+            val sModel = nodeMap.getModel(nodeId)
+            sModel?.let {
+                val newParentModule = nodeMap.getModule(newParentId)
+                if (newParentModule == null) {
+                    logger.error("Model ($nodeId) was not moved to a new parent module, because  Modelix Node $newParentId was not mapped to MPS yet.")
+                    return@enqueue null
+                }
+
+                val oldParentModule = sModel.module
+                if (oldParentModule == newParentModule) {
+                    return@enqueue null
+                }
+
+                // remove from old parent
+                require(oldParentModule is SModuleBase) { "Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase" }
+                require(sModel is SModelBase) { "Model ${sModel.modelId} is not an SModelBase" }
+                oldParentModule.unregisterModel(sModel)
+                sModel.module = null
+
+                // add to new parent
+                require(newParentModule is SModuleBase) { "New parent Module ${newParentModule.moduleId} is not an SModuleBase" }
+                newParentModule.registerModel(sModel)
+                return@enqueue null
+            }
+
+            val isMapped = nodeMap.isMappedToMps(newParentId)
+            // if isMapped == false, then we missed a possible new parent case
+            logger.error("Node ($nodeId) was not moved to a new parent, because Modelix Node $newParentId was not mapped to MPS yet (isMapped=$isMapped).")
+
+            null
         }
     }
 

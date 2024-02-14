@@ -98,7 +98,12 @@ class SNodeFactory(
         nodeMap.put(sNode, nodeId)
 
         // 3. set properties
-        setProperties(iNode, sNode)
+        syncQueue.enqueueBlocking(
+            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
+            SyncDirection.MODELIX_TO_MPS,
+        ) {
+            setProperties(iNode, sNode)
+        }
 
         // 4. set references
         prepareLinkReferences(iNode)
@@ -121,10 +126,7 @@ class SNodeFactory(
         target.concept.properties.forEach { sProperty ->
             val property = PropertyFromName(sProperty.name)
             val value = source.getPropertyValue(property)
-
-            syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
-                target.setProperty(sProperty, value)
-            }
+            target.setProperty(sProperty, value)
         }
     }
 

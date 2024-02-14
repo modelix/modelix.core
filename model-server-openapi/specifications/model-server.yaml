@@ -16,8 +16,6 @@ servers:
   - url: '/v2'
     description: model-server
 
-# TODO problem json
-
 tags:
   - name: IDs
   - name: repository management
@@ -36,7 +34,6 @@ tags:
       * What about access to KVs without repo context? Security issue? Removed for now
   - name: ModelQl access
   - name: WebSocket access
-  - name: TODO light-model-server API merge?
 
 paths:
 
@@ -53,6 +50,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ServerId"
+        default:
+          $ref: "#/components/responses/Problem"
   /client-id:
     post:
       operationId: generateClientId
@@ -66,6 +65,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClientId"
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories:
     get:
@@ -80,6 +81,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RepositoryList"
+        default:
+          $ref: "#/components/responses/Problem"
     post:
       operationId: initializeRepository
       summary: Creates a new repository
@@ -108,6 +111,12 @@ paths:
                 $ref: "#/components/schemas/Repository"
         "400":
           description: A repository of the same name already exists
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories/{repository}:
     parameters:
@@ -126,6 +135,8 @@ paths:
                 $ref: "#/components/schemas/Repository"
         "404":
           $ref: "#/components/responses/NoSuchRepository"
+        default:
+          $ref: "#/components/responses/Problem"
 
     delete:
       operationId: deleteRepository
@@ -136,7 +147,8 @@ paths:
           description: Repository was deleted
         "404":
           $ref: "#/components/responses/NoSuchRepository"
-
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories/{repository}/branches:
     parameters:
@@ -155,6 +167,8 @@ paths:
                 $ref: "#/components/schemas/BranchList"
         "404":
           $ref: "#/components/responses/NoSuchRepository"
+        default:
+          $ref: "#/components/responses/Problem"
 
     post:
       operationId: createBranch
@@ -175,8 +189,18 @@ paths:
                 $ref: "#/components/schemas/Branch"
         "404":
           description: "Repository not found or hash not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "400":
           description: "A branch with the given name already exists"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories/{repository}/branches/{branch}:
     parameters:
@@ -196,6 +220,12 @@ paths:
                 $ref: "#/components/schemas/Branch"
         "404":
           description: Repository or branch does not exist.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
     put:
       operationId: updateBranch
@@ -218,8 +248,18 @@ paths:
                 $ref: "#/components/schemas/Branch"
         "400":
           description: Branch name cannot be changed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
           description: Branch, repository, or hash not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
     delete:
       operationId: deleteBranch
@@ -231,6 +271,12 @@ paths:
           description: Branch deleted successfully
         "404":
           description: Repository or branch do not exist
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories/{repository}/branches/{branch}/delta:
     parameters:
@@ -253,8 +299,13 @@ paths:
           $ref: "#/components/responses/VersionDelta"
         "404":
           description: Repository, branch or `from` hash does not exist.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
-    # TODO PUT, PATCH or POST?
     put:
       operationId: upsertBranch
       summary: Creates or updates a branch with a delta from an existing state.
@@ -270,6 +321,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/VersionDelta'
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories/{repository}/branches/{branch}/hash:
     parameters:
@@ -293,6 +346,12 @@ paths:
           $ref: "#/components/responses/VersionDelta"
         "404":
           description: Repository, branch or `from` hash does not exist.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
   # TODO specify input and output formats
   /repositories/{repository}/branches/{branch}/query:
@@ -313,8 +372,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
-        "500":
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Problem'
 
   /repositories/{repository}/versions/{versionHash}/delta:
     parameters:
@@ -333,7 +392,13 @@ paths:
         "200":
           $ref: "#/components/responses/VersionDelta"
         "404":
-          $ref: '#/components/responses/404'
+          description: Repository or version hash does not exist.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
   # TODO specify input and output formats
   /repositories/{repository}/versions/{versionHash}/query:
@@ -355,8 +420,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
-        "500":
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Problem'
 
   # TODO: is there a good reason that the input format requires the client to provide the key if the key is always the
   # SHA256 sum of the value?
@@ -392,6 +457,8 @@ paths:
           description: Provided data is not valid
         "404":
           $ref: "#/components/responses/NoSuchRepository"
+        default:
+          $ref: "#/components/responses/Problem"
 
     post:
       operationId: queryRepositoryObjects
@@ -420,6 +487,8 @@ paths:
                 description: Values separated by newlines
         "404":
           $ref: "#/components/responses/NoSuchRepository"
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories/{repository}/objects/{key}:
     parameters:
@@ -438,7 +507,13 @@ paths:
                 type: string
                 example: my value
         "404":
-          $ref: '#/components/responses/404'
+          description: Repository or key not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
 
     put:
       tags:
@@ -457,8 +532,14 @@ paths:
           description: Value already existed.
         "400":
           description: Value and key do not match.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          $ref: '#/components/responses/404'
+          $ref: '#/components/responses/NoSuchRepository'
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories/{repository}/versions/{versionHash}/history/{oldestVersionHash}:
     get:
@@ -466,9 +547,6 @@ paths:
       tags:
         - TODO remove this?
       description: not implemented, it seems
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
       parameters:
         - name: repository
           in: "path"
@@ -485,6 +563,11 @@ paths:
           required: true
           schema:
             type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+        default:
+          $ref: "#/components/responses/Problem"
 
   # TODO what is this?
   /counter/{key}:
@@ -500,14 +583,10 @@ paths:
           schema:
             type: string
       responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: "#/components/responses/Problem"
 
   /getEmail:
     get:
@@ -532,6 +611,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: "#/components/responses/Problem"
 
   /getRecursively/{key}:
     get:
@@ -546,6 +627,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
+        default:
+          $ref: "#/components/responses/Problem"
 
   /poll/{key}:
     get:
@@ -565,20 +648,15 @@ paths:
           schema:
             type: string
       responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "404":
-          $ref: '#/components/responses/404'
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: "#/components/responses/Problem"
 
   /repositories/{repository}/branches/{branch}/listen:
     get:
       operationId: listenRepositoryBranch
+      summary: Listen for branch updates using WebSockets
       tags:
         - WebSocket access
       description: |-
@@ -643,6 +721,10 @@ components:
   responses:
     NoSuchRepository:
       description: No repository with the given name exists
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
 
     "VersionDelta":
       description: OK
@@ -691,33 +773,39 @@ components:
     "400":
       description: "Bad Request"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
+            $ref: "#/components/schemas/Problem"
     "401":
       description: "Unauthorized"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
+            $ref: "#/components/schemas/Problem"
     403:
       description: "Forbidden"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
+            $ref: "#/components/schemas/Problem"
     "404":
       description: "Not Found"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
+            $ref: "#/components/schemas/Problem"
     "500":
       description: "Internal Server Error"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
+            $ref: "#/components/schemas/Problem"
+    Problem:
+      description: "Some error occured"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
 
   parameters:
     RepositoryPath:
@@ -905,3 +993,49 @@ components:
           type: string
         value2:
           type: string
+
+    Problem:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: >
+            A URI reference that uniquely identifies the problem type only in the
+            context of the provided API. Opposed to the specification in RFC-9457,
+            it is neither recommended to be dereferenceable and point to a
+            human-readable documentation nor globally unique for the problem type.
+          default: 'about:blank'
+          example: '/some/uri-reference'
+        title:
+          type: string
+          description: >
+            A short summary of the problem type. Written in English and readable
+            for engineers, usually not suited for non technical stakeholders and
+            not localized.
+          example: some title for the error situation
+        status:
+          type: integer
+          format: int32
+          description: >
+            The HTTP status code generated by the origin server for this occurrence
+            of the problem.
+          minimum: 100
+          maximum: 600
+          exclusiveMaximum: true
+        detail:
+          type: string
+          description: >
+            A human readable explanation specific to this occurrence of the
+            problem that is helpful to locate the problem and give advice on how
+            to proceed. Written in English and readable for engineers, usually not
+            suited for non technical stakeholders and not localized.
+          example: some description for the error situation
+        instance:
+          type: string
+          format: uri-reference
+          description: >
+            A URI reference that identifies the specific occurrence of the problem,
+            e.g. by adding a fragment identifier or sub-path to the problem type.
+            May be used to locate the root of this problem in the source code.
+          example: '/some/uri-reference#specific-occurrence-context'

@@ -31,4 +31,14 @@ class BuiltinLanguagesTest {
         // Model.stereotype was accessed once directly.
         assertEquals(4, properties.size)
     }
+
+    @Test
+    fun allChildrenAreListed() {
+        val childLinks = BuiltinLanguages.MPSRepositoryConcepts.Model.getOwnChildLinks()
+
+        // This trivial assertion is relevant
+        // because previously, children were not listed at all in Model.getOwnChildLinks().
+        // They were only accessible by directly calling Model.modelImports for example.
+        assertEquals(3, childLinks.size)
+    }
 }

@@ -16,8 +16,6 @@
 
 package org.modelix.model.api
 
-import kotlin.reflect.KProperty
-
 /**
  * TODO if you add a new Concept to a language, do not forget to add it to the language's included concepts field.
  * Otherwise the concept will not be eagerly added to the Language, when registering the language in the ILanguageRegistry.
@@ -38,9 +36,18 @@ object BuiltinLanguages {
                 addConcept(this)
             }
 
-            val virtualPackage by property("ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626/1193676396447")
-            val smodelAttribute by childLink("ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626/5169995583184591170").multiple()
-                .optional().type { Attribute }
+            val virtualPackage = SimpleProperty(
+                "virtualPackage",
+                uid = "ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626/1193676396447",
+            ).also(this::addProperty)
+
+            val smodelAttribute = SimpleChildLink(
+                simpleName = "smodelAttribute",
+                isMultiple = true,
+                isOptional = true,
+                targetConcept = Attribute,
+                uid = "ceab5195-25ea-4f22-9b92-103b95ca8c0c/1133920641626/5169995583184591170",
+            ).also(this::addChildLink)
         }
 
         object Attribute : SimpleConcept(
@@ -63,7 +70,10 @@ object BuiltinLanguages {
 
         object INamedConcept : SimpleConcept(conceptName = "INamedConcept") {
             init { addConcept(this) }
-            val name by property("ceab5195-25ea-4f22-9b92-103b95ca8c0c/1169194658468/1169194664001")
+            val name = SimpleProperty(
+                "name",
+                uid = "ceab5195-25ea-4f22-9b92-103b95ca8c0c/1169194658468/1169194664001",
+            ).also(this::addProperty)
         }
     }
 
@@ -88,8 +98,15 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
-            val id by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/2615330535972958738")
-            val stereotype by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/3832696962605996173")
+            val id = SimpleProperty(
+                "id",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/2615330535972958738",
+            ).also(this::addProperty)
+
+            val stereotype = SimpleProperty(
+                "stereotype",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/3832696962605996173",
+            ).also(this::addProperty)
 
             val rootNodes = SimpleChildLink(
                 simpleName = "rootNodes",
@@ -97,21 +114,23 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = jetbrains_mps_lang_core.BaseConcept,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/474657388638618900",
-            )
+            ).also(this::addChildLink)
+
             val modelImports = SimpleChildLink(
                 simpleName = "modelImports",
                 isMultiple = true,
                 isOptional = true,
                 targetConcept = ModelReference,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/6402965165736931000",
-            )
+            ).also(this::addChildLink)
+
             val usedLanguages = SimpleChildLink(
                 simpleName = "usedLanguages",
                 isMultiple = true,
                 isOptional = true,
                 targetConcept = SingleLanguageDependency,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/5381564949800872334",
-            )
+            ).also(this::addChildLink)
         }
 
         object Module : SimpleConcept(
@@ -121,9 +140,20 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
-            val id by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/4225291329823310560")
-            val moduleVersion by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242370")
-            val compileInMPS by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242373")
+            val id = SimpleProperty(
+                "id",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/4225291329823310560",
+            ).also(this::addProperty)
+
+            val moduleVersion = SimpleProperty(
+                "moduleVersion",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242370",
+            ).also(this::addProperty)
+
+            val compileInMPS = SimpleProperty(
+                "compileInMPS",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242373",
+            ).also(this::addProperty)
 
             val models = SimpleChildLink(
                 simpleName = "models",
@@ -131,28 +161,31 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = Model,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898",
-            )
+            ).also(this::addChildLink)
+
             val facets = SimpleChildLink(
                 simpleName = "facets",
                 isMultiple = true,
                 isOptional = true,
                 targetConcept = ModuleFacet,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242412",
-            )
+            ).also(this::addChildLink)
+
             val dependencies = SimpleChildLink(
                 simpleName = "dependencies",
                 isMultiple = true,
                 isOptional = true,
                 targetConcept = ModuleDependency,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242425",
-            )
+            ).also(this::addChildLink)
+
             val languageDependencies = SimpleChildLink(
                 simpleName = "languageDependencies",
                 isMultiple = true,
                 isOptional = true,
                 targetConcept = LanguageDependency,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242439",
-            )
+            ).also(this::addChildLink)
         }
 
         object Solution : SimpleConcept(
@@ -192,7 +225,7 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903",
-            )
+            ).also(this::addChildLink)
 
             val projects = SimpleChildLink(
                 simpleName = "projects",
@@ -200,7 +233,7 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = Project,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/7064605579395546636",
-            )
+            ).also(this::addChildLink)
 
             val tempModules = SimpleChildLink(
                 simpleName = "tempModules",
@@ -208,7 +241,7 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/8226136427470548682",
-            )
+            ).also(this::addChildLink)
         }
 
         object Project : SimpleConcept(
@@ -224,7 +257,7 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = Module,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4008363636171860450",
-            )
+            ).also(this::addChildLink)
 
             val projectModules = SimpleChildLink(
                 simpleName = "projectModules",
@@ -232,7 +265,7 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = ProjectModule,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4201834143491306088",
-            )
+            ).also(this::addChildLink)
         }
 
         object ProjectModule : SimpleConcept(
@@ -242,7 +275,10 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
-            val virtualFolder by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/4201834143491306084/4201834143491306085")
+            val virtualFolder = SimpleProperty(
+                "virtualFolder",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4201834143491306084/4201834143491306085",
+            ).also(this::addProperty)
         }
 
         object ModuleReference : SimpleConcept(
@@ -283,8 +319,15 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
-            val uuid by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575314")
-            val name by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575315")
+            val uuid = SimpleProperty(
+                "uuid",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575314",
+            ).also(this::addProperty)
+
+            val name = SimpleProperty(
+                "name",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/8958347146611575311/8958347146611575315",
+            ).also(this::addProperty)
         }
 
         object SingleLanguageDependency : SimpleConcept(
@@ -294,7 +337,10 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
-            val version by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429/2206727074858242435")
+            val version = SimpleProperty(
+                "version",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429/2206727074858242435",
+            ).also(this::addProperty)
         }
 
         object DevkitDependency : SimpleConcept(
@@ -320,8 +366,15 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
-            val generated by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406/2206727074858242407")
-            val path by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406/2206727074858242409")
+            val generated = SimpleProperty(
+                "generated",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406/2206727074858242407",
+            ).also(this::addProperty)
+
+            val path = SimpleProperty(
+                "path",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242406/2206727074858242409",
+            ).also(this::addProperty)
         }
 
         object ModuleDependency : SimpleConcept(
@@ -331,12 +384,35 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
-            val reexport by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242416")
-            val uuid by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242418")
-            val name by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242421")
-            val explicit by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750565")
-            val version by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750570")
-            val scope by property("0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/8438396892798826745")
+            val reexport = SimpleProperty(
+                "reexport",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242416",
+            ).also(this::addProperty)
+
+            val uuid = SimpleProperty(
+                "uuid",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242418",
+            ).also(this::addProperty)
+
+            val name = SimpleProperty(
+                "name",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858242421",
+            ).also(this::addProperty)
+
+            val explicit = SimpleProperty(
+                "explicit",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750565",
+            ).also(this::addProperty)
+
+            val version = SimpleProperty(
+                "version",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/2206727074858750570",
+            ).also(this::addProperty)
+
+            val scope = SimpleProperty(
+                "scope",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242415/8438396892798826745",
+            ).also(this::addProperty)
         }
     }
 
@@ -358,7 +434,7 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = RepositoryInfo,
                 uid = "b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348863/7113393488488348866",
-            )
+            ).also(this::addChildLink)
         }
 
         object RepositoryInfo : SimpleConcept(
@@ -368,7 +444,10 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
-            val id by property("b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348864/7113393488488348870")
+            val id = SimpleProperty(
+                "id",
+                uid = "b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348864/7113393488488348870",
+            ).also(this::addProperty)
 
             val branches = SimpleChildLink(
                 simpleName = "branches",
@@ -376,7 +455,7 @@ object BuiltinLanguages {
                 isOptional = true,
                 targetConcept = BranchInfo,
                 uid = "b6980ebd-f01d-459d-a952-38740f6313b4/7113393488488348864/7113393488488348868",
-            )
+            ).also(this::addChildLink)
         }
 
         object BranchInfo : SimpleConcept(
@@ -393,47 +472,4 @@ object BuiltinLanguages {
         MPSRepositoryConcepts,
         ModelixRuntimelang,
     )
-}
-
-private fun SimpleConcept.property(uid: String) = object {
-    private lateinit var name: String
-    private lateinit var owner: SimpleConcept
-    private val instance: IProperty by lazy {
-        SimpleProperty(name, uid = uid).also { owner.addProperty(it) }
-    }
-
-    operator fun getValue(ownerConcept: SimpleConcept, kotlinProperty: KProperty<*>): IProperty {
-        this.owner = ownerConcept
-        this.name = kotlinProperty.name
-        return instance
-    }
-}
-
-private fun SimpleConcept.childLink(uid: String) = object {
-    private lateinit var name: String
-    private lateinit var owner: SimpleConcept
-    private var multiple: Boolean = true
-    private var optional: Boolean = true
-    private lateinit var targetConcept: () -> IConcept
-    private val instance: IChildLink by lazy {
-        SimpleChildLink(
-            simpleName = name,
-            uid = uid,
-            isMultiple = multiple,
-            isOptional = optional,
-            targetConcept = targetConcept(),
-        ).also { owner.addChildLink(it) }
-    }
-
-    operator fun getValue(ownerConcept: SimpleConcept, kotlinProperty: KProperty<*>): IChildLink {
-        this.owner = ownerConcept
-        this.name = kotlinProperty.name
-        return instance
-    }
-
-    fun mandatory() = this.also { this.optional = false }
-    fun optional() = this.also { this.optional = true }
-    fun single() = this.also { this.multiple = false }
-    fun multiple() = this.also { this.multiple = true }
-    fun type(targetConcept: () -> IConcept) = also { this.targetConcept = targetConcept }
 }

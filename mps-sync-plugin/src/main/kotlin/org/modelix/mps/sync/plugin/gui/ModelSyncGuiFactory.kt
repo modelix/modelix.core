@@ -41,6 +41,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.plugin.ModelSyncService
+import org.modelix.mps.sync.plugin.configuration.CloudResourcesConfigurationComponent
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
 import java.awt.FlowLayout
@@ -140,6 +141,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
             val connectProjectButton = JButton("Connect")
             connectProjectButton.addActionListener { _: ActionEvent ->
+                CloudResourcesConfigurationComponent.State.INSTANCE.addSomeData()
+
                 modelSyncService.connectModelServer(
                     serverURL.text,
                     jwt.text,

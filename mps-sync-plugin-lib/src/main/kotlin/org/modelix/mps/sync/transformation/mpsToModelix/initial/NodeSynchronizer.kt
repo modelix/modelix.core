@@ -31,6 +31,7 @@ import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -46,14 +47,18 @@ class NodeSynchronizer(
 ) {
 
     fun addNodeAsync(node: SNode) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { addNodeSync(node) }
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.NONE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) { addNodeSync(node) }
     }
 
     fun addNodeSync(node: SNode) {
         syncQueue.enqueueBlocking(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
-            true,
+            InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             val parentNodeId = if (node.parent != null) {
                 nodeMap[node.parent]!!
@@ -129,7 +134,11 @@ class NodeSynchronizer(
     }
 
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX, true) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val nodeId = sourceNodeIdProducer.invoke(nodeMap)
             val cloudNode = branch.getNode(nodeId)
             cloudNode.setPropertyValue(property, newValue)
@@ -137,7 +146,11 @@ class NodeSynchronizer(
     }
 
     fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX, true) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
             val nodeId = childNodeIdProducer.invoke(nodeMap)
 
@@ -154,7 +167,11 @@ class NodeSynchronizer(
         sourceNodeIdProducer: (MpsToModelixMap) -> Long,
         targetNodeIdProducer: (MpsToModelixMap) -> Long?,
     ) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX, true) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val sourceNodeId = sourceNodeIdProducer.invoke(nodeMap)
             val targetNodeId = targetNodeIdProducer.invoke(nodeMap)
             val reference = MPSReferenceLink(mpsReferenceLink)

@@ -37,26 +37,26 @@ object SyncQueue {
     fun enqueue(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
-        checkExecutionThread: Boolean = false,
+        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
-        enqueue(task, checkExecutionThread)
+        enqueue(task, inspectionMode)
         return ContinuableSyncTask(task)
     }
 
     fun enqueueBlocking(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
-        checkExecutionThread: Boolean = false,
+        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
-        enqueueBlocking(task, checkExecutionThread)
+        enqueueBlocking(task, inspectionMode)
         return ContinuableSyncTask(task)
     }
 
-    fun enqueue(task: SyncTask, checkExecutionThread: Boolean) {
+    fun enqueue(task: SyncTask, inspectionMode: InspectionMode) {
         /**
          * If we have to check the execution thread, then do not schedule Task if it is initiated on a Thread that is
          * running a synchronization and the sync direction is the opposite of what is running on the thread already.
@@ -68,7 +68,7 @@ object SyncQueue {
          * there is a very little chance of missing an intended change on other side. With other words: there is very
          * little chance that it makes sense that on the same thread two SyncTasks occur.
          */
-        if (checkExecutionThread) {
+        if (inspectionMode == InspectionMode.CHECK_EXECUTION_THREAD) {
             val taskSyncDirection = task.syncDirection
             val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
 
@@ -85,8 +85,8 @@ object SyncQueue {
         }
     }
 
-    private fun enqueueBlocking(task: SyncTask, checkExecutionThread: Boolean) {
-        enqueue(task, checkExecutionThread)
+    private fun enqueueBlocking(task: SyncTask, inspectionMode: InspectionMode) {
+        enqueue(task, inspectionMode)
         task.result.get()
     }
 

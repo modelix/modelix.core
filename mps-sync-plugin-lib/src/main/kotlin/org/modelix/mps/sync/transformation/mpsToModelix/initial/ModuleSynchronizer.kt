@@ -32,6 +32,7 @@ import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -74,7 +75,11 @@ class ModuleSynchronizer(
     }
 
     fun addDependencyAsync(module: SModule, dependency: SDependency) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.NONE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             addDependencySync(module, dependency)
         }
     }
@@ -83,6 +88,7 @@ class ModuleSynchronizer(
         syncQueue.enqueueBlocking(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies

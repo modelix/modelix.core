@@ -30,6 +30,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
+import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -65,7 +66,11 @@ class ModelSynchronizer(
     }
 
     private fun addModelAsync(model: SModelBase): ContinuableSyncTask =
-        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.NONE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             addModelSync(model).getResult()
         }
 
@@ -73,7 +78,7 @@ class ModelSynchronizer(
         syncQueue.enqueueBlocking(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
-            true,
+            InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             val moduleModelixId = nodeMap[model.module]!!
             val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
@@ -115,13 +120,21 @@ class ModelSynchronizer(
     }
 
     fun addModelImportAsync(model: SModel, importedModelReference: SModelReference) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.NONE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             addModelImportSync(model, importedModelReference)
         }
     }
 
     private fun addModelImportSync(model: SModel, importedModelReference: SModelReference) {
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX, true) {
+        syncQueue.enqueueBlocking(
+            linkedSetOf(SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val targetModel = importedModelReference.resolve(model.repository)
             if (resolvableModelImports != null) {
                 resolvableModelImports.add(CloudResolvableModelImport(model, targetModel))
@@ -152,7 +165,11 @@ class ModelSynchronizer(
     }
 
     fun addLanguageDependencyAsync(model: SModel, language: SLanguage) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.NONE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             addLanguageDependencySync(model, language)
         }
     }
@@ -161,7 +178,7 @@ class ModelSynchronizer(
         syncQueue.enqueueBlocking(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
-            true,
+            InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             val modelixId = nodeMap[model]!!
 
@@ -197,7 +214,11 @@ class ModelSynchronizer(
     }
 
     fun addDevKitDependencyAsync(model: SModel, devKit: SModuleReference) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.NONE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             addDevKitDependencySync(model, devKit)
         }
     }
@@ -206,7 +227,7 @@ class ModelSynchronizer(
         syncQueue.enqueueBlocking(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
-            true,
+            InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             val modelixId = nodeMap[model]!!
 

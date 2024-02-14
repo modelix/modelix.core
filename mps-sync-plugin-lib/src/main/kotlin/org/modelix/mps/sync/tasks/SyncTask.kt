@@ -36,14 +36,14 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
     fun continueWith(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
-        checkExecutionThread: Boolean = false,
+        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
         val result = SyncQueue.enqueue(linkedSetOf(SyncLock.NONE), syncDirection) {
             // blocking wait for the result of the previous task
             val previousResult = getResult()
             val task = SyncTask(requiredLocks, syncDirection, action, previousResult)
-            SyncQueue.enqueue(task, checkExecutionThread)
+            SyncQueue.enqueue(task, inspectionMode)
 
             task.result.get()
         }

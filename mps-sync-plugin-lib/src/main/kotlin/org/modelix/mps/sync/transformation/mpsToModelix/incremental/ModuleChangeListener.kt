@@ -29,6 +29,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
+import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -70,7 +71,11 @@ class ModuleChangeListener(
     }
 
     override fun moduleChanged(module: SModule) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX, true) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val iModuleNodeId = nodeMap[module]!!
             val iModule = branch.getNode(iModuleNodeId)
 

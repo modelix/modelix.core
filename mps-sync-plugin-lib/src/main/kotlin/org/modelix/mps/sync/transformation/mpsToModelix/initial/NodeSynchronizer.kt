@@ -37,13 +37,14 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
+import java.util.concurrent.CopyOnWriteArrayList
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeSynchronizer(
     private val branch: IBranch,
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
-    private val resolvableReferences: MutableList<CloudResolvableReference>? = null,
+    private val resolvableReferences: CopyOnWriteArrayList<CloudResolvableReference>? = null,
 ) {
 
     fun addNodeAsync(node: SNode) {

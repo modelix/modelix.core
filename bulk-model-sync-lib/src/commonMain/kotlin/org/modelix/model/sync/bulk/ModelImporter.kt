@@ -23,6 +23,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.getDescendants
+import org.modelix.model.api.isChildRoleOrdered
 import org.modelix.model.api.remove
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
@@ -118,15 +119,15 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
         }
     }
 
-    private fun syncChildren(node: INode, data: NodeData, progressReporter: ProgressReporter) {
-        val allRoles = (data.children.map { it.role } + node.allChildren.map { it.roleInParent }).distinct()
+    private fun syncChildren(existingParent: INode, expectedParent: NodeData, progressReporter: ProgressReporter) {
+        val allRoles = (expectedParent.children.map { it.role } + existingParent.allChildren.map { it.roleInParent }).distinct()
         for (role in allRoles) {
-            val expectedNodes = data.children.filter { it.role == role }
-            val existingNodes = node.getChildren(role).toList()
+            val expectedNodes = expectedParent.children.filter { it.role == role }
+            val existingNodes = existingParent.getChildren(role).toList()
 
             // optimization that uses the bulk operation .addNewChildren
             if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {
-                node.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } }).zip(expectedNodes).forEach { (newChild, expected) ->
+                existingParent.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } }).zip(expectedNodes).forEach { (newChild, expected) ->
                     val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
                     newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
                     originalIdToExisting[expectedId] = newChild
@@ -142,19 +143,41 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
                 continue
             }
 
-            expectedNodes.forEachIndexed { index, expected ->
-                val nodeAtIndex = node.getChildren(role).toList().getOrNull(index)
+            val isOrdered = existingParent.isChildRoleOrdered(role)
+
+            expectedNodes.forEachIndexed { indexInImport, expected ->
+                val existingChildren = existingParent.getChildren(role).toList()
                 val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
+                // newIndex is the index on which to import the expected child.
+                // It might be -1 if the child does not exist and should be added at the end.
+                val newIndex = if (isOrdered) {
+                    indexInImport
+                } else {
+                    // The `existingChildren` are only searched once for the expected element before changing.
+                    // Therefore, indexing existing children will not be more efficient than iterating once.
+                    // (For the moment, this is fine because as we expect unordered children to be the exception,
+                    // Reusable indexing would be possible if we switch from
+                    // a depth-first import to a breadth-first import.)
+                    existingChildren
+                        .indexOfFirst { existingChild -> existingChild.originalId() == expected.originalId() }
+                }
+                // existingChildren.getOrNull handles `-1` as needed by returning `null`.
+                val nodeAtIndex = existingChildren.getOrNull(newIndex)
                 val expectedConcept = expected.concept?.let { s -> ConceptReference(s) }
                 val childNode = if (nodeAtIndex?.originalId() != expectedId) {
                     val existingNode = originalIdToExisting[expectedId]
                     if (existingNode == null) {
-                        val newChild = node.addNewChild(role, index, expectedConcept)
+                        val newChild = existingParent.addNewChild(role, newIndex, expectedConcept)
                         newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
                         originalIdToExisting[expectedId] = newChild
                         newChild
                     } else {
-                        node.moveChild(role, index, existingNode)
+                        // The existing child node is not only moved to a new index,
+                        // it is potentially moved to a new parent and role.
+                        existingParent.moveChild(role, newIndex, existingNode)
+                        // If the old parent and old role synchronized before the move operation,
+                        // the existing child node would have been marked as to be deleted.
+                        // Now that it is used, it should not be deleted.
                         nodesToRemove.remove(existingNode)
                         existingNode
                     }
@@ -166,7 +189,10 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
                 syncNode(childNode, expected, progressReporter)
             }
 
-            nodesToRemove += node.getChildren(role).drop(expectedNodes.size)
+            val expectedNodesIds = expectedNodes.map(NodeData::originalId).toSet()
+            // Do not use existingNodes, but call node.getChildren(role) because
+            // the recursive synchronization in the meantime already removed some nodes from node.getChildren(role).
+            nodesToRemove += existingParent.getChildren(role).filterNot { existingNode -> expectedNodesIds.contains(existingNode.originalId()) }
         }
     }
 

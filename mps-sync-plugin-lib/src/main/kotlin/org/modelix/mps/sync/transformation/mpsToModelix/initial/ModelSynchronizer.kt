@@ -82,32 +82,36 @@ class ModelSynchronizer(
             nodeMap.put(model, cloudModel.nodeIdAsLong())
 
             synchronizeModelProperties(cloudModel, model)
-
+        }.continueWith(
+            linkedSetOf(SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             // synchronize root nodes
             model.rootNodes.waitForCompletionOfEachTask { nodeSynchronizer.addNode(it) }
         }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            linkedSetOf(SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize model imports
             model.modelImports.waitForCompletionOfEachTask { addModelImport(model, it) }
         }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            linkedSetOf(SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize language dependencies
             model.importedLanguageIds().waitForCompletionOfEachTask { addLanguageDependency(model, it) }
         }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            linkedSetOf(SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize devKits
             model.importedDevkits().waitForCompletionOfEachTask { addDevKitDependency(model, it) }
         }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            linkedSetOf(SyncLock.NONE),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {

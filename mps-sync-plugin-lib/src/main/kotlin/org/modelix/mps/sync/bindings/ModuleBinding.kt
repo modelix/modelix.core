@@ -49,8 +49,7 @@ class ModuleBinding(
     private var isActivated = false
 
     override fun activate(callback: Runnable?) {
-        check(!isDisposed) { "${name()} is disposed." }
-        if (isActivated) {
+        if (isDisposed || isActivated) {
             return
         }
 

@@ -61,15 +61,16 @@ class ModuleSynchronizer(
             nodeMap.put(module, cloudModule.nodeIdAsLong())
 
             synchronizeModuleProperties(cloudModule, module)
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // synchronize dependencies
             module.declaredDependencies.waitForCompletionOfEachTask { addDependency(module, it) }
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // synchronize models
             module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
         }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // resolve cross-model references
             modelSynchronizer.resolveCrossModelReferences()
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             // register binding
             val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
             bindingsRegistry.addModuleBinding(binding)

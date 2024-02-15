@@ -214,8 +214,10 @@ class RepositoriesManager(val client: LocalModelClient) {
     }
 
     fun getVersionHash(branch: BranchReference): String? {
-        return store[branchKey(branch)]
-            ?: store[legacyBranchKey(branch)]?.also { store.put(branchKey(branch), it, true) }
+        return store.runTransaction {
+            store[branchKey(branch)]
+                ?: store[legacyBranchKey(branch)]?.also { store.put(branchKey(branch), it, true) }
+        }
     }
 
     private fun putVersionHash(branch: BranchReference, hash: String?) {

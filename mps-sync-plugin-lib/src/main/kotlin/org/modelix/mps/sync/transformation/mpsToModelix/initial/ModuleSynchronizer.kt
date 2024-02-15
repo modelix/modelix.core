@@ -38,7 +38,7 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
-import org.modelix.mps.sync.util.waitForCompletionOnEach
+import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleSynchronizer(
@@ -62,10 +62,10 @@ class ModuleSynchronizer(
 
             synchronizeModuleProperties(cloudModule, module)
             // synchronize dependencies
-            module.declaredDependencies.waitForCompletionOnEach { addDependency(module, it) }
+            module.declaredDependencies.waitForCompletionOfEachTask { addDependency(module, it) }
         }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // synchronize models
-            module.models.waitForCompletionOnEach { modelSynchronizer.addModel(it as SModelBase) }
+            module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
         }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // resolve cross-model references
             modelSynchronizer.resolveCrossModelReferences()

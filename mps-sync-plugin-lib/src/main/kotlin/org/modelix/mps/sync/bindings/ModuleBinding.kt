@@ -28,7 +28,8 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
-import java.util.concurrent.CountDownLatch
+import org.modelix.mps.sync.util.waitForCompletionOfEach
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleBinding(
@@ -78,15 +79,17 @@ class ModuleBinding(
 
         syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             val modelBindings = bindingsRegistry.getModelBindings(module)
-            val barrier = CountDownLatch(modelBindings?.size ?: 0)
 
             // deactivate child models' bindings
-            modelBindings?.forEach {
-                it.deactivate(removeFromServer) { barrier.countDown() }
+            modelBindings?.waitForCompletionOfEach {
+                val future = CompletableFuture<Unit>()
+                try {
+                    it.deactivate(removeFromServer) { future.complete(null) }
+                } catch (t: Throwable) {
+                    future.completeExceptionally(t)
+                }
+                future
             }
-
-            // wait for all model bindings to be deactivated
-            barrier.await()
 
             // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
             bindingsRegistry.removeModuleBinding(this)

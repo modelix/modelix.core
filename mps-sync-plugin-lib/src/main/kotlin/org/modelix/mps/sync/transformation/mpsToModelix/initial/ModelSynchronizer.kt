@@ -36,7 +36,7 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
-import org.modelix.mps.sync.util.waitForCompletionOnEach
+import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CopyOnWriteArrayList
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -84,28 +84,28 @@ class ModelSynchronizer(
             synchronizeModelProperties(cloudModel, model)
 
             // synchronize root nodes
-            model.rootNodes.waitForCompletionOnEach { nodeSynchronizer.addNode(it) }
+            model.rootNodes.waitForCompletionOfEachTask { nodeSynchronizer.addNode(it) }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize model imports
-            model.modelImports.waitForCompletionOnEach { addModelImport(model, it) }
+            model.modelImports.waitForCompletionOfEachTask { addModelImport(model, it) }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize language dependencies
-            model.importedLanguageIds().waitForCompletionOnEach { addLanguageDependency(model, it) }
+            model.importedLanguageIds().waitForCompletionOfEachTask { addLanguageDependency(model, it) }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize devKits
-            model.importedDevkits().waitForCompletionOnEach { addDevKitDependency(model, it) }
+            model.importedDevkits().waitForCompletionOfEachTask { addDevKitDependency(model, it) }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,

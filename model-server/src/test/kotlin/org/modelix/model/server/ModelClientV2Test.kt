@@ -28,10 +28,12 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.IKVValue
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.modelql.core.count
@@ -183,5 +185,32 @@ class ModelClientV2Test {
 
         assertFalse(success)
         assertFalse(containsRepository)
+    }
+
+    @Test
+    fun `pulling existing versions pulls all referenced objects`() = runTest {
+        // Arrange
+        val url = "http://localhost/v2"
+        val modelClientForArrange = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val modelClientForAssert = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val repositoryId = RepositoryId("repo1")
+        val branchId = repositoryId.getBranchReference("my-branch")
+        modelClientForArrange.runWrite(branchId) { root ->
+            root.addNewChild("aChild", -1, null as IConceptReference?)
+        }
+
+        // Act
+        val versionPulled = modelClientForAssert.pullIfExists(branchId)!! as CLVersion
+
+        // Assert
+        fun checkAllReferencedEntriesExistInStore(referencingEntry: IKVValue) {
+            for (entryReference in referencingEntry.getReferencedEntries()) {
+                // Check that the store also provides each referenced KVEntry.
+                // `getValue` would fail if this is not the case.
+                val referencedEntry = entryReference.getValue(versionPulled.store)
+                checkAllReferencedEntriesExistInStore(referencedEntry)
+            }
+        }
+        checkAllReferencedEntriesExistInStore(versionPulled.data!!)
     }
 }

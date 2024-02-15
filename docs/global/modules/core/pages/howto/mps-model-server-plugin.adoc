@@ -42,6 +42,5 @@ You can check the health status over at http://127.0.0.1:48305/health[^].
 If you want to find out how connect a client and send queries to the plugin, have a look at the usage docs for the
 
 * xref:howto/modelql.adoc[ModelQL],
-* xref:howto/usage-light-model-client.adoc[light-model-client],
-* xref:howto/usage-model-client-v2.adoc[model-client v2], or
+* xref:howto/usage-light-model-client.adoc[light-model-client], or
 * the component reference for the xref:core:reference/component-light-model-client.adoc[light-client].

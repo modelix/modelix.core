@@ -1,5 +1,5 @@
 = How-To Run the Light `model-server` in MPS as a Plugin
-:navtitle: mps-model-server-plugin
+:navtitle: `mps-model-server-plugin`
 
 
 You can run a *light version* of the `model-server` directly in MPS via the dedicated *MPS as Modelix Model Server Plugin*, which is published over at the https://plugins.jetbrains.com/plugin/22834-mps-as-modelix-model-server[JetBrains Marketplace^].
@@ -39,4 +39,9 @@ starting modelix server
 The `model-server` will run by default on port `48305`.
 You can check the health status over at http://127.0.0.1:48305/health[^].
 
-If you want to find out how connect a client and send queries to the plugin, have a look at the xref:howto/modelql.adoc[ModelQL documentation] or the xref:core:reference/component-mps-model-server-plugin.adoc[component reference].
+If you want to find out how connect a client and send queries to the plugin, have a look at the usage docs for the
+
+* xref:howto/modelql.adoc[ModelQL],
+* xref:howto/usage-light-model-client.adoc[light-model-client],
+* xref:howto/usage-model-client-v2.adoc[model-client v2], or
+* the component reference for the xref:core:reference/component-light-model-client.adoc[light-client].

@@ -47,7 +47,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.api.public.Paths
 import org.modelix.authorization.getUserName
-import org.modelix.model.IncrementalInMemoryModel
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreePointer
@@ -266,25 +265,22 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             TODO()
         }
 
-        val inMemoryModel = IncrementalInMemoryModel()
-        post<Paths.postRepositoryBranchQuery> {
-            fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
-
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
-            val branchRef = branchRef()
+        post<Paths.postRepositoryBranchQuery> { parameters ->
+            val branchRef = RepositoryId(parameters.repository).getBranchReference(parameters.branch)
             val version = repositoriesManager.getVersion(branchRef)
             LOG.trace("Running query on {} @ {}", branchRef, version)
             val initialTree = version!!.getTree()
-            val branch = OTBranch(PBranch(initialTree, repositoriesManager.client.idGenerator), repositoriesManager.client.idGenerator, repositoriesManager.client.storeCache)
+            val branch = OTBranch(
+                PBranch(initialTree, repositoriesManager.client.idGenerator),
+                repositoriesManager.client.idGenerator,
+                repositoriesManager.client.storeCache,
+            )
 
             ModelQLServer.handleCall(call, { writeAccess ->
                 if (writeAccess) {
                     branch.getRootNode() to branch.getArea()
                 } else {
-                    val model = inMemoryModel.getModel(initialTree)
+                    val model = repositoriesManager.inMemoryModels.getModel(initialTree)
                     model.getNode(ITree.ROOT_ID) to model.getArea()
                 }
             }, {

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.IKeyValueStore
+import org.modelix.model.InMemoryModels
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IReadTransaction
@@ -51,6 +52,7 @@ class RepositoriesManager(val client: LocalModelClient) {
     private val store: IStoreClient get() = client.store
     private val kvStore: IKeyValueStore get() = client.asyncStore
     private val objectStore: IDeserializingKeyValueStore get() = client.storeCache
+    val inMemoryModels = InMemoryModels()
 
     fun generateClientId(repositoryId: RepositoryId): Long {
         return client.store.generateId("$KEY_PREFIX:${repositoryId.id}:clientId")

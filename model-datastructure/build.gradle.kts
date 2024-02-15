@@ -55,6 +55,7 @@ kotlin {
 //                implementation("org.json:json:20230618")
                 implementation(libs.trove4j)
                 implementation(libs.apache.commons.collections)
+                implementation(libs.kotlin.coroutines.core)
 //
 //                implementation("com.google.oauth-client:google-oauth-client:1.34.1")
 //                implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")

@@ -18,6 +18,10 @@ package org.modelix.model
 
 import gnu.trove.map.TLongObjectMap
 import gnu.trove.map.hash.TLongObjectHashMap
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
@@ -44,6 +48,42 @@ import kotlin.time.DurationUnit
 
 private val LOG = mu.KotlinLogging.logger { }
 
+class InMemoryModelLoader(val model: IncrementalInMemoryModel) {
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private var modelLoadingJob: Job? = null
+
+    /**
+     * Should be called repeatedly by a readiness probe until it returns true.
+     *
+     * @return true if the model is done loading
+     */
+    @Synchronized
+    fun loadModelAsync(tree: CLTree): Boolean {
+        if (model.getLoadedModel()?.loadedMapRef?.getHash() == tree.nodesMap!!.hash) return true
+        if (modelLoadingJob?.isActive != true) {
+            modelLoadingJob = coroutineScope.launch {
+                try {
+                    model.getModel(tree)
+                } catch (ex: Throwable) {
+                    LOG.error(ex) { "Failed loading model ${tree.hash}" }
+                }
+            }
+        }
+        return false
+    }
+}
+
+class InMemoryModels {
+    private val models = HashMap<String, InMemoryModelLoader>()
+
+    @Synchronized
+    fun getModel(id: String) = models.getOrPut(id) { InMemoryModelLoader(IncrementalInMemoryModel()) }
+
+    fun getModel(tree: CLTree) = getModel(tree.getId()).model.getModel(tree)
+
+    fun loadModelAsync(tree: CLTree) = getModel(tree.getId()).loadModelAsync(tree)
+}
+
 class IncrementalInMemoryModel {
     private var lastModel: InMemoryModel? = null
 
@@ -58,6 +98,8 @@ class IncrementalInMemoryModel {
         lastModel = newModel
         return newModel
     }
+
+    fun getLoadedModel() = lastModel
 }
 
 class InMemoryModel private constructor(

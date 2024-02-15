@@ -47,17 +47,9 @@ class NodeSynchronizer(
     private val resolvableReferences: CopyOnWriteArrayList<CloudResolvableReference>? = null,
 ) {
 
-    fun addNodeAsync(node: SNode) {
+    fun addNode(node: SNode) =
         syncQueue.enqueue(
             linkedSetOf(SyncLock.NONE),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) { addNodeSync(node) }
-    }
-
-    fun addNodeSync(node: SNode) {
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -83,7 +75,6 @@ class NodeSynchronizer(
 
             synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
         }
-    }
 
     private fun synchronizeNodeToCloud(
         mpsConcept: SConcept,

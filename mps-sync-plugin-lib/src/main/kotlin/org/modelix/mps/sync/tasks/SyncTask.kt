@@ -41,7 +41,7 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
     ): ContinuableSyncTask {
         val result = SyncQueue.enqueue(linkedSetOf(SyncLock.NONE), syncDirection) {
             // blocking wait for the result of the previous task
-            val previousResult = getResult()
+            val previousResult = waitForResult()
             val task = SyncTask(requiredLocks, syncDirection, action, previousResult)
             SyncQueue.enqueue(task, inspectionMode)
 
@@ -51,7 +51,9 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
         return result
     }
 
-    fun getResult() = previousTask.result.get()
+    fun getResult() = previousTask.result
+
+    fun waitForResult() = getResult().get()
 }
 
 typealias SyncTaskAction = (Any?) -> Any?

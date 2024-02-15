@@ -37,7 +37,7 @@ class NodeChangeListener(
 
     private val synchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
 
-    override fun nodeAdded(event: SNodeAddEvent) = synchronizer.addNodeAsync(event.child)
+    override fun nodeAdded(event: SNodeAddEvent) = synchronizer.addNode(event.child)
 
     override fun nodeRemoved(event: SNodeRemoveEvent) = synchronizer.removeNode(
         parentNodeIdProducer = {

@@ -36,6 +36,7 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.waitForCompletion
 import java.util.concurrent.CopyOnWriteArrayList
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -72,7 +73,7 @@ class ModelSynchronizer(
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
-            addModelSync(model).getResult()
+            addModelSync(model).waitForResult()
         }
 
     fun addModelSync(model: SModelBase): ContinuableSyncTask =
@@ -90,19 +91,38 @@ class ModelSynchronizer(
             nodeMap.put(model, cloudModel.nodeIdAsLong())
 
             synchronizeModelProperties(cloudModel, model)
-            // synchronize root nodes
-            model.rootNodes.forEach { nodeSynchronizer.addNodeSync(it) }
-            // synchronize model imports
-            model.modelImports.forEach { addModelImportSync(model, it) }
-            // synchronize language dependencies
-            model.importedLanguageIds().forEach { addLanguageDependencySync(model, it) }
-            // synchronize devKits
-            model.importedDevkits().forEach { addDevKitDependencySync(model, it) }
 
+            // synchronize root nodes
+            model.rootNodes.waitForCompletion { nodeSynchronizer.addNode(it) }
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            // synchronize model imports
+            model.modelImports.waitForCompletion { addModelImport(model, it) }
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            // synchronize language dependencies
+            model.importedLanguageIds().waitForCompletion { addLanguageDependency(model, it) }
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            // synchronize devKits
+            model.importedDevkits().waitForCompletion { addDevKitDependency(model, it) }
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             // register binding
             val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
             bindingsRegistry.addModelBinding(binding)
-
             binding
         }
 
@@ -120,19 +140,9 @@ class ModelSynchronizer(
         }
     }
 
-    fun addModelImportAsync(model: SModel, importedModelReference: SModelReference) {
+    fun addModelImport(model: SModel, importedModelReference: SModelReference) =
         syncQueue.enqueue(
             linkedSetOf(SyncLock.NONE),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
-            addModelImportSync(model, importedModelReference)
-        }
-    }
-
-    private fun addModelImportSync(model: SModel, importedModelReference: SModelReference) {
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -143,7 +153,6 @@ class ModelSynchronizer(
                 addModelImportToCloud(model, targetModel)
             }
         }
-    }
 
     private fun addModelImportToCloud(source: SModel, targetModel: SModel) {
         val modelixId = nodeMap[source]!!
@@ -165,19 +174,9 @@ class ModelSynchronizer(
         )
     }
 
-    fun addLanguageDependencyAsync(model: SModel, language: SLanguage) {
+    fun addLanguageDependency(model: SModel, language: SLanguage) =
         syncQueue.enqueue(
             linkedSetOf(SyncLock.NONE),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
-            addLanguageDependencySync(model, language)
-        }
-    }
-
-    private fun addLanguageDependencySync(model: SModel, language: SLanguage) {
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -212,21 +211,10 @@ class ModelSynchronizer(
                 model.module.getUsedLanguageVersion(language).toString(),
             )
         }
-    }
 
-    fun addDevKitDependencyAsync(model: SModel, devKit: SModuleReference) {
+    fun addDevKitDependency(model: SModel, devKit: SModuleReference) =
         syncQueue.enqueue(
             linkedSetOf(SyncLock.NONE),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
-            addDevKitDependencySync(model, devKit)
-        }
-    }
-
-    private fun addDevKitDependencySync(model: SModel, devKit: SModuleReference) {
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -254,7 +242,6 @@ class ModelSynchronizer(
                 devKitModule?.moduleId.toString(),
             )
         }
-    }
 
     private fun resolveModelImportsSync() {
         syncQueue.enqueueBlocking(

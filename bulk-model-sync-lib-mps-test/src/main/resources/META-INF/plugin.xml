@@ -1,0 +1,7 @@
+<idea-plugin require-restart="false">
+    <!-- We are not building an actual plugin.
+        We use the gradle-intellij-plugin run tests with MPS.
+     See build.gradle for details. -->
+    <id>org.modelix.model.sync.bulk.lib.test</id>
+    <vendor email="modelix@itemis.de" url="https://modelix.org/">itemis AG</vendor>
+</idea-plugin>

@@ -30,6 +30,16 @@ interface IChildLink : ILink {
     companion object {
         fun fromName(name: String): IChildLink = ChildLinkFromName(name)
     }
+
+    /**
+     * Whether children with this role are returned in a meaningful order and whether they are allowed to be reordered.
+     *
+     * Children returned for an unordered role might be returned in a different order in subsequent request.
+     * If a child role is not ordered, implementations of [[INode.moveChild]] are allowed to fail
+     * when instructed to move a node in between existing nodes.
+     */
+    val isOrdered
+        get() = true
 }
 
 data class ChildLinkFromName(override val name: String) : LinkFromName(), IChildLink {

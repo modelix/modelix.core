@@ -38,6 +38,7 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.waitForCompletion
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleSynchronizer(
@@ -61,12 +62,14 @@ class ModuleSynchronizer(
 
             synchronizeModuleProperties(cloudModule, module)
             // synchronize dependencies
-            module.declaredDependencies.forEach { addDependencySync(module, it) }
+            module.declaredDependencies.waitForCompletion { addDependency(module, it) }
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // synchronize models
-            module.models.forEach { modelSynchronizer.addModelSync(it as SModelBase) }
+            module.models.waitForCompletion { modelSynchronizer.addModel(it as SModelBase) }
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // resolve cross-model references
             modelSynchronizer.resolveCrossModelReferences()
-
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // register binding
             val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
             bindingsRegistry.addModuleBinding(binding)
@@ -74,19 +77,9 @@ class ModuleSynchronizer(
         }
     }
 
-    fun addDependencyAsync(module: SModule, dependency: SDependency) {
+    fun addDependency(module: SModule, dependency: SDependency) =
         syncQueue.enqueue(
             linkedSetOf(SyncLock.NONE),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
-            addDependencySync(module, dependency)
-        }
-    }
-
-    private fun addDependencySync(module: SModule, dependency: SDependency) {
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -141,7 +134,6 @@ class ModuleSynchronizer(
                 dependency.scope.toString(),
             )
         }
-    }
 
     private fun synchronizeModuleProperties(cloudModule: INode, module: SModule) {
         cloudModule.setPropertyValue(

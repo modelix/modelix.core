@@ -174,13 +174,10 @@ class NodeSynchronizer(
         }
     }
 
-    fun resolveReferencesSync() {
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX) {
-            resolvableReferences?.forEach { setReferenceInTheCloud(it.sourceNode, it.referenceLink, it.mpsTargetNode) }
-        }
+    fun resolveReferences() {
+        resolvableReferences?.forEach { setReferenceInTheCloud(it.sourceNode, it.referenceLink, it.mpsTargetNode) }
+        resolvableReferences?.clear()
     }
-
-    fun clearResolvableReferences() = resolvableReferences?.clear()
 }
 
 @UnstableModelixFeature(

@@ -61,24 +61,15 @@ class ModelSynchronizer(
     }
 
     fun addModelAndActivate(model: SModelBase) {
-        addModelAsync(model)
+        addModel(model)
             .continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
                 (it as IBinding).activate()
             }
     }
 
-    private fun addModelAsync(model: SModelBase): ContinuableSyncTask =
+    fun addModel(model: SModelBase): ContinuableSyncTask =
         syncQueue.enqueue(
             linkedSetOf(SyncLock.NONE),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
-            addModelSync(model).waitForResult()
-        }
-
-    fun addModelSync(model: SModelBase): ContinuableSyncTask =
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -243,22 +234,15 @@ class ModelSynchronizer(
             )
         }
 
-    private fun resolveModelImportsSync() {
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-        ) {
-            resolvableModelImports?.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
-            resolvableModelImports?.clear()
-        }
+    private fun resolveModelImports() {
+        resolvableModelImports?.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
+        resolvableModelImports?.clear()
     }
 
     fun resolveCrossModelReferences() {
-        resolveModelImportsSync()
-
+        resolveModelImports()
         // resolve (cross-model) references
-        nodeSynchronizer.resolveReferencesSync()
-        nodeSynchronizer.clearResolvableReferences()
+        nodeSynchronizer.resolveReferences()
     }
 }
 

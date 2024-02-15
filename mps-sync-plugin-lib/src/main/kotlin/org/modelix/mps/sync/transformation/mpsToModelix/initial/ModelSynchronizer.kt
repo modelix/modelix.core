@@ -36,7 +36,7 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
-import org.modelix.mps.sync.util.waitForCompletion
+import org.modelix.mps.sync.util.waitForCompletionOnEach
 import java.util.concurrent.CopyOnWriteArrayList
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -69,7 +69,7 @@ class ModelSynchronizer(
 
     fun addModel(model: SModelBase): ContinuableSyncTask =
         syncQueue.enqueue(
-            linkedSetOf(SyncLock.NONE),
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -84,28 +84,28 @@ class ModelSynchronizer(
             synchronizeModelProperties(cloudModel, model)
 
             // synchronize root nodes
-            model.rootNodes.waitForCompletion { nodeSynchronizer.addNode(it) }
+            model.rootNodes.waitForCompletionOnEach { nodeSynchronizer.addNode(it) }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize model imports
-            model.modelImports.waitForCompletion { addModelImport(model, it) }
+            model.modelImports.waitForCompletionOnEach { addModelImport(model, it) }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize language dependencies
-            model.importedLanguageIds().waitForCompletion { addLanguageDependency(model, it) }
+            model.importedLanguageIds().waitForCompletionOnEach { addLanguageDependency(model, it) }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             // synchronize devKits
-            model.importedDevkits().waitForCompletion { addDevKitDependency(model, it) }
+            model.importedDevkits().waitForCompletionOnEach { addDevKitDependency(model, it) }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
@@ -133,7 +133,7 @@ class ModelSynchronizer(
 
     fun addModelImport(model: SModel, importedModelReference: SModelReference) =
         syncQueue.enqueue(
-            linkedSetOf(SyncLock.NONE),
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -167,7 +167,7 @@ class ModelSynchronizer(
 
     fun addLanguageDependency(model: SModel, language: SLanguage) =
         syncQueue.enqueue(
-            linkedSetOf(SyncLock.NONE),
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -205,7 +205,7 @@ class ModelSynchronizer(
 
     fun addDevKitDependency(model: SModel, devKit: SModuleReference) =
         syncQueue.enqueue(
-            linkedSetOf(SyncLock.NONE),
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {

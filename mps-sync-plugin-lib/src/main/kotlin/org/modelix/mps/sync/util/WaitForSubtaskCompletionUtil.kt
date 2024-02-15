@@ -21,11 +21,11 @@ import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun <T> Collection<T>.waitForCompletion(continuableSyncTaskProducer: (T) -> ContinuableSyncTask) =
-    this.asIterable().waitForCompletion(continuableSyncTaskProducer)
+fun <T> Collection<T>.waitForCompletionOnEach(continuableSyncTaskProducer: (T) -> ContinuableSyncTask) =
+    this.asIterable().waitForCompletionOnEach(continuableSyncTaskProducer)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun <T> Iterable<T>.waitForCompletion(continuableSyncTaskProducer: (T) -> ContinuableSyncTask) {
+fun <T> Iterable<T>.waitForCompletionOnEach(continuableSyncTaskProducer: (T) -> ContinuableSyncTask) {
     val futures = mutableSetOf<CompletableFuture<*>>()
     this.forEach {
         val future = continuableSyncTaskProducer.invoke(it).getResult()

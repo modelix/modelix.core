@@ -49,7 +49,7 @@ class NodeSynchronizer(
 
     fun addNode(node: SNode) =
         syncQueue.enqueue(
-            linkedSetOf(SyncLock.NONE),
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {

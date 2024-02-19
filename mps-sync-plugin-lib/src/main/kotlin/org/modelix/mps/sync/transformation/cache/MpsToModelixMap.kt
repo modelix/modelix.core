@@ -25,7 +25,8 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import java.util.concurrent.ConcurrentHashMap
+import org.modelix.mps.sync.util.synchronizedLinkedHashSet
+import org.modelix.mps.sync.util.synchronizedMap
 
 /**
  * WARNING:
@@ -35,26 +36,26 @@ import java.util.concurrent.ConcurrentHashMap
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object MpsToModelixMap {
 
-    private val nodeToModelixId = ConcurrentHashMap<SNode, Long>()
-    private val modelixIdToNode = ConcurrentHashMap<Long, SNode>()
+    private val nodeToModelixId = synchronizedMap<SNode, Long>()
+    private val modelixIdToNode = synchronizedMap<Long, SNode>()
 
-    private val modelToModelixId = ConcurrentHashMap<SModel, Long>()
-    private val modelixIdToModel = ConcurrentHashMap<Long, SModel>()
+    private val modelToModelixId = synchronizedMap<SModel, Long>()
+    private val modelixIdToModel = synchronizedMap<Long, SModel>()
 
-    private val moduleToModelixId = ConcurrentHashMap<SModule, Long>()
-    private val modelixIdToModule = ConcurrentHashMap<Long, SModule>()
+    private val moduleToModelixId = synchronizedMap<SModule, Long>()
+    private val modelixIdToModule = synchronizedMap<Long, SModule>()
 
-    private val moduleWithOutgoingModuleReferenceToModelixId = ConcurrentHashMap<ModuleWithModuleReference, Long>()
-    private val modelixIdToModuleWithOutgoingModuleReference = ConcurrentHashMap<Long, ModuleWithModuleReference>()
+    private val moduleWithOutgoingModuleReferenceToModelixId = synchronizedMap<ModuleWithModuleReference, Long>()
+    private val modelixIdToModuleWithOutgoingModuleReference = synchronizedMap<Long, ModuleWithModuleReference>()
 
-    private val modelWithOutgoingModuleReferenceToModelixId = ConcurrentHashMap<ModelWithModuleReference, Long>()
-    private val modelixIdToModelWithOutgoingModuleReference = ConcurrentHashMap<Long, ModelWithModuleReference>()
+    private val modelWithOutgoingModuleReferenceToModelixId = synchronizedMap<ModelWithModuleReference, Long>()
+    private val modelixIdToModelWithOutgoingModuleReference = synchronizedMap<Long, ModelWithModuleReference>()
 
-    private val modelWithOutgoingModelReferenceToModelixId = ConcurrentHashMap<ModelWithModelReference, Long>()
-    private val modelixIdToModelWithOutgoingModelReference = ConcurrentHashMap<Long, ModelWithModelReference>()
+    private val modelWithOutgoingModelReferenceToModelixId = synchronizedMap<ModelWithModelReference, Long>()
+    private val modelixIdToModelWithOutgoingModelReference = synchronizedMap<Long, ModelWithModelReference>()
 
-    private val objectsRelatedToAModel = ConcurrentHashMap<SModel, MutableSet<Any>>()
-    private val objectsRelatedToAModule = ConcurrentHashMap<SModule, MutableSet<Any>>()
+    private val objectsRelatedToAModel = synchronizedMap<SModel, MutableSet<Any>>()
+    private val objectsRelatedToAModule = synchronizedMap<SModule, MutableSet<Any>>()
 
     val models = modelixIdToModel.values
     val modules = modelixIdToModule.values
@@ -105,13 +106,13 @@ object MpsToModelixMap {
     }
 
     private fun putObjRelatedToAModel(model: SModel, obj: Any?) {
-        objectsRelatedToAModel.computeIfAbsent(model) { mutableSetOf() }.add(obj!!)
+        objectsRelatedToAModel.computeIfAbsent(model) { synchronizedLinkedHashSet() }.add(obj!!)
         // just in case, the model has not been tracked yet. E.g. @descriptor models that are created locally but were not synchronized to the model server.
         putObjRelatedToAModule(model.module, model)
     }
 
     private fun putObjRelatedToAModule(module: SModule, obj: Any?) =
-        objectsRelatedToAModule.computeIfAbsent(module) { mutableSetOf() }.add(obj!!)
+        objectsRelatedToAModule.computeIfAbsent(module) { synchronizedLinkedHashSet() }.add(obj!!)
 
     operator fun get(node: SNode?) = nodeToModelixId[node]
 

@@ -22,20 +22,20 @@ import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
-import java.util.Collections
-import java.util.concurrent.ConcurrentHashMap
+import org.modelix.mps.sync.util.synchronizedLinkedHashSet
+import org.modelix.mps.sync.util.synchronizedMap
 import java.util.concurrent.LinkedBlockingQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object BindingsRegistry {
 
-    private val modelBindingsByModule = ConcurrentHashMap<SModule, LinkedHashSet<ModelBinding>>()
-    private val moduleBindings = Collections.synchronizedSet(LinkedHashSet<ModuleBinding>())
+    private val modelBindingsByModule = synchronizedMap<SModule, MutableSet<ModelBinding>>()
+    private val moduleBindings = synchronizedLinkedHashSet<ModuleBinding>()
 
     val bindings = LinkedBlockingQueue<BindingWithOperation>()
 
     fun addModelBinding(binding: ModelBinding) {
-        modelBindingsByModule.computeIfAbsent(binding.model.module!!) { LinkedHashSet() }.add(binding)
+        modelBindingsByModule.computeIfAbsent(binding.model.module!!) { synchronizedLinkedHashSet() }.add(binding)
         bindingAdded(binding)
     }
 

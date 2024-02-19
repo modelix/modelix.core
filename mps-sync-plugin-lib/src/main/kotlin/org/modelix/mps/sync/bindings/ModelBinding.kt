@@ -28,6 +28,7 @@ import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelBinding(
@@ -43,8 +44,13 @@ class ModelBinding(
     private val modelChangeListener = ModelChangeListener(branch, nodeMap, bindingsRegistry, syncQueue, this)
     private val nodeChangeListener = NodeChangeListener(branch, nodeMap, syncQueue)
 
+    @Volatile
     private var isDisposed = false
+
+    @Volatile
     private var beingDisposed = false
+
+    @Volatile
     private var isActivated = false
 
     override fun activate(callback: Runnable?) {
@@ -62,25 +68,25 @@ class ModelBinding(
         callback?.run()
     }
 
-    override fun deactivate(removeFromServer: Boolean, callback: Runnable?) {
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
         if (isDisposed || beingDisposed) {
-            return
-        }
-        beingDisposed = true
-
-        // unregister listeners
-        model.removeChangeListener(nodeChangeListener)
-        model.removeModelListener(modelChangeListener)
-
-        val parentModule = model.module!!
-        if (removeFromServer) {
-            // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
-            bindingsRegistry.removeModelBinding(parentModule, this)
+            return CompletableFuture.completedFuture(null)
         }
 
-        // delete model
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
+        return syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+            beingDisposed = true
+
+            // unregister listeners
+            model.removeChangeListener(nodeChangeListener)
+            model.removeModelListener(modelChangeListener)
+
+            if (removeFromServer) {
+                // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
+                bindingsRegistry.removeModelBinding(model.module!!, this)
+            }
+        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
             try {
+                // delete model
                 if (!removeFromServer) {
                     // to delete the files locally
                     // otherwise, MPS has to take care of triggering ModelDeleteHelper(model).delete() to delete the model
@@ -93,7 +99,7 @@ class ModelBinding(
                 throw ex
             }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
-            bindingsRegistry.removeModelBinding(parentModule, this)
+            bindingsRegistry.removeModelBinding(model.module!!, this)
 
             if (!removeFromServer) {
                 // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
@@ -115,7 +121,7 @@ class ModelBinding(
             )
 
             callback?.run()
-        }
+        }.getResult()
     }
 
     override fun name() = "Binding of Model \"${model.name}\""

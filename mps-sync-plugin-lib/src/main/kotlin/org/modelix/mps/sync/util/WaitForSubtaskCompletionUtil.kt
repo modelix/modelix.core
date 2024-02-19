@@ -30,11 +30,22 @@ fun <T> Iterable<T>.waitForCompletionOfEachTask(continuableSyncTaskProducer: (T)
         continuableSyncTaskProducer.invoke(it).getResult()
     }
 
-fun <T> Iterable<T>.waitForCompletionOfEach(futureProducer: (T) -> CompletableFuture<*>) {
-    val futures = mutableSetOf<CompletableFuture<*>>()
-    this.forEach {
-        val future = futureProducer.invoke(it)
-        futures.add(future)
+fun <T> Iterable<T>.waitForCompletionOfEach(futureProducer: (T) -> CompletableFuture<*>): CompletableFuture<*> {
+    val compositeFuture = CompletableFuture<Any?>()
+
+    try {
+        // wait for all subtasks to complete
+        val futures = mutableSetOf<CompletableFuture<*>>()
+        this.forEach {
+            val future = futureProducer.invoke(it)
+            futures.add(future)
+        }
+        futures.forEach { it.join() }
+
+        compositeFuture.complete(null)
+    } catch (t: Throwable) {
+        compositeFuture.completeExceptionally(t)
     }
-    futures.forEach { it.join() }
+
+    return compositeFuture
 }

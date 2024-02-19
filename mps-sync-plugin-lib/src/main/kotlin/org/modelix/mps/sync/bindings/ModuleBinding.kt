@@ -44,8 +44,13 @@ class ModuleBinding(
 
     private val changeListener = ModuleChangeListener(branch, nodeMap, bindingsRegistry, syncQueue)
 
+    @Volatile
     private var isDisposed = false
+
+    @Volatile
     private var beingDisposed = false
+
+    @Volatile
     private var isActivated = false
 
     override fun activate(callback: Runnable?) {
@@ -66,29 +71,22 @@ class ModuleBinding(
         callback?.run()
     }
 
-    override fun deactivate(removeFromServer: Boolean, callback: Runnable?) {
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
         if (isDisposed || beingDisposed) {
-            return
+            return CompletableFuture.completedFuture(null)
         }
 
-        beingDisposed = true
+        return syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+            beingDisposed = true
 
-        // unregister listener
-        module.removeModuleListener(changeListener)
-
-        syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+            // unregister listener
+            module.removeModuleListener(changeListener)
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             val modelBindings = bindingsRegistry.getModelBindings(module)
 
-            // deactivate child models' bindings
-            modelBindings?.waitForCompletionOfEach {
-                val future = CompletableFuture<Unit>()
-                try {
-                    it.deactivate(removeFromServer) { future.complete(null) }
-                } catch (t: Throwable) {
-                    future.completeExceptionally(t)
-                }
-                future
-            }
+            // deactivate child models' bindings and wait for their successful completion
+            // throws ExecutionException if any deactivation failed
+            modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }?.get()
 
             // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
             bindingsRegistry.removeModuleBinding(this)
@@ -125,7 +123,7 @@ class ModuleBinding(
             )
 
             callback?.run()
-        }
+        }.getResult()
     }
 
     override fun name() = "Binding of Module \"${module.moduleName}\""

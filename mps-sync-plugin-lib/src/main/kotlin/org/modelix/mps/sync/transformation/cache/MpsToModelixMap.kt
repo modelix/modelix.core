@@ -25,6 +25,7 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * WARNING:
@@ -34,26 +35,26 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object MpsToModelixMap {
 
-    private val nodeToModelixId = mutableMapOf<SNode, Long>()
-    private val modelixIdToNode = mutableMapOf<Long, SNode>()
+    private val nodeToModelixId = ConcurrentHashMap<SNode, Long>()
+    private val modelixIdToNode = ConcurrentHashMap<Long, SNode>()
 
-    private val modelToModelixId = mutableMapOf<SModel, Long>()
-    private val modelixIdToModel = mutableMapOf<Long, SModel>()
+    private val modelToModelixId = ConcurrentHashMap<SModel, Long>()
+    private val modelixIdToModel = ConcurrentHashMap<Long, SModel>()
 
-    private val moduleToModelixId = mutableMapOf<SModule, Long>()
-    private val modelixIdToModule = mutableMapOf<Long, SModule>()
+    private val moduleToModelixId = ConcurrentHashMap<SModule, Long>()
+    private val modelixIdToModule = ConcurrentHashMap<Long, SModule>()
 
-    private val moduleWithOutgoingModuleReferenceToModelixId = mutableMapOf<ModuleWithModuleReference, Long>()
-    private val modelixIdToModuleWithOutgoingModuleReference = mutableMapOf<Long, ModuleWithModuleReference>()
+    private val moduleWithOutgoingModuleReferenceToModelixId = ConcurrentHashMap<ModuleWithModuleReference, Long>()
+    private val modelixIdToModuleWithOutgoingModuleReference = ConcurrentHashMap<Long, ModuleWithModuleReference>()
 
-    private val modelWithOutgoingModuleReferenceToModelixId = mutableMapOf<ModelWithModuleReference, Long>()
-    private val modelixIdToModelWithOutgoingModuleReference = mutableMapOf<Long, ModelWithModuleReference>()
+    private val modelWithOutgoingModuleReferenceToModelixId = ConcurrentHashMap<ModelWithModuleReference, Long>()
+    private val modelixIdToModelWithOutgoingModuleReference = ConcurrentHashMap<Long, ModelWithModuleReference>()
 
-    private val modelWithOutgoingModelReferenceToModelixId = mutableMapOf<ModelWithModelReference, Long>()
-    private val modelixIdToModelWithOutgoingModelReference = mutableMapOf<Long, ModelWithModelReference>()
+    private val modelWithOutgoingModelReferenceToModelixId = ConcurrentHashMap<ModelWithModelReference, Long>()
+    private val modelixIdToModelWithOutgoingModelReference = ConcurrentHashMap<Long, ModelWithModelReference>()
 
-    private val objectsRelatedToAModel = mutableMapOf<SModel, MutableSet<Any>>()
-    private val objectsRelatedToAModule = mutableMapOf<SModule, MutableSet<Any>>()
+    private val objectsRelatedToAModel = ConcurrentHashMap<SModel, MutableSet<Any>>()
+    private val objectsRelatedToAModule = ConcurrentHashMap<SModule, MutableSet<Any>>()
 
     val models = modelixIdToModel.values
     val modules = modelixIdToModule.values

@@ -97,9 +97,8 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
             }
             nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)
         }
+        resolvableModelImports.clear()
     }
-
-    fun clearResolvableModelImports() = resolvableModelImports.clear()
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

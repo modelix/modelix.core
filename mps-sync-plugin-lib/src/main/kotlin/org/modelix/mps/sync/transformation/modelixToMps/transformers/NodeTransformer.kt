@@ -131,9 +131,10 @@ class NodeTransformer(
         }
     }
 
-    fun resolveReferences() = nodeFactory.resolveReferences()
-
-    fun clearResolvableReferences() = nodeFactory.clearResolvableReferences()
+    fun resolveReferences() {
+        nodeFactory.resolveReferences()
+        nodeFactory.clearResolvableReferences()
+    }
 
     private fun getDependentModule(iNode: INode): SModule {
         val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)!!

@@ -157,8 +157,8 @@ class ModelixTreeChangeVisitor(
             }
 
             val isMapped = nodeMap.isMappedToMps(nodeId)
-            // if isMapped == false, then we missed a possible removal case
-            logger.error("Node ($nodeId) was not removed from MPS, because it was not mapped yet (isMapped=$isMapped).")
+            // if isMapped == true, then we missed a possible removal case
+            logger.info("Node ($nodeId) was not removed from MPS, because it might have been already removed (isMapped=$isMapped).")
 
             null
         }
@@ -200,6 +200,12 @@ class ModelixTreeChangeVisitor(
         }
     }
 
+    /**
+     * TODO rethink if we have to limit childrenChanged operation further
+     * it is expected to be called after the nodeAdded methods and thereby we have to resolve the modelImports and references
+     * However, this method can be also called before/after the nodeDeleted operation. Where, however it does not make sense to resolve the references...
+     * (Moreover, there is no guarantee in which order the method of this class will be called, due to the undefined order of changes after the Diff calculation.)
+     */
     override fun childrenChanged(nodeId: Long, role: String?) {
         syncQueue.enqueue(
             linkedSetOf(SyncLock.MPS_WRITE),
@@ -207,10 +213,7 @@ class ModelixTreeChangeVisitor(
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             modelTransformer.resolveModelImports(project.repository)
-            modelTransformer.clearResolvableModelImports()
-
             nodeTransformer.resolveReferences()
-            nodeTransformer.clearResolvableReferences()
 
             null
         }

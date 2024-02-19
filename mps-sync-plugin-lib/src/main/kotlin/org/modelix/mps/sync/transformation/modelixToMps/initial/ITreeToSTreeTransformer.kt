@@ -85,7 +85,9 @@ class ITreeToSTreeTransformer(
                 }
 
                 logger.info("--- Resolving references ---")
-                nodeTransformer.resolveReferences()
+                syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+                    nodeTransformer.resolveReferences()
+                }
 
                 logger.info("--- Registering module and model bindings ---")
                 nodeMap.modules.forEach {

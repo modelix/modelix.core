@@ -38,6 +38,10 @@ import kotlin.jvm.JvmName
  * Properties, references, and child links are synchronized for this node and all of its (in-)direct children.
  *
  * @param root the root node to be updated
+ * @param continueOnError if true, ignore exceptions and continue.
+ *        Enabling this might lead to inconsistent models.
+ * @param childFilter filter that is applied to all children of a parent.
+ *        If the filter evaluates to true, the node is included.
  */
 class ModelImporter(
     private val root: INode,

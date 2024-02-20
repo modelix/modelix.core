@@ -34,20 +34,6 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
-  /headers:
-    get:
-      operationId: getHeaders
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-  /health:
-    get:
-      operationId: getHealth
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-        "500":
-          $ref: '#/components/responses/500'
   /v2/repositories:
     get:
       operationId: getRepositories
@@ -160,6 +146,7 @@ paths:
   /v2/repositories/{repository}/branches/{branch}/listen:
     get:
       operationId: listenRepositoryBranch
+      deprecated: true
       parameters:
         - name: lastKnown
           in: "query"
@@ -299,7 +286,7 @@ paths:
           in: "query"
           required: false
           schema:
-            type: string
+            type: boolean
         - name: repository
           in: "path"
           required: true
@@ -359,6 +346,7 @@ paths:
   /v2/repositories/{repository}/versions/{versionHash}/history/{oldestVersionHash}:
     get:
       operationId: getOldestVersionHash
+      deprecated: true
       responses:
         "200":
           $ref: '#/components/responses/200'
@@ -420,6 +408,7 @@ paths:
   /v2/versions/{versionHash}/history/{oldestVersionHash}:
     get:
       operationId: getOldestVersionHashForVersion
+      deprecated: true
       responses:
         "200":
           $ref: '#/components/responses/200'
@@ -434,125 +423,6 @@ paths:
           required: true
           schema:
             type: string
-  /counter/{key}:
-    post:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200'
-  /get/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/200'
-  /getAll:
-    put:
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200json'
-  /getEmail:
-    get:
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-  /getRecursively/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          $ref: '#/components/responses/200json'
-  /poll/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: lastKnownValue
-          in: "query"
-          required: false
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/200'
-  /put/{key}:
-    put:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200'
-        "404":
-          $ref: '#/components/responses/404'
-  /putAll:
-    put:
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
-        "200":
-          $ref: '#/components/responses/200'
-        "404":
-          $ref: '#/components/responses/404'
 components:
   responses:
     "200":

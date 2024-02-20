@@ -88,7 +88,13 @@ object MPSBulkSynchronizer {
                     return isModuleIncluded(moduleName, includedModuleNames, includedModulePrefixes)
                 }
                 println("Importing modules...")
-                ModelImporter(repoAsNode, continueOnError, childFilter = ::moduleFilter).importFilesAsRootChildren(jsonFiles)
+                try {
+                    ModelImporter(repoAsNode, continueOnError, childFilter = ::moduleFilter).importFilesAsRootChildren(jsonFiles)
+                } catch (ex: Exception) {
+                    // Exceptions are only visible in the MPS log file by default
+                    ex.printStackTrace()
+                }
+
                 println("Import finished.")
             }
         }

@@ -28,18 +28,16 @@ import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeC
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelixBranchListener(
-    private val replicatedModel: ReplicatedModel,
-    private val project: MPSProject,
-    private val languageRepository: MPSLanguageRepository,
-    private val nodeMap: MpsToModelixMap,
-    private val syncQueue: SyncQueue,
+    replicatedModel: ReplicatedModel,
+    project: MPSProject,
+    languageRepository: MPSLanguageRepository,
+    nodeMap: MpsToModelixMap,
+    syncQueue: SyncQueue,
 ) : IBranchListener {
+
+    private val visitor = ModelixTreeChangeVisitor(replicatedModel, project, languageRepository, nodeMap, syncQueue)
+
     override fun treeChanged(oldTree: ITree?, newTree: ITree) {
-        if (oldTree != null) {
-            newTree.visitChanges(
-                oldTree,
-                ModelixTreeChangeVisitor(replicatedModel, project, languageRepository, nodeMap, syncQueue),
-            )
-        }
+        oldTree?.let { newTree.visitChanges(it, visitor) }
     }
 }

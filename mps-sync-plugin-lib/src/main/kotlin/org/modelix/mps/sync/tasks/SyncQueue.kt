@@ -23,6 +23,7 @@ import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -113,7 +114,11 @@ object SyncQueue {
 
         if (locks.isEmpty()) {
             val result = task.action.invoke(task.previousTaskResult)
-            taskResult.complete(result)
+            if (result is CompletableFuture<*> && result.isCompletedExceptionally) {
+                result.handle { _, throwable -> taskResult.completeExceptionally(throwable) }
+            } else {
+                taskResult.complete(result)
+            }
         } else {
             val lockHeadAndTail = locks.toList().headTail()
             val lockHead = lockHeadAndTail.first

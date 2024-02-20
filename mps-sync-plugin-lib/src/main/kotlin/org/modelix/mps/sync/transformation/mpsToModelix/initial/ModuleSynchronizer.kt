@@ -143,7 +143,7 @@ class ModuleSynchronizer(
         )
         cloudModule.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion,
-            ((module as? AbstractModule)?.moduleDescriptor?.moduleVersion ?: 0).toString(),
+            ((module as? AbstractModule)?.moduleVersion).toString(),
         )
 
         val compileInMPS =

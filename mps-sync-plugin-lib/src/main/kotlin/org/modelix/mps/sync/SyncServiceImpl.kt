@@ -109,10 +109,6 @@ class SyncServiceImpl(
         val bindings = runBlocking(coroutineScope.coroutineContext) {
             // TODO how to handle multiple replicated models at the same time?
             val replicatedModel = client.getReplicatedModel(branchReference)
-            // TODO when and how to dispose the replicated model and everything that depends on it?
-            replicatedModel.start()
-            replicatedModelByBranchReference[branchReference] = replicatedModel
-
             /**
              * TODO fixme:
              * (1) How to propagate replicated model to other places of code?
@@ -125,7 +121,10 @@ class SyncServiceImpl(
              * (3) We don't. We have to make sure that the places always have the latest replicated models from the registry. E.g. if we disconnect from the model server then we remove the replicated model (and thus break the registered event handlers), otherwise the event handlers as for the replicated model from the registry (based on some identifying metainfo for example, so to know which replicated model they need).
              */
             ReplicatedModelRegistry.model = replicatedModel
-            val branch = replicatedModel.getBranch()
+            replicatedModelByBranchReference[branchReference] = replicatedModel
+
+            // TODO when and how to dispose the replicated model and everything that depends on it?
+            val branch = replicatedModel.start()
 
             val targetProject = mpsProjectInjector.activeMpsProject!!
             val languageRepository = registerLanguages(targetProject)

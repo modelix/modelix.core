@@ -38,6 +38,7 @@ import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
 import org.modelix.model.metameta.MetaModelBranch
+import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
@@ -240,16 +241,23 @@ class RepositoriesManager(val client: LocalModelClient) {
                 val version = CLVersion(versionHash, objectStore)
                 // Use a bulk query to make as few request to the underlying store as possible.
                 val bulkQuery = objectStore.newBulkQuery()
+                // It is unsatisfactory that we have to keep already emitted hashes in memory.
+                // But without changing the underlying model,
+                // we have to do this to not emit objects more than once.
+                val seenHashes = mutableSetOf<String>()
                 fun emitObjects(entry: KVEntryReference<*>) {
                     bulkQuery.get(entry).onSuccess {
                         channel.trySend(entry.getHash() to it!!.serialize())
-                        for (referencedEntry in it!!.getReferencedEntries()) {
-                            emitObjects(referencedEntry)
+                        for (referencedEntry in it.getReferencedEntries()) {
+                            val wasSeenBefore = !seenHashes.add(referencedEntry.getHash())
+                            // Do not emit the object if we already emitted it.
+                            if (!wasSeenBefore) {
+                                emitObjects(referencedEntry)
+                            }
                         }
                     }
                 }
-                channel.send(versionHash to kvStore.get(versionHash)!!)
-                emitObjects(version.treeHash!!)
+                emitObjects(KVEntryReference(versionHash, CPVersion.DESERIALIZER))
                 (bulkQuery as? BulkQuery)?.process()
             }
         }

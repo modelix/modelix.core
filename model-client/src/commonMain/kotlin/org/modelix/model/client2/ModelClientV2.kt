@@ -337,31 +337,6 @@ class ModelClientV2(
         httpClient.close()
     }
 
-    private suspend fun HttpResponse.readVersionDelta(): VersionDeltaStream {
-        return if (contentType()?.match(VersionDeltaStream.CONTENT_TYPE) == true) {
-            val content = bodyAsChannel()
-            val versionHash = checkNotNull(content.readUTF8Line()) { "No objects received" }
-            val versionObject = content.readUTF8Line()
-            return if (versionObject == null) {
-                VersionDeltaStream(versionHash, emptyFlow())
-            } else {
-                VersionDeltaStream(
-                    versionHash,
-                    flow {
-                        emit(versionHash to versionObject)
-                        while (true) {
-                            val key = content.readUTF8Line() ?: break
-                            val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
-                            emit(key to value)
-                        }
-                    },
-                )
-            }
-        } else {
-            body<VersionDelta>().asStream()
-        }
-    }
-
     private suspend fun createVersion(baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
         delta.getObjectsAsFlow().collect {
             HashUtil.checkObjectHash(it.first, it.second)
@@ -403,10 +378,6 @@ class ModelClientV2(
             require(baseVersion.store == store) { "baseVersion was not created by this client" }
             CLVersion(versionHash, store)
         }
-    }
-
-    private fun HttpRequestBuilder.useVersionStreamFormat() {
-        headers.set(HttpHeaders.Accept, VersionDeltaStream.CONTENT_TYPE.toString())
     }
 
     companion object {
@@ -506,6 +477,35 @@ private fun URLBuilder.appendPathSegmentsEncodingSlash(vararg components: String
 }
 
 fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.associateBy { HashUtil.sha256(it) }
+
+suspend fun HttpResponse.readVersionDelta(): VersionDeltaStream {
+    return if (contentType()?.match(VersionDeltaStream.CONTENT_TYPE) == true) {
+        val content = bodyAsChannel()
+        val versionHash = checkNotNull(content.readUTF8Line()) { "No objects received" }
+        val versionObject = content.readUTF8Line()
+        return if (versionObject == null) {
+            VersionDeltaStream(versionHash, emptyFlow())
+        } else {
+            VersionDeltaStream(
+                versionHash,
+                flow {
+                    emit(versionHash to versionObject)
+                    while (true) {
+                        val key = content.readUTF8Line() ?: break
+                        val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
+                        emit(key to value)
+                    }
+                },
+            )
+        }
+    } else {
+        body<VersionDelta>().asStream()
+    }
+}
+
+fun HttpRequestBuilder.useVersionStreamFormat() {
+    headers.set(HttpHeaders.Accept, VersionDeltaStream.CONTENT_TYPE.toString())
+}
 
 /**
  * Performs a write transaction on the root node of the given branch.

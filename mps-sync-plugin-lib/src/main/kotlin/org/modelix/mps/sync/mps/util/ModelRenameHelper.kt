@@ -30,8 +30,10 @@ import jetbrains.mps.smodel.event.SModelFileChangedEvent
 import jetbrains.mps.smodel.event.SModelRenamedEvent
 import jetbrains.mps.vfs.IFile
 import org.jetbrains.mps.openapi.model.SModelName
+import org.modelix.kotlin.utils.UnstableModelixFeature
 
 // TODO retest this class in and above MPS 2021.1, because some of its methods might have been removed from their original classes (see origin comments above the methods)
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelRenameHelper(private val model: EditableSModelBase) {
 
     val logger = logger<ModelRenameHelper>()

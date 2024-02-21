@@ -344,19 +344,19 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
                 oldTree.nodesMap!!,
                 object : CPHamtNode.IChangeVisitor {
                     override fun visitChangesOnly(): Boolean = false
-                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>?) {
+                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>) {
                         changedNodeIds += key
                         if (value != null) bulkQuery.get(value)
                     }
 
-                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>?) {
+                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>) {
                         changedNodeIds += key
                     }
 
                     override fun entryChanged(
                         key: Long,
-                        oldValue: KVEntryReference<CPNode>?,
-                        newValue: KVEntryReference<CPNode>?,
+                        oldValue: KVEntryReference<CPNode>,
+                        newValue: KVEntryReference<CPNode>,
                     ) {
                         changedNodeIds += key
                         if (newValue != null) bulkQuery.get(newValue)

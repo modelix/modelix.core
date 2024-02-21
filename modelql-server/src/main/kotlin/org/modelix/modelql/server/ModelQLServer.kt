@@ -77,12 +77,17 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
         fun builder(rootNodeProvider: () -> INode?): Builder = Builder().also { it.rootNode(rootNodeProvider) }
 
         suspend fun handleCall(call: ApplicationCall, rootNode: INode, area: IArea) {
+            handleCall(call, { rootNode to area }, {})
+        }
+
+        suspend fun handleCall(call: ApplicationCall, input: (write: Boolean) -> Pair<INode, IArea>, afterQueryExecution: () -> Unit = {}) {
             try {
                 val serializedQuery = call.receiveText()
                 val json = UntypedModelQL.json
                 val queryDescriptor = VersionAndData.deserialize(serializedQuery, QueryGraphDescriptor.serializer(), json).data
                 val query = queryDescriptor.createRootQuery() as IMonoUnboundQuery<INode, Any?>
                 LOG.debug { "query: $query" }
+                val (rootNode, area) = input(query.requiresWriteAccess())
                 val transactionBody: () -> IStepOutput<Any?> = {
                     runBlocking {
                         area.runWithAdditionalScopeInCoroutine {
@@ -100,8 +105,10 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
 
                 val versionAndResult = VersionAndData(result)
                 val serializedResult = json.encodeToString(VersionAndData.serializer(serializer), versionAndResult)
+                afterQueryExecution()
                 call.respondText(text = serializedResult, contentType = ContentType.Application.Json)
             } catch (ex: Throwable) {
+                afterQueryExecution()
                 call.respondText(
                     text = "server version: $modelqlVersion\n" + ex.stackTraceToString(),
                     status = HttpStatusCode.InternalServerError,

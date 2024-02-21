@@ -44,6 +44,10 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     override val parent: INode?
         get() = node.parent?.let { MPSNode(it) } ?: node.model?.let { MPSModelAsNode(it) }
 
+    override fun tryGetConcept(): IConcept {
+        return MPSConcept(node.concept)
+    }
+
     override fun getConceptReference(): ConceptReference {
         return concept.getReference() as ConceptReference
     }

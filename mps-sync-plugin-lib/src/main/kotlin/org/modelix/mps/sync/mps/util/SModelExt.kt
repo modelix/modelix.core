@@ -29,8 +29,20 @@ fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun SModel.deleteDevKit(devKitModuleReference: SModuleReference) {
+    require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
+    this.deleteDevKit(devKitModuleReference)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.addLanguage(sLanguage)
     this.setLanguageImportVersion(sLanguage, version)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun SModel.deleteLanguage(sLanguage: SLanguage) {
+    require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
+    this.deleteLanguageId(sLanguage)
 }

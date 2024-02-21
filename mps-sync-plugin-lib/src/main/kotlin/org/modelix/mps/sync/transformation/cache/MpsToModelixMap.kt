@@ -141,6 +141,12 @@ object MpsToModelixMap {
 
     fun getModule(modelixId: Long?) = modelixIdToModule[modelixId]
 
+    fun getOutgoingModelReference(modelixId: Long?) = modelixIdToModelWithOutgoingModelReference[modelixId]
+
+    fun getOutgoingModuleReferenceFromModel(modelixId: Long?) = modelixIdToModelWithOutgoingModuleReference[modelixId]
+
+    fun getOutgoingModuleReferenceFromModule(modelixId: Long?) = modelixIdToModuleWithOutgoingModuleReference[modelixId]
+
     fun remove(modelixId: Long) {
         // is related to node
         modelixIdToNode.remove(modelixId)?.let { nodeToModelixId.remove(it) }
@@ -211,10 +217,10 @@ object MpsToModelixMap {
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-data class ModelWithModelReference(private val model: SModel, private val modelReference: SModelReference)
+data class ModelWithModelReference(val source: SModel, val modelReference: SModelReference)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-data class ModelWithModuleReference(private val model: SModel, private val moduleReference: SModuleReference)
+data class ModelWithModuleReference(val source: SModel, val moduleReference: SModuleReference)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-data class ModuleWithModuleReference(private val module: SModule, private val moduleReference: SModuleReference)
+data class ModuleWithModuleReference(val source: SModule, val moduleReference: SModuleReference)

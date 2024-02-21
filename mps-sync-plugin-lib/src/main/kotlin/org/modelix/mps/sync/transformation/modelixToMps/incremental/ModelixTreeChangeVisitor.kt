@@ -23,10 +23,13 @@ import jetbrains.mps.extapi.module.SModuleBase
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.Project
 import jetbrains.mps.project.structure.modules.SolutionDescriptor
 import jetbrains.mps.refactoring.Renamer
+import jetbrains.mps.smodel.ModelImports
+import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
@@ -40,10 +43,14 @@ import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.util.ModelRenameHelper
+import org.modelix.mps.sync.mps.util.deleteDevKit
+import org.modelix.mps.sync.mps.util.deleteLanguage
 import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.cache.ModelWithModuleReference
+import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
@@ -163,6 +170,24 @@ class ModelixTreeChangeVisitor(
             val sModule = nodeMap.getModule(nodeId)
             sModule?.let {
                 moduleDeleted(sModule, nodeId)
+                return@enqueue null
+            }
+
+            val outgoingModelReference = nodeMap.getOutgoingModelReference(nodeId)
+            outgoingModelReference?.let {
+                ModelImports(outgoingModelReference.source).removeModelImport(outgoingModelReference.modelReference)
+                return@enqueue null
+            }
+
+            val outgoingModuleReferenceFromModel = nodeMap.getOutgoingModuleReferenceFromModel(nodeId)
+            outgoingModuleReferenceFromModel?.let {
+                moduleDependencyOfModelDeleted(it, nodeId)
+                return@enqueue null
+            }
+
+            val outgoingModuleReferenceFromModule = nodeMap.getOutgoingModuleReferenceFromModule(nodeId)
+            outgoingModuleReferenceFromModule?.let {
+                outgoingModuleReferenceFromModuleDeleted(outgoingModuleReferenceFromModule, nodeId)
                 return@enqueue null
             }
 
@@ -470,5 +495,58 @@ class ModelixTreeChangeVisitor(
             return
         }
         newParentModule.registerModel(sModel)
+    }
+
+    private fun moduleDependencyOfModelDeleted(
+        outgoingModuleReferenceFromModel: ModelWithModuleReference,
+        nodeId: Long,
+    ) {
+        val sourceModel = outgoingModuleReferenceFromModel.source
+        val targetModuleReference = outgoingModuleReferenceFromModel.moduleReference
+        when (val targetModule = targetModuleReference.resolve(sourceModel.repository)) {
+            is SLanguage -> {
+                try {
+                    sourceModel.deleteLanguage(targetModule)
+                } catch (ex: Exception) {
+                    val message =
+                        "Language import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
+                    logger.error(message, ex)
+                }
+            }
+
+            is DevKit -> {
+                try {
+                    sourceModel.deleteDevKit(targetModuleReference)
+                } catch (ex: Exception) {
+                    val message =
+                        "DevKit dependency ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
+                    logger.error(message, ex)
+                }
+            }
+
+            else -> {
+                logger.error("Target module referred by $targetModuleReference is neither a Language nor DevKit. Therefore the dependency for it cannot be deleted. Corresponding Modelix Node ID is $nodeId.")
+            }
+        }
+    }
+
+    private fun outgoingModuleReferenceFromModuleDeleted(
+        outgoingModuleReferenceFromModule: ModuleWithModuleReference,
+        nodeId: Long,
+    ) {
+        val sourceModule = outgoingModuleReferenceFromModule.source
+        if (sourceModule !is AbstractModule) {
+            logger.error("Source module ($sourceModule) is not an AbstractModule, therefore outgoing module dependency reference cannot be removed. Corresponding Modelix Node ID is $nodeId.")
+            return
+        }
+
+        val targetModuleReference = outgoingModuleReferenceFromModule.moduleReference
+        val dependency =
+            sourceModule.moduleDescriptor?.dependencies?.firstOrNull { it.moduleRef == targetModuleReference }
+        if (dependency != null) {
+            sourceModule.removeDependency(dependency)
+        } else {
+            logger.error("Outgoing dependency $targetModuleReference from Module $sourceModule is not found, therefore it cannot be deleted. Corresponding Modelix Node ID is $nodeId.")
+        }
     }
 }

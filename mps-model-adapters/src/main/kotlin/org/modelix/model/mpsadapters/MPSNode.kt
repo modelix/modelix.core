@@ -16,6 +16,8 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
+import jetbrains.mps.smodel.adapter.ids.SReferenceLinkId
+import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapterById
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
@@ -129,9 +131,15 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
-        val ref = node.references.first { MPSReferenceLink(it.link).getUID() == link.getUID() }
+        val refLink = when (link) {
+            is MPSReferenceLink -> link.link
+            else -> node.references.find { MPSReferenceLink(it.link).getUID() == link.getUID() }?.link
+                ?: node.concept.referenceLinks.find { MPSReferenceLink(it).getUID() == link.getUID() }
+                ?: SReferenceLinkAdapterById(SReferenceLinkId.deserialize(link.getUID()), "")
+        }
+
         val targetNode = target?.let { getArea().resolveNode(it.reference) } as MPSNode
-        node.setReferenceTarget(ref.link, targetNode.node)
+        node.setReferenceTarget(refLink, targetNode.node)
     }
 
     override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {

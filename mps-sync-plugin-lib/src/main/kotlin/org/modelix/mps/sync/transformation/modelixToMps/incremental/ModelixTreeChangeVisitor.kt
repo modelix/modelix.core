@@ -65,7 +65,7 @@ class ModelixTreeChangeVisitor(
         ) {
             val sNode = nodeMap.getNode(nodeId)
             if (sNode == null) {
-                logger.error("Node ($nodeId) is not mapped to MPS yet.")
+                logger.info("Node ($nodeId) is not mapped to MPS yet.")
                 return@enqueue null
             }
 
@@ -95,6 +95,12 @@ class ModelixTreeChangeVisitor(
             SyncDirection.MODELIX_TO_MPS,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
+            val isMapped = nodeMap.isMappedToMps(nodeId)
+            if (!isMapped) {
+                logger.info("Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore its $role property cannot be changed.")
+                return@enqueue null
+            }
+
             val iNode = getNode(nodeId)
             val iProperty = PropertyFromName(role)
             val newValue = iNode.getPropertyValue(iProperty)
@@ -117,9 +123,7 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            val isMapped = nodeMap.isMappedToMps(nodeId)
-            // if isMapped == true, then we missed a possible removal case
-            logger.info("Property $role of Node ($nodeId) was not set in MPS, because it might not exist yet (isMapped=$isMapped).")
+            logger.error("We missed a property setting case (property=$role) for Modelix Node ($nodeId).")
 
             null
         }
@@ -131,6 +135,12 @@ class ModelixTreeChangeVisitor(
             SyncDirection.MODELIX_TO_MPS,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
+            val isMapped = nodeMap.isMappedToMps(nodeId)
+            if (!isMapped) {
+                logger.info("Element represented by Modelix Node ($nodeId) is already removed from MPS.")
+                return@enqueue null
+            }
+
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
                 nodeTransformer.nodeDeleted(it, nodeId)
@@ -167,9 +177,7 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            val isMapped = nodeMap.isMappedToMps(nodeId)
-            // if isMapped == true, then we missed a possible removal case
-            logger.info("Node ($nodeId) was not removed from MPS, because it might have been already removed (isMapped=$isMapped).")
+            logger.error("We missed a removal case for Modelix Node ($nodeId).")
 
             null
         }
@@ -183,7 +191,7 @@ class ModelixTreeChangeVisitor(
         ) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (isMapped) {
-                logger.error("Node ($nodeId) is already mapped to MPS.")
+                logger.info("Node ($nodeId) is already mapped to MPS.")
                 return@enqueue null
             }
 
@@ -236,6 +244,12 @@ class ModelixTreeChangeVisitor(
             SyncDirection.MODELIX_TO_MPS,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
+            val nodeIsMapped = nodeMap.isMappedToMps(nodeId)
+            if (!nodeIsMapped) {
+                logger.info("Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore it cannot be moved to a new parent.")
+                return@enqueue null
+            }
+
             val iNode = getNode(nodeId)
             val newParent = iNode.parent
             if (newParent == null) {
@@ -243,6 +257,11 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
             val newParentId = newParent.nodeIdAsLong()
+            val parentIsMapped = nodeMap.isMappedToMps(newParentId)
+            if (!parentIsMapped) {
+                logger.error("Modelix Node ($nodeId)'s new parent ($newParentId) is not mapped to MPS yet. Therefore Node cannot be moved to a new parent.")
+                return@enqueue null
+            }
 
             val containmentLink = iNode.getContainmentLink()
             if (containmentLink == null) {
@@ -262,9 +281,7 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            val isMapped = nodeMap.isMappedToMps(newParentId)
-            // if isMapped == false, then we missed a possible new parent case
-            logger.error("Node ($nodeId) was not moved to a new parent, because Modelix Node $newParentId was not mapped to MPS yet (isMapped=$isMapped).")
+            logger.error("We missed a move to new parent case for Modelix Node ($nodeId).")
 
             null
         }

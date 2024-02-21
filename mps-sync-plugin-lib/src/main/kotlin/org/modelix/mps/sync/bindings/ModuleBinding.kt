@@ -48,11 +48,12 @@ class ModuleBinding(
     private var isDisposed = false
 
     @Volatile
-    private var beingDisposed = false
-
-    @Volatile
     private var isActivated = false
 
+    @Volatile
+    private var moduleDeletedLocally = false
+
+    @Synchronized
     override fun activate(callback: Runnable?) {
         if (isDisposed || isActivated) {
             return
@@ -72,45 +73,54 @@ class ModuleBinding(
     }
 
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
-        if (isDisposed || beingDisposed) {
+        if (isDisposed) {
             return CompletableFuture.completedFuture(null)
         }
 
         return syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
-            beingDisposed = true
+            synchronized(this) {
+                if (isActivated) {
+                    // unregister listener
+                    module.removeModuleListener(changeListener)
 
-            // unregister listener
-            module.removeModuleListener(changeListener)
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
-            val modelBindings = bindingsRegistry.getModelBindings(module)
+                    val modelBindings = bindingsRegistry.getModelBindings(module)
 
-            // deactivate child models' bindings and wait for their successful completion
-            // throws ExecutionException if any deactivation failed
-            modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }?.get()
+                    // deactivate child models' bindings and wait for their successful completion
+                    // throws ExecutionException if any deactivation failed
+                    modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }?.get()
 
-            // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
-            bindingsRegistry.removeModuleBinding(this)
-        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
-            // delete module
-            try {
-                if (!removeFromServer) {
-                    // if we just delete it locally, then we have to call ModuleDeleteHelper manually.
-                    // otherwise, MPS will call us via the event-handler chain starting from ModuleDeleteHelper.deleteModules --> RepositoryChangeListener --> moduleListener.deactivate(removeFromServer = true)
-                    ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!)
-                        .deleteModules(listOf(module), false, true)
+                    // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
+                    bindingsRegistry.removeModuleBinding(this)
+
+                    isActivated = false
                 }
-            } catch (ex: Exception) {
-                logger.error("Exception occurred while deactivating ${name()}.", ex)
-                // if any error occurs, then we put the binding back to let the rest of the application know that it exists
-                bindingsRegistry.addModuleBinding(this)
-                throw ex
+            }
+        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
+            synchronized(this) {
+                // delete module
+                try {
+                    if (!removeFromServer && !moduleDeletedLocally) {
+                        /**
+                         * if we just delete it locally, then we have to call ModuleDeleteHelper manually.
+                         * otherwise, MPS will call us via the event-handler chain starting from
+                         * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener --> moduleListener.deactivate(removeFromServer = true)
+                         */
+                        ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!)
+                            .deleteModules(listOf(module), false, true)
+                        moduleDeletedLocally = true
+                    }
+                } catch (ex: Exception) {
+                    logger.error("Exception occurred while deactivating ${name()}.", ex)
+                    // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                    bindingsRegistry.addModuleBinding(this)
+                    activate()
+                    throw ex
+                }
             }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
             nodeMap.remove(module)
 
             isDisposed = true
-            beingDisposed = false
-            isActivated = false
 
             logger.info(
                 "${name()} is deactivated and module is removed locally${

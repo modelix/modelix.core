@@ -48,11 +48,12 @@ class ModelBinding(
     private var isDisposed = false
 
     @Volatile
-    private var beingDisposed = false
-
-    @Volatile
     private var isActivated = false
 
+    @Volatile
+    private var modelDeletedLocally = false
+
+    @Synchronized
     override fun activate(callback: Runnable?) {
         if (isDisposed || isActivated) {
             return
@@ -69,34 +70,45 @@ class ModelBinding(
     }
 
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
-        if (isDisposed || beingDisposed) {
+        if (isDisposed) {
             return CompletableFuture.completedFuture(null)
         }
 
         return syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
-            beingDisposed = true
+            synchronized(this) {
+                if (isActivated) {
+                    // unregister listeners
+                    model.removeChangeListener(nodeChangeListener)
+                    model.removeModelListener(modelChangeListener)
 
-            // unregister listeners
-            model.removeChangeListener(nodeChangeListener)
-            model.removeModelListener(modelChangeListener)
+                    if (removeFromServer) {
+                        // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
+                        bindingsRegistry.removeModelBinding(model.module!!, this)
+                    }
 
-            if (removeFromServer) {
-                // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
-                bindingsRegistry.removeModelBinding(model.module!!, this)
+                    isActivated = false
+                }
             }
         }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
-            try {
-                // delete model
-                if (!removeFromServer) {
-                    // to delete the files locally
-                    // otherwise, MPS has to take care of triggering ModelDeleteHelper(model).delete() to delete the model
-                    ModelDeleteHelper(model).delete()
+            synchronized(this) {
+                try {
+                    // delete model
+                    if (!removeFromServer && !modelDeletedLocally) {
+                        /**
+                         * to delete the files locally, otherwise MPS takes care of calling
+                         * ModelDeleteHelper(model).delete() to delete the model (if removeFromServer is true)
+                         */
+                        ModelDeleteHelper(model).delete()
+                        modelDeletedLocally = true
+                    }
+                } catch (ex: Exception) {
+                    logger.error("Exception occurred while deactivating ${name()}.", ex)
+                    // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                    bindingsRegistry.addModelBinding(this)
+                    activate()
+
+                    throw ex
                 }
-            } catch (ex: Exception) {
-                logger.error("Exception occurred while deactivating ${name()}.", ex)
-                // if any error occurs, then we put the binding back to let the rest of the application know that it exists
-                bindingsRegistry.addModelBinding(this)
-                throw ex
             }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
             bindingsRegistry.removeModelBinding(model.module!!, this)
@@ -107,8 +119,6 @@ class ModelBinding(
             }
 
             isDisposed = true
-            beingDisposed = false
-            isActivated = false
 
             logger.info(
                 "${name()} is deactivated and model is removed locally${

@@ -41,9 +41,13 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
     ): ContinuableSyncTask {
         /**
          * WARNING: if you change enqueueBlocking to enqueue, then keep in mind that MPS might get frozen, because
-         * a non-running, but queued task might have taken the lock that is needed by the task (that is expected to be run next)
+         * a non-running, but queued task might have taken the lock that is needed by the task (that is expected
+         * to be run next)
+         *
+         * UPDATE: I'm (@benedekh) not entirely sure if we have to use enqueue or enqueueBlocking, because different
+         * tasks are blocked depending on which one we use.
          */
-        val result = SyncQueue.enqueueBlocking(linkedSetOf(SyncLock.NONE), syncDirection) {
+        val result = SyncQueue.enqueue(linkedSetOf(SyncLock.NONE), syncDirection) {
             // blocking wait for the result of the previous task
             val previousResult = waitForResult()
             val task = SyncTask(requiredLocks, syncDirection, action, previousResult)

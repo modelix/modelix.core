@@ -23,9 +23,10 @@ import jetbrains.mps.extapi.module.SModuleBase
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.structure.modules.ModuleReference
+import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.SModelReference
-import org.jetbrains.mps.openapi.language.SLanguage
+import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
@@ -193,9 +194,10 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
         val sourceModel = modelWithModuleReference.source
         val targetModuleReference = modelWithModuleReference.moduleReference
         when (val targetModule = targetModuleReference.resolve(sourceModel.repository)) {
-            is SLanguage -> {
+            is Language -> {
                 try {
-                    sourceModel.deleteLanguage(targetModule)
+                    val sLanguage = MetaAdapterFactory.getLanguage(targetModuleReference)
+                    sourceModel.deleteLanguage(sLanguage)
                 } catch (ex: Exception) {
                     val message =
                         "Language import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."

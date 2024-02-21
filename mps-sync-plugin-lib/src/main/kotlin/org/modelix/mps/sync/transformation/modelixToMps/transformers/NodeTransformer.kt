@@ -21,9 +21,12 @@ import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
+import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
@@ -134,6 +137,82 @@ class NodeTransformer(
     fun resolveReferences() {
         nodeFactory.resolveReferences()
         nodeFactory.clearResolvableReferences()
+    }
+
+    fun nodeDeleted(sNode: SNode, nodeId: Long) {
+        sNode.delete()
+        nodeMap.remove(nodeId)
+    }
+
+    fun nodePropertyChanged(sNode: SNode, role: String, nodeId: Long, newValue: String?) {
+        val sProperty = sNode.concept.properties.find { it.name == role }
+        if (sProperty == null) {
+            logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have property called $role.")
+            return
+        }
+
+        val oldValue = sNode.getProperty(sProperty)
+        if (oldValue != newValue) {
+            sNode.setProperty(sProperty, newValue)
+        }
+    }
+
+    fun nodeMovedToNewParent(
+        newParentId: Long,
+        sNode: SNode,
+        containmentLink: IChildLink,
+        nodeId: Long,
+    ) {
+        // node moved to a new parent node
+        val newParentNode = nodeMap.getNode(newParentId)
+        newParentNode?.let {
+            nodeMovedToNewParentNode(sNode, newParentNode, containmentLink, nodeId)
+            return
+        }
+
+        // node moved to a new parent model
+        val newParentModel = nodeMap.getModel(newParentId)
+        newParentModel?.let {
+            nodeMovedToNewParentModel(sNode, newParentModel)
+            return
+        }
+
+        logger.error("Node ($nodeId) was neither moved to a new parent node nor to a new parent model, because Modelix Node $newParentId was not mapped to MPS yet.")
+    }
+
+    private fun nodeMovedToNewParentNode(sNode: SNode, newParent: SNode, containmentLink: IChildLink, nodeId: Long) {
+        val oldParent = sNode.parent
+        if (oldParent == newParent) {
+            return
+        }
+
+        val containmentLinkName = containmentLink.getSimpleName()
+        val containment = newParent.concept.containmentLinks.find { it.name == containmentLinkName }
+        if (containment == null) {
+            logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have containment link called $containmentLinkName.")
+            return
+        }
+
+        // remove from old parent
+        oldParent?.removeChild(sNode)
+        sNode.model?.removeRootNode(sNode)
+
+        // add to new parent
+        newParent.addChild(containment, sNode)
+    }
+
+    private fun nodeMovedToNewParentModel(sNode: SNode, newParentModel: SModel) {
+        val parentModel = sNode.model
+        if (parentModel == newParentModel) {
+            return
+        }
+
+        // remove from old parent
+        parentModel?.removeRootNode(sNode)
+        sNode.parent?.removeChild(sNode)
+
+        // add to new parent
+        newParentModel.addRootNode(sNode)
     }
 
     private fun getDependentModule(iNode: INode): SModule {

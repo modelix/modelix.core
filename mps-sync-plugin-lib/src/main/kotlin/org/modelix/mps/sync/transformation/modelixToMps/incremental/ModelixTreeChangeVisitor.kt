@@ -17,45 +17,22 @@
 package org.modelix.mps.sync.transformation.modelixToMps.incremental
 
 import com.intellij.openapi.diagnostic.logger
-import jetbrains.mps.extapi.model.EditableSModelBase
-import jetbrains.mps.extapi.model.SModelBase
-import jetbrains.mps.extapi.module.SModuleBase
-import jetbrains.mps.model.ModelDeleteHelper
-import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
-import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
-import jetbrains.mps.project.Project
-import jetbrains.mps.project.structure.modules.SolutionDescriptor
-import jetbrains.mps.refactoring.Renamer
-import jetbrains.mps.smodel.ModelImports
-import org.jetbrains.mps.openapi.language.SLanguage
-import org.jetbrains.mps.openapi.model.SModel
-import org.jetbrains.mps.openapi.model.SNode
-import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.IChildLink
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.util.ModelRenameHelper
-import org.modelix.mps.sync.mps.util.deleteDevKit
-import org.modelix.mps.sync.mps.util.deleteLanguage
 import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.ModelWithModuleReference
-import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
-import org.modelix.mps.sync.util.BooleanUtil
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.isDevKitDependency
 import org.modelix.mps.sync.util.isModel
@@ -64,7 +41,6 @@ import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.isModuleDependency
 import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
-import java.text.ParseException
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelixTreeChangeVisitor(
@@ -125,19 +101,19 @@ class ModelixTreeChangeVisitor(
 
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
-                nodePropertyChanged(sNode, role, nodeId, newValue)
+                nodeTransformer.nodePropertyChanged(sNode, role, nodeId, newValue)
                 return@enqueue null
             }
 
             val sModel = nodeMap.getModel(nodeId)
             sModel?.let {
-                modelPropertyChanged(sModel, role, newValue, nodeId)
+                modelTransformer.modelPropertyChanged(sModel, role, newValue, nodeId)
                 return@enqueue null
             }
 
             val sModule = nodeMap.getModule(nodeId)
             sModule?.let {
-                modulePropertyChanged(role, nodeId, sModule, newValue)
+                moduleTransformer.modulePropertyChanged(role, nodeId, sModule, newValue)
                 return@enqueue null
             }
 
@@ -157,37 +133,37 @@ class ModelixTreeChangeVisitor(
         ) {
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
-                nodeDeleted(it, nodeId)
+                nodeTransformer.nodeDeleted(it, nodeId)
                 return@enqueue null
             }
 
             val sModel = nodeMap.getModel(nodeId)
             sModel?.let {
-                modelDeleted(sModel, nodeId)
+                modelTransformer.modelDeleted(sModel, nodeId)
                 return@enqueue null
             }
 
             val sModule = nodeMap.getModule(nodeId)
             sModule?.let {
-                moduleDeleted(sModule, nodeId)
+                moduleTransformer.moduleDeleted(sModule, nodeId)
                 return@enqueue null
             }
 
             val outgoingModelReference = nodeMap.getOutgoingModelReference(nodeId)
             outgoingModelReference?.let {
-                ModelImports(outgoingModelReference.source).removeModelImport(outgoingModelReference.modelReference)
+                modelTransformer.modeImportDeleted(it)
                 return@enqueue null
             }
 
             val outgoingModuleReferenceFromModel = nodeMap.getOutgoingModuleReferenceFromModel(nodeId)
             outgoingModuleReferenceFromModel?.let {
-                moduleDependencyOfModelDeleted(it, nodeId)
+                modelTransformer.moduleDependencyOfModelDeleted(it, nodeId)
                 return@enqueue null
             }
 
             val outgoingModuleReferenceFromModule = nodeMap.getOutgoingModuleReferenceFromModule(nodeId)
             outgoingModuleReferenceFromModule?.let {
-                outgoingModuleReferenceFromModuleDeleted(outgoingModuleReferenceFromModule, nodeId)
+                moduleTransformer.outgoingModuleReferenceFromModuleDeleted(outgoingModuleReferenceFromModule, nodeId)
                 return@enqueue null
             }
 
@@ -276,13 +252,13 @@ class ModelixTreeChangeVisitor(
 
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
-                nodeMovedToNewParent(newParentId, sNode, containmentLink, nodeId)
+                nodeTransformer.nodeMovedToNewParent(newParentId, sNode, containmentLink, nodeId)
                 return@enqueue null
             }
 
             val sModel = nodeMap.getModel(nodeId)
             sModel?.let {
-                modelMovedToNewParent(newParentId, nodeId, sModel)
+                modelTransformer.modelMovedToNewParent(newParentId, nodeId, sModel)
                 return@enqueue null
             }
 
@@ -295,258 +271,4 @@ class ModelixTreeChangeVisitor(
     }
 
     private fun getNode(nodeId: Long) = replicatedModel.getBranch().getNode(nodeId)
-
-    private fun nodePropertyChanged(sNode: SNode, role: String, nodeId: Long, newValue: String?) {
-        val sProperty = sNode.concept.properties.find { it.name == role }
-        if (sProperty == null) {
-            logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have property called $role.")
-            return
-        }
-
-        val oldValue = sNode.getProperty(sProperty)
-        if (oldValue != newValue) {
-            sNode.setProperty(sProperty, newValue)
-        }
-    }
-
-    private fun modelPropertyChanged(sModel: SModel, role: String, newValue: String?, nodeId: Long) {
-        val modelId = sModel.modelId
-
-        if (role == BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName()) {
-            val oldValue = sModel.name.value
-            if (oldValue != newValue) {
-                if (newValue.isNullOrEmpty()) {
-                    logger.error("Name cannot be null or empty for Model $modelId. Corresponding Modelix Node ID is $nodeId.")
-                    return
-                } else if (sModel !is EditableSModelBase) {
-                    logger.error("SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId.")
-                    return
-                }
-
-                ModelRenameHelper(sModel).renameModel(newValue)
-            }
-        } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype.getSimpleName()) {
-            val oldValue = sModel.name.stereotype
-            if (oldValue != newValue) {
-                if (sModel !is EditableSModelBase) {
-                    logger.error("SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId.")
-                    return
-                }
-
-                ModelRenameHelper(sModel).changeStereotype(newValue)
-            }
-        } else {
-            logger.error("Role $role is unknown for concept Model. Therefore the property is not set in MPS from Modelix Node $nodeId")
-        }
-    }
-
-    private fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?) {
-        val moduleId = sModule.moduleId
-        if (sModule !is AbstractModule) {
-            logger.error("SModule ($moduleId) is not an AbstractModule, therefore its $role property cannot be changed. Corresponding Modelix Node ID is $nodeId.")
-            return
-        }
-
-        if (role == BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName()) {
-            val oldValue = sModule.moduleName
-            if (oldValue != newValue) {
-                if (newValue.isNullOrEmpty()) {
-                    logger.error("Name cannot be null or empty for Module $moduleId. Corresponding Modelix Node ID is $nodeId.")
-                    return
-                }
-
-                val activeProject = ActiveMpsProjectInjector.activeMpsProject as Project
-                Renamer(activeProject).renameModule(sModule, newValue)
-            }
-        } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion.getSimpleName()) {
-            try {
-                val newVersion = newValue?.toInt() ?: return
-                val oldVersion = sModule.moduleVersion
-                if (oldVersion != newVersion) {
-                    sModule.moduleVersion = newVersion
-                }
-            } catch (ex: NumberFormatException) {
-                logger.error("New module version ($newValue) of SModule ($moduleId) is not an integer, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId.")
-            }
-        } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS.getSimpleName()) {
-            try {
-                val newCompileInMPS = newValue?.let { BooleanUtil.toBooleanStrict(it) } ?: return
-                val moduleDescriptor = sModule.moduleDescriptor ?: return
-                val oldCompileInMPS = moduleDescriptor.compileInMPS
-                if (oldCompileInMPS != newCompileInMPS) {
-                    if (moduleDescriptor !is SolutionDescriptor) {
-                        logger.error("Module ($moduleId)'s descriptor is not a SolutionDescriptor, therefore compileInMPS will not be (un)set in MPS. Corresponding Modelix Node ID is $nodeId.")
-                        return
-                    }
-                    moduleDescriptor.compileInMPS = newCompileInMPS
-                }
-            } catch (ex: ParseException) {
-                logger.error("New compileInMPS ($newValue) property of SModule ($moduleId) is not a strict boolean, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId.")
-            }
-        } else {
-            logger.error("Role $role is unknown for concept Module. Therefore the property is not set in MPS from Modelix Node $nodeId")
-        }
-    }
-
-    private fun nodeDeleted(it: SNode, nodeId: Long) {
-        it.delete()
-        nodeMap.remove(nodeId)
-    }
-
-    private fun modelDeleted(sModel: SModel, nodeId: Long) {
-        ModelDeleteHelper(sModel).delete()
-        nodeMap.remove(nodeId)
-    }
-
-    private fun moduleDeleted(sModule: SModule, nodeId: Long) {
-        sModule.models.forEach { model ->
-            val modelNodeId = nodeMap[model]
-            ModelDeleteHelper(model).delete()
-            modelNodeId?.let { nodeMap.remove(it) }
-        }
-        ModuleDeleteHelper(project).deleteModules(listOf(sModule), false, true)
-        nodeMap.remove(nodeId)
-    }
-
-    private fun nodeMovedToNewParent(
-        newParentId: Long,
-        sNode: SNode,
-        containmentLink: IChildLink,
-        nodeId: Long,
-    ) {
-        // node moved to a new parent node
-        val newParentNode = nodeMap.getNode(newParentId)
-        newParentNode?.let {
-            nodeMovedToNewParentNode(sNode, newParentNode, containmentLink, nodeId)
-            return
-        }
-
-        // node moved to a new parent model
-        val newParentModel = nodeMap.getModel(newParentId)
-        newParentModel?.let {
-            nodeMovedToNewParentModel(sNode, newParentModel)
-            return
-        }
-
-        logger.error("Node ($nodeId) was neither moved to a new parent node nor to a new parent model, because Modelix Node $newParentId was not mapped to MPS yet.")
-    }
-
-    private fun nodeMovedToNewParentNode(sNode: SNode, newParent: SNode, containmentLink: IChildLink, nodeId: Long) {
-        val oldParent = sNode.parent
-        if (oldParent == newParent) {
-            return
-        }
-
-        val containmentLinkName = containmentLink.getSimpleName()
-        val containment = newParent.concept.containmentLinks.find { it.name == containmentLinkName }
-        if (containment == null) {
-            logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have containment link called $containmentLinkName.")
-            return
-        }
-
-        // remove from old parent
-        oldParent?.removeChild(sNode)
-        sNode.model?.removeRootNode(sNode)
-
-        // add to new parent
-        newParent.addChild(containment, sNode)
-    }
-
-    private fun nodeMovedToNewParentModel(sNode: SNode, newParentModel: SModel) {
-        val parentModel = sNode.model
-        if (parentModel == newParentModel) {
-            return
-        }
-
-        // remove from old parent
-        parentModel?.removeRootNode(sNode)
-        sNode.parent?.removeChild(sNode)
-
-        // add to new parent
-        newParentModel.addRootNode(sNode)
-    }
-
-    private fun modelMovedToNewParent(newParentId: Long, nodeId: Long, sModel: SModel) {
-        val newParentModule = nodeMap.getModule(newParentId)
-        if (newParentModule == null) {
-            logger.error("Modelix Node ($nodeId) that is a Model, was not moved to a new parent module, because new parent Module (Modelix Node $newParentId) was not mapped to MPS yet.")
-            return
-        }
-
-        val oldParentModule = sModel.module
-        if (oldParentModule == newParentModule) {
-            return
-        }
-
-        // remove from old parent
-        if (oldParentModule !is SModuleBase) {
-            logger.error("Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS.")
-            return
-        } else if (sModel !is SModelBase) {
-            logger.error("Model ${sModel.modelId} is not an SModelBase")
-            return
-        }
-        oldParentModule.unregisterModel(sModel)
-        sModel.module = null
-
-        // add to new parent
-        if (newParentModule !is SModuleBase) {
-            logger.error("New parent Module ${newParentModule.moduleId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS.")
-            return
-        }
-        newParentModule.registerModel(sModel)
-    }
-
-    private fun moduleDependencyOfModelDeleted(
-        outgoingModuleReferenceFromModel: ModelWithModuleReference,
-        nodeId: Long,
-    ) {
-        val sourceModel = outgoingModuleReferenceFromModel.source
-        val targetModuleReference = outgoingModuleReferenceFromModel.moduleReference
-        when (val targetModule = targetModuleReference.resolve(sourceModel.repository)) {
-            is SLanguage -> {
-                try {
-                    sourceModel.deleteLanguage(targetModule)
-                } catch (ex: Exception) {
-                    val message =
-                        "Language import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
-                    logger.error(message, ex)
-                }
-            }
-
-            is DevKit -> {
-                try {
-                    sourceModel.deleteDevKit(targetModuleReference)
-                } catch (ex: Exception) {
-                    val message =
-                        "DevKit dependency ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
-                    logger.error(message, ex)
-                }
-            }
-
-            else -> {
-                logger.error("Target module referred by $targetModuleReference is neither a Language nor DevKit. Therefore the dependency for it cannot be deleted. Corresponding Modelix Node ID is $nodeId.")
-            }
-        }
-    }
-
-    private fun outgoingModuleReferenceFromModuleDeleted(
-        outgoingModuleReferenceFromModule: ModuleWithModuleReference,
-        nodeId: Long,
-    ) {
-        val sourceModule = outgoingModuleReferenceFromModule.source
-        if (sourceModule !is AbstractModule) {
-            logger.error("Source module ($sourceModule) is not an AbstractModule, therefore outgoing module dependency reference cannot be removed. Corresponding Modelix Node ID is $nodeId.")
-            return
-        }
-
-        val targetModuleReference = outgoingModuleReferenceFromModule.moduleReference
-        val dependency =
-            sourceModule.moduleDescriptor?.dependencies?.firstOrNull { it.moduleRef == targetModuleReference }
-        if (dependency != null) {
-            sourceModule.removeDependency(dependency)
-        } else {
-            logger.error("Outgoing dependency $targetModuleReference from Module $sourceModule is not found, therefore it cannot be deleted. Corresponding Modelix Node ID is $nodeId.")
-        }
-    }
 }

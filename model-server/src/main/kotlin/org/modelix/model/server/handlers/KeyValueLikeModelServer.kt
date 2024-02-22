@@ -96,7 +96,9 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
             get<Paths.getHealth> {
                 // eagerly load model into memory to speed up ModelQL queries
                 val branchRef = System.getenv("MODELIX_SERVER_MODELQL_WARMUP_REPOSITORY")?.let { RepositoryId(it) }
-                    ?.getBranchReference(System.getenv("MODELIX_SERVER_MODELQL_WARMUP_BRANCH"))
+                    ?.let { repoId ->
+                        System.getenv("MODELIX_SERVER_MODELQL_WARMUP_BRANCH")?.let { repoId.getBranchReference(it) }
+                    }
                 if (branchRef != null) {
                     val version = repositoriesManager.getVersion(branchRef)
                     if (!repositoriesManager.inMemoryModels.loadModelAsync(version!!.getTree())) {

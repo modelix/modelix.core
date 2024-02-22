@@ -8,6 +8,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import java.net.URL
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 interface SyncService {
@@ -37,7 +38,7 @@ interface IBinding {
 
     fun activate(callback: Runnable? = null)
 
-    fun deactivate(removeFromServer: Boolean, callback: Runnable? = null)
+    fun deactivate(removeFromServer: Boolean, callback: Runnable? = null): CompletableFuture<*>
 
     fun name(): String
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2024.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.modelix
+package org.modelix.mps.sync.tasks
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.client2.ReplicatedModel
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-object ReplicatedModelRegistry {
-    // TODO what shall happen if we switch ReplicatedModels? Some threads might still be working on the old ReplicatedModel. (with other words: search for all places where this field is referred to and think about if it can cause trouble if we change this reference to another one suddenly..)
-    var model: ReplicatedModel? = null
+enum class InspectionMode {
+    CHECK_EXECUTION_THREAD,
+    OFF,
 }

@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.util
+package org.modelix.mps.sync.tasks
 
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.containers.headTail
-import jetbrains.mps.util.containers.ConcurrentHashSet
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -31,51 +32,68 @@ object SyncQueue {
 
     private val logger = logger<SyncQueue>()
 
-    private val activeSyncThreads = ConcurrentHashSet<Thread>()
+    private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
 
     fun enqueue(
         requiredLocks: LinkedHashSet<SyncLock>,
-        checkExecutionThread: Boolean = false,
+        syncDirection: SyncDirection,
+        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
-        val task = SyncTask(requiredLocks, action)
-        enqueue(task, checkExecutionThread)
-        return ContinuableSyncTask(task, this)
+        val task = SyncTask(requiredLocks, syncDirection, action)
+        enqueue(task, inspectionMode)
+        return ContinuableSyncTask(task)
     }
 
     fun enqueueBlocking(
         requiredLocks: LinkedHashSet<SyncLock>,
-        checkExecutionThread: Boolean = false,
+        syncDirection: SyncDirection,
+        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
-        val task = SyncTask(requiredLocks, action)
-        enqueueBlocking(task, checkExecutionThread)
-        return ContinuableSyncTask(task, this)
+        val task = SyncTask(requiredLocks, syncDirection, action)
+        enqueueBlocking(task, inspectionMode)
+        return ContinuableSyncTask(task)
     }
 
-    fun enqueue(task: SyncTask, checkExecutionThread: Boolean) {
+    fun enqueue(task: SyncTask, inspectionMode: InspectionMode) {
         /**
          * If we have to check the execution thread, then do not schedule Task if it is initiated on a Thread that is
-         * running a synchronization. This might be a symptom of a "Table tennis" (ping-pong) effect in which a change
-         * in MPS triggers a change in Modelix which triggers a change in MPS again via the *ChangeListener and
-         * ModelixTreeChangeVisitor chains registered in MPS and in Modelix, respectively.
+         * running a synchronization and the sync direction is the opposite of what is running on the thread already.
+         * This might be a symptom of a "Table tennis" (ping-pong) effect in which a change in MPS triggers a change
+         * in Modelix which triggers a change in MPS again via the *ChangeListener and ModelixTreeChangeVisitor chains
+         * registered in MPS and in Modelix, respectively.
          *
          * Because the SyncTasks are executed on separate threads by the ExecutorService (see SharedExecutors.FIXED),
          * there is a very little chance of missing an intended change on other side. With other words: there is very
          * little chance that it makes sense that on the same thread two SyncTasks occur.
          */
-        if (checkExecutionThread && activeSyncThreads.contains(Thread.currentThread())) {
-            task.result.complete(null)
+        if (inspectionMode == InspectionMode.CHECK_EXECUTION_THREAD) {
+            val taskSyncDirection = task.syncDirection
+            val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
+
+            val noTaskIsRunning = runningSyncDirection == null
+            val runningTaskDirectionIsTheSame = taskSyncDirection == runningSyncDirection
+            val isNoneDirection = taskSyncDirection == SyncDirection.NONE || runningSyncDirection == SyncDirection.NONE
+            if (noTaskIsRunning || isNoneDirection || runningTaskDirectionIsTheSame) {
+                enqueueAndFlush(task)
+            } else {
+                task.result.complete(null)
+            }
         } else {
-            tasks.add(task)
-            scheduleFlush()
+            enqueueAndFlush(task)
         }
     }
 
-    fun enqueueBlocking(task: SyncTask, checkExecutionThread: Boolean) {
-        enqueue(task, checkExecutionThread)
+    private fun enqueueBlocking(task: SyncTask, inspectionMode: InspectionMode) {
+        enqueue(task, inspectionMode)
         task.result.get()
+    }
+
+    private fun enqueueAndFlush(task: SyncTask) {
+        tasks.add(task)
+        scheduleFlush()
     }
 
     private fun scheduleFlush() {
@@ -85,14 +103,10 @@ object SyncQueue {
     }
 
     private fun doFlush() {
-        activeSyncThreads.add(Thread.currentThread())
-
         while (!tasks.isEmpty()) {
-            val task = tasks.poll()
+            val task = tasks.poll() ?: return
             runWithLocks(task.sortedLocks, task)
         }
-
-        activeSyncThreads.remove(Thread.currentThread())
     }
 
     private fun runWithLocks(locks: LinkedHashSet<SyncLock>, task: SyncTask) {
@@ -100,14 +114,21 @@ object SyncQueue {
 
         if (locks.isEmpty()) {
             val result = task.action.invoke(task.previousTaskResult)
-            taskResult.complete(result)
+            if (result is CompletableFuture<*> && result.isCompletedExceptionally) {
+                result.handle { _, throwable -> taskResult.completeExceptionally(throwable) }
+            } else {
+                taskResult.complete(result)
+            }
         } else {
             val lockHeadAndTail = locks.toList().headTail()
             val lockHead = lockHeadAndTail.first
 
             runWithLock(lockHead) {
                 val currentThread = Thread.currentThread()
-                val wasAddedHere = activeSyncThreads.add(currentThread)
+                val wasAddedHere = !activeSyncThreadsWithSyncDirection.containsKey(currentThread)
+                if (wasAddedHere) {
+                    activeSyncThreadsWithSyncDirection[currentThread] = task.syncDirection
+                }
 
                 try {
                     val lockTail = lockHeadAndTail.second
@@ -122,8 +143,8 @@ object SyncQueue {
                     throw t
                 } finally {
                     if (wasAddedHere) {
-                        // do not remove threads that were registered somewhere else (i.e. above in the SyncQueue class)
-                        activeSyncThreads.remove(currentThread)
+                        // do not remove threads that were registered somewhere else
+                        activeSyncThreadsWithSyncDirection.remove(currentThread)
                     }
                 }
             }

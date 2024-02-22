@@ -29,11 +29,15 @@ import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
+import org.modelix.mps.sync.tasks.InspectionMode
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.ContinuableSyncTask
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.waitForCompletionOfEachTask
+import java.util.concurrent.CopyOnWriteArrayList
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSynchronizer(
@@ -45,26 +49,30 @@ class ModelSynchronizer(
 ) {
 
     private val nodeSynchronizer = if (postponeReferenceResolution) {
-        NodeSynchronizer(branch, nodeMap, syncQueue, mutableListOf())
+        NodeSynchronizer(branch, nodeMap, syncQueue, CopyOnWriteArrayList<CloudResolvableReference>())
     } else {
         NodeSynchronizer(branch, nodeMap, syncQueue)
     }
 
     private val resolvableModelImports = if (postponeReferenceResolution) {
-        mutableListOf<CloudResolvableModelImport>()
+        CopyOnWriteArrayList<CloudResolvableModelImport>()
     } else {
         null
     }
 
     fun addModelAndActivate(model: SModelBase) {
         addModel(model)
-            .continueWith(linkedSetOf(SyncLock.NONE)) {
+            .continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
                 (it as IBinding).activate()
             }
     }
 
     fun addModel(model: SModelBase): ContinuableSyncTask =
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val moduleModelixId = nodeMap[model.module]!!
             val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
@@ -74,19 +82,42 @@ class ModelSynchronizer(
             nodeMap.put(model, cloudModel.nodeIdAsLong())
 
             synchronizeModelProperties(cloudModel, model)
+        }.continueWith(
+            linkedSetOf(SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             // synchronize root nodes
-            model.rootNodes.forEach { nodeSynchronizer.addNode(it) }
+            model.rootNodes.waitForCompletionOfEachTask { nodeSynchronizer.addNode(it) }
+        }.continueWith(
+            linkedSetOf(SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             // synchronize model imports
-            model.modelImports.forEach { addModelImport(model, it) }
+            model.modelImports.waitForCompletionOfEachTask { addModelImport(model, it) }
+        }.continueWith(
+            linkedSetOf(SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             // synchronize language dependencies
-            model.importedLanguageIds().forEach { addLanguageDependency(model, it) }
+            model.importedLanguageIds().waitForCompletionOfEachTask { addLanguageDependency(model, it) }
+        }.continueWith(
+            linkedSetOf(SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             // synchronize devKits
-            model.importedDevkits().forEach { addDevKitDependency(model, it) }
-
+            model.importedDevkits().waitForCompletionOfEachTask { addDevKitDependency(model, it) }
+        }.continueWith(
+            linkedSetOf(SyncLock.NONE),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             // register binding
             val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
             bindingsRegistry.addModelBinding(binding)
-
             binding
         }
 
@@ -104,8 +135,12 @@ class ModelSynchronizer(
         }
     }
 
-    fun addModelImport(model: SModel, importedModelReference: SModelReference) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), true) {
+    fun addModelImport(model: SModel, importedModelReference: SModelReference) =
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val targetModel = importedModelReference.resolve(model.repository)
             if (resolvableModelImports != null) {
                 resolvableModelImports.add(CloudResolvableModelImport(model, targetModel))
@@ -113,7 +148,6 @@ class ModelSynchronizer(
                 addModelImportToCloud(model, targetModel)
             }
         }
-    }
 
     private fun addModelImportToCloud(source: SModel, targetModel: SModel) {
         val modelixId = nodeMap[source]!!
@@ -121,24 +155,26 @@ class ModelSynchronizer(
         val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
         val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
 
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ)) {
-            val cloudParentNode = branch.getNode(modelixId)
-            val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
+        val cloudParentNode = branch.getNode(modelixId)
+        val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
 
-            nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
+        nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the fields by hand
-            val targetModelModelixId = nodeMap[targetModel]!!
-            val cloudTargetModel = branch.getNode(targetModelModelixId)
-            cloudModelReference.setReferenceTarget(
-                BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
-                cloudTargetModel,
-            )
-        }
+        // warning: might be fragile, because we synchronize the fields by hand
+        val targetModelModelixId = nodeMap[targetModel]!!
+        val cloudTargetModel = branch.getNode(targetModelModelixId)
+        cloudModelReference.setReferenceTarget(
+            BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
+            cloudTargetModel,
+        )
     }
 
-    fun addLanguageDependency(model: SModel, language: SLanguage) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
+    fun addLanguageDependency(model: SModel, language: SLanguage) =
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val modelixId = nodeMap[model]!!
 
             val languageModuleReference = language.sourceModuleReference
@@ -170,10 +206,13 @@ class ModelSynchronizer(
                 model.module.getUsedLanguageVersion(language).toString(),
             )
         }
-    }
 
-    fun addDevKitDependency(model: SModel, devKit: SModuleReference) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
+    fun addDevKitDependency(model: SModel, devKit: SModuleReference) =
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val modelixId = nodeMap[model]!!
 
             val repository = model.repository
@@ -198,7 +237,6 @@ class ModelSynchronizer(
                 devKitModule?.moduleId.toString(),
             )
         }
-    }
 
     private fun resolveModelImports() {
         resolvableModelImports?.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
@@ -207,10 +245,8 @@ class ModelSynchronizer(
 
     fun resolveCrossModelReferences() {
         resolveModelImports()
-
         // resolve (cross-model) references
         nodeSynchronizer.resolveReferences()
-        nodeSynchronizer.clearResolvableReferences()
     }
 }
 

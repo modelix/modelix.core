@@ -16,9 +16,17 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.transformers
 
+import com.intellij.openapi.diagnostic.logger
+import jetbrains.mps.extapi.model.EditableSModelBase
+import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.extapi.module.SModuleBase
+import jetbrains.mps.model.ModelDeleteHelper
+import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.structure.modules.ModuleReference
+import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.SModelReference
+import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
@@ -27,10 +35,16 @@ import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
+import org.modelix.mps.sync.mps.util.ModelRenameHelper
 import org.modelix.mps.sync.mps.util.createModel
+import org.modelix.mps.sync.mps.util.deleteDevKit
+import org.modelix.mps.sync.mps.util.deleteLanguage
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.cache.ModelWithModelReference
+import org.modelix.mps.sync.transformation.cache.ModelWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.nodeIdAsLong
@@ -38,7 +52,10 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQueue: SyncQueue) {
 
+    private val logger = logger<ModelTransformer>()
+
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
+
     fun transformToModel(iNode: INode) {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         check(name != null) { "Model's ($iNode) name is null" }
@@ -52,7 +69,10 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
         val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
         lateinit var sModel: EditableSModel
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ)) {
+        syncQueue.enqueueBlocking(
+            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
+            SyncDirection.MODELIX_TO_MPS,
+        ) {
             val modelDoesNotExist = module.getModel(modelId) == null
             if (modelDoesNotExist) {
                 sModel = module.createModel(name, modelId) as EditableSModel
@@ -91,14 +111,115 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
             val sourceModel = it.source
-            syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE)) {
+            syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
                 ModelImports(sourceModel).addModelImport(modelImport)
             }
             nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)
         }
+        resolvableModelImports.clear()
     }
 
-    fun clearResolvableModelImports() = resolvableModelImports.clear()
+    fun modelPropertyChanged(sModel: SModel, role: String, newValue: String?, nodeId: Long) {
+        val modelId = sModel.modelId
+
+        if (role == BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName()) {
+            val oldValue = sModel.name.value
+            if (oldValue != newValue) {
+                if (newValue.isNullOrEmpty()) {
+                    logger.error("Name cannot be null or empty for Model $modelId. Corresponding Modelix Node ID is $nodeId.")
+                    return
+                } else if (sModel !is EditableSModelBase) {
+                    logger.error("SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId.")
+                    return
+                }
+
+                ModelRenameHelper(sModel).renameModel(newValue)
+            }
+        } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype.getSimpleName()) {
+            val oldValue = sModel.name.stereotype
+            if (oldValue != newValue) {
+                if (sModel !is EditableSModelBase) {
+                    logger.error("SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId.")
+                    return
+                }
+
+                ModelRenameHelper(sModel).changeStereotype(newValue)
+            }
+        } else {
+            logger.error("Role $role is unknown for concept Model. Therefore the property is not set in MPS from Modelix Node $nodeId")
+        }
+    }
+
+    fun modelMovedToNewParent(newParentId: Long, nodeId: Long, sModel: SModel) {
+        val newParentModule = nodeMap.getModule(newParentId)
+        if (newParentModule == null) {
+            logger.error("Modelix Node ($nodeId) that is a Model, was not moved to a new parent module, because new parent Module (Modelix Node $newParentId) was not mapped to MPS yet.")
+            return
+        }
+
+        val oldParentModule = sModel.module
+        if (oldParentModule == newParentModule) {
+            return
+        }
+
+        // remove from old parent
+        if (oldParentModule !is SModuleBase) {
+            logger.error("Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS.")
+            return
+        } else if (sModel !is SModelBase) {
+            logger.error("Model ${sModel.modelId} is not an SModelBase")
+            return
+        }
+        oldParentModule.unregisterModel(sModel)
+        sModel.module = null
+
+        // add to new parent
+        if (newParentModule !is SModuleBase) {
+            logger.error("New parent Module ${newParentModule.moduleId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS.")
+            return
+        }
+        newParentModule.registerModel(sModel)
+    }
+
+    fun modelDeleted(sModel: SModel, nodeId: Long) {
+        ModelDeleteHelper(sModel).delete()
+        nodeMap.remove(nodeId)
+    }
+
+    fun modeImportDeleted(outgoingModelReference: ModelWithModelReference) {
+        ModelImports(outgoingModelReference.source).removeModelImport(outgoingModelReference.modelReference)
+    }
+
+    fun moduleDependencyOfModelDeleted(modelWithModuleReference: ModelWithModuleReference, nodeId: Long) {
+        val sourceModel = modelWithModuleReference.source
+        val targetModuleReference = modelWithModuleReference.moduleReference
+        when (val targetModule = targetModuleReference.resolve(sourceModel.repository)) {
+            is Language -> {
+                try {
+                    val sLanguage = MetaAdapterFactory.getLanguage(targetModuleReference)
+                    sourceModel.deleteLanguage(sLanguage)
+                } catch (ex: Exception) {
+                    val message =
+                        "Language import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
+                    logger.error(message, ex)
+                }
+            }
+
+            is DevKit -> {
+                try {
+                    sourceModel.deleteDevKit(targetModuleReference)
+                } catch (ex: Exception) {
+                    val message =
+                        "DevKit dependency ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
+                    logger.error(message, ex)
+                }
+            }
+
+            else -> {
+                logger.error("Target module referred by $targetModuleReference is neither a Language nor DevKit. Therefore the dependency for it cannot be deleted. Corresponding Modelix Node ID is $nodeId.")
+            }
+        }
+    }
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

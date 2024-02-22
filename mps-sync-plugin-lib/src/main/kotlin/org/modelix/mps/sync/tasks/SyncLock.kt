@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.util
+package org.modelix.mps.sync.tasks
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
 

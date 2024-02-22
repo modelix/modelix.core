@@ -248,7 +248,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             unbindButton.addActionListener {
                 existingBindingCB.selectedItem?.let {
                     (it as IBinding).deactivate(removeFromServer = false)
-                    existingBindingCB.removeItem(it)
                 }
             }
             bindingsPanel.add(unbindButton)

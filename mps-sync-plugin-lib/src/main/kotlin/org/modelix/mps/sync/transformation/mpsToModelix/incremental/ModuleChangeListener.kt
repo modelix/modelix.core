@@ -29,13 +29,15 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
+import org.modelix.mps.sync.tasks.InspectionMode
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -69,7 +71,11 @@ class ModuleChangeListener(
     }
 
     override fun moduleChanged(module: SModule) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
             val iModuleNodeId = nodeMap[module]!!
             val iModule = branch.getNode(iModuleNodeId)
 
@@ -78,7 +84,7 @@ class ModuleChangeListener(
             val iName = iModule.getPropertyValue(nameProperty)
             val actualName = module.moduleName!!
             if (actualName != iName) {
-                nodeSynchronizer.runSetPropertyAction(
+                nodeSynchronizer.setProperty(
                     nameProperty,
                     actualName,
                     sourceNodeIdProducer = { iModuleNodeId },
@@ -94,7 +100,7 @@ class ModuleChangeListener(
                     ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == sDependency.targetModule.moduleId
                 }
             }
-            addedDependencies.forEach { dependency -> moduleSynchronizer.runAddDependencyAction(module, dependency) }
+            addedDependencies.forEach { dependency -> moduleSynchronizer.addDependency(module, dependency) }
 
             val removedDependencies = lastKnownDependencies.filter { dependencyINode ->
                 val targetModuleIdAccordingToModelix =
@@ -104,7 +110,7 @@ class ModuleChangeListener(
                 }
             }
             removedDependencies.forEach { dependencyINode ->
-                nodeSynchronizer.runRemoveNodeAction(
+                nodeSynchronizer.removeNode(
                     parentNodeIdProducer = { it[module]!! },
                     childNodeIdProducer = { dependencyINode.nodeIdAsLong() },
                 )

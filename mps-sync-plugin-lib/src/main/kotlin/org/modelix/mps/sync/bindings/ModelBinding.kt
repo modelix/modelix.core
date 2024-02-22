@@ -22,11 +22,13 @@ import jetbrains.mps.model.ModelDeleteHelper
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelBinding(
@@ -42,13 +44,18 @@ class ModelBinding(
     private val modelChangeListener = ModelChangeListener(branch, nodeMap, bindingsRegistry, syncQueue, this)
     private val nodeChangeListener = NodeChangeListener(branch, nodeMap, syncQueue)
 
+    @Volatile
     private var isDisposed = false
-    private var beingDisposed = false
+
+    @Volatile
     private var isActivated = false
 
+    @Volatile
+    private var modelDeletedLocally = false
+
+    @Synchronized
     override fun activate(callback: Runnable?) {
-        check(!isDisposed) { "${name()} is disposed." }
-        if (isActivated) {
+        if (isDisposed || isActivated) {
             return
         }
 
@@ -62,38 +69,49 @@ class ModelBinding(
         callback?.run()
     }
 
-    override fun deactivate(removeFromServer: Boolean, callback: Runnable?) {
-        if (isDisposed || beingDisposed) {
-            return
-        }
-        beingDisposed = true
-
-        // unregister listeners
-        model.removeChangeListener(nodeChangeListener)
-        model.removeModelListener(modelChangeListener)
-
-        val parentModule = model.module!!
-        if (removeFromServer) {
-            // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
-            bindingsRegistry.removeModelBinding(parentModule, this)
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
+        if (isDisposed) {
+            return CompletableFuture.completedFuture(null)
         }
 
-        // delete model
-        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE)) {
-            try {
-                if (!removeFromServer) {
-                    // to delete the files locally
-                    // otherwise, MPS has to take care of triggering ModelDeleteHelper(model).delete() to delete the model
-                    ModelDeleteHelper(model).delete()
+        return syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+            synchronized(this) {
+                if (isActivated) {
+                    // unregister listeners
+                    model.removeChangeListener(nodeChangeListener)
+                    model.removeModelListener(modelChangeListener)
+
+                    if (removeFromServer) {
+                        // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
+                        bindingsRegistry.removeModelBinding(model.module!!, this)
+                    }
+
+                    isActivated = false
                 }
-            } catch (ex: Exception) {
-                logger.error("Exception occurred while deactivating ${name()}.", ex)
-                // if any error occurs, then we put the binding back to let the rest of the application know that it exists
-                bindingsRegistry.addModelBinding(this)
-                throw ex
             }
-        }.continueWith(linkedSetOf(SyncLock.NONE)) {
-            bindingsRegistry.removeModelBinding(parentModule, this)
+        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
+            synchronized(this) {
+                try {
+                    // delete model
+                    if (!removeFromServer && !modelDeletedLocally) {
+                        /**
+                         * to delete the files locally, otherwise MPS takes care of calling
+                         * ModelDeleteHelper(model).delete() to delete the model (if removeFromServer is true)
+                         */
+                        ModelDeleteHelper(model).delete()
+                        modelDeletedLocally = true
+                    }
+                } catch (ex: Exception) {
+                    logger.error("Exception occurred while deactivating ${name()}.", ex)
+                    // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                    bindingsRegistry.addModelBinding(this)
+                    activate()
+
+                    throw ex
+                }
+            }
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+            bindingsRegistry.removeModelBinding(model.module!!, this)
 
             if (!removeFromServer) {
                 // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
@@ -101,8 +119,6 @@ class ModelBinding(
             }
 
             isDisposed = true
-            beingDisposed = false
-            isActivated = false
 
             logger.info(
                 "${name()} is deactivated and model is removed locally${
@@ -115,7 +131,7 @@ class ModelBinding(
             )
 
             callback?.run()
-        }
+        }.getResult()
     }
 
     override fun name() = "Binding of Model \"${model.name}\""

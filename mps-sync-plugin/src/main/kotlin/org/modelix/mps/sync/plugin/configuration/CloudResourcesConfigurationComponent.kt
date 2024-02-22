@@ -16,15 +16,13 @@
 
 package org.modelix.mps.sync.plugin.configuration
 
-import com.intellij.openapi.components.BaseState
+import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.SimplePersistentStateComponent
 import com.intellij.openapi.components.State
-import com.intellij.openapi.diagnostic.logger
-import com.intellij.util.xmlb.Converter
-import com.intellij.util.xmlb.annotations.OptionTag
+import com.intellij.openapi.components.Storage
+import com.intellij.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import kotlin.reflect.KProperty
 
 /**
  * This component handles the storage of the cloud configuration.
@@ -35,112 +33,32 @@ import kotlin.reflect.KProperty
 @State(
     name = "CloudResources",
     // TODO see what happens when we switch between projects. If the state gets persisted and/or overriden by the info from another project.
-    // storages = [Storage(StoragePathMacros.WORKSPACE_FILE)],
-    // storages = [Storage("cloudSettings.xml", roamingType = RoamingType.DISABLED)],
+    storages = [Storage("cloudSettings.xml", roamingType = RoamingType.DISABLED)],
+    reloadable = true,
 )
-class CloudResourcesConfigurationComponent :
-    SimplePersistentStateComponent<CloudResourcesConfigurationComponent.State>(State.INSTANCE) {
+// todo remove project parameter, if not used and if possible
+class CloudResourcesConfigurationComponent(project: Project) :
+    PersistentStateComponent<CloudResourcesConfigurationComponent.State> {
 
-    private val logger = logger<CloudResourcesConfigurationComponent>()
+    class State {
+        // TODO implement actual data
+        // MutableCollections do not work!!!
 
-    override fun loadState(state: State) {
-        super.loadState(state)
-        logger.info("State is loaded!!")
-        logger.info(state.toString())
-    }
-
-    class State : BaseState() {
-
-        @Transient
-        private val logger = logger<State>()
-
-        var aaa by string("this is it")
-
-        @OptionTag(converter = SetConverter::class)
-        var modelServers: MutableSet<String> = mutableSetOf()
-
-        @OptionTag(converter = SetConverter::class)
-        var transientProjects: MutableSet<String> = mutableSetOf()
-
-        /*@get:OptionTag(converter = SetConverter::class)
-        var modelServers by HashSetDelegate()
-
-        @get:OptionTag(converter = SetConverter::class)
-        var transientProjects by HashSetDelegate()*/
-
-        companion object {
-            val INSTANCE = State()
-        }
+        var modelServers: List<String> = listOf<String>()
+        var transientProjects: Set<String> = setOf<String>()
 
         fun addSomeData() {
-            aaa = "this is that"
-
-            modelServers.add("Hello")
-            this.incrementModificationCount()
-            modelServers.add("World")
-            this.incrementModificationCount()
-            transientProjects.add("42")
-            this.incrementModificationCount()
-
-            logger.info("Some data is added")
-        }
-
-        override fun toString(): String {
-            return "State(cloudRepositories: $modelServers, transientProjects: $transientProjects)"
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            if (!super.equals(other)) return false
-
-            other as State
-
-            if (aaa != other.aaa) return false
-            if (modelServers != other.modelServers) return false
-            if (transientProjects != other.transientProjects) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = super.hashCode()
-            result = 31 * result + aaa.hashCode()
-            result = 31 * result + modelServers.hashCode()
-            result = 31 * result + transientProjects.hashCode()
-            return result
+            modelServers = modelServers + "X"
+            transientProjects = transientProjects + "X"
         }
     }
 
-    class HashSetDelegate {
-        private var storedValue = HashSet<String>()
+    private var state: State = State()
 
-        private val logger = logger<HashSetDelegate>()
-
-        operator fun getValue(thisRef: Any?, property: KProperty<*>): HashSet<String> {
-            logger.info("HashSetDelegate.get() is called. Field contains: $storedValue")
-            return storedValue
-        }
-
-        operator fun setValue(thisRef: Any?, property: KProperty<*>, value: HashSet<String>) {
-            logger.info("HashSetDelegate.set() is called. Field contains: $value")
-            storedValue = value
-        }
+    override fun getState(): State {
+        return state
     }
-
-    internal class SetConverter : Converter<HashSet<String>?>() {
-
-        private val logger = logger<SetConverter>()
-
-        override fun fromString(value: String): HashSet<String> {
-            logger.info("SetConverter.fromString() $value")
-            return value.split(",").toHashSet()
-        }
-
-        override fun toString(value: HashSet<String>): String {
-            logger.info("SetConverter.toString() $value")
-
-            return value.joinToString(",")
-        }
+    override fun loadState(newState: State) {
+         state = newState
     }
 }

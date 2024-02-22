@@ -38,10 +38,6 @@
                     icon="org.modelix.mps.sync.plugin.icons.CloudIcons.PLUGIN_ICON" anchor="right"
                     factoryClass="org.modelix.mps.sync.plugin.gui.ModelSyncGuiFactory"/>
 
-        <!-- service to handle storage of cloud details via project settings, aka .mps/modelix.xml -->
-        <projectService
-                serviceImplementation="org.modelix.mps.sync.plugin.configuration.CloudResourcesConfigurationComponent"/>
-
         <!-- the actual service in charge of connecting and binding -->
         <applicationService serviceImplementation="org.modelix.mps.sync.plugin.ModelSyncService"/>
 

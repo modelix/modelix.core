@@ -20,10 +20,8 @@ import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.plugin.ModelSyncService
-import org.modelix.mps.sync.plugin.configuration.CloudResourcesConfigurationComponent
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MPSSynchronizationAppLifecycleListener : AppLifecycleListener {
@@ -35,25 +33,11 @@ class MPSSynchronizationAppLifecycleListener : AppLifecycleListener {
 //        service<ModelSyncService>().ensureStarted()
 //    }
 
-    private var persist: CloudResourcesConfigurationComponent? = null
-
     override fun appStarting(project: Project?) {
     }
 
     override fun appStarted() {
         logger.info("============================================ app started")
         service<ModelSyncService>().ensureStarted()
-
-        // this is just a dummy call to instantiate the CloudResourcesConfigurationComponent that enables state persistence...
-        val project = ProjectManager.getInstance().openProjects.first()
-        persist = project.service<CloudResourcesConfigurationComponent>()
-        val state = persist?.state
-        logger.info("============================================  is persist null? ${persist == null}")
-        logger.info("============================================  THAT'S THE STATE")
-        logger.info(state?.toString())
-    }
-
-    override fun appClosing() {
-        logger.info("============================================  State modification count = ${persist?.stateModificationCount}")
     }
 }

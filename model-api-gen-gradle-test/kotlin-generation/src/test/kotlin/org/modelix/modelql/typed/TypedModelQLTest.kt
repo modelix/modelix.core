@@ -360,4 +360,15 @@ abstract class TypedModelQLTest {
 
         assertTrue { actual.instanceOf(C_XmlDocument) }
     }
+
+    @Test
+    fun `write operations return typed nodes`() = runTest { client ->
+        val name = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .first()
+                .addToMember(C_StaticMethodDeclaration)
+                .name
+        }
+        assertEquals("", name)
+    }
 }

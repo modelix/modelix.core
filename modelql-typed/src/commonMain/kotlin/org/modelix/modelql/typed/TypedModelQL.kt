@@ -144,15 +144,15 @@ object TypedModelQL {
         return input.untyped().flatMap { it.children(link.untyped().key()) }.typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
     }
 
-    fun <ParentT : ITypedNode, ChildT : ITypedNode> addNewChild(input: IMonoStep<ParentT>, link: ITypedChildListLink<ChildT>, index: Int = -1, concept: ITypedConcept): IMonoStep<ChildT> {
+    fun <ParentT : ITypedNode, ChildT : ITypedNode, Out : ChildT> addNewChild(input: IMonoStep<ParentT>, link: ITypedChildListLink<ChildT>, index: Int = -1, concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
         val conceptRef = ConceptReference(concept.untyped().getUID())
-        return input.untyped().addNewChild(link.untyped(), index, conceptRef).typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
+        return input.untyped().addNewChild(link.untyped(), index, conceptRef).ofConcept(concept)
     }
 
-    fun <ParentT : ITypedNode, ChildT : ITypedNode> setChild(input: IMonoStep<ParentT>, link: ITypedSingleChildLink<ChildT>, concept: ITypedConcept): IMonoStep<ChildT> {
+    fun <ParentT : ITypedNode, ChildT : ITypedNode, Out : ChildT> setChild(input: IMonoStep<ParentT>, link: ITypedSingleChildLink<ChildT>, concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
         val conceptRef = ConceptReference(concept.untyped().getUID())
         input.untyped().children(link.untyped().key()).firstOrNull().mapIfNotNull { it.remove() }
-        return input.untyped().addNewChild(link.untyped(), conceptRef).typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
+        return input.untyped().addNewChild(link.untyped(), conceptRef).ofConcept(concept)
     }
 
     fun <SourceT : ITypedNode, TargetT : ITypedNode> reference(input: IMonoStep<SourceT>, link: ITypedReferenceLink<TargetT>): IMonoStep<TargetT> {

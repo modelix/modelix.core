@@ -23,8 +23,9 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asTypeName
-import org.modelix.metamodel.ITypedConcept
+import org.modelix.metamodel.IConceptOfTypedNode
 import org.modelix.metamodel.generator.MetaModelGenerator
 import org.modelix.metamodel.generator.NameConfig
 import org.modelix.metamodel.generator.ProcessedChildLink
@@ -159,9 +160,10 @@ internal class ModelQLExtensionsGenerator(
 
     private fun FileSpec.Builder.addChildSetter(childLink: ProcessedChildLink) {
         val targetType = childLink.type.resolved.nodeWrapperInterfaceType()
-        val returnType = IMonoStep::class.asTypeName().parameterizedBy(targetType)
+        val outType = TypeVariableName("Out", targetType)
+        val returnType = IMonoStep::class.asTypeName().parameterizedBy(outType)
         val receiverType = IMonoStep::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
-        val conceptParameter = ParameterSpec.builder("concept", ITypedConcept::class.asTypeName()).apply {
+        val conceptParameter = ParameterSpec.builder("concept", IConceptOfTypedNode::class.asTypeName().parameterizedBy(outType)).apply {
             if (!childLink.type.resolved.abstract) {
                 defaultValue("%T", childLink.type.resolved.conceptWrapperInterfaceClass())
             }
@@ -170,6 +172,7 @@ internal class ModelQLExtensionsGenerator(
         val funName = if (childLink.multiple) childLink.adderMethodName() else childLink.setterName()
 
         val funSpec = FunSpec.builder(funName).runBuild {
+            addTypeVariable(outType)
             returns(returnType)
             receiver(receiverType)
             addParameter(conceptParameter)

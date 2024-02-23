@@ -38,8 +38,16 @@ import kotlin.jvm.JvmName
  * Properties, references, and child links are synchronized for this node and all of its (in-)direct children.
  *
  * @param root the root node to be updated
+ * @param continueOnError if true, ignore exceptions and continue.
+ *        Enabling this might lead to inconsistent models.
+ * @param childFilter filter that is applied to all children of a parent.
+ *        If the filter evaluates to true, the node is included.
  */
-class ModelImporter(private val root: INode, private val continueOnError: Boolean) {
+class ModelImporter(
+    private val root: INode,
+    private val continueOnError: Boolean,
+    private val childFilter: (INode) -> Boolean = { true },
+) {
 
     private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
     private val postponedReferences = ArrayList<() -> Unit>()
@@ -123,7 +131,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
         val allRoles = (expectedParent.children.map { it.role } + existingParent.allChildren.map { it.roleInParent }).distinct()
         for (role in allRoles) {
             val expectedNodes = expectedParent.children.filter { it.role == role }
-            val existingNodes = existingParent.getChildren(role).toList()
+            val existingNodes = existingParent.getChildren(role).filter(childFilter).toList()
 
             // optimization that uses the bulk operation .addNewChildren
             if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {
@@ -215,7 +223,7 @@ class ModelImporter(private val root: INode, private val continueOnError: Boolea
 
         val toBeRemoved = node.getPropertyRoles().toSet()
             .subtract(nodeData.properties.keys)
-            .filter { it != NodeData.idPropertyKey }
+            .filter { it != NodeData.idPropertyKey && node.getPropertyValue(it) != null }
         toBeRemoved.forEach { node.setPropertyValue(it, null) }
     }
 

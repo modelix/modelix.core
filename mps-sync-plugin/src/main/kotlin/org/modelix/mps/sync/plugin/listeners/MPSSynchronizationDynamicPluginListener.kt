@@ -19,38 +19,38 @@ package org.modelix.mps.sync.plugin.listeners
 import com.intellij.ide.plugins.DynamicPluginListener
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MPSSynchronizationDynamicPluginListener : DynamicPluginListener {
 
-    private val logger = logger<MPSSynchronizationDynamicPluginListener>()
+    private val logger = KotlinLogging.logger {}
 
     override fun beforePluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        logger.info("============================================ before load")
+        logger.info { "============================================ before load" }
         super.beforePluginLoaded(pluginDescriptor)
     }
 
     override fun beforePluginUnload(pluginDescriptor: IdeaPluginDescriptor, isUpdate: Boolean) {
-        logger.info("============================================ before unload")
+        logger.info { "============================================ before unload" }
         super.beforePluginUnload(pluginDescriptor, isUpdate)
     }
 
     override fun checkUnloadPlugin(pluginDescriptor: IdeaPluginDescriptor) {
-        logger.info("============================================ check unload")
+        logger.info { "============================================ check unload" }
         super.checkUnloadPlugin(pluginDescriptor)
     }
 
     override fun pluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        logger.info("============================================ loaded")
+        logger.info { "============================================ loaded" }
         super.pluginLoaded(pluginDescriptor)
         service<ModelSyncService>().ensureStarted()
     }
 
     override fun pluginUnloaded(pluginDescriptor: IdeaPluginDescriptor, isUpdate: Boolean) {
-        logger.info("============================================ unloaded")
+        logger.info { "============================================ unloaded" }
         super.pluginUnloaded(pluginDescriptor, isUpdate)
     }
 }

@@ -18,7 +18,6 @@ package org.modelix.mps.sync.plugin.gui
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.ComboBox
@@ -30,6 +29,7 @@ import com.intellij.ui.content.ContentFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
@@ -58,13 +58,13 @@ import javax.swing.JSeparator
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
-    private val log = logger<ModelSyncGuiFactory>()
+    private val logger = KotlinLogging.logger {}
     private lateinit var toolWindowContent: ModelSyncGui
     private lateinit var content: Content
     private lateinit var bindingsRefresher: BindingsComboBoxRefresher
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        log.info("-------------------------------------------- createToolWindowContent")
+        logger.info { "-------------------------------------------- createToolWindowContent" }
 
         toolWindowContent = ModelSyncGui(toolWindow)
         content = ContentFactory.SERVICE.getInstance().createContent(toolWindowContent.contentPanel, "", false)
@@ -73,7 +73,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     }
 
     override fun dispose() {
-        log.info("-------------------------------------------- disposing ModelSyncGuiFactory")
+        logger.info { "-------------------------------------------- disposing ModelSyncGuiFactory" }
         bindingsRefresher.interrupt()
         content.dispose()
     }
@@ -85,7 +85,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             private const val TEXTFIELD_WIDTH = 20
         }
 
-        private val log = logger<ModelSyncGui>()
+        private val logger = KotlinLogging.logger {}
 
         val contentPanel = JPanel()
         val bindingsRefresher: BindingsComboBoxRefresher
@@ -107,7 +107,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val moduleModel = DefaultComboBoxModel<INodeWithName>()
 
         init {
-            log.info("-------------------------------------------- ModelSyncGui init")
+            logger.info { "-------------------------------------------- ModelSyncGui init" }
             toolWindow.setIcon(CloudIcons.ROOT_ICON)
             bindingsRefresher = BindingsComboBoxRefresher(this)
             contentPanel.layout = FlowLayout()
@@ -222,7 +222,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val bindButton = JButton("Bind Selected")
             bindButton.addActionListener { _: ActionEvent? ->
                 if (existingConnectionsModel.size > 0) {
-                    log.info("Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}")
+                    logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
                     modelSyncService.bindModule(
                         existingConnectionsModel.selectedItem as ModelClientV2,
                         (branchModel.selectedItem as BranchReference).branchName,

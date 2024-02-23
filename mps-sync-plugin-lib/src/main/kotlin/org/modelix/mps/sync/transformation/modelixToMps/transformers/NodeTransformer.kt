@@ -16,11 +16,11 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.transformers
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
@@ -52,7 +52,7 @@ class NodeTransformer(
     mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
-    private val logger = logger<NodeTransformer>()
+    private val logger = KotlinLogging.logger {}
     private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue)
 
     fun transformToNode(iNode: INode) {
@@ -67,13 +67,13 @@ class NodeTransformer(
                 val isTransformed = nodeMap.isMappedToMps(iNode.nodeIdAsLong())
                 if (!isTransformed) {
                     if (model == null) {
-                        logger.info("Node ${iNode.nodeIdAsLong()}(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null.")
+                        logger.info { "Node ${iNode.nodeIdAsLong()}(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null." }
                     } else {
                         nodeFactory.createNode(iNode, model)
                     }
                 }
             } catch (ex: Exception) {
-                logger.error("Transformation of Node ($iNode) failed.", ex)
+                logger.error(ex) { "Transformation of Node ($iNode) failed." }
             }
         }
     }
@@ -103,7 +103,7 @@ class NodeTransformer(
                 parentModel.addLanguageImport(sLanguage, languageVersion)
                 nodeMap.put(parentModel, languageModuleReference, iNode.nodeIdAsLong())
             } else {
-                logger.error("Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus the Language Dependency is not added to the model/module.")
+                logger.error { "Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus the Language Dependency is not added to the model/module." }
             }
         }
     }
@@ -129,7 +129,7 @@ class NodeTransformer(
                 parentModel.addDevKit(devKitModuleReference)
                 nodeMap.put(parentModel, devKitModuleReference, iNode.nodeIdAsLong())
             } else {
-                logger.error("Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus DevKit is not added to the model/module.")
+                logger.error { "Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus DevKit is not added to the model/module." }
             }
         }
     }
@@ -147,7 +147,7 @@ class NodeTransformer(
     fun nodePropertyChanged(sNode: SNode, role: String, nodeId: Long, newValue: String?) {
         val sProperty = sNode.concept.properties.find { it.name == role }
         if (sProperty == null) {
-            logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have property called $role.")
+            logger.error { "Node ($nodeId)'s concept (${sNode.concept.name}) does not have property called $role." }
             return
         }
 
@@ -177,7 +177,7 @@ class NodeTransformer(
             return
         }
 
-        logger.error("Node ($nodeId) was neither moved to a new parent node nor to a new parent model, because Modelix Node $newParentId was not mapped to MPS yet.")
+        logger.error { "Node ($nodeId) was neither moved to a new parent node nor to a new parent model, because Modelix Node $newParentId was not mapped to MPS yet." }
     }
 
     private fun nodeMovedToNewParentNode(sNode: SNode, newParent: SNode, containmentLink: IChildLink, nodeId: Long) {
@@ -189,7 +189,7 @@ class NodeTransformer(
         val containmentLinkName = containmentLink.getSimpleName()
         val containment = newParent.concept.containmentLinks.find { it.name == containmentLinkName }
         if (containment == null) {
-            logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have containment link called $containmentLinkName.")
+            logger.error { "Node ($nodeId)'s concept (${sNode.concept.name}) does not have containment link called $containmentLinkName." }
             return
         }
 

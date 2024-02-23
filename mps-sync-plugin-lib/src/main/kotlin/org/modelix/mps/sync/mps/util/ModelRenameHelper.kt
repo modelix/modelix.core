@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.mps.util
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.EditableSModelBase
 import jetbrains.mps.extapi.module.SModuleBase
 import jetbrains.mps.extapi.persistence.FileDataSource
@@ -29,6 +28,7 @@ import jetbrains.mps.smodel.SModelReference
 import jetbrains.mps.smodel.event.SModelFileChangedEvent
 import jetbrains.mps.smodel.event.SModelRenamedEvent
 import jetbrains.mps.vfs.IFile
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModelName
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
@@ -36,7 +36,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelRenameHelper(private val model: EditableSModelBase) {
 
-    val logger = logger<ModelRenameHelper>()
+    val logger = KotlinLogging.logger {}
 
     fun changeStereotype(stereotype: String?) {
         beforeRename()
@@ -93,11 +93,11 @@ class ModelRenameHelper(private val model: EditableSModelBase) {
                 }
             }
         } catch (var8: NoSourceRootsInModelRootException) {
-            logger.error(var8)
+            logger.error(var8) {}
         } catch (var8: SourceRootDoesNotExistException) {
-            logger.error(var8)
+            logger.error(var8) {}
         } catch (var8: DataSourceFactoryNotFoundException) {
-            logger.error(var8)
+            logger.error(var8) {}
         }
 
         model.save()
@@ -112,7 +112,7 @@ class ModelRenameHelper(private val model: EditableSModelBase) {
             try {
                 iterator.next().beforeModelRenamed(event)
             } catch (var5: Throwable) {
-                logger.error(var5)
+                logger.error(var5) {}
             }
         }
     }
@@ -132,7 +132,7 @@ class ModelRenameHelper(private val model: EditableSModelBase) {
             try {
                 iterator.next().beforeModelFileChanged(event)
             } catch (var5: Throwable) {
-                logger.error(var5)
+                logger.error(var5) {}
             }
         }
     }
@@ -144,7 +144,7 @@ class ModelRenameHelper(private val model: EditableSModelBase) {
             try {
                 iterator.next().modelFileChanged(event)
             } catch (var5: Throwable) {
-                logger.error(var5)
+                logger.error(var5) {}
             }
         }
     }
@@ -156,7 +156,7 @@ class ModelRenameHelper(private val model: EditableSModelBase) {
             try {
                 iterator.next().modelRenamed(event)
             } catch (var5: Throwable) {
-                logger.error(var5)
+                logger.error(var5) {}
             }
         }
     }

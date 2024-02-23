@@ -16,8 +16,8 @@
 
 package org.modelix.mps.sync.tasks
 
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.containers.headTail
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object SyncQueue {
 
-    private val logger = logger<SyncQueue>()
+    private val logger = KotlinLogging.logger {}
 
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
@@ -134,7 +134,7 @@ object SyncQueue {
                     val lockTail = lockHeadAndTail.second
                     runWithLocks(LinkedHashSet(lockTail), task)
                 } catch (t: Throwable) {
-                    logger.error("Exception in task on $currentThread, Thread ID ${currentThread.id}", t)
+                    logger.error(t) { "Exception in task on $currentThread, Thread ID ${currentThread.id}" }
 
                     if (!taskResult.isCompletedExceptionally) {
                         taskResult.completeExceptionally(t)

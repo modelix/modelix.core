@@ -16,9 +16,9 @@
 
 package org.modelix.mps.sync.bindings
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.model.ModelDeleteHelper
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
@@ -39,7 +39,7 @@ class ModelBinding(
     private val syncQueue: SyncQueue,
 ) : IBinding {
 
-    private val logger = logger<ModelBinding>()
+    private val logger = KotlinLogging.logger {}
 
     private val modelChangeListener = ModelChangeListener(branch, nodeMap, bindingsRegistry, syncQueue, this)
     private val nodeChangeListener = NodeChangeListener(branch, nodeMap, syncQueue)
@@ -64,7 +64,7 @@ class ModelBinding(
         model.addModelListener(modelChangeListener)
 
         isActivated = true
-        logger.info("${name()} is activated.")
+        logger.info { "${name()} is activated." }
 
         callback?.run()
     }
@@ -102,7 +102,7 @@ class ModelBinding(
                         modelDeletedLocally = true
                     }
                 } catch (ex: Exception) {
-                    logger.error("Exception occurred while deactivating ${name()}.", ex)
+                    logger.error(ex) { "Exception occurred while deactivating ${name()}." }
                     // if any error occurs, then we put the binding back to let the rest of the application know that it exists
                     bindingsRegistry.addModelBinding(this)
                     activate()
@@ -120,15 +120,15 @@ class ModelBinding(
 
             isDisposed = true
 
-            logger.info(
+            logger.info {
                 "${name()} is deactivated and model is removed locally${
                     if (removeFromServer) {
                         " and from server"
                     } else {
                         ""
                     }
-                }.",
-            )
+                }."
+            }
 
             callback?.run()
         }.getResult()

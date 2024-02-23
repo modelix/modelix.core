@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.transformers
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.EditableSModelBase
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.module.SModuleBase
@@ -27,6 +26,7 @@ import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.SModelReference
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
@@ -52,7 +52,7 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQueue: SyncQueue) {
 
-    private val logger = logger<ModelTransformer>()
+    private val logger = KotlinLogging.logger {}
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
@@ -126,10 +126,10 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
             val oldValue = sModel.name.value
             if (oldValue != newValue) {
                 if (newValue.isNullOrEmpty()) {
-                    logger.error("Name cannot be null or empty for Model $modelId. Corresponding Modelix Node ID is $nodeId.")
+                    logger.error { "Name cannot be null or empty for Model $modelId. Corresponding Modelix Node ID is $nodeId." }
                     return
                 } else if (sModel !is EditableSModelBase) {
-                    logger.error("SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId.")
+                    logger.error { "SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId." }
                     return
                 }
 
@@ -139,21 +139,21 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
             val oldValue = sModel.name.stereotype
             if (oldValue != newValue) {
                 if (sModel !is EditableSModelBase) {
-                    logger.error("SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId.")
+                    logger.error { "SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId." }
                     return
                 }
 
                 ModelRenameHelper(sModel).changeStereotype(newValue)
             }
         } else {
-            logger.error("Role $role is unknown for concept Model. Therefore the property is not set in MPS from Modelix Node $nodeId")
+            logger.error { "Role $role is unknown for concept Model. Therefore the property is not set in MPS from Modelix Node $nodeId" }
         }
     }
 
     fun modelMovedToNewParent(newParentId: Long, nodeId: Long, sModel: SModel) {
         val newParentModule = nodeMap.getModule(newParentId)
         if (newParentModule == null) {
-            logger.error("Modelix Node ($nodeId) that is a Model, was not moved to a new parent module, because new parent Module (Modelix Node $newParentId) was not mapped to MPS yet.")
+            logger.error { "Modelix Node ($nodeId) that is a Model, was not moved to a new parent module, because new parent Module (Modelix Node $newParentId) was not mapped to MPS yet." }
             return
         }
 
@@ -164,10 +164,10 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
 
         // remove from old parent
         if (oldParentModule !is SModuleBase) {
-            logger.error("Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS.")
+            logger.error { "Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS." }
             return
         } else if (sModel !is SModelBase) {
-            logger.error("Model ${sModel.modelId} is not an SModelBase")
+            logger.error { "Model ${sModel.modelId} is not an SModelBase" }
             return
         }
         oldParentModule.unregisterModel(sModel)
@@ -175,7 +175,7 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
 
         // add to new parent
         if (newParentModule !is SModuleBase) {
-            logger.error("New parent Module ${newParentModule.moduleId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS.")
+            logger.error { "New parent Module ${newParentModule.moduleId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS." }
             return
         }
         newParentModule.registerModel(sModel)
@@ -201,7 +201,7 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
                 } catch (ex: Exception) {
                     val message =
                         "Language import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
-                    logger.error(message, ex)
+                    logger.error(ex) { message }
                 }
             }
 
@@ -211,12 +211,12 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
                 } catch (ex: Exception) {
                     val message =
                         "DevKit dependency ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
-                    logger.error(message, ex)
+                    logger.error(ex) { message }
                 }
             }
 
             else -> {
-                logger.error("Target module referred by $targetModuleReference is neither a Language nor DevKit. Therefore the dependency for it cannot be deleted. Corresponding Modelix Node ID is $nodeId.")
+                logger.error { "Target module referred by $targetModuleReference is neither a Language nor DevKit. Therefore the dependency for it cannot be deleted. Corresponding Modelix Node ID is $nodeId." }
             }
         }
     }

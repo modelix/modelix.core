@@ -16,9 +16,9 @@
 
 package org.modelix.mps.sync.bindings
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
@@ -40,7 +40,7 @@ class ModuleBinding(
     private val syncQueue: SyncQueue,
 ) : IBinding {
 
-    private val logger = logger<ModelBinding>()
+    private val logger = KotlinLogging.logger {}
 
     private val changeListener = ModuleChangeListener(branch, nodeMap, bindingsRegistry, syncQueue)
 
@@ -67,7 +67,7 @@ class ModuleBinding(
 
         isActivated = true
 
-        logger.info("${name()} is activated.")
+        logger.info { "${name()} is activated." }
 
         callback?.run()
     }
@@ -110,7 +110,7 @@ class ModuleBinding(
                         moduleDeletedLocally = true
                     }
                 } catch (ex: Exception) {
-                    logger.error("Exception occurred while deactivating ${name()}.", ex)
+                    logger.error(ex) { "Exception occurred while deactivating ${name()}." }
                     // if any error occurs, then we put the binding back to let the rest of the application know that it exists
                     bindingsRegistry.addModuleBinding(this)
                     activate()
@@ -122,15 +122,15 @@ class ModuleBinding(
 
             isDisposed = true
 
-            logger.info(
+            logger.info {
                 "${name()} is deactivated and module is removed locally${
                     if (removeFromServer) {
                         " and from server"
                     } else {
                         ""
                     }
-                }.",
-            )
+                }."
+            }
 
             callback?.run()
         }.getResult()

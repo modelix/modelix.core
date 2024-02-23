@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.transformers
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
@@ -26,6 +25,7 @@ import jetbrains.mps.project.Project
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.project.structure.modules.SolutionDescriptor
 import jetbrains.mps.refactoring.Renamer
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -53,7 +53,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         }
     }
 
-    private val logger = logger<ModuleTransformer>()
+    private val logger = KotlinLogging.logger {}
 
     private val solutionProducer = SolutionProducer(project)
 
@@ -96,7 +96,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
     fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?) {
         val moduleId = sModule.moduleId
         if (sModule !is AbstractModule) {
-            logger.error("SModule ($moduleId) is not an AbstractModule, therefore its $role property cannot be changed. Corresponding Modelix Node ID is $nodeId.")
+            logger.error { "SModule ($moduleId) is not an AbstractModule, therefore its $role property cannot be changed. Corresponding Modelix Node ID is $nodeId." }
             return
         }
 
@@ -104,7 +104,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
             val oldValue = sModule.moduleName
             if (oldValue != newValue) {
                 if (newValue.isNullOrEmpty()) {
-                    logger.error("Name cannot be null or empty for Module $moduleId. Corresponding Modelix Node ID is $nodeId.")
+                    logger.error { "Name cannot be null or empty for Module $moduleId. Corresponding Modelix Node ID is $nodeId." }
                     return
                 }
 
@@ -119,7 +119,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
                     sModule.moduleVersion = newVersion
                 }
             } catch (ex: NumberFormatException) {
-                logger.error("New module version ($newValue) of SModule ($moduleId) is not an integer, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId.")
+                logger.error { "New module version ($newValue) of SModule ($moduleId) is not an integer, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId." }
             }
         } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS.getSimpleName()) {
             try {
@@ -128,16 +128,16 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
                 val oldCompileInMPS = moduleDescriptor.compileInMPS
                 if (oldCompileInMPS != newCompileInMPS) {
                     if (moduleDescriptor !is SolutionDescriptor) {
-                        logger.error("Module ($moduleId)'s descriptor is not a SolutionDescriptor, therefore compileInMPS will not be (un)set in MPS. Corresponding Modelix Node ID is $nodeId.")
+                        logger.error { "Module ($moduleId)'s descriptor is not a SolutionDescriptor, therefore compileInMPS will not be (un)set in MPS. Corresponding Modelix Node ID is $nodeId." }
                         return
                     }
                     moduleDescriptor.compileInMPS = newCompileInMPS
                 }
             } catch (ex: ParseException) {
-                logger.error("New compileInMPS ($newValue) property of SModule ($moduleId) is not a strict boolean, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId.")
+                logger.error { "New compileInMPS ($newValue) property of SModule ($moduleId) is not a strict boolean, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId." }
             }
         } else {
-            logger.error("Role $role is unknown for concept Module. Therefore the property is not set in MPS from Modelix Node $nodeId")
+            logger.error { "Role $role is unknown for concept Module. Therefore the property is not set in MPS from Modelix Node $nodeId" }
         }
     }
 
@@ -155,7 +155,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
     fun outgoingModuleReferenceFromModuleDeleted(moduleWithModuleReference: ModuleWithModuleReference, nodeId: Long) {
         val sourceModule = moduleWithModuleReference.source
         if (sourceModule !is AbstractModule) {
-            logger.error("Source module ($sourceModule) is not an AbstractModule, therefore outgoing module dependency reference cannot be removed. Corresponding Modelix Node ID is $nodeId.")
+            logger.error { "Source module ($sourceModule) is not an AbstractModule, therefore outgoing module dependency reference cannot be removed. Corresponding Modelix Node ID is $nodeId." }
             return
         }
 
@@ -165,7 +165,7 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
         if (dependency != null) {
             sourceModule.removeDependency(dependency)
         } else {
-            logger.error("Outgoing dependency $targetModuleReference from Module $sourceModule is not found, therefore it cannot be deleted. Corresponding Modelix Node ID is $nodeId.")
+            logger.error { "Outgoing dependency $targetModuleReference from Module $sourceModule is not found, therefore it cannot be deleted. Corresponding Modelix Node ID is $nodeId." }
         }
     }
 }

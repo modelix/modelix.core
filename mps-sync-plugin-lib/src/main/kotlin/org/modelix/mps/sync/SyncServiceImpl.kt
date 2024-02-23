@@ -1,13 +1,12 @@
 package org.modelix.mps.sync
 
-import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ILanguageRepository
@@ -37,7 +36,7 @@ class SyncServiceImpl(
     private val mpsProjectInjector: ActiveMpsProjectInjector = ActiveMpsProjectInjector,
 ) : SyncService {
 
-    private val logger: Logger = logger<SyncServiceImpl>()
+    private val logger = KotlinLogging.logger {}
 
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     val activeClients = mutableSetOf<ModelClientV2>()
@@ -47,7 +46,7 @@ class SyncServiceImpl(
     private var projectWithChangeListener: Pair<MPSProject, RepositoryChangeListener>? = null
 
     init {
-        logger.info("============================================ Registering builtin languages")
+        logger.info { "============================================ Registering builtin languages" }
         // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
         ILanguageRepository.default.javaClass
     }
@@ -61,7 +60,7 @@ class SyncServiceImpl(
         // avoid reconnect to existing server
         val client = activeClients.find { it.baseUrl == serverURL.toString() }
         client?.let {
-            logger.info("Using already existing connection to $serverURL")
+            logger.info { "Using already existing connection to $serverURL" }
             return it
         }
 
@@ -70,14 +69,14 @@ class SyncServiceImpl(
 
         runBlocking(coroutineScope.coroutineContext) {
             try {
-                logger.info("Connecting to $serverURL")
+                logger.info { "Connecting to $serverURL" }
                 modelClientV2.init()
             } catch (e: ConnectException) {
-                logger.warn("Unable to connect: ${e.message} / ${e.cause}")
+                logger.warn { "Unable to connect: ${e.message} / ${e.cause}" }
                 throw e
             }
         }
-        logger.info("Connection to $serverURL successful")
+        logger.info { "Connection to $serverURL successful" }
         activeClients.add(modelClientV2)
 
         callback?.invoke()

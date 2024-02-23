@@ -16,9 +16,9 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.incremental
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
@@ -51,7 +51,7 @@ class ModelixTreeChangeVisitor(
     private val syncQueue: SyncQueue,
 ) : ITreeChangeVisitorEx {
 
-    private val logger = logger<ModelixTreeChangeVisitor>()
+    private val logger = KotlinLogging.logger {}
 
     private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, languageRepository)
     private val modelTransformer = ModelTransformer(nodeMap, syncQueue)
@@ -65,13 +65,13 @@ class ModelixTreeChangeVisitor(
         ) {
             val sNode = nodeMap.getNode(nodeId)
             if (sNode == null) {
-                logger.info("Node ($nodeId) is not mapped to MPS yet.")
+                logger.info { "Node ($nodeId) is not mapped to MPS yet." }
                 return@enqueue null
             }
 
             val sReferenceLink = sNode.concept.referenceLinks.find { it.name == role }
             if (sReferenceLink == null) {
-                logger.error("Node ($nodeId)'s concept (${sNode.concept.name}) does not have reference link called $role.")
+                logger.error { "Node ($nodeId)'s concept (${sNode.concept.name}) does not have reference link called $role." }
                 return@enqueue null
             }
 
@@ -97,7 +97,7 @@ class ModelixTreeChangeVisitor(
         ) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
-                logger.info("Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore its $role property cannot be changed.")
+                logger.info { "Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore its $role property cannot be changed." }
                 return@enqueue null
             }
 
@@ -123,7 +123,7 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            logger.error("We missed a property setting case (property=$role) for Modelix Node ($nodeId).")
+            logger.error { "We missed a property setting case (property=$role) for Modelix Node ($nodeId)." }
 
             null
         }
@@ -137,7 +137,7 @@ class ModelixTreeChangeVisitor(
         ) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
-                logger.info("Element represented by Modelix Node ($nodeId) is already removed from MPS.")
+                logger.info { "Element represented by Modelix Node ($nodeId) is already removed from MPS." }
                 return@enqueue null
             }
 
@@ -177,7 +177,7 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            logger.error("We missed a removal case for Modelix Node ($nodeId).")
+            logger.error { "We missed a removal case for Modelix Node ($nodeId)." }
 
             null
         }
@@ -191,7 +191,7 @@ class ModelixTreeChangeVisitor(
         ) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (isMapped) {
-                logger.info("Node ($nodeId) is already mapped to MPS.")
+                logger.info { "Node ($nodeId) is already mapped to MPS." }
                 return@enqueue null
             }
 
@@ -246,26 +246,26 @@ class ModelixTreeChangeVisitor(
         ) {
             val nodeIsMapped = nodeMap.isMappedToMps(nodeId)
             if (!nodeIsMapped) {
-                logger.info("Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore it cannot be moved to a new parent.")
+                logger.info { "Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore it cannot be moved to a new parent." }
                 return@enqueue null
             }
 
             val iNode = getNode(nodeId)
             val newParent = iNode.parent
             if (newParent == null) {
-                logger.error("Node ($nodeId)'s new parent is null.")
+                logger.error { "Node ($nodeId)'s new parent is null." }
                 return@enqueue null
             }
             val newParentId = newParent.nodeIdAsLong()
             val parentIsMapped = nodeMap.isMappedToMps(newParentId)
             if (!parentIsMapped) {
-                logger.error("Modelix Node ($nodeId)'s new parent ($newParentId) is not mapped to MPS yet. Therefore Node cannot be moved to a new parent.")
+                logger.error { "Modelix Node ($nodeId)'s new parent ($newParentId) is not mapped to MPS yet. Therefore Node cannot be moved to a new parent." }
                 return@enqueue null
             }
 
             val containmentLink = iNode.getContainmentLink()
             if (containmentLink == null) {
-                logger.error("Node ($nodeId)'s containment link is null.")
+                logger.error { "Node ($nodeId)'s containment link is null." }
                 return@enqueue null
             }
 
@@ -281,7 +281,7 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            logger.error("We missed a move to new parent case for Modelix Node ($nodeId).")
+            logger.error { "We missed a move to new parent case for Modelix Node ($nodeId)." }
 
             null
         }

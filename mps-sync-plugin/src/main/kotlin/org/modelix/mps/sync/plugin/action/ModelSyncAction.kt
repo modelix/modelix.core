@@ -19,8 +19,8 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.bindings.BindingsRegistry
@@ -38,7 +38,7 @@ class ModelSyncAction : AnAction {
         fun create() = ModelSyncAction("Synchronize model to server")
     }
 
-    private val logger = logger<ModelSyncAction>()
+    private val logger = KotlinLogging.logger {}
 
     constructor() : super()
 
@@ -51,7 +51,7 @@ class ModelSyncAction : AnAction {
             // TODO fixme: warn the user if the model imports another model that is not on the model server yet
             ModelSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModelAndActivate(model)
         } catch (ex: Exception) {
-            logger.error("Model sync error occurred", ex)
+            logger.error(ex) { "Model sync error occurred" }
         }
     }
 }

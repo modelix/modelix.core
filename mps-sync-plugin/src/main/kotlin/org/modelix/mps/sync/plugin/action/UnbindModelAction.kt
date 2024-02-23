@@ -19,8 +19,8 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.bindings.BindingsRegistry
@@ -34,7 +34,7 @@ class UnbindModelAction : AnAction {
         fun create() = UnbindModelAction("Unbind model")
     }
 
-    private val logger = logger<UnbindModelAction>()
+    private val logger = KotlinLogging.logger {}
 
     constructor() : super()
 
@@ -45,7 +45,7 @@ class UnbindModelAction : AnAction {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
             BindingsRegistry.getModelBinding(model)?.deactivate(removeFromServer = false)
         } catch (ex: Exception) {
-            logger.error("Model unbind error occurred", ex)
+            logger.error(ex) { "Model unbind error occurred" }
         }
     }
 }

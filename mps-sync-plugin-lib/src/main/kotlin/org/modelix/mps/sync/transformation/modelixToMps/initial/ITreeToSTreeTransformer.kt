@@ -16,10 +16,10 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.initial
 
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
@@ -50,7 +50,7 @@ class ITreeToSTreeTransformer(
     private val syncQueue: SyncQueue,
 ) {
 
-    private val logger = logger<ITreeToSTreeTransformer>()
+    private val logger = KotlinLogging.logger {}
 
     private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, mpsLanguageRepository)
     private val modelTransformer = ModelTransformer(nodeMap, syncQueue)
@@ -64,7 +64,7 @@ class ITreeToSTreeTransformer(
                 val nodeId = entryPoint.nodeIdAsLong()
                 val root = branch.getNode(nodeId)
 
-                logger.info("--- Transforming modules and models in modelix Node $nodeId ---")
+                logger.info { "--- Transforming modules and models in modelix Node $nodeId ---" }
                 traverse(root, 1) {
                     if (it.isModule()) {
                         moduleTransformer.transformToModule(it)
@@ -73,10 +73,10 @@ class ITreeToSTreeTransformer(
                     }
                 }
 
-                logger.info("--- Resolving model imports ---")
+                logger.info { "--- Resolving model imports ---" }
                 modelTransformer.resolveModelImports(project.repository)
 
-                logger.info("--- Transforming nodes ---")
+                logger.info { "--- Transforming nodes ---" }
                 traverse(root, 1) {
                     val isNotModuleOrModel = !(it.isModule() || it.isModel())
                     if (isNotModuleOrModel) {
@@ -84,12 +84,12 @@ class ITreeToSTreeTransformer(
                     }
                 }
 
-                logger.info("--- Resolving references ---")
+                logger.info { "--- Resolving references ---" }
                 syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
                     nodeTransformer.resolveReferences()
                 }
 
-                logger.info("--- Registering module and model bindings ---")
+                logger.info { "--- Registering module and model bindings ---" }
                 nodeMap.modules.forEach {
                     val module = it as AbstractModule
                     val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
@@ -104,7 +104,7 @@ class ITreeToSTreeTransformer(
                 }
             }
         } catch (ex: Exception) {
-            logger.error("Transformation of Node tree starting from Node $entryPoint failed.", ex)
+            logger.error(ex) { "Transformation of Node tree starting from Node $entryPoint failed." }
         }
 
         return bindings

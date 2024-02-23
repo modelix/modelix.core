@@ -6,11 +6,6 @@ set -x
 TEST_DIR="$(dirname "$(readlink -f "$0")")"
 cd "${TEST_DIR}"
 
-(
-  cd graph-lang-api
-  ./gradlew publishToMavenLocal --console=plain
-)
-
 ./gradlew assemble --console=plain
 
 if [ "${CI}" != "true" ]; then

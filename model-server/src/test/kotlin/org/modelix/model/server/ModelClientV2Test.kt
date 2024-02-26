@@ -196,7 +196,10 @@ class ModelClientV2Test {
         val repositoryId = RepositoryId("repo1")
         val branchId = repositoryId.getBranchReference("my-branch")
         modelClientForArrange.runWrite(branchId) { root ->
-            root.addNewChild("aChild", -1, null as IConceptReference?)
+            // Creating many children makes the flow emitting many values at once.
+            repeat(100) {
+                root.addNewChild("aChild", -1, null as IConceptReference?)
+            }
         }
 
         // Act

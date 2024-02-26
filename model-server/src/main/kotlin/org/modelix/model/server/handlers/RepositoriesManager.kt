@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.IKeyValueStore
@@ -30,7 +31,6 @@ import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.BulkQuery
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
@@ -46,6 +46,7 @@ import java.lang.ref.SoftReference
 import java.util.UUID
 
 class RepositoriesManager(val client: LocalModelClient) {
+
     init {
         migrateLegacyRepositoriesList()
     }
@@ -246,19 +247,23 @@ class RepositoriesManager(val client: LocalModelClient) {
                 // we have to do this to not emit objects more than once.
                 val seenHashes = mutableSetOf<String>()
                 fun emitObjects(entry: KVEntryReference<*>) {
+                    if (seenHashes.contains(entry.getHash())) return
+                    seenHashes.add(entry.getHash())
                     bulkQuery.get(entry).onSuccess {
-                        channel.trySend(entry.getHash() to it!!.serialize())
-                        for (referencedEntry in it.getReferencedEntries()) {
-                            val wasSeenBefore = !seenHashes.add(referencedEntry.getHash())
-                            // Do not emit the object if we already emitted it.
-                            if (!wasSeenBefore) {
-                                emitObjects(referencedEntry)
-                            }
+                        val value = checkNotNull(it) { "No value received for ${entry.getHash()}" }
+                        // Use `send` instead of `trySend`,
+                        // because `trySend` fails if the channel capacity is full.
+                        // This might happen if the data is produced faster than consumed.
+                        // A better solution would be to have bulk queries which itself are asynchronous
+                        // but doing that needs more consideration.
+                        runBlocking { channel.send(entry.getHash() to value.serialize()) }
+                        for (referencedEntry in value.getReferencedEntries()) {
+                            emitObjects(referencedEntry)
                         }
                     }
                 }
                 emitObjects(KVEntryReference(versionHash, CPVersion.DESERIALIZER))
-                (bulkQuery as? BulkQuery)?.process()
+                bulkQuery.process()
             }
         }
 

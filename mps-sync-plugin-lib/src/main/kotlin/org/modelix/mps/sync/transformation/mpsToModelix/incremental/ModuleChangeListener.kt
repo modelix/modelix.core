@@ -26,6 +26,7 @@ import org.jetbrains.mps.openapi.module.SModuleListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
@@ -39,6 +40,7 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronize
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleChangeListener(
@@ -72,7 +74,7 @@ class ModuleChangeListener(
 
     override fun moduleChanged(module: SModule) {
         syncQueue.enqueue(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
@@ -100,7 +102,21 @@ class ModuleChangeListener(
                     ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == sDependency.targetModule.moduleId
                 }
             }
-            addedDependencies.forEach { dependency -> moduleSynchronizer.addDependency(module, dependency) }
+            addedDependencies.waitForCompletionOfEachTask { dependency ->
+                moduleSynchronizer.addDependency(
+                    module,
+                    dependency,
+                )
+            }
+
+            lastKnownDependencies
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            val lastKnownDependencies = it as Iterable<INode>
+            val actualDependencies = module.declaredDependencies
 
             val removedDependencies = lastKnownDependencies.filter { dependencyINode ->
                 val targetModuleIdAccordingToModelix =

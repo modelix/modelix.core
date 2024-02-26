@@ -61,7 +61,7 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
 
     fun getResult() = previousTask.result
 
-    private fun waitForResult() = getResult().get()
+    fun waitForResult() = getResult().get()
 }
 
 typealias SyncTaskAction = (Any?) -> Any?

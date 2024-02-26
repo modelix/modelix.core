@@ -32,6 +32,8 @@ import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -51,7 +53,7 @@ class ModuleSynchronizer(
     private val modelSynchronizer =
         ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue, postponeReferenceResolution = true)
 
-    fun addModule(module: AbstractModule) {
+    fun addModule(module: AbstractModule): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val rootNode = branch.getRootNode()
             val childLink = ChildLinkFromName("modules")
@@ -76,22 +78,33 @@ class ModuleSynchronizer(
             bindingsRegistry.addModuleBinding(binding)
             binding.activate()
         }
-    }
 
-    fun addDependency(module: SModule, dependency: SDependency) =
+    fun addDependency(module: SModule, dependency: SDependency): ContinuableSyncTask =
         syncQueue.enqueue(
+            linkedSetOf(SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            val repository = ActiveMpsProjectInjector.activeMpsProject?.repository!!
+            val targetModule = dependency.targetModule.resolve(repository)
+            val isMappedToMps = nodeMap[targetModule] != null
+            if (!isMappedToMps) {
+                require(targetModule is AbstractModule) { "Dependency target module ($targetModule) of Module ($module) must be an AbstractModule." }
+                addModule(targetModule).waitForResult()
+            }
+        }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
-            val moduleReference = dependency.targetModule
 
             val cloudModule = branch.getNode(moduleModelixId)
             val cloudDependency =
                 cloudModule.addNewChild(dependencies, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
 
+            val moduleReference = dependency.targetModule
             nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the properties by hand

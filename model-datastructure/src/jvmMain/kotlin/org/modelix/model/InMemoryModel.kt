@@ -106,14 +106,15 @@ class InMemoryModel private constructor(
     val branchId: String,
     val loadedMapRef: KVEntryReference<CPHamtNode>,
     val nodeMap: TLongObjectMap<CPNode>,
+    val useRoleIds: Boolean,
 ) {
 
     companion object {
         fun load(tree: CLTree): InMemoryModel {
-            return load(tree.getId(), tree.data.idToHash, tree.store.keyValueStore)
+            return load(tree.getId(), tree.data.idToHash, tree.store.keyValueStore, tree.usesRoleIds())
         }
 
-        fun load(branchId: String, slowMapRef: KVEntryReference<CPHamtNode>, store: IKeyValueStore): InMemoryModel {
+        fun load(branchId: String, slowMapRef: KVEntryReference<CPHamtNode>, store: IKeyValueStore, useRoleIds: Boolean): InMemoryModel {
             val fastMap: TLongObjectMap<CPNode> = TLongObjectHashMap()
             val bulkQuery = NonCachingObjectStore(store).newBulkQuery()
             LOG.info { "Start loading model into memory" }
@@ -130,14 +131,14 @@ class InMemoryModel private constructor(
                 bulkQuery.process()
             }.milliseconds
             LOG.info { "Done loading model into memory after ${duration.toDouble(DurationUnit.SECONDS)} s" }
-            return InMemoryModel(branchId, slowMapRef, fastMap)
+            return InMemoryModel(branchId, slowMapRef, fastMap, useRoleIds)
         }
     }
 
     fun loadIncremental(tree: CLTree): InMemoryModel {
-        return loadIncremental(tree.data.idToHash, tree.store.keyValueStore)
+        return loadIncremental(tree.data.idToHash, tree.store.keyValueStore, tree.usesRoleIds())
     }
-    fun loadIncremental(slowMapRef: KVEntryReference<CPHamtNode>, store: IKeyValueStore): InMemoryModel {
+    fun loadIncremental(slowMapRef: KVEntryReference<CPHamtNode>, store: IKeyValueStore, useRoleIds: Boolean): InMemoryModel {
         if (slowMapRef.getHash() == loadedMapRef.getHash()) return this
 
         val fastMap: TLongObjectMap<CPNode> = TLongObjectHashMap()
@@ -180,7 +181,7 @@ class InMemoryModel private constructor(
             bulkQuery.process()
         }.milliseconds
         LOG.info { "Done updating model after ${duration.toDouble(DurationUnit.SECONDS)} s" }
-        return InMemoryModel(branchId, slowMapRef, fastMap)
+        return InMemoryModel(branchId, slowMapRef, fastMap, useRoleIds)
     }
 
     fun getNodeData(nodeId: Long): CPNode = nodeMap.get(nodeId)
@@ -253,6 +254,9 @@ class InMemoryModel private constructor(
 }
 
 data class InMemoryNode(val model: InMemoryModel, val nodeId: Long) : INode, INodeReference {
+
+    override fun usesRoleIds(): Boolean = model.useRoleIds
+
     fun getNodeData(): CPNode = model.getNodeData(nodeId)
 
     override fun serialize(): String {

@@ -85,7 +85,7 @@ mpsBuild {
 modelSync {
     dependsOn(copyTestRepo)
     direction("testPush") {
-        includeModule("GraphSolution")
+        includeModulesByPrefix("GraphSolution")
         fromLocal {
             mpsHeapSize = "2g"
             repositoryDir = repoDir
@@ -99,7 +99,7 @@ modelSync {
         }
     }
     direction("testPull") {
-        includeModule("GraphSolution")
+        includeModulesByPrefix("GraphSolution")
         fromModelServer {
             url = "http://localhost:28309/v2"
             repositoryId = "ci-test"

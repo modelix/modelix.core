@@ -30,11 +30,13 @@
     "registry": "https://artifacts.itemis.cloud/repository/npm-open/"
   },
   "dependencies": {
-    "@modelix/model-client": "file:../model-client/build/npmDevPackage/model-client.tgz",
+    "@modelix/model-client": "file:../model-client/build/npmDevPackage/model-client.tgz"
+  },
+  "devDependencies": {
     "@tsconfig/recommended": "^1.0.3",
     "@types/jest": "^29.5.12",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
     "dukat": "^0.5.8-rc.4",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
@@ -44,7 +46,7 @@
     "typescript": "^5.3.3"
   },
   "prettier-comment": "// IMPORTANT: keep Prettier version in sync with the version in .pre-commit-config.yaml",
-  "eslint-comment": "// IMPORTANT: keep ESLint version and versions and plugins in sync with the version in .pre-commit-config.yaml",
+  "eslint-comment": "// IMPORTANT: keep ESLint version and versions of plugins in sync with the versions in .pre-commit-config.yaml",
   "peerDependencies": {
     "vue": "^3.3.4"
   }

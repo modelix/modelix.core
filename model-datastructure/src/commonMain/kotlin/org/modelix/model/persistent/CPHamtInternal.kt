@@ -169,7 +169,7 @@ class CPHamtInternal(
         return create(newBitmap, newChildren)
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>?) -> Unit): IBulkQuery.Value<Unit> {
+    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
         return bulkQuery.map(data.children.asIterable()) { bulkQuery.get(it) }.mapBulk { children ->
             bulkQuery.map(children) { it!!.visitEntries(bulkQuery, visitor) }.map { }
         }

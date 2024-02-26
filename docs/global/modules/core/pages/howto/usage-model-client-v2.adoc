@@ -1,0 +1,104 @@
+= How-To use the `model-client` v2 (Kotlin)
+:navtitle: Use the `model-client` v2 (Kotlin)
+
+NOTE: In order to use the client, you will need a xref:core:howto/usage-model-server.adoc[running model-server] to connect to.
+
+== Gradle Dependency
+
+To use the `model-client` v2 you have to add the `model-client` library to your dependencies.
+Add the following to your `build.gradle.kts`:
+
+[source,kotlin]
+--
+repositories {
+    mavenLocal {}
+    maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
+    // ...
+}
+// ...
+dependencies {
+    implementation("org.modelix:model-client:4.6.0")
+    // ...
+}
+--
+
+
+== Usage
+
+Once set up, creating an instance that loads the entire model from the server can be done like this:
+
+
+[source, kotlin]
+--
+val client = ModelClientV2.builder()
+                          .url("http://localhost:28101/v2")
+                          .build()
+--
+
+Nearly all operations are interfacing with a remote repository, consequently most operations in the client are https://kotlinlang.org/docs/composing-suspending-functions.html[suspending functions^].
+As a result, we need to use https://kotlinlang.org/docs/coroutines-basics.html[Kotlin Coroutines^] to execute these functions.
+To initialize the client, we can call (we assume coroutine execution in all following code blocks):
+
+[source, kotlin]
+--
+// init is a suspend fun, so we use a coroutine
+runBlocking(CoroutineScope(Dispatchers.Default).coroutineContext){
+    client.init()
+}
+
+--
+
+Afterward, we create a repository and replicate it locally into a `ReplicatedModel`.
+This data structure automatically synchronizes its content with the remote.
+We can consequently assume that its data is always correct and up-to-date.
+
+[source, kotlin]
+--
+// create a new repository
+val myRepoId: RepositoryId = RepositoryId("myRepository")
+client.initRepository(myRepoId)
+
+// obtain the main branch created by default
+val myBranchReference: BranchReference = BranchReference(repositoryId = myRepoId, branchName = RepositoryId.DEFAULT_BRANCH)
+
+// replicate the branch content
+val replicatedModel: ReplicatedModel = client.getReplicatedModel(myBranchReference)
+// start the continuous replication
+replicatedModel.start()
+--
+
+To ensure that read and write are executed correctly, we need to use read and write transactions whenever we interact with the content, e.g. by adding a new child:
+
+[source, kotlin]
+--
+// initial root node after repository initialization has the id 1
+val rootNode: INode = replicatedModel.getBranch().getRootNode()
+
+// to create a node we need run a write transaction
+replicatedModel.getBranch().runWrite {
+    val newChild: INode = rootNode.addNewChild("myRole")
+    println("Added node $newChild under parent ${newChild.parent}")
+}
+
+// to get model content we need a read transaction
+replicatedModel.getBranch().runRead {
+    println("All nodes in repository: ${(rootNode.getDescendants(true).toMutableList())}")
+}
+--
+
+Which will yield the following output:
+
+[source]
+--
+Added node PNode2100000001 under parent PNode1
+All nodes in repository: [PNode1, PNode2100000001]
+--
+
+CAUTION: If you try to access a node that does not exist, an exception is thrown.
+
+Browsing to the `model-sever` content explorer over at http://localhost:28101/repos[] and selecting _Explore Latest Version_ for _myRepository_ you should see this:
+
+image::model-client-v2-sample.png[Result in `model-server` of the above code]
+
+
+For more information how to deal with `INodes` and the `client`, check the https://api.modelix.org/latest/model-api/index.html[model API] and the https://api.modelix.org/latest/model-client/org.modelix.model.client2/-model-client-v2/index.html[ModelClientV2 API] respectively.

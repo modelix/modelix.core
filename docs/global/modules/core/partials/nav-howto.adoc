@@ -1,6 +1,8 @@
 * xref:core:howto/usage-model-server.adoc[]
+* xref:core:howto/mps-model-server-plugin.adoc[]
 * xref:core:howto/metrics.adoc[]
 * xref:core:howto/usage-model-api-gen-gradle.adoc[]
+* xref:core:howto/usage-model-client-v2.adoc[]
 * xref:core:howto/usage-light-model-client.adoc[]
 * xref:core:howto/testing-against-model-api.adoc[]
 * xref:core:howto/modelql.adoc[]

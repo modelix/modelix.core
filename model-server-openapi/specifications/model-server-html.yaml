@@ -37,6 +37,23 @@ paths:
               examples:
                 Example#1:
                   value: "../repos/"
+  /content/{repository}/{branch}/latest:
+    get:
+      operationId: getContentRepositoryBranchLatest
+      parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
   /content/{versionHash}:
     get:
       operationId: getVersionHash

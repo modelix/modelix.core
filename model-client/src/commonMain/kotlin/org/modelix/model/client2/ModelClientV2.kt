@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
 import org.modelix.model.api.IdGeneratorDummy
@@ -336,31 +337,6 @@ class ModelClientV2(
         httpClient.close()
     }
 
-    private suspend fun HttpResponse.readVersionDelta(): VersionDeltaStream {
-        return if (contentType()?.match(VersionDeltaStream.CONTENT_TYPE) == true) {
-            val content = bodyAsChannel()
-            val versionHash = checkNotNull(content.readUTF8Line()) { "No objects received" }
-            val versionObject = content.readUTF8Line()
-            return if (versionObject == null) {
-                VersionDeltaStream(versionHash, emptyFlow())
-            } else {
-                VersionDeltaStream(
-                    versionHash,
-                    flow {
-                        emit(versionHash to versionObject)
-                        while (true) {
-                            val key = content.readUTF8Line() ?: break
-                            val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
-                            emit(key to value)
-                        }
-                    },
-                )
-            }
-        } else {
-            body<VersionDelta>().asStream()
-        }
-    }
-
     private suspend fun createVersion(baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
         delta.getObjectsAsFlow().collect {
             HashUtil.checkObjectHash(it.first, it.second)
@@ -402,10 +378,6 @@ class ModelClientV2(
             require(baseVersion.store == store) { "baseVersion was not created by this client" }
             CLVersion(versionHash, store)
         }
-    }
-
-    private fun HttpRequestBuilder.useVersionStreamFormat() {
-        headers.set(HttpHeaders.Accept, VersionDeltaStream.CONTENT_TYPE.toString())
     }
 
     companion object {
@@ -506,10 +478,52 @@ private fun URLBuilder.appendPathSegmentsEncodingSlash(vararg components: String
 
 fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.associateBy { HashUtil.sha256(it) }
 
+suspend fun HttpResponse.readVersionDelta(): VersionDeltaStream {
+    return if (contentType()?.match(VersionDeltaStream.CONTENT_TYPE) == true) {
+        val content = bodyAsChannel()
+        val versionHash = checkNotNull(content.readUTF8Line()) { "No objects received" }
+        val versionObject = content.readUTF8Line()
+        return if (versionObject == null) {
+            VersionDeltaStream(versionHash, emptyFlow())
+        } else {
+            VersionDeltaStream(
+                versionHash,
+                flow {
+                    emit(versionHash to versionObject)
+                    while (true) {
+                        val key = content.readUTF8Line() ?: break
+                        val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
+                        emit(key to value)
+                    }
+                },
+            )
+        }
+    } else {
+        body<VersionDelta>().asStream()
+    }
+}
+
+fun HttpRequestBuilder.useVersionStreamFormat() {
+    headers.set(HttpHeaders.Accept, VersionDeltaStream.CONTENT_TYPE.toString())
+}
+
 /**
  * Performs a write transaction on the root node of the given branch.
+ *
+ * [IModelClientV2.runWriteOnBranch] can be used access to the underlying branch is needed.
  */
 suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode) -> T): T {
+    return runWriteOnBranch(branchRef) {
+        body(it.getRootNode())
+    }
+}
+
+/**
+ * Performs a write transaction on the root node of the given branch.
+ *
+ * [IModelClientV2.runWrite] can be used if access to the underlying branch is not needed.
+ */
+suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body: (IBranch) -> T): T {
     val client = this
     val baseVersion = client.pullIfExists(branchRef)
         ?: branchRef.repositoryId.getBranchReference()
@@ -518,7 +532,7 @@ suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode
         ?: client.initRepository(branchRef.repositoryId)
     val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (client as ModelClientV2).store)
     val result = branch.computeWrite {
-        body(branch.getRootNode())
+        body(branch)
     }
     val (ops, newTree) = branch.getPendingChanges()
     val newVersion = CLVersion.createRegularVersion(

@@ -31,6 +31,10 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
         return constant(hash.getValue(store))
     }
 
+    override fun process() {
+        // all requests are processed immediately
+    }
+
     class Value<T>(private val value: T) : IBulkQuery.Value<T> {
         override fun execute(): T {
             return value

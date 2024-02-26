@@ -43,7 +43,9 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
 import org.modelix.model.client.IModelClient
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.templates.PageWithMenuBar
 import kotlin.collections.set
 
@@ -53,6 +55,26 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         application.routing {
             get<Paths.getContent> {
                 call.respondRedirect("../repos/")
+            }
+            get<Paths.getContentRepositoryBranchLatest> {
+                val repository = call.parameters["repository"]
+                val branch = call.parameters["branch"]
+                if (repository.isNullOrEmpty()) {
+                    call.respondText("repository not found", status = HttpStatusCode.BadRequest)
+                    return@get
+                }
+                if (branch.isNullOrEmpty()) {
+                    call.respondText("branch not found", status = HttpStatusCode.BadRequest)
+                    return@get
+                }
+
+                val latestVersion = repoManager.getVersion(BranchReference(RepositoryId(repository), branch))
+                if (latestVersion == null) {
+                    call.respondText("unable to find latest version", status = HttpStatusCode.InternalServerError)
+                    return@get
+                } else {
+                    call.respondRedirect("../../../${latestVersion.getContentHash()}/")
+                }
             }
             get<Paths.getVersionHash> {
                 val versionHash = call.parameters["versionHash"]

@@ -9,9 +9,11 @@ import io.ktor.server.routing.routing
 import kotlinx.html.FlowContent
 import kotlinx.html.FlowOrInteractiveOrPhrasingContent
 import kotlinx.html.a
+import kotlinx.html.form
 import kotlinx.html.h1
 import kotlinx.html.i
 import kotlinx.html.p
+import kotlinx.html.postButton
 import kotlinx.html.span
 import kotlinx.html.table
 import kotlinx.html.tbody
@@ -48,7 +50,7 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                         th { +"Repository" }
                         th { +"Branch" }
                         th {
-                            colSpan = "2"
+                            colSpan = "3"
                             +"Actions"
                         }
                     }
@@ -67,6 +69,7 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                                 td { }
                                 td { }
                                 td { }
+                                td { }
                             }
                         } else {
                             for (branch in branches) {
@@ -80,10 +83,17 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                                         buildHistoryLink(branch.repositoryId.id, branch.branchName)
                                     }
                                     td {
-                                        val latestVersion = repoManager.getVersion(branch)
-                                            ?: throw RuntimeException("Branch not found: $branch")
-                                        a("../content/${latestVersion.getContentHash()}/") {
+                                        a("../content/$repository/${branch.branchName}/latest/") {
                                             +"Explore Latest Version"
+                                        }
+                                    }
+                                    td {
+                                        form {
+                                            postButton {
+                                                name = "delete"
+                                                formAction = "../v2/repositories/${branch.repositoryId.id}/delete"
+                                                +"Delete Repository"
+                                            }
                                         }
                                     }
                                 }

@@ -15,11 +15,13 @@ package org.modelix.model.server.handlers
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import org.apache.commons.collections4.map.LRUMap
+import org.modelix.model.IKeyValueStore
+import org.modelix.model.InMemoryModels
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IReadTransaction
@@ -28,12 +30,15 @@ import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.BulkQuery
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
 import org.modelix.model.metameta.MetaModelBranch
+import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
@@ -46,6 +51,9 @@ class RepositoriesManager(val client: LocalModelClient) {
     }
 
     private val store: IStoreClient get() = client.store
+    private val kvStore: IKeyValueStore get() = client.asyncStore
+    private val objectStore: IDeserializingKeyValueStore get() = client.storeCache
+    val inMemoryModels = InMemoryModels()
 
     fun generateClientId(repositoryId: RepositoryId): Long {
         return client.store.generateId("$KEY_PREFIX:${repositoryId.id}:clientId")
@@ -207,8 +215,10 @@ class RepositoriesManager(val client: LocalModelClient) {
     }
 
     fun getVersionHash(branch: BranchReference): String? {
-        return store[branchKey(branch)]
-            ?: store[legacyBranchKey(branch)]?.also { store.put(branchKey(branch), it, true) }
+        return store.runTransaction {
+            store[branchKey(branch)]
+                ?: store[legacyBranchKey(branch)]?.also { store.put(branchKey(branch), it, true) }
+        }
     }
 
     private fun putVersionHash(branch: BranchReference, hash: String?) {
@@ -226,17 +236,29 @@ class RepositoriesManager(val client: LocalModelClient) {
         if (versionHash == baseVersionHash) return emptyFlow()
         if (baseVersionHash == null) {
             // no need to cache anything if there is no delta computation happening
-            return flow {
-                suspend fun emitObjects(entry: KVEntryReference<*>) {
-                    emit(entry.getHash() to client.get(entry.getHash())!!)
-                    for (referencedEntry in entry.getValue(client.storeCache).getReferencedEntries()) {
-                        emitObjects(referencedEntry)
+
+            return channelFlow {
+                val version = CLVersion(versionHash, objectStore)
+                // Use a bulk query to make as few request to the underlying store as possible.
+                val bulkQuery = objectStore.newBulkQuery()
+                // It is unsatisfactory that we have to keep already emitted hashes in memory.
+                // But without changing the underlying model,
+                // we have to do this to not emit objects more than once.
+                val seenHashes = mutableSetOf<String>()
+                fun emitObjects(entry: KVEntryReference<*>) {
+                    bulkQuery.get(entry).onSuccess {
+                        channel.trySend(entry.getHash() to it!!.serialize())
+                        for (referencedEntry in it.getReferencedEntries()) {
+                            val wasSeenBefore = !seenHashes.add(referencedEntry.getHash())
+                            // Do not emit the object if we already emitted it.
+                            if (!wasSeenBefore) {
+                                emitObjects(referencedEntry)
+                            }
+                        }
                     }
                 }
-
-                emit(versionHash to client.get(versionHash)!!)
-                val version = CLVersion(versionHash, client.storeCache)
-                emitObjects(version.treeHash!!)
+                emitObjects(KVEntryReference(versionHash, CPVersion.DESERIALIZER))
+                (bulkQuery as? BulkQuery)?.process()
             }
         }
 

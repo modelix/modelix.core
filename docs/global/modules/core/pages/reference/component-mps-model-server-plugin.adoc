@@ -6,6 +6,7 @@
 https://api.modelix.org/3.12.0/mps-model-server-plugin/index.html[API doc^] | https://github.com/modelix/modelix.core[Repository^] | Artifacts: https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/org/modelix/mps/model-server-plugin/[Nexus^] https://github.com/modelix/modelix.core/packages/1916747[GitHub Packages^]
 --
 
+NOTE: Install instructions can be found in the xref:core:howto/mps-model-server-plugin.adoc[corresponding How-To].
 
 == Health checks
 

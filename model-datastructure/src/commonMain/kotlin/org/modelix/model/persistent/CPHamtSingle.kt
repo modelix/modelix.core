@@ -112,7 +112,7 @@ class CPHamtSingle(
         return bulkQuery[child].map { childData -> childData!! }
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>?) -> Unit): IBulkQuery.Value<Unit> {
+    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
         return getChild(bulkQuery).mapBulk { it.visitEntries(bulkQuery, visitor) }
     }
 

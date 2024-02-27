@@ -72,7 +72,7 @@ class ModuleBinding(
         callback?.run()
     }
 
-    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<Any?> {
         if (isDisposed) {
             return CompletableFuture.completedFuture(null)
         }
@@ -85,15 +85,21 @@ class ModuleBinding(
 
                     val modelBindings = bindingsRegistry.getModelBindings(module)
 
-                    // deactivate child models' bindings and wait for their successful completion
-                    // throws ExecutionException if any deactivation failed
-                    modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }?.get()
-
-                    // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
-                    bindingsRegistry.removeModuleBinding(this)
-
-                    isActivated = false
+                    /**
+                     * deactivate child models' bindings and wait for their successful completion
+                     * throws ExecutionException if any deactivation failed
+                     */
+                    return@enqueue modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }
                 }
+            }
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+            synchronized(this) {
+                /**
+                 * delete the binding, because if binding exists then module is assumed to exist,
+                 * i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
+                 */
+                bindingsRegistry.removeModuleBinding(this)
+                isActivated = false
             }
         }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
             synchronized(this) {
@@ -103,7 +109,8 @@ class ModuleBinding(
                         /**
                          * if we just delete it locally, then we have to call ModuleDeleteHelper manually.
                          * otherwise, MPS will call us via the event-handler chain starting from
-                         * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener --> moduleListener.deactivate(removeFromServer = true)
+                         * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener -->
+                         * moduleListener.deactivate(removeFromServer = true)
                          */
                         ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!)
                             .deleteModules(listOf(module), false, true)
@@ -111,7 +118,10 @@ class ModuleBinding(
                     }
                 } catch (ex: Exception) {
                     logger.error(ex) { "Exception occurred while deactivating ${name()}." }
-                    // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                    /**
+                     * if any error occurs, then we put the binding back to let the rest of the application know that
+                     * it exists
+                     */
                     bindingsRegistry.addModuleBinding(this)
                     activate()
                     throw ex

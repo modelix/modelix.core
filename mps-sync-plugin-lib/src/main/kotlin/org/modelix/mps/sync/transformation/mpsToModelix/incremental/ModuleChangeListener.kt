@@ -93,13 +93,14 @@ class ModuleChangeListener(
                 )
             }
 
-            // calculate the difference in dependencies between the SModule's INode and what is in the SModule.declaredDependencies
+            // calculate the difference in dependencies between the SModule's INode and SModule.declaredDependencies
             val lastKnownDependencies = iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
             val actualDependencies = module.declaredDependencies
 
             val addedDependencies = actualDependencies.filter { sDependency ->
                 lastKnownDependencies.none { dependencyINode ->
-                    ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == sDependency.targetModule.moduleId
+                    val targetModuleId = sDependency.targetModule.moduleId
+                    ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == targetModuleId
                 }
             }
             addedDependencies.waitForCompletionOfEachTask { dependency ->

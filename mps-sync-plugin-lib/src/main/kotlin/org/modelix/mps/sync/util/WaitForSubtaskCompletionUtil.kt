@@ -18,31 +18,62 @@ package org.modelix.mps.sync.util
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
+import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import java.util.concurrent.CompletableFuture
 
+/**
+ * Iterates through each element of the Collection, and calls the `continuableSyncTaskProducer` function on them. I.e.
+ * a synchronization operation from modelix to MPS or the other way around. After that, waits until all tasks are
+ * completed.
+ *
+ * If any of them fails then it fails the resulting future. Otherwise, it completes the resulting future with null.
+ *
+ * Suggestion: use this method as the last statement of a short-living SyncTask, possibly without any SyncLocks to
+ * avoid busy-waiting on the lock. The continuation of SyncTasks will take care of waiting for all futures to complete.
+ * If you run a SyncTask on its own, then you have to manually wait for the task to complete.
+ */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun <T> Collection<T>.waitForCompletionOfEachTask(continuableSyncTaskProducer: (T) -> ContinuableSyncTask) =
     this.asIterable().waitForCompletionOfEachTask(continuableSyncTaskProducer)
 
+/**
+ * Iterates through each element of the Iterable, and calls the `continuableSyncTaskProducer` function on them. I.e.
+ * a synchronization operation from modelix to MPS or the other way around. After that, waits until all tasks are
+ * completed.
+ *
+ * If any of them fails then it fails the resulting future. Otherwise, it completes the resulting future with null.
+ *
+ * Suggestion: use this method as the last statement of a short-living SyncTask, possibly without any SyncLocks to
+ * avoid busy-waiting on the lock. The continuation of SyncTasks will take care of waiting for all futures to complete.
+ * If you run a SyncTask on its own, then you have to manually wait for the task to complete.
+ */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun <T> Iterable<T>.waitForCompletionOfEachTask(continuableSyncTaskProducer: (T) -> ContinuableSyncTask) =
     this.waitForCompletionOfEach {
         continuableSyncTaskProducer.invoke(it).getResult()
     }
 
-fun <T> Iterable<T>.waitForCompletionOfEach(futureProducer: (T) -> CompletableFuture<*>): CompletableFuture<*> {
+/**
+ * Iterates through each element of the Iterable, and calls the `futureProducer` function on them. After that,
+ * waits until all futures are completed.
+ *
+ * If any of them fails then it fails the resulting future. Otherwise, it completes the resulting future with null.
+ *
+ * Suggestion: use this method as the last statement of a short-living SyncTask, possibly without any SyncLocks to
+ * avoid busy-waiting on the lock. The continuation of SyncTasks will take care of waiting for all futures to complete.
+ * If you run a SyncTask on its own, then you have to manually wait for the task to complete.
+ */
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun <T> Iterable<T>.waitForCompletionOfEach(futureProducer: (T) -> CompletableFuture<Any?>): CompletableFuture<*> {
     val compositeFuture = CompletableFuture<Any?>()
 
     try {
-        // wait for all subtasks to complete
-        val futures = mutableSetOf<CompletableFuture<*>>()
+        val futures = mutableSetOf<CompletableFuture<Any?>>()
         this.forEach {
             val future = futureProducer.invoke(it)
             futures.add(future)
         }
-        futures.forEach { it.join() }
-
-        compositeFuture.complete(null)
+        FuturesWaitQueue.add(compositeFuture, futures)
     } catch (t: Throwable) {
         compositeFuture.completeExceptionally(t)
     }

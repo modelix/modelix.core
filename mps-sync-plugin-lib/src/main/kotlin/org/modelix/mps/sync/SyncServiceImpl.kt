@@ -11,7 +11,6 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
-import org.modelix.model.client.SharedExecutors
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
@@ -22,6 +21,7 @@ import org.modelix.mps.sync.modelix.ModelixBranchListener
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.RepositoryChangeListener
+import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
@@ -171,7 +171,8 @@ class SyncServiceImpl(
     override fun dispose() {
         // cancel all running coroutines
         coroutineScope.cancel()
-        SharedExecutors.shutdownAll()
+        SyncQueue.close()
+        FuturesWaitQueue.close()
         // unregister change listeners
         resetProjectWithChangeListener()
         changeListenerByReplicatedModel.forEach { it.key.getBranch().removeListener(it.value) }

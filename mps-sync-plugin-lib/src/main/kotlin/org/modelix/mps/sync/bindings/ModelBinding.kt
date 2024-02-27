@@ -69,7 +69,7 @@ class ModelBinding(
         callback?.run()
     }
 
-    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<Any?> {
         if (isDisposed) {
             return CompletableFuture.completedFuture(null)
         }
@@ -82,7 +82,11 @@ class ModelBinding(
                     model.removeModelListener(modelChangeListener)
 
                     if (removeFromServer) {
-                        // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
+                        /**
+                         * remove from bindings, so when removing the model from the module we'll know that this model
+                         * is not assumed to exist, therefore we'll not delete it in the cloud
+                         * (see ModuleChangeListener's modelRemoved method)
+                         */
                         bindingsRegistry.removeModelBinding(model.module!!, this)
                     }
 
@@ -103,7 +107,10 @@ class ModelBinding(
                     }
                 } catch (ex: Exception) {
                     logger.error(ex) { "Exception occurred while deactivating ${name()}." }
-                    // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                    /**
+                     * if any error occurs, then we put the binding back to let the rest of the application know that
+                     * it exists
+                     */
                     bindingsRegistry.addModelBinding(this)
                     activate()
 
@@ -114,7 +121,10 @@ class ModelBinding(
             bindingsRegistry.removeModelBinding(model.module!!, this)
 
             if (!removeFromServer) {
-                // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
+                /**
+                 * when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes
+                 * care of the node deletion
+                 */
                 nodeMap.remove(model)
             }
 

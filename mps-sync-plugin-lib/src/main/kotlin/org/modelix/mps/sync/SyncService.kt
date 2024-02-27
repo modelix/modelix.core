@@ -38,7 +38,7 @@ interface IBinding {
 
     fun activate(callback: Runnable? = null)
 
-    fun deactivate(removeFromServer: Boolean, callback: Runnable? = null): CompletableFuture<*>
+    fun deactivate(removeFromServer: Boolean, callback: Runnable? = null): CompletableFuture<Any?>
 
     fun name(): String
 }

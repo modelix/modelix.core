@@ -19,21 +19,27 @@ package org.modelix.mps.sync.tasks
 import com.intellij.util.containers.headTail
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
+import org.modelix.mps.sync.util.getActualResult
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.Executors
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-object SyncQueue {
+object SyncQueue : AutoCloseable {
 
     private val logger = KotlinLogging.logger {}
+    private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
+
+    override fun close() {
+        threadPool.shutdownNow()
+    }
 
     fun enqueue(
         requiredLocks: LinkedHashSet<SyncLock>,
@@ -65,7 +71,7 @@ object SyncQueue {
          * in Modelix which triggers a change in MPS again via the *ChangeListener and ModelixTreeChangeVisitor chains
          * registered in MPS and in Modelix, respectively.
          *
-         * Because the SyncTasks are executed on separate threads by the ExecutorService (see SharedExecutors.FIXED),
+         * Because the SyncTasks are executed on separate threads by the ExecutorService (see SyncTaskExecutors),
          * there is a very little chance of missing an intended change on other side. With other words: there is very
          * little chance that it makes sense that on the same thread two SyncTasks occur.
          */
@@ -97,7 +103,7 @@ object SyncQueue {
     }
 
     private fun scheduleFlush() {
-        SharedExecutors.FIXED.submit {
+        threadPool.submit {
             doFlush()
         }
     }
@@ -113,7 +119,8 @@ object SyncQueue {
         val taskResult = task.result
 
         if (locks.isEmpty()) {
-            val result = task.action.invoke(task.previousTaskResult)
+            val previousTaskResult = task.previousTaskResultHolder?.getActualResult()
+            val result = task.action.invoke(previousTaskResult)
             if (result is CompletableFuture<*> && result.isCompletedExceptionally) {
                 result.handle { _, throwable -> taskResult.completeExceptionally(throwable) }
             } else {

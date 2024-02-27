@@ -24,6 +24,7 @@ import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -240,7 +241,7 @@ class ModelClientV2(
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
         require(lastKnownVersion is CLVersion?)
-        val response = httpClient.get {
+        return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
@@ -249,29 +250,30 @@ class ModelClientV2(
                 }
             }
             useVersionStreamFormat()
+        }.execute { response ->
+            val receivedVersion = createVersion(lastKnownVersion, response.readVersionDelta())
+            LOG.debug { "${clientId.toString(16)}.pull($branch, $lastKnownVersion) -> $receivedVersion" }
+            receivedVersion
         }
-        val receivedVersion = createVersion(lastKnownVersion, response.readVersionDelta())
-        LOG.debug { "${clientId.toString(16)}.pull($branch, $lastKnownVersion) -> $receivedVersion" }
-        return receivedVersion
     }
 
     override suspend fun pullIfExists(branch: BranchReference): IVersion? {
-        val response = httpClient.get {
+        return httpClient.prepareGet {
             expectSuccess = false
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
             useVersionStreamFormat()
+        }.execute { response ->
+            val receivedVersion = when (response.status) {
+                HttpStatusCode.NotFound -> null
+                HttpStatusCode.OK -> createVersion(null, response.readVersionDelta())
+                else -> throw ResponseException(response, response.bodyAsText())
+            }
+            LOG.debug { "${clientId.toString(16)}.pullIfExists($branch) -> $receivedVersion" }
+            receivedVersion
         }
-
-        val receivedVersion = when (response.status) {
-            HttpStatusCode.NotFound -> null
-            HttpStatusCode.OK -> createVersion(null, response.readVersionDelta())
-            else -> throw ResponseException(response, response.bodyAsText())
-        }
-        LOG.debug { "${clientId.toString(16)}.pullIfExists($branch) -> $receivedVersion" }
-        return receivedVersion
     }
 
     override suspend fun pullHash(branch: BranchReference): String {
@@ -302,7 +304,7 @@ class ModelClientV2(
     override suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
         require(lastKnownVersion is CLVersion?)
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion)" }
-        val response = httpClient.get {
+        return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "poll")
@@ -311,10 +313,11 @@ class ModelClientV2(
                 }
             }
             useVersionStreamFormat()
+        }.execute { response ->
+            val receivedVersion = createVersion(lastKnownVersion, response.readVersionDelta())
+            LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
+            receivedVersion
         }
-        val receivedVersion = createVersion(lastKnownVersion, response.readVersionDelta())
-        LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
-        return receivedVersion
     }
 
     override suspend fun <R> query(branch: BranchReference, body: (IMonoStep<INode>) -> IMonoStep<R>): R {

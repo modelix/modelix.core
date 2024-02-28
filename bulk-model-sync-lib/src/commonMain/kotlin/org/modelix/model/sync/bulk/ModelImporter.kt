@@ -50,7 +50,7 @@ class ModelImporter(
 ) {
 
     private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
-    private val postponedReferences = ArrayList<() -> Unit>()
+    private val postponedReferences = mutableListOf<PostponedReference>()
     private val nodesToRemove = HashSet<INode>()
     private var numExpectedNodes = 0
     private var currentNodeProgress = 0
@@ -69,6 +69,23 @@ class ModelImporter(
             } else {
                 throw e
             }
+        }
+    }
+
+    data class PostponedReference(
+        val expectedTargetId: String,
+        val mpsNode: INode,
+        val role: String,
+    )
+
+    private fun PostponedReference.setPostponedReference() {
+        val expectedRefTarget = originalIdToExisting[expectedTargetId]
+        if (expectedRefTarget == null) {
+            // The target node is not part of the model. Assuming it exists in some other model we can
+            // store the reference and try to resolve it dynamically on access.
+            mpsNode.setReferenceTarget(role, SerializedNodeReference(expectedTargetId))
+        } else {
+            mpsNode.setReferenceTarget(role, expectedRefTarget)
         }
     }
 
@@ -95,11 +112,7 @@ class ModelImporter(
             syncNode(root, data.root, progressReporter)
 
             logger.info { "Synchronizing references..." }
-            postponedReferences.forEach {
-                doAndPotentiallyContinueOnErrors {
-                    it.invoke()
-                }
-            }
+            postponedReferences.forEach { it.setPostponedReference() }
 
             logger.info { "Removing extra nodes..." }
             nodesToRemove.forEach {
@@ -234,16 +247,7 @@ class ModelImporter(
             if (actualTargetId != expectedTargetId) {
                 val expectedTarget = originalIdToExisting[expectedTargetId]
                 if (expectedTarget == null) {
-                    postponedReferences += {
-                        val expectedRefTarget = originalIdToExisting[expectedTargetId]
-                        if (expectedRefTarget == null) {
-                            // The target node is not part of the model. Assuming it exists in some other model we can
-                            // store the reference and try to resolve it dynamically on access.
-                            node.setReferenceTarget(it.key, SerializedNodeReference(expectedTargetId))
-                        } else {
-                            node.setReferenceTarget(it.key, expectedRefTarget)
-                        }
-                    }
+                    postponedReferences += PostponedReference(expectedTargetId, node, it.key)
                 } else {
                     node.setReferenceTarget(it.key, expectedTarget)
                 }

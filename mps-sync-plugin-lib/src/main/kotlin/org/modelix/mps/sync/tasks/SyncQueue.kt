@@ -22,7 +22,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
-import org.modelix.mps.sync.util.getActualResult
+import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -85,7 +85,7 @@ object SyncQueue : AutoCloseable {
             if (noTaskIsRunning || isNoneDirection || runningTaskDirectionIsTheSame) {
                 enqueueAndFlush(task)
             } else {
-                task.result.complete(null)
+                task.result.completeWithDefault()
             }
         } else {
             enqueueAndFlush(task)
@@ -119,10 +119,13 @@ object SyncQueue : AutoCloseable {
         val taskResult = task.result
 
         if (locks.isEmpty()) {
-            val previousTaskResult = task.previousTaskResultHolder?.getActualResult()
+            // warning blocking call: if MPS gets frozen, this might be the reason
+            val previousTaskResult = task.previousTaskResultHolder?.get()
             val result = task.action.invoke(previousTaskResult)
             if (result is CompletableFuture<*> && result.isCompletedExceptionally) {
                 result.handle { _, throwable -> taskResult.completeExceptionally(throwable) }
+            } else if (result == null) {
+                taskResult.completeWithDefault()
             } else {
                 taskResult.complete(result)
             }

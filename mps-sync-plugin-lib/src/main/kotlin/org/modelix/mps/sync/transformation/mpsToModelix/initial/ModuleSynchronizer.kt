@@ -40,6 +40,7 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.bindTo
+import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
@@ -94,10 +95,10 @@ class ModuleSynchronizer(
             val future = CompletableFuture<Any?>()
             if (!isMappedToMps) {
                 require(targetModule is AbstractModule) { "Dependency target module ($targetModule) of Module ($module) must be an AbstractModule." }
-                // conenct the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
+                // connect the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
                 addModule(targetModule).getResult().bindTo(future)
             } else {
-                future.complete(null)
+                future.completeWithDefault()
             }
             return@enqueue future
         }.continueWith(

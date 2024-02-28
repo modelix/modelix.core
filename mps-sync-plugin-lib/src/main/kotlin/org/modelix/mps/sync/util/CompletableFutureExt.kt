@@ -20,16 +20,6 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun CompletableFuture<*>.getActualResult(): Any? {
-    val resultCandidate = get()
-    return if (resultCandidate is CompletableFuture<*>) {
-        resultCandidate.getActualResult()
-    } else {
-        resultCandidate
-    }
-}
-
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun CompletableFuture<Any?>.bindTo(other: CompletableFuture<Any?>): CompletableFuture<Any?> {
     this.handle { result, throwable ->
         if (throwable != null) {
@@ -40,3 +30,13 @@ fun CompletableFuture<Any?>.bindTo(other: CompletableFuture<Any?>): CompletableF
     }
     return this
 }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun CompletableFuture<Any?>.completeWithDefault() = this.complete(CompletableFutureDefaultResult)
+
+/**
+ * This class is used instead of null, because if CompletableFuture.result == null then it means the Future is not
+ * done yet...
+ */
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+object CompletableFutureDefaultResult

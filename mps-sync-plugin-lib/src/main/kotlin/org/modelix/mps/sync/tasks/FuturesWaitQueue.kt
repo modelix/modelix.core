@@ -18,20 +18,22 @@ package org.modelix.mps.sync.tasks
 
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.util.getActualResult
+import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.stream.Collectors
+import java.util.stream.Stream
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object FuturesWaitQueue : Runnable, AutoCloseable {
 
     private val logger = KotlinLogging.logger {}
-    private val threadPool = Executors.newFixedThreadPool(1)
+    private val threadPool = Executors.newSingleThreadExecutor()
 
     private val pauseObject = Object()
 
-    private val continuationByPredecessors = ConcurrentHashMap<Set<CompletableFuture<Any?>>, FillableFuture>()
+    private val continuations = LinkedBlockingQueue<FutureWithPredecessors>()
 
     init {
         threadPool.submit(this)
@@ -42,8 +44,13 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
         predecessors: Set<CompletableFuture<Any?>>,
         fillContinuation: Boolean = false,
     ) {
-        continuationByPredecessors[predecessors] = FillableFuture(continuation, fillContinuation)
-        pauseObject.notify()
+        if (predecessors.isEmpty()) {
+            continuation.completeWithDefault()
+            return
+        }
+
+        continuations.add(FutureWithPredecessors(predecessors, FillableFuture(continuation, fillContinuation)))
+        notifyThread()
     }
 
     override fun close() {
@@ -54,55 +61,96 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
         val executorThread = Thread.currentThread()
         try {
             while (!executorThread.isInterrupted) {
-                while (!continuationByPredecessors.isEmpty()) {
-                    continuationByPredecessors.forEach {
-                        if (executorThread.isInterrupted) {
-                            // TODO test it
-                            throw InterruptedException()
-                        }
-
-                        val predecessors = it.key
-                        val continuation = it.value.future
-
-                        val failedPredecessor =
-                            predecessors.firstOrNull { predecessor -> predecessor.isCompletedExceptionally }
-                        if (failedPredecessor != null) {
-                            failedPredecessor.handle { _, throwable -> continuation.completeExceptionally(throwable) }
-                            return@forEach remove(predecessors)
-                        }
-
-                        val anyCancelled = predecessors.any { predecessor -> predecessor.isCancelled }
-                        if (anyCancelled) {
-                            continuation.cancel(true)
-                            return@forEach remove(predecessors)
-                        }
-
-                        val allCompleted = predecessors.all { predecessor -> predecessor.isDone }
-                        if (allCompleted) {
-                            val fillContinuation = it.value.shallBeFilled
-                            val result = if (fillContinuation) {
-                                predecessors.first().getActualResult()
-                            } else {
-                                null
-                            }
-                            continuation.complete(result)
-                            remove(predecessors)
-                        }
+                while (!continuations.isEmpty()) {
+                    if (executorThread.isInterrupted) {
+                        throw InterruptedException()
                     }
+
+                    val futureWithPredecessors = continuations.take()
+                    val predecessors = futureWithPredecessors.predecessors
+
+                    val fillableFuture = futureWithPredecessors.future
+                    val continuation = fillableFuture.future
+
+                    val failedPredecessor =
+                        predecessors.firstOrNull { predecessor -> predecessor.isCompletedExceptionally }
+                    if (failedPredecessor != null) {
+                        failedPredecessor.handle { _, throwable -> continuation.completeExceptionally(throwable) }
+                        continue
+                    }
+
+                    val anyCancelled = predecessors.any { predecessor -> predecessor.isCancelled }
+                    if (anyCancelled) {
+                        continuation.cancel(true)
+                        continue
+                    }
+
+                    val allCompleted = predecessors.all { predecessor -> predecessor.isDone }
+                    if (allCompleted) {
+                        /**
+                         * Check if there is any predecessor whose result (.get()) is a CompletableFuture. Replace such
+                         * CompletableFutures with their result and put them at the end of the queue.
+                         *
+                         * In the normal case, such predecessors are created if Iterable<T>.waitForCompletionOfEach is
+                         * the last statement of a SyncTask, that returns a CompletableFuture. This Future will be put
+                         * inside SyncTask.result, which is a Future already. However, we are curious about the completion
+                         * of the inner Future, thus we have to unpack it here.
+                         */
+                        val cfPredecessors = predecessors.filter { it.get() is CompletableFuture<*> }
+                            .map { it.get() as CompletableFuture<Any?> }
+                        if (cfPredecessors.isNotEmpty()) {
+                            val normalPredecessors = predecessors.filter { it.get() !is CompletableFuture<*> }
+                            val newPredecessors = Stream.concat(normalPredecessors.stream(), cfPredecessors.stream())
+                                .collect(Collectors.toSet())
+
+                            val nextRound = FutureWithPredecessors(newPredecessors, fillableFuture)
+                            continuations.add(nextRound)
+                            continue
+                        }
+
+                        val fillContinuation = fillableFuture.shallBeFilled
+                        val result = if (fillContinuation) {
+                            predecessors.first().get()
+                        } else {
+                            null
+                        }
+
+                        if (result == null) {
+                            continuation.completeWithDefault()
+                        } else {
+                            continuation.complete(result)
+                        }
+                        continue
+                    }
+
+                    // re-queue item if it was not processed
+                    continuations.add(futureWithPredecessors)
                 }
 
-                pauseObject.wait()
+                waitForNotification()
             }
-        } catch (ex: InterruptedException) {
-            logger.info { "BusyWaitQueue is shutting down, because it got interrupted" }
-            continuationByPredecessors.values.forEach { it.future.completeExceptionally(ex) }
+        } catch (ex: Throwable) {
+            logger.error(ex) { "BusyWaitQueue is shutting down, because it got an Exception" }
+            continuations.forEach { it.future.future.completeExceptionally(ex) }
             return
         }
     }
 
-    private fun remove(predecessors: Set<CompletableFuture<Any?>>) {
-        continuationByPredecessors.remove(predecessors)
+    private fun notifyThread() {
+        synchronized(pauseObject) {
+            pauseObject.notifyAll()
+        }
+    }
+
+    private fun waitForNotification() {
+        synchronized(pauseObject) {
+            pauseObject.wait()
+        }
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+data class FutureWithPredecessors(val predecessors: Set<CompletableFuture<Any?>>, val future: FillableFuture)
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class FillableFuture(val future: CompletableFuture<Any?>, val shallBeFilled: Boolean = false)

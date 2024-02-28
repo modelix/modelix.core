@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2023-2024.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.modelix.model.sync.bulk
 
-import org.junit.jupiter.api.Test
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
@@ -30,6 +29,8 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.withAutoTransactions
+import kotlin.js.JsName
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
@@ -94,6 +95,7 @@ class ModelImporterOrderPropertyTest {
     }
 
     @Test
+    @JsName("nodes_in_unordered_child_link_are_added_and_removed")
     fun `nodes in unordered child link are added and removed`() {
         // language=json
         val dataBeforeImportJson = """
@@ -173,6 +175,7 @@ class ModelImporterOrderPropertyTest {
     }
 
     @Test
+    @JsName("nodes_in_unordered_child_link_can_change_child_link_inside_same_parent")
     fun `nodes in unordered child link can change child link inside same parent`() {
         // language=json
         val dataBeforeImportJson = """
@@ -242,6 +245,7 @@ class ModelImporterOrderPropertyTest {
     }
 
     @Test
+    @JsName("nodes_in_unordered_child_link_can_change_parent")
     fun `nodes in unordered child link can change parent`() {
         // language=json
         val dataBeforeImportJson = """
@@ -314,6 +318,7 @@ class ModelImporterOrderPropertyTest {
     }
 
     @Test
+    @JsName("children_without_resolvable_role_are_ordered")
     fun `children without resolvable role are ordered`() {
         // language=json
         val dataBeforeImportJson = """

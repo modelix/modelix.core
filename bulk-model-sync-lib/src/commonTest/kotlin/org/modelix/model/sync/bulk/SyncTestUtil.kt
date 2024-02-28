@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2023-2024.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.modelix.model.sync.bulk
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.model.api.INode
+import org.modelix.model.api.IProperty
 import org.modelix.model.api.getDescendants
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.associateWithNotNull
@@ -27,6 +28,8 @@ import org.modelix.model.operations.DeleteNodeOp
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.MoveNodeOp
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.test.fail
 
 object SyncTestUtil {
@@ -68,8 +71,8 @@ internal fun assertNodeConformsToSpec(expected: NodeData, actual: INode, origina
 
 internal fun assertNodePropertiesConformToSpec(expected: NodeData, actual: INode) {
     val actualProperties = actual.getPropertyRoles().associateWithNotNull { actual.getPropertyValue(it) }
-    assertEquals(expected.properties, actualProperties.filterKeys { it != NodeData.idPropertyKey })
-    assertEquals(expected.id, actualProperties[NodeData.idPropertyKey])
+    assertEquals(expected.properties, actualProperties.filterKeys { it != NodeData.ID_PROPERTY_KEY })
+    assertEquals(expected.id, actualProperties[NodeData.ID_PROPERTY_KEY])
 }
 
 internal fun assertNodeReferencesConformToSpec(
@@ -85,14 +88,16 @@ internal fun assertNodeReferencesConformToSpec(
             numUnresolvableRefs++
             return@associateWithNotNull null
         }
-        target.getPropertyValue(NodeData.idPropertyKey) ?: target.reference.serialize()
+        target.getPropertyValue(IProperty.fromName(NodeData.ID_PROPERTY_KEY)) ?: target.reference.serialize()
     }
 
     assertEquals(expected.references.size, actualResolvableRefs.size + numUnresolvableRefs)
-    assert(expected.references.entries.containsAll(actualResolvableRefs.entries))
+    assertTrue(expected.references.entries.containsAll(actualResolvableRefs.entries))
     val unresolved = expected.references.entries.subtract(actualResolvableRefs.entries)
     unresolved.forEach {
-        assert(!originalIdToSpec.containsKey(it.value)) { "node ref with target ${it.value} should have been resolved" }
+        assertFalse("node ref with target ${it.value} should have been resolved") {
+            originalIdToSpec.containsKey(it.value)
+        }
     }
 }
 
@@ -109,9 +114,9 @@ internal fun assertNoOverlappingOperations(operations: List<IAppliedOperation>) 
     val deletionsSet = opsByType[DeleteNodeOp::class]?.map { (it.getOriginalOp() as DeleteNodeOp).childId }?.toSet() ?: emptySet()
     val movesSet = opsByType[MoveNodeOp::class]?.map { (it.getOriginalOp() as MoveNodeOp).childId }?.toSet() ?: emptySet()
 
-    assert(additionsSet.intersect(deletionsSet).isEmpty())
-    assert(deletionsSet.intersect(movesSet).isEmpty())
-    assert(movesSet.intersect(additionsSet).isEmpty())
+    assertTrue(additionsSet.intersect(deletionsSet).isEmpty())
+    assertTrue(deletionsSet.intersect(movesSet).isEmpty())
+    assertTrue(movesSet.intersect(additionsSet).isEmpty())
 }
 
 internal fun NodeData.countNodes(): Int {

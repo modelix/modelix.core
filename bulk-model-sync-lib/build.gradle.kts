@@ -21,12 +21,18 @@ kotlin {
             }
         }
 
-        val jvmTest by getting {
+        val commonTest by getting {
             dependencies {
                 implementation(project(":model-api"))
                 implementation(libs.kotlin.serialization.json)
-                implementation(project(":model-client", configuration = "jvmRuntimeElements"))
+                implementation(project(":model-client"))
                 implementation(kotlin("test"))
+            }
+        }
+
+        val jvmTest by getting {
+            dependencies {
+                implementation(project(":model-client", configuration = "jvmRuntimeElements"))
             }
         }
     }

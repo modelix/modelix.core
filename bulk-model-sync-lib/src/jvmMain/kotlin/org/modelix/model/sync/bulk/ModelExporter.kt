@@ -35,6 +35,8 @@ actual class ModelExporter actual constructor(private val root: INode) {
         outputFile.parentFile.mkdirs()
 
         val modelData = ModelData(root = root.asExported())
-        Json.encodeToStream(modelData, outputFile.outputStream())
+        outputFile.outputStream().use { outputStream ->
+            Json.encodeToStream(modelData, outputStream)
+        }
     }
 }

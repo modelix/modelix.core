@@ -40,14 +40,11 @@ fun ModelImporter.import(jsonFile: File) {
 
 @OptIn(ExperimentalSerializationApi::class)
 fun ModelImporter.importFilesAsRootChildren(files: Collection<File>) {
-    val models: List<ModelData> = files.map {
-        Json.decodeFromStream(it.inputStream())
+    val models: List<ModelData> = files.map { file ->
+        file.inputStream().use(Json::decodeFromStream)
     }
     import(mergeModelData(models))
 }
 
 @Deprecated("use collection parameter for better performance")
-fun ModelImporter.importFilesAsRootChildren(vararg files: File) {
-    val models = files.map { ModelData.fromJson(it.readText()) }
-    import(mergeModelData(*models.toTypedArray()))
-}
+fun ModelImporter.importFilesAsRootChildren(vararg files: File) = importFilesAsRootChildren(files.asList())

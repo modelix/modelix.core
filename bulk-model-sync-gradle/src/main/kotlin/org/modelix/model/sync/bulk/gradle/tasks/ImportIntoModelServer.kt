@@ -73,21 +73,21 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
     val metaProperties: MapProperty<String, String> = of.mapProperty(String::class.java, String::class.java)
 
     @TaskAction
-    fun import() {
+    fun import() = runBlocking {
         val inputDir = inputDir.get().asFile
         val repoId = RepositoryId(repositoryId.get())
 
         val branchRef = ModelFacade.createBranchReference(repoId, branchName.get())
-        val client = ModelClientV2.builder()
-            .url(url.get())
-            .requestTimeout(requestTimeoutSeconds.get().seconds)
-            .build()
         val files = inputDir.listFiles()?.filter {
             it.extension == "json" && isModuleIncluded(it.nameWithoutExtension, includedModules.get(), includedModulePrefixes.get())
         }
         if (files.isNullOrEmpty()) error("no json files found for included modules")
 
-        runBlocking {
+        val client = ModelClientV2.builder()
+            .url(url.get())
+            .requestTimeout(requestTimeoutSeconds.get().seconds)
+            .build()
+        client.use {
             logger.info("Initializing client...")
             client.init()
             logger.info("Importing...")
@@ -108,6 +108,7 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
                 logger.info("Sending diff to server...")
             }
         }
+
         logger.info("Import finished.")
     }
 }

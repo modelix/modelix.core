@@ -26,16 +26,13 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import org.modelix.model.ModelFacade
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
-import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
-import org.modelix.model.client2.getReplicatedModel
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.isModuleIncluded
@@ -71,21 +68,17 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val requestTimeoutSeconds: Property<Int> = of.property(Int::class.java)
 
+    private fun getBranchReference(): BranchReference = RepositoryId(repositoryId.get()).getBranchReference(branchName.get())
+
     @TaskAction
-    fun export() {
+    fun export() = runBlocking {
         val modelClient = ModelClientV2PlatformSpecificBuilder()
             .url(url.get())
             .requestTimeout(requestTimeoutSeconds.get().seconds)
             .build()
         modelClient.use { client ->
-            runBlocking { client.init() }
-
-            val branch = if (revision.isPresent) {
-                getBranchByRevision(client)
-            } else {
-                getBranchByRepoIdAndBranch(client)
-            }
-
+            client.init()
+            val branch = loadDataAsBranch(client)
             branch.runRead {
                 val root = branch.getRootNode()
                 logger.info("Got root node: {}", root)
@@ -100,6 +93,16 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
         }
     }
 
+    private suspend fun loadDataAsBranch(client: ModelClientV2): PBranch {
+        val version = if (revision.isPresent) {
+            client.loadVersion(revision.get(), null)
+        } else {
+            client.pull(getBranchReference(), null)
+        }
+        val branch = PBranch(version.getTree(), client.getIdGenerator())
+        return branch
+    }
+
     private fun getIncludedModules(root: INode): Iterable<INode> {
         val nameRole = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
 
@@ -110,20 +113,5 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
 
             isModule && isIncluded
         }
-    }
-
-    private fun getBranchByRepoIdAndBranch(client: ModelClientV2): IBranch {
-        val repoId = RepositoryId(repositoryId.get())
-        val branchRef = ModelFacade.createBranchReference(repoId, branchName.get())
-
-        val branch = runBlocking {
-            client.getReplicatedModel(branchRef).start()
-        }
-        return branch
-    }
-
-    private fun getBranchByRevision(client: IModelClientV2): IBranch {
-        val version = runBlocking { client.loadVersion(revision.get(), null) }
-        return PBranch(version.getTree(), client.getIdGenerator())
     }
 }

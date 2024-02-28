@@ -23,8 +23,9 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asTypeName
-import org.modelix.metamodel.ITypedConcept
+import org.modelix.metamodel.IConceptOfTypedNode
 import org.modelix.metamodel.generator.MetaModelGenerator
 import org.modelix.metamodel.generator.NameConfig
 import org.modelix.metamodel.generator.ProcessedChildLink
@@ -66,6 +67,9 @@ internal class ModelQLExtensionsGenerator(
                     is ProcessedChildLink -> {
                         addChildGetter(feature)
                         addChildSetter(feature)
+                        if (!feature.type.resolved.abstract) {
+                            addDefaultChildSetter(feature)
+                        }
                     }
 
                     is ProcessedReferenceLink -> {
@@ -80,7 +84,7 @@ internal class ModelQLExtensionsGenerator(
 
     private fun FileSpec.Builder.addReferenceSetter(referenceLink: ProcessedReferenceLink) {
         val targetType = referenceLink.type.resolved.nodeWrapperInterfaceType().copy(nullable = referenceLink.optional)
-        val inputStepType = IMonoStep::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
+        val inputStepType = getSetterReceiverType()
 
         val parameterType = IMonoStep::class.asTypeName().parameterizedBy(targetType)
             .let { if (referenceLink.optional) it.copy(nullable = true) else it }
@@ -159,26 +163,23 @@ internal class ModelQLExtensionsGenerator(
 
     private fun FileSpec.Builder.addChildSetter(childLink: ProcessedChildLink) {
         val targetType = childLink.type.resolved.nodeWrapperInterfaceType()
-        val returnType = IMonoStep::class.asTypeName().parameterizedBy(targetType)
-        val receiverType = IMonoStep::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
-        val conceptParameter = ParameterSpec.builder("concept", ITypedConcept::class.asTypeName()).apply {
-            if (!childLink.type.resolved.abstract) {
-                defaultValue("%T", childLink.type.resolved.conceptWrapperInterfaceClass())
-            }
-        }.build()
+        val outType = TypeVariableName("Out", targetType)
+        val returnType = IMonoStep::class.asTypeName().parameterizedBy(outType)
+        val receiverType = getSetterReceiverType()
+        val conceptParameter = ParameterSpec.builder(
+            name = "concept",
+            type = IConceptOfTypedNode::class.asTypeName().parameterizedBy(outType),
+        ).build()
 
-        val funName = if (childLink.multiple) childLink.adderMethodName() else childLink.setterName()
+        val funName = getSetterName(childLink)
 
         val funSpec = FunSpec.builder(funName).runBuild {
+            addTypeVariable(outType)
             returns(returnType)
             receiver(receiverType)
             addParameter(conceptParameter)
             if (childLink.multiple) {
-                val indexParameter = ParameterSpec.builder("index", Int::class.asTypeName())
-                    .defaultValue("-1")
-                    .build()
-
-                addParameter(indexParameter)
+                addIndexParameter()
                 addStatement(
                     "return %T.addNewChild(this, %T.%N, index, concept)",
                     TypedModelQL::class.asTypeName(),
@@ -197,6 +198,55 @@ internal class ModelQLExtensionsGenerator(
 
         addFunction(funSpec)
     }
+
+    /*
+        If we use the concept companion object as a default value for the concept parameter,
+        the kotlin compiler reports a type mismatch since it cannot properly infer the type variable.
+        That's why we need a separate default setter.
+     */
+    private fun FileSpec.Builder.addDefaultChildSetter(childLink: ProcessedChildLink) {
+        val targetType = childLink.type.resolved.conceptWrapperInterfaceClass()
+        val returnType = IMonoStep::class.asTypeName().parameterizedBy(childLink.type.resolved.nodeWrapperInterfaceType())
+        val receiverType = getSetterReceiverType()
+
+        val funName = getSetterName(childLink)
+
+        val funSpec = FunSpec.builder(funName).runBuild {
+            returns(returnType)
+            receiver(receiverType)
+            if (childLink.multiple) {
+                addIndexParameter()
+                addStatement(
+                    "return %T.addNewChild(this, %T.%N, index, %T)",
+                    TypedModelQL::class.asTypeName(),
+                    concept.conceptObjectType(),
+                    childLink.generatedName,
+                    targetType,
+                )
+            } else {
+                addStatement(
+                    "return %T.setChild(this, %T.%N, %T)",
+                    TypedModelQL::class.asTypeName(),
+                    concept.conceptObjectType(),
+                    childLink.generatedName,
+                    targetType,
+                )
+            }
+        }
+
+        addFunction(funSpec)
+    }
+
+    private fun FunSpec.Builder.addIndexParameter() {
+        val indexParameter = ParameterSpec.builder("index", Int::class.asTypeName())
+            .defaultValue("-1")
+            .build()
+
+        addParameter(indexParameter)
+    }
+
+    private fun getSetterName(childLink: ProcessedChildLink) =
+        if (childLink.multiple) childLink.adderMethodName() else childLink.setterName()
 
     private fun FileSpec.Builder.addChildGetter(childLink: ProcessedChildLink) {
         val inputStepType = (if (childLink.multiple) IProducingStep::class else IMonoStep::class).asTypeName()
@@ -225,8 +275,7 @@ internal class ModelQLExtensionsGenerator(
     }
 
     private fun FileSpec.Builder.addPropertySetter(property: ProcessedProperty) {
-        val inputStepType = IMonoStep::class.asTypeName()
-            .parameterizedBy(concept.nodeWrapperInterfaceType())
+        val inputStepType = getSetterReceiverType()
 
         val parameterType = IMonoStep::class.asTypeName()
             .parameterizedBy(property.asKotlinType(alwaysUseNonNullableProperties))
@@ -245,6 +294,9 @@ internal class ModelQLExtensionsGenerator(
 
         addFunction(setterSpec)
     }
+
+    private fun getSetterReceiverType() =
+        IMonoStep::class.asTypeName().parameterizedBy(concept.nodeWrapperInterfaceType())
 
     private fun FileSpec.Builder.addPropertyGetterForStepType(
         property: ProcessedProperty,

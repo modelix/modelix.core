@@ -160,7 +160,7 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
 
     override fun getPropertyValue(property: IProperty): String? {
         if (property.isIdProperty()) {
-            return node.nodeId.toString()
+            return node.reference.toString()
         }
         val mpsProperty = node.properties.firstOrNull { MPSProperty(it).getUID() == property.getUID() } ?: return null
         return node.getProperty(mpsProperty)

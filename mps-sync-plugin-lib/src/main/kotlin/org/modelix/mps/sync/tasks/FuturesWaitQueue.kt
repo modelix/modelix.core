@@ -93,8 +93,12 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                          *
                          * In the normal case, such predecessors are created if Iterable<T>.waitForCompletionOfEach is
                          * the last statement of a SyncTask, that returns a CompletableFuture. This Future will be put
-                         * inside SyncTask.result, which is a Future already. However, we are curious about the completion
-                         * of the inner Future, thus we have to unpack it here.
+                         * inside SyncTask.result, which is a Future already. However, we are curious about the
+                         * completion of the inner Future, thus we have to unpack it here.
+                         *
+                         * As a consequence of this feature, it is not possible to pass a CF from a SyncTask to a
+                         * consecutive SyncTask via the predecessor's return and the successors input parameter, because
+                         * this CF will be always unpacked until no more CFs are found.
                          */
                         val cfPredecessors = predecessors.filter { it.get() is CompletableFuture<*> }
                             .map { it.get() as CompletableFuture<Any?> }

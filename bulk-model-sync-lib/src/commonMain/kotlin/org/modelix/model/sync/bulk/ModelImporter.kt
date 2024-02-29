@@ -25,6 +25,7 @@ import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.isChildRoleOrdered
 import org.modelix.model.api.remove
+import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import kotlin.jvm.JvmName
@@ -48,11 +49,17 @@ class ModelImporter(
     private val continueOnError: Boolean,
     private val childFilter: (INode) -> Boolean = { true },
 ) {
+    // We have seen imports where the `originalIdToExisting` had a dozen ten million entries.
+    // Therefore, choose a map with is optimized for memory usage.
+    // For the same reason store `INodeReference`s instead of `INode`s.
+    // In a few cases, where we need the `INode` we can resolve it.
+    private val originalIdToExisting by lazy(::buildExistingIndex)
 
-    private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
+    // Use`INode` instead of `INodeReference` in `postponedReferences` and `nodesToRemove`
+    // because we know that we will always need the `INode`s in those cases.
+    // Those cases are deleting nodes and adding references to nodes.
     private val postponedReferences = mutableListOf<PostponedReference>()
     private val nodesToRemove = HashSet<INode>()
-    private var numExpectedNodes = 0
     private var currentNodeProgress = 0
     private val logger = KotlinLogging.logger {}
 
@@ -96,34 +103,51 @@ class ModelImporter(
      */
     @JvmName("importData")
     fun import(data: ModelData) {
-        INodeResolutionScope.runWithAdditionalScope(root.getArea()) {
-            logImportSize(data.root, logger)
-            logger.info { "Building indices for import..." }
-            originalIdToExisting.clear()
-            postponedReferences.clear()
-            nodesToRemove.clear()
-            numExpectedNodes = countExpectedNodes(data.root)
-            val progressReporter = ProgressReporter(numExpectedNodes.toULong(), logger)
-            currentNodeProgress = 0
-            buildExistingIndex(root)
+        importIntoNodes(sequenceOf(ExistingAndExpectedNode(root, data)))
+    }
 
-            logger.info { "Importing nodes..." }
-            data.root.originalId()?.let { originalIdToExisting[it] = root }
-            syncNode(root, data.root, progressReporter)
+    /**
+     * Incrementally updates existing children of the given with specified data.
+     *
+     * @param nodeCombinationsToImport Combinations of an old existing child and the new expected data.
+     * The combinations are consumed lazily.
+     * Callers can use this to load expected data on demand.
+     */
+    fun importIntoNodes(nodeCombinationsToImport: Sequence<ExistingAndExpectedNode>) {
+        logger.info { "Building indices for import..." }
+        postponedReferences.clear()
+        nodesToRemove.clear()
 
-            logger.info { "Synchronizing references..." }
-            postponedReferences.forEach { it.setPostponedReference() }
+        nodeCombinationsToImport.forEach { nodeCombination ->
+            importIntoNode(nodeCombination.expectedNodeData, nodeCombination.existingNode)
+        }
 
-            logger.info { "Removing extra nodes..." }
-            nodesToRemove.forEach {
-                doAndPotentiallyContinueOnErrors {
-                    if (it.isValid) { // if it's invalid then it's already removed
-                        it.remove()
-                    }
+        logger.info { "Synchronizing references..." }
+        postponedReferences.forEach { it.setPostponedReference() }
+
+        logger.info { "Removing extra nodes..." }
+        nodesToRemove.forEach {
+            doAndPotentiallyContinueOnErrors {
+                if (it.isValid) { // if it's invalid then it's already removed
+                    it.remove()
                 }
             }
+        }
 
-            logger.info { "Synchronization finished." }
+        logger.info { "Synchronization finished." }
+    }
+
+    private fun importIntoNode(expectedNodeData: ModelData, existingNode: INode = root) {
+        INodeResolutionScope.runWithAdditionalScope(existingNode.getArea()) {
+            logImportSize(expectedNodeData.root, logger)
+            logger.info { "Building indices for nodes import..." }
+            currentNodeProgress = 0
+            val numExpectedNodes = countExpectedNodes(expectedNodeData.root)
+            val progressReporter = ProgressReporter(numExpectedNodes.toULong(), logger)
+
+            logger.info { "Importing nodes..." }
+            expectedNodeData.root.originalId()?.let { originalIdToExisting[it] = existingNode.reference }
+            syncNode(existingNode, expectedNodeData.root, progressReporter)
         }
     }
 
@@ -145,15 +169,25 @@ class ModelImporter(
         for (role in allRoles) {
             val expectedNodes = expectedParent.children.filter { it.role == role }
             val existingNodes = existingParent.getChildren(role).filter(childFilter).toList()
+            val allExpectedNodesDoNotExist by lazy {
+                expectedNodes.all { expectedNode ->
+                    val originalId = expectedNode.originalId()
+                    checkNotNull(originalId) { "Specified node '$expectedNode' has no ID." }
+                    originalIdToExisting[originalId] == null
+                }
+            }
 
             // optimization that uses the bulk operation .addNewChildren
-            if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {
-                existingParent.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } }).zip(expectedNodes).forEach { (newChild, expected) ->
-                    val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
-                    newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
-                    originalIdToExisting[expectedId] = newChild
-                    syncNode(newChild, expected, progressReporter)
-                }
+            if (existingNodes.isEmpty() && allExpectedNodesDoNotExist) {
+                existingParent.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } })
+                    .zip(expectedNodes)
+                    .forEach { (newChild, expected) ->
+                        val expectedId = expected.originalId()
+                        checkNotNull(expectedId) { "Specified node '$expected' has no ID." }
+                        newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                        originalIdToExisting[expectedId] = newChild.reference
+                        syncNode(newChild, expected, progressReporter)
+                    }
                 continue
             }
 
@@ -186,13 +220,18 @@ class ModelImporter(
                 val nodeAtIndex = existingChildren.getOrNull(newIndex)
                 val expectedConcept = expected.concept?.let { s -> ConceptReference(s) }
                 val childNode = if (nodeAtIndex?.originalId() != expectedId) {
-                    val existingNode = originalIdToExisting[expectedId]
-                    if (existingNode == null) {
+                    val existingNodeReference = originalIdToExisting[expectedId]
+                    if (existingNodeReference == null) {
                         val newChild = existingParent.addNewChild(role, newIndex, expectedConcept)
                         newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
-                        originalIdToExisting[expectedId] = newChild
+                        originalIdToExisting[expectedId] = newChild.reference
                         newChild
                     } else {
+                        val existingNode = existingNodeReference.resolveInCurrentContext()
+                        checkNotNull(existingNode) {
+                            // This reference should always be resolvable because the node existed or was created before.
+                            "Could not resolve $existingNodeReference."
+                        }
                         // The existing child node is not only moved to a new index,
                         // it is potentially moved to a new parent and role.
                         existingParent.moveChild(role, newIndex, existingNode)
@@ -217,10 +256,12 @@ class ModelImporter(
         }
     }
 
-    private fun buildExistingIndex(root: INode) {
+    private fun buildExistingIndex(): MemoryEfficientMap<String, INodeReference> {
+        val localOriginalIdToExisting = MemoryEfficientMap<String, INodeReference>()
         root.getDescendants(true).forEach { node ->
-            node.originalId()?.let { originalIdToExisting[it] = node }
+            node.originalId()?.let { localOriginalIdToExisting[it] = node.reference }
         }
+        return localOriginalIdToExisting
     }
 
     private fun syncProperties(node: INode, nodeData: NodeData) {
@@ -268,3 +309,8 @@ internal fun INode.originalId(): String? {
 internal fun NodeData.originalId(): String? {
     return properties[NodeData.idPropertyKey] ?: id
 }
+
+data class ExistingAndExpectedNode(
+    val existingNode: INode,
+    val expectedNodeData: ModelData,
+)

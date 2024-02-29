@@ -21,6 +21,7 @@ dependencies {
 
     implementation(kotlin("stdlib"))
     implementation(libs.kotlin.logging)
+    implementation(libs.kotlin.serialization.json)
 }
 
 publishing {

@@ -116,7 +116,7 @@ subprojects {
         if (!name.lowercase().contains("test")) {
             this.kotlinOptions {
                 jvmTarget = "11"
-                freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+                freeCompilerArgs += listOf("-Xjvm-default=all-compatibility", "-Xexpect-actual-classes")
                 apiVersion = kotlinApiVersion.version
             }
         }

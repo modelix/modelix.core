@@ -21,6 +21,12 @@ kotlin {
             }
         }
 
+        val jvmMain by getting {
+            dependencies {
+                implementation(libs.trove4j)
+            }
+        }
+
         val commonTest by getting {
             dependencies {
                 implementation(project(":model-api"))

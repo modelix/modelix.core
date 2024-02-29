@@ -54,6 +54,10 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     override fun resolveNode(ref: INodeReference): INode? {
+        // TOdo document optimize most common case
+        if (ref is MPSNodeReference) {
+            resolveMPSNodeReference(ref)
+        }
         val serialized = ref.serialize()
         val prefix = serialized.substringBefore(":")
         return when (prefix) {

@@ -26,7 +26,6 @@ import org.jetbrains.mps.openapi.module.SModuleListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
@@ -39,8 +38,11 @@ import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTrans
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.util.bindTo
+import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleChangeListener(
@@ -78,22 +80,32 @@ class ModuleChangeListener(
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
+            // check if name is the same
             val iModuleNodeId = nodeMap[module]!!
             val iModule = branch.getNode(iModuleNodeId)
-
-            // check if name is the same
             val nameProperty = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
             val iName = iModule.getPropertyValue(nameProperty)
             val actualName = module.moduleName!!
+
+            val future = CompletableFuture<Any?>()
             if (actualName != iName) {
                 nodeSynchronizer.setProperty(
                     nameProperty,
                     actualName,
                     sourceNodeIdProducer = { iModuleNodeId },
-                )
+                ).getResult().bindTo(future)
+            } else {
+                future.completeWithDefault()
             }
-
-            // calculate the difference in dependencies between the SModule's INode and SModule.declaredDependencies
+            return@enqueue future
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            // add new dependencies
+            val iModuleNodeId = nodeMap[module]!!
+            val iModule = branch.getNode(iModuleNodeId)
             val lastKnownDependencies = iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
             val actualDependencies = module.declaredDependencies
 
@@ -109,14 +121,15 @@ class ModuleChangeListener(
                     dependency,
                 )
             }
-
-            lastKnownDependencies
         }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
-            val lastKnownDependencies = it as Iterable<INode>
+            // remove deleted dependencies
+            val iModuleNodeId = nodeMap[module]!!
+            val iModule = branch.getNode(iModuleNodeId)
+            val lastKnownDependencies = iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
             val actualDependencies = module.declaredDependencies
 
             val removedDependencies = lastKnownDependencies.filter { dependencyINode ->
@@ -126,7 +139,7 @@ class ModuleChangeListener(
                     targetModuleIdAccordingToModelix == sDependency.targetModule.moduleId
                 }
             }
-            removedDependencies.forEach { dependencyINode ->
+            removedDependencies.waitForCompletionOfEachTask { dependencyINode ->
                 nodeSynchronizer.removeNode(
                     parentNodeIdProducer = { it[module]!! },
                     childNodeIdProducer = { dependencyINode.nodeIdAsLong() },

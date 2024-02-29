@@ -41,19 +41,22 @@ class NodeChangeListener(
         synchronizer.addNode(event.child)
     }
 
-    override fun nodeRemoved(event: SNodeRemoveEvent) = synchronizer.removeNode(
-        parentNodeIdProducer = {
-            if (event.isRoot) {
-                it[event.model]!!
-            } else {
-                it[event.parent!!]!!
-            }
-        },
-        childNodeIdProducer = { it[event.child]!! },
-    )
+    override fun nodeRemoved(event: SNodeRemoveEvent) {
+        synchronizer.removeNode(
+            parentNodeIdProducer = {
+                if (event.isRoot) {
+                    it[event.model]!!
+                } else {
+                    it[event.parent!!]!!
+                }
+            },
+            childNodeIdProducer = { it[event.child]!! },
+        )
+    }
 
-    override fun propertyChanged(event: SPropertyChangeEvent) =
+    override fun propertyChanged(event: SPropertyChangeEvent) {
         synchronizer.setProperty(MPSProperty(event.property), event.newValue) { it[event.node]!! }
+    }
 
     override fun referenceChanged(event: SReferenceChangeEvent) {
         // TODO fix me: it does not work correctly, if event.newValue.targetNode points to a node that is in a different model, that has not been synced yet to model server...

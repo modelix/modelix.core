@@ -125,7 +125,7 @@ class NodeSynchronizer(
         cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
     }
 
-    fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
+    fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) =
         syncQueue.enqueue(
             linkedSetOf(SyncLock.MODELIX_WRITE),
             SyncDirection.MPS_TO_MODELIX,
@@ -135,9 +135,8 @@ class NodeSynchronizer(
             val cloudNode = branch.getNode(nodeId)
             cloudNode.setPropertyValue(property, newValue)
         }
-    }
 
-    fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {
+    fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) =
         syncQueue.enqueue(
             linkedSetOf(SyncLock.MODELIX_WRITE),
             SyncDirection.MPS_TO_MODELIX,
@@ -152,7 +151,6 @@ class NodeSynchronizer(
 
             nodeMap.remove(nodeId)
         }
-    }
 
     fun setReference(
         mpsReferenceLink: SReferenceLink,

@@ -54,34 +54,41 @@ class ModelChangeListener(
         modelSynchronizer.addModelImport(event.model, event.modelUID)
     }
 
-    override fun importRemoved(event: SModelImportEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { it[event.model]!! },
-        childNodeIdProducer = { it[event.model, event.modelUID]!! },
-    )
+    override fun importRemoved(event: SModelImportEvent) {
+        nodeSynchronizer.removeNode(
+            parentNodeIdProducer = { it[event.model]!! },
+            childNodeIdProducer = { it[event.model, event.modelUID]!! },
+        )
+    }
 
     override fun languageAdded(event: SModelLanguageEvent) {
         modelSynchronizer.addLanguageDependency(event.model, event.eventLanguage)
     }
 
-    override fun languageRemoved(event: SModelLanguageEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { it[event.model]!! },
-        childNodeIdProducer = { it[event.model, event.eventLanguage.sourceModuleReference]!! },
-    )
+    override fun languageRemoved(event: SModelLanguageEvent) {
+        nodeSynchronizer.removeNode(
+            parentNodeIdProducer = { it[event.model]!! },
+            childNodeIdProducer = { it[event.model, event.eventLanguage.sourceModuleReference]!! },
+        )
+    }
 
     override fun devkitAdded(event: SModelDevKitEvent) {
         modelSynchronizer.addDevKitDependency(event.model, event.devkitNamespace)
     }
 
-    override fun devkitRemoved(event: SModelDevKitEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { it[event.model]!! },
-        childNodeIdProducer = { it[event.model, event.devkitNamespace]!! },
-    )
+    override fun devkitRemoved(event: SModelDevKitEvent) {
+        nodeSynchronizer.removeNode(
+            parentNodeIdProducer = { it[event.model]!! },
+            childNodeIdProducer = { it[event.model, event.devkitNamespace]!! },
+        )
+    }
 
-    override fun modelRenamed(event: SModelRenamedEvent) =
+    override fun modelRenamed(event: SModelRenamedEvent) {
         nodeSynchronizer.setProperty(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
             event.newName,
         ) { it[event.model]!! }
+    }
 
     override fun beforeModelDisposed(model: SModel) {
         if (!ApplicationLifecycleTracker.applicationClosing) {

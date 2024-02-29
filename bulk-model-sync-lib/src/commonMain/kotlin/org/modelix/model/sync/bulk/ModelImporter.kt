@@ -53,14 +53,13 @@ class ModelImporter(
     // Therefore, choose a map with is optimized for memory usage.
     // For the same reason store `INodeReference`s instead of `INode`s.
     // In a few cases, where we need the `INode` we can resolve it.
-    private var originalIdToExisting = MemoryEfficientMap<String, INodeReference>()
+    private val originalIdToExisting by lazy(::buildExistingIndex)
 
     // Use`INode` instead of `INodeReference` in `postponedReferences` and `nodesToRemove`
     // because we know that we will always need the `INode`s in those cases.
     // Those cases are deleting nodes and adding references to nodes.
     private val postponedReferences = mutableListOf<PostponedReference>()
     private val nodesToRemove = HashSet<INode>()
-    private var numExpectedNodes = 0
     private var currentNodeProgress = 0
     private val logger = KotlinLogging.logger {}
 
@@ -104,34 +103,51 @@ class ModelImporter(
      */
     @JvmName("importData")
     fun import(data: ModelData) {
-        INodeResolutionScope.runWithAdditionalScope(root.getArea()) {
-            logImportSize(data.root, logger)
-            logger.info { "Building indices for import..." }
-            originalIdToExisting = MemoryEfficientMap()
-            postponedReferences.clear()
-            nodesToRemove.clear()
-            numExpectedNodes = countExpectedNodes(data.root)
-            val progressReporter = ProgressReporter(numExpectedNodes.toULong(), logger)
-            currentNodeProgress = 0
-            buildExistingIndex(root)
+        importIntoNodes(sequenceOf(ExistingAndExpectedNode(root, data)))
+    }
 
-            logger.info { "Importing nodes..." }
-            data.root.originalId()?.let { originalIdToExisting[it] = root.reference }
-            syncNode(root, data.root, progressReporter)
+    /**
+     * Incrementally updates existing children of the given with specified data.
+     *
+     * @param nodeCombinationsToImport Combinations of an old existing child and the new expected data.
+     * The combinations are consumed lazily.
+     * Callers can use this to load expected data on demand.
+     */
+    fun importIntoNodes(nodeCombinationsToImport: Sequence<ExistingAndExpectedNode>) {
+        logger.info { "Building indices for import..." }
+        postponedReferences.clear()
+        nodesToRemove.clear()
 
-            logger.info { "Synchronizing references..." }
-            postponedReferences.forEach { it.setPostponedReference() }
+        nodeCombinationsToImport.forEach { nodeCombination ->
+            importIntoNode(nodeCombination.expectedNodeData, nodeCombination.existingNode)
+        }
 
-            logger.info { "Removing extra nodes..." }
-            nodesToRemove.forEach {
-                doAndPotentiallyContinueOnErrors {
-                    if (it.isValid) { // if it's invalid then it's already removed
-                        it.remove()
-                    }
+        logger.info { "Synchronizing references..." }
+        postponedReferences.forEach { it.setPostponedReference() }
+
+        logger.info { "Removing extra nodes..." }
+        nodesToRemove.forEach {
+            doAndPotentiallyContinueOnErrors {
+                if (it.isValid) { // if it's invalid then it's already removed
+                    it.remove()
                 }
             }
+        }
 
-            logger.info { "Synchronization finished." }
+        logger.info { "Synchronization finished." }
+    }
+
+    private fun importIntoNode(expectedNodeData: ModelData, existingNode: INode = root) {
+        INodeResolutionScope.runWithAdditionalScope(existingNode.getArea()) {
+            logImportSize(expectedNodeData.root, logger)
+            logger.info { "Building indices for nodes import..." }
+            currentNodeProgress = 0
+            val numExpectedNodes = countExpectedNodes(expectedNodeData.root)
+            val progressReporter = ProgressReporter(numExpectedNodes.toULong(), logger)
+
+            logger.info { "Importing nodes..." }
+            expectedNodeData.root.originalId()?.let { originalIdToExisting[it] = existingNode.reference }
+            syncNode(existingNode, expectedNodeData.root, progressReporter)
         }
     }
 
@@ -240,10 +256,12 @@ class ModelImporter(
         }
     }
 
-    private fun buildExistingIndex(root: INode) {
+    private fun buildExistingIndex(): MemoryEfficientMap<String, INodeReference> {
+        val localOriginalIdToExisting = MemoryEfficientMap<String, INodeReference>()
         root.getDescendants(true).forEach { node ->
-            node.originalId()?.let { originalIdToExisting[it] = node.reference }
+            node.originalId()?.let { localOriginalIdToExisting[it] = node.reference }
         }
+        return localOriginalIdToExisting
     }
 
     private fun syncProperties(node: INode, nodeData: NodeData) {
@@ -291,3 +309,8 @@ internal fun INode.originalId(): String? {
 internal fun NodeData.originalId(): String? {
     return properties[NodeData.idPropertyKey] ?: id
 }
+
+data class ExistingAndExpectedNode(
+    val existingNode: INode,
+    val expectedNodeData: ModelData,
+)

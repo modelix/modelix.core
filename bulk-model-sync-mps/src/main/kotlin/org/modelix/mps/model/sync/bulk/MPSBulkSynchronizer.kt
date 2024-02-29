@@ -19,14 +19,17 @@ package org.modelix.mps.model.sync.bulk
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.ProjectManager
 import jetbrains.mps.ide.project.ProjectHelper
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
-import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.INode
+import org.modelix.model.data.ModelData
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.sync.bulk.ExistingAndExpectedNode
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.ModelImporter
-import org.modelix.model.sync.bulk.importFilesAsRootChildren
 import org.modelix.model.sync.bulk.isModuleIncluded
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
@@ -37,7 +40,8 @@ object MPSBulkSynchronizer {
     fun exportRepository() {
         val repository = getRepository()
         val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules"))
-        val includedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules.prefixes"))
+        val includedModulePrefixes =
+            parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules.prefixes"))
 
         repository.modelAccess.runReadAction {
             val allModules = repository.modules
@@ -62,6 +66,7 @@ object MPSBulkSynchronizer {
         }
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     @JvmStatic
     fun importRepository() {
         val repository = getRepository()
@@ -70,7 +75,11 @@ object MPSBulkSynchronizer {
         val inputPath = System.getProperty("modelix.mps.model.sync.bulk.input.path")
         val continueOnError = System.getProperty("modelix.mps.model.sync.bulk.input.continueOnError", "false").toBoolean()
         val jsonFiles = File(inputPath).listFiles()?.filter {
-            it.extension == "json" && isModuleIncluded(it.nameWithoutExtension, includedModuleNames, includedModulePrefixes)
+            it.extension == "json" && isModuleIncluded(
+                it.nameWithoutExtension,
+                includedModuleNames,
+                includedModulePrefixes,
+            )
         }
 
         if (jsonFiles.isNullOrEmpty()) error("no json files found for included modules")
@@ -78,18 +87,32 @@ object MPSBulkSynchronizer {
         println("Found ${jsonFiles.size} modules to be imported")
         val access = repository.modelAccess
         access.runWriteInEDT {
+            val allModules = repository.modules
+            val includedModules: Iterable<SModule> = allModules.filter {
+                isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
+            }
+            val numIncludedModules = includedModules.count()
             access.executeCommand {
                 val repoAsNode = MPSRepositoryAsNode(repository)
-
-                // Without the filter MPS would attempt to delete all modules that are not included
-                fun moduleFilter(node: INode): Boolean {
-                    if (node.getConceptReference()?.getUID() != BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()) return true
-                    val moduleName = node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) ?: return false
-                    return isModuleIncluded(moduleName, includedModuleNames, includedModulePrefixes)
-                }
                 println("Importing modules...")
                 try {
-                    ModelImporter(repoAsNode, continueOnError, childFilter = ::moduleFilter).importFilesAsRootChildren(jsonFiles)
+                    println("Importing modules...")
+                    // `modulesToImport` lazily produces modules to import
+                    // so that loaded model data can be garbage collected.
+                    val modulesToImport = includedModules.asSequence().flatMapIndexed { index, module ->
+                        println("Importing module ${index + 1} of $numIncludedModules: '${module.moduleName}'")
+                        val fileName = inputPath + File.separator + module.moduleName + ".json"
+                        val moduleFile = File(fileName)
+                        if (moduleFile.exists()) {
+                            val expectedData: ModelData = moduleFile.inputStream().use(Json::decodeFromStream)
+                            sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module), expectedData))
+                        } else {
+                            println("Skip importing ${module.moduleName}} because $fileName does not exist.")
+                            sequenceOf()
+                        }
+                    }
+                    ModelImporter(repoAsNode, continueOnError).importIntoNodes(modulesToImport)
+                    println("Import finished.")
                 } catch (ex: Exception) {
                     // Exceptions are only visible in the MPS log file by default
                     ex.printStackTrace()

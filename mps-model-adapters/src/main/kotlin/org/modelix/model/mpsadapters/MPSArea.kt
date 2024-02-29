@@ -19,6 +19,7 @@ import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.GlobalModelAccess
 import jetbrains.mps.smodel.SNodePointer
+import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.IBranch
@@ -54,6 +55,11 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     override fun resolveNode(ref: INodeReference): INode? {
+        // By far, the most common case is to resolve a MPSNodeReference.
+        // Optimize for that case by not serializing and doing string operations.
+        if (ref is MPSNodeReference) {
+            return resolveSNodeReferenceToMPSNode(ref.ref)
+        }
         val serialized = ref.serialize()
         val prefix = serialized.substringBefore(":")
         return when (prefix) {
@@ -138,18 +144,19 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     private fun resolveMPSNodeReference(ref: INodeReference): MPSNode? {
-        val sNodeReference = if (ref is MPSNodeReference) {
-            ref.ref
-        } else {
-            val serialized = ref.serialize()
-            val serializedMPSRef = when {
-                serialized.startsWith("mps-node:") -> serialized.substringAfter("mps-node:")
-                serialized.startsWith("mps:") -> serialized.substringAfter("mps:")
-                else -> return null
-            }
-            SNodePointer.deserialize(serializedMPSRef)
+        if (ref is MPSNodeReference) {
+            return resolveSNodeReferenceToMPSNode(ref.ref)
         }
+        val serialized = ref.serialize()
+        val serializedMPSRef = when {
+            serialized.startsWith("mps-node:") -> serialized.substringAfter("mps-node:")
+            serialized.startsWith("mps:") -> serialized.substringAfter("mps:")
+            else -> return null
+        }
+        return resolveSNodeReferenceToMPSNode(SNodePointer.deserialize(serializedMPSRef))
+    }
 
+    private fun resolveSNodeReferenceToMPSNode(sNodeReference: SNodeReference): MPSNode? {
         return sNodeReference.resolve(repository)?.let { MPSNode(it) }
     }
 

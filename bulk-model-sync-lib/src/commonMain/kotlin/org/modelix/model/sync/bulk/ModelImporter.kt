@@ -25,6 +25,7 @@ import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.isChildRoleOrdered
 import org.modelix.model.api.remove
+import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import kotlin.jvm.JvmName
@@ -50,7 +51,13 @@ class ModelImporter(
 ) {
     // We have seen imports where the `originalIdToExisting` had a dozen ten million entries.
     // Therefore, choose a map with is optimized for memory usage.
-    private var originalIdToExisting = MemoryEfficientMap<String, INode>()
+    // For the same reason store `INodeReference`s instead of `INode`s.
+    // In a few cases, where we need the `INode` we can resolve it.
+    private var originalIdToExisting = MemoryEfficientMap<String, INodeReference>()
+
+    // Use`INode` instead of `INodeReference` in `postponedReferences` and `nodesToRemove`
+    // because we know that we will always need the `INode`s in those cases.
+    // Those cases are deleting nodes and adding references to nodes.
     private val postponedReferences = mutableListOf<PostponedReference>()
     private val nodesToRemove = HashSet<INode>()
     private var numExpectedNodes = 0
@@ -109,7 +116,7 @@ class ModelImporter(
             buildExistingIndex(root)
 
             logger.info { "Importing nodes..." }
-            data.root.originalId()?.let { originalIdToExisting[it] = root }
+            data.root.originalId()?.let { originalIdToExisting[it] = root.reference }
             syncNode(root, data.root, progressReporter)
 
             logger.info { "Synchronizing references..." }
@@ -162,7 +169,7 @@ class ModelImporter(
                         val expectedId = expected.originalId()
                         checkNotNull(expectedId) { "Specified node '$expected' has no ID." }
                         newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
-                        originalIdToExisting[expectedId] = newChild
+                        originalIdToExisting[expectedId] = newChild.reference
                         syncNode(newChild, expected, progressReporter)
                     }
                 continue
@@ -197,13 +204,18 @@ class ModelImporter(
                 val nodeAtIndex = existingChildren.getOrNull(newIndex)
                 val expectedConcept = expected.concept?.let { s -> ConceptReference(s) }
                 val childNode = if (nodeAtIndex?.originalId() != expectedId) {
-                    val existingNode = originalIdToExisting[expectedId]
-                    if (existingNode == null) {
+                    val existingNodeReference = originalIdToExisting[expectedId]
+                    if (existingNodeReference == null) {
                         val newChild = existingParent.addNewChild(role, newIndex, expectedConcept)
                         newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
-                        originalIdToExisting[expectedId] = newChild
+                        originalIdToExisting[expectedId] = newChild.reference
                         newChild
                     } else {
+                        val existingNode = existingNodeReference.resolveInCurrentContext()
+                        checkNotNull(existingNode) {
+                            // This reference should always be resolvable because the node existed or was created before.
+                            "Could not resolve $existingNodeReference."
+                        }
                         // The existing child node is not only moved to a new index,
                         // it is potentially moved to a new parent and role.
                         existingParent.moveChild(role, newIndex, existingNode)
@@ -230,7 +242,7 @@ class ModelImporter(
 
     private fun buildExistingIndex(root: INode) {
         root.getDescendants(true).forEach { node ->
-            node.originalId()?.let { originalIdToExisting[it] = node }
+            node.originalId()?.let { originalIdToExisting[it] = node.reference }
         }
     }
 

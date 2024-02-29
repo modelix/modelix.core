@@ -48,8 +48,9 @@ class ModelImporter(
     private val continueOnError: Boolean,
     private val childFilter: (INode) -> Boolean = { true },
 ) {
-
-    private val originalIdToExisting: MutableMap<String, INode> = mutableMapOf()
+    // We have seen imports where the `originalIdToExisting` had a dozen ten million entries.
+    // Therefore, choose a map with is optimized for memory usage.
+    private var originalIdToExisting = MemoryEfficientMap<String, INode>()
     private val postponedReferences = mutableListOf<PostponedReference>()
     private val nodesToRemove = HashSet<INode>()
     private var numExpectedNodes = 0
@@ -99,7 +100,7 @@ class ModelImporter(
         INodeResolutionScope.runWithAdditionalScope(root.getArea()) {
             logImportSize(data.root, logger)
             logger.info { "Building indices for import..." }
-            originalIdToExisting.clear()
+            originalIdToExisting = MemoryEfficientMap()
             postponedReferences.clear()
             nodesToRemove.clear()
             numExpectedNodes = countExpectedNodes(data.root)
@@ -145,15 +146,25 @@ class ModelImporter(
         for (role in allRoles) {
             val expectedNodes = expectedParent.children.filter { it.role == role }
             val existingNodes = existingParent.getChildren(role).filter(childFilter).toList()
+            val allExpectedNodesDoNotExist by lazy {
+                expectedNodes.all { expectedNode ->
+                    val originalId = expectedNode.originalId()
+                    checkNotNull(originalId) { "Specified node '$expectedNode' has no ID." }
+                    originalIdToExisting[originalId] == null
+                }
+            }
 
             // optimization that uses the bulk operation .addNewChildren
-            if (existingNodes.isEmpty() && expectedNodes.all { originalIdToExisting[it.originalId()] == null }) {
-                existingParent.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } }).zip(expectedNodes).forEach { (newChild, expected) ->
-                    val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
-                    newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
-                    originalIdToExisting[expectedId] = newChild
-                    syncNode(newChild, expected, progressReporter)
-                }
+            if (existingNodes.isEmpty() && allExpectedNodesDoNotExist) {
+                existingParent.addNewChildren(role, -1, expectedNodes.map { it.concept?.let { ConceptReference(it) } })
+                    .zip(expectedNodes)
+                    .forEach { (newChild, expected) ->
+                        val expectedId = expected.originalId()
+                        checkNotNull(expectedId) { "Specified node '$expected' has no ID." }
+                        newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                        originalIdToExisting[expectedId] = newChild
+                        syncNode(newChild, expected, progressReporter)
+                    }
                 continue
             }
 

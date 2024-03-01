@@ -328,10 +328,10 @@ class ModelClientV2(
         return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
     }
 
-    override suspend fun <R> query(repository: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+    override suspend fun <R> query(repositoryId: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
         val url = URLBuilder().apply {
             takeFrom(baseUrl)
-            appendPathSegmentsEncodingSlash("repositories", repository.id, "versions", versionHash, "query")
+            appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "versions", versionHash, "query")
         }
         return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
     }

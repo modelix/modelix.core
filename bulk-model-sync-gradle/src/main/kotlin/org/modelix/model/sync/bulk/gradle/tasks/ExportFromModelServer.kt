@@ -28,14 +28,15 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
-import org.modelix.model.api.PBranch
-import org.modelix.model.api.getRootNode
-import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.isModuleIncluded
+import org.modelix.modelql.core.IMonoStep
+import org.modelix.modelql.core.toList
+import org.modelix.modelql.untyped.allChildren
+import org.modelix.modelql.untyped.ofConcept
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
@@ -68,50 +69,45 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val requestTimeoutSeconds: Property<Int> = of.property(Int::class.java)
 
-    private fun getBranchReference(): BranchReference = RepositoryId(repositoryId.get()).getBranchReference(branchName.get())
+    private fun getRepositoryId(): RepositoryId = RepositoryId(repositoryId.get())
+    private fun getBranchReference(): BranchReference = getRepositoryId().getBranchReference(branchName.get())
 
     @TaskAction
     fun export() = runBlocking {
+        val modules = query {
+            it.allChildren()
+                .ofConcept(BuiltinLanguages.MPSRepositoryConcepts.Module)
+                .toList()
+        }
+        logger.info("Got modules: {}", modules)
+        val outputDir = outputDir.get().asFile
+
+        getIncludedModules(modules).forEach {
+            val fileName = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+            val outputFile = outputDir.resolve("$fileName.json")
+            ModelExporter(it).export(outputFile)
+        }
+    }
+
+    private suspend fun <R> query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
         val modelClient = ModelClientV2PlatformSpecificBuilder()
             .url(url.get())
             .requestTimeout(requestTimeoutSeconds.get().seconds)
             .build()
         modelClient.use { client ->
-            client.init()
-            val branch = loadDataAsBranch(client)
-            branch.runRead {
-                val root = branch.getRootNode()
-                logger.info("Got root node: {}", root)
-                val outputDir = outputDir.get().asFile
-
-                getIncludedModules(root).forEach {
-                    val fileName = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-                    val outputFile = outputDir.resolve("$fileName.json")
-                    ModelExporter(it).export(outputFile)
-                }
+            return if (revision.isPresent) {
+                client.query(getRepositoryId(), revision.get(), body)
+            } else {
+                client.query(getBranchReference(), body)
             }
         }
     }
 
-    private suspend fun loadDataAsBranch(client: ModelClientV2): PBranch {
-        val version = if (revision.isPresent) {
-            client.loadVersion(revision.get(), null)
-        } else {
-            client.pull(getBranchReference(), null)
-        }
-        val branch = PBranch(version.getTree(), client.getIdGenerator())
-        return branch
-    }
-
-    private fun getIncludedModules(root: INode): Iterable<INode> {
+    private fun getIncludedModules(modules: Iterable<INode>): Iterable<INode> {
         val nameRole = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
-
-        return root.allChildren.filter {
-            val isModule = it.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()
+        return modules.filter {
             val moduleName = it.getPropertyValue(nameRole) ?: return@filter false
-            val isIncluded = isModuleIncluded(moduleName, includedModules.get(), includedModulePrefixes.get())
-
-            isModule && isIncluded
+            isModuleIncluded(moduleName, includedModules.get(), includedModulePrefixes.get())
         }
     }
 }

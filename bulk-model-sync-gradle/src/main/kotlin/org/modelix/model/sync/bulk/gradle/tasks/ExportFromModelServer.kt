@@ -28,8 +28,6 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
-import org.modelix.model.api.PBranch
-import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.lazy.BranchReference
@@ -68,7 +66,8 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val requestTimeoutSeconds: Property<Int> = of.property(Int::class.java)
 
-    private fun getBranchReference(): BranchReference = RepositoryId(repositoryId.get()).getBranchReference(branchName.get())
+    private fun getRepositoryId(): RepositoryId = RepositoryId(repositoryId.get())
+    private fun getBranchReference(): BranchReference = getRepositoryId().getBranchReference(branchName.get())
 
     @TaskAction
     fun export() = runBlocking {
@@ -78,29 +77,24 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
             .build()
         modelClient.use { client ->
             client.init()
-            val branch = loadDataAsBranch(client)
-            branch.runRead {
-                val root = branch.getRootNode()
-                logger.info("Got root node: {}", root)
-                val outputDir = outputDir.get().asFile
+            val root = loadRootNode(client)
+            logger.info("Got root node: {}", root)
+            val outputDir = outputDir.get().asFile
 
-                getIncludedModules(root).forEach {
-                    val fileName = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-                    val outputFile = outputDir.resolve("$fileName.json")
-                    ModelExporter(it).export(outputFile)
-                }
+            getIncludedModules(root).forEach {
+                val fileName = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+                val outputFile = outputDir.resolve("$fileName.json")
+                ModelExporter(it).export(outputFile)
             }
         }
     }
 
-    private suspend fun loadDataAsBranch(client: ModelClientV2): PBranch {
-        val version = if (revision.isPresent) {
-            client.loadVersion(revision.get(), null)
+    private suspend fun loadRootNode(client: ModelClientV2): INode {
+        return if (revision.isPresent) {
+            client.query(getRepositoryId(), revision.get()) { it }
         } else {
-            client.pull(getBranchReference(), null)
+            client.query(getBranchReference()) { it }
         }
-        val branch = PBranch(version.getTree(), client.getIdGenerator())
-        return branch
     }
 
     private fun getIncludedModules(root: INode): Iterable<INode> {

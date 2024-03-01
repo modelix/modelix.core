@@ -285,6 +285,7 @@ class ModelImporter(
         nodeData.references.forEach {
             val expectedTargetId = it.value
             val actualTargetId = node.getReferenceTarget(it.key)?.originalId()
+                ?: node.getReferenceTargetRef(it.key)?.serialize()
             if (actualTargetId != expectedTargetId) {
                 val expectedTarget = originalIdToExisting[expectedTargetId]
                 if (expectedTarget == null) {
@@ -296,8 +297,7 @@ class ModelImporter(
         }
         val toBeRemoved = node.getReferenceRoles().toSet() - nodeData.references.keys
         toBeRemoved.forEach {
-            val nullReference: INodeReference? = null
-            node.setReferenceTarget(it, nullReference)
+            node.setReferenceTarget(it, null as INodeReference?)
         }
     }
 }

@@ -36,8 +36,8 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
-import java.util.concurrent.CopyOnWriteArrayList
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSynchronizer(
@@ -49,16 +49,12 @@ class ModelSynchronizer(
 ) {
 
     private val nodeSynchronizer = if (postponeReferenceResolution) {
-        NodeSynchronizer(branch, nodeMap, syncQueue, CopyOnWriteArrayList<CloudResolvableReference>())
+        NodeSynchronizer(branch, nodeMap, syncQueue, synchronizedLinkedHashSet())
     } else {
         NodeSynchronizer(branch, nodeMap, syncQueue)
     }
 
-    private val resolvableModelImports = if (postponeReferenceResolution) {
-        CopyOnWriteArrayList<CloudResolvableModelImport>()
-    } else {
-        null
-    }
+    private val resolvableModelImports = synchronizedLinkedHashSet<CloudResolvableModelImport>()
 
     fun addModelAndActivate(model: SModelBase) {
         addModel(model)
@@ -142,7 +138,9 @@ class ModelSynchronizer(
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
             val targetModel = importedModelReference.resolve(model.repository)
-            if (resolvableModelImports != null) {
+            val isNotMapped = nodeMap[targetModel] == null
+
+            if (isNotMapped) {
                 resolvableModelImports.add(CloudResolvableModelImport(model, targetModel))
             } else {
                 addModelImportToCloud(model, targetModel)
@@ -238,15 +236,24 @@ class ModelSynchronizer(
             )
         }
 
-    private fun resolveModelImports() {
-        resolvableModelImports?.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
-        resolvableModelImports?.clear()
-    }
+    fun resolveModelImportsInTask() =
+        syncQueue.enqueue(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            resolveModelImports()
+        }
 
     fun resolveCrossModelReferences() {
         resolveModelImports()
         // resolve (cross-model) references
         nodeSynchronizer.resolveReferences()
+    }
+
+    private fun resolveModelImports() {
+        resolvableModelImports.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
+        resolvableModelImports.clear()
     }
 }
 

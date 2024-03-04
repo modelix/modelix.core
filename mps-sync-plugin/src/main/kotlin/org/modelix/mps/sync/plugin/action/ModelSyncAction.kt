@@ -48,7 +48,6 @@ class ModelSyncAction : AnAction {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
             val branch = ReplicatedModelRegistry.model!!.getBranch()
-            // TODO fixme: warn the user if the model imports another model that is not on the model server yet
             ModelSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModelAndActivate(model)
         } catch (ex: Exception) {
             logger.error(ex) { "Model sync error occurred" }

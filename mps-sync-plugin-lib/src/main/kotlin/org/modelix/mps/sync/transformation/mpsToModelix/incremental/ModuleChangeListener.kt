@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
 import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.extapi.model.SModelDescriptorStub
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -42,6 +43,7 @@ import org.modelix.mps.sync.util.bindTo
 import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
+import org.modelix.mps.sync.util.waitForCompletionOfEach
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
 
@@ -94,7 +96,7 @@ class ModuleChangeListener(
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
-            try {
+            errorHandlerWrapper(it, module) {
                 // check if name is the same
                 val iModuleNodeId = nodeMap[module]!!
                 val iModule = branch.getNode(iModuleNodeId)
@@ -112,16 +114,14 @@ class ModuleChangeListener(
                 } else {
                     future.completeWithDefault()
                 }
-                future.exceptionally { removeModuleFromSyncInProgressAndRethrow(module, it) }
-            } catch (t: Throwable) {
-                removeModuleFromSyncInProgressAndRethrow(module, t)
+                future
             }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
-            try {
+            errorHandlerWrapper(it, module) {
                 // add new dependencies
                 val iModuleNodeId = nodeMap[module]!!
                 val iModule = branch.getNode(iModuleNodeId)
@@ -140,9 +140,28 @@ class ModuleChangeListener(
                         module,
                         dependency,
                     )
-                }.exceptionally { removeModuleFromSyncInProgressAndRethrow(module, it) }
-            } catch (t: Throwable) {
-                removeModuleFromSyncInProgressAndRethrow(module, t)
+                }
+            }
+        }.continueWith(
+            linkedSetOf(SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            // resolve model imports (that had not been resolved, because the corresponding module/model were not uploaded yet)
+            errorHandlerWrapper(it, module) {
+                module.models.waitForCompletionOfEach { model ->
+                    if (model is SModelDescriptorStub && model.modelListeners.isNotEmpty()) {
+                        model.modelListeners.waitForCompletionOfEach { listener ->
+                            if (listener is ModelChangeListener) {
+                                listener.resolveModelImports().getResult()
+                            } else {
+                                CompletableFuture<Any?>().completeWithDefault()
+                            }
+                        }
+                    } else {
+                        CompletableFuture<Any?>().completeWithDefault()
+                    }
+                }
             }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
@@ -179,11 +198,6 @@ class ModuleChangeListener(
         }
     }
 
-    private fun removeModuleFromSyncInProgressAndRethrow(module: SModule, throwable: Throwable?) {
-        moduleChangeSyncInProgress.remove(module)
-        throwable?.let { throw it }
-    }
-
     override fun dependencyAdded(module: SModule, dependency: SDependency) {
         // handled by moduleChanged, because this method is never called
     }
@@ -200,4 +214,22 @@ class ModuleChangeListener(
     override fun languageRemoved(module: SModule, language: SLanguage) {}
     override fun beforeModelRemoved(module: SModule, model: SModel) {}
     override fun beforeModelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
+
+    private fun errorHandlerWrapper(
+        input: Any?,
+        module: SModule,
+        func: (Any?) -> CompletableFuture<Any?>,
+    ): Any? {
+        try {
+            return func.invoke(input).exceptionally { removeModuleFromSyncInProgressAndRethrow(module, it) }
+        } catch (t: Throwable) {
+            removeModuleFromSyncInProgressAndRethrow(module, t)
+            return null
+        }
+    }
+
+    private fun removeModuleFromSyncInProgressAndRethrow(module: SModule, throwable: Throwable?) {
+        moduleChangeSyncInProgress.remove(module)
+        throwable?.let { throw it }
+    }
 }

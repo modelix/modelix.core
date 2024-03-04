@@ -133,4 +133,6 @@ class ModelChangeListener(
     override fun beforeModelRenamed(event: SModelRenamedEvent) {}
     override fun modelSaved(model: SModel) {}
     override fun modelLoadingStateChanged(model: SModel?, state: ModelLoadingState) {}
+
+    fun resolveModelImports() = modelSynchronizer.resolveModelImportsInTask()
 }

@@ -32,7 +32,10 @@ fun CompletableFuture<Any?>.bindTo(other: CompletableFuture<Any?>): CompletableF
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun CompletableFuture<Any?>.completeWithDefault() = this.complete(CompletableFutureDefaultResult)
+fun CompletableFuture<Any?>.completeWithDefault(): CompletableFuture<Any?> {
+    this.complete(CompletableFutureDefaultResult)
+    return this
+}
 
 /**
  * This class is used instead of null, because if CompletableFuture.result == null then it means the Future is not

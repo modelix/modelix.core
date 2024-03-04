@@ -87,7 +87,7 @@ modelSync {
     direction("testPush") {
         includeModulesByPrefix("GraphSolution")
         fromLocal {
-            mpsHeapSize = "2g"
+            mpsHeapSize = "4g"
             repositoryDir = repoDir
         }
         toModelServer {
@@ -107,6 +107,7 @@ modelSync {
         }
         toLocal {
             repositoryDir = repoDir
+            mpsHeapSize = "4g"
         }
     }
 }

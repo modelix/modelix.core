@@ -47,6 +47,10 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
             // this will only run if previousTask is completed according to the FuturesWaitQueue
             SyncQueue.enqueue(task, inspectionMode)
         }
+        continuation.exceptionally {
+            // if a predecessor failed then we have to fail the next task
+            task.result.completeExceptionally(it)
+        }
 
         return ContinuableSyncTask(task)
     }

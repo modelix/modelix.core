@@ -149,8 +149,6 @@ object SyncQueue : AutoCloseable {
                     if (!taskResult.isCompletedExceptionally) {
                         taskResult.completeExceptionally(t)
                     }
-
-                    throw t
                 } finally {
                     if (wasAddedHere) {
                         // do not remove threads that were registered somewhere else

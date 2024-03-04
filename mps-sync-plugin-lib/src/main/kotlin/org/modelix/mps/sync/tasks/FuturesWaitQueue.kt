@@ -98,7 +98,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                          *
                          * As a consequence of this feature, it is not possible to pass a CF from a SyncTask to a
                          * consecutive SyncTask via the predecessor's return and the successors input parameter, because
-                         * this CF will be always unpacked until no more CFs are found.
+                         * this CF will always be unpacked until no more CFs are found.
                          */
                         val cfPredecessors = predecessors.filter { it.get() is CompletableFuture<*> }
                             .map { it.get() as CompletableFuture<Any?> }
@@ -114,7 +114,12 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
 
                         val fillContinuation = fillableFuture.shallBeFilled
                         val result = if (fillContinuation) {
-                            predecessors.first().get()
+                            val candidate = predecessors.first()
+                            if (candidate.isCompletedExceptionally) {
+                                candidate.exceptionally { continuation.completeExceptionally(it) }
+                                continue
+                            }
+                            candidate.get()
                         } else {
                             null
                         }
@@ -133,9 +138,13 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
 
                 waitForNotification()
             }
-        } catch (ex: Throwable) {
-            logger.error(ex) { "BusyWaitQueue is shutting down, because it got an Exception" }
-            continuations.forEach { it.future.future.completeExceptionally(ex) }
+        } catch (t: Throwable) {
+            /**
+             * TODO this might be normal (i.e. if it's an InterruptedException), but in other cases we have to
+             * notify the user, because synchronization does not work without this class!
+             */
+            logger.error(t) { "BusyWaitQueue is shutting down, because it got an Exception" }
+            continuations.forEach { it.future.future.completeExceptionally(t) }
             return
         }
     }

@@ -64,7 +64,7 @@ fun <T> Iterable<T>.waitForCompletionOfEachTask(continuableSyncTaskProducer: (T)
  * If you run a SyncTask on its own, then you have to manually wait for the task to complete.
  */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun <T> Iterable<T>.waitForCompletionOfEach(futureProducer: (T) -> CompletableFuture<Any?>): CompletableFuture<*> {
+fun <T> Iterable<T>.waitForCompletionOfEach(futureProducer: (T) -> CompletableFuture<Any?>): CompletableFuture<Any?> {
     val compositeFuture = CompletableFuture<Any?>()
 
     try {

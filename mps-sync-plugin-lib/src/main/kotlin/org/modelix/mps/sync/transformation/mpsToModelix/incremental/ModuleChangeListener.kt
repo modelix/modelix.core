@@ -41,6 +41,7 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 import org.modelix.mps.sync.util.bindTo
 import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
 
@@ -55,6 +56,8 @@ class ModuleChangeListener(
     private val moduleSynchronizer = ModuleSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
     private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
     private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
+
+    private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModule>()
 
     override fun modelAdded(module: SModule, model: SModel) = modelSynchronizer.addModelAndActivate(model as SModelBase)
 
@@ -75,77 +78,110 @@ class ModuleChangeListener(
     }
 
     override fun moduleChanged(module: SModule) {
+        synchronized(module) {
+            /**
+             * in some cases MPS might call this method multiple times consecutively(e.g. when we add the new
+             * dependency), and we want to avoid breaking an ongoing synchronizations.
+             */
+            if (moduleChangeSyncInProgress.contains(module)) {
+                return
+            }
+            moduleChangeSyncInProgress.add(module)
+        }
+
         syncQueue.enqueue(
             linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
-            // check if name is the same
-            val iModuleNodeId = nodeMap[module]!!
-            val iModule = branch.getNode(iModuleNodeId)
-            val nameProperty = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
-            val iName = iModule.getPropertyValue(nameProperty)
-            val actualName = module.moduleName!!
+            try {
+                // check if name is the same
+                val iModuleNodeId = nodeMap[module]!!
+                val iModule = branch.getNode(iModuleNodeId)
+                val nameProperty = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
+                val iName = iModule.getPropertyValue(nameProperty)
+                val actualName = module.moduleName!!
 
-            val future = CompletableFuture<Any?>()
-            if (actualName != iName) {
-                nodeSynchronizer.setProperty(
-                    nameProperty,
-                    actualName,
-                    sourceNodeIdProducer = { iModuleNodeId },
-                ).getResult().bindTo(future)
-            } else {
-                future.completeWithDefault()
-            }
-            return@enqueue future
-        }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
-            // add new dependencies
-            val iModuleNodeId = nodeMap[module]!!
-            val iModule = branch.getNode(iModuleNodeId)
-            val lastKnownDependencies = iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
-            val actualDependencies = module.declaredDependencies
-
-            val addedDependencies = actualDependencies.filter { sDependency ->
-                lastKnownDependencies.none { dependencyINode ->
-                    val targetModuleId = sDependency.targetModule.moduleId
-                    ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == targetModuleId
+                val future = CompletableFuture<Any?>()
+                if (actualName != iName) {
+                    nodeSynchronizer.setProperty(
+                        nameProperty,
+                        actualName,
+                        sourceNodeIdProducer = { iModuleNodeId },
+                    ).getResult().bindTo(future)
+                } else {
+                    future.completeWithDefault()
                 }
-            }
-            addedDependencies.waitForCompletionOfEachTask { dependency ->
-                moduleSynchronizer.addDependency(
-                    module,
-                    dependency,
-                )
+                future.exceptionally { removeModuleFromSyncInProgressAndRethrow(module, it) }
+            } catch (t: Throwable) {
+                removeModuleFromSyncInProgressAndRethrow(module, t)
             }
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
             InspectionMode.CHECK_EXECUTION_THREAD,
         ) {
-            // remove deleted dependencies
-            val iModuleNodeId = nodeMap[module]!!
-            val iModule = branch.getNode(iModuleNodeId)
-            val lastKnownDependencies = iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
-            val actualDependencies = module.declaredDependencies
+            try {
+                // add new dependencies
+                val iModuleNodeId = nodeMap[module]!!
+                val iModule = branch.getNode(iModuleNodeId)
+                val lastKnownDependencies =
+                    iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
+                val actualDependencies = module.declaredDependencies
 
-            val removedDependencies = lastKnownDependencies.filter { dependencyINode ->
-                val targetModuleIdAccordingToModelix =
-                    ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode)
-                actualDependencies.none { sDependency ->
-                    targetModuleIdAccordingToModelix == sDependency.targetModule.moduleId
+                val addedDependencies = actualDependencies.filter { sDependency ->
+                    lastKnownDependencies.none { dependencyINode ->
+                        val targetModuleId = sDependency.targetModule.moduleId
+                        ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == targetModuleId
+                    }
                 }
+                addedDependencies.waitForCompletionOfEachTask { dependency ->
+                    moduleSynchronizer.addDependency(
+                        module,
+                        dependency,
+                    )
+                }.exceptionally { removeModuleFromSyncInProgressAndRethrow(module, it) }
+            } catch (t: Throwable) {
+                removeModuleFromSyncInProgressAndRethrow(module, t)
             }
-            removedDependencies.waitForCompletionOfEachTask { dependencyINode ->
-                nodeSynchronizer.removeNode(
-                    parentNodeIdProducer = { it[module]!! },
-                    childNodeIdProducer = { dependencyINode.nodeIdAsLong() },
-                )
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+            InspectionMode.CHECK_EXECUTION_THREAD,
+        ) {
+            try {
+                // remove deleted dependencies
+                val iModuleNodeId = nodeMap[module]!!
+                val iModule = branch.getNode(iModuleNodeId)
+                val lastKnownDependencies =
+                    iModule.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
+                val actualDependencies = module.declaredDependencies
+
+                val removedDependencies = lastKnownDependencies.filter { dependencyINode ->
+                    val targetModuleIdAccordingToModelix =
+                        ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode)
+                    actualDependencies.none { sDependency ->
+                        targetModuleIdAccordingToModelix == sDependency.targetModule.moduleId
+                    }
+                }
+                removedDependencies.waitForCompletionOfEachTask { dependencyINode ->
+                    nodeSynchronizer.removeNode(
+                        parentNodeIdProducer = { it[module]!! },
+                        childNodeIdProducer = { dependencyINode.nodeIdAsLong() },
+                    )
+                }.handle { result, throwable ->
+                    removeModuleFromSyncInProgressAndRethrow(module, throwable)
+                    result
+                }
+            } catch (t: Throwable) {
+                removeModuleFromSyncInProgressAndRethrow(module, t)
             }
         }
+    }
+
+    private fun removeModuleFromSyncInProgressAndRethrow(module: SModule, throwable: Throwable?) {
+        moduleChangeSyncInProgress.remove(module)
+        throwable?.let { throw it }
     }
 
     override fun dependencyAdded(module: SModule, dependency: SDependency) {

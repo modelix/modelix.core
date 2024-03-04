@@ -25,7 +25,6 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
-import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -58,11 +57,7 @@ class ModelixTreeChangeVisitor(
     private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
 
     override fun referenceChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val sNode = nodeMap.getNode(nodeId)
             if (sNode == null) {
                 logger.info { "Node ($nodeId) is not mapped to MPS yet." }
@@ -90,11 +85,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun propertyChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
                 logger.info { "Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore its $role property cannot be changed." }
@@ -130,11 +121,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeRemoved(nodeId: Long) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
                 logger.info { "Element represented by Modelix Node ($nodeId) is already removed from MPS." }
@@ -184,11 +171,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeAdded(nodeId: Long) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (isMapped) {
                 logger.info { "Node ($nodeId) is already mapped to MPS." }
@@ -226,24 +209,15 @@ class ModelixTreeChangeVisitor(
      * (Moreover, there is no guarantee in which order the method of this class will be called, due to the undefined order of changes after the Diff calculation.)
      */
     override fun childrenChanged(nodeId: Long, role: String?) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             modelTransformer.resolveModelImports(project.repository)
             nodeTransformer.resolveReferences()
-
             null
         }
     }
 
     override fun containmentChanged(nodeId: Long) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val nodeIsMapped = nodeMap.isMappedToMps(nodeId)
             if (!nodeIsMapped) {
                 logger.info { "Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore it cannot be moved to a new parent." }

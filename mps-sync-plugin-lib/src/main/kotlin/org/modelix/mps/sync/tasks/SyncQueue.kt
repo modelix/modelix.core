@@ -44,56 +44,49 @@ object SyncQueue : AutoCloseable {
     fun enqueue(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
-        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
-        enqueue(task, inspectionMode)
+        enqueue(task)
         return ContinuableSyncTask(task)
     }
 
     fun enqueueBlocking(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
-        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
-        enqueueBlocking(task, inspectionMode)
+        enqueueBlocking(task)
         return ContinuableSyncTask(task)
     }
 
-    fun enqueue(task: SyncTask, inspectionMode: InspectionMode) {
+    fun enqueue(task: SyncTask) {
         /**
-         * If we have to check the execution thread, then do not schedule Task if it is initiated on a Thread that is
-         * running a synchronization and the sync direction is the opposite of what is running on the thread already.
-         * This might be a symptom of a "Table tennis" (ping-pong) effect in which a change in MPS triggers a change
-         * in Modelix which triggers a change in MPS again via the *ChangeListener and ModelixTreeChangeVisitor chains
-         * registered in MPS and in Modelix, respectively.
+         * Do not schedule Task if it is initiated on a Thread that is  running a synchronization and the sync direction
+         * is the opposite of what is running on the thread already. This might be a symptom of a "table tennis"
+         * (ping-pong) effect in which a change in MPS triggers a change in Modelix which triggers a change in MPS again
+         * via the *ChangeListener and ModelixTreeChangeVisitor chains registered in MPS and in Modelix, respectively.
          *
          * Because the SyncTasks are executed on separate threads by the ExecutorService (see SyncTaskExecutors),
          * there is a very little chance of missing an intended change on other side. With other words: there is very
          * little chance that it makes sense that on the same thread two SyncTasks occur.
          */
-        if (inspectionMode == InspectionMode.CHECK_EXECUTION_THREAD) {
-            val taskSyncDirection = task.syncDirection
-            val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
+        val taskSyncDirection = task.syncDirection
+        val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
 
-            val noTaskIsRunning = runningSyncDirection == null
-            val runningTaskDirectionIsTheSame = taskSyncDirection == runningSyncDirection
-            val isNoneDirection = taskSyncDirection == SyncDirection.NONE || runningSyncDirection == SyncDirection.NONE
-            if (noTaskIsRunning || isNoneDirection || runningTaskDirectionIsTheSame) {
-                enqueueAndFlush(task)
-            } else {
-                task.result.completeWithDefault()
-            }
-        } else {
+        val noTaskIsRunning = runningSyncDirection == null
+        val runningTaskDirectionIsTheSame = taskSyncDirection == runningSyncDirection
+        val isNoneDirection = taskSyncDirection == SyncDirection.NONE || runningSyncDirection == SyncDirection.NONE
+        if (noTaskIsRunning || isNoneDirection || runningTaskDirectionIsTheSame) {
             enqueueAndFlush(task)
+        } else {
+            task.result.completeWithDefault()
         }
     }
 
-    private fun enqueueBlocking(task: SyncTask, inspectionMode: InspectionMode) {
-        enqueue(task, inspectionMode)
+    private fun enqueueBlocking(task: SyncTask) {
+        enqueue(task)
         task.result.get()
     }
 

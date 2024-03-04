@@ -36,7 +36,6 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
     fun continueWith(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
-        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
         val continuation = CompletableFuture<Any?>()
@@ -45,7 +44,7 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
         val task = SyncTask(requiredLocks, syncDirection, action, continuation)
         continuation.thenRun {
             // this will only run if previousTask is completed according to the FuturesWaitQueue
-            SyncQueue.enqueue(task, inspectionMode)
+            SyncQueue.enqueue(task)
         }
         continuation.exceptionally {
             // if a predecessor failed then we have to fail the next task

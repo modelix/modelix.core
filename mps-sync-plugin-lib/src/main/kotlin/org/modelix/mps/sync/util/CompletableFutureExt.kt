@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture
 fun CompletableFuture<Any?>.bindTo(other: CompletableFuture<Any?>): CompletableFuture<Any?> {
     this.handle { result, throwable ->
         if (throwable != null) {
-            other.cancel(true)
+            other.completeExceptionally(throwable)
         } else {
             other.complete(result)
         }

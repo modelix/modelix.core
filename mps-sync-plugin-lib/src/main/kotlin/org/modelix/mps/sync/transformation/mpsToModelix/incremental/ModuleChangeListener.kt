@@ -30,7 +30,6 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
-import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -91,11 +90,7 @@ class ModuleChangeListener(
             moduleChangeSyncInProgress.add(module)
         }
 
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             errorHandlerWrapper(it, module) {
                 // check if name is the same
                 val iModuleNodeId = nodeMap[module]!!
@@ -116,11 +111,7 @@ class ModuleChangeListener(
                 }
                 future
             }
-        }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             errorHandlerWrapper(it, module) {
                 // add new dependencies
                 val iModuleNodeId = nodeMap[module]!!
@@ -142,11 +133,7 @@ class ModuleChangeListener(
                     )
                 }
             }
-        }.continueWith(
-            linkedSetOf(SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // resolve model imports (that had not been resolved, because the corresponding module/model were not uploaded yet)
             errorHandlerWrapper(it, module) {
                 module.models.waitForCompletionOfEach { model ->
@@ -163,11 +150,7 @@ class ModuleChangeListener(
                     }
                 }
             }
-        }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             try {
                 // remove deleted dependencies
                 val iModuleNodeId = nodeMap[module]!!

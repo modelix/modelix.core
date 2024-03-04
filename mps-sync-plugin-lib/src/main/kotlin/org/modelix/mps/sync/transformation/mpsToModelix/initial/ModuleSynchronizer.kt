@@ -34,7 +34,6 @@ import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
-import org.modelix.mps.sync.tasks.InspectionMode
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -83,11 +82,7 @@ class ModuleSynchronizer(
         }
 
     fun addDependency(module: SModule, dependency: SDependency): ContinuableSyncTask =
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val repository = ActiveMpsProjectInjector.activeMpsProject?.repository!!
             val targetModule = dependency.targetModule.resolve(repository)
             val isMappedToMps = nodeMap[targetModule] != null
@@ -100,12 +95,8 @@ class ModuleSynchronizer(
             } else {
                 future.completeWithDefault()
             }
-            return@enqueue future
-        }.continueWith(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+            future
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
 

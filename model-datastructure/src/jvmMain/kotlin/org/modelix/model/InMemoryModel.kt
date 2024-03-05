@@ -18,10 +18,12 @@ package org.modelix.model
 
 import gnu.trove.map.TLongObjectMap
 import gnu.trove.map.hash.TLongObjectHashMap
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
@@ -42,52 +44,66 @@ import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
+import java.util.Collections
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.DurationUnit
 
 private val LOG = mu.KotlinLogging.logger { }
 
-class InMemoryModelLoader(val model: IncrementalInMemoryModel) {
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
-    private var modelLoadingJob: Job? = null
+class InMemoryModelLoader(val incrementalModel: IncrementalInMemoryModel, val coroutineScope: CoroutineScope) {
+    private val treeHash2modelLoadJob = Collections.synchronizedMap(HashMap<String, Deferred<InMemoryModel>>())
 
-    /**
-     * Should be called repeatedly by a readiness probe until it returns true.
-     *
-     * @return true if the model is done loading
-     */
-    @Synchronized
-    fun loadModelAsync(tree: CLTree): Boolean {
-        if (model.getLoadedModel()?.loadedMapRef?.getHash() == tree.nodesMap!!.hash) return true
-        if (modelLoadingJob?.isActive != true) {
-            modelLoadingJob = coroutineScope.launch {
-                try {
-                    model.getModel(tree)
-                } catch (ex: Throwable) {
-                    LOG.error(ex) { "Failed loading model ${tree.hash}" }
+    fun getModel(tree: CLTree): Deferred<InMemoryModel> {
+        val loadedModel = incrementalModel.getLoadedModel()
+        if (loadedModel != null && loadedModel.loadedMapRef.getHash() == tree.nodesMap?.hash) return CompletableDeferred(loadedModel)
+
+        return synchronized(treeHash2modelLoadJob) {
+            val activeJobs = treeHash2modelLoadJob.values.toList()
+            val loadJob = treeHash2modelLoadJob.getOrPut(tree.hash) {
+                coroutineScope.async {
+                    // There should only be one active loading job, because we want to reuse as much data as possible
+                    // from a previously loaded model, so we have to wait for its completion.
+                    // This also limits the number of thread used from the IO dispatcher.
+                    activeJobs.forEach { it.join() }
+
+                    // This is a long-running method that should be executed only once for a new tree version.
+                    // It's executed on the IO dispatcher, because it's not a suspendable function and blocks
+                    // the thread.
+                    incrementalModel.getModel(tree)
                 }
             }
+
+            // cleanup finished jobs
+            treeHash2modelLoadJob -= treeHash2modelLoadJob.entries.filter { !it.value.isActive }.map { it.key }.toSet()
+
+            loadJob
         }
-        return false
     }
 }
 
 class InMemoryModels {
-    private val models = HashMap<String, InMemoryModelLoader>()
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val branchId2modelLoader = Collections.synchronizedMap(HashMap<String, InMemoryModelLoader>())
 
-    @Synchronized
-    fun getModel(id: String) = models.getOrPut(id) { InMemoryModelLoader(IncrementalInMemoryModel()) }
+    fun dispose() {
+        coroutineScope.cancel("disposed")
+    }
 
-    fun getModel(tree: CLTree) = getModel(tree.getId()).model.getModel(tree)
+    private fun getModelLoader(branchId: String): InMemoryModelLoader {
+        return synchronized(branchId2modelLoader) {
+            branchId2modelLoader.getOrPut(branchId) { InMemoryModelLoader(IncrementalInMemoryModel(), coroutineScope) }
+        }
+    }
 
-    fun loadModelAsync(tree: CLTree) = getModel(tree.getId()).loadModelAsync(tree)
+    fun getModel(tree: CLTree): Deferred<InMemoryModel> {
+        return getModelLoader(tree.getId()).getModel(tree)
+    }
 }
 
 class IncrementalInMemoryModel {
     private var lastModel: InMemoryModel? = null
 
-    @Synchronized
     fun getModel(tree: CLTree): InMemoryModel {
         val reusable = lastModel?.takeIf { it.branchId == tree.getId() }
         val newModel = if (reusable == null) {

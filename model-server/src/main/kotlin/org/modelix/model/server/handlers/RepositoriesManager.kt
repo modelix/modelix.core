@@ -56,6 +56,12 @@ class RepositoriesManager(val client: LocalModelClient) {
     private val objectStore: IDeserializingKeyValueStore get() = client.storeCache
     val inMemoryModels = InMemoryModels()
 
+    fun dispose() {
+        // TODO find instance creations and add a dispose() call if needed. Whoever creates an instance is responsible
+        //      for its lifecycle.
+        inMemoryModels.dispose()
+    }
+
     fun generateClientId(repositoryId: RepositoryId): Long {
         return client.store.generateId("$KEY_PREFIX:${repositoryId.id}:clientId")
     }

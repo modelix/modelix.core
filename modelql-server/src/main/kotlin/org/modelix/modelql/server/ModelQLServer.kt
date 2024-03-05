@@ -80,7 +80,7 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
             handleCall(call, { rootNode to area }, {})
         }
 
-        suspend fun handleCall(call: ApplicationCall, input: (write: Boolean) -> Pair<INode, IArea>, afterQueryExecution: () -> Unit = {}) {
+        suspend fun handleCall(call: ApplicationCall, input: suspend (write: Boolean) -> Pair<INode, IArea>, afterQueryExecution: () -> Unit = {}) {
             try {
                 val serializedQuery = call.receiveText()
                 val json = UntypedModelQL.json

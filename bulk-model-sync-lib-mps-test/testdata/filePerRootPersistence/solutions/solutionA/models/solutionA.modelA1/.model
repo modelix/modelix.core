@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model ref="r:e806521f-80c5-4ff3-b19e-3dcdb6afb0eb(solutionA.modelA1)" content="header">
+  <persistence version="9" />
+  <languages>
+    <use id="2104e020-80c6-4b51-979e-0112e11fe2d1" name="languageA" version="0" />
+  </languages>
+  <imports />
+</model>
+

@@ -37,6 +37,8 @@ import io.ktor.util.pipeline.PipelineContext
 import io.ktor.websocket.send
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
@@ -280,8 +282,15 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 if (writeAccess) {
                     branch.getRootNode() to branch.getArea()
                 } else {
-                    val model = repositoriesManager.inMemoryModels.getModel(initialTree)
-                    model.getNode(ITree.ROOT_ID) to model.getArea()
+                    coroutineScope {
+                        // Get and possibly load models not in request coroutine,
+                        // but on Dispatchers.Default as it is CPU intensive.
+                        val deferredModel = async {
+                            repositoriesManager.inMemoryModels.getModel(initialTree)
+                        }
+                        val model = deferredModel.await()
+                        model.getNode(ITree.ROOT_ID) to model.getArea()
+                    }
                 }
             }, {
                 // writing the new version has to happen before call.respond is invoked, otherwise subsequent queries

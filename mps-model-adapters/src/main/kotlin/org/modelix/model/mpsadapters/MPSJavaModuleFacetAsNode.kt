@@ -48,9 +48,7 @@ data class MPSJavaModuleFacetAsNode(val facet: JavaModuleFacet) : IDefaultNodeAd
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.isIdProperty()) {
-            reference.serialize()
-        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.JavaModuleFacet.generated)) {
+        return if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.JavaModuleFacet.generated)) {
             // Should always be true
             // https://github.com/JetBrains/MPS/blob/2820965ff7b8836ed1d14adaf1bde29744c88147/core/project/source/jetbrains/mps/project/facets/JavaModuleFacetImpl.java
             true.toString()

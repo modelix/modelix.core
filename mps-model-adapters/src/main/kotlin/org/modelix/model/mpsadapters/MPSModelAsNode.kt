@@ -111,8 +111,6 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
             model.name.value
         } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.id)) {
             model.modelId.toString()
-        } else if (property.isIdProperty()) {
-            reference.serialize()
         } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype)) {
             model.name.stereotype
         } else {

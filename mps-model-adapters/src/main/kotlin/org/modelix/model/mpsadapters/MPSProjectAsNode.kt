@@ -49,9 +49,7 @@ data class MPSProjectAsNode(val project: ProjectBase) : IDefaultNodeAdapter {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.isIdProperty()) {
-            reference.serialize()
-        } else if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)) {
+        return if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)) {
             project.name
         } else {
             null

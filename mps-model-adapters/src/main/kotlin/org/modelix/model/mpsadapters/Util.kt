@@ -20,9 +20,6 @@ import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.IRole
-import org.modelix.model.data.NodeData
-
-internal fun IProperty.isIdProperty() = getSimpleName() == NodeData.ID_PROPERTY_KEY
 
 // statically ensures that receiver and parameter are of the same type
 internal fun IChildLink.conformsTo(other: IChildLink) = conformsToRole(other)

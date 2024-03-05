@@ -58,9 +58,7 @@ data class MPSModuleDependencyAsNode(
     override fun getPropertyValue(property: IProperty): String? {
         val moduleDependency = BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency
 
-        return if (property.isIdProperty()) {
-            reference.serialize()
-        } else if (property.conformsTo(moduleDependency.explicit)) {
+        return if (property.conformsTo(moduleDependency.explicit)) {
             explicit.toString()
         } else if (property.conformsTo(moduleDependency.name)) {
             moduleReference.moduleName

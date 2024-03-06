@@ -99,10 +99,7 @@ abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : De
 
                     logger.info("Setting meta properties...")
                     for ((key, value) in metaProperties.get()) {
-                        val property = IProperty.fromName(key)
-                        if (rootNode.getPropertyValue(property) == null) {
-                            rootNode.setPropertyValue(property, value)
-                        }
+                        rootNode.setPropertyValue(IProperty.fromName(key), value)
                     }
                 }
                 logger.info("Sending diff to server...")

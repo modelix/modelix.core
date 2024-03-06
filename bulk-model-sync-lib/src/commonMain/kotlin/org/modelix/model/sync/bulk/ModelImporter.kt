@@ -265,7 +265,7 @@ class ModelImporter(
     }
 
     private fun syncProperties(node: INode, nodeData: NodeData) {
-        if (node.getPropertyValue(NodeData.idPropertyKey) == null) {
+        if (node.originalId() == null) {
             node.setPropertyValue(NodeData.idPropertyKey, nodeData.originalId())
         }
 
@@ -303,11 +303,11 @@ class ModelImporter(
 }
 
 internal fun INode.originalId(): String? {
-    return this.getPropertyValue(NodeData.idPropertyKey)
+    return this.getOriginalReference()
 }
 
 internal fun NodeData.originalId(): String? {
-    return properties[NodeData.idPropertyKey] ?: id
+    return properties[NodeData.ID_PROPERTY_KEY] ?: id
 }
 
 data class ExistingAndExpectedNode(

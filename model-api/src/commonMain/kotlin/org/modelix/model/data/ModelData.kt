@@ -86,7 +86,11 @@ data class NodeData(
     val references: Map<String, String> = emptyMap(),
 ) {
     companion object {
-        const val ID_PROPERTY_KEY = "#mpsNodeId#"
+
+        /**
+         * Users should not use this directly. Use [INode.getOriginalReference].
+         */
+        const val ID_PROPERTY_KEY = "#originalRef#"
 
         @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
         const val idPropertyKey = ID_PROPERTY_KEY

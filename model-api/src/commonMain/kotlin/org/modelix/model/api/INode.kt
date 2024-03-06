@@ -211,6 +211,7 @@ interface INode {
      * @return the original reference of this node
      */
     fun getOriginalReference(): String? = getPropertyValue(IProperty.fromName(NodeData.ID_PROPERTY_KEY))
+        ?: getPropertyValue(IProperty.fromName("#mpsNodeID#")) // for backwards compatibility
 
     // <editor-fold desc="non-string based API">
     fun usesRoleIds(): Boolean = false

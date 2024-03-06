@@ -19,9 +19,18 @@ package org.modelix.mps.model.sync.bulk
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.ProjectManager
 import jetbrains.mps.ide.project.ProjectHelper
+import jetbrains.mps.smodel.SNodeUtil
+import jetbrains.mps.smodel.adapter.ids.MetaIdHelper
+import jetbrains.mps.smodel.adapter.ids.SConceptId
+import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
+import jetbrains.mps.smodel.language.ConceptRegistry
+import jetbrains.mps.smodel.language.StructureRegistry
+import jetbrains.mps.smodel.runtime.ConceptDescriptor
+import jetbrains.mps.smodel.runtime.illegal.IllegalConceptDescriptor
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
+import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.data.ModelData
@@ -125,9 +134,57 @@ object MPSBulkSynchronizer {
         ApplicationManager.getApplication().invokeAndWait {
             println("Persisting changes...")
             repository.modelAccess.runWriteAction {
+                enableWorkaroundForFilePerRootPersistence(repository)
                 repository.saveAll()
             }
             println("Changes persisted.")
+        }
+    }
+
+    /**
+     * Workaround for MPS not being able to read the name property of the node during the save process
+     * in case FilePerRootPersistence is used.
+     * This is because the concept is not properly loaded and in the MPS code it checks if the concept is a subconcept
+     * of INamedConcept.
+     * Without this workaround the id of the root node will be used instead of the name, resulting in renamed files.
+     */
+    @JvmStatic
+    private fun enableWorkaroundForFilePerRootPersistence(repository: SRepository) {
+        val structureRegistry: StructureRegistry = ConceptRegistry.getInstance().readField("myStructureRegistry")
+        val myConceptDescriptorsById: MutableMap<SConceptId, ConceptDescriptor> = structureRegistry.readField("myConceptDescriptorsById")
+
+        repository.modules
+            .asSequence()
+            .flatMap { it.models }
+            .mapNotNull { it as? EditableSModel }
+            .filter { it.isChanged }
+            .flatMap { it.rootNodes }
+            .mapNotNull { (it.concept as? SConceptAdapterById) }
+            .forEach {
+                myConceptDescriptorsById.putIfAbsent(it.id, DummyNamedConceptDescriptor(it))
+            }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <R> Any.readField(name: String): R {
+        return this::class.java.getDeclaredField(name).also { it.isAccessible = true }.get(this) as R
+    }
+
+    private class DummyNamedConceptDescriptor(concept: SConceptAdapterById) : ConceptDescriptor by IllegalConceptDescriptor(concept.id, concept.qualifiedName) {
+        override fun isAssignableTo(other: SConceptId?): Boolean {
+            return MetaIdHelper.getConcept(SNodeUtil.concept_INamedConcept) == other
+        }
+
+        override fun getSuperConceptId(): SConceptId {
+            return MetaIdHelper.getConcept(SNodeUtil.concept_BaseConcept)
+        }
+
+        override fun getAncestorsIds(): MutableSet<SConceptId> {
+            return mutableSetOf(MetaIdHelper.getConcept(SNodeUtil.concept_INamedConcept))
+        }
+
+        override fun getParentsIds(): MutableList<SConceptId> {
+            return mutableListOf(MetaIdHelper.getConcept(SNodeUtil.concept_INamedConcept))
         }
     }
 

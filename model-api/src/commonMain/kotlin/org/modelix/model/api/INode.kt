@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
 import org.modelix.model.area.IArea
+import org.modelix.model.data.NodeData
 
 /**
  * Representation of a model element.
@@ -205,6 +206,11 @@ interface INode {
      */
     @Deprecated("use getReferenceLinks()")
     fun getReferenceRoles(): List<String>
+
+    /**
+     * @return the original reference of this node
+     */
+    fun getOriginalReference(): String? = getPropertyValue(IProperty.fromName(NodeData.ID_PROPERTY_KEY))
 
     // <editor-fold desc="non-string based API">
     fun usesRoleIds(): Boolean = false

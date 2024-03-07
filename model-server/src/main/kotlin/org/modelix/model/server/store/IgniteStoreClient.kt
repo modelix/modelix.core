@@ -14,6 +14,8 @@
  */
 package org.modelix.model.server.store
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import mu.KotlinLogging
 import org.apache.ignite.Ignite
 import org.apache.ignite.IgniteCache
@@ -36,6 +38,7 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
     private val pendingChangeMessages = PendingChangeMessages {
         ignite.message().send(ENTRY_CHANGED_TOPIC, it)
     }
+    private val transactionMutex = Mutex()
 
     /**
      * Istantiate an IgniteStoreClient
@@ -147,6 +150,84 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
             return body()
         }
     }
+
+    suspend fun <T> runTransactionSuspendable(body: () -> T): T {
+        val transactions = ignite.transactions()
+        // The Transaction is started on one thread.
+        // If the body becomes suspendable,
+        // another coroutine could be executed on the same thread and get the transaction.
+        // We would need to store transactions in coroutine contexts and restore it to the thread.
+        if (transactions.tx() == null) {
+            println("IgniteStoreClient: opening new transaction")
+            // Only one coroutine can put messages.
+            // Effectively, only one `transactions.txStart()` is run a time.
+            transactionMutex.withLock {
+                transactions.txStart().use { tx ->
+                    val result = body()
+                    tx.commit()
+                    pendingChangeMessages.flushChangeMessages()
+                    return result
+                }
+            }
+        } else {
+            println("IgniteStoreClient: Reusing transaction ${transactions.tx()}")
+            // already in a transaction
+            return body()
+        }
+    }
+
+    suspend fun <T> runTransactionSuspendableWithSuspendableBody(body: suspend () -> T): T {
+        val transactions = ignite.transactions()
+        // The Transaction is started on one thread.
+        // If the body becomes suspendable,
+        // another coroutine could be executed on the same thread and get the transaction.
+        // We would need to store transactions in coroutine contexts and restore it to the thread.
+        if (transactions.tx() == null) {
+            println("IgniteStoreClient: opening new transaction")
+            // Only one coroutine can put messages.
+            // Effectively, only one `transactions.txStart()` is run a time.
+            transactionMutex.withLock {
+                transactions.txStart().use { tx ->
+                    val result = body()
+                    tx.commit()
+                    pendingChangeMessages.flushChangeMessages()
+                    return result
+                }
+            }
+        } else {
+            println("IgniteStoreClient: Reusing transaction ${transactions.tx()}")
+            // already in a transaction
+            return body()
+        }
+    }
+
+
+    suspend fun <T> runTransaction3(body: () -> T): T {
+        val transactions = ignite.transactions()
+        // The Transaction is started on one thread.
+        // If the body becomes suspendable,
+        // another coroutine could be executed on the same thread and get the transaction.
+        // We would need to store transactions in coroutine contexts and restore it to the thread.
+
+        // Only one coroutine can put messages.
+        // Effectively, only one `transactions.txStart()` is run a time
+        transactionMutex.withLock {
+            if (transactions.tx() == null) {
+                // Only one coroutine can put messages.
+                // Effectively, only one `transactions.txStart()` is run a time.
+                    transactions.txStart().use { tx ->
+                        val result = body()
+                        tx.commit()
+                        pendingChangeMessages.flushChangeMessages()
+                        return result
+                    }
+            } else {
+                // already in a transaction
+                return body()
+            }
+        }
+    }
+
 
     fun dispose() {
         ignite.close()

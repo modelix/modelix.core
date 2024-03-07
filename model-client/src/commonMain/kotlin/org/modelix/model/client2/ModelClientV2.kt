@@ -288,12 +288,16 @@ class ModelClientV2(
     }
 
     override suspend fun pollHash(branch: BranchReference, lastKnownVersion: IVersion?): String {
+        return pollHash(branch, lastKnownVersion?.getContentHash())
+    }
+
+    override suspend fun pollHash(branch: BranchReference, lastKnownHash: String?): String {
         val response = httpClient.get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "pollHash")
-                if (lastKnownVersion != null) {
-                    parameters["lastKnown"] = lastKnownVersion.getContentHash()
+                if (lastKnownHash != null) {
+                    parameters["lastKnown"] = lastKnownHash
                 }
             }
         }

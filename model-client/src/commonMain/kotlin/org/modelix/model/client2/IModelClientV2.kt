@@ -70,6 +70,8 @@ interface IModelClientV2 {
      */
     suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
 
+    suspend fun pollHash(branch: BranchReference, lastKnownHash: String?): String
+
     suspend fun pollHash(branch: BranchReference, lastKnownVersion: IVersion?): String
 
     suspend fun <R> query(branch: BranchReference, body: (IMonoStep<INode>) -> IMonoStep<R>): R

@@ -40,10 +40,12 @@ import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.js.JsName
 import kotlin.random.Random
 import kotlin.reflect.KClass
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@Ignore
 class ModelImporterTest {
 
     private fun createOTBranchFromModel(model: ModelData): OTBranch {

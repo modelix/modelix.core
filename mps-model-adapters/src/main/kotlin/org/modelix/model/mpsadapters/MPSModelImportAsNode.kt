@@ -62,9 +62,6 @@ class MPSModelImportAsNode(val importedModel: SModel, val importingModel: SModel
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        if (!property.isIdProperty()) {
-            return super.getPropertyValue(property)
-        }
         return reference.serialize()
     }
 

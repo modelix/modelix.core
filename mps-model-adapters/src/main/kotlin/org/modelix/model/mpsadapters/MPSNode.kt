@@ -29,7 +29,6 @@ import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
-import org.modelix.model.api.IDeprecatedNodeDefaults
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
@@ -37,7 +36,7 @@ import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.resolveIn
 import org.modelix.model.area.IArea
 
-data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
+data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
     override fun getArea(): IArea {
         return MPSArea(node.model?.repository ?: MPSModuleRepository.getInstance())
     }
@@ -159,9 +158,6 @@ data class MPSNode(val node: SNode) : IDeprecatedNodeDefaults {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        if (property.isIdProperty()) {
-            return node.nodeId.toString()
-        }
         val mpsProperty = node.properties.firstOrNull { MPSProperty(it).getUID() == property.getUID() } ?: return null
         return node.getProperty(mpsProperty)
     }

@@ -38,6 +38,10 @@ interface IDefaultNodeAdapter : IDeprecatedNodeDefaults {
         return concept?.getReference()
     }
 
+    override fun getOriginalReference(): String? {
+        return reference.serialize()
+    }
+
     override fun getPropertyLinks(): List<IProperty> {
         return concept?.getAllProperties() ?: emptyList()
     }

@@ -141,8 +141,6 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
             version.toString()
         } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS)) {
             getCompileInMPS().toString()
-        } else if (property.isIdProperty()) {
-            reference.serialize()
         } else {
             null
         }

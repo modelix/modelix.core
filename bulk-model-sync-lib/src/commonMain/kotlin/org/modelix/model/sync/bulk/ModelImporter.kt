@@ -265,7 +265,7 @@ class ModelImporter(
     }
 
     private fun syncProperties(node: INode, nodeData: NodeData) {
-        if (node.getPropertyValue(NodeData.idPropertyKey) == null) {
+        if (node.originalId() == null) {
             node.setPropertyValue(NodeData.idPropertyKey, nodeData.originalId())
         }
 
@@ -285,6 +285,7 @@ class ModelImporter(
         nodeData.references.forEach {
             val expectedTargetId = it.value
             val actualTargetId = node.getReferenceTarget(it.key)?.originalId()
+                ?: node.getReferenceTargetRef(it.key)?.serialize()
             if (actualTargetId != expectedTargetId) {
                 val expectedTarget = originalIdToExisting[expectedTargetId]
                 if (expectedTarget == null) {
@@ -296,18 +297,17 @@ class ModelImporter(
         }
         val toBeRemoved = node.getReferenceRoles().toSet() - nodeData.references.keys
         toBeRemoved.forEach {
-            val nullReference: INodeReference? = null
-            node.setReferenceTarget(it, nullReference)
+            node.setReferenceTarget(it, null as INodeReference?)
         }
     }
 }
 
 internal fun INode.originalId(): String? {
-    return this.getPropertyValue(NodeData.idPropertyKey)
+    return this.getOriginalReference()
 }
 
 internal fun NodeData.originalId(): String? {
-    return properties[NodeData.idPropertyKey] ?: id
+    return properties[NodeData.ID_PROPERTY_KEY] ?: id
 }
 
 data class ExistingAndExpectedNode(

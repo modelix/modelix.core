@@ -15,7 +15,7 @@ package org.modelix.model.api
 
 import kotlin.jvm.JvmOverloads
 
-class SimpleProperty
+data class SimpleProperty
 @JvmOverloads constructor(
     private val simpleName: String,
     override val isOptional: Boolean = true,

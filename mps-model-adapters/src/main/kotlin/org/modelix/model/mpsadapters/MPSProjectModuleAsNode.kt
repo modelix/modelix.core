@@ -54,9 +54,7 @@ data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule)
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.isIdProperty()) {
-            reference.serialize()
-        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.virtualFolder)) {
+        return if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.virtualFolder)) {
             project.getPath(module)?.virtualFolder
         } else {
             null

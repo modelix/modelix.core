@@ -280,7 +280,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 if (writeAccess) {
                     branch.getRootNode() to branch.getArea()
                 } else {
-                    val model = repositoriesManager.inMemoryModels.getModel(initialTree)
+                    val model = repositoriesManager.inMemoryModels.getModel(initialTree).await()
                     model.getNode(ITree.ROOT_ID) to model.getArea()
                 }
             }, {

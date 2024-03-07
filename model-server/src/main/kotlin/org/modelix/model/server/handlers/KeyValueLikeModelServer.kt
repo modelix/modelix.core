@@ -99,7 +99,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     ?.getBranchReference(System.getenv("MODELIX_SERVER_MODELQL_WARMUP_BRANCH"))
                 if (branchRef != null) {
                     val version = repositoriesManager.getVersion(branchRef)
-                    if (!repositoriesManager.inMemoryModels.loadModelAsync(version!!.getTree())) {
+                    if (repositoriesManager.inMemoryModels.getModel(version!!.getTree()).isActive) {
                         call.respondText(
                             status = HttpStatusCode.ServiceUnavailable,
                             text = "Waiting for version $version to be loaded into memory",

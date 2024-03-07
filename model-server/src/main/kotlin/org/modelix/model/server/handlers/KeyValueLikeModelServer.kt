@@ -99,12 +99,16 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     ?.getBranchReference(System.getenv("MODELIX_SERVER_MODELQL_WARMUP_BRANCH"))
                 if (branchRef != null) {
                     val version = repositoriesManager.getVersion(branchRef)
-                    if (repositoriesManager.inMemoryModels.getModel(version!!.getTree()).isActive) {
-                        call.respondText(
-                            status = HttpStatusCode.ServiceUnavailable,
-                            text = "Waiting for version $version to be loaded into memory",
-                        )
-                        return@get
+                    // The repository may not exist yet. This is not an error. There just isn't anything to do until
+                    // it's created.
+                    if (version != null) {
+                        if (repositoriesManager.inMemoryModels.getModel(version.getTree()).isActive) {
+                            call.respondText(
+                                status = HttpStatusCode.ServiceUnavailable,
+                                text = "Waiting for version $version to be loaded into memory",
+                            )
+                            return@get
+                        }
                     }
                 }
 

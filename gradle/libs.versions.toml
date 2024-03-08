@@ -25,7 +25,7 @@ intellij = { id = "org.jetbrains.intellij", version = "1.17.2" }
 openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
 
 [versions]
-kotlin = "1.9.21"
+kotlin = "1.9.23"
 kotlinCoroutines="1.8.0"
 ktor="2.3.9"
 kotlinHtml="0.8.0"

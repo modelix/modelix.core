@@ -23,9 +23,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
-import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
-import org.modelix.metamodel.GeneratedProperty
 import org.modelix.metamodel.IConceptOfTypedNode
 import org.modelix.metamodel.INonAbstractConcept
 import org.modelix.metamodel.ITypedConcept
@@ -103,7 +101,7 @@ internal class ConceptWrapperInterfaceGenerator(
     }
 
     private fun TypeSpec.Builder.addConceptWrapperInterfaceReferenceLink(referenceLink: ProcessedReferenceLink) {
-        val propertySpec = PropertySpec.builder(referenceLink.generatedName, referenceLink.generatedReferenceLinkType()).runBuild {
+        val propertySpec = PropertySpec.builder(referenceLink.generatedName, referenceLink.typedLinkType()).runBuild {
             getter(FunSpec.getterBuilder().addCode(referenceLink.returnKotlinRef()).build())
             addDeprecationIfNecessary(referenceLink)
         }
@@ -112,7 +110,7 @@ internal class ConceptWrapperInterfaceGenerator(
     }
 
     private fun TypeSpec.Builder.addConceptWrapperInterfaceChildLink(childLink: ProcessedChildLink) {
-        val propertySpec = PropertySpec.builder(childLink.generatedName, childLink.generatedChildLinkType()).runBuild {
+        val propertySpec = PropertySpec.builder(childLink.generatedName, childLink.typedLinkType()).runBuild {
             getter(FunSpec.getterBuilder().addCode(childLink.returnKotlinRef()).build())
             addDeprecationIfNecessary(childLink)
         }
@@ -123,8 +121,7 @@ internal class ConceptWrapperInterfaceGenerator(
     private fun TypeSpec.Builder.addConceptWrapperInterfaceProperty(property: ProcessedProperty) {
         val propertySpec = PropertySpec.builder(
             name = property.generatedName,
-            type = GeneratedProperty::class.asClassName()
-                .parameterizedBy(property.asKotlinType(alwaysUseNonNullableProperties)),
+            type = property.typedPropertyType(alwaysUseNonNullableProperties),
         ).runBuild {
             val getterSpec = FunSpec.getterBuilder().runBuild {
                 addCode(property.returnKotlinRef())

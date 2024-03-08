@@ -70,6 +70,6 @@ class PushTest {
                 ?.getDescendants(false)
                 ?.find { it.getConceptReference() == ConceptReference(_C_UntypedImpl_Graph.getUID()) },
         )
-        assertEquals(solution1Graph, solution2Graph.getReferenceTarget(C_Graph.relatedGraph))
+        assertEquals(solution1Graph, solution2Graph.getReferenceTarget(C_Graph.relatedGraph.untyped()))
     }
 }

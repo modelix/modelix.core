@@ -26,6 +26,11 @@ import org.modelix.metamodel.GeneratedChildListLink
 import org.modelix.metamodel.GeneratedMandatorySingleChildLink
 import org.modelix.metamodel.GeneratedReferenceLink
 import org.modelix.metamodel.GeneratedSingleChildLink
+import org.modelix.metamodel.ITypedChildListLink
+import org.modelix.metamodel.ITypedMandatorySingleChildLink
+import org.modelix.metamodel.ITypedProperty
+import org.modelix.metamodel.ITypedReferenceLink
+import org.modelix.metamodel.ITypedSingleChildLink
 import org.modelix.metamodel.generator.NameConfig
 import org.modelix.metamodel.generator.ProcessedChildLink
 import org.modelix.metamodel.generator.ProcessedConcept
@@ -77,11 +82,36 @@ internal abstract class NameConfigBasedGenerator(open val nameConfig: NameConfig
         )
     }
 
+    protected fun ProcessedChildLink.typedLinkType(): TypeName {
+        val childConcept = type.resolved
+        val linkClass = if (multiple) {
+            ITypedChildListLink::class
+        } else {
+            if (optional) ITypedSingleChildLink::class else ITypedMandatorySingleChildLink::class
+        }
+        return linkClass.asClassName().parameterizedBy(
+            childConcept.nodeWrapperInterfaceType(),
+        )
+    }
+
     protected fun ProcessedReferenceLink.generatedReferenceLinkType(): TypeName {
         val targetConcept = type.resolved
         return GeneratedReferenceLink::class.asClassName().parameterizedBy(
             targetConcept.nodeWrapperInterfaceType(),
             targetConcept.conceptWrapperInterfaceType(),
+        )
+    }
+
+    protected fun ProcessedReferenceLink.typedLinkType(): TypeName {
+        val targetConcept = type.resolved
+        return ITypedReferenceLink::class.asClassName().parameterizedBy(
+            targetConcept.nodeWrapperInterfaceType(),
+        )
+    }
+
+    protected fun ProcessedProperty.typedPropertyType(alwaysUseNonNullableProperties: Boolean): TypeName {
+        return ITypedProperty::class.asClassName().parameterizedBy(
+            asKotlinType(alwaysUseNonNullableProperties),
         )
     }
 

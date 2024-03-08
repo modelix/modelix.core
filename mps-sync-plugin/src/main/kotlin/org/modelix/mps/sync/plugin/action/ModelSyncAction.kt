@@ -47,7 +47,14 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-            val branch = ReplicatedModelRegistry.model!!.getBranch()
+
+            val binding = BindingsRegistry.getModelBinding(model)
+            require(binding == null) { "Model is already synchronized to server." }
+
+            val replicatedModel = ReplicatedModelRegistry.model
+            require(replicatedModel != null) { "Synchronization to server has not been established yet" }
+
+            val branch = replicatedModel.getBranch()
             ModelSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModelAndActivate(model)
         } catch (ex: Exception) {
             logger.error(ex) { "Model sync error occurred" }

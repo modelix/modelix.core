@@ -47,7 +47,14 @@ class ModuleSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-            val branch = ReplicatedModelRegistry.model!!.getBranch()
+
+            val binding = BindingsRegistry.getModuleBinding(module)
+            require(binding == null) { "Module is already synchronized to server." }
+
+            val replicatedModel = ReplicatedModelRegistry.model
+            require(replicatedModel != null) { "Synchronization to server has not been established yet" }
+
+            val branch = replicatedModel.getBranch()
             ModuleSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModule(module)
         } catch (ex: Exception) {
             logger.error(ex) { "Module sync error occurred" }

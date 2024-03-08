@@ -43,7 +43,11 @@ class UnbindModuleAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-            BindingsRegistry.getModuleBinding(module)?.deactivate(removeFromServer = false)
+
+            val binding = BindingsRegistry.getModuleBinding(module)
+            require(binding != null) { "Module is not synchronized to the server yet." }
+
+            binding.deactivate(removeFromServer = false)
         } catch (ex: Exception) {
             logger.error(ex) { "Module unbind error occurred" }
         }

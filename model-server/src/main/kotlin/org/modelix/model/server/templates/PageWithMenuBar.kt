@@ -62,6 +62,7 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
             }
             div {
                 style = "display: flex; flex-direction: column; align-items: center;"
+
                 insert(bodyContent)
             }
         }

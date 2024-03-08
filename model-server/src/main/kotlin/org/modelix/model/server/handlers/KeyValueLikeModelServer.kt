@@ -27,6 +27,7 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
+import kotlinx.coroutines.runBlocking
 import kotlinx.html.br
 import kotlinx.html.div
 import kotlinx.html.h1
@@ -48,12 +49,12 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
+import org.modelix.model.server.store.runTransactionSuspendable
 import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.*
 import java.util.regex.Pattern
-import kotlin.collections.LinkedHashMap
 
 val PERMISSION_MODEL_SERVER = "model-server".asResource()
 val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
@@ -85,7 +86,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         // request to initialize it lazily, would make the code less robust.
         // Each change in the logic of RepositoriesManager#maybeInitAndGetSeverId would need
         // the special conditions in the affected requests to be updated.
-        repositoriesManager.maybeInitAndGetSeverId()
+        runBlocking { repositoriesManager.maybeInitAndGetSeverId() }
         application.apply {
             modelServerModule()
         }
@@ -283,7 +284,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         return result
     }
 
-    protected fun CallContext.putEntries(newEntries: Map<String, String?>) {
+    protected suspend fun CallContext.putEntries(newEntries: Map<String, String?>) {
         val referencedKeys: MutableSet<String> = HashSet()
         for ((key, value) in newEntries) {
             checkKeyPermission(key, EPermissionType.WRITE)
@@ -336,14 +337,14 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
 
         HashUtil.checkObjectHashes(hashedObjects)
 
-        repositoriesManager.client.store.runTransaction {
+        repositoriesManager.client.store.runTransactionSuspendable {
             storeClient.putAll(hashedObjects)
             storeClient.putAll(userDefinedEntries)
             for ((branch, value) in branchChanges) {
                 if (value == null) {
-                    repositoriesManager.removeBranches(branch.repositoryId, setOf(branch.branchName))
+                    runBlocking { repositoriesManager.removeBranches(branch.repositoryId, setOf(branch.branchName)) }
                 } else {
-                    repositoriesManager.mergeChanges(branch, value)
+                    runBlocking { repositoriesManager.mergeChanges(branch, value) }
                 }
             }
         }

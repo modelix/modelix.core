@@ -14,9 +14,11 @@
  */
 package org.modelix.model.server.store
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.modelix.model.IKeyListener
 import java.io.File
@@ -34,6 +36,10 @@ interface IStoreClient : AutoCloseable {
     fun removeListener(key: String, listener: IKeyListener)
     fun generateId(key: String): Long
     fun <T> runTransaction(body: () -> T): T
+}
+
+suspend fun <T> IStoreClient.runTransactionSuspendable(body: () -> T): T {
+    return withContext(Dispatchers.IO) { runTransaction(body) }
 }
 
 suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: String?): String? {

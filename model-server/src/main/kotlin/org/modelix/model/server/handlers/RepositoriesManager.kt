@@ -42,12 +42,27 @@ import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
+import org.modelix.model.server.store.runTransactionSuspendable
 import java.lang.ref.SoftReference
 import java.util.UUID
 
 class RepositoriesManager(val client: LocalModelClient) {
 
     init {
+        fun migrateLegacyRepositoriesList() {
+            val legacyRepositories = listLegacyRepositories().groupBy { it.repositoryId }
+            if (legacyRepositories.isNotEmpty()) {
+                // To not use `runTransactionSuspendable` like everywhere else,
+                // because this is blocking initialization code anyways.
+                store.runTransaction {
+                    ensureRepositoriesAreInList(legacyRepositories.keys)
+                    for ((legacyRepository, legacyBranches) in legacyRepositories) {
+                        ensureBranchesAreInList(legacyRepository, legacyBranches.map { it.branchName }.toSet())
+                    }
+                }
+            }
+        }
+
         migrateLegacyRepositoriesList()
     }
 
@@ -75,8 +90,8 @@ class RepositoriesManager(val client: LocalModelClient) {
      * If the server ID was created previously but is only stored under a legacy database key,
      * it also gets stored under the current and all legacy database keys.
      */
-    fun maybeInitAndGetSeverId(): String {
-        return store.runTransaction {
+    suspend fun maybeInitAndGetSeverId(): String {
+        return store.runTransactionSuspendable {
             var serverId = store[SERVER_ID_KEY]
             if (serverId == null) {
                 serverId = store[LEGACY_SERVER_ID_KEY2]
@@ -102,9 +117,9 @@ class RepositoriesManager(val client: LocalModelClient) {
 
     private fun repositoryExists(repositoryId: RepositoryId) = getRepositories().contains(repositoryId)
 
-    fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true): CLVersion {
+    suspend fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true): CLVersion {
         var initialVersion: CLVersion? = null
-        store.runTransaction {
+        store.runTransactionSuspendable {
             val masterBranch = repositoryId.getBranchReference()
             if (repositoryExists(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
             val existingRepositories = getRepositories()
@@ -160,10 +175,10 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    fun removeRepository(repository: RepositoryId): Boolean {
-        return store.runTransaction {
+    suspend fun removeRepository(repository: RepositoryId): Boolean {
+        return store.runTransactionSuspendable {
             if (!repositoryExists(repository)) {
-                return@runTransaction false
+                return@runTransactionSuspendable false
             }
 
             for (branchName in getBranchNames(repository)) {
@@ -178,9 +193,9 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
+    suspend fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
         if (branchNames.isEmpty()) return
-        store.runTransaction {
+        store.runTransactionSuspendable {
             val key = branchListKey(repository)
             val existingBranches = store[key]?.lines()?.toSet() ?: emptySet()
             val remainingBranches = existingBranches - branchNames
@@ -191,11 +206,10 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
+    suspend fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
         var result: String? = null
-        store.runTransaction {
-            val branchKey = branchKey(branch)
-            val headHash = getVersionHash(branch)
+        store.runTransactionSuspendable {
+            val headHash = getVersionHashInsideTransaction(branch)
             val mergedHash = if (headHash == null) {
                 newVersionHash
             } else {
@@ -217,15 +231,18 @@ class RepositoriesManager(val client: LocalModelClient) {
         return result!!
     }
 
-    fun getVersion(branch: BranchReference): CLVersion? {
+    suspend fun getVersion(branch: BranchReference): CLVersion? {
         return getVersionHash(branch)?.let { CLVersion.loadFromHash(it, client.storeCache) }
     }
 
-    fun getVersionHash(branch: BranchReference): String? {
-        return store.runTransaction {
-            store[branchKey(branch)]
-                ?: store[legacyBranchKey(branch)]?.also { store.put(branchKey(branch), it, true) }
+    suspend fun getVersionHash(branch: BranchReference): String? {
+        return store.runTransactionSuspendable {
+            getVersionHashInsideTransaction(branch)
         }
+    }
+
+    private fun getVersionHashInsideTransaction(branch: BranchReference): String? {
+        return store[branchKey(branch)] ?: store[legacyBranchKey(branch)]?.also { store.put(branchKey(branch), it, true) }
     }
 
     private fun putVersionHash(branch: BranchReference, hash: String?) {
@@ -294,18 +311,6 @@ class RepositoriesManager(val client: LocalModelClient) {
     }
 
     private fun branchListKey(repositoryId: RepositoryId) = "$KEY_PREFIX:repositories:${repositoryId.id}:branches"
-
-    fun migrateLegacyRepositoriesList() {
-        val legacyRepositories = listLegacyRepositories().groupBy { it.repositoryId }
-        if (legacyRepositories.isNotEmpty()) {
-            store.runTransaction {
-                ensureRepositoriesAreInList(legacyRepositories.keys)
-                for ((legacyRepository, legacyBranches) in legacyRepositories) {
-                    ensureBranchesAreInList(legacyRepository, legacyBranches.map { it.branchName }.toSet())
-                }
-            }
-        }
-    }
 
     private fun listLegacyRepositories(): Set<BranchReference> {
         val result: MutableSet<BranchReference> = HashSet()

@@ -16,8 +16,8 @@ package org.modelix.model.server.handlers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.apache.commons.collections4.map.LRUMap
@@ -30,6 +30,7 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.runSynchronized
+import org.modelix.model.client2.checkObjectHashes
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -39,6 +40,8 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
 import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.persistent.CPVersion
+import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.api.v2.toMap
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.pollEntry
@@ -255,39 +258,12 @@ class RepositoriesManager(val client: LocalModelClient) {
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
-    private val deltaCache = LRUMap<Pair<String, String?>, SoftReference<Lazy<Map<String, String>>>>(10)
-    fun computeDelta(versionHash: String, baseVersionHash: String?): Flow<Pair<String, String>> {
-        if (versionHash == baseVersionHash) return emptyFlow()
+    private val deltaCache = LRUMap<Pair<String, String?>, SoftReference<Lazy<ObjectDataMap>>>(10)
+    fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData {
+        if (versionHash == baseVersionHash) return ObjectData.empty
         if (baseVersionHash == null) {
             // no need to cache anything if there is no delta computation happening
-
-            return channelFlow {
-                val version = CLVersion(versionHash, objectStore)
-                // Use a bulk query to make as few request to the underlying store as possible.
-                val bulkQuery = objectStore.newBulkQuery()
-                // It is unsatisfactory that we have to keep already emitted hashes in memory.
-                // But without changing the underlying model,
-                // we have to do this to not emit objects more than once.
-                val seenHashes = mutableSetOf<String>()
-                fun emitObjects(entry: KVEntryReference<*>) {
-                    if (seenHashes.contains(entry.getHash())) return
-                    seenHashes.add(entry.getHash())
-                    bulkQuery.get(entry).onSuccess {
-                        val value = checkNotNull(it) { "No value received for ${entry.getHash()}" }
-                        // Use `send` instead of `trySend`,
-                        // because `trySend` fails if the channel capacity is full.
-                        // This might happen if the data is produced faster than consumed.
-                        // A better solution would be to have bulk queries which itself are asynchronous
-                        // but doing that needs more consideration.
-                        runBlocking { channel.send(entry.getHash() to value.serialize()) }
-                        for (referencedEntry in value.getReferencedEntries()) {
-                            emitObjects(referencedEntry)
-                        }
-                    }
-                }
-                emitObjects(KVEntryReference(versionHash, CPVersion.DESERIALIZER))
-                bulkQuery.process()
-            }
+            return allObjectDataAsFlow(versionHash)
         }
 
         return runSynchronized(deltaCache) {
@@ -297,9 +273,47 @@ class RepositoriesManager(val client: LocalModelClient) {
                 // SoftReference because deltas can be very large
                 val version = CLVersion(versionHash, client.storeCache)
                 val baseVersion = CLVersion(baseVersionHash, client.storeCache)
-                version.computeDelta(baseVersion)
+                val objectsMap = version.computeDelta(baseVersion)
+                ObjectDataMap(objectsMap)
             }.also { deltaCache[key] = SoftReference(it) }
-        }.value.entries.asFlow().map { it.toPair() }
+        }.value
+    }
+
+    private fun allObjectDataAsFlow(versionHash: String): ObjectDataFlow {
+        val hashObjectFlow = channelFlow {
+            val version = CLVersion(versionHash, objectStore)
+            // Use a bulk query to make as few request to the underlying store as possible.
+            val bulkQuery = objectStore.newBulkQuery()
+            // It is unsatisfactory that we have to keep already emitted hashes in memory.
+            // But without changing the underlying model,
+            // we have to do this to not emit objects more than once.
+            val seenHashes = mutableSetOf<String>()
+            fun emitObjects(entry: KVEntryReference<*>) {
+                if (seenHashes.contains(entry.getHash())) return
+                seenHashes.add(entry.getHash())
+                bulkQuery.get(entry).onSuccess {
+                    val value = checkNotNull(it) { "No value received for ${entry.getHash()}" }
+                    // Use `send` instead of `trySend`,
+                    // because `trySend` fails if the channel capacity is full.
+                    // This might happen if the data is produced faster than consumed.
+                    // A better solution would be to have bulk queries which itself are asynchronous
+                    // but doing that needs more consideration.
+                    runBlocking {
+                        // Maybe we should avoid Flow<Pair<String, String>> and use Flow<String>.
+                        // This needs profiling.
+                        channel.send(entry.getHash() to value.serialize())
+                    }
+                    for (referencedEntry in value.getReferencedEntries()) {
+                        emitObjects(referencedEntry)
+                    }
+                }
+            }
+            emitObjects(KVEntryReference(versionHash, CPVersion.DESERIALIZER))
+            bulkQuery.process()
+        }
+        val checkedHashObjectFlow = hashObjectFlow.checkObjectHashes()
+        val objectData = ObjectDataFlow(checkedHashObjectFlow)
+        return objectData
     }
 
     private fun branchKey(branch: BranchReference): String {
@@ -342,3 +356,29 @@ class RepositoriesManager(val client: LocalModelClient) {
 }
 
 class RepositoryAlreadyExistsException(val name: String) : IllegalStateException("Repository '$name' already exists")
+
+sealed interface ObjectData {
+    suspend fun asMap(): Map<String, String>
+    fun asFlow(): Flow<Pair<String, String>>
+
+    companion object {
+        val empty = ObjectDataMap(emptyMap())
+    }
+}
+
+class ObjectDataMap(private val byHashObjects: Map<String, String>) : ObjectData {
+    init {
+        HashUtil.checkObjectHashes(byHashObjects)
+    }
+    override suspend fun asMap(): Map<String, String> = byHashObjects
+    override fun asFlow(): Flow<Pair<String, String>> = byHashObjects.entries.asFlow().map { it.toPair() }
+}
+
+class ObjectDataFlow(private val hashObjectFlow: Flow<Pair<String, String>>) : ObjectData {
+    override suspend fun asMap(): Map<String, String> = hashObjectFlow.toMap()
+    override fun asFlow(): Flow<Pair<String, String>> = hashObjectFlow
+}
+
+private fun Flow<Pair<String, String>>.checkObjectHashes(): Flow<Pair<String, String>> {
+    return onEach { HashUtil.checkObjectHash(it.first, it.second) }
+}

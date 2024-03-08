@@ -200,8 +200,18 @@ class RepositoriesManager(val client: LocalModelClient) {
     }
 
     suspend fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
+        return store.runTransactionSuspendable {
+            removeBranchesBlocking(repository, branchNames)
+        }
+    }
+
+    /**
+     * Same as [removeBranches] but blocking.
+     * Caller is expected to execute it outside the request thread.
+     */
+    fun removeBranchesBlocking(repository: RepositoryId, branchNames: Set<String>) {
         if (branchNames.isEmpty()) return
-        store.runTransactionSuspendable {
+        store.runTransaction {
             val key = branchListKey(repository)
             val existingBranches = store[key]?.lines()?.toSet() ?: emptySet()
             val remainingBranches = existingBranches - branchNames
@@ -213,9 +223,18 @@ class RepositoriesManager(val client: LocalModelClient) {
     }
 
     suspend fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
-        var result: String? = null
-        store.runTransactionSuspendable {
-            val headHash = getVersionHashInsideTransaction(branch)
+        return store.runTransactionSuspendable {
+            mergeChangesBlocking(branch, newVersionHash)
+        }
+    }
+
+    /**
+     * Same as [mergeChanges] but blocking.
+     * Caller is expected to execute it outside the request thread.
+     */
+    fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String {
+        return store.runTransaction {
+            val headHash = getVersionHashBlocking(branch)
             val mergedHash = if (headHash == null) {
                 newVersionHash
             } else {
@@ -232,9 +251,8 @@ class RepositoriesManager(val client: LocalModelClient) {
             putVersionHash(branch, mergedHash)
             ensureRepositoriesAreInList(setOf(branch.repositoryId))
             ensureBranchesAreInList(branch.repositoryId, setOf(branch.branchName))
-            result = mergedHash
+            mergedHash
         }
-        return result!!
     }
 
     suspend fun getVersion(branch: BranchReference): CLVersion? {
@@ -243,12 +261,24 @@ class RepositoriesManager(val client: LocalModelClient) {
 
     suspend fun getVersionHash(branch: BranchReference): String? {
         return store.runTransactionSuspendable {
-            getVersionHashInsideTransaction(branch)
+            getVersionHashBlocking(branch)
         }
     }
 
-    private fun getVersionHashInsideTransaction(branch: BranchReference): String? {
-        return store[branchKey(branch)] ?: store[legacyBranchKey(branch)]?.also { store.put(branchKey(branch), it, true) }
+    /**
+     * Same as [getVersionHash] but blocking.
+     * Caller is expected to execute it outside the request thread.
+     */
+    private fun getVersionHashBlocking(branch: BranchReference): String? {
+        return store.runTransaction {
+            store[branchKey(branch)] ?: store[legacyBranchKey(branch)]?.also {
+                store.put(
+                    branchKey(branch),
+                    it,
+                    true,
+                )
+            }
+        }
     }
 
     private fun putVersionHash(branch: BranchReference, hash: String?) {
@@ -368,6 +398,7 @@ class ObjectDataMap(private val byHashObjects: Map<String, String>) : ObjectData
     init {
         HashUtil.checkObjectHashes(byHashObjects)
     }
+
     override suspend fun asMap(): Map<String, String> = byHashObjects
     override fun asFlow(): Flow<Pair<String, String>> = byHashObjects.entries.asFlow().map { it.toPair() }
 }

@@ -28,27 +28,28 @@ import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.util.isModule
+import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.Collections
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ITreeToSTreeTransformer(
-    private val branch: IBranch,
     private val bindingsRegistry: BindingsRegistry,
     nodeMap: MpsToModelixMap,
     syncQueue: SyncQueue,
     project: MPSProject,
     mpsLanguageRepository: MPSLanguageRepository,
+    branch: IBranch,
 ) {
 
     private val logger = KotlinLogging.logger {}
 
-    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project, mpsLanguageRepository)
+    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project, branch, mpsLanguageRepository)
 
     fun transform(entryPoint: INode): Iterable<IBinding> {
         require(entryPoint.isModule()) { "Transformation entry point (Node $entryPoint) must be a Module" }
 
         return try {
-            moduleTransformer.transformToModuleCompletely(entryPoint, branch, bindingsRegistry)
+            moduleTransformer.transformToModuleCompletely(entryPoint.nodeIdAsLong(), bindingsRegistry)
                 .getResult().get() as Iterable<IBinding>
         } catch (ex: Exception) {
             logger.error(ex) { "Transformation of Node tree starting from Node $entryPoint failed." }

@@ -130,16 +130,17 @@ class SyncServiceImpl(
 
             // transform the model
             val bindings = ITreeToSTreeTransformer(
-                branch,
                 bindingsRegistry,
                 nodeMap,
                 syncQueue,
                 targetProject,
                 languageRepository,
+                branch,
             ).transform(module)
 
             // register replicated model change listener
-            val listener = ModelixBranchListener(replicatedModel, targetProject, languageRepository, nodeMap, syncQueue)
+            val listener =
+                ModelixBranchListener(replicatedModel, targetProject, languageRepository, nodeMap, syncQueue, branch)
             branch.addListener(listener)
             changeListenerByReplicatedModel[replicatedModel] = listener
 

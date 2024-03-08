@@ -26,8 +26,10 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
+import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SNodeFactory
@@ -48,61 +50,69 @@ import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import kotlin.reflect.KFunction2
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeTransformer(
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
+    private val branch: IBranch,
     mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue)
+    private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue, branch)
 
     fun transformToNode(iNode: INode): ContinuableSyncTask {
+        val nodeId = iNode.nodeIdAsLong()
         return if (iNode.isDevKitDependency()) {
-            transformDevKitDependency(iNode)
+            transformDevKitDependency(nodeId)
         } else if (iNode.isSingleLanguageDependency()) {
-            transformLanguageDependency(iNode)
+            transformLanguageDependency(nodeId)
         } else {
-            transformNode(iNode)
+            transformNode(nodeId, nodeFactory::createNodeRecursively)
         }
     }
 
-    private fun transformNode(iNode: INode) =
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
-            val future = CompletableFuture<Any?>()
+    fun transformNode(
+        nodeId: Long,
+        nodeFactoryMethod: KFunction2<Long, SModel?, ContinuableSyncTask> = nodeFactory::createNode,
+    ) = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+        val iNode = branch.getNode(nodeId)
+        val future = CompletableFuture<Any?>()
 
-            val modelId = iNode.getModel()?.nodeIdAsLong()
-            val model = nodeMap.getModel(modelId)
-            val isTransformed = nodeMap.isMappedToMps(iNode.nodeIdAsLong())
-            if (isTransformed) {
-                logger.info { "Node ${iNode.nodeIdAsLong()} is already transformed." }
+        val modelId = iNode.getModel()?.nodeIdAsLong()
+        val model = nodeMap.getModel(modelId)
+        val isTransformed = nodeMap.isMappedToMps(nodeId)
+        if (isTransformed) {
+            logger.info { "Node $nodeId is already transformed." }
+            future.completeWithDefault()
+        } else {
+            if (model == null) {
+                logger.info { "Node $nodeId(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null." }
                 future.completeWithDefault()
             } else {
-                if (model == null) {
-                    logger.info { "Node ${iNode.nodeIdAsLong()}(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null." }
-                    future.completeWithDefault()
-                } else {
-                    nodeFactory.createNode(iNode, model).getResult().bindTo(future)
-                }
+                nodeFactoryMethod.invoke(nodeId, model).getResult().bindTo(future)
             }
-
-            future
         }
 
+        future
+    }
+
     fun transformLanguageOrDevKitDependency(iNode: INode): ContinuableSyncTask {
+        val nodeId = iNode.nodeIdAsLong()
         return if (iNode.isDevKitDependency()) {
-            transformDevKitDependency(iNode)
+            transformDevKitDependency(nodeId)
         } else if (iNode.isSingleLanguageDependency()) {
-            transformLanguageDependency(iNode)
+            transformLanguageDependency(nodeId)
         } else {
-            throw IllegalStateException("iNode ${iNode.nodeIdAsLong()} is neither DevKit nor SingleLanguageDependency")
+            throw IllegalStateException("iNode $nodeId is neither DevKit nor SingleLanguageDependency")
         }
     }
 
-    fun transformLanguageDependency(iNode: INode) =
+    fun transformLanguageDependency(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val dependentModule = getDependentModule(iNode)
             val languageModuleReference = (dependentModule as Language).moduleReference
             val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference)
@@ -130,8 +140,9 @@ class NodeTransformer(
             }
         }
 
-    fun transformDevKitDependency(iNode: INode) =
+    fun transformDevKitDependency(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val dependentModule = getDependentModule(iNode)
             val devKitModuleReference = (dependentModule as DevKit).moduleReference
 

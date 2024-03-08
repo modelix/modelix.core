@@ -20,6 +20,7 @@ import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
@@ -45,16 +46,17 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 class ModelixTreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
     private val project: MPSProject,
-    languageRepository: MPSLanguageRepository,
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
+    branch: IBranch,
+    languageRepository: MPSLanguageRepository,
 ) : ITreeChangeVisitorEx {
 
     private val logger = KotlinLogging.logger {}
 
-    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, languageRepository)
-    private val modelTransformer = ModelTransformer(nodeMap, syncQueue, languageRepository)
-    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project, languageRepository)
+    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, branch, languageRepository)
+    private val modelTransformer = ModelTransformer(nodeMap, syncQueue, branch, languageRepository)
+    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project, branch, languageRepository)
 
     override fun referenceChanged(nodeId: Long, role: String) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
@@ -180,25 +182,23 @@ class ModelixTreeChangeVisitor(
 
             val iNode = getNode(nodeId)
             if (iNode.isModule()) {
-                moduleTransformer.transformToModule(iNode)
+                moduleTransformer.transformToModule(nodeId)
             } else if (iNode.isModuleDependency()) {
                 val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
                 val parentModule = nodeMap.getModule(moduleNodeId)!!
                 require(parentModule is AbstractModule) { "Parent Module ($moduleNodeId) of INode (${iNode.nodeIdAsLong()}) is not an AbstractModule." }
-                moduleTransformer.transformModuleDependency(iNode, parentModule)
+                moduleTransformer.transformModuleDependency(nodeId, parentModule)
             } else if (iNode.isModel()) {
-                modelTransformer.transformToModel(iNode)
+                modelTransformer.transformToModel(nodeId)
             } else if (iNode.isModelImport()) {
-                modelTransformer.transformModelImport(iNode)
+                modelTransformer.transformModelImport(nodeId)
             } else if (iNode.isSingleLanguageDependency()) {
-                nodeTransformer.transformLanguageDependency(iNode)
+                nodeTransformer.transformLanguageDependency(nodeId)
             } else if (iNode.isDevKitDependency()) {
-                nodeTransformer.transformDevKitDependency(iNode)
+                nodeTransformer.transformDevKitDependency(nodeId)
             } else {
-                nodeTransformer.transformToNode(iNode)
+                nodeTransformer.transformNode(nodeId)
             }
-
-            null
         }
     }
 

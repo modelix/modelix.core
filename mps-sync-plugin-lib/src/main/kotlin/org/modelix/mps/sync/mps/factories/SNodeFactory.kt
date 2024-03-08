@@ -28,28 +28,43 @@ import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
+import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SNodeFactory(
     private val conceptRepository: MPSLanguageRepository,
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
+    private val branch: IBranch,
 ) {
 
     private val resolvableReferences = mutableListOf<ResolvableReference>()
 
-    fun createNode(iNode: INode, model: SModel?) =
+    fun createNodeRecursively(nodeId: Long, model: SModel?): ContinuableSyncTask =
+        createNode(nodeId, model)
+            .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+                val iNode = branch.getNode(nodeId)
+                iNode.allChildren.waitForCompletionOfEachTask {
+                    createNodeRecursively(it.nodeIdAsLong(), model)
+                }
+            }
+
+    fun createNode(nodeId: Long, model: SModel?): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val conceptId = iNode.concept?.getUID()!!
             val concept: SConcept = when (val rawConcept = conceptRepository.resolveMPSConcept(conceptId)) {
                 is SInterfaceConcept -> {

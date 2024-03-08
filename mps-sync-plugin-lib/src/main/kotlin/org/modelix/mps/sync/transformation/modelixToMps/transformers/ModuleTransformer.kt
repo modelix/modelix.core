@@ -33,6 +33,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
@@ -54,6 +55,7 @@ class ModuleTransformer(
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
     private val project: MPSProject,
+    private val branch: IBranch,
     mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
@@ -68,20 +70,22 @@ class ModuleTransformer(
 
     private val solutionProducer = SolutionProducer(project)
 
-    private val modelTransformer = ModelTransformer(nodeMap, syncQueue, mpsLanguageRepository)
+    private val modelTransformer = ModelTransformer(nodeMap, syncQueue, branch, mpsLanguageRepository)
 
-    fun transformToModuleCompletely(iNode: INode, branch: IBranch, bindingsRegistry: BindingsRegistry) =
-        transformToModule(iNode)
+    fun transformToModuleCompletely(nodeId: Long, bindingsRegistry: BindingsRegistry) =
+        transformToModule(nodeId)
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
-                iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).waitForCompletionOfEachTask {
-                    // transform models
-                    modelTransformer.transformToModelCompletely(it, branch, bindingsRegistry)
+                // transform models
+                val module = branch.getNode(nodeId)
+                module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).waitForCompletionOfEachTask {
+                    modelTransformer.transformToModelCompletely(it.nodeIdAsLong(), branch, bindingsRegistry)
                 }
             }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
                 // resolve cross-model references (and node references)
                 modelTransformer.resolveCrossModelReferences(project.repository)
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) {
                 // register binding
+                val iNode = branch.getNode(nodeId)
                 val module = nodeMap.getModule(iNode.nodeIdAsLong()) as AbstractModule
                 val moduleBinding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
                 bindingsRegistry.addModuleBinding(moduleBinding)
@@ -93,8 +97,9 @@ class ModuleTransformer(
                 bindings
             }
 
-    fun transformToModule(iNode: INode) =
+    fun transformToModule(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
             check(serializedId.isNotEmpty()) { "Module's ($iNode) ID is empty" }
 
@@ -107,12 +112,13 @@ class ModuleTransformer(
 
             // transform dependencies
             iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).waitForCompletionOfEachTask {
-                transformModuleDependency(it, sModule)
+                transformModuleDependency(it.nodeIdAsLong(), sModule)
             }
         }
 
-    fun transformModuleDependency(iNode: INode, parentModule: AbstractModule) =
+    fun transformModuleDependency(nodeId: Long, parentModule: AbstractModule) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val reexport = (
                 iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
                     ?: "false"

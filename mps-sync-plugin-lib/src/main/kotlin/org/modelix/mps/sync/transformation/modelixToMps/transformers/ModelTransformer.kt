@@ -35,7 +35,7 @@ import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.INode
+import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
@@ -58,38 +58,42 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 class ModelTransformer(
     private val nodeMap: MpsToModelixMap,
     private val syncQueue: SyncQueue,
+    private val branch: IBranch,
     mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
     private val logger = KotlinLogging.logger {}
 
-    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, mpsLanguageRepository)
+    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, branch, mpsLanguageRepository)
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
-    fun transformToModelCompletely(iNode: INode, branch: IBranch, bindingsRegistry: BindingsRegistry) =
-        transformToModel(iNode)
+    fun transformToModelCompletely(nodeId: Long, branch: IBranch, bindingsRegistry: BindingsRegistry) =
+        transformToModel(nodeId)
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
-                iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).waitForCompletionOfEachTask {
-                    // transform nodes
+                val model = branch.getNode(nodeId)
+                // transform nodes
+                model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).waitForCompletionOfEachTask {
                     nodeTransformer.transformToNode(it)
                 }
             }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
-                iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)
+                val model = branch.getNode(nodeId)
+                // transform language or DevKit dependencies
+                model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)
                     .waitForCompletionOfEachTask {
-                        // transform language or DevKit dependencies
                         nodeTransformer.transformLanguageOrDevKitDependency(it)
                     }
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) {
                 // register binding
-                val model = nodeMap.getModel(iNode.nodeIdAsLong()) as SModelBase
+                val model = nodeMap.getModel(branch.getNode(nodeId).nodeIdAsLong()) as SModelBase
                 val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
                 bindingsRegistry.addModelBinding(binding)
                 binding
             }
 
-    fun transformToModel(iNode: INode) =
+    fun transformToModel(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
             check(name != null) { "Model's ($iNode) name is null" }
 
@@ -110,12 +114,13 @@ class ModelTransformer(
 
             // register model imports
             iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).waitForCompletionOfEachTask {
-                transformModelImport(it)
+                transformModelImport(it.nodeIdAsLong())
             }
         }
 
-    fun transformModelImport(iNode: INode) =
+    fun transformModelImport(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val sourceModel = nodeMap.getModel(iNode.getModel()?.nodeIdAsLong())!!
             val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
             val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!

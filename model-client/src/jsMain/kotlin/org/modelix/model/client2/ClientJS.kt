@@ -19,6 +19,7 @@
 package org.modelix.model.client2
 
 import INodeJS
+import INodeReferenceJS
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.promise
@@ -31,7 +32,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.getRootNode
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.withAutoTransactions
@@ -47,11 +47,23 @@ fun loadModelsFromJson(
     json: Array<String>,
     changeCallback: (ChangeJS) -> Unit,
 ): INodeJS {
+    val branch = loadModelsFromJsonAsBranch(json, changeCallback)
+    return branch.rootNode
+}
+
+@UnstableModelixFeature(
+    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
+    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
+)
+@JsExport
+fun loadModelsFromJsonAsBranch(
+    json: Array<String>,
+    changeCallback: (ChangeJS) -> Unit,
+): BranchJS {
     val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
     json.forEach { ModelData.fromJson(it).load(branch) }
     branch.addListener(ChangeListener(branch, changeCallback))
-    val rootNode = branch.withAutoTransactions().getRootNode()
-    return toNodeJs(rootNode)
+    return BranchJSImpl({}, branch.withAutoTransactions())
 }
 
 @UnstableModelixFeature(
@@ -121,9 +133,8 @@ class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
             model.start()
             val branch = model.getBranch()
             branch.addListener(ChangeListener(branch, changeCallback))
-            val rootNode = branch.withAutoTransactions().getRootNode()
-            val jsRootNode = toNodeJs(rootNode)
-            return@promise BranchJSImpl(model, jsRootNode)
+            val branchWithAutoTransaction = branch.withAutoTransactions()
+            return@promise BranchJSImpl({ model.dispose() }, branchWithAutoTransaction)
         }
     }
 
@@ -140,18 +151,7 @@ class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 interface BranchJS {
     val rootNode: INodeJS
     fun dispose()
-}
-
-class BranchJSImpl(private val model: ReplicatedModel, private val jsRootNode: INodeJS) : BranchJS {
-
-    override val rootNode: INodeJS
-        get() {
-            return jsRootNode
-        }
-
-    override fun dispose() {
-        model.dispose()
-    }
+    fun resolveNode(reference: INodeReferenceJS): INodeJS?
 }
 
 class ChangeListener(private val branch: IBranch, private val changeCallback: (ChangeJS) -> Unit) : IBranchListener {

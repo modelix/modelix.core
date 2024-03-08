@@ -30,6 +30,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
+                implementation(libs.trove4j)
             }
         }
         val jvmTest by getting {

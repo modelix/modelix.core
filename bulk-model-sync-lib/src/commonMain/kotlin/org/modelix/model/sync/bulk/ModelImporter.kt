@@ -17,6 +17,7 @@
 package org.modelix.model.sync.bulk
 
 import mu.KotlinLogging
+import org.modelix.kotlin.utils.createMemoryEfficientMap
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
@@ -256,8 +257,8 @@ class ModelImporter(
         }
     }
 
-    private fun buildExistingIndex(): MemoryEfficientMap<String, INodeReference> {
-        val localOriginalIdToExisting = MemoryEfficientMap<String, INodeReference>()
+    private fun buildExistingIndex(): MutableMap<String, INodeReference> {
+        val localOriginalIdToExisting = createMemoryEfficientMap<String, INodeReference>()
         root.getDescendants(true).forEach { node ->
             node.originalId()?.let { localOriginalIdToExisting[it] = node.reference }
         }

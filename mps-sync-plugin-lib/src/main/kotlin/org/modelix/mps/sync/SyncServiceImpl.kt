@@ -140,7 +140,15 @@ class SyncServiceImpl(
 
             // register replicated model change listener
             val listener =
-                ModelixBranchListener(replicatedModel, targetProject, languageRepository, nodeMap, syncQueue, branch)
+                ModelixBranchListener(
+                    replicatedModel,
+                    targetProject,
+                    languageRepository,
+                    nodeMap,
+                    syncQueue,
+                    branch,
+                    bindingsRegistry,
+                )
             branch.addListener(listener)
             changeListenerByReplicatedModel[replicatedModel] = listener
 

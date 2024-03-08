@@ -23,6 +23,7 @@ import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ITree
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeChangeVisitor
@@ -35,10 +36,19 @@ class ModelixBranchListener(
     nodeMap: MpsToModelixMap,
     syncQueue: SyncQueue,
     branch: IBranch,
+    bindingsRegistry: BindingsRegistry,
 ) : IBranchListener {
 
     private val visitor =
-        ModelixTreeChangeVisitor(replicatedModel, project, nodeMap, syncQueue, branch, languageRepository)
+        ModelixTreeChangeVisitor(
+            replicatedModel,
+            project,
+            nodeMap,
+            syncQueue,
+            branch,
+            languageRepository,
+            bindingsRegistry,
+        )
 
     override fun treeChanged(oldTree: ITree?, newTree: ITree) {
         oldTree?.let { newTree.visitChanges(it, visitor) }

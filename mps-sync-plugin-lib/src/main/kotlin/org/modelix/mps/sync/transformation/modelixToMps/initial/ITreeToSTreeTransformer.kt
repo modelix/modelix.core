@@ -43,24 +43,19 @@ class ITreeToSTreeTransformer(
 
     private val logger = KotlinLogging.logger {}
 
-    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project, branch, mpsLanguageRepository)
+    private val moduleTransformer =
+        ModuleTransformer(nodeMap, syncQueue, project, branch, bindingsRegistry, mpsLanguageRepository)
 
     fun transform(entryPoint: INode): Iterable<IBinding> {
         require(entryPoint.isModule()) { "Transformation entry point (Node $entryPoint) must be a Module" }
 
         return try {
-            moduleTransformer.transformToModuleCompletely(entryPoint.nodeIdAsLong(), bindingsRegistry)
+            @Suppress("UNCHECKED_CAST")
+            moduleTransformer.transformToModuleCompletely(entryPoint.nodeIdAsLong())
                 .getResult().get() as Iterable<IBinding>
         } catch (ex: Exception) {
             logger.error(ex) { "Transformation of Node tree starting from Node $entryPoint failed." }
             Collections.emptyList()
-        }
-    }
-
-    private fun traverse(parent: INode, level: Int, processNode: (INode) -> Unit) {
-        processNode(parent)
-        parent.allChildren.forEach {
-            traverse(it, level + 1, processNode)
         }
     }
 }

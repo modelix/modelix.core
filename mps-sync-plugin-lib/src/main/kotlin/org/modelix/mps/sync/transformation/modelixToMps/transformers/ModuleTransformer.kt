@@ -31,24 +31,30 @@ import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.ChildLinkFromName
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
+import org.modelix.model.api.getRootNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SolutionProducer
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.BooleanUtil
+import org.modelix.mps.sync.util.bindTo
+import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.text.ParseException
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleTransformer(
@@ -56,6 +62,7 @@ class ModuleTransformer(
     private val syncQueue: SyncQueue,
     private val project: MPSProject,
     private val branch: IBranch,
+    private val bindingsRegistry: BindingsRegistry,
     mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
@@ -72,8 +79,8 @@ class ModuleTransformer(
 
     private val modelTransformer = ModelTransformer(nodeMap, syncQueue, branch, mpsLanguageRepository)
 
-    fun transformToModuleCompletely(nodeId: Long, bindingsRegistry: BindingsRegistry) =
-        transformToModule(nodeId)
+    fun transformToModuleCompletely(nodeId: Long) =
+        transformToModule(nodeId, true)
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
                 // transform models
                 val module = branch.getNode(nodeId)
@@ -97,7 +104,7 @@ class ModuleTransformer(
                 bindings
             }
 
-    fun transformToModule(nodeId: Long) =
+    fun transformToModule(nodeId: Long, fetchTargetModule: Boolean = false) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
@@ -112,24 +119,54 @@ class ModuleTransformer(
 
             // transform dependencies
             iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).waitForCompletionOfEachTask {
-                transformModuleDependency(it.nodeIdAsLong(), sModule)
+                transformModuleDependency(it.nodeIdAsLong(), sModule, fetchTargetModule)
             }
         }
 
-    fun transformModuleDependency(nodeId: Long, parentModule: AbstractModule) =
+    fun transformModuleDependency(
+        nodeId: Long,
+        parentModule: AbstractModule,
+        fetchTargetModule: Boolean = false,
+    ): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
+            val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
+
+            val future = CompletableFuture<Any?>()
+            val targetModuleIsNotMapped = nodeMap.getModule(targetModuleId) == null
+            if (targetModuleIsNotMapped && fetchTargetModule) {
+                // find target module in modelix
+                val targetModule = branch.getRootNode().getChildren(ChildLinkFromName("modules")).firstOrNull {
+                    val serializedId = it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id)
+                    serializedId?.let {
+                        val moduleId = PersistenceFacade.getInstance().createModuleId(serializedId)
+                        moduleId == targetModuleId
+                    } ?: false
+                }
+
+                if (targetModule != null) {
+                    // TODO in this case we have to collect all ModuleBindings and ModelBindings that were created
+                    // and we have to pass it on to the caller side, so in the end all bindings can be correctly activated
+                    transformToModuleCompletely(targetModule.nodeIdAsLong()).getResult().bindTo(future)
+                } else {
+                    logger.error { "Target Module of ModuleDependency ($nodeId) not found on the server." }
+                    future.completeWithDefault()
+                }
+            } else {
+                future.completeWithDefault()
+            }
+            future
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
+            val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
+
+            val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
+            val moduleReference = ModuleReference(moduleName, targetModuleId)
+
             val reexport = (
                 iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
                     ?: "false"
                 ).toBoolean()
-
-            // TODO if target module is not synchronized yet then try to find it and download
-            // if not found then throw exception
-
-            val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
-            val moduleId = getTargetModuleIdFromModuleDependency(iNode)
-            val moduleReference = ModuleReference(moduleName, moduleId)
             parentModule.addDependency(moduleReference, reexport)
 
             nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())

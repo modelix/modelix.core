@@ -26,6 +26,7 @@ import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -50,13 +51,15 @@ class ModelixTreeChangeVisitor(
     private val syncQueue: SyncQueue,
     branch: IBranch,
     languageRepository: MPSLanguageRepository,
+    bindingsRegistry: BindingsRegistry,
 ) : ITreeChangeVisitorEx {
 
     private val logger = KotlinLogging.logger {}
 
     private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, branch, languageRepository)
     private val modelTransformer = ModelTransformer(nodeMap, syncQueue, branch, languageRepository)
-    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project, branch, languageRepository)
+    private val moduleTransformer =
+        ModuleTransformer(nodeMap, syncQueue, project, branch, bindingsRegistry, languageRepository)
 
     override fun referenceChanged(nodeId: Long, role: String) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {

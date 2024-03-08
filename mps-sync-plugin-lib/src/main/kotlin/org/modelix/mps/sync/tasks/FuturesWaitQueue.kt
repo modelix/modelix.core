@@ -156,9 +156,11 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
     }
 
     private fun waitForNotification() {
+        logger.info { ">>>>>>>>>>>>> about to sleep" }
         synchronized(pauseObject) {
             pauseObject.wait()
         }
+        logger.info { ">>>>>>>>>>>>> woke up from sleep" }
     }
 }
 

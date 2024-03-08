@@ -34,7 +34,11 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.mps.util.ModelRenameHelper
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.deleteDevKit
@@ -48,57 +52,82 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQueue: SyncQueue) {
+class ModelTransformer(
+    private val nodeMap: MpsToModelixMap,
+    private val syncQueue: SyncQueue,
+    mpsLanguageRepository: MPSLanguageRepository,
+) {
 
     private val logger = KotlinLogging.logger {}
 
+    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, mpsLanguageRepository)
+
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
-    fun transformToModel(iNode: INode) {
-        val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-        check(name != null) { "Model's ($iNode) name is null" }
+    fun transformToModelCompletely(iNode: INode, branch: IBranch, bindingsRegistry: BindingsRegistry) =
+        transformToModel(iNode)
+            .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+                iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).waitForCompletionOfEachTask {
+                    // transform nodes
+                    nodeTransformer.transformToNode(it)
+                }
+            }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+                iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)
+                    .waitForCompletionOfEachTask {
+                        // transform language or DevKit dependencies
+                        nodeTransformer.transformLanguageOrDevKitDependency(it)
+                    }
+            }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) {
+                // register binding
+                val model = nodeMap.getModel(iNode.nodeIdAsLong()) as SModelBase
+                val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
+                bindingsRegistry.addModelBinding(binding)
+                binding
+            }
 
-        val moduleId = iNode.getModule()?.nodeIdAsLong()!!
-        val module: SModule? = nodeMap.getModule(moduleId)
-        check(module != null) { "Parent module with ID $moduleId is not found" }
+    fun transformToModel(iNode: INode) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+            check(name != null) { "Model's ($iNode) name is null" }
 
-        val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
-        check(serializedId.isNotEmpty()) { "Model's ($iNode) ID is empty" }
-        val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
+            val moduleId = iNode.getModule()?.nodeIdAsLong()!!
+            val module: SModule? = nodeMap.getModule(moduleId)
+            check(module != null) { "Parent module with ID $moduleId is not found" }
 
-        lateinit var sModel: EditableSModel
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-        ) {
+            val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
+            check(serializedId.isNotEmpty()) { "Model's ($iNode) ID is empty" }
+            val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
+
             val modelDoesNotExist = module.getModel(modelId) == null
             if (modelDoesNotExist) {
-                sModel = module.createModel(name, modelId) as EditableSModel
+                val sModel = module.createModel(name, modelId) as EditableSModel
                 sModel.save()
                 nodeMap.put(sModel, iNode.nodeIdAsLong())
             }
+
+            // register model imports
+            iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).waitForCompletionOfEachTask {
+                transformModelImport(it)
+            }
         }
 
-        // register model imports
-        iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
-            .forEach { transformModelImport(it) }
-    }
-
-    fun transformModelImport(iNode: INode) {
-        val sourceModel = nodeMap.getModel(iNode.getModel()?.nodeIdAsLong())!!
-        val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
-        val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
-        resolvableModelImports.add(
-            ResolvableModelImport(
-                source = sourceModel,
-                targetModelId = targetId,
-                targetModelModelixId = targetModel.nodeIdAsLong(),
-                modelReferenceNodeId = iNode.nodeIdAsLong(),
-            ),
-        )
-    }
+    fun transformModelImport(iNode: INode) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val sourceModel = nodeMap.getModel(iNode.getModel()?.nodeIdAsLong())!!
+            val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+            val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
+            resolvableModelImports.add(
+                ResolvableModelImport(
+                    source = sourceModel,
+                    targetModelId = targetId,
+                    targetModelModelixId = targetModel.nodeIdAsLong(),
+                    modelReferenceNodeId = iNode.nodeIdAsLong(),
+                ),
+            )
+        }
 
     fun resolveModelImports(repository: SRepository) {
         resolvableModelImports.forEach {
@@ -111,12 +140,15 @@ class ModelTransformer(private val nodeMap: MpsToModelixMap, private val syncQue
             val modelImport = SModelReference(moduleReference, id, targetModel.name)
 
             val sourceModel = it.source
-            syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
-                ModelImports(sourceModel).addModelImport(modelImport)
-            }
+            ModelImports(sourceModel).addModelImport(modelImport)
             nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)
         }
         resolvableModelImports.clear()
+    }
+
+    fun resolveCrossModelReferences(repository: SRepository) {
+        resolveModelImports(repository)
+        nodeTransformer.resolveReferences()
     }
 
     fun modelPropertyChanged(sModel: SModel, role: String, newValue: String?, nodeId: Long) {

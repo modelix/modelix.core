@@ -53,8 +53,8 @@ class ModelixTreeChangeVisitor(
     private val logger = KotlinLogging.logger {}
 
     private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, languageRepository)
-    private val modelTransformer = ModelTransformer(nodeMap, syncQueue)
-    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
+    private val modelTransformer = ModelTransformer(nodeMap, syncQueue, languageRepository)
+    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project, languageRepository)
 
     override fun referenceChanged(nodeId: Long, role: String) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {

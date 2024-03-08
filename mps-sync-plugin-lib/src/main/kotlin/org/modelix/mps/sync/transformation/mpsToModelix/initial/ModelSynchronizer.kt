@@ -29,7 +29,6 @@ import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
-import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -62,7 +61,7 @@ class ModelSynchronizer(
             }
     }
 
-    fun addModel(model: SModelBase): ContinuableSyncTask =
+    fun addModel(model: SModelBase) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val moduleModelixId = nodeMap[model.module]!!
             val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
@@ -73,7 +72,7 @@ class ModelSynchronizer(
             nodeMap.put(model, cloudModel.nodeIdAsLong())
 
             synchronizeModelProperties(cloudModel, model)
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+
             // synchronize root nodes
             model.rootNodes.waitForCompletionOfEachTask { nodeSynchronizer.addNode(it) }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {

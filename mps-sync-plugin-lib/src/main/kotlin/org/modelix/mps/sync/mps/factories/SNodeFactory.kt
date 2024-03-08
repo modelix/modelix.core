@@ -48,41 +48,37 @@ class SNodeFactory(
 
     private val resolvableReferences = mutableListOf<ResolvableReference>()
 
-    fun createNode(iNode: INode, model: SModel?): SNode {
-        val conceptId = iNode.concept?.getUID()!!
-        val concept: SConcept = when (val rawConcept = conceptRepository.resolveMPSConcept(conceptId)) {
-            is SInterfaceConcept -> {
-                MetaAdapterByDeclaration.asInstanceConcept((rawConcept as SAbstractConcept))
+    fun createNode(iNode: INode, model: SModel?) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val conceptId = iNode.concept?.getUID()!!
+            val concept: SConcept = when (val rawConcept = conceptRepository.resolveMPSConcept(conceptId)) {
+                is SInterfaceConcept -> {
+                    MetaAdapterByDeclaration.asInstanceConcept((rawConcept as SAbstractConcept))
+                }
+
+                is SConcept -> {
+                    rawConcept
+                }
+
+                else -> throw IllegalStateException("Unknown raw concept: $rawConcept")
             }
 
-            is SConcept -> {
-                rawConcept
+            // 1. create node
+            val mpsNodeId = getMpsNodeId(iNode)
+            val sNode = jetbrains.mps.smodel.SNode(concept, mpsNodeId)
+            val nodeId = iNode.nodeIdAsLong()
+
+            // 2. add to parent
+            val parent = iNode.parent
+            val parentSerializedModelId =
+                parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
+            val parentModelId = if (parentSerializedModelId.isNotEmpty()) {
+                PersistenceFacade.getInstance().createModelId(parentSerializedModelId)
+            } else {
+                null
             }
-
-            else -> throw IllegalStateException("Unknown raw concept: $rawConcept")
-        }
-
-        // 1. create node
-        val mpsNodeId = getMpsNodeId(iNode)
-        val sNode = jetbrains.mps.smodel.SNode(concept, mpsNodeId)
-        val nodeId = iNode.nodeIdAsLong()
-
-        // 2. add to parent
-        val parent = iNode.parent
-        val parentSerializedModelId =
-            parent?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
-        val parentModelId = if (parentSerializedModelId.isNotEmpty()) {
-            PersistenceFacade.getInstance().createModelId(parentSerializedModelId)
-        } else {
-            null
-        }
-        val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
-        val isRootNode = concept.isRootable && modelIsTheParent
-
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-        ) {
+            val modelIsTheParent = parentModelId != null && model?.modelId == parentModelId
+            val isRootNode = concept.isRootable && modelIsTheParent
             if (isRootNode) {
                 model?.addRootNode(sNode)
             } else {
@@ -94,22 +90,14 @@ class SNodeFactory(
                 val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
                 parentNode.addChild(containmentLink, sNode)
             }
-        }
-        nodeMap.put(sNode, nodeId)
+            nodeMap.put(sNode, nodeId)
 
-        // 3. set properties
-        syncQueue.enqueueBlocking(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-        ) {
+            // 3. set properties
             setProperties(iNode, sNode)
+
+            // 4. set references
+            prepareLinkReferences(iNode)
         }
-
-        // 4. set references
-        prepareLinkReferences(iNode)
-
-        return sNode
-    }
 
     private fun getMpsNodeId(iNode: INode): SNodeId {
         val mpsNodeIdAsString = iNode.mappedMpsNodeID()

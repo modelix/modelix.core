@@ -16,98 +16,44 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.initial
 
-import jetbrains.mps.extapi.model.SModelBase
-import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
-import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.bindings.ModelBinding
-import org.modelix.mps.sync.bindings.ModuleBinding
-import org.modelix.mps.sync.tasks.SyncDirection
-import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
-import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
-import org.modelix.mps.sync.util.isModel
 import org.modelix.mps.sync.util.isModule
-import org.modelix.mps.sync.util.nodeIdAsLong
+import java.util.Collections
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ITreeToSTreeTransformer(
     private val branch: IBranch,
-    private val project: MPSProject,
-    mpsLanguageRepository: MPSLanguageRepository,
-    private val nodeMap: MpsToModelixMap,
     private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
+    nodeMap: MpsToModelixMap,
+    syncQueue: SyncQueue,
+    project: MPSProject,
+    mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
     private val logger = KotlinLogging.logger {}
 
-    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, mpsLanguageRepository)
-    private val modelTransformer = ModelTransformer(nodeMap, syncQueue)
-    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
+    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project, mpsLanguageRepository)
 
-    fun transform(entryPoint: INode): List<IBinding> {
-        val bindings = mutableListOf<IBinding>()
+    fun transform(entryPoint: INode): Iterable<IBinding> {
+        require(entryPoint.isModule()) { "Transformation entry point (Node $entryPoint) must be a Module" }
 
-        try {
-            syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
-                val nodeId = entryPoint.nodeIdAsLong()
-                val root = branch.getNode(nodeId)
-
-                logger.info { "--- Transforming modules and models in modelix Node $nodeId ---" }
-                traverse(root, 1) {
-                    if (it.isModule()) {
-                        moduleTransformer.transformToModule(it)
-                    } else if (it.isModel()) {
-                        modelTransformer.transformToModel(it)
-                    }
-                }
-
-                logger.info { "--- Resolving model imports ---" }
-                modelTransformer.resolveModelImports(project.repository)
-
-                logger.info { "--- Transforming nodes ---" }
-                traverse(root, 1) {
-                    val isNotModuleOrModel = !(it.isModule() || it.isModel())
-                    if (isNotModuleOrModel) {
-                        nodeTransformer.transformToNode(it)
-                    }
-                }
-
-                logger.info { "--- Resolving references ---" }
-                syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
-                    nodeTransformer.resolveReferences()
-                }
-
-                logger.info { "--- Registering module and model bindings ---" }
-                nodeMap.modules.forEach {
-                    val module = it as AbstractModule
-                    val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
-                    bindingsRegistry.addModuleBinding(binding)
-                    bindings.add(binding)
-                }
-                nodeMap.models.forEach {
-                    val model = it as SModelBase
-                    val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
-                    bindingsRegistry.addModelBinding(binding)
-                    bindings.add(binding)
-                }
-            }
+        return try {
+            moduleTransformer.transformToModuleCompletely(entryPoint, branch, bindingsRegistry)
+                .getResult().get() as Iterable<IBinding>
         } catch (ex: Exception) {
             logger.error(ex) { "Transformation of Node tree starting from Node $entryPoint failed." }
+            Collections.emptyList()
         }
-
-        return bindings
     }
 
     private fun traverse(parent: INode, level: Int, processNode: (INode) -> Unit) {

@@ -18,7 +18,7 @@ interface SyncService {
         branchReference: BranchReference,
         module: INode,
         callback: (() -> Unit)? = null,
-    ): List<IBinding>
+    ): Iterable<IBinding>
 
     suspend fun connectModelServer(serverURL: URL, jwt: String, callback: (() -> Unit)? = null): ModelClientV2
 

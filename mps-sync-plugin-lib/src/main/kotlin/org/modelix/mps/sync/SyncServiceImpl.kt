@@ -99,7 +99,7 @@ class SyncServiceImpl(
         branchReference: BranchReference,
         module: INode,
         callback: (() -> Unit)?,
-    ): List<IBinding> {
+    ): Iterable<IBinding> {
         if (replicatedModelByBranchReference.containsKey(branchReference)) {
             return emptyList()
         }
@@ -131,11 +131,11 @@ class SyncServiceImpl(
             // transform the model
             val bindings = ITreeToSTreeTransformer(
                 branch,
+                bindingsRegistry,
+                nodeMap,
+                syncQueue,
                 targetProject,
                 languageRepository,
-                nodeMap,
-                bindingsRegistry,
-                syncQueue,
             ).transform(module)
 
             // register replicated model change listener
@@ -160,7 +160,6 @@ class SyncServiceImpl(
     }
 
     override fun setActiveProject(project: Project) {
-        resetProjectWithChangeListener()
         mpsProjectInjector.setActiveProject(project)
     }
 

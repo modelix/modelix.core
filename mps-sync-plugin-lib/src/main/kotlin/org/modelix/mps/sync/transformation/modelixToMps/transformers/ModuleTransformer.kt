@@ -31,7 +31,12 @@ import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SolutionProducer
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -41,10 +46,16 @@ import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.BooleanUtil
 import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.text.ParseException
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQueue: SyncQueue, project: MPSProject) {
+class ModuleTransformer(
+    private val nodeMap: MpsToModelixMap,
+    private val syncQueue: SyncQueue,
+    private val project: MPSProject,
+    mpsLanguageRepository: MPSLanguageRepository,
+) {
 
     companion object {
         fun getTargetModuleIdFromModuleDependency(moduleDependency: INode): SModuleId {
@@ -57,41 +68,66 @@ class ModuleTransformer(private val nodeMap: MpsToModelixMap, private val syncQu
 
     private val solutionProducer = SolutionProducer(project)
 
-    fun transformToModule(iNode: INode) {
-        val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
-        check(serializedId.isNotEmpty()) { "Module's ($iNode) ID is empty" }
+    private val modelTransformer = ModelTransformer(nodeMap, syncQueue, mpsLanguageRepository)
 
-        val moduleId = PersistenceFacade.getInstance().createModuleId(serializedId)
-        val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-        check(name != null) { "Module's ($iNode) name is null" }
+    fun transformToModuleCompletely(iNode: INode, branch: IBranch, bindingsRegistry: BindingsRegistry) =
+        transformToModule(iNode)
+            .continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+                iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).waitForCompletionOfEachTask {
+                    // transform models
+                    modelTransformer.transformToModelCompletely(it, branch, bindingsRegistry)
+                }
+            }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+                // resolve cross-model references (and node references)
+                modelTransformer.resolveCrossModelReferences(project.repository)
+            }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) {
+                // register binding
+                val module = nodeMap.getModule(iNode.nodeIdAsLong()) as AbstractModule
+                val moduleBinding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
+                bindingsRegistry.addModuleBinding(moduleBinding)
 
-        var sModule: AbstractModule? = null
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
-            sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
-            sModule // ignored
+                val modelBindings = bindingsRegistry.getModelBindings(module)!!
+                val bindings = mutableSetOf<IBinding>(moduleBinding)
+                bindings.addAll(modelBindings)
+
+                bindings
+            }
+
+    fun transformToModule(iNode: INode) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
+            check(serializedId.isNotEmpty()) { "Module's ($iNode) ID is empty" }
+
+            val moduleId = PersistenceFacade.getInstance().createModuleId(serializedId)
+            val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+            check(name != null) { "Module's ($iNode) name is null" }
+
+            val sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
+            nodeMap.put(sModule, iNode.nodeIdAsLong())
+
+            // transform dependencies
+            iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).waitForCompletionOfEachTask {
+                transformModuleDependency(it, sModule)
+            }
         }
-        nodeMap.put(sModule!!, iNode.nodeIdAsLong())
 
-        iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).forEach {
-            transformModuleDependency(it, sModule!!)
-        }
-    }
+    fun transformModuleDependency(iNode: INode, parentModule: AbstractModule) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val reexport = (
+                iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
+                    ?: "false"
+                ).toBoolean()
 
-    fun transformModuleDependency(iNode: INode, parentModule: AbstractModule) {
-        val reexport = (
-            iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
-                ?: "false"
-            ).toBoolean()
+            // TODO if target module is not synchronized yet then try to find it and download
+            // if not found then throw exception
 
-        val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
-        val moduleId = getTargetModuleIdFromModuleDependency(iNode)
-        val moduleReference = ModuleReference(moduleName, moduleId)
-        syncQueue.enqueueBlocking(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
+            val moduleId = getTargetModuleIdFromModuleDependency(iNode)
+            val moduleReference = ModuleReference(moduleName, moduleId)
             parentModule.addDependency(moduleReference, reexport)
-        }
 
-        nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
-    }
+            nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
+        }
 
     fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?) {
         val moduleId = sModule.moduleId

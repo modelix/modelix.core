@@ -51,16 +51,6 @@ object SyncQueue : AutoCloseable {
         return ContinuableSyncTask(task)
     }
 
-    fun enqueueBlocking(
-        requiredLocks: LinkedHashSet<SyncLock>,
-        syncDirection: SyncDirection,
-        action: SyncTaskAction,
-    ): ContinuableSyncTask {
-        val task = SyncTask(requiredLocks, syncDirection, action)
-        enqueueBlocking(task)
-        return ContinuableSyncTask(task)
-    }
-
     fun enqueue(task: SyncTask) {
         /**
          * Do not schedule Task if it is initiated on a Thread that is  running a synchronization and the sync direction
@@ -83,11 +73,6 @@ object SyncQueue : AutoCloseable {
         } else {
             task.result.completeWithDefault()
         }
-    }
-
-    private fun enqueueBlocking(task: SyncTask) {
-        enqueue(task)
-        task.result.get()
     }
 
     private fun enqueueAndFlush(task: SyncTask) {

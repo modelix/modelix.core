@@ -65,7 +65,7 @@ class ModuleSynchronizer(
             nodeMap.put(module, cloudModule.nodeIdAsLong())
 
             synchronizeModuleProperties(cloudModule, module)
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+
             // synchronize dependencies
             module.declaredDependencies.waitForCompletionOfEachTask { addDependency(module, it) }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
@@ -81,7 +81,7 @@ class ModuleSynchronizer(
             binding.activate()
         }
 
-    fun addDependency(module: SModule, dependency: SDependency): ContinuableSyncTask =
+    fun addDependency(module: SModule, dependency: SDependency) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val repository = ActiveMpsProjectInjector.activeMpsProject?.repository!!
             val targetModule = dependency.targetModule.resolve(repository)

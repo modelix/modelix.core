@@ -27,7 +27,7 @@ openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
 [versions]
 kotlin = "1.9.21"
 kotlinCoroutines="1.8.0"
-ktor="2.3.7"
+ktor="2.3.9"
 kotlinHtml="0.8.0"
 kotlinSerialization="1.6.2"
 ignite="2.16.0"

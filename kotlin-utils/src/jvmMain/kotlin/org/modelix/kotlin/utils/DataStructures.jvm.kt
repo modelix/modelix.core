@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package org.modelix.model.sync.bulk
+package org.modelix.kotlin.utils
 
-import gnu.trove.map.TMap
 import gnu.trove.map.hash.THashMap
 
-actual class MemoryEfficientMap<KeyT, ValueT> {
-    private val map: TMap<KeyT, ValueT> = THashMap()
-
-    actual operator fun set(key: KeyT, value: ValueT) = map.set(key, value)
-
-    actual operator fun get(key: KeyT) = map[key]
-}
+actual fun <K, V> createMemoryEfficientMap(): MutableMap<K, V> = THashMap()

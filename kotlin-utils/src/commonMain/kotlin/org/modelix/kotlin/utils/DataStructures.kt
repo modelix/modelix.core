@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package org.modelix.model.sync.bulk
+package org.modelix.kotlin.utils
 
 /**
- * Built-in maps like [HashMap] are not the most memory efficient way of map.
- * A common issue is that entry objects for every item in the table are created.
- * [MemoryEfficientMap] is an internal implementation that we can use
- * when the memory overhead becomes too big.
+ * Creates a mutable map with less memory overhead.
+ * This is an internal API.
  *
+ * Built-in maps like [HashMap] are not the not very memory efficient.
+ * A common issue is that entry objects for every item in the table are created.
  * Java implementation is optimized to not create entry objects by using a map implementation from another library.
  * The JS implementation is not optimized yet because we did not invest time in finding a suitable library.
  *
- * [MemoryEfficientMap] is an internal abstraction.
- * The API is therefore kept minimal
+ * We did not look into performance implications for storing and retrieving data.
+ * Therefore, the memory efficient maps are used sparingly for only the very big maps.
  */
-expect class MemoryEfficientMap<KeyT, ValueT>() {
-    operator fun set(key: KeyT, value: ValueT)
-    operator fun get(key: KeyT): ValueT?
-}
+expect fun <K, V> createMemoryEfficientMap(): MutableMap<K, V>

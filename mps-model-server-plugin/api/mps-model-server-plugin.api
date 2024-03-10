@@ -1,0 +1,23 @@
+public final class org/modelix/model/server/mps/MPSModelServer : com/intellij/openapi/Disposable {
+	public fun <init> ()V
+	public fun dispose ()V
+	public final fun ensureStarted ()V
+	public final fun ensureStopped ()V
+	public final fun registerProject (Lcom/intellij/openapi/project/Project;)V
+	public final fun unregisterProject (Lcom/intellij/openapi/project/Project;)V
+}
+
+public final class org/modelix/model/server/mps/MPSModelServerForProject : com/intellij/openapi/Disposable {
+	public fun <init> (Lcom/intellij/openapi/project/Project;)V
+	public fun dispose ()V
+}
+
+public final class org/modelix/model/server/mps/MPSModelServerKt {
+	public static final field LOAD_MODELS_MODULE_PARAMETER_NAME Ljava/lang/String;
+}
+
+public final class org/modelix/model/server/mps/MPSModelServerStartupActivity : com/intellij/openapi/startup/StartupActivity$Background {
+	public fun <init> ()V
+	public fun runActivity (Lcom/intellij/openapi/project/Project;)V
+}
+

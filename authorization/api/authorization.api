@@ -1,0 +1,135 @@
+public final class org/modelix/authorization/AccessTokenPrincipal : io/ktor/server/auth/Principal {
+	public fun <init> (Lcom/auth0/jwt/interfaces/DecodedJWT;)V
+	public final fun getJwt ()Lcom/auth0/jwt/interfaces/DecodedJWT;
+	public final fun getUserName ()Ljava/lang/String;
+}
+
+public final class org/modelix/authorization/EPermissionType : java/lang/Enum {
+	public static final field READ Lorg/modelix/authorization/EPermissionType;
+	public static final field WRITE Lorg/modelix/authorization/EPermissionType;
+	public final fun getIncludedTypes ()[Lorg/modelix/authorization/EPermissionType;
+	public final fun includes (Lorg/modelix/authorization/EPermissionType;)Z
+	public static fun valueOf (Ljava/lang/String;)Lorg/modelix/authorization/EPermissionType;
+	public static fun values ()[Lorg/modelix/authorization/EPermissionType;
+}
+
+public final class org/modelix/authorization/KeycloakResource {
+	public fun <init> (Ljava/lang/String;Lorg/modelix/authorization/KeycloakResourceType;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lorg/modelix/authorization/KeycloakResourceType;
+	public final fun copy (Ljava/lang/String;Lorg/modelix/authorization/KeycloakResourceType;)Lorg/modelix/authorization/KeycloakResource;
+	public static synthetic fun copy$default (Lorg/modelix/authorization/KeycloakResource;Ljava/lang/String;Lorg/modelix/authorization/KeycloakResourceType;ILjava/lang/Object;)Lorg/modelix/authorization/KeycloakResource;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getType ()Lorg/modelix/authorization/KeycloakResourceType;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/authorization/KeycloakResourceType {
+	public static final field Companion Lorg/modelix/authorization/KeycloakResourceType$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/util/Set;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Set;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/Set;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/util/Set;Z)Lorg/modelix/authorization/KeycloakResourceType;
+	public static synthetic fun copy$default (Lorg/modelix/authorization/KeycloakResourceType;Ljava/lang/String;Ljava/util/Set;ZILjava/lang/Object;)Lorg/modelix/authorization/KeycloakResourceType;
+	public final fun createInstance (Ljava/lang/String;)Lorg/modelix/authorization/KeycloakResource;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCreateByUser ()Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getScopes ()Ljava/util/Set;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/authorization/KeycloakResourceType$Companion {
+	public final fun getDEFAULT_TYPE ()Lorg/modelix/authorization/KeycloakResourceType;
+	public final fun getMODEL_SERVER_ENTRY ()Lorg/modelix/authorization/KeycloakResourceType;
+	public final fun getREPOSITORY ()Lorg/modelix/authorization/KeycloakResourceType;
+}
+
+public final class org/modelix/authorization/KeycloakScope {
+	public static final field Companion Lorg/modelix/authorization/KeycloakScope$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/authorization/KeycloakScope;
+	public static synthetic fun copy$default (Lorg/modelix/authorization/KeycloakScope;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/authorization/KeycloakScope;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun plus (Lorg/modelix/authorization/KeycloakScope;)Ljava/util/Set;
+	public final fun toSet ()Ljava/util/Set;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/authorization/KeycloakScope$Companion {
+	public final fun getADD ()Lorg/modelix/authorization/KeycloakScope;
+	public final fun getALL_SCOPES ()Ljava/util/Set;
+	public final fun getDELETE ()Lorg/modelix/authorization/KeycloakScope;
+	public final fun getLIST ()Lorg/modelix/authorization/KeycloakScope;
+	public final fun getREAD ()Lorg/modelix/authorization/KeycloakScope;
+	public final fun getREAD_LIST ()Ljava/util/Set;
+	public final fun getREAD_ONLY ()Ljava/util/Set;
+	public final fun getREAD_WRITE ()Ljava/util/Set;
+	public final fun getREAD_WRITE_DELETE ()Ljava/util/Set;
+	public final fun getREAD_WRITE_DELETE_LIST ()Ljava/util/Set;
+	public final fun getREAD_WRITE_LIST ()Ljava/util/Set;
+	public final fun getWRITE ()Lorg/modelix/authorization/KeycloakScope;
+}
+
+public final class org/modelix/authorization/KeycloakUtils {
+	public static final field INSTANCE Lorg/modelix/authorization/KeycloakUtils;
+	public final fun createToken (Ljava/util/List;)Lcom/auth0/jwt/interfaces/DecodedJWT;
+	public final fun ensureResourcesExists (Lorg/modelix/authorization/KeycloakResource;Lcom/auth0/jwt/interfaces/DecodedJWT;)Lorg/keycloak/representations/idm/authorization/ResourceRepresentation;
+	public static synthetic fun ensureResourcesExists$default (Lorg/modelix/authorization/KeycloakUtils;Lorg/modelix/authorization/KeycloakResource;Lcom/auth0/jwt/interfaces/DecodedJWT;ILjava/lang/Object;)Lorg/keycloak/representations/idm/authorization/ResourceRepresentation;
+	public final fun getAuthzClient ()Lorg/keycloak/authorization/client/AuthzClient;
+	public final fun getBASE_URL ()Ljava/lang/String;
+	public final fun getCLIENT_ID ()Ljava/lang/String;
+	public final fun getCLIENT_SECRET ()Ljava/lang/String;
+	public final fun getJwkProvider ()Lcom/auth0/jwk/JwkProvider;
+	public final fun getREALM ()Ljava/lang/String;
+	public final fun getServiceAccountToken ()Lcom/auth0/jwt/interfaces/DecodedJWT;
+	public final fun hasPermission (Lcom/auth0/jwt/interfaces/DecodedJWT;Lorg/modelix/authorization/KeycloakResource;Lorg/modelix/authorization/KeycloakScope;)Z
+	public final fun isEnabled ()Z
+}
+
+public final class org/modelix/authorization/KeycloakUtilsKt {
+	public static final fun asResource (Ljava/lang/String;)Lorg/modelix/authorization/KeycloakResource;
+	public static final fun toKeycloakScope (Lorg/modelix/authorization/EPermissionType;)Lorg/modelix/authorization/KeycloakScope;
+}
+
+public final class org/modelix/authorization/KtorAuthUtilsKt {
+	public static final fun checkPermission (Lio/ktor/server/application/ApplicationCall;Lorg/modelix/authorization/KeycloakResource;Lorg/modelix/authorization/KeycloakScope;)V
+	public static final fun getBearerToken (Lio/ktor/server/application/ApplicationCall;)Ljava/lang/String;
+	public static final fun getServiceAccountTokenProvider ()Lkotlin/jvm/functions/Function0;
+	public static final fun getUserName (Lio/ktor/server/application/ApplicationCall;)Ljava/lang/String;
+	public static final fun getUserName (Lio/ktor/util/pipeline/PipelineContext;)Ljava/lang/String;
+	public static final fun installAuthentication (Lio/ktor/server/application/Application;Z)V
+	public static synthetic fun installAuthentication$default (Lio/ktor/server/application/Application;ZILjava/lang/Object;)V
+	public static final fun jwt (Lio/ktor/server/application/ApplicationCall;)Lcom/auth0/jwt/interfaces/DecodedJWT;
+	public static final fun jwtFromHeaders (Lio/ktor/server/application/ApplicationCall;)Lcom/auth0/jwt/interfaces/DecodedJWT;
+	public static final fun nullIfInvalid (Lcom/auth0/jwt/interfaces/DecodedJWT;)Lcom/auth0/jwt/interfaces/DecodedJWT;
+	public static final fun requiresDelete (Lio/ktor/server/routing/Route;Lorg/modelix/authorization/KeycloakResource;Lkotlin/jvm/functions/Function1;)V
+	public static final fun requiresLogin (Lio/ktor/server/routing/Route;Lkotlin/jvm/functions/Function1;)V
+	public static final fun requiresPermission (Lio/ktor/server/routing/Route;Lorg/modelix/authorization/KeycloakResource;Lorg/modelix/authorization/EPermissionType;Lkotlin/jvm/functions/Function1;)V
+	public static final fun requiresPermission (Lio/ktor/server/routing/Route;Lorg/modelix/authorization/KeycloakResource;Lorg/modelix/authorization/KeycloakScope;Lkotlin/jvm/functions/Function1;)V
+	public static final fun requiresRead (Lio/ktor/server/routing/Route;Lorg/modelix/authorization/KeycloakResource;Lkotlin/jvm/functions/Function1;)V
+	public static final fun requiresWrite (Lio/ktor/server/routing/Route;Lorg/modelix/authorization/KeycloakResource;Lkotlin/jvm/functions/Function1;)V
+	public static final fun verifyTokenSignature (Lcom/auth0/jwt/interfaces/DecodedJWT;)V
+}
+
+public final class org/modelix/authorization/NoPermissionException : java/lang/RuntimeException {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Lorg/modelix/authorization/AccessTokenPrincipal;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Lorg/modelix/authorization/AccessTokenPrincipal;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getResourceId ()Ljava/lang/String;
+	public final fun getScope ()Ljava/lang/String;
+	public final fun getUser ()Lorg/modelix/authorization/AccessTokenPrincipal;
+}
+
+public final class org/modelix/authorization/NotLoggedInException : java/lang/RuntimeException {
+	public fun <init> ()V
+}
+

@@ -1,0 +1,71 @@
+public abstract class org/modelix/metamodel/gradle/GenerateAntScriptForMpsMetaModelExport : org/gradle/api/DefaultTask {
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun generate ()V
+	public final fun getAntScriptFile ()Lorg/gradle/api/file/RegularFileProperty;
+	public final fun getExportModulesFilter ()Lorg/gradle/api/provider/Property;
+	public final fun getExporterDir ()Lorg/gradle/api/provider/Property;
+	public final fun getHeapSize ()Lorg/gradle/api/provider/Property;
+	public final fun getModuleFolders ()Lorg/gradle/api/provider/ListProperty;
+	public final fun getMpsHome ()Lorg/gradle/api/provider/Property;
+}
+
+public abstract class org/modelix/metamodel/gradle/GenerateMetaModelSources : org/gradle/api/DefaultTask {
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun generate ()V
+	public final fun getConceptPropertiesInterfaceName ()Lorg/gradle/api/provider/Property;
+	public final fun getExportedLanguagesDir ()Lorg/gradle/api/file/DirectoryProperty;
+	public final fun getIncludedConcepts ()Lorg/gradle/api/provider/ListProperty;
+	public final fun getIncludedLanguages ()Lorg/gradle/api/provider/ListProperty;
+	public final fun getIncludedNamespaces ()Lorg/gradle/api/provider/ListProperty;
+	public final fun getKotlinOutputDir ()Lorg/gradle/api/file/DirectoryProperty;
+	public final fun getModelqlKotlinOutputDir ()Lorg/gradle/api/file/DirectoryProperty;
+	public final fun getNameConfig ()Lorg/gradle/api/provider/Property;
+	public final fun getRegistrationHelperName ()Lorg/gradle/api/provider/Property;
+	public final fun getTypescriptOutputDir ()Lorg/gradle/api/file/DirectoryProperty;
+}
+
+public final class org/modelix/metamodel/gradle/MetaModelGradlePlugin : org/gradle/api/Plugin {
+	public fun <init> ()V
+	public synthetic fun apply (Ljava/lang/Object;)V
+	public fun apply (Lorg/gradle/api/Project;)V
+}
+
+public class org/modelix/metamodel/gradle/MetaModelGradleSettings {
+	public fun <init> ()V
+	public final fun dependsOn ([Ljava/lang/Object;)V
+	public final fun exportModules (Ljava/lang/String;)V
+	public final fun getConceptPropertiesInterfaceName ()Ljava/lang/String;
+	public final fun getIncludedConcepts ()Ljava/util/Set;
+	public final fun getIncludedLanguageNamespaces ()Ljava/util/Set;
+	public final fun getIncludedLanguages ()Ljava/util/Set;
+	public final fun getIncludedModules ()Ljava/util/Set;
+	public final fun getJavaExecutable ()Ljava/io/File;
+	public final fun getJsonDir ()Ljava/io/File;
+	public final fun getKotlinDir ()Ljava/io/File;
+	public final fun getKotlinProject ()Lorg/gradle/api/Project;
+	public final fun getModelqlKotlinDir ()Ljava/io/File;
+	public final fun getModuleFolders ()Ljava/util/ArrayList;
+	public final fun getMpsHeapSize ()Ljava/lang/String;
+	public final fun getMpsHome ()Ljava/io/File;
+	public final fun getRegistrationHelperName ()Ljava/lang/String;
+	public final fun getTaskDependencies ()Ljava/util/List;
+	public final fun getTypescriptDir ()Ljava/io/File;
+	public final fun includeConcept (Ljava/lang/String;)V
+	public final fun includeLanguage (Ljava/lang/String;)V
+	public final fun includeNamespace (Ljava/lang/String;)V
+	public final fun javaExecutable (Ljava/io/File;)V
+	public final fun javaExecutable (Lkotlin/jvm/functions/Function0;)V
+	public final fun modulesFrom (Ljava/io/File;)V
+	public final fun names (Lorg/gradle/api/Action;)V
+	public final fun setConceptPropertiesInterfaceName (Ljava/lang/String;)V
+	public final fun setJavaExecutable (Ljava/io/File;)V
+	public final fun setJsonDir (Ljava/io/File;)V
+	public final fun setKotlinDir (Ljava/io/File;)V
+	public final fun setKotlinProject (Lorg/gradle/api/Project;)V
+	public final fun setModelqlKotlinDir (Ljava/io/File;)V
+	public final fun setMpsHeapSize (Ljava/lang/String;)V
+	public final fun setMpsHome (Ljava/io/File;)V
+	public final fun setRegistrationHelperName (Ljava/lang/String;)V
+	public final fun setTypescriptDir (Ljava/io/File;)V
+}
+

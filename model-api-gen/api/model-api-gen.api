@@ -1,0 +1,349 @@
+public final class org/modelix/metamodel/generator/ChildLinkData : org/modelix/metamodel/generator/IConceptFeatureData {
+	public static final field Companion Lorg/modelix/metamodel/generator/ChildLinkData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZ)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZ)Lorg/modelix/metamodel/generator/ChildLinkData;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/generator/ChildLinkData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZILjava/lang/Object;)Lorg/modelix/metamodel/generator/ChildLinkData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMultiple ()Z
+	public fun getName ()Ljava/lang/String;
+	public final fun getOptional ()Z
+	public final fun getType ()Ljava/lang/String;
+	public fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/ChildLinkData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/generator/ChildLinkData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/metamodel/generator/ChildLinkData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/metamodel/generator/ChildLinkData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/ChildLinkData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/ConceptBuilder {
+	public fun <init> (Ljava/lang/String;Lorg/modelix/metamodel/generator/LanguageBuilder;)V
+	public final fun abstract (Z)V
+	public static synthetic fun abstract$default (Lorg/modelix/metamodel/generator/ConceptBuilder;ZILjava/lang/Object;)V
+	public final fun build ()Lorg/modelix/model/data/ConceptData;
+	public final fun child (Ljava/lang/String;Ljava/lang/String;ZZ)V
+	public final fun child0 (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun child0n (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun child1 (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun child1n (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun concept (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun concept$default (Lorg/modelix/metamodel/generator/ConceptBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun extends (Ljava/lang/String;)V
+	public final fun getConceptName ()Ljava/lang/String;
+	public final fun getLanguageBuilder ()Lorg/modelix/metamodel/generator/LanguageBuilder;
+	public final fun optionalReference (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun property (Ljava/lang/String;)V
+	public final fun reference (Ljava/lang/String;Ljava/lang/String;Z)V
+	public static synthetic fun reference$default (Lorg/modelix/metamodel/generator/ConceptBuilder;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)V
+}
+
+public final class org/modelix/metamodel/generator/ConceptData {
+	public static final field Companion Lorg/modelix/metamodel/generator/ConceptData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;)Lorg/modelix/metamodel/generator/ConceptData;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/generator/ConceptData;Ljava/lang/String;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lorg/modelix/metamodel/generator/ConceptData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAbstract ()Z
+	public final fun getChildren ()Ljava/util/List;
+	public final fun getExtends ()Ljava/util/List;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getProperties ()Ljava/util/List;
+	public final fun getReferences ()Ljava/util/List;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/ConceptData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/generator/ConceptData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/metamodel/generator/ConceptData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/metamodel/generator/ConceptData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/ConceptData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/ConceptInLanguageKt {
+	public static final fun parseConceptRef (Ljava/lang/String;Lorg/modelix/model/data/LanguageData;)Lorg/modelix/metamodel/generator/ConceptRef;
+}
+
+public final class org/modelix/metamodel/generator/ConceptRef {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getConceptName ()Ljava/lang/String;
+	public final fun getLanguageName ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/ConceptsFilter {
+	public fun <init> (Lorg/modelix/metamodel/generator/LanguageSet;)V
+	public final fun apply ()Lorg/modelix/metamodel/generator/LanguageSet;
+	public final fun getLanguageSet ()Lorg/modelix/metamodel/generator/LanguageSet;
+	public final fun includeConcept (Ljava/lang/String;)V
+	public final fun isConceptIncluded (Ljava/lang/String;)Z
+	public final fun isLanguageIncluded (Ljava/lang/String;)Z
+}
+
+public final class org/modelix/metamodel/generator/ConfigurableName : java/io/Serializable {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBaseNameConversion ()Lkotlin/jvm/functions/Function1;
+	public final fun getPrefix ()Ljava/lang/String;
+	public final fun getSuffix ()Ljava/lang/String;
+	public final fun invoke (Ljava/lang/String;)Ljava/lang/String;
+	public final fun setBaseNameConversion (Lkotlin/jvm/functions/Function1;)V
+	public final fun setPrefix (Ljava/lang/String;)V
+	public final fun setSuffix (Ljava/lang/String;)V
+}
+
+public final class org/modelix/metamodel/generator/FeatureInConcept {
+	public fun <init> (Lorg/modelix/metamodel/generator/LanguageSet$ConceptInLanguage;Lorg/modelix/model/data/IConceptFeatureData;)V
+	public final fun component1 ()Lorg/modelix/metamodel/generator/LanguageSet$ConceptInLanguage;
+	public final fun component2 ()Lorg/modelix/model/data/IConceptFeatureData;
+	public final fun copy (Lorg/modelix/metamodel/generator/LanguageSet$ConceptInLanguage;Lorg/modelix/model/data/IConceptFeatureData;)Lorg/modelix/metamodel/generator/FeatureInConcept;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/generator/FeatureInConcept;Lorg/modelix/metamodel/generator/LanguageSet$ConceptInLanguage;Lorg/modelix/model/data/IConceptFeatureData;ILjava/lang/Object;)Lorg/modelix/metamodel/generator/FeatureInConcept;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConcept ()Lorg/modelix/metamodel/generator/LanguageSet$ConceptInLanguage;
+	public final fun getData ()Lorg/modelix/model/data/IConceptFeatureData;
+	public final fun getOriginalName ()Ljava/lang/String;
+	public final fun getValidName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/GeneratorInputKt {
+	public static final fun getReservedPropertyNames ()Ljava/util/Set;
+	public static final fun process (Lorg/modelix/metamodel/generator/LanguageSet;)Lorg/modelix/metamodel/generator/IProcessedLanguageSet;
+}
+
+public abstract interface class org/modelix/metamodel/generator/IConceptFeatureData {
+	public abstract fun getName ()Ljava/lang/String;
+	public abstract fun getUid ()Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/metamodel/generator/IProcessedLanguageSet {
+}
+
+public final class org/modelix/metamodel/generator/LanguageBuilder {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun build ()Lorg/modelix/model/data/LanguageData;
+	public final fun concept (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun concept$default (Lorg/modelix/metamodel/generator/LanguageBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun getName ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/LanguageData {
+	public static final field Companion Lorg/modelix/metamodel/generator/LanguageData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lorg/modelix/metamodel/generator/LanguageData;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/generator/LanguageData;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lorg/modelix/metamodel/generator/LanguageData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConcepts ()Ljava/util/List;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toCompactJson ()Ljava/lang/String;
+	public final fun toJson ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+	public final fun toYaml ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/LanguageData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/generator/LanguageData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/metamodel/generator/LanguageData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/metamodel/generator/LanguageData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/LanguageData$Companion {
+	public final fun fromFile (Ljava/io/File;)Lorg/modelix/metamodel/generator/LanguageData;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/LanguageSet {
+	public fun <init> (Ljava/util/List;)V
+	public final fun filter (Lkotlin/jvm/functions/Function1;)Lorg/modelix/metamodel/generator/LanguageSet;
+	public final fun getLanguages ()Ljava/util/List;
+	public final fun resolveConcept (Ljava/lang/String;)Lorg/modelix/metamodel/generator/LanguageSet$ConceptInLanguage;
+}
+
+public final class org/modelix/metamodel/generator/LanguageSet$ConceptInLanguage {
+	public fun <init> (Lorg/modelix/metamodel/generator/LanguageSet;Lorg/modelix/model/data/ConceptData;Lorg/modelix/model/data/LanguageData;)V
+	public final fun allFeatures ()Ljava/util/List;
+	public final fun allSuperConcepts ()Ljava/util/List;
+	public final fun allSuperConceptsAndSelf ()Ljava/util/List;
+	public final fun directFeatures ()Ljava/util/List;
+	public final fun directFeaturesAndConflicts ()Ljava/util/List;
+	public final fun directSuperConcepts ()Ljava/util/List;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun extended ()Ljava/util/List;
+	public final fun extends ()Ljava/util/List;
+	public final fun getConcept ()Lorg/modelix/model/data/ConceptData;
+	public final fun getConceptFqName ()Ljava/lang/String;
+	public final fun getFqName ()Ljava/lang/String;
+	public final fun getLanguage ()Lorg/modelix/model/data/LanguageData;
+	public final fun getSimpleName ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun loadInheritance (Lorg/modelix/metamodel/generator/LanguageSet$ConceptInLanguage;Ljava/util/Map;)V
+	public final fun ref ()Lorg/modelix/metamodel/generator/ConceptRef;
+	public final fun resolveMultipleInheritanceConflicts ()Ljava/util/Map;
+}
+
+public final class org/modelix/metamodel/generator/LanguageSet$LanguageInSet {
+	public fun <init> (Lorg/modelix/metamodel/generator/LanguageSet;Lorg/modelix/model/data/LanguageData;)V
+	public final fun getConceptsInLanguage ()Ljava/util/List;
+	public final fun getLanguage ()Lorg/modelix/model/data/LanguageData;
+	public final fun getLanguageSet ()Lorg/modelix/metamodel/generator/LanguageSet;
+	public final fun getName ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/MetaModelDSLKt {
+	public static final fun newLanguage (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lorg/modelix/model/data/LanguageData;
+}
+
+public final class org/modelix/metamodel/generator/MetaModelGenerator {
+	public static final field Companion Lorg/modelix/metamodel/generator/MetaModelGenerator$Companion;
+	public static final field HEADER_COMMENT Ljava/lang/String;
+	public fun <init> (Ljava/nio/file/Path;Lorg/modelix/metamodel/generator/NameConfig;Ljava/nio/file/Path;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/nio/file/Path;Lorg/modelix/metamodel/generator/NameConfig;Ljava/nio/file/Path;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun generate (Lorg/modelix/metamodel/generator/IProcessedLanguageSet;)V
+	public final fun generateRegistrationHelper (Ljava/lang/String;Lorg/modelix/metamodel/generator/IProcessedLanguageSet;)V
+}
+
+public final class org/modelix/metamodel/generator/MetaModelGenerator$Companion {
+}
+
+public final class org/modelix/metamodel/generator/NameConfig : java/io/Serializable {
+	public fun <init> ()V
+	public final fun getConceptTypeAlias ()Lorg/modelix/metamodel/generator/ConfigurableName;
+	public final fun getLanguageClass ()Lorg/modelix/metamodel/generator/ConfigurableName;
+	public final fun getTypedConcept ()Lorg/modelix/metamodel/generator/ConfigurableName;
+	public final fun getTypedConceptImpl ()Lorg/modelix/metamodel/generator/ConfigurableName;
+	public final fun getTypedNode ()Lorg/modelix/metamodel/generator/ConfigurableName;
+	public final fun getTypedNodeImpl ()Lorg/modelix/metamodel/generator/ConfigurableName;
+	public final fun getUntypedConcept ()Lorg/modelix/metamodel/generator/ConfigurableName;
+}
+
+public final class org/modelix/metamodel/generator/PropertyData : org/modelix/metamodel/generator/IConceptFeatureData {
+	public static final field Companion Lorg/modelix/metamodel/generator/PropertyData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/metamodel/generator/PropertyType;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/metamodel/generator/PropertyType;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lorg/modelix/metamodel/generator/PropertyType;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/metamodel/generator/PropertyType;)Lorg/modelix/metamodel/generator/PropertyData;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/generator/PropertyData;Ljava/lang/String;Ljava/lang/String;Lorg/modelix/metamodel/generator/PropertyType;ILjava/lang/Object;)Lorg/modelix/metamodel/generator/PropertyData;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getName ()Ljava/lang/String;
+	public final fun getType ()Lorg/modelix/metamodel/generator/PropertyType;
+	public fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/PropertyData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/generator/PropertyData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/metamodel/generator/PropertyData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/metamodel/generator/PropertyData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/PropertyData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/PropertyType : java/lang/Enum {
+	public static final field BOOLEAN Lorg/modelix/metamodel/generator/PropertyType;
+	public static final field INT Lorg/modelix/metamodel/generator/PropertyType;
+	public static final field STRING Lorg/modelix/metamodel/generator/PropertyType;
+	public static fun valueOf (Ljava/lang/String;)Lorg/modelix/metamodel/generator/PropertyType;
+	public static fun values ()[Lorg/modelix/metamodel/generator/PropertyType;
+}
+
+public final class org/modelix/metamodel/generator/ReferenceLinkData : org/modelix/metamodel/generator/IConceptFeatureData {
+	public static final field Companion Lorg/modelix/metamodel/generator/ReferenceLinkData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)Lorg/modelix/metamodel/generator/ReferenceLinkData;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/generator/ReferenceLinkData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lorg/modelix/metamodel/generator/ReferenceLinkData;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getName ()Ljava/lang/String;
+	public final fun getOptional ()Z
+	public final fun getType ()Ljava/lang/String;
+	public fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/generator/ReferenceLinkData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/generator/ReferenceLinkData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/metamodel/generator/ReferenceLinkData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/metamodel/generator/ReferenceLinkData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/ReferenceLinkData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/generator/TypescriptMMGenerator {
+	public fun <init> (Ljava/nio/file/Path;Lorg/modelix/metamodel/generator/NameConfig;)V
+	public synthetic fun <init> (Ljava/nio/file/Path;Lorg/modelix/metamodel/generator/NameConfig;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun generate (Lorg/modelix/metamodel/generator/IProcessedLanguageSet;)V
+	public final fun getNameConfig ()Lorg/modelix/metamodel/generator/NameConfig;
+	public final fun getOutputDir ()Ljava/nio/file/Path;
+}
+

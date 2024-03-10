@@ -1,0 +1,2771 @@
+public abstract class org/modelix/modelql/core/AggregationStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	protected abstract fun aggregate (Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public final fun connectAndDowncast (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IMonoStep;
+	protected fun createFlow (Lkotlinx/coroutines/flow/Flow;Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun inputIsConsumedMultipleTimes ()Z
+	public fun needsCoroutineScope ()Z
+	public fun requiresSingularQueryInput ()Z
+}
+
+public final class org/modelix/modelql/core/AllowEmptyStep : org/modelix/modelql/core/IdentityStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/AllowEmptyStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/AllowEmptyStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/AllowEmptyStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/AllowEmptyStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/AllowEmptyStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/AllowEmptyStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/AllowEmptyStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/AndOperatorStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/AndOperatorStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IZipOutput;)Ljava/lang/Boolean;
+}
+
+public final class org/modelix/modelql/core/AndOperatorStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/AndOperatorStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/AndOperatorStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/AndOperatorStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/AndOperatorStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/AndOperatorStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/AndOperatorStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/AndOperatorStepKt {
+	public static final fun and (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/AssertNotEmptyStep : org/modelix/modelql/core/IdentityStep {
+	public fun <init> ()V
+	public fun canBeEmpty ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/AssertNotEmptyStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/AssertNotEmptyStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/AssertNotEmptyStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/AssertNotEmptyStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/AssertNotEmptyStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/AssertNotEmptyStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/AssertNotEmptyStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/AtomicLong {
+	public fun <init> (J)V
+	public final fun incrementAndGet ()J
+}
+
+public final class org/modelix/modelql/core/BulkQueryExecutor : org/modelix/modelql/core/IBulkQueryExecutor {
+	public fun <init> ()V
+	public fun flush ()V
+	public fun request (Lorg/modelix/modelql/core/IBulkRequestType;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class org/modelix/modelql/core/CollectionSizeStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/util/Collection;)Ljava/lang/Integer;
+}
+
+public final class org/modelix/modelql/core/CollectionSizeStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/CollectionSizeStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/CollectionSizeStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/CollectionSizeStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/CollectionSizeStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/CollectionSizeStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/CollectionSizeStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/CollectionSizeStepKt {
+	public static final fun size (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public abstract class org/modelix/modelql/core/CollectorStep : org/modelix/modelql/core/AggregationStep {
+	public fun <init> ()V
+	protected abstract fun getOutputSerializer (Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/KSerializer;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/CollectorStepKt {
+	public static final fun associate (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun associateBy (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun associateWith (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun toList (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun toMap (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun toSet (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun toSingletonList (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun toSingletonSet (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/CollectorStepOutput : org/modelix/modelql/core/IStepOutput {
+	public fun <init> (Ljava/util/List;Ljava/lang/Object;Ljava/lang/Object;)V
+	public final fun getInput ()Ljava/util/List;
+	public final fun getInternalCollection ()Ljava/lang/Object;
+	public final fun getOutput ()Ljava/lang/Object;
+	public fun getValue ()Ljava/lang/Object;
+}
+
+public abstract class org/modelix/modelql/core/CollectorStepOutputSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> (Lkotlinx/serialization/KSerializer;)V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/CollectorStepOutput;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun getInputElementSerializer ()Lkotlinx/serialization/KSerializer;
+	protected abstract fun inputToInternal (Ljava/util/List;)Ljava/lang/Object;
+	protected abstract fun internalToOutput (Ljava/lang/Object;)Ljava/lang/Object;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/CollectorStepOutput;)V
+}
+
+public final class org/modelix/modelql/core/CombiningSequence : kotlin/sequences/Sequence {
+	public fun <init> ([Lkotlin/sequences/Sequence;)V
+	public fun iterator ()Ljava/util/Iterator;
+}
+
+public final class org/modelix/modelql/core/CombiningSequence$UNINITIALIZED {
+	public static final field INSTANCE Lorg/modelix/modelql/core/CombiningSequence$UNINITIALIZED;
+}
+
+public class org/modelix/modelql/core/ConstantSourceStep : org/modelix/modelql/core/ProducingStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> (Ljava/lang/Object;Lkotlin/reflect/KType;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun canEvaluateStatically ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createFlow (Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun evaluateStatically ()Ljava/lang/Object;
+	public final fun getElement ()Ljava/lang/Object;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getType ()Lkotlin/reflect/KType;
+	public fun hasSideEffect ()Z
+	public fun needsCoroutineScope ()Z
+	public fun requiresSingularQueryInput ()Z
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/ConstantSourceStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/ConstantSourceStep$Descriptor$Companion;
+	public fun <init> (Ljava/lang/Object;Ljava/lang/String;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getElement ()Ljava/lang/Object;
+	public final fun getElementType ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/ConstantSourceStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ConstantSourceStep$Descriptor$Serializer : kotlinx/serialization/KSerializer {
+	public fun <init> ()V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/ConstantSourceStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/ConstantSourceStep$Descriptor;)V
+}
+
+public final class org/modelix/modelql/core/ConstantSourceStepKt {
+	public static final fun asMono (B)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (C)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (D)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (F)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (I)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (J)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (Ljava/util/Set;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (S)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono (Z)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/Boolean;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/Byte;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/Character;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/Double;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/Float;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/Integer;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/Long;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/Short;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMono_nullable (Ljava/util/Set;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/ContextValue {
+	public fun <init> ()V
+	public final fun computeWith (Ljava/lang/Object;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun getStack ()Ljava/util/List;
+	public final fun getValue ()Ljava/lang/Object;
+	public final fun tryGetValue ()Ljava/lang/Object;
+}
+
+public abstract class org/modelix/modelql/core/CoreStepDescriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/CoreStepDescriptor$Companion;
+	public synthetic fun <init> (ILjava/lang/Long;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+	public static final synthetic fun write$Self (Lorg/modelix/modelql/core/CoreStepDescriptor;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+}
+
+public final class org/modelix/modelql/core/CoreStepDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/CountingStep : org/modelix/modelql/core/AggregationStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/CountingStep$CountDescriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/CountingStep$CountDescriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/CountingStep$CountDescriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/CountingStep$CountDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/CountingStep$CountDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/CountingStep$CountDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/CountingStep$CountDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/CountingStep$CountDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/CountingStepKt {
+	public static final fun count (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/CrossQueryReferenceException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/modelix/modelql/core/DropStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> (I)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/DropStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getCount ()I
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/DropStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/DropStep$Descriptor$Companion;
+	public fun <init> (I)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getCount ()I
+}
+
+public final class org/modelix/modelql/core/DropStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/DropStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/DropStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/DropStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/DropStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/DropStepKt {
+	public static final fun drop (Lorg/modelix/modelql/core/IFluxStep;I)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/core/EmptyStringIfNullStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/EmptyStringIfNullStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/EmptyStringIfNullStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/EmptyStringIfNullStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/EmptyStringIfNullStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/EmptyStringIfNullStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/EmptyStringIfNullStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/EmptyStringIfNullStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/EmptyStringIfNullStepKt {
+	public static final fun emptyStringIfNull (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun emptyStringIfNull (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/EqualsOperatorStep : org/modelix/modelql/core/TransformingStepWithParameter {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/EqualsOperatorStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/EqualsOperatorStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/EqualsOperatorStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/EqualsOperatorStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/EqualsOperatorStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/EqualsOperatorStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/EqualsOperatorStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/EqualsOperatorStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/EqualsOperatorStepKt {
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Boolean;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Byte;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Character;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Double;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Float;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Integer;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Long;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Short;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun equalTo (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Boolean;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Byte;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Character;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Double;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Float;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Integer;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Long;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/Short;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun notEqualTo (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/ExecuteLocalStep : org/modelix/modelql/core/LocalMappingStep {
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public fun hasSideEffect ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/FilteringStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> (Lorg/modelix/modelql/core/MonoUnboundQuery;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/FilteringStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getCondition ()Lorg/modelix/modelql/core/MonoUnboundQuery;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public fun validate ()V
+}
+
+public final class org/modelix/modelql/core/FilteringStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/FilteringStep$Descriptor$Companion;
+	public fun <init> (J)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getQueryId ()J
+}
+
+public final class org/modelix/modelql/core/FilteringStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/FilteringStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/FilteringStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/FilteringStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/FilteringStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/FilteringStepKt {
+	public static final fun filter (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun filter (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/FirstElementStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/FirstElementStep$FirstElementDescriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun requiresSingularQueryInput ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/FirstElementStep$FirstElementDescriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/FirstElementStep$FirstElementDescriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/FirstElementStep$FirstElementDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/FirstElementStep$FirstElementDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/FirstElementStep$FirstElementDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/FirstElementStep$FirstElementDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/FirstElementStep$FirstElementDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/FirstElementStepKt {
+	public static final fun first (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/FirstOrNullStep : org/modelix/modelql/core/AggregationStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/FirstOrNullStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/FirstOrNullStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/FirstOrNullStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/FirstOrNullStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/FirstOrNullStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/FirstOrNullStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/FirstOrNullStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/FirstOrNullStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/FirstOrNullStepKt {
+	public static final fun firstOrNull (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/FlatMapStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxStep {
+	public fun <init> (Lorg/modelix/modelql/core/FluxUnboundQuery;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/FlatMapStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getQuery ()Lorg/modelix/modelql/core/FluxUnboundQuery;
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/FlatMapStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/FlatMapStep$Descriptor$Companion;
+	public fun <init> (J)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getQueryId ()J
+}
+
+public final class org/modelix/modelql/core/FlatMapStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/FlatMapStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/FlatMapStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/FlatMapStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/FlatMapStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/FlatMapStepKt {
+	public static final fun flatMap (Lorg/modelix/modelql/core/IProducingStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun flatMap (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IFluxUnboundQuery;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/core/FlowExtensionsKt {
+	public static final fun asSequence (Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun assertNotEmpty (Lkotlinx/coroutines/flow/Flow;Lkotlin/jvm/functions/Function0;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun assertNotEmpty$default (Lkotlinx/coroutines/flow/Flow;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun batchTransform (Lkotlinx/coroutines/flow/Flow;ILkotlin/jvm/functions/Function1;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun chunked (Lkotlinx/coroutines/flow/Flow;I)Lkotlinx/coroutines/flow/Flow;
+	public static final fun flatMapConcatConcurrent (Lkotlinx/coroutines/flow/Flow;Lkotlin/jvm/functions/Function2;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun flattenConcatConcurrent (Lkotlinx/coroutines/flow/Flow;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun optionalSingle (Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/FlowInstantiationContext : org/modelix/modelql/core/IFlowInstantiationContext {
+	public fun <init> (Lorg/modelix/modelql/core/QueryEvaluationContext;Lkotlinx/coroutines/CoroutineScope;Lorg/modelix/modelql/core/UnboundQuery;)V
+	public fun getCoroutineScope ()Lkotlinx/coroutines/CoroutineScope;
+	public fun getEvaluationContext ()Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public fun getFlow (Lorg/modelix/modelql/core/IProducingStep;)Lkotlinx/coroutines/flow/Flow;
+	public fun getOrCreateFlow (Lorg/modelix/modelql/core/IProducingStep;)Lkotlinx/coroutines/flow/Flow;
+	public final fun getQuery ()Lorg/modelix/modelql/core/UnboundQuery;
+	public final fun put (Lorg/modelix/modelql/core/IProducingStep;Lkotlinx/coroutines/flow/Flow;)V
+	public fun setEvaluationContext (Lorg/modelix/modelql/core/QueryEvaluationContext;)V
+}
+
+public abstract class org/modelix/modelql/core/FluxTransformingStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxStep {
+	public fun <init> ()V
+	public final fun connectAndDowncast (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/core/FluxUnboundQuery : org/modelix/modelql/core/UnboundQuery, org/modelix/modelql/core/IFluxUnboundQuery {
+	public fun <init> (Lorg/modelix/modelql/core/QueryInput;Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/modelql/core/QueryReference;Ljava/util/List;)V
+	public fun bind (Lorg/modelix/modelql/core/IQueryExecutor;)Lorg/modelix/modelql/core/IFluxQuery;
+	public synthetic fun bind (Lorg/modelix/modelql/core/IQueryExecutor;)Lorg/modelix/modelql/core/IQuery;
+	public fun execute (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IStepOutput;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun flatMap (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+	public fun getAggregationOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun getElementOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun getOutputStep ()Lorg/modelix/modelql/core/IFluxStep;
+	public synthetic fun getOutputStep ()Lorg/modelix/modelql/core/IProducingStep;
+	public fun map (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+}
+
+public abstract class org/modelix/modelql/core/FoldingStep : org/modelix/modelql/core/AggregationStep {
+	public fun <init> (Ljava/lang/Object;)V
+	protected fun aggregate (Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	protected abstract fun fold (Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/FragmentBuilder : org/modelix/modelql/core/IRecursiveFragmentBuilder, org/modelix/modelql/core/IUnboundFragmentInternal {
+	public fun <init> ()V
+	public final fun checkNotSealed ()V
+	public final fun checkSealed ()V
+	public final fun compileMappingStep (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public synthetic fun getInput ()Lorg/modelix/modelql/core/IMonoStep;
+	public fun getInput ()Lorg/modelix/modelql/core/QueryInput;
+	public final fun getQuery ()Lorg/modelix/modelql/core/IMonoUnboundQuery;
+	public final fun getQueryBuilder ()Lorg/modelix/modelql/core/QueryBuilderContext;
+	public fun getQueryReference ()Lorg/modelix/modelql/core/QueryReference;
+	public fun onSuccess (Lkotlin/jvm/functions/Function1;)V
+	public fun processResult (Lorg/modelix/modelql/core/IZipOutput;Ljava/lang/Object;)V
+	public fun request (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IValueRequest;
+	public final fun seal ()V
+	public fun shared (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public fun shared (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/FragmentBuilderKt {
+	public static final fun bindFragment (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun bindFragment (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/modelql/core/IUnboundFragment;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun bindFragment (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun bindFragment (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IUnboundFragment;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun buildModelQLFragment (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IUnboundFragment;
+	public static final fun buildModelQLFragment (ZLkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IUnboundFragment;
+	public static final fun castToInstance (Lorg/modelix/modelql/core/IFragmentBuilder;)Lorg/modelix/modelql/core/FragmentBuilder;
+	public static final fun insertFragment (Ljava/lang/Object;Lorg/modelix/modelql/core/IBoundFragment;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IBoundFragment {
+	public abstract fun insertInto (Ljava/lang/Object;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IBulkQueryExecutor {
+	public abstract fun flush ()V
+	public abstract fun request (Lorg/modelix/modelql/core/IBulkRequestType;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IBulkRequestType {
+	public abstract fun executeRequest (Ljava/util/Collection;)Ljava/util/Map;
+	public abstract fun getMaxBatchSize ()I
+}
+
+public abstract interface class org/modelix/modelql/core/IConsumingStep : org/modelix/modelql/core/IStep {
+	public abstract fun addProducer (Lorg/modelix/modelql/core/IProducingStep;)V
+	public abstract fun getProducers ()Ljava/util/List;
+	public fun inputIsConsumedMultipleTimes ()Z
+}
+
+public final class org/modelix/modelql/core/IConsumingStep$DefaultImpls {
+	public static fun createDescriptor (Lorg/modelix/modelql/core/IConsumingStep;Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public static fun getRootInputSteps (Lorg/modelix/modelql/core/IConsumingStep;)Ljava/util/Set;
+	public static fun hasSideEffect (Lorg/modelix/modelql/core/IConsumingStep;)Z
+	public static fun inputIsConsumedMultipleTimes (Lorg/modelix/modelql/core/IConsumingStep;)Z
+	public static fun needsCoroutineScope (Lorg/modelix/modelql/core/IConsumingStep;)Z
+	public static fun requiresWriteAccess (Lorg/modelix/modelql/core/IConsumingStep;)Z
+	public static fun validate (Lorg/modelix/modelql/core/IConsumingStep;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IFlowInstantiationContext {
+	public abstract fun getCoroutineScope ()Lkotlinx/coroutines/CoroutineScope;
+	public abstract fun getEvaluationContext ()Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public abstract fun getFlow (Lorg/modelix/modelql/core/IProducingStep;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getOrCreateFlow (Lorg/modelix/modelql/core/IProducingStep;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class org/modelix/modelql/core/IFluxOrMonoStep : org/modelix/modelql/core/IFluxStep, org/modelix/modelql/core/IMonoStep {
+}
+
+public final class org/modelix/modelql/core/IFluxOrMonoStep$DefaultImpls {
+	public static fun canBeEmpty (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Z
+	public static fun canBeMultiple (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Z
+	public static fun canEvaluateStatically (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Z
+	public static fun createDescriptor (Lorg/modelix/modelql/core/IFluxOrMonoStep;Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public static fun evaluateStatically (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Ljava/lang/Object;
+	public static fun getRootInputSteps (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Ljava/util/Set;
+	public static fun hasSideEffect (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Z
+	public static fun needsCoroutineScope (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Z
+	public static fun outputIsConsumedMultipleTimes (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Z
+	public static fun requiresSingularQueryInput (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Z
+	public static fun requiresWriteAccess (Lorg/modelix/modelql/core/IFluxOrMonoStep;)Z
+	public static fun validate (Lorg/modelix/modelql/core/IFluxOrMonoStep;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IFluxQuery : org/modelix/modelql/core/IQuery {
+	public abstract fun flatMap (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxQuery;
+	public abstract fun map (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxQuery;
+}
+
+public abstract interface class org/modelix/modelql/core/IFluxStep : org/modelix/modelql/core/IProducingStep {
+}
+
+public final class org/modelix/modelql/core/IFluxStep$DefaultImpls {
+	public static fun canBeEmpty (Lorg/modelix/modelql/core/IFluxStep;)Z
+	public static fun canBeMultiple (Lorg/modelix/modelql/core/IFluxStep;)Z
+	public static fun canEvaluateStatically (Lorg/modelix/modelql/core/IFluxStep;)Z
+	public static fun createDescriptor (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public static fun evaluateStatically (Lorg/modelix/modelql/core/IFluxStep;)Ljava/lang/Object;
+	public static fun getRootInputSteps (Lorg/modelix/modelql/core/IFluxStep;)Ljava/util/Set;
+	public static fun hasSideEffect (Lorg/modelix/modelql/core/IFluxStep;)Z
+	public static fun needsCoroutineScope (Lorg/modelix/modelql/core/IFluxStep;)Z
+	public static fun outputIsConsumedMultipleTimes (Lorg/modelix/modelql/core/IFluxStep;)Z
+	public static fun requiresSingularQueryInput (Lorg/modelix/modelql/core/IFluxStep;)Z
+	public static fun requiresWriteAccess (Lorg/modelix/modelql/core/IFluxStep;)Z
+	public static fun validate (Lorg/modelix/modelql/core/IFluxStep;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IFluxUnboundQuery : org/modelix/modelql/core/IUnboundQuery {
+	public abstract fun bind (Lorg/modelix/modelql/core/IQueryExecutor;)Lorg/modelix/modelql/core/IFluxQuery;
+	public abstract fun flatMap (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+	public abstract fun map (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+}
+
+public final class org/modelix/modelql/core/IFluxUnboundQuery$DefaultImpls {
+	public static fun asFlow (Lorg/modelix/modelql/core/IFluxUnboundQuery;Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IStepOutput;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class org/modelix/modelql/core/IFragmentBuilder : org/modelix/modelql/core/IStepSharingContext, org/modelix/modelql/core/IZipBuilderContext {
+	public abstract fun getInput ()Lorg/modelix/modelql/core/IMonoStep;
+	public fun insertFragment (Ljava/lang/Object;Lorg/modelix/modelql/core/IBoundFragment;)V
+	public fun insertFragment (Ljava/lang/Object;Lorg/modelix/modelql/core/IValueRequest;)V
+	public abstract fun onSuccess (Lkotlin/jvm/functions/Function1;)V
+	public fun requestFragment (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/modelql/core/IUnboundFragment;)Lorg/modelix/modelql/core/IValueRequest;
+	public fun requestFragment (Lorg/modelix/modelql/core/IFluxStep;ZLkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IValueRequest;
+	public fun requestFragment (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IUnboundFragment;)Lorg/modelix/modelql/core/IValueRequest;
+	public fun requestFragment (Lorg/modelix/modelql/core/IMonoStep;ZLkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IValueRequest;
+	public static synthetic fun requestFragment$default (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IFluxStep;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/modelix/modelql/core/IValueRequest;
+	public static synthetic fun requestFragment$default (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/modelix/modelql/core/IValueRequest;
+}
+
+public final class org/modelix/modelql/core/IFragmentBuilder$DefaultImpls {
+	public static fun getLater (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IValueRequest;
+	public static fun insertFragment (Lorg/modelix/modelql/core/IFragmentBuilder;Ljava/lang/Object;Lorg/modelix/modelql/core/IBoundFragment;)V
+	public static fun insertFragment (Lorg/modelix/modelql/core/IFragmentBuilder;Ljava/lang/Object;Lorg/modelix/modelql/core/IValueRequest;)V
+	public static fun requestFragment (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/modelql/core/IUnboundFragment;)Lorg/modelix/modelql/core/IValueRequest;
+	public static fun requestFragment (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IFluxStep;ZLkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IValueRequest;
+	public static fun requestFragment (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IUnboundFragment;)Lorg/modelix/modelql/core/IValueRequest;
+	public static fun requestFragment (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;ZLkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IValueRequest;
+	public static synthetic fun requestFragment$default (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IFluxStep;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/modelix/modelql/core/IValueRequest;
+	public static synthetic fun requestFragment$default (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/modelix/modelql/core/IValueRequest;
+}
+
+public abstract interface class org/modelix/modelql/core/ILocalMappingBuilder : org/modelix/modelql/core/IZipBuilderContext {
+	public abstract fun onSuccess (Lkotlin/jvm/functions/Function0;)V
+}
+
+public final class org/modelix/modelql/core/ILocalMappingBuilder$DefaultImpls {
+	public static fun getLater (Lorg/modelix/modelql/core/ILocalMappingBuilder;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IValueRequest;
+}
+
+public abstract interface class org/modelix/modelql/core/IMonoQuery : org/modelix/modelql/core/IQuery {
+	public abstract fun flatMap (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxQuery;
+	public abstract fun map (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoQuery;
+}
+
+public abstract interface class org/modelix/modelql/core/IMonoStep : org/modelix/modelql/core/IProducingStep {
+}
+
+public final class org/modelix/modelql/core/IMonoStep$DefaultImpls {
+	public static fun canBeEmpty (Lorg/modelix/modelql/core/IMonoStep;)Z
+	public static fun canBeMultiple (Lorg/modelix/modelql/core/IMonoStep;)Z
+	public static fun canEvaluateStatically (Lorg/modelix/modelql/core/IMonoStep;)Z
+	public static fun createDescriptor (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public static fun evaluateStatically (Lorg/modelix/modelql/core/IMonoStep;)Ljava/lang/Object;
+	public static fun getRootInputSteps (Lorg/modelix/modelql/core/IMonoStep;)Ljava/util/Set;
+	public static fun hasSideEffect (Lorg/modelix/modelql/core/IMonoStep;)Z
+	public static fun needsCoroutineScope (Lorg/modelix/modelql/core/IMonoStep;)Z
+	public static fun outputIsConsumedMultipleTimes (Lorg/modelix/modelql/core/IMonoStep;)Z
+	public static fun requiresSingularQueryInput (Lorg/modelix/modelql/core/IMonoStep;)Z
+	public static fun requiresWriteAccess (Lorg/modelix/modelql/core/IMonoStep;)Z
+	public static fun validate (Lorg/modelix/modelql/core/IMonoStep;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IMonoUnboundQuery : org/modelix/modelql/core/IUnboundQuery {
+	public abstract fun bind (Lorg/modelix/modelql/core/IQueryExecutor;)Lorg/modelix/modelql/core/IMonoQuery;
+	public fun flatMap (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+	public fun map (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoUnboundQuery;
+	public abstract fun map (Lorg/modelix/modelql/core/IFluxUnboundQuery;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+	public abstract fun map (Lorg/modelix/modelql/core/IMonoUnboundQuery;)Lorg/modelix/modelql/core/IMonoUnboundQuery;
+}
+
+public final class org/modelix/modelql/core/IMonoUnboundQuery$DefaultImpls {
+	public static fun asFlow (Lorg/modelix/modelql/core/IMonoUnboundQuery;Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IStepOutput;)Lkotlinx/coroutines/flow/Flow;
+	public static fun flatMap (Lorg/modelix/modelql/core/IMonoUnboundQuery;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+	public static fun map (Lorg/modelix/modelql/core/IMonoUnboundQuery;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoUnboundQuery;
+}
+
+public abstract interface class org/modelix/modelql/core/IProcessingStep : org/modelix/modelql/core/IConsumingStep, org/modelix/modelql/core/IProducingStep {
+	public fun inputIsConsumedMultipleTimes ()Z
+}
+
+public final class org/modelix/modelql/core/IProcessingStep$DefaultImpls {
+	public static fun canBeEmpty (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun canBeMultiple (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun canEvaluateStatically (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun createDescriptor (Lorg/modelix/modelql/core/IProcessingStep;Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public static fun evaluateStatically (Lorg/modelix/modelql/core/IProcessingStep;)Ljava/lang/Object;
+	public static fun getRootInputSteps (Lorg/modelix/modelql/core/IProcessingStep;)Ljava/util/Set;
+	public static fun hasSideEffect (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun inputIsConsumedMultipleTimes (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun needsCoroutineScope (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun outputIsConsumedMultipleTimes (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun requiresSingularQueryInput (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun requiresWriteAccess (Lorg/modelix/modelql/core/IProcessingStep;)Z
+	public static fun validate (Lorg/modelix/modelql/core/IProcessingStep;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IProducingStep : org/modelix/modelql/core/IStep {
+	public abstract fun addConsumer (Lorg/modelix/modelql/core/IConsumingStep;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun canEvaluateStatically ()Z
+	public abstract fun createFlow (Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun evaluateStatically ()Ljava/lang/Object;
+	public abstract fun getConsumers ()Ljava/util/List;
+	public abstract fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun outputIsConsumedMultipleTimes ()Z
+	public fun requiresSingularQueryInput ()Z
+}
+
+public final class org/modelix/modelql/core/IProducingStep$DefaultImpls {
+	public static fun canBeEmpty (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public static fun canBeMultiple (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public static fun canEvaluateStatically (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public static fun createDescriptor (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public static fun evaluateStatically (Lorg/modelix/modelql/core/IProducingStep;)Ljava/lang/Object;
+	public static fun getRootInputSteps (Lorg/modelix/modelql/core/IProducingStep;)Ljava/util/Set;
+	public static fun hasSideEffect (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public static fun needsCoroutineScope (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public static fun outputIsConsumedMultipleTimes (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public static fun requiresSingularQueryInput (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public static fun requiresWriteAccess (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public static fun validate (Lorg/modelix/modelql/core/IProducingStep;)V
+}
+
+public abstract interface class org/modelix/modelql/core/IQuery {
+	public abstract fun asFlow (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun execute (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IQueryBuilderContext : org/modelix/modelql/core/IStepSharingContext {
+	public abstract fun mapRecursive (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public abstract interface class org/modelix/modelql/core/IQueryExecutor {
+	public abstract fun createFlow (Lorg/modelix/modelql/core/IUnboundQuery;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class org/modelix/modelql/core/IQueryReference {
+	public abstract fun getId ()J
+	public abstract fun getQuery ()Lorg/modelix/modelql/core/IUnboundQuery;
+}
+
+public abstract interface class org/modelix/modelql/core/IRecursiveFragmentBuilder : org/modelix/modelql/core/IFragmentBuilder, org/modelix/modelql/core/IUnboundFragment {
+}
+
+public final class org/modelix/modelql/core/IRecursiveFragmentBuilder$DefaultImpls {
+	public static fun getLater (Lorg/modelix/modelql/core/IRecursiveFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IValueRequest;
+	public static fun insertFragment (Lorg/modelix/modelql/core/IRecursiveFragmentBuilder;Ljava/lang/Object;Lorg/modelix/modelql/core/IBoundFragment;)V
+	public static fun insertFragment (Lorg/modelix/modelql/core/IRecursiveFragmentBuilder;Ljava/lang/Object;Lorg/modelix/modelql/core/IValueRequest;)V
+	public static fun requestFragment (Lorg/modelix/modelql/core/IRecursiveFragmentBuilder;Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/modelql/core/IUnboundFragment;)Lorg/modelix/modelql/core/IValueRequest;
+	public static fun requestFragment (Lorg/modelix/modelql/core/IRecursiveFragmentBuilder;Lorg/modelix/modelql/core/IFluxStep;ZLkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IValueRequest;
+	public static fun requestFragment (Lorg/modelix/modelql/core/IRecursiveFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IUnboundFragment;)Lorg/modelix/modelql/core/IValueRequest;
+	public static fun requestFragment (Lorg/modelix/modelql/core/IRecursiveFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;ZLkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IValueRequest;
+}
+
+public abstract interface class org/modelix/modelql/core/IStep {
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public abstract fun getOwner ()Lorg/modelix/modelql/core/QueryReference;
+	public fun getRootInputSteps ()Ljava/util/Set;
+	public fun hasSideEffect ()Z
+	public fun needsCoroutineScope ()Z
+	public abstract fun requiresSingularQueryInput ()Z
+	public fun requiresWriteAccess ()Z
+	public fun validate ()V
+}
+
+public final class org/modelix/modelql/core/IStep$DefaultImpls {
+	public static fun createDescriptor (Lorg/modelix/modelql/core/IStep;Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public static fun getRootInputSteps (Lorg/modelix/modelql/core/IStep;)Ljava/util/Set;
+	public static fun hasSideEffect (Lorg/modelix/modelql/core/IStep;)Z
+	public static fun needsCoroutineScope (Lorg/modelix/modelql/core/IStep;)Z
+	public static fun requiresWriteAccess (Lorg/modelix/modelql/core/IStep;)Z
+	public static fun validate (Lorg/modelix/modelql/core/IStep;)V
+}
+
+public final class org/modelix/modelql/core/IStepKt {
+	public static final fun connect (Lorg/modelix/modelql/core/IConsumingStep;Lorg/modelix/modelql/core/IProducingStep;)V
+	public static final fun connect (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IConsumingStep;)V
+	public static final fun isSingle (Lorg/modelix/modelql/core/IProducingStep;)Z
+}
+
+public abstract interface class org/modelix/modelql/core/IStepOutput {
+	public abstract fun getValue ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IStepOutputKt {
+	public static final fun asStepFlow (Lkotlinx/coroutines/flow/Flow;Lorg/modelix/modelql/core/IProducingStep;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun asStepOutput (Ljava/lang/Object;Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IStepOutput;
+	public static final fun getValue (Lkotlinx/coroutines/flow/Flow;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun stepOutputSerializer (Lkotlinx/serialization/KSerializer;Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/SimpleStepOutputSerializer;
+	public static final fun upcast (Lorg/modelix/modelql/core/IStepOutput;)Lorg/modelix/modelql/core/IStepOutput;
+}
+
+public abstract interface class org/modelix/modelql/core/IStepSharingContext {
+	public abstract fun shared (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public abstract fun shared (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public abstract interface class org/modelix/modelql/core/IUnboundFragment {
+}
+
+public abstract interface class org/modelix/modelql/core/IUnboundQuery {
+	public static final field Companion Lorg/modelix/modelql/core/IUnboundQuery$Companion;
+	public abstract fun asFlow (Lorg/modelix/modelql/core/QueryEvaluationContext;Lkotlinx/coroutines/flow/Flow;)Lkotlinx/coroutines/flow/Flow;
+	public fun asFlow (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IStepOutput;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun bind (Lorg/modelix/modelql/core/IQueryExecutor;)Lorg/modelix/modelql/core/IQuery;
+	public abstract fun canBeEmpty ()Z
+	public abstract fun execute (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IStepOutput;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getAggregationOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public abstract fun getElementOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public abstract fun getReference ()Lorg/modelix/modelql/core/IQueryReference;
+	public abstract fun requiresWriteAccess ()Z
+}
+
+public final class org/modelix/modelql/core/IUnboundQuery$Companion {
+	public final fun buildFlux (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+	public final fun buildMono (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoUnboundQuery;
+}
+
+public final class org/modelix/modelql/core/IUnboundQuery$DefaultImpls {
+	public static fun asFlow (Lorg/modelix/modelql/core/IUnboundQuery;Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IStepOutput;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class org/modelix/modelql/core/IValueRequest {
+	public abstract fun get ()Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip1Output : org/modelix/modelql/core/IZipOutput {
+	public abstract fun getFirst ()Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip2Output : org/modelix/modelql/core/IZip1Output {
+	public abstract fun getSecond ()Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip3Output : org/modelix/modelql/core/IZip2Output {
+	public abstract fun getThird ()Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip4Output : org/modelix/modelql/core/IZip3Output {
+	public fun getForth ()Ljava/lang/Object;
+	public abstract fun getFourth ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IZip4Output$DefaultImpls {
+	public static fun getForth (Lorg/modelix/modelql/core/IZip4Output;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip5Output : org/modelix/modelql/core/IZip4Output {
+	public abstract fun getFifth ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IZip5Output$DefaultImpls {
+	public static fun getForth (Lorg/modelix/modelql/core/IZip5Output;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip6Output : org/modelix/modelql/core/IZip5Output {
+	public abstract fun getSixth ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IZip6Output$DefaultImpls {
+	public static fun getForth (Lorg/modelix/modelql/core/IZip6Output;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip7Output : org/modelix/modelql/core/IZip6Output {
+	public abstract fun getSeventh ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IZip7Output$DefaultImpls {
+	public static fun getForth (Lorg/modelix/modelql/core/IZip7Output;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip8Output : org/modelix/modelql/core/IZip7Output {
+	public abstract fun getEighth ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IZip8Output$DefaultImpls {
+	public static fun getForth (Lorg/modelix/modelql/core/IZip8Output;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZip9Output : org/modelix/modelql/core/IZip8Output {
+	public abstract fun getNinth ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IZip9Output$DefaultImpls {
+	public static fun getForth (Lorg/modelix/modelql/core/IZip9Output;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/modelql/core/IZipBuilderContext {
+	public fun getLater (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IValueRequest;
+	public abstract fun request (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IValueRequest;
+}
+
+public final class org/modelix/modelql/core/IZipBuilderContext$DefaultImpls {
+	public static fun getLater (Lorg/modelix/modelql/core/IZipBuilderContext;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IValueRequest;
+}
+
+public abstract interface class org/modelix/modelql/core/IZipOutput {
+	public abstract fun getValues ()Ljava/util/List;
+}
+
+public class org/modelix/modelql/core/IdentityStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxOrMonoStep {
+	public fun <init> ()V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	protected fun createFlow (Lkotlinx/coroutines/flow/Flow;Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/IdentityStep$IdentityStepDescriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/IdentityStep$IdentityStepDescriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/IdentityStep$IdentityStepDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/IdentityStep$IdentityStepDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/IdentityStep$IdentityStepDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/IdentityStep$IdentityStepDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IdentityStep$IdentityStepDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IdentityStepKt {
+	public static final fun asFlux (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun identity (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun identity (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/IfEmptyKt {
+	public static final fun ifEmpty_flux_flux (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function0;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun ifEmpty_flux_mono (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function0;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun ifEmpty_mono_flux (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function0;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun ifEmpty_mono_mono (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function0;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/IfEmptyStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxOrMonoStep {
+	public fun <init> (Lorg/modelix/modelql/core/UnboundQuery;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/IfEmptyStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getAlternative ()Lorg/modelix/modelql/core/UnboundQuery;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun requiresSingularQueryInput ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/IfEmptyStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/IfEmptyStep$Descriptor$Companion;
+	public fun <init> (J)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getAlternative ()J
+}
+
+public final class org/modelix/modelql/core/IfEmptyStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/IfEmptyStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/IfEmptyStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/IfEmptyStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IfEmptyStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/InPredicate : org/modelix/modelql/core/TransformingStepWithParameter {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/InPredicate$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/InPredicate$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/InPredicate$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/InPredicate$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/InPredicate$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/InPredicate$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/InPredicate$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/InPredicate$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/InPredicateKt {
+	public static final fun inSet (Lorg/modelix/modelql/core/IFluxStep;Ljava/util/Set;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun inSet (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun inSet (Lorg/modelix/modelql/core/IMonoStep;Ljava/util/Set;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun inSet (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/IntSumStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> (I)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/IntSumStep$IntSumDescriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getOperand ()I
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;I)Ljava/lang/Integer;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IntSumStep$IntSumDescriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/IntSumStep$IntSumDescriptor$Companion;
+	public fun <init> (I)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getOperand ()I
+}
+
+public final class org/modelix/modelql/core/IntSumStep$IntSumDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/IntSumStep$IntSumDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/IntSumStep$IntSumDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/IntSumStep$IntSumDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IntSumStep$IntSumDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IntSumStepKt {
+	public static final fun plus (ILorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun plus (ILorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun plus (Lorg/modelix/modelql/core/IFluxStep;I)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun plus (Lorg/modelix/modelql/core/IMonoStep;I)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/IsEmptyStep : org/modelix/modelql/core/AggregationStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/IsEmptyStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/IsEmptyStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/IsEmptyStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/IsEmptyStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/IsEmptyStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/IsEmptyStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/IsEmptyStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IsEmptyStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IsEmptyStepKt {
+	public static final fun isEmpty (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun isNotEmpty (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/IsNullPredicateStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/IsNullPredicateStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Boolean;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/IsNullPredicateStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/IsNullPredicateStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/IsNullPredicateStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/IsNullPredicateStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/IsNullPredicateStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/IsNullPredicateStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IsNullPredicateStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/IsNullPredicateStepKt {
+	public static final fun filterNotNull (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun filterNotNull (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun isNull (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/JoinStep : org/modelix/modelql/core/ProducingStep, org/modelix/modelql/core/IConsumingStep, org/modelix/modelql/core/IFluxStep {
+	public fun <init> ()V
+	public fun addProducer (Lorg/modelix/modelql/core/IProducingStep;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/JoinStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createFlow (Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun getProducers ()Ljava/util/List;
+	public fun requiresSingularQueryInput ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/JoinStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/JoinStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/JoinStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/JoinStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/JoinStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/JoinStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/JoinStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/JoinStepKt {
+	public static final fun plus (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/core/ListCollectorStep : org/modelix/modelql/core/CollectorStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/ListCollectorStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/ListCollectorStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/ListCollectorStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/ListCollectorStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/ListCollectorStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/ListCollectorStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/ListCollectorStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ListCollectorStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ListCollectorStepOutputSerializer : org/modelix/modelql/core/CollectorStepOutputSerializer {
+	public fun <init> (Lkotlinx/serialization/KSerializer;)V
+	public synthetic fun inputToInternal (Ljava/util/List;)Ljava/lang/Object;
+	public synthetic fun internalToOutput (Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/LocalMappingSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> (Lorg/modelix/modelql/core/LocalMappingStep;Lkotlinx/serialization/KSerializer;)V
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun getInputSerializer ()Lkotlinx/serialization/KSerializer;
+	public final fun getStep ()Lorg/modelix/modelql/core/LocalMappingStep;
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+}
+
+public class org/modelix/modelql/core/LocalMappingStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	protected fun createFlow (Lkotlinx/coroutines/flow/Flow;Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getTransformation ()Lkotlin/jvm/functions/Function1;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/LocalMappingStepKt {
+	public static final fun buildLocalMapping (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun buildLocalMapping (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun executeLocal (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun executeLocal (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun mapLocal (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun mapLocal (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun mapLocal2 (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun mapLocal2 (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/MapAccessStep : org/modelix/modelql/core/TransformingStepWithParameter {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/MapAccessStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/MapAccessStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/MapAccessStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/MapAccessStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/MapAccessStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/MapAccessStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/MapAccessStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MapAccessStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MapAccessStepKt {
+	public static final fun get (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/MapCollectorStep : org/modelix/modelql/core/CollectorStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/MapCollectorStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/MapCollectorStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/MapCollectorStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/MapCollectorStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/MapCollectorStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/MapCollectorStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/MapCollectorStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MapCollectorStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MapCollectorStepOutputSerializer : org/modelix/modelql/core/CollectorStepOutputSerializer {
+	public fun <init> (Lkotlinx/serialization/KSerializer;)V
+	public synthetic fun inputToInternal (Ljava/util/List;)Ljava/lang/Object;
+	public synthetic fun internalToOutput (Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/MapIfNotNullStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> (Lorg/modelix/modelql/core/MonoUnboundQuery;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/MapIfNotNullStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getQuery ()Lorg/modelix/modelql/core/MonoUnboundQuery;
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/MapIfNotNullStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/MapIfNotNullStep$Descriptor$Companion;
+	public fun <init> (J)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getQueryId ()J
+}
+
+public final class org/modelix/modelql/core/MapIfNotNullStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/MapIfNotNullStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/MapIfNotNullStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/MapIfNotNullStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MapIfNotNullStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MapIfNotNullStepKt {
+	public static final fun mapIfNotNull (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun mapIfNotNull (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/MappingStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> (Lorg/modelix/modelql/core/MonoUnboundQuery;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/MappingStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getQuery ()Lorg/modelix/modelql/core/MonoUnboundQuery;
+	public fun requiresSingularQueryInput ()Z
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+	public fun validate ()V
+}
+
+public final class org/modelix/modelql/core/MappingStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/MappingStep$Descriptor$Companion;
+	public fun <init> (J)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getQueryId ()J
+}
+
+public final class org/modelix/modelql/core/MappingStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/MappingStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/MappingStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/MappingStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MappingStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MappingStepKt {
+	public static final fun map (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun map (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/modelql/core/IMonoUnboundQuery;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun map (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun map (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoUnboundQuery;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public abstract class org/modelix/modelql/core/MonoTransformingStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> ()V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public final fun connectAndDowncast (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun connectAndDowncast (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/MonoUnboundQuery : org/modelix/modelql/core/UnboundQuery, org/modelix/modelql/core/IMonoUnboundQuery {
+	public fun <init> (Lorg/modelix/modelql/core/QueryInput;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/QueryReference;Ljava/util/List;)V
+	public fun bind (Lorg/modelix/modelql/core/IQueryExecutor;)Lorg/modelix/modelql/core/IMonoQuery;
+	public synthetic fun bind (Lorg/modelix/modelql/core/IQueryExecutor;)Lorg/modelix/modelql/core/IQuery;
+	public fun execute (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IStepOutput;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getAggregationOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun getElementOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun getOutputStep ()Lorg/modelix/modelql/core/IMonoStep;
+	public synthetic fun getOutputStep ()Lorg/modelix/modelql/core/IProducingStep;
+	public fun map (Lorg/modelix/modelql/core/IFluxUnboundQuery;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+	public fun map (Lorg/modelix/modelql/core/IMonoUnboundQuery;)Lorg/modelix/modelql/core/IMonoUnboundQuery;
+}
+
+public final class org/modelix/modelql/core/MultiplexedOutput : org/modelix/modelql/core/IStepOutput {
+	public fun <init> (ILorg/modelix/modelql/core/IStepOutput;)V
+	public final fun getMuxIndex ()I
+	public final fun getOutput ()Lorg/modelix/modelql/core/IStepOutput;
+	public fun getValue ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/MultiplexedOutputKt {
+	public static final fun nullSerializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/MultiplexedOutputSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> (Lorg/modelix/modelql/core/IStep;Ljava/util/List;)V
+	public final fun component1 ()Lorg/modelix/modelql/core/IStep;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lorg/modelix/modelql/core/IStep;Ljava/util/List;)Lorg/modelix/modelql/core/MultiplexedOutputSerializer;
+	public static synthetic fun copy$default (Lorg/modelix/modelql/core/MultiplexedOutputSerializer;Lorg/modelix/modelql/core/IStep;Ljava/util/List;ILjava/lang/Object;)Lorg/modelix/modelql/core/MultiplexedOutputSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/MultiplexedOutput;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun getOwner ()Lorg/modelix/modelql/core/IStep;
+	public final fun getSerializers ()Ljava/util/List;
+	public fun hashCode ()I
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/MultiplexedOutput;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/NotOperatorStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/NotOperatorStep$NotDescriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Z)Ljava/lang/Boolean;
+}
+
+public final class org/modelix/modelql/core/NotOperatorStep$NotDescriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/NotOperatorStep$NotDescriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/NotOperatorStep$NotDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/NotOperatorStep$NotDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/NotOperatorStep$NotDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/NotOperatorStep$NotDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/NotOperatorStep$NotDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/NotOperatorStepKt {
+	public static final fun not (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/NullIfEmpty : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	public fun canBeEmpty ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/NullIfEmpty$OrNullDescriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/NullIfEmpty$OrNullDescriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/NullIfEmpty$OrNullDescriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/NullIfEmpty$OrNullDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/NullIfEmpty$OrNullDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/NullIfEmpty$OrNullDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/NullIfEmpty$OrNullDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/NullIfEmpty$OrNullDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/NullIfEmptyKt {
+	public static final fun nullIfEmpty (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun nullIfEmpty (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun orNull (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun orNull (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/Optional {
+	public static final field Companion Lorg/modelix/modelql/core/Optional$Companion;
+	public static final synthetic fun box-impl (Ljava/lang/Object;)Lorg/modelix/modelql/core/Optional;
+	public static fun constructor-impl (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (Ljava/lang/Object;Ljava/lang/Object;)Z
+	public static final fun equals-impl0 (Ljava/lang/Object;Ljava/lang/Object;)Z
+	public static final fun flatMap-R6ioWyk (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun get-impl (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun hashCode ()I
+	public static fun hashCode-impl (Ljava/lang/Object;)I
+	public static final fun isPresent-impl (Ljava/lang/Object;)Z
+	public static final fun map-R6ioWyk (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (Ljava/lang/Object;)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/Optional$Companion {
+	public final fun empty-w5vQfLU ()Ljava/lang/Object;
+	public final fun of-R6ioWyk (Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/OptionalKt {
+	public static final fun getOrElse-n1_DaB4 (Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+	public static final fun presentAndEqual-n1_DaB4 (Ljava/lang/Object;Ljava/lang/Object;)Z
+}
+
+public final class org/modelix/modelql/core/OrOperatorStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/OrOperatorStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/IZipOutput;)Ljava/lang/Boolean;
+}
+
+public final class org/modelix/modelql/core/OrOperatorStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/OrOperatorStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/OrOperatorStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/OrOperatorStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/OrOperatorStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/OrOperatorStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/OrOperatorStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/OrOperatorStepKt {
+	public static final fun or (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/PortConnection {
+	public static final field Companion Lorg/modelix/modelql/core/PortConnection$Companion;
+	public fun <init> (Lorg/modelix/modelql/core/PortReference;Lorg/modelix/modelql/core/PortReference;)V
+	public final fun component1 ()Lorg/modelix/modelql/core/PortReference;
+	public final fun component2 ()Lorg/modelix/modelql/core/PortReference;
+	public final fun copy (Lorg/modelix/modelql/core/PortReference;Lorg/modelix/modelql/core/PortReference;)Lorg/modelix/modelql/core/PortConnection;
+	public static synthetic fun copy$default (Lorg/modelix/modelql/core/PortConnection;Lorg/modelix/modelql/core/PortReference;Lorg/modelix/modelql/core/PortReference;ILjava/lang/Object;)Lorg/modelix/modelql/core/PortConnection;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConsumer ()Lorg/modelix/modelql/core/PortReference;
+	public final fun getProducer ()Lorg/modelix/modelql/core/PortReference;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/PortConnection$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/PortConnection$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/PortConnection;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/PortConnection;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/PortConnection$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/PortReference {
+	public static final field Companion Lorg/modelix/modelql/core/PortReference$Companion;
+	public fun <init> (II)V
+	public synthetic fun <init> (IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Lorg/modelix/modelql/core/PortReference;
+	public static synthetic fun copy$default (Lorg/modelix/modelql/core/PortReference;IIILjava/lang/Object;)Lorg/modelix/modelql/core/PortReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPort ()I
+	public final fun getStep ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/PortReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/PortReference$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/PortReference;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/PortReference;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/PortReference$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/PrintStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> (Ljava/lang/String;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getPrefix ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/PrintStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/PrintStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getPrefix ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/PrintStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/PrintStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/PrintStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/PrintStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/PrintStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/PrintStepKt {
+	public static final fun print (Lorg/modelix/modelql/core/IFluxStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun print (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static synthetic fun print$default (Lorg/modelix/modelql/core/IFluxStep;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/modelql/core/IFluxStep;
+	public static synthetic fun print$default (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public abstract class org/modelix/modelql/core/ProducingStep : org/modelix/modelql/core/IProducingStep {
+	public fun <init> ()V
+	public fun addConsumer (Lorg/modelix/modelql/core/IConsumingStep;)V
+	public fun getConsumers ()Ljava/util/List;
+	public fun getOwner ()Lorg/modelix/modelql/core/QueryReference;
+}
+
+public final class org/modelix/modelql/core/QueryBuilderContext : org/modelix/modelql/core/IQueryBuilderContext {
+	public static final field Companion Lorg/modelix/modelql/core/QueryBuilderContext$Companion;
+	public fun <init> ()V
+	public final fun computeWith (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun getInputStep ()Lorg/modelix/modelql/core/QueryInput;
+	public final fun getQueryReference ()Lorg/modelix/modelql/core/QueryReference;
+	public final fun getSharedSteps ()Ljava/util/ArrayList;
+	public fun mapRecursive (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public fun shared (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public fun shared (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun shared (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/SharedStep;
+	public final fun validateAll ()V
+	public final fun validateAllIfRoot ()V
+}
+
+public final class org/modelix/modelql/core/QueryBuilderContext$Companion {
+	public final fun getCONTEXT_VALUE ()Lorg/modelix/kotlin/utils/ContextValue;
+}
+
+public final class org/modelix/modelql/core/QueryBuilderContextKt {
+	public static final fun buildFluxQuery (Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IFluxUnboundQuery;
+	public static final fun buildMonoQuery (Lkotlin/jvm/functions/Function2;)Lorg/modelix/modelql/core/IMonoUnboundQuery;
+}
+
+public final class org/modelix/modelql/core/QueryCallStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> (Lorg/modelix/modelql/core/QueryReference;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getQuery ()Lorg/modelix/modelql/core/IUnboundQuery;
+	public final fun getQueryRef ()Lorg/modelix/modelql/core/QueryReference;
+	public fun requiresSingularQueryInput ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/QueryCallStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/QueryCallStep$Descriptor$Companion;
+	public fun <init> (J)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getQueryId ()J
+}
+
+public final class org/modelix/modelql/core/QueryCallStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/QueryCallStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/QueryCallStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/QueryCallStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryCallStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryCallStepKt {
+	public static final fun callFluxQuery (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function0;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun callFluxQuery (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/QueryReference;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun callQuery (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/jvm/functions/Function0;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun callQuery (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/QueryReference;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/QueryDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/QueryDescriptor$Companion;
+	public fun <init> (IILjava/util/List;ZJ)V
+	public synthetic fun <init> (IILjava/util/List;ZJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Z
+	public final fun component5 ()J
+	public final fun copy (IILjava/util/List;ZJ)Lorg/modelix/modelql/core/QueryDescriptor;
+	public static synthetic fun copy$default (Lorg/modelix/modelql/core/QueryDescriptor;IILjava/util/List;ZJILjava/lang/Object;)Lorg/modelix/modelql/core/QueryDescriptor;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInput ()I
+	public final fun getOutput ()I
+	public final fun getQueryId ()J
+	public final fun getSharedSteps ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun isFluxOutput ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/QueryDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/QueryDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/QueryDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/QueryDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryDeserializationContext {
+	public fun <init> (Lorg/modelix/modelql/core/QueryGraphDescriptor;)V
+	public final fun createConnections ()V
+	public final fun createQueries ()Ljava/util/List;
+	public final fun getGraphDescriptor ()Lorg/modelix/modelql/core/QueryGraphDescriptor;
+	public final fun getOrCreateQuery (J)Lorg/modelix/modelql/core/UnboundQuery;
+	public final fun getOrCreateQueryReference (J)Lorg/modelix/modelql/core/QueryReference;
+	public final fun getOrCreateStep (I)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/QueryEvaluationContext {
+	public static final field Companion Lorg/modelix/modelql/core/QueryEvaluationContext$Companion;
+	public synthetic fun <init> (Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun copy (Ljava/util/Map;)Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public static synthetic fun copy$default (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/util/Map;ILjava/lang/Object;)Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue (Lorg/modelix/modelql/core/IProducingStep;)Ljava/util/List;
+	public final fun hasValue (Lorg/modelix/modelql/core/IProducingStep;)Z
+	public fun hashCode ()I
+	public final fun plus (Lkotlin/Pair;)Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public final fun plus (Lorg/modelix/modelql/core/IProducingStep;Ljava/util/List;)Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public final fun plus (Lorg/modelix/modelql/core/QueryEvaluationContext;)Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/QueryEvaluationContext$Companion {
+	public final fun getEMPTY ()Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public final fun of (Lkotlin/Pair;)Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public final fun of (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IStepOutput;)Lorg/modelix/modelql/core/QueryEvaluationContext;
+}
+
+public final class org/modelix/modelql/core/QueryGraphDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/QueryGraphDescriptor$Companion;
+	public fun <init> (Ljava/util/List;Ljava/util/Map;Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/util/Map;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;Ljava/util/Map;Ljava/util/List;)Lorg/modelix/modelql/core/QueryGraphDescriptor;
+	public static synthetic fun copy$default (Lorg/modelix/modelql/core/QueryGraphDescriptor;Ljava/util/List;Ljava/util/Map;Ljava/util/List;ILjava/lang/Object;)Lorg/modelix/modelql/core/QueryGraphDescriptor;
+	public final fun createRootQuery ()Lorg/modelix/modelql/core/UnboundQuery;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConnections ()Ljava/util/List;
+	public final fun getQueries ()Ljava/util/List;
+	public final fun getSteps ()Ljava/util/Map;
+	public fun hashCode ()I
+	public final fun initStepIds ()V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/QueryGraphDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/QueryGraphDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/QueryGraphDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/QueryGraphDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryGraphDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryGraphDescriptorBuilder {
+	public fun <init> ()V
+	public final fun build ()Lorg/modelix/modelql/core/QueryGraphDescriptor;
+	public final fun createConnections ()V
+	public final fun createStep (Lorg/modelix/modelql/core/IStep;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun id (Lorg/modelix/modelql/core/IStep;)I
+	public final fun load (Lkotlin/sequences/Sequence;)V
+	public final fun load (Lorg/modelix/modelql/core/IUnboundQuery;)J
+	public final fun stepId (Lorg/modelix/modelql/core/IStep;)I
+}
+
+public final class org/modelix/modelql/core/QueryGraphDescriptorBuilder$QueryDescriptorBuilder {
+	public fun <init> (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;Lorg/modelix/modelql/core/UnboundQuery;)V
+	public final fun buildQueryDescriptor ()Lorg/modelix/modelql/core/QueryDescriptor;
+	public final fun getGraphBuilder ()Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;
+	public final fun getQuery ()Lorg/modelix/modelql/core/UnboundQuery;
+}
+
+public final class org/modelix/modelql/core/QueryInput : org/modelix/modelql/core/ProducingStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> ()V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/QueryInput$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createFlow (Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/QueryInput$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/QueryInput$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/QueryInput$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/QueryInput$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/QueryInput$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/QueryInput$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryInput$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryKt {
+	public static final fun castToInstance (Lorg/modelix/modelql/core/IFluxUnboundQuery;)Lorg/modelix/modelql/core/FluxUnboundQuery;
+	public static final fun castToInstance (Lorg/modelix/modelql/core/IMonoUnboundQuery;)Lorg/modelix/modelql/core/MonoUnboundQuery;
+	public static final fun castToInstance (Lorg/modelix/modelql/core/IUnboundQuery;)Lorg/modelix/modelql/core/UnboundQuery;
+	public static final fun evaluate (Lorg/modelix/modelql/core/IMonoUnboundQuery;Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun map (Lorg/modelix/modelql/core/IMonoUnboundQuery;Lorg/modelix/modelql/core/IUnboundQuery;)Lorg/modelix/modelql/core/IUnboundQuery;
+	public static final fun upcast (Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/QueryReference : org/modelix/modelql/core/IQueryReference {
+	public static final field Companion Lorg/modelix/modelql/core/QueryReference$Companion;
+	public fun <init> (Lorg/modelix/modelql/core/IUnboundQuery;Ljava/lang/Long;Lkotlin/jvm/functions/Function0;)V
+	public fun getId ()J
+	public final fun getProvidedQuery ()Lorg/modelix/modelql/core/IUnboundQuery;
+	public fun getQuery ()Lorg/modelix/modelql/core/IUnboundQuery;
+	public final fun getQueryId ()Ljava/lang/Long;
+	public final fun setProvidedQuery (Lorg/modelix/modelql/core/IUnboundQuery;)V
+	public final fun setQueryId (Ljava/lang/Long;)V
+}
+
+public final class org/modelix/modelql/core/QueryReference$Companion {
+	public final fun getCONTEXT_VALUE ()Lorg/modelix/kotlin/utils/ContextValue;
+}
+
+public final class org/modelix/modelql/core/RecursiveQuerySerializer : kotlinx/serialization/KSerializer {
+	public fun <init> (Lorg/modelix/modelql/core/IUnboundQuery;Lorg/modelix/modelql/core/QueryCallStep;Lorg/modelix/modelql/core/SerializationContext;)V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/IStepOutput;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun getOwner ()Lorg/modelix/modelql/core/QueryCallStep;
+	public final fun getQuery ()Lorg/modelix/modelql/core/IUnboundQuery;
+	public final fun getSerializationContext ()Lorg/modelix/modelql/core/SerializationContext;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/IStepOutput;)V
+}
+
+public final class org/modelix/modelql/core/RegexPredicate : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> (Lkotlin/text/Regex;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/RegexPredicate$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getRegex ()Lkotlin/text/Regex;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/String;)Ljava/lang/Boolean;
+}
+
+public final class org/modelix/modelql/core/RegexPredicate$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/RegexPredicate$Descriptor$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getPattern ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/RegexPredicate$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/RegexPredicate$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/RegexPredicate$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/RegexPredicate$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/RegexPredicate$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/RegexPredicateKt {
+	public static final fun matches (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/text/Regex;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/SerializationContext {
+	public fun <init> (Lkotlinx/serialization/modules/SerializersModule;Ljava/util/Map;)V
+	public synthetic fun <init> (Lkotlinx/serialization/modules/SerializersModule;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getQueryInputSerializers ()Ljava/util/Map;
+	public final fun getSerializersModule ()Lkotlinx/serialization/modules/SerializersModule;
+	public final fun plus (Lkotlin/Pair;)Lorg/modelix/modelql/core/SerializationContext;
+	public final fun serializer (Lkotlin/reflect/KType;)Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/SetCollectorStep : org/modelix/modelql/core/CollectorStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/SetCollectorStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/SetCollectorStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/SetCollectorStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/SetCollectorStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/SetCollectorStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/SetCollectorStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/SetCollectorStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/SetCollectorStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/SetCollectorStepOutputSerializer : org/modelix/modelql/core/CollectorStepOutputSerializer {
+	public fun <init> (Lkotlinx/serialization/KSerializer;)V
+	public synthetic fun inputToInternal (Ljava/util/List;)Ljava/lang/Object;
+	public synthetic fun internalToOutput (Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/SharedStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun getRootInputSteps ()Ljava/util/Set;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/SharedStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/SharedStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/SharedStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/SharedStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/SharedStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/SharedStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/SharedStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract class org/modelix/modelql/core/SimpleMonoTransformingStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	protected fun createFlow (Lkotlinx/coroutines/flow/Flow;Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/SimpleQueryExecutor : org/modelix/modelql/core/IQueryExecutor {
+	public fun <init> (Ljava/lang/Object;)V
+	public fun createFlow (Lorg/modelix/modelql/core/IUnboundQuery;)Lkotlinx/coroutines/flow/Flow;
+	public final fun getInput ()Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/SimpleStepOutput : org/modelix/modelql/core/IStepOutput {
+	public fun <init> (Ljava/lang/Object;Lorg/modelix/modelql/core/IProducingStep;)V
+	public final fun getOwner ()Lorg/modelix/modelql/core/IProducingStep;
+	public fun getValue ()Ljava/lang/Object;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/SimpleStepOutputSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> (Lkotlinx/serialization/KSerializer;Lorg/modelix/modelql/core/IProducingStep;)V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/SimpleStepOutput;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun getOwner ()Lorg/modelix/modelql/core/IProducingStep;
+	public final fun getValueSerializer ()Lkotlinx/serialization/KSerializer;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/SimpleStepOutput;)V
+}
+
+public final class org/modelix/modelql/core/SinglePathFlowInstantiationContext : org/modelix/modelql/core/IFlowInstantiationContext {
+	public fun <init> (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/modelql/core/QueryInput;Lkotlinx/coroutines/flow/Flow;)V
+	public fun getCoroutineScope ()Lkotlinx/coroutines/CoroutineScope;
+	public fun getEvaluationContext ()Lorg/modelix/modelql/core/QueryEvaluationContext;
+	public fun getFlow (Lorg/modelix/modelql/core/IProducingStep;)Lkotlinx/coroutines/flow/Flow;
+	public final fun getInputFlow ()Lkotlinx/coroutines/flow/Flow;
+	public fun getOrCreateFlow (Lorg/modelix/modelql/core/IProducingStep;)Lkotlinx/coroutines/flow/Flow;
+	public final fun getQueryInput ()Lorg/modelix/modelql/core/QueryInput;
+}
+
+public final class org/modelix/modelql/core/SingleStep : org/modelix/modelql/core/AggregationStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/SingleStep$Descriptor;
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/SingleStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/SingleStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/SingleStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/SingleStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/SingleStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/SingleStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/SingleStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/SingleStepKt {
+	public static final fun single (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public abstract class org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/StepDescriptor$Companion;
+	public fun <init> ()V
+	public synthetic fun <init> (ILjava/lang/Long;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+	public abstract fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getId ()Ljava/lang/Integer;
+	public final fun getOwner ()Ljava/lang/Long;
+	public final fun setId (Ljava/lang/Integer;)V
+	public final fun setOwner (Ljava/lang/Long;)V
+	public static final synthetic fun write$Self (Lorg/modelix/modelql/core/StepDescriptor;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+}
+
+public final class org/modelix/modelql/core/StepDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/StringContainsPredicate : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> (Ljava/lang/String;)V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StringContainsPredicate$StringContainsDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getSubstring ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/String;)Ljava/lang/Boolean;
+}
+
+public final class org/modelix/modelql/core/StringContainsPredicate$StringContainsDescriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/StringContainsPredicate$StringContainsDescriptor$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getSubstring ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/StringContainsPredicate$StringContainsDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/StringContainsPredicate$StringContainsDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/StringContainsPredicate$StringContainsDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/StringContainsPredicate$StringContainsDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/StringContainsPredicate$StringContainsDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/StringContainsPredicateKt {
+	public static final fun contains (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/StringToBooleanStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/String;)Ljava/lang/Boolean;
+}
+
+public final class org/modelix/modelql/core/StringToBooleanStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/StringToBooleanStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/StringToBooleanStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/StringToBooleanStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/StringToBooleanStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/StringToBooleanStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/StringToBooleanStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/StringToBooleanStepKt {
+	public static final fun toBoolean (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun toBoolean (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/StringToIntStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/String;)Ljava/lang/Integer;
+}
+
+public final class org/modelix/modelql/core/StringToIntStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/StringToIntStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/StringToIntStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/StringToIntStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/StringToIntStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/StringToIntStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/StringToIntStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/StringToIntStepKt {
+	public static final fun toInt (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun toInt (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/TakeStep : org/modelix/modelql/core/TransformingStep, org/modelix/modelql/core/IFluxStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> (I)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/TakeStep$Descriptor;
+	public final fun getCount ()I
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/TakeStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/TakeStep$Descriptor$Companion;
+	public fun <init> (I)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getCount ()I
+}
+
+public final class org/modelix/modelql/core/TakeStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/TakeStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/TakeStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/TakeStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/TakeStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/TakeStepKt {
+	public static final fun take (Lorg/modelix/modelql/core/IFluxStep;I)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/core/ToStringStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/ToStringStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/ToStringStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/ToStringStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/ToStringStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/ToStringStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/ToStringStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ToStringStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ToStringStepKt {
+	public static final fun asString (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun asString (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asStringNullable (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun asStringNullable (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public abstract class org/modelix/modelql/core/TransformingStep : org/modelix/modelql/core/ProducingStep, org/modelix/modelql/core/IProcessingStep {
+	public fun <init> ()V
+	public fun addProducer (Lorg/modelix/modelql/core/IProducingStep;)V
+	protected abstract fun createFlow (Lkotlinx/coroutines/flow/Flow;Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun createFlow (Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public final fun getProducer ()Lorg/modelix/modelql/core/IProducingStep;
+	public fun getProducers ()Ljava/util/List;
+	public fun validate ()V
+}
+
+public abstract class org/modelix/modelql/core/TransformingStepWithParameter : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	public fun addProducer (Lorg/modelix/modelql/core/IProducingStep;)V
+	protected fun createFlow (Lkotlinx/coroutines/flow/Flow;Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public final fun getInputProducer ()Lorg/modelix/modelql/core/IProducingStep;
+	public final fun getParameterProducer ()Lorg/modelix/modelql/core/IProducingStep;
+	public fun getProducers ()Ljava/util/List;
+	protected abstract fun transformElement (Lorg/modelix/modelql/core/IStepOutput;Lorg/modelix/modelql/core/IStepOutput;)Lorg/modelix/modelql/core/IStepOutput;
+	public fun validate ()V
+}
+
+public abstract class org/modelix/modelql/core/UnboundQuery : org/modelix/modelql/core/IUnboundQuery {
+	public static final field Companion Lorg/modelix/modelql/core/UnboundQuery$Companion;
+	public fun <init> (Lorg/modelix/modelql/core/QueryInput;Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/QueryReference;Ljava/util/List;)V
+	public fun asFlow (Lorg/modelix/modelql/core/QueryEvaluationContext;Lkotlinx/coroutines/flow/Flow;)Lkotlinx/coroutines/flow/Flow;
+	public fun canBeEmpty ()Z
+	public final fun createDescriptor ()Lorg/modelix/modelql/core/QueryGraphDescriptor;
+	public final fun getAllSteps ()Ljava/util/Set;
+	public final fun getInputStep ()Lorg/modelix/modelql/core/QueryInput;
+	public fun getOutputStep ()Lorg/modelix/modelql/core/IProducingStep;
+	public final fun getOwnSteps ()Ljava/util/List;
+	public synthetic fun getReference ()Lorg/modelix/modelql/core/IQueryReference;
+	public fun getReference ()Lorg/modelix/modelql/core/QueryReference;
+	public final fun getSharedSteps ()Ljava/util/List;
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+	public final fun validate ()V
+}
+
+public final class org/modelix/modelql/core/UnboundQuery$Companion {
+	public final fun generateId ()J
+	public final fun getSerializersModule ()Lkotlinx/serialization/modules/SerializersModule;
+}
+
+public final class org/modelix/modelql/core/VersionAndData {
+	public static final field Companion Lorg/modelix/modelql/core/VersionAndData$Companion;
+	public fun <init> (Ljava/lang/Object;)V
+	public fun <init> (Ljava/lang/Object;Ljava/lang/String;)V
+	public final fun getData ()Ljava/lang/Object;
+	public final fun getVersion ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/VersionAndData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public synthetic fun <init> (Lkotlinx/serialization/KSerializer;)V
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/VersionAndData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/VersionAndData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/VersionAndData$Companion {
+	public final fun deserialize (Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/json/Json;)Lorg/modelix/modelql/core/VersionAndData;
+	public final fun readVersionOnly (Ljava/lang/String;)Ljava/lang/String;
+	public final fun serializer (Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/VersionKt {
+	public static final field modelqlVersion Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/WhenStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> (Ljava/util/List;Lorg/modelix/modelql/core/IMonoUnboundQuery;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getCases ()Ljava/util/List;
+	public final fun getElseCase ()Lorg/modelix/modelql/core/IMonoUnboundQuery;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/WhenStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/WhenStep$Descriptor$Companion;
+	public fun <init> (Ljava/util/List;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getCases ()Ljava/util/List;
+	public final fun getElseCase ()Ljava/lang/Long;
+}
+
+public final class org/modelix/modelql/core/WhenStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/WhenStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/WhenStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/WhenStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/WhenStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/WhenStepBuilder {
+	public fun <init> (Lorg/modelix/modelql/core/IMonoStep;)V
+	public final fun else (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun if (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/WhenStepBuilder$CaseBuilder;
+}
+
+public final class org/modelix/modelql/core/WhenStepBuilder$CaseBuilder {
+	public fun <init> (Lorg/modelix/modelql/core/WhenStepBuilder;Lorg/modelix/modelql/core/IMonoUnboundQuery;)V
+	public final fun getCondition ()Lorg/modelix/modelql/core/IMonoUnboundQuery;
+	public final fun then (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/WhenStepBuilder;
+}
+
+public final class org/modelix/modelql/core/WhenStepKt {
+	public static final fun when (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/WhenStepBuilder;
+}
+
+public final class org/modelix/modelql/core/WithIndexStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun requiresSingularQueryInput ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/WithIndexStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/WithIndexStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/WithIndexStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/WithIndexStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/WithIndexStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/WithIndexStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/WithIndexStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/WithIndexStepKt {
+	public static final fun getIndex (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getValue (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun withIndex (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/core/ZipBuilder {
+	public fun <init> ()V
+	public final fun compileOutputStep ()Lorg/modelix/modelql/core/IMonoStep;
+	public final fun request (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IValueRequest;
+	public final fun withResult (Lorg/modelix/modelql/core/IZipOutput;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/core/ZipElementAccessStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> (I)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getIndex ()I
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/ZipElementAccessStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/ZipElementAccessStep$Descriptor$Companion;
+	public fun <init> (I)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getIndex ()I
+}
+
+public final class org/modelix/modelql/core/ZipElementAccessStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/ZipElementAccessStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/ZipElementAccessStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/ZipElementAccessStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ZipElementAccessStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ZipElementAccessStepKt {
+	public static final fun component1 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component2 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component3 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component4 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component5 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component6 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component7 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component8 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component9 (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getEighth (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getFifth (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getFirst (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getForth (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getFourth (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getNinth (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getSecond (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getSeventh (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getSixth (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getThird (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/core/ZipOutput : org/modelix/modelql/core/IZip9Output {
+	public static final field Companion Lorg/modelix/modelql/core/ZipOutput$Companion;
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lorg/modelix/modelql/core/ZipOutput;
+	public static synthetic fun copy$default (Lorg/modelix/modelql/core/ZipOutput;Ljava/util/List;ILjava/lang/Object;)Lorg/modelix/modelql/core/ZipOutput;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun get (I)Ljava/lang/Object;
+	public fun getEighth ()Ljava/lang/Object;
+	public fun getFifth ()Ljava/lang/Object;
+	public fun getFirst ()Ljava/lang/Object;
+	public fun getFourth ()Ljava/lang/Object;
+	public fun getNinth ()Ljava/lang/Object;
+	public fun getSecond ()Ljava/lang/Object;
+	public fun getSeventh ()Ljava/lang/Object;
+	public fun getSixth ()Ljava/lang/Object;
+	public fun getThird ()Ljava/lang/Object;
+	public fun getValues ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/core/ZipOutput$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public synthetic fun <init> (Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;)V
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/ZipOutput;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/ZipOutput;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ZipOutput$Companion {
+	public final fun serializer (Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ZipOutputSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> ([Lkotlinx/serialization/KSerializer;)V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/ZipStepOutput;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun getElementSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/ZipStepOutput;)V
+}
+
+public class org/modelix/modelql/core/ZipStep : org/modelix/modelql/core/ProducingStep, org/modelix/modelql/core/IConsumingStep, org/modelix/modelql/core/IFluxStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> ()V
+	public fun addProducer (Lorg/modelix/modelql/core/IProducingStep;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/ZipStep$Descriptor;
+	public fun createFlow (Lorg/modelix/modelql/core/IFlowInstantiationContext;)Lkotlinx/coroutines/flow/Flow;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun getProducers ()Ljava/util/List;
+	public fun requiresSingularQueryInput ()Z
+	public fun toString ()Ljava/lang/String;
+	public fun validate ()V
+}
+
+public final class org/modelix/modelql/core/ZipStep$Descriptor : org/modelix/modelql/core/CoreStepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/core/ZipStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/core/ZipStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/core/ZipStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/core/ZipStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/core/ZipStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ZipStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/core/ZipStepKt {
+	public static final fun allowEmpty (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun allowEmpty (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun assertNotEmpty (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun assertNotEmpty (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun component1 (Lorg/modelix/modelql/core/IZip1Output;)Ljava/lang/Object;
+	public static final fun component2 (Lorg/modelix/modelql/core/IZip2Output;)Ljava/lang/Object;
+	public static final fun component3 (Lorg/modelix/modelql/core/IZip3Output;)Ljava/lang/Object;
+	public static final fun component4 (Lorg/modelix/modelql/core/IZip4Output;)Ljava/lang/Object;
+	public static final fun component5 (Lorg/modelix/modelql/core/IZip5Output;)Ljava/lang/Object;
+	public static final fun component6 (Lorg/modelix/modelql/core/IZip6Output;)Ljava/lang/Object;
+	public static final fun component7 (Lorg/modelix/modelql/core/IZip7Output;)Ljava/lang/Object;
+	public static final fun component8 (Lorg/modelix/modelql/core/IZip8Output;)Ljava/lang/Object;
+	public static final fun component9 (Lorg/modelix/modelql/core/IZip9Output;)Ljava/lang/Object;
+	public static final fun zip (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IMonoStep;[Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun zip (Lorg/modelix/modelql/core/IProducingStep;[Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun zipList ([Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun zipN (Lorg/modelix/modelql/core/IMonoStep;[Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun zipN (Lorg/modelix/modelql/core/IProducingStep;[Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/core/ZipStepOutput : org/modelix/modelql/core/IStepOutput {
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun getValue ()Ljava/lang/Object;
+	public fun getValue ()Lorg/modelix/modelql/core/IZipOutput;
+	public final fun getValues ()Ljava/util/List;
+}
+

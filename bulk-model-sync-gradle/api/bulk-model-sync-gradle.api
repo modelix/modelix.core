@@ -1,0 +1,201 @@
+public final class org/modelix/model/sync/bulk/gradle/ModelSyncGradlePlugin : org/gradle/api/Plugin {
+	public fun <init> ()V
+	public synthetic fun apply (Ljava/lang/Object;)V
+	public fun apply (Lorg/gradle/api/Project;)V
+}
+
+public abstract interface class org/modelix/model/sync/bulk/gradle/config/LocalEndpoint : org/modelix/model/sync/bulk/gradle/config/SyncEndpoint {
+	public abstract fun getMpsDebugPort ()Ljava/lang/Integer;
+	public abstract fun getMpsHeapSize ()Ljava/lang/String;
+	public abstract fun getMpsHome ()Ljava/io/File;
+	public abstract fun getRepositoryDir ()Ljava/io/File;
+	public fun getValidationErrors ()Ljava/util/List;
+	public abstract fun mpsLibrary (Ljava/io/File;)V
+	public abstract fun setMpsDebugPort (Ljava/lang/Integer;)V
+	public abstract fun setMpsHeapSize (Ljava/lang/String;)V
+	public abstract fun setMpsHome (Ljava/io/File;)V
+	public abstract fun setRepositoryDir (Ljava/io/File;)V
+}
+
+public final class org/modelix/model/sync/bulk/gradle/config/LocalEndpoint$DefaultImpls {
+	public static fun getValidationErrors (Lorg/modelix/model/sync/bulk/gradle/config/LocalEndpoint;)Ljava/util/List;
+}
+
+public final class org/modelix/model/sync/bulk/gradle/config/LocalSource : org/modelix/model/sync/bulk/gradle/config/LocalEndpoint {
+	public fun <init> ()V
+	public fun <init> (Ljava/io/File;Ljava/util/Set;Ljava/lang/String;Ljava/io/File;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/io/File;Ljava/util/Set;Ljava/lang/String;Ljava/io/File;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/io/File;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/io/File;
+	public final fun component5 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/io/File;Ljava/util/Set;Ljava/lang/String;Ljava/io/File;Ljava/lang/Integer;)Lorg/modelix/model/sync/bulk/gradle/config/LocalSource;
+	public static synthetic fun copy$default (Lorg/modelix/model/sync/bulk/gradle/config/LocalSource;Ljava/io/File;Ljava/util/Set;Ljava/lang/String;Ljava/io/File;Ljava/lang/Integer;ILjava/lang/Object;)Lorg/modelix/model/sync/bulk/gradle/config/LocalSource;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMpsDebugPort ()Ljava/lang/Integer;
+	public fun getMpsHeapSize ()Ljava/lang/String;
+	public fun getMpsHome ()Ljava/io/File;
+	public fun getRepositoryDir ()Ljava/io/File;
+	public fun hashCode ()I
+	public fun mpsLibrary (Ljava/io/File;)V
+	public fun setMpsDebugPort (Ljava/lang/Integer;)V
+	public fun setMpsHeapSize (Ljava/lang/String;)V
+	public fun setMpsHome (Ljava/io/File;)V
+	public fun setRepositoryDir (Ljava/io/File;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/sync/bulk/gradle/config/LocalTarget : org/modelix/model/sync/bulk/gradle/config/LocalEndpoint {
+	public fun <init> ()V
+	public fun <init> (Ljava/io/File;Ljava/util/Set;Ljava/lang/String;Ljava/io/File;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/io/File;Ljava/util/Set;Ljava/lang/String;Ljava/io/File;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/io/File;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/io/File;
+	public final fun component5 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/io/File;Ljava/util/Set;Ljava/lang/String;Ljava/io/File;Ljava/lang/Integer;)Lorg/modelix/model/sync/bulk/gradle/config/LocalTarget;
+	public static synthetic fun copy$default (Lorg/modelix/model/sync/bulk/gradle/config/LocalTarget;Ljava/io/File;Ljava/util/Set;Ljava/lang/String;Ljava/io/File;Ljava/lang/Integer;ILjava/lang/Object;)Lorg/modelix/model/sync/bulk/gradle/config/LocalTarget;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMpsDebugPort ()Ljava/lang/Integer;
+	public fun getMpsHeapSize ()Ljava/lang/String;
+	public fun getMpsHome ()Ljava/io/File;
+	public fun getRepositoryDir ()Ljava/io/File;
+	public fun hashCode ()I
+	public fun mpsLibrary (Ljava/io/File;)V
+	public fun setMpsDebugPort (Ljava/lang/Integer;)V
+	public fun setMpsHeapSize (Ljava/lang/String;)V
+	public fun setMpsHome (Ljava/io/File;)V
+	public fun setRepositoryDir (Ljava/io/File;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public class org/modelix/model/sync/bulk/gradle/config/ModelSyncGradleSettings {
+	public fun <init> ()V
+	public final fun dependsOn (Ljava/lang/Object;)V
+	public final fun direction (Ljava/lang/String;Lorg/gradle/api/Action;)V
+}
+
+public abstract interface class org/modelix/model/sync/bulk/gradle/config/ServerEndpoint : org/modelix/model/sync/bulk/gradle/config/SyncEndpoint {
+	public abstract fun getBranchName ()Ljava/lang/String;
+	public abstract fun getRepositoryId ()Ljava/lang/String;
+	public abstract fun getRequestTimeoutSeconds ()I
+	public abstract fun getUrl ()Ljava/lang/String;
+	public fun getValidationErrors ()Ljava/util/List;
+	public abstract fun setBranchName (Ljava/lang/String;)V
+	public abstract fun setRepositoryId (Ljava/lang/String;)V
+	public abstract fun setRequestTimeoutSeconds (I)V
+	public abstract fun setUrl (Ljava/lang/String;)V
+}
+
+public final class org/modelix/model/sync/bulk/gradle/config/ServerEndpoint$DefaultImpls {
+	public static fun getValidationErrors (Lorg/modelix/model/sync/bulk/gradle/config/ServerEndpoint;)Ljava/util/List;
+}
+
+public final class org/modelix/model/sync/bulk/gradle/config/ServerSource : org/modelix/model/sync/bulk/gradle/config/ServerEndpoint {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()I
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)Lorg/modelix/model/sync/bulk/gradle/config/ServerSource;
+	public static synthetic fun copy$default (Lorg/modelix/model/sync/bulk/gradle/config/ServerSource;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/sync/bulk/gradle/config/ServerSource;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getBranchName ()Ljava/lang/String;
+	public fun getRepositoryId ()Ljava/lang/String;
+	public fun getRequestTimeoutSeconds ()I
+	public final fun getRevision ()Ljava/lang/String;
+	public fun getUrl ()Ljava/lang/String;
+	public fun getValidationErrors ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun setBranchName (Ljava/lang/String;)V
+	public fun setRepositoryId (Ljava/lang/String;)V
+	public fun setRequestTimeoutSeconds (I)V
+	public final fun setRevision (Ljava/lang/String;)V
+	public fun setUrl (Ljava/lang/String;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/sync/bulk/gradle/config/ServerTarget : org/modelix/model/sync/bulk/gradle/config/ServerEndpoint {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()I
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/util/Map;)Lorg/modelix/model/sync/bulk/gradle/config/ServerTarget;
+	public static synthetic fun copy$default (Lorg/modelix/model/sync/bulk/gradle/config/ServerTarget;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/util/Map;ILjava/lang/Object;)Lorg/modelix/model/sync/bulk/gradle/config/ServerTarget;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getBranchName ()Ljava/lang/String;
+	public final fun getMetaProperties ()Ljava/util/Map;
+	public fun getRepositoryId ()Ljava/lang/String;
+	public fun getRequestTimeoutSeconds ()I
+	public fun getUrl ()Ljava/lang/String;
+	public fun getValidationErrors ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun setBranchName (Ljava/lang/String;)V
+	public fun setRepositoryId (Ljava/lang/String;)V
+	public fun setRequestTimeoutSeconds (I)V
+	public fun setUrl (Ljava/lang/String;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/sync/bulk/gradle/config/SyncDirection {
+	public fun <init> (Ljava/lang/String;Lorg/modelix/model/sync/bulk/gradle/config/SyncEndpoint;Lorg/modelix/model/sync/bulk/gradle/config/SyncEndpoint;Ljava/util/Set;Ljava/util/Set;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Lorg/modelix/model/sync/bulk/gradle/config/SyncEndpoint;Lorg/modelix/model/sync/bulk/gradle/config/SyncEndpoint;Ljava/util/Set;Ljava/util/Set;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun copy (Ljava/lang/String;Lorg/modelix/model/sync/bulk/gradle/config/SyncEndpoint;Lorg/modelix/model/sync/bulk/gradle/config/SyncEndpoint;Ljava/util/Set;Ljava/util/Set;Z)Lorg/modelix/model/sync/bulk/gradle/config/SyncDirection;
+	public static synthetic fun copy$default (Lorg/modelix/model/sync/bulk/gradle/config/SyncDirection;Ljava/lang/String;Lorg/modelix/model/sync/bulk/gradle/config/SyncEndpoint;Lorg/modelix/model/sync/bulk/gradle/config/SyncEndpoint;Ljava/util/Set;Ljava/util/Set;ZILjava/lang/Object;)Lorg/modelix/model/sync/bulk/gradle/config/SyncDirection;
+	public final fun enableContinueOnError (Z)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun fromLocal (Lorg/gradle/api/Action;)V
+	public final fun fromModelServer (Lorg/gradle/api/Action;)V
+	public fun hashCode ()I
+	public final fun includeModule (Ljava/lang/String;)V
+	public final fun includeModulesByPrefix (Ljava/lang/String;)V
+	public final fun registerLanguage (Lorg/modelix/model/api/ILanguage;)V
+	public final fun toLocal (Lorg/gradle/api/Action;)V
+	public final fun toModelServer (Lorg/gradle/api/Action;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/sync/bulk/gradle/config/SyncEndpoint {
+	public abstract fun getValidationErrors ()Ljava/util/List;
+}
+
+public abstract class org/modelix/model/sync/bulk/gradle/tasks/ExportFromModelServer : org/gradle/api/DefaultTask {
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun export ()V
+	public final fun getBranchName ()Lorg/gradle/api/provider/Property;
+	public final fun getIncludedModulePrefixes ()Lorg/gradle/api/provider/SetProperty;
+	public final fun getIncludedModules ()Lorg/gradle/api/provider/SetProperty;
+	public final fun getOutputDir ()Lorg/gradle/api/file/DirectoryProperty;
+	public final fun getRepositoryId ()Lorg/gradle/api/provider/Property;
+	public final fun getRequestTimeoutSeconds ()Lorg/gradle/api/provider/Property;
+	public final fun getRevision ()Lorg/gradle/api/provider/Property;
+	public final fun getUrl ()Lorg/gradle/api/provider/Property;
+}
+
+public abstract class org/modelix/model/sync/bulk/gradle/tasks/ImportIntoModelServer : org/gradle/api/DefaultTask {
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun getBranchName ()Lorg/gradle/api/provider/Property;
+	public final fun getContinueOnError ()Lorg/gradle/api/provider/Property;
+	public final fun getIncludedModulePrefixes ()Lorg/gradle/api/provider/SetProperty;
+	public final fun getIncludedModules ()Lorg/gradle/api/provider/SetProperty;
+	public final fun getInputDir ()Lorg/gradle/api/file/DirectoryProperty;
+	public final fun getMetaProperties ()Lorg/gradle/api/provider/MapProperty;
+	public final fun getRepositoryId ()Lorg/gradle/api/provider/Property;
+	public final fun getRequestTimeoutSeconds ()Lorg/gradle/api/provider/Property;
+	public final fun getUrl ()Lorg/gradle/api/provider/Property;
+	public final fun import ()V
+}
+
+public abstract class org/modelix/model/sync/bulk/gradle/tasks/ValidateSyncSettings : org/gradle/api/DefaultTask {
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun getSettings ()Lorg/gradle/api/provider/Property;
+	public final fun validate ()V
+}
+

@@ -1,0 +1,1067 @@
+public final class org/modelix/model/AllChildrenDependency : org/modelix/model/DependencyBase {
+	public fun <init> (Lorg/modelix/model/api/IBranch;J)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun component2 ()J
+	public final fun copy (Lorg/modelix/model/api/IBranch;J)Lorg/modelix/model/AllChildrenDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/AllChildrenDependency;Lorg/modelix/model/api/IBranch;JILjava/lang/Object;)Lorg/modelix/model/AllChildrenDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public synthetic fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public fun getGroup ()Lorg/modelix/model/UnclassifiedNodeDependency;
+	public final fun getNodeId ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/AllPropertiesDependency : org/modelix/model/DependencyBase {
+	public fun <init> (Lorg/modelix/model/api/IBranch;J)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun component2 ()J
+	public final fun copy (Lorg/modelix/model/api/IBranch;J)Lorg/modelix/model/AllPropertiesDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/AllPropertiesDependency;Lorg/modelix/model/api/IBranch;JILjava/lang/Object;)Lorg/modelix/model/AllPropertiesDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public synthetic fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public fun getGroup ()Lorg/modelix/model/UnclassifiedNodeDependency;
+	public final fun getNodeId ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/AllReferencesDependency : org/modelix/model/DependencyBase {
+	public fun <init> (Lorg/modelix/model/api/IBranch;J)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun component2 ()J
+	public final fun copy (Lorg/modelix/model/api/IBranch;J)Lorg/modelix/model/AllReferencesDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/AllReferencesDependency;Lorg/modelix/model/api/IBranch;JILjava/lang/Object;)Lorg/modelix/model/AllReferencesDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public synthetic fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public fun getGroup ()Lorg/modelix/model/UnclassifiedNodeDependency;
+	public final fun getNodeId ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/AutoReadTransaction : org/modelix/model/AutoTransaction, org/modelix/model/api/IReadTransaction {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+}
+
+public class org/modelix/model/AutoTransaction : org/modelix/model/api/ITransaction {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public fun containsNode (J)Z
+	public fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getParent (J)J
+	public fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRole (J)Ljava/lang/String;
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun getUserObject (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun putUserObject (Ljava/lang/Object;Ljava/lang/Object;)V
+}
+
+public final class org/modelix/model/AutoTransactionsBranch : org/modelix/model/api/IBranch, org/modelix/model/api/IBranchWrapper {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun computeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeReadT (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public fun computeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeWriteT (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public fun getId ()Ljava/lang/String;
+	public fun getReadTransaction ()Lorg/modelix/model/api/IReadTransaction;
+	public fun getTransaction ()Lorg/modelix/model/api/ITransaction;
+	public fun getWriteTransaction ()Lorg/modelix/model/api/IWriteTransaction;
+	public fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun runRead (Lkotlin/jvm/functions/Function0;)V
+	public fun runReadT (Lkotlin/jvm/functions/Function1;)V
+	public fun runWrite (Lkotlin/jvm/functions/Function0;)V
+	public fun runWriteT (Lkotlin/jvm/functions/Function1;)V
+	public fun unwrapBranch ()Lorg/modelix/model/api/IBranch;
+}
+
+public final class org/modelix/model/AutoTransactionsBranchKt {
+	public static final fun withAutoTransactions (Lorg/modelix/model/api/IBranch;)Lorg/modelix/model/AutoTransactionsBranch;
+}
+
+public final class org/modelix/model/AutoWriteTransaction : org/modelix/model/AutoTransaction, org/modelix/model/api/IWriteTransaction {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConcept;)J
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConceptReference;)J
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChildren (JLjava/lang/String;I[Lorg/modelix/model/api/IConceptReference;)[J
+	public fun deleteNode (J)V
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun moveChild (JLjava/lang/String;IJ)V
+	public fun setProperty (JLjava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public fun setTree (Lorg/modelix/model/api/ITree;)V
+}
+
+public final class org/modelix/model/BranchDependency : org/modelix/incremental/IStateVariableReference {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun copy (Lorg/modelix/model/api/IBranch;)Lorg/modelix/model/BranchDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/BranchDependency;Lorg/modelix/model/api/IBranch;ILjava/lang/Object;)Lorg/modelix/model/BranchDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public fun hashCode ()I
+	public synthetic fun read ()Ljava/lang/Object;
+	public fun read ()Lorg/modelix/model/api/IBranch;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/ChildrenDependency : org/modelix/model/DependencyBase {
+	public fun <init> (Lorg/modelix/model/api/IBranch;JLjava/lang/String;)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Lorg/modelix/model/api/IBranch;JLjava/lang/String;)Lorg/modelix/model/ChildrenDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/ChildrenDependency;Lorg/modelix/model/api/IBranch;JLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/ChildrenDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public synthetic fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public fun getGroup ()Lorg/modelix/model/AllChildrenDependency;
+	public final fun getNodeId ()J
+	public final fun getRole ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/ContainmentDependency : org/modelix/model/DependencyBase {
+	public fun <init> (Lorg/modelix/model/api/IBranch;J)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun component2 ()J
+	public final fun copy (Lorg/modelix/model/api/IBranch;J)Lorg/modelix/model/ContainmentDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/ContainmentDependency;Lorg/modelix/model/api/IBranch;JILjava/lang/Object;)Lorg/modelix/model/ContainmentDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public synthetic fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public fun getGroup ()Lorg/modelix/model/UnclassifiedNodeDependency;
+	public final fun getNodeId ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class org/modelix/model/DependencyBase : org/modelix/incremental/IStateVariableReference {
+	public fun <init> ()V
+	public synthetic fun read ()Ljava/lang/Object;
+	public fun read ()V
+}
+
+public abstract interface class org/modelix/model/IKeyValueStoreWrapper : org/modelix/model/IKeyValueStore {
+	public static final field Companion Lorg/modelix/model/IKeyValueStoreWrapper$Companion;
+	public abstract fun getWrapped ()Lorg/modelix/model/IKeyValueStore;
+}
+
+public final class org/modelix/model/IKeyValueStoreWrapper$Companion {
+	public final fun getAllStores (Lorg/modelix/model/IKeyValueStore;)Ljava/util/List;
+}
+
+public final class org/modelix/model/IKeyValueStoreWrapper$DefaultImpls {
+	public static fun getA (Lorg/modelix/model/IKeyValueStoreWrapper;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun newBulkQuery (Lorg/modelix/model/IKeyValueStoreWrapper;Lorg/modelix/model/lazy/IDeserializingKeyValueStore;)Lorg/modelix/model/lazy/IBulkQuery;
+}
+
+public final class org/modelix/model/IncrementalBranch : org/modelix/model/api/IBranch, org/modelix/model/api/IBranchWrapper {
+	public static final field Companion Lorg/modelix/model/IncrementalBranch$Companion;
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public final fun accessed (Lorg/modelix/incremental/IStateVariableReference;)V
+	public fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun computeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeReadT (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public fun computeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeWriteT (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getId ()Ljava/lang/String;
+	public fun getReadTransaction ()Lorg/modelix/model/api/IReadTransaction;
+	public fun getTransaction ()Lorg/modelix/model/api/ITransaction;
+	public fun getWriteTransaction ()Lorg/modelix/model/api/IWriteTransaction;
+	public final fun modified (Lorg/modelix/incremental/IStateVariableReference;)V
+	public fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun runRead (Lkotlin/jvm/functions/Function0;)V
+	public fun runReadT (Lkotlin/jvm/functions/Function1;)V
+	public fun runWrite (Lkotlin/jvm/functions/Function0;)V
+	public fun runWriteT (Lkotlin/jvm/functions/Function1;)V
+	public fun unwrapBranch ()Lorg/modelix/model/api/IBranch;
+}
+
+public final class org/modelix/model/IncrementalBranch$Companion {
+}
+
+public final class org/modelix/model/IncrementalBranch$IncrementalReadTransaction : org/modelix/model/IncrementalBranch$IncrementalTransaction, org/modelix/model/api/IReadTransaction {
+	public fun <init> (Lorg/modelix/model/IncrementalBranch;Lorg/modelix/model/api/IReadTransaction;)V
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+}
+
+public abstract class org/modelix/model/IncrementalBranch$IncrementalTransaction : org/modelix/model/api/ITransaction {
+	public fun <init> (Lorg/modelix/model/IncrementalBranch;Lorg/modelix/model/api/ITransaction;)V
+	public fun containsNode (J)Z
+	public fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getParent (J)J
+	public fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRole (J)Ljava/lang/String;
+	public final fun getTransaction ()Lorg/modelix/model/api/ITransaction;
+	public fun getUserObject (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun putUserObject (Ljava/lang/Object;Ljava/lang/Object;)V
+}
+
+public final class org/modelix/model/IncrementalBranch$IncrementalTree : org/modelix/model/api/ITree {
+	public fun <init> (Lorg/modelix/model/IncrementalBranch;Lorg/modelix/model/api/ITree;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/ITree;
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/ITree;
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/ITree;
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/ITree;
+	public fun containsNode (J)Z
+	public fun deleteNode (J)Lorg/modelix/model/api/ITree;
+	public fun deleteNodes ([J)Lorg/modelix/model/api/ITree;
+	public fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getChildRoles (J)Ljava/lang/Iterable;
+	public fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getId ()Ljava/lang/String;
+	public fun getParent (J)J
+	public fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRole (J)Ljava/lang/String;
+	public final fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun moveChild (JLjava/lang/String;IJ)Lorg/modelix/model/api/ITree;
+	public fun setProperty (JLjava/lang/String;Ljava/lang/String;)Lorg/modelix/model/api/ITree;
+	public fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/ITree;
+	public fun usesRoleIds ()Z
+	public fun visitChanges (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/ITreeChangeVisitor;)V
+}
+
+public final class org/modelix/model/IncrementalBranch$IncrementalWriteTransaction : org/modelix/model/IncrementalBranch$IncrementalTransaction, org/modelix/model/api/IWriteTransaction {
+	public fun <init> (Lorg/modelix/model/IncrementalBranch;Lorg/modelix/model/api/IWriteTransaction;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConcept;)J
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConceptReference;)J
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChildren (JLjava/lang/String;I[Lorg/modelix/model/api/IConceptReference;)[J
+	public fun deleteNode (J)V
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun moveChild (JLjava/lang/String;IJ)V
+	public fun setProperty (JLjava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public fun setTree (Lorg/modelix/model/api/ITree;)V
+}
+
+public final class org/modelix/model/IncrementalBranchKt {
+	public static final fun withIncrementalComputationSupport (Lorg/modelix/model/api/IBranch;)Lorg/modelix/model/IncrementalBranch;
+}
+
+public final class org/modelix/model/KeyValueStoreCache : org/modelix/model/IKeyValueStoreWrapper {
+	public static final field Companion Lorg/modelix/model/KeyValueStoreCache$Companion;
+	public fun <init> (Lorg/modelix/model/IKeyValueStore;)V
+	public fun get (Ljava/lang/String;)Ljava/lang/String;
+	public fun getAll (Ljava/lang/Iterable;)Ljava/util/Map;
+	public fun getPendingSize ()I
+	public fun getWrapped ()Lorg/modelix/model/IKeyValueStore;
+	public fun listen (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun prefetch (Ljava/lang/String;)V
+	public fun put (Ljava/lang/String;Ljava/lang/String;)V
+	public fun putAll (Ljava/util/Map;)V
+	public fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+}
+
+public final class org/modelix/model/KeyValueStoreCache$Companion {
+}
+
+public final class org/modelix/model/ModelFacade {
+	public static final field INSTANCE Lorg/modelix/model/ModelFacade;
+	public final fun createBranchReference (Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;)Lorg/modelix/model/lazy/BranchReference;
+	public static synthetic fun createBranchReference$default (Lorg/modelix/model/ModelFacade;Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/lazy/BranchReference;
+	public final fun createRepositoryId (Ljava/lang/String;)Lorg/modelix/model/lazy/RepositoryId;
+	public final fun getBranch (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/IBranch;
+	public final fun getRootNode (Lorg/modelix/model/api/IBranch;)Lorg/modelix/model/api/INode;
+	public final fun loadCurrentModel (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/BranchReference;)Lorg/modelix/model/api/ITree;
+	public final fun loadCurrentVersion (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/BranchReference;)Lorg/modelix/model/lazy/CLVersion;
+	public final fun mergeUpdate (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/BranchReference;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lorg/modelix/model/lazy/CLVersion;
+	public static synthetic fun mergeUpdate$default (Lorg/modelix/model/ModelFacade;Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/BranchReference;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/modelix/model/lazy/CLVersion;
+	public final fun newLocalTree ()Lorg/modelix/model/api/ITree;
+	public final fun readNode (Lorg/modelix/model/api/INode;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun toLocalBranch (Lorg/modelix/model/api/ITree;)Lorg/modelix/model/api/IBranch;
+	public final fun toNode (Lorg/modelix/model/api/ITree;)Lorg/modelix/model/api/INode;
+	public final fun writeNode (Lorg/modelix/model/api/INode;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/ModelIndex {
+	public static final field Companion Lorg/modelix/model/ModelIndex$Companion;
+	public synthetic fun <init> (Lorg/modelix/model/api/ITree;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun find (Ljava/lang/String;)Ljava/util/Set;
+	public final fun getPropertyRole ()Ljava/lang/String;
+	public final fun getTree ()Lorg/modelix/model/api/ITree;
+}
+
+public final class org/modelix/model/ModelIndex$Companion {
+	public final fun fromTree (Lorg/modelix/model/api/ITree;Ljava/lang/String;)Lorg/modelix/model/ModelIndex;
+	public final fun get (Lorg/modelix/model/api/ITransaction;Ljava/lang/String;)Lorg/modelix/model/ModelIndex;
+	public final fun incremental (Lorg/modelix/model/ModelIndex;Lorg/modelix/model/api/ITree;)Lorg/modelix/model/ModelIndex;
+}
+
+public final class org/modelix/model/ModelMigrations {
+	public static final field INSTANCE Lorg/modelix/model/ModelMigrations;
+	public final fun useCanonicalReferences (Lorg/modelix/model/api/IBranch;)V
+}
+
+public final class org/modelix/model/PropertyDependency : org/modelix/model/DependencyBase {
+	public fun <init> (Lorg/modelix/model/api/IBranch;JLjava/lang/String;)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Lorg/modelix/model/api/IBranch;JLjava/lang/String;)Lorg/modelix/model/PropertyDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/PropertyDependency;Lorg/modelix/model/api/IBranch;JLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/PropertyDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public synthetic fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public fun getGroup ()Lorg/modelix/model/AllPropertiesDependency;
+	public final fun getNodeId ()J
+	public final fun getRole ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/ReferenceDependency : org/modelix/model/DependencyBase {
+	public fun <init> (Lorg/modelix/model/api/IBranch;JLjava/lang/String;)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Lorg/modelix/model/api/IBranch;JLjava/lang/String;)Lorg/modelix/model/ReferenceDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/ReferenceDependency;Lorg/modelix/model/api/IBranch;JLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/ReferenceDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public synthetic fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public fun getGroup ()Lorg/modelix/model/AllReferencesDependency;
+	public final fun getNodeId ()J
+	public final fun getRole ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/SubtreeChanges {
+	public static final field Companion Lorg/modelix/model/SubtreeChanges$Companion;
+	public fun <init> (I)V
+	public final fun getAffectedSubtrees (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/ITree;)Ljava/util/Set;
+	public final fun getCacheSize ()I
+}
+
+public final class org/modelix/model/SubtreeChanges$Companion {
+	public final fun getINSTANCE ()Lorg/modelix/model/SubtreeChanges;
+}
+
+public final class org/modelix/model/UnclassifiedNodeDependency : org/modelix/model/DependencyBase {
+	public fun <init> (Lorg/modelix/model/api/IBranch;J)V
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun component2 ()J
+	public final fun copy (Lorg/modelix/model/api/IBranch;J)Lorg/modelix/model/UnclassifiedNodeDependency;
+	public static synthetic fun copy$default (Lorg/modelix/model/UnclassifiedNodeDependency;Lorg/modelix/model/api/IBranch;JILjava/lang/Object;)Lorg/modelix/model/UnclassifiedNodeDependency;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getGroup ()Lorg/modelix/incremental/IStateVariableGroup;
+	public final fun getNodeId ()J
+	public fun hashCode ()I
+	public synthetic fun read ()Ljava/lang/Object;
+	public fun read ()V
+	public fun toString ()Ljava/lang/String;
+}
+
+public class org/modelix/model/client/ActiveBranch : org/modelix/model/client/IIndirectBranch {
+	public static final field Companion Lorg/modelix/model/client/ActiveBranch$Companion;
+	public static final field DEFAULT_BRANCH_NAME Ljava/lang/String;
+	public fun <init> (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	protected fun createReplicatedRepository (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)Lorg/modelix/model/client/ReplicatedRepository;
+	public fun dispose ()V
+	public fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public final fun getBranchName ()Ljava/lang/String;
+	public final fun getClient ()Lorg/modelix/model/client/IModelClient;
+	public final fun getRepository ()Lorg/modelix/model/lazy/RepositoryId;
+	public final fun getVersion ()Lorg/modelix/model/lazy/CLVersion;
+	protected final fun notifyListeners (Lorg/modelix/model/api/ITree;)V
+	public fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+	public final fun switchBranch (Ljava/lang/String;)V
+}
+
+public final class org/modelix/model/client/ActiveBranch$Companion {
+}
+
+public final class org/modelix/model/client/AsyncStore : org/modelix/model/IKeyValueStoreWrapper {
+	public static final field Companion Lorg/modelix/model/client/AsyncStore$Companion;
+	public fun <init> (Lorg/modelix/model/IKeyValueStore;)V
+	public final fun dispose ()V
+	public fun get (Ljava/lang/String;)Ljava/lang/String;
+	public fun getAll (Ljava/lang/Iterable;)Ljava/util/Map;
+	public fun getPendingSize ()I
+	public fun getWrapped ()Lorg/modelix/model/IKeyValueStore;
+	public fun listen (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun prefetch (Ljava/lang/String;)V
+	public fun put (Ljava/lang/String;Ljava/lang/String;)V
+	public fun putAll (Ljava/util/Map;)V
+	public fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+}
+
+public final class org/modelix/model/client/AsyncStore$Companion {
+}
+
+public abstract interface class org/modelix/model/client/ConnectionListener {
+	public abstract fun receivedForbiddenResponse ()V
+	public abstract fun receivedSuccessfulResponse ()V
+}
+
+public final class org/modelix/model/client/GarbageFilteringStore : org/modelix/model/IKeyValueStoreWrapper {
+	public fun <init> (Lorg/modelix/model/IKeyValueStore;)V
+	public fun get (Ljava/lang/String;)Ljava/lang/String;
+	public fun getAll (Ljava/lang/Iterable;)Ljava/util/Map;
+	public fun getPendingSize ()I
+	public fun getWrapped ()Lorg/modelix/model/IKeyValueStore;
+	public fun listen (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun prefetch (Ljava/lang/String;)V
+	public fun put (Ljava/lang/String;Ljava/lang/String;)V
+	public fun putAll (Ljava/util/Map;)V
+	public fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+}
+
+public abstract interface class org/modelix/model/client/IIndirectBranch {
+	public abstract fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	public abstract fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public abstract fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+}
+
+public abstract interface class org/modelix/model/client/IModelClient : org/modelix/model/IKeyValueStore {
+	public abstract fun getAsyncStore ()Lorg/modelix/model/IKeyValueStore;
+	public abstract fun getClientId ()I
+	public abstract fun getIdGenerator ()Lorg/modelix/model/api/IIdGenerator;
+	public abstract fun getStoreCache ()Lorg/modelix/model/lazy/IDeserializingKeyValueStore;
+}
+
+public final class org/modelix/model/client/IModelClient$DefaultImpls {
+	public static fun getA (Lorg/modelix/model/client/IModelClient;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun newBulkQuery (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/IDeserializingKeyValueStore;)Lorg/modelix/model/lazy/IBulkQuery;
+}
+
+public class org/modelix/model/client/ReplicatedRepository {
+	public static final field Companion Lorg/modelix/model/client/ReplicatedRepository$Companion;
+	public fun <init> (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/BranchReference;Lkotlin/jvm/functions/Function0;)V
+	public fun <init> (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public final fun checkDisposed ()V
+	protected final fun createAndMergeLocalVersion ()Lorg/modelix/model/lazy/CLVersion;
+	public final fun createVersion (Lorg/modelix/model/lazy/CLTree;[Lorg/modelix/model/operations/IOperation;Lorg/modelix/model/lazy/CLVersion;)Lorg/modelix/model/lazy/CLVersion;
+	protected final fun deleteDetachedNodes ()V
+	public fun dispose ()V
+	public final fun endEdit ()Lorg/modelix/model/lazy/CLVersion;
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public final fun getLocalVersion ()Lorg/modelix/model/lazy/CLVersion;
+	public final fun isDisposed ()Z
+	public final fun startEdit ()V
+	protected final fun writeLocalVersion (Lorg/modelix/model/lazy/CLVersion;)V
+	protected final fun writeRemoteVersion (Lorg/modelix/model/lazy/CLVersion;)V
+}
+
+public final class org/modelix/model/client/ReplicatedRepository$Companion {
+}
+
+public final class org/modelix/model/client/RestWebModelClient : org/modelix/model/client/IModelClient {
+	public static final field Companion Lorg/modelix/model/client/RestWebModelClient$Companion;
+	public static final field MODEL_URI_VAR_NAME Ljava/lang/String;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function0;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function0;Ljava/util/List;Lio/ktor/client/HttpClient;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function0;Ljava/util/List;Lio/ktor/client/HttpClient;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun addForbiddenListener (Lorg/modelix/model/client/ConnectionListener;)V
+	public final fun addStatusListener (Lkotlin/jvm/functions/Function2;)V
+	public final fun dispose ()V
+	public fun get (Ljava/lang/String;)Ljava/lang/String;
+	public fun getA (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getAll (Ljava/lang/Iterable;)Ljava/util/Map;
+	public final fun getAllA (Ljava/lang/Iterable;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getAsyncStore ()Lorg/modelix/model/IKeyValueStore;
+	public final fun getBaseUrl ()Ljava/lang/String;
+	public fun getClientId ()I
+	public final fun getConnectionStatus ()Lorg/modelix/model/client/RestWebModelClient$ConnectionStatus;
+	public final fun getEmail ()Ljava/lang/String;
+	public final fun getEmailA (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getIdGenerator ()Lorg/modelix/model/api/IIdGenerator;
+	public fun getPendingSize ()I
+	public fun getStoreCache ()Lorg/modelix/model/lazy/IDeserializingKeyValueStore;
+	public fun listen (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun prefetch (Ljava/lang/String;)V
+	public fun put (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun putA (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun putAll (Ljava/util/Map;)V
+	public final fun putAllA (Ljava/util/Map;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun reconnect ()V
+	public fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public final fun removeStatusListener (Lkotlin/jvm/functions/Function2;)V
+	public final fun setBaseUrl (Ljava/lang/String;)V
+	public final fun sortEntriesByDependency (Ljava/util/Map;)Ljava/util/Map;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/client/RestWebModelClient$Companion {
+	public final fun getDefaultUrl ()Ljava/lang/String;
+	public final fun getModelUrlFromEnv ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/client/RestWebModelClient$ConnectionStatus : java/lang/Enum {
+	public static final field CONNECTED Lorg/modelix/model/client/RestWebModelClient$ConnectionStatus;
+	public static final field DISCONNECTED Lorg/modelix/model/client/RestWebModelClient$ConnectionStatus;
+	public static final field NEW Lorg/modelix/model/client/RestWebModelClient$ConnectionStatus;
+	public static final field WAITING_FOR_TOKEN Lorg/modelix/model/client/RestWebModelClient$ConnectionStatus;
+	public static fun valueOf (Ljava/lang/String;)Lorg/modelix/model/client/RestWebModelClient$ConnectionStatus;
+	public static fun values ()[Lorg/modelix/model/client/RestWebModelClient$ConnectionStatus;
+}
+
+public final class org/modelix/model/client/RestWebModelClient$PollingListener {
+	public fun <init> (Lorg/modelix/model/client/RestWebModelClient;Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public final fun dispose ()V
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getKeyListener ()Lorg/modelix/model/IKeyListener;
+	public final fun getNextDelay-UwyO8pc ()J
+	public final fun setNextDelay-LRDsOJo (J)V
+	public final fun start ()V
+}
+
+public final class org/modelix/model/client/RestWebModelClientKt {
+	public static final fun getForbidden (Lio/ktor/client/statement/HttpResponse;)Z
+	public static final fun getSuccessful (Lio/ktor/client/statement/HttpResponse;)Z
+	public static final fun getUnsuccessful (Lio/ktor/client/statement/HttpResponse;)Z
+}
+
+public final class org/modelix/model/client/SharedExecutors {
+	public static final field FIXED Ljava/util/concurrent/ExecutorService;
+	public static final field INSTANCE Lorg/modelix/model/client/SharedExecutors;
+	public static final fun fixDelay (JJLjava/lang/Runnable;)Ljava/util/concurrent/ScheduledFuture;
+	public static final fun fixDelay (JLjava/lang/Runnable;)Ljava/util/concurrent/ScheduledFuture;
+	public final fun getSCHEDULED ()Ljava/util/concurrent/ScheduledExecutorService;
+	public final fun shutdownAll ()V
+}
+
+public final class org/modelix/model/client/SimpleIndirectBranch : org/modelix/model/client/IIndirectBranch {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+}
+
+public abstract class org/modelix/model/client/VersionChangeDetector {
+	public static final field Companion Lorg/modelix/model/client/VersionChangeDetector$Companion;
+	public fun <init> (Lorg/modelix/model/IKeyValueStore;Ljava/lang/String;Lkotlinx/coroutines/CoroutineScope;)V
+	public final fun dispose ()V
+	public final fun getLastVersionHash ()Ljava/lang/String;
+	protected abstract fun processVersionChange (Ljava/lang/String;Ljava/lang/String;)V
+}
+
+public final class org/modelix/model/client/VersionChangeDetector$Companion {
+}
+
+public abstract interface class org/modelix/model/client2/IModelClientV2 {
+	public abstract fun deleteRepository (Lorg/modelix/model/lazy/RepositoryId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getClientId ()I
+	public abstract fun getIdGenerator ()Lorg/modelix/model/api/IIdGenerator;
+	public abstract fun getUserId ()Ljava/lang/String;
+	public abstract fun initRepository (Lorg/modelix/model/lazy/RepositoryId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun listBranches (Lorg/modelix/model/lazy/RepositoryId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun listRepositories (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun loadVersion (Ljava/lang/String;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun loadVersion (Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun poll (Lorg/modelix/model/lazy/BranchReference;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun pollHash (Lorg/modelix/model/lazy/BranchReference;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun pollHash (Lorg/modelix/model/lazy/BranchReference;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun pull (Lorg/modelix/model/lazy/BranchReference;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun pullHash (Lorg/modelix/model/lazy/BranchReference;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun pullIfExists (Lorg/modelix/model/lazy/BranchReference;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun push (Lorg/modelix/model/lazy/BranchReference;Lorg/modelix/model/IVersion;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun query (Lorg/modelix/model/lazy/BranchReference;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun query (Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/client2/ModelClientV2 : org/modelix/model/client2/Closable, org/modelix/model/client2/IModelClientV2 {
+	public static final field Companion Lorg/modelix/model/client2/ModelClientV2$Companion;
+	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;)V
+	public fun close ()V
+	public fun deleteRepository (Lorg/modelix/model/lazy/RepositoryId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getBaseUrl ()Ljava/lang/String;
+	public fun getClientId ()I
+	public fun getIdGenerator ()Lorg/modelix/model/api/IIdGenerator;
+	public final fun getStore ()Lorg/modelix/model/lazy/ObjectStoreCache;
+	public fun getUserId ()Ljava/lang/String;
+	public final fun init (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun initRepository (Lorg/modelix/model/lazy/RepositoryId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun listBranches (Lorg/modelix/model/lazy/RepositoryId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun listRepositories (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadVersion (Ljava/lang/String;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadVersion (Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun poll (Lorg/modelix/model/lazy/BranchReference;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun pollHash (Lorg/modelix/model/lazy/BranchReference;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun pollHash (Lorg/modelix/model/lazy/BranchReference;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun pull (Lorg/modelix/model/lazy/BranchReference;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun pullHash (Lorg/modelix/model/lazy/BranchReference;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun pullIfExists (Lorg/modelix/model/lazy/BranchReference;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun push (Lorg/modelix/model/lazy/BranchReference;Lorg/modelix/model/IVersion;Lorg/modelix/model/IVersion;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun query (Lorg/modelix/model/lazy/BranchReference;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun query (Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setClientProvideUserId (Ljava/lang/String;)V
+	public final fun updateUserId (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/client2/ModelClientV2$Companion {
+	public final fun builder ()Lorg/modelix/model/client2/ModelClientV2Builder;
+}
+
+public abstract class org/modelix/model/client2/ModelClientV2Builder {
+	public static final field Companion Lorg/modelix/model/client2/ModelClientV2Builder$Companion;
+	public fun <init> ()V
+	public final fun authToken (Lkotlin/jvm/functions/Function0;)Lorg/modelix/model/client2/ModelClientV2Builder;
+	public final fun build ()Lorg/modelix/model/client2/ModelClientV2;
+	public final fun client (Lio/ktor/client/HttpClient;)Lorg/modelix/model/client2/ModelClientV2Builder;
+	protected fun configureHttpClient (Lio/ktor/client/HttpClientConfig;)V
+	public final fun connectTimeout-LRDsOJo (J)Lorg/modelix/model/client2/ModelClientV2Builder;
+	protected abstract fun createHttpClient ()Lio/ktor/client/HttpClient;
+	protected final fun getAuthTokenProvider ()Lkotlin/jvm/functions/Function0;
+	protected final fun getBaseUrl ()Ljava/lang/String;
+	protected final fun getConnectTimeout-UwyO8pc ()J
+	protected final fun getHttpClient ()Lio/ktor/client/HttpClient;
+	protected final fun getRequestTimeout-UwyO8pc ()J
+	protected final fun getUserId ()Ljava/lang/String;
+	public final fun requestTimeout-LRDsOJo (J)Lorg/modelix/model/client2/ModelClientV2Builder;
+	protected final fun setAuthTokenProvider (Lkotlin/jvm/functions/Function0;)V
+	protected final fun setBaseUrl (Ljava/lang/String;)V
+	protected final fun setConnectTimeout-LRDsOJo (J)V
+	protected final fun setHttpClient (Lio/ktor/client/HttpClient;)V
+	protected final fun setRequestTimeout-LRDsOJo (J)V
+	protected final fun setUserId (Ljava/lang/String;)V
+	public final fun url (Ljava/lang/String;)Lorg/modelix/model/client2/ModelClientV2Builder;
+	public final fun userId (Ljava/lang/String;)Lorg/modelix/model/client2/ModelClientV2Builder;
+}
+
+public final class org/modelix/model/client2/ModelClientV2Builder$Companion {
+}
+
+public final class org/modelix/model/client2/ModelClientV2Kt {
+	public static final fun checkObjectHashes (Lorg/modelix/model/server/api/v2/VersionDelta;)V
+	public static final fun getAllObjects (Lorg/modelix/model/server/api/v2/VersionDelta;)Ljava/util/Map;
+	public static final fun readVersionDelta (Lio/ktor/client/statement/HttpResponse;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun runWrite (Lorg/modelix/model/client2/IModelClientV2;Lorg/modelix/model/lazy/BranchReference;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun runWriteOnBranch (Lorg/modelix/model/client2/IModelClientV2;Lorg/modelix/model/lazy/BranchReference;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun useVersionStreamFormat (Lio/ktor/client/request/HttpRequestBuilder;)V
+}
+
+public final class org/modelix/model/client2/ModelClientV2PlatformSpecificBuilder : org/modelix/model/client2/ModelClientV2Builder {
+	public fun <init> ()V
+}
+
+public final class org/modelix/model/client2/ReplicatedModel {
+	public static final field Companion Lorg/modelix/model/client2/ReplicatedModel$Companion;
+	public fun <init> (Lorg/modelix/model/client2/IModelClientV2;Lorg/modelix/model/lazy/BranchReference;Lkotlinx/coroutines/CoroutineScope;)V
+	public synthetic fun <init> (Lorg/modelix/model/client2/IModelClientV2;Lorg/modelix/model/lazy/BranchReference;Lkotlinx/coroutines/CoroutineScope;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun dispose ()V
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public final fun getBranchRef ()Lorg/modelix/model/lazy/BranchReference;
+	public final fun getClient ()Lorg/modelix/model/client2/IModelClientV2;
+	public final fun getCurrentVersion (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun isDisposed ()Z
+	public final fun resetToServerVersion (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/client2/ReplicatedModel$Companion {
+}
+
+public final class org/modelix/model/client2/ReplicatedModelKt {
+	public static final fun getReplicatedModel (Lorg/modelix/model/client2/IModelClientV2;Lorg/modelix/model/lazy/BranchReference;)Lorg/modelix/model/client2/ReplicatedModel;
+	public static final fun getReplicatedModel (Lorg/modelix/model/client2/IModelClientV2;Lorg/modelix/model/lazy/BranchReference;Lkotlinx/coroutines/CoroutineScope;)Lorg/modelix/model/client2/ReplicatedModel;
+}
+
+public final class org/modelix/model/metameta/MetaMetaLanguage {
+	public static final field INSTANCE Lorg/modelix/model/metameta/MetaMetaLanguage;
+	public final fun getChildLink_Concept_childLinks ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getChildLink_Concept_properties ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getChildLink_Concept_referenceLinks ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getChildLink_Concept_superConcepts ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getChildLink_Language_concepts ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getConcept_ChildLink ()Lorg/modelix/model/api/SimpleConcept;
+	public final fun getConcept_Concept ()Lorg/modelix/model/api/SimpleConcept;
+	public final fun getConcept_ConceptReference ()Lorg/modelix/model/api/SimpleConcept;
+	public final fun getConcept_IHasUID ()Lorg/modelix/model/api/SimpleConcept;
+	public final fun getConcept_Language ()Lorg/modelix/model/api/SimpleConcept;
+	public final fun getConcept_Property ()Lorg/modelix/model/api/SimpleConcept;
+	public final fun getConcept_ReferenceLink ()Lorg/modelix/model/api/SimpleConcept;
+	public final fun getLanguage_metameta ()Lorg/modelix/model/api/SimpleLanguage;
+	public final fun getProperty_ChildLink_multiple ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_ChildLink_name ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_ChildLink_optional ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_Concept_abstract ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_Concept_name ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_IHasUID_uid ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_Language_name ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_Property_name ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_ReferenceLink_name ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getProperty_ReferenceLink_optional ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getReferenceLink_ChildLink_childConcept ()Lorg/modelix/model/api/SimpleReferenceLink;
+	public final fun getReferenceLink_ConceptReference_concept ()Lorg/modelix/model/api/SimpleReferenceLink;
+	public final fun getReferenceLink_ReferenceLink_targetConcept ()Lorg/modelix/model/api/SimpleReferenceLink;
+}
+
+public final class org/modelix/model/metameta/MetaModelBranch : org/modelix/model/api/IBranch {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun computeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeReadT (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public fun computeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeWriteT (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public final fun getDisabled ()Z
+	public fun getId ()Ljava/lang/String;
+	public fun getReadTransaction ()Lorg/modelix/model/api/IReadTransaction;
+	public fun getTransaction ()Lorg/modelix/model/api/ITransaction;
+	public fun getWriteTransaction ()Lorg/modelix/model/api/IWriteTransaction;
+	public fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+	public final fun resolveConcept (Lorg/modelix/model/api/IConceptReference;Lorg/modelix/model/api/ITree;)Lorg/modelix/model/api/IConcept;
+	public fun runRead (Lkotlin/jvm/functions/Function0;)V
+	public fun runReadT (Lkotlin/jvm/functions/Function1;)V
+	public fun runWrite (Lkotlin/jvm/functions/Function0;)V
+	public fun runWriteT (Lkotlin/jvm/functions/Function1;)V
+	public final fun setDisabled (Z)V
+	public final fun toGlobalConcept (Lorg/modelix/model/api/IConcept;Lorg/modelix/model/api/ITree;)Lorg/modelix/model/api/IConcept;
+	public final fun toGlobalConceptRef (Lorg/modelix/model/api/IConceptReference;Lorg/modelix/model/api/ITree;)Lorg/modelix/model/api/IConceptReference;
+	public final fun toLocalConcept (Lorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/IConcept;
+	public final fun wrapTree (Lorg/modelix/model/api/ITree;)Lorg/modelix/model/metameta/MetaModelBranch$MMTree;
+}
+
+public final class org/modelix/model/metameta/MetaModelBranch$MMBranchListener : org/modelix/model/api/IBranchListener {
+	public fun <init> (Lorg/modelix/model/metameta/MetaModelBranch;Lorg/modelix/model/api/IBranchListener;)V
+	public final fun getListener ()Lorg/modelix/model/api/IBranchListener;
+	public fun treeChanged (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/ITree;)V
+}
+
+public final class org/modelix/model/metameta/MetaModelBranch$MMBulkTree : org/modelix/model/metameta/MetaModelBranch$MMTree, org/modelix/model/lazy/IBulkTree, org/modelix/model/lazy/ITreeWrapper {
+	public fun <init> (Lorg/modelix/model/metameta/MetaModelBranch;Lorg/modelix/model/lazy/IBulkTree;)V
+	public fun getAncestors (Ljava/lang/Iterable;Z)Ljava/util/Set;
+	public fun getDescendants (JZ)Ljava/lang/Iterable;
+	public fun getDescendants (Ljava/lang/Iterable;Z)Ljava/lang/Iterable;
+	public synthetic fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun getTree ()Lorg/modelix/model/lazy/IBulkTree;
+	public fun getWrappedTree ()Lorg/modelix/model/api/ITree;
+}
+
+public final class org/modelix/model/metameta/MetaModelBranch$MMReadTransaction : org/modelix/model/ITransactionWrapper, org/modelix/model/api/IReadTransaction {
+	public fun <init> (Lorg/modelix/model/metameta/MetaModelBranch;Lorg/modelix/model/api/IReadTransaction;)V
+	public fun containsNode (J)Z
+	public fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getParent (J)J
+	public fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRole (J)Ljava/lang/String;
+	public final fun getTransaction ()Lorg/modelix/model/api/IReadTransaction;
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun getUserObject (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun putUserObject (Ljava/lang/Object;Ljava/lang/Object;)V
+	public fun unwrap ()Lorg/modelix/model/api/ITransaction;
+}
+
+public class org/modelix/model/metameta/MetaModelBranch$MMTree : org/modelix/model/api/ITree {
+	public fun <init> (Lorg/modelix/model/metameta/MetaModelBranch;Lorg/modelix/model/api/ITree;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/ITree;
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/ITree;
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/ITree;
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/ITree;
+	public fun containsNode (J)Z
+	public fun deleteNode (J)Lorg/modelix/model/api/ITree;
+	public fun deleteNodes ([J)Lorg/modelix/model/api/ITree;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getAllChildrenAsFlow (J)Lkotlinx/coroutines/flow/Flow;
+	public fun getAllReferenceTargetsAsFlow (J)Lkotlinx/coroutines/flow/Flow;
+	public fun getChildRoles (J)Ljava/lang/Iterable;
+	public fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getChildrenAsFlow (JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getDescendantsAsFlow (JZ)Lkotlinx/coroutines/flow/Flow;
+	public fun getId ()Ljava/lang/String;
+	public fun getParent (J)J
+	public fun getParentAsFlow (J)Lkotlinx/coroutines/flow/Flow;
+	public fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getPropertyValueAsFlow (JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceTargetAsFlow (JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public fun getRole (J)Ljava/lang/String;
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun hashCode ()I
+	public fun moveChild (JLjava/lang/String;IJ)Lorg/modelix/model/api/ITree;
+	public fun setProperty (JLjava/lang/String;Ljava/lang/String;)Lorg/modelix/model/api/ITree;
+	public fun setReferenceTarget (JLjava/lang/String;J)Lorg/modelix/model/api/ITree;
+	public fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/ITree;
+	public fun toString ()Ljava/lang/String;
+	public fun usesRoleIds ()Z
+	public fun visitChanges (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/ITreeChangeVisitor;)V
+}
+
+public final class org/modelix/model/metameta/MetaModelBranch$MMWriteTransaction : org/modelix/model/ITransactionWrapper, org/modelix/model/api/IWriteTransaction {
+	public fun <init> (Lorg/modelix/model/metameta/MetaModelBranch;Lorg/modelix/model/api/IWriteTransaction;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConcept;)J
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConceptReference;)J
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChildren (JLjava/lang/String;I[Lorg/modelix/model/api/IConceptReference;)[J
+	public fun containsNode (J)Z
+	public fun deleteNode (J)V
+	public fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getParent (J)J
+	public fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRole (J)Ljava/lang/String;
+	public final fun getTransaction ()Lorg/modelix/model/api/IWriteTransaction;
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun getUserObject (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun moveChild (JLjava/lang/String;IJ)V
+	public fun putUserObject (Ljava/lang/Object;Ljava/lang/Object;)V
+	public fun setProperty (JLjava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public fun setTree (Lorg/modelix/model/api/ITree;)V
+	public fun unwrap ()Lorg/modelix/model/api/ITransaction;
+}
+
+public final class org/modelix/model/metameta/MetaModelIndex {
+	public static final field Companion Lorg/modelix/model/metameta/MetaModelIndex$Companion;
+	public static final field LANGUAGES_ROLE Ljava/lang/String;
+	public synthetic fun <init> (Lorg/modelix/model/api/ITree;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getChildLinkId (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Long;
+	public final fun getConceptId (Lorg/modelix/model/api/IConcept;)Ljava/lang/Long;
+	public final fun getLanguageId (Lorg/modelix/model/api/ILanguage;)Ljava/lang/Long;
+	public final fun getPropertyId (Lorg/modelix/model/api/IProperty;)Ljava/lang/Long;
+	public final fun getReferenceLinkId (Lorg/modelix/model/api/IReferenceLink;)Ljava/lang/Long;
+	public final fun getTree ()Lorg/modelix/model/api/ITree;
+}
+
+public final class org/modelix/model/metameta/MetaModelIndex$Companion {
+	public final fun fromTree (Lorg/modelix/model/api/ITree;)Lorg/modelix/model/metameta/MetaModelIndex;
+	public final fun incremental (Lorg/modelix/model/metameta/MetaModelIndex;Lorg/modelix/model/api/ITree;)Lorg/modelix/model/metameta/MetaModelIndex;
+}
+
+public final class org/modelix/model/metameta/MetaModelSynchronizer {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public final fun getChildLinkId (Lorg/modelix/model/api/IChildLink;)J
+	public final fun getConceptId (Lorg/modelix/model/api/IConcept;)J
+	public final fun getIndex ()Lorg/modelix/model/metameta/MetaModelIndex;
+	public final fun getLanguageId (Lorg/modelix/model/api/ILanguage;)J
+	public final fun getPropertyId (Lorg/modelix/model/api/IProperty;)J
+	public final fun getReferenceLinkId (Lorg/modelix/model/api/IReferenceLink;)J
+	public final fun prefetch ()V
+}
+
+public final class org/modelix/model/metameta/PersistedConcept : org/modelix/model/api/IConcept, org/modelix/model/api/IConceptReference {
+	public fun <init> (JLjava/lang/String;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (JLjava/lang/String;)Lorg/modelix/model/metameta/PersistedConcept;
+	public static synthetic fun copy$default (Lorg/modelix/model/metameta/PersistedConcept;JLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/metameta/PersistedConcept;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildLinks ()Ljava/util/List;
+	public fun getAllProperties ()Ljava/util/List;
+	public fun getAllReferenceLinks ()Ljava/util/List;
+	public fun getChildLink (Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public fun getDirectSuperConcepts ()Ljava/util/List;
+	public final fun getId ()J
+	public fun getLanguage ()Lorg/modelix/model/api/ILanguage;
+	public fun getLongName ()Ljava/lang/String;
+	public fun getOwnChildLinks ()Ljava/util/List;
+	public fun getOwnProperties ()Ljava/util/List;
+	public fun getOwnReferenceLinks ()Ljava/util/List;
+	public fun getProperty (Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public fun getReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getReferenceLink (Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public fun getShortName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isAbstract ()Z
+	public fun isExactly (Lorg/modelix/model/api/IConcept;)Z
+	public fun isSubConceptOf (Lorg/modelix/model/api/IConcept;)Z
+	public fun resolve (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/IConcept;
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/oauth/ModelixOAuthClient {
+	public static final field INSTANCE Lorg/modelix/model/oauth/ModelixOAuthClient;
+	public final fun authorize (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getTokens ()Lcom/google/api/client/auth/oauth2/StoredCredential;
+	public final fun installAuth (Lio/ktor/client/HttpClientConfig;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun installAuth$default (Lorg/modelix/model/oauth/ModelixOAuthClient;Lio/ktor/client/HttpClientConfig;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+}
+
+public final class org/modelix/model/util/StreamUtils {
+	public static final field INSTANCE Lorg/modelix/model/util/StreamUtils;
+	public final fun indexOf (Ljava/util/stream/LongStream;J)I
+	public final fun intersection (Ljava/util/stream/Stream;Ljava/util/Set;)Ljava/util/Set;
+	public final fun last (Ljava/util/List;)Ljava/lang/Object;
+	public final fun removeLast (Ljava/util/List;)Ljava/lang/Object;
+	public final fun toList (Ljava/lang/Iterable;)Ljava/util/List;
+	public final fun toStream (Ljava/lang/Iterable;)Ljava/util/stream/Stream;
+}
+
+public abstract interface class org/modelix/model/util/pmap/CustomPMap {
+	public abstract fun containsKey (Ljava/lang/Object;)Z
+	public abstract fun get (Ljava/lang/Object;)Ljava/lang/Object;
+	public abstract fun keys ()Ljava/lang/Iterable;
+	public abstract fun put (Ljava/lang/Object;Ljava/lang/Object;)Lorg/modelix/model/util/pmap/CustomPMap;
+	public abstract fun remove (Ljava/lang/Object;)Lorg/modelix/model/util/pmap/CustomPMap;
+	public abstract fun values ()Ljava/lang/Iterable;
+}
+
+public final class org/modelix/model/util/pmap/LongKeyPMap {
+	public static final field Companion Lorg/modelix/model/util/pmap/LongKeyPMap$Companion;
+	public fun <init> ()V
+	public final fun get (J)Ljava/lang/Object;
+	public final fun put (JLjava/lang/Object;)Lorg/modelix/model/util/pmap/LongKeyPMap;
+	public final fun remove (J)Lorg/modelix/model/util/pmap/LongKeyPMap;
+	public final fun visitChanges (Lorg/modelix/model/util/pmap/LongKeyPMap;Lorg/modelix/model/util/pmap/LongKeyPMap$IChangeVisitor;)V
+	public final fun visitEntries (Ljava/util/function/BiPredicate;)V
+}
+
+public final class org/modelix/model/util/pmap/LongKeyPMap$Companion {
+	public final fun isBitNotSet (II)Z
+	public final fun logicalToPhysicalIndex (II)I
+}
+
+public final class org/modelix/model/util/pmap/LongKeyPMap$EmptyNode : org/modelix/model/util/pmap/LongKeyPMap$INode {
+	public fun <init> ()V
+	public fun get (JI)Ljava/lang/Object;
+	public fun put (JLjava/lang/Object;I)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public fun remove (JI)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public fun visitChanges (Lorg/modelix/model/util/pmap/LongKeyPMap$INode;Lorg/modelix/model/util/pmap/LongKeyPMap$IChangeVisitor;)V
+	public fun visitEntries (Ljava/util/function/BiPredicate;)Z
+}
+
+public abstract interface class org/modelix/model/util/pmap/LongKeyPMap$IChangeVisitor {
+	public abstract fun entryAdded (JLjava/lang/Object;)V
+	public abstract fun entryChanged (JLjava/lang/Object;Ljava/lang/Object;)V
+	public abstract fun entryRemoved (JLjava/lang/Object;)V
+}
+
+public abstract interface class org/modelix/model/util/pmap/LongKeyPMap$INode {
+	public abstract fun get (JI)Ljava/lang/Object;
+	public abstract fun put (JLjava/lang/Object;I)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public abstract fun remove (JI)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public abstract fun visitChanges (Lorg/modelix/model/util/pmap/LongKeyPMap$INode;Lorg/modelix/model/util/pmap/LongKeyPMap$IChangeVisitor;)V
+	public abstract fun visitEntries (Ljava/util/function/BiPredicate;)Z
+}
+
+public final class org/modelix/model/util/pmap/LongKeyPMap$InternalNode : org/modelix/model/util/pmap/LongKeyPMap$INode {
+	public static final field Companion Lorg/modelix/model/util/pmap/LongKeyPMap$InternalNode$Companion;
+	public fun <init> (I[Lorg/modelix/model/util/pmap/LongKeyPMap$INode;)V
+	public final fun deleteChild (I)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public fun get (JI)Ljava/lang/Object;
+	public final fun getChild (I)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public fun put (JLjava/lang/Object;I)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public fun remove (JI)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public final fun setChild (ILorg/modelix/model/util/pmap/LongKeyPMap$INode;)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public fun visitChanges (Lorg/modelix/model/util/pmap/LongKeyPMap$INode;Lorg/modelix/model/util/pmap/LongKeyPMap$IChangeVisitor;)V
+	public fun visitEntries (Ljava/util/function/BiPredicate;)Z
+}
+
+public final class org/modelix/model/util/pmap/LongKeyPMap$InternalNode$Companion {
+	public final fun empty ()Lorg/modelix/model/util/pmap/LongKeyPMap$InternalNode;
+	public final fun getEMPTY ()Lorg/modelix/model/util/pmap/LongKeyPMap$InternalNode;
+}
+
+public final class org/modelix/model/util/pmap/LongKeyPMap$LeafNode : org/modelix/model/util/pmap/LongKeyPMap$INode {
+	public static final field Companion Lorg/modelix/model/util/pmap/LongKeyPMap$LeafNode$Companion;
+	public fun <init> (JLjava/lang/Object;)V
+	public fun get (JI)Ljava/lang/Object;
+	public final fun getKey ()J
+	public final fun getValue ()Ljava/lang/Object;
+	public fun put (JLjava/lang/Object;I)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public fun remove (JI)Lorg/modelix/model/util/pmap/LongKeyPMap$INode;
+	public fun visitChanges (Lorg/modelix/model/util/pmap/LongKeyPMap$INode;Lorg/modelix/model/util/pmap/LongKeyPMap$IChangeVisitor;)V
+	public fun visitEntries (Ljava/util/function/BiPredicate;)Z
+}
+
+public final class org/modelix/model/util/pmap/LongKeyPMap$LeafNode$Companion {
+	public final fun create (JLjava/lang/Object;)Lorg/modelix/model/util/pmap/LongKeyPMap$LeafNode;
+}
+
+public abstract class org/modelix/model/util/pmap/SmallPMap : org/modelix/model/util/pmap/CustomPMap {
+	public static final field Companion Lorg/modelix/model/util/pmap/SmallPMap$Companion;
+	public fun <init> ()V
+	public abstract fun get (Ljava/lang/Object;)Ljava/lang/Object;
+	public abstract fun keys ()Ljava/lang/Iterable;
+	public abstract fun put (Ljava/lang/Object;Ljava/lang/Object;)Lorg/modelix/model/util/pmap/SmallPMap;
+	public abstract fun remove (Ljava/lang/Object;)Lorg/modelix/model/util/pmap/SmallPMap;
+	public abstract fun values ()Ljava/lang/Iterable;
+}
+
+public final class org/modelix/model/util/pmap/SmallPMap$Companion {
+	public final fun createS (Ljava/lang/Iterable;Ljava/lang/Iterable;)Lorg/modelix/model/util/pmap/SmallPMap;
+	public final fun empty ()Lorg/modelix/model/util/pmap/SmallPMap;
+}
+
+public final class org/modelix/model/util/pmap/SmallPMap$Multiple : org/modelix/model/util/pmap/SmallPMap {
+	public fun <init> ([Ljava/lang/Object;[Ljava/lang/Object;)V
+	public fun containsKey (Ljava/lang/Object;)Z
+	public fun get (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun keys ()Ljava/lang/Iterable;
+	public synthetic fun put (Ljava/lang/Object;Ljava/lang/Object;)Lorg/modelix/model/util/pmap/CustomPMap;
+	public fun put (Ljava/lang/Object;Ljava/lang/Object;)Lorg/modelix/model/util/pmap/SmallPMap;
+	public synthetic fun remove (Ljava/lang/Object;)Lorg/modelix/model/util/pmap/CustomPMap;
+	public fun remove (Ljava/lang/Object;)Lorg/modelix/model/util/pmap/SmallPMap;
+	public fun values ()Ljava/lang/Iterable;
+}
+
+public final class org/modelix/model/util/pmap/SmallPMap$Single : org/modelix/model/util/pmap/SmallPMap {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Object;)V
+	public fun containsKey (Ljava/lang/Object;)Z
+	public fun get (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun keys ()Ljava/lang/Iterable;
+	public synthetic fun put (Ljava/lang/Object;Ljava/lang/Object;)Lorg/modelix/model/util/pmap/CustomPMap;
+	public fun put (Ljava/lang/Object;Ljava/lang/Object;)Lorg/modelix/model/util/pmap/SmallPMap;
+	public synthetic fun remove (Ljava/lang/Object;)Lorg/modelix/model/util/pmap/CustomPMap;
+	public fun remove (Ljava/lang/Object;)Lorg/modelix/model/util/pmap/SmallPMap;
+	public fun values ()Ljava/lang/Iterable;
+}
+

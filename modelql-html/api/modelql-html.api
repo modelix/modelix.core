@@ -1,0 +1,20 @@
+public final class org/modelix/modelql/html/HtmlTemplatesKt {
+	public static final fun buildHtmlQuery (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoUnboundQuery;
+	public static final fun insert (Ljava/lang/Object;Lorg/modelix/modelql/html/ModelQLTemplateInstance;Lio/ktor/server/html/TemplatePlaceholder;)V
+	public static final fun insert (Ljava/lang/Object;Lorg/modelix/modelql/html/ModelQLTemplateInstance;Lkotlin/jvm/functions/Function1;)V
+	public static final fun requestTemplate (Lorg/modelix/modelql/core/IFragmentBuilder;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/modelql/html/IModelQLTemplate;)Lorg/modelix/modelql/html/ModelQLTemplateInstance;
+	public static final fun toKotlinTemplate (Lorg/modelix/modelql/core/IBoundFragment;)Lio/ktor/server/html/Template;
+	public static final fun toKotlinTemplate (Lorg/modelix/modelql/core/IValueRequest;)Lio/ktor/server/html/Template;
+	public static final fun toKotlinTemplate (Lorg/modelix/modelql/html/ModelQLTemplateInstance;)Lio/ktor/server/html/Template;
+}
+
+public abstract interface class org/modelix/modelql/html/IModelQLTemplate {
+	public abstract fun buildFragment (Lorg/modelix/modelql/core/IFragmentBuilder;)V
+}
+
+public final class org/modelix/modelql/html/ModelQLTemplateInstance {
+	public fun <init> (Lorg/modelix/modelql/html/IModelQLTemplate;Lorg/modelix/modelql/core/IValueRequest;)V
+	public final fun getFragment ()Lorg/modelix/modelql/core/IValueRequest;
+	public final fun getTemplate ()Lorg/modelix/modelql/html/IModelQLTemplate;
+}
+

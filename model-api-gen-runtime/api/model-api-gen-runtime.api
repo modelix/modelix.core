@@ -1,0 +1,593 @@
+public final class org/modelix/metamodel/BooleanPropertyAccessor : org/modelix/metamodel/PropertyAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;)V
+	public fun convertRead (Ljava/lang/String;)Ljava/lang/Boolean;
+	public synthetic fun convertRead (Ljava/lang/String;)Ljava/lang/Object;
+	public synthetic fun convertWrite (Ljava/lang/Object;)Ljava/lang/String;
+	public fun convertWrite (Z)Ljava/lang/String;
+}
+
+public abstract class org/modelix/metamodel/ChildAccessor : java/lang/Iterable, kotlin/jvm/internal/markers/KMappedMarker {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;Lorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)V
+	public final fun addNew (I)Lorg/modelix/metamodel/ITypedNode;
+	public final fun addNew (ILorg/modelix/metamodel/INonAbstractConcept;)Lorg/modelix/metamodel/ITypedNode;
+	public final fun addNew (Lorg/modelix/metamodel/INonAbstractConcept;)Lorg/modelix/metamodel/ITypedNode;
+	public static synthetic fun addNew$default (Lorg/modelix/metamodel/ChildAccessor;IILjava/lang/Object;)Lorg/modelix/metamodel/ITypedNode;
+	public static synthetic fun addNew$default (Lorg/modelix/metamodel/ChildAccessor;ILorg/modelix/metamodel/INonAbstractConcept;ILjava/lang/Object;)Lorg/modelix/metamodel/ITypedNode;
+	protected final fun getChildConcept ()Lorg/modelix/model/api/IConcept;
+	public final fun getChildType ()Lkotlin/reflect/KClass;
+	protected final fun getParent ()Lorg/modelix/model/api/INode;
+	protected final fun getRole ()Lorg/modelix/model/api/IChildLink;
+	public final fun getSize ()I
+	public final fun isEmpty ()Z
+	public fun iterator ()Ljava/util/Iterator;
+	public final fun remove (Lorg/modelix/metamodel/TypedNodeImpl;)V
+	public final fun removeUnwrapped (Lorg/modelix/model/api/INode;)V
+	public final fun untypedNodes ()Ljava/lang/Iterable;
+}
+
+public final class org/modelix/metamodel/ChildAccessorKt {
+	public static final fun filterLoaded (Lorg/modelix/metamodel/ChildAccessor;)Ljava/util/List;
+}
+
+public final class org/modelix/metamodel/ChildListAccessor : org/modelix/metamodel/ChildAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;Lorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)V
+}
+
+public final class org/modelix/metamodel/ChildNotSetException : java/lang/Exception {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedMandatorySingleChildLink;)V
+	public final fun getLink ()Lorg/modelix/metamodel/ITypedMandatorySingleChildLink;
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+}
+
+public abstract class org/modelix/metamodel/EmptyConcept : org/modelix/model/api/IConcept {
+	public fun <init> ()V
+	public fun getAllChildLinks ()Ljava/util/List;
+	public fun getAllProperties ()Ljava/util/List;
+	public fun getAllReferenceLinks ()Ljava/util/List;
+	public fun getChildLink (Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public fun getDirectSuperConcepts ()Ljava/util/List;
+	public fun getOwnChildLinks ()Ljava/util/List;
+	public fun getOwnProperties ()Ljava/util/List;
+	public fun getOwnReferenceLinks ()Ljava/util/List;
+	public fun getProperty (Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public fun getReferenceLink (Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public fun isAbstract ()Z
+	public fun isExactly (Lorg/modelix/model/api/IConcept;)Z
+	public fun isSubConceptOf (Lorg/modelix/model/api/IConcept;)Z
+}
+
+public abstract class org/modelix/metamodel/EnumSerializer {
+	public fun <init> ()V
+	protected final fun deserializeEnumMemberId (Ljava/lang/String;)Ljava/lang/String;
+	protected final fun serializeEnumMember (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/FallbackTypedConcept : org/modelix/metamodel/ITypedConcept {
+	public fun <init> (Lorg/modelix/model/api/IConcept;)V
+	public fun untyped ()Lorg/modelix/model/api/IConcept;
+}
+
+public abstract class org/modelix/metamodel/GeneratedChildLink : org/modelix/metamodel/ITypedChildLink, org/modelix/model/api/IChildLink {
+	public fun <init> (Lorg/modelix/model/api/IConcept;Ljava/lang/String;Ljava/lang/String;ZZLorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)V
+	public fun castChild (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/ITypedNode;
+	public fun getChildConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getTypedChildConcept ()Lorg/modelix/metamodel/IConceptOfTypedNode;
+	public fun getUID ()Ljava/lang/String;
+	public fun isMultiple ()Z
+	public fun isOptional ()Z
+	public fun untyped ()Lorg/modelix/model/api/IChildLink;
+}
+
+public final class org/modelix/metamodel/GeneratedChildListLink : org/modelix/metamodel/GeneratedChildLink, org/modelix/metamodel/ITypedChildListLink {
+	public fun <init> (Lorg/modelix/model/api/IConcept;Ljava/lang/String;Ljava/lang/String;ZLorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)V
+}
+
+public abstract class org/modelix/metamodel/GeneratedConcept : org/modelix/model/api/IConcept {
+	public static final field Companion Lorg/modelix/metamodel/GeneratedConcept$Companion;
+	public static final field UID_PREFIX Ljava/lang/String;
+	public fun <init> (Ljava/lang/String;Z)V
+	public fun getAllChildLinks ()Ljava/util/List;
+	public fun getAllProperties ()Ljava/util/List;
+	public fun getAllReferenceLinks ()Ljava/util/List;
+	public fun getChildLink (Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public abstract fun getInstanceClass ()Lkotlin/reflect/KClass;
+	public fun getLongName ()Ljava/lang/String;
+	public fun getOwnChildLinks ()Ljava/util/List;
+	public fun getOwnProperties ()Ljava/util/List;
+	public fun getOwnReferenceLinks ()Ljava/util/List;
+	public fun getProperty (Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public fun getReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getReferenceLink (Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public fun getShortName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public final fun get_typed ()Lorg/modelix/metamodel/ITypedConcept;
+	public fun isAbstract ()Z
+	public fun isExactly (Lorg/modelix/model/api/IConcept;)Z
+	public fun isSubConceptOf (Lorg/modelix/model/api/IConcept;)Z
+	public final fun newChildListLink (Ljava/lang/String;Ljava/lang/String;ZLorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)Lorg/modelix/metamodel/GeneratedChildListLink;
+	public final fun newMandatorySingleChildLink (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)Lorg/modelix/metamodel/GeneratedMandatorySingleChildLink;
+	public final fun newOptionalSingleChildLink (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)Lorg/modelix/metamodel/GeneratedSingleChildLink;
+	public final fun newProperty (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/metamodel/IPropertyValueSerializer;Z)Lorg/modelix/metamodel/GeneratedProperty;
+	public final fun newReferenceLink (Ljava/lang/String;Ljava/lang/String;ZLorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)Lorg/modelix/metamodel/GeneratedReferenceLink;
+	public abstract fun typed ()Lorg/modelix/metamodel/ITypedConcept;
+	public abstract fun wrap (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/ITypedNode;
+}
+
+public final class org/modelix/metamodel/GeneratedConcept$Companion {
+}
+
+public final class org/modelix/metamodel/GeneratedConceptKt {
+	public static final fun typed (Lorg/modelix/model/api/IChildLink;)Lorg/modelix/metamodel/ITypedChildLink;
+	public static final fun typed (Lorg/modelix/model/api/IProperty;)Lorg/modelix/metamodel/ITypedProperty;
+	public static final fun typed (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/metamodel/ITypedReferenceLink;
+}
+
+public abstract class org/modelix/metamodel/GeneratedLanguage : org/modelix/model/api/ILanguage {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun assertRegistered ()V
+	public fun getName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public final fun isRegistered ()Z
+	public final fun register ()V
+	public final fun unregister ()V
+}
+
+public final class org/modelix/metamodel/GeneratedMandatorySingleChildLink : org/modelix/metamodel/GeneratedSingleChildLink, org/modelix/metamodel/ITypedMandatorySingleChildLink {
+	public fun <init> (Lorg/modelix/model/api/IConcept;Ljava/lang/String;Ljava/lang/String;Lorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)V
+}
+
+public final class org/modelix/metamodel/GeneratedProperty : org/modelix/metamodel/ITypedProperty, org/modelix/model/api/IProperty {
+	public fun <init> (Lorg/modelix/model/api/IConcept;Ljava/lang/String;Ljava/lang/String;ZLorg/modelix/metamodel/IPropertyValueSerializer;)V
+	public fun deserializeValue (Ljava/lang/String;)Ljava/lang/Object;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun isOptional ()Z
+	public fun serializeValue (Ljava/lang/Object;)Ljava/lang/String;
+	public fun untyped ()Lorg/modelix/model/api/IProperty;
+}
+
+public final class org/modelix/metamodel/GeneratedReferenceLink : org/modelix/metamodel/ITypedReferenceLink, org/modelix/model/api/IReferenceLink {
+	public fun <init> (Lorg/modelix/model/api/IConcept;Ljava/lang/String;Ljava/lang/String;ZLorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)V
+	public fun castTarget (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/ITypedNode;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getTypedTargetConcept ()Lorg/modelix/metamodel/IConceptOfTypedNode;
+	public fun getUID ()Ljava/lang/String;
+	public fun isOptional ()Z
+	public fun untyped ()Lorg/modelix/model/api/IReferenceLink;
+}
+
+public class org/modelix/metamodel/GeneratedSingleChildLink : org/modelix/metamodel/GeneratedChildLink, org/modelix/metamodel/ITypedSingleChildLink {
+	public fun <init> (Lorg/modelix/model/api/IConcept;Ljava/lang/String;Ljava/lang/String;ZLorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)V
+}
+
+public abstract interface class org/modelix/metamodel/IConceptOfTypedNode : org/modelix/metamodel/ITypedConcept {
+	public abstract fun getInstanceInterface ()Lkotlin/reflect/KClass;
+}
+
+public abstract interface class org/modelix/metamodel/INonAbstractConcept : org/modelix/metamodel/IConceptOfTypedNode {
+}
+
+public abstract interface class org/modelix/metamodel/IPropertyValueEnum {
+	public abstract fun getName ()Ljava/lang/String;
+	public abstract fun getPresentation ()Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/metamodel/IPropertyValueSerializer {
+	public abstract fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public abstract fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/metamodel/ITypedChildLink : org/modelix/metamodel/ITypedConceptFeature {
+	public abstract fun castChild (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/ITypedNode;
+	public abstract fun getTypedChildConcept ()Lorg/modelix/metamodel/IConceptOfTypedNode;
+	public abstract fun untyped ()Lorg/modelix/model/api/IChildLink;
+}
+
+public final class org/modelix/metamodel/ITypedChildLinkKt {
+	public static final fun addNewChild (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedChildLink;ILorg/modelix/metamodel/INonAbstractConcept;)Lorg/modelix/metamodel/ITypedNode;
+	public static synthetic fun addNewChild$default (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedChildLink;ILorg/modelix/metamodel/INonAbstractConcept;ILjava/lang/Object;)Lorg/modelix/metamodel/ITypedNode;
+	public static final fun getChild (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedMandatorySingleChildLink;)Lorg/modelix/metamodel/ITypedNode;
+	public static final fun getChild (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedSingleChildLink;)Lorg/modelix/metamodel/ITypedNode;
+	public static final fun getChildren (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedChildLink;)Ljava/util/List;
+	public static final fun setNewChild (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedSingleChildLink;Lorg/modelix/metamodel/INonAbstractConcept;)Lorg/modelix/metamodel/ITypedNode;
+	public static synthetic fun setNewChild$default (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedSingleChildLink;Lorg/modelix/metamodel/INonAbstractConcept;ILjava/lang/Object;)Lorg/modelix/metamodel/ITypedNode;
+}
+
+public abstract interface class org/modelix/metamodel/ITypedChildListLink : org/modelix/metamodel/ITypedChildLink {
+}
+
+public abstract interface class org/modelix/metamodel/ITypedConcept {
+	public abstract fun untyped ()Lorg/modelix/model/api/IConcept;
+}
+
+public abstract interface class org/modelix/metamodel/ITypedConceptFeature {
+}
+
+public final class org/modelix/metamodel/ITypedConceptKt {
+	public static final fun getInstanceClass (Lorg/modelix/metamodel/IConceptOfTypedNode;)Lkotlin/reflect/KClass;
+	public static final fun get_concept (Lorg/modelix/metamodel/ITypedConcept;)Lorg/modelix/model/api/IConcept;
+	public static final fun typed (Lorg/modelix/model/api/IConcept;)Lorg/modelix/metamodel/ITypedConcept;
+}
+
+public abstract interface class org/modelix/metamodel/ITypedMandatorySingleChildLink : org/modelix/metamodel/ITypedSingleChildLink {
+}
+
+public abstract interface class org/modelix/metamodel/ITypedNode {
+	public abstract fun get_concept ()Lorg/modelix/metamodel/ITypedConcept;
+	public abstract fun unwrap ()Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/metamodel/ITypedNodeKt {
+	public static final fun getPropertyValue (Lorg/modelix/metamodel/ITypedNode;Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public static final fun instanceOf (Lorg/modelix/metamodel/ITypedNode;Lorg/modelix/metamodel/ITypedConcept;)Z
+	public static final fun instanceOf (Lorg/modelix/metamodel/ITypedNode;Lorg/modelix/model/api/IConcept;)Z
+	public static final fun typedConcept (Lorg/modelix/metamodel/ITypedNode;)Lorg/modelix/metamodel/ITypedConcept;
+	public static final fun untyped (Lorg/modelix/metamodel/ITypedNode;)Lorg/modelix/model/api/INode;
+	public static final fun untypedConcept (Lorg/modelix/metamodel/ITypedNode;)Lorg/modelix/model/api/IConcept;
+	public static final fun untypedReference (Lorg/modelix/metamodel/ITypedNode;)Lorg/modelix/model/api/INodeReference;
+}
+
+public abstract interface class org/modelix/metamodel/ITypedProperty : org/modelix/metamodel/ITypedConceptFeature {
+	public abstract fun deserializeValue (Ljava/lang/String;)Ljava/lang/Object;
+	public abstract fun serializeValue (Ljava/lang/Object;)Ljava/lang/String;
+	public abstract fun untyped ()Lorg/modelix/model/api/IProperty;
+}
+
+public final class org/modelix/metamodel/ITypedPropertyKt {
+	public static final fun getTypedPropertyValue (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedProperty;)Ljava/lang/Object;
+	public static final fun setTypedPropertyValue (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedProperty;Ljava/lang/Object;)V
+}
+
+public abstract interface class org/modelix/metamodel/ITypedReferenceLink : org/modelix/metamodel/ITypedConceptFeature {
+	public abstract fun castTarget (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/ITypedNode;
+	public abstract fun getTypedTargetConcept ()Lorg/modelix/metamodel/IConceptOfTypedNode;
+	public abstract fun untyped ()Lorg/modelix/model/api/IReferenceLink;
+}
+
+public final class org/modelix/metamodel/ITypedReferenceLinkKt {
+	public static final fun getReferenceTarget (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedReferenceLink;)Lorg/modelix/metamodel/ITypedNode;
+	public static final fun getReferenceTargetOrNull (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedReferenceLink;)Lorg/modelix/metamodel/ITypedNode;
+	public static final fun setReferenceTarget (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedReferenceLink;Lorg/modelix/metamodel/ITypedNode;)V
+}
+
+public abstract interface class org/modelix/metamodel/ITypedSingleChildLink : org/modelix/metamodel/ITypedChildLink {
+}
+
+public final class org/modelix/metamodel/IntPropertyAccessor : org/modelix/metamodel/PropertyAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;)V
+	public fun convertRead (Ljava/lang/String;)Ljava/lang/Integer;
+	public synthetic fun convertRead (Ljava/lang/String;)Ljava/lang/Object;
+	public fun convertWrite (I)Ljava/lang/String;
+	public synthetic fun convertWrite (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/MandatoryBooleanPropertySerializer : org/modelix/metamodel/IPropertyValueSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/MandatoryBooleanPropertySerializer;
+	public fun deserialize (Ljava/lang/String;)Ljava/lang/Boolean;
+	public synthetic fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public synthetic fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+	public fun serialize (Z)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/MandatoryEnumSerializer : org/modelix/metamodel/EnumSerializer, org/modelix/metamodel/IPropertyValueSerializer {
+	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public fun deserialize (Ljava/lang/String;)Ljava/lang/Enum;
+	public synthetic fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public fun serialize (Ljava/lang/Enum;)Ljava/lang/String;
+	public synthetic fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/MandatoryIntPropertySerializer : org/modelix/metamodel/IPropertyValueSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/MandatoryIntPropertySerializer;
+	public fun deserialize (Ljava/lang/String;)Ljava/lang/Integer;
+	public synthetic fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public fun serialize (I)Ljava/lang/String;
+	public synthetic fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/MandatoryReferenceAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;Lkotlin/reflect/KClass;)V
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public final fun getRole ()Lorg/modelix/model/api/IReferenceLink;
+	public final fun getTargetType ()Lkotlin/reflect/KClass;
+	public final fun getValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;)Lorg/modelix/metamodel/ITypedNode;
+	public final fun setValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;Lorg/modelix/metamodel/ITypedNode;)V
+}
+
+public final class org/modelix/metamodel/MandatoryStringPropertySerializer : org/modelix/metamodel/IPropertyValueSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/MandatoryStringPropertySerializer;
+	public synthetic fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public fun deserialize (Ljava/lang/String;)Ljava/lang/String;
+	public synthetic fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+	public fun serialize (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/ModelData {
+	public static final field Companion Lorg/modelix/metamodel/ModelData$Companion;
+	public fun <init> (Ljava/lang/String;Lorg/modelix/metamodel/NodeData;)V
+	public synthetic fun <init> (Ljava/lang/String;Lorg/modelix/metamodel/NodeData;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lorg/modelix/metamodel/NodeData;
+	public final fun copy (Ljava/lang/String;Lorg/modelix/metamodel/NodeData;)Lorg/modelix/metamodel/ModelData;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/ModelData;Ljava/lang/String;Lorg/modelix/metamodel/NodeData;ILjava/lang/Object;)Lorg/modelix/metamodel/ModelData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getRoot ()Lorg/modelix/metamodel/NodeData;
+	public fun hashCode ()I
+	public final fun load (Lorg/modelix/model/api/IBranch;)V
+	public final fun toCompactJson ()Ljava/lang/String;
+	public final fun toJson ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/ModelData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/ModelData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/metamodel/ModelData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/metamodel/ModelData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/ModelData$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lorg/modelix/metamodel/ModelData;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/ModelDataKt {
+	public static final fun nodeUID (Lorg/modelix/metamodel/ModelData;Lorg/modelix/metamodel/NodeData;)Ljava/lang/String;
+	public static final fun uid (Lorg/modelix/metamodel/NodeData;Lorg/modelix/metamodel/ModelData;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/ModelDataUtilsKt {
+	public static final fun modelDataFromFile (Ljava/io/File;)Lorg/modelix/model/data/ModelData;
+	public static final fun modelDataFromJson (Ljava/lang/String;)Lorg/modelix/model/data/ModelData;
+	public static final fun modelDataFromYaml (Ljava/lang/String;)Lorg/modelix/model/data/ModelData;
+	public static final fun toYaml (Lorg/modelix/model/data/ModelData;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/NodeData {
+	public static final field Companion Lorg/modelix/metamodel/NodeData$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun component6 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;)Lorg/modelix/metamodel/NodeData;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/NodeData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;ILjava/lang/Object;)Lorg/modelix/metamodel/NodeData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChildren ()Ljava/util/List;
+	public final fun getConcept ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getProperties ()Ljava/util/Map;
+	public final fun getReferences ()Ljava/util/Map;
+	public final fun getRole ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/NodeData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/NodeData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/metamodel/NodeData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/metamodel/NodeData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/NodeData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/metamodel/NullConcept : org/modelix/metamodel/EmptyConcept, org/modelix/model/api/IConceptReference {
+	public static final field INSTANCE Lorg/modelix/metamodel/NullConcept;
+	public fun getLanguage ()Lorg/modelix/model/api/ILanguage;
+	public fun getLongName ()Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getShortName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun resolve (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/IConcept;
+	public fun serialize ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/OptionalBooleanPropertySerializer : org/modelix/metamodel/IPropertyValueSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/OptionalBooleanPropertySerializer;
+	public fun deserialize (Ljava/lang/String;)Ljava/lang/Boolean;
+	public synthetic fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public fun serialize (Ljava/lang/Boolean;)Ljava/lang/String;
+	public synthetic fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/OptionalEnumSerializer : org/modelix/metamodel/EnumSerializer, org/modelix/metamodel/IPropertyValueSerializer {
+	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public fun deserialize (Ljava/lang/String;)Ljava/lang/Enum;
+	public synthetic fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public fun serialize (Ljava/lang/Enum;)Ljava/lang/String;
+	public synthetic fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/OptionalIntPropertySerializer : org/modelix/metamodel/IPropertyValueSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/OptionalIntPropertySerializer;
+	public fun deserialize (Ljava/lang/String;)Ljava/lang/Integer;
+	public synthetic fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public fun serialize (Ljava/lang/Integer;)Ljava/lang/String;
+	public synthetic fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/OptionalReferenceAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;Lkotlin/reflect/KClass;)V
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public final fun getRole ()Lorg/modelix/model/api/IReferenceLink;
+	public final fun getTargetType ()Lkotlin/reflect/KClass;
+	public final fun getValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;)Lorg/modelix/metamodel/ITypedNode;
+	public final fun setValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;Lorg/modelix/metamodel/ITypedNode;)V
+}
+
+public final class org/modelix/metamodel/OptionalStringPropertySerializer : org/modelix/metamodel/IPropertyValueSerializer {
+	public static final field INSTANCE Lorg/modelix/metamodel/OptionalStringPropertySerializer;
+	public synthetic fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
+	public fun deserialize (Ljava/lang/String;)Ljava/lang/String;
+	public synthetic fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+	public fun serialize (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public abstract class org/modelix/metamodel/PropertyAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;)V
+	public abstract fun convertRead (Ljava/lang/String;)Ljava/lang/Object;
+	public abstract fun convertWrite (Ljava/lang/Object;)Ljava/lang/String;
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public final fun getRole ()Lorg/modelix/model/api/IProperty;
+	public final fun getValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;)Ljava/lang/Object;
+	public final fun setValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;Ljava/lang/Object;)V
+}
+
+public final class org/modelix/metamodel/RawPropertyAccessor : org/modelix/metamodel/PropertyAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;)V
+	public synthetic fun convertRead (Ljava/lang/String;)Ljava/lang/Object;
+	public fun convertRead (Ljava/lang/String;)Ljava/lang/String;
+	public synthetic fun convertWrite (Ljava/lang/Object;)Ljava/lang/String;
+	public fun convertWrite (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/RawReferenceAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;)V
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public final fun getRole ()Lorg/modelix/model/api/IReferenceLink;
+	public final fun getValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;)Lorg/modelix/model/api/INode;
+	public final fun setValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;Lorg/modelix/model/api/INode;)V
+}
+
+public final class org/modelix/metamodel/ReferenceNotSetException : java/lang/Exception {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedReferenceLink;)V
+	public final fun getLink ()Lorg/modelix/metamodel/ITypedReferenceLink;
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/metamodel/SingleChildAccessor : org/modelix/metamodel/ChildAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;Lorg/modelix/model/api/IConcept;Lkotlin/reflect/KClass;)V
+	public final fun get ()Lorg/modelix/metamodel/ITypedNode;
+	public final fun isSet ()Z
+	public final fun read (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun setNew ()Lorg/modelix/metamodel/ITypedNode;
+	public final fun setNew (Lorg/modelix/metamodel/INonAbstractConcept;)Lorg/modelix/metamodel/ITypedNode;
+}
+
+public final class org/modelix/metamodel/SingleChildAccessorKt {
+	public static final fun setNew (Lorg/modelix/metamodel/SingleChildAccessor;Lkotlin/jvm/functions/Function1;)Lorg/modelix/metamodel/ITypedNode;
+	public static final fun setNew (Lorg/modelix/metamodel/SingleChildAccessor;Lorg/modelix/metamodel/INonAbstractConcept;Lkotlin/jvm/functions/Function1;)Lorg/modelix/metamodel/ITypedNode;
+}
+
+public final class org/modelix/metamodel/StringPropertyAccessor : org/modelix/metamodel/PropertyAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;)V
+	public synthetic fun convertRead (Ljava/lang/String;)Ljava/lang/Object;
+	public fun convertRead (Ljava/lang/String;)Ljava/lang/String;
+	public synthetic fun convertWrite (Ljava/lang/Object;)Ljava/lang/String;
+	public fun convertWrite (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/TypedLanguagesRegistry : org/modelix/model/api/ILanguageRepository {
+	public static final field INSTANCE Lorg/modelix/metamodel/TypedLanguagesRegistry;
+	public final fun dispose ()V
+	public fun getAllConcepts ()Ljava/util/List;
+	public fun getPriority ()I
+	public final fun isRegistered (Lorg/modelix/metamodel/GeneratedLanguage;)Z
+	public final fun register (Lorg/modelix/metamodel/GeneratedLanguage;)V
+	public fun resolveConcept (Ljava/lang/String;)Lorg/modelix/metamodel/GeneratedConcept;
+	public synthetic fun resolveConcept (Ljava/lang/String;)Lorg/modelix/model/api/IConcept;
+	public final fun unregister (Lorg/modelix/metamodel/GeneratedLanguage;)V
+	public final fun wrapNode (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/ITypedNode;
+}
+
+public final class org/modelix/metamodel/TypedLanguagesRegistryKt {
+	public static final fun asTypedNode (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/ITypedNode;
+	public static final fun typed (Lorg/modelix/model/api/INode;Lkotlin/reflect/KClass;)Lorg/modelix/metamodel/ITypedNode;
+	public static final fun typedUnsafe (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/ITypedNode;
+}
+
+public abstract class org/modelix/metamodel/TypedNodeImpl : org/modelix/metamodel/ITypedNode {
+	public fun <init> (Lorg/modelix/model/api/INode;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getWrappedNode ()Lorg/modelix/model/api/INode;
+	public fun hashCode ()I
+	public fun unwrap ()Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/metamodel/TypedNodeReference {
+	public fun <init> (Lorg/modelix/model/api/INodeReference;Lkotlin/reflect/KClass;)V
+	public final fun component1 ()Lorg/modelix/model/api/INodeReference;
+	public final fun component2 ()Lkotlin/reflect/KClass;
+	public final fun copy (Lorg/modelix/model/api/INodeReference;Lkotlin/reflect/KClass;)Lorg/modelix/metamodel/TypedNodeReference;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/TypedNodeReference;Lorg/modelix/model/api/INodeReference;Lkotlin/reflect/KClass;ILjava/lang/Object;)Lorg/modelix/metamodel/TypedNodeReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNodeClass ()Lkotlin/reflect/KClass;
+	public final fun getRef ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public final fun resolve (Lorg/modelix/model/area/IArea;)Lorg/modelix/metamodel/ITypedNode;
+	public fun toString ()Ljava/lang/String;
+	public final fun untyped ()Lorg/modelix/model/api/INodeReference;
+}
+
+public final class org/modelix/metamodel/TypedNodeTraversalKt {
+	public static final fun descendants (Lorg/modelix/metamodel/ITypedNode;Z)Lkotlin/sequences/Sequence;
+	public static synthetic fun descendants$default (Lorg/modelix/metamodel/ITypedNode;ZILjava/lang/Object;)Lkotlin/sequences/Sequence;
+}
+
+public final class org/modelix/metamodel/TypedPropertyAccessor {
+	public fun <init> (Lorg/modelix/model/api/INode;Lorg/modelix/metamodel/ITypedProperty;)V
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public final fun getRole ()Lorg/modelix/metamodel/ITypedProperty;
+	public final fun getValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;)Ljava/lang/Object;
+	public final fun setValue (Ljava/lang/Object;Lkotlin/reflect/KProperty;Ljava/lang/Object;)V
+}
+
+public final class org/modelix/metamodel/UnknownConcept : org/modelix/metamodel/EmptyConcept {
+	public fun <init> (Lorg/modelix/model/api/IConceptReference;)V
+	public final fun copy (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/metamodel/UnknownConcept;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/UnknownConcept;Lorg/modelix/model/api/IConceptReference;ILjava/lang/Object;)Lorg/modelix/metamodel/UnknownConcept;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getLanguage ()Lorg/modelix/model/api/ILanguage;
+	public fun getLongName ()Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getShortName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/metamodel/UnknownConceptInstance : org/modelix/metamodel/ITypedNode {
+	public fun <init> (Lorg/modelix/model/api/INode;)V
+	public final fun component1 ()Lorg/modelix/model/api/INode;
+	public final fun copy (Lorg/modelix/model/api/INode;)Lorg/modelix/metamodel/UnknownConceptInstance;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/UnknownConceptInstance;Lorg/modelix/model/api/INode;ILjava/lang/Object;)Lorg/modelix/metamodel/UnknownConceptInstance;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public fun get_concept ()Lorg/modelix/metamodel/ITypedConcept;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+	public fun unwrap ()Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/metamodel/UnknownTypedConcept : org/modelix/metamodel/ITypedConcept {
+	public fun <init> (Lorg/modelix/model/api/IConceptReference;)V
+	public final fun copy (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/metamodel/UnknownTypedConcept;
+	public static synthetic fun copy$default (Lorg/modelix/metamodel/UnknownTypedConcept;Lorg/modelix/model/api/IConceptReference;ILjava/lang/Object;)Lorg/modelix/metamodel/UnknownTypedConcept;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+	public fun untyped ()Lorg/modelix/model/api/IConcept;
+}
+

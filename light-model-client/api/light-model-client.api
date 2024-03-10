@@ -1,0 +1,168 @@
+public final class org/modelix/client/light/LightClientNodeReference : org/modelix/model/api/INodeReference {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getNodeId ()Ljava/lang/String;
+	public fun resolveNode (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/client/light/LightClientReferenceSerializer : org/modelix/model/api/INodeReferenceSerializerEx {
+	public static final field INSTANCE Lorg/modelix/client/light/LightClientReferenceSerializer;
+	public fun deserialize (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getPrefix ()Ljava/lang/String;
+	public fun getSupportedReferenceClasses ()Ljava/util/Set;
+	public final fun register ()V
+	public fun serialize (Lorg/modelix/model/api/INodeReference;)Ljava/lang/String;
+	public final fun unregister ()V
+}
+
+public final class org/modelix/client/light/LightModelClient {
+	public static final field Companion Lorg/modelix/client/light/LightModelClient$Companion;
+	public static final fun builder ()Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun changeQuery (Lorg/modelix/model/server/api/ModelQuery;)V
+	public final fun checkException ()V
+	public final fun dispose ()V
+	public final fun getAutoFilterNonLoadedNodes ()Z
+	public final fun getConnection ()Lorg/modelix/client/light/LightModelClient$IConnection;
+	public final fun getDebugName ()Ljava/lang/String;
+	public final fun getModelQLClient ()Lorg/modelix/modelql/client/ModelQLClient;
+	public final fun getNode (Ljava/lang/String;)Lorg/modelix/client/light/LightModelClient$NodeAdapter;
+	public final fun getNodeIfLoaded (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public final fun getRepositoryId ()Ljava/lang/String;
+	public final fun getRootNode ()Lorg/modelix/model/api/INode;
+	public final fun isInSync ()Z
+	public final fun isInitialized ()Z
+	public final fun runRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun runWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun tryGetParentId (Ljava/lang/String;)Ljava/lang/String;
+	public final fun waitForRootNode-VtjQ1oo (JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun waitForRootNode-VtjQ1oo$default (Lorg/modelix/client/light/LightModelClient;JLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class org/modelix/client/light/LightModelClient$Area : org/modelix/model/area/IArea {
+	public fun <init> (Lorg/modelix/client/light/LightModelClient;)V
+	public fun addListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun collectAreas ()Ljava/util/List;
+	public fun executeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun executeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun getClient ()Lorg/modelix/client/light/LightModelClient;
+	public fun getReference ()Lorg/modelix/model/area/IAreaReference;
+	public fun getRoot ()Lorg/modelix/model/api/INode;
+	public fun removeListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun resolveArea (Lorg/modelix/model/area/IAreaReference;)Lorg/modelix/model/area/IArea;
+	public fun resolveBranch (Ljava/lang/String;)Lorg/modelix/model/api/IBranch;
+	public fun resolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun resolveOriginalNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/client/light/LightModelClient$AreaReference : org/modelix/model/area/IAreaReference {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/client/light/LightModelClient$AreaReference;
+	public static synthetic fun copy$default (Lorg/modelix/client/light/LightModelClient$AreaReference;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/client/light/LightModelClient$AreaReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranchId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/client/light/LightModelClient$Companion {
+	public final fun builder ()Lorg/modelix/client/light/LightModelClientBuilder;
+}
+
+public abstract interface class org/modelix/client/light/LightModelClient$IConnection {
+	public abstract fun connect (Lkotlin/jvm/functions/Function1;)V
+	public abstract fun disconnect ()V
+	public abstract fun sendMessage (Lorg/modelix/model/server/api/MessageFromClient;)V
+}
+
+public final class org/modelix/client/light/LightModelClient$NodeAdapter : org/modelix/model/api/INodeEx, org/modelix/modelql/untyped/ISupportsModelQL {
+	public fun <init> (Lorg/modelix/client/light/LightModelClient;Ljava/lang/String;)V
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public final fun checkContainmentConsistency ()V
+	public fun createQueryExecutor ()Lorg/modelix/modelql/core/IQueryExecutor;
+	public fun equals (Ljava/lang/Object;)Z
+	public synthetic fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getAllChildren ()Ljava/util/List;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public synthetic fun getChildren (Ljava/lang/String;)Ljava/lang/Iterable;
+	public fun getChildren (Ljava/lang/String;)Ljava/util/List;
+	public final fun getClient ()Lorg/modelix/client/light/LightModelClient;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public final fun getData ()Lorg/modelix/model/server/api/NodeData;
+	public final fun getNodeId ()Ljava/lang/String;
+	public fun getParent ()Lorg/modelix/client/light/LightModelClient$NodeAdapter;
+	public synthetic fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyRoles ()Ljava/util/List;
+	public fun getPropertyValue (Ljava/lang/String;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceRoles ()Ljava/util/List;
+	public fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/client/light/LightModelClient$NodeAdapter;
+	public synthetic fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetRef (Ljava/lang/String;)Lorg/modelix/client/light/LightClientNodeReference;
+	public synthetic fun getReferenceTargetRef (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRoleInParent ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isValid ()Z
+	public fun moveChild (Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	public final fun setNodeId (Ljava/lang/String;)V
+	public fun setPropertyValue (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public fun toString ()Ljava/lang/String;
+	public fun usesRoleIds ()Z
+}
+
+public abstract class org/modelix/client/light/LightModelClientBuilder {
+	public fun <init> ()V
+	public final fun autoFilterNonLoadedNodes (Z)Lorg/modelix/client/light/LightModelClientBuilder;
+	public static synthetic fun autoFilterNonLoadedNodes$default (Lorg/modelix/client/light/LightModelClientBuilder;ZILjava/lang/Object;)Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun autoTransactions ()Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun build ()Lorg/modelix/client/light/LightModelClient;
+	public final fun connection (Lorg/modelix/client/light/LightModelClient$IConnection;)Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun debugName (Ljava/lang/String;)Lorg/modelix/client/light/LightModelClientBuilder;
+	protected abstract fun getDefaultEngineFactory ()Lio/ktor/client/engine/HttpClientEngineFactory;
+	public final fun host (Ljava/lang/String;)Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun httpClient (Lio/ktor/client/HttpClient;)Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun httpEngine (Lio/ktor/client/engine/HttpClientEngine;)Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun httpEngine (Lio/ktor/client/engine/HttpClientEngineFactory;)Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun modelQLClient (Lorg/modelix/modelql/client/ModelQLClient;)Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun port (I)Lorg/modelix/client/light/LightModelClientBuilder;
+	public final fun url (Ljava/lang/String;)Lorg/modelix/client/light/LightModelClientBuilder;
+}
+
+public final class org/modelix/client/light/LightModelClientJVM {
+	public static final field INSTANCE Lorg/modelix/client/light/LightModelClientJVM;
+	public static final fun builder ()Lorg/modelix/client/light/LightModelClientBuilder;
+}
+
+public final class org/modelix/client/light/LightModelClientKt {
+	public static final fun asUpdateData (Lorg/modelix/model/server/api/NodeData;)Lorg/modelix/model/server/api/NodeUpdateData;
+	public static final fun filterLoaded (Ljava/lang/Iterable;)Ljava/util/List;
+	public static final fun filterLoaded (Lkotlin/sequences/Sequence;)Lkotlin/sequences/Sequence;
+	public static final fun isLoaded (Lorg/modelix/model/api/INode;)Z
+}
+
+public final class org/modelix/client/light/PlatformSpecificLightModelClientBuilder : org/modelix/client/light/LightModelClientBuilder {
+	public fun <init> ()V
+}
+
+public final class org/modelix/client/light/ServerSideException : java/lang/Exception {
+	public fun <init> (Lorg/modelix/model/server/api/ExceptionData;)V
+}
+
+public final class org/modelix/client/light/WebsocketConnection : org/modelix/client/light/LightModelClient$IConnection {
+	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;)V
+	public fun connect (Lkotlin/jvm/functions/Function1;)V
+	public fun disconnect ()V
+	public final fun getCoroutineScope ()Lkotlinx/coroutines/CoroutineScope;
+	public final fun getHttpClient ()Lio/ktor/client/HttpClient;
+	public final fun getOutgoingMessagesChannel ()Lkotlinx/coroutines/channels/Channel;
+	public final fun getUrl ()Ljava/lang/String;
+	public fun sendMessage (Lorg/modelix/model/server/api/MessageFromClient;)V
+}
+

@@ -1,0 +1,6 @@
+public final class org/modelix/mps/model/sync/bulk/MPSBulkSynchronizer {
+	public static final field INSTANCE Lorg/modelix/mps/model/sync/bulk/MPSBulkSynchronizer;
+	public static final fun exportRepository ()V
+	public static final fun importRepository ()V
+}
+

@@ -1,0 +1,115 @@
+public final class org/modelix/modelql/typed/ConceptSwitchBuilder {
+	public fun <init> (Lorg/modelix/modelql/core/IMonoStep;)V
+	public final fun else (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun if (Lorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/typed/ConceptSwitchBuilder$CaseBuilder;
+}
+
+public final class org/modelix/modelql/typed/ConceptSwitchBuilder$CaseBuilder {
+	public fun <init> (Lorg/modelix/modelql/typed/ConceptSwitchBuilder;Lorg/modelix/metamodel/IConceptOfTypedNode;)V
+	public final fun getConcept ()Lorg/modelix/metamodel/IConceptOfTypedNode;
+	public final fun then (Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/typed/ConceptSwitchBuilder;
+}
+
+public final class org/modelix/modelql/typed/ConceptSwitchKt {
+	public static final fun conceptSwitch (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/typed/ConceptSwitchBuilder;
+	public static final fun conceptSwitchFragment (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/typed/ConceptSwitchBuilder;
+	public static final fun elseFragment (Lorg/modelix/modelql/typed/ConceptSwitchBuilder;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun thenFragment (Lorg/modelix/modelql/typed/ConceptSwitchBuilder$CaseBuilder;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/typed/ConceptSwitchBuilder;
+}
+
+public final class org/modelix/modelql/typed/TypedModelQL {
+	public static final field INSTANCE Lorg/modelix/modelql/typed/TypedModelQL;
+	public final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedChildListLink;ILorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/core/IMonoStep;
+	public static synthetic fun addNewChild$default (Lorg/modelix/modelql/typed/TypedModelQL;Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedChildListLink;ILorg/modelix/metamodel/IConceptOfTypedNode;ILjava/lang/Object;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun booleanProperty (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun booleanProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun children (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/ITypedChildLink;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun children (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedMandatorySingleChildLink;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun children (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedSingleChildLink;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun children (Lorg/modelix/modelql/core/IProducingStep;Lorg/modelix/metamodel/ITypedChildListLink;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun getSerializersModule ()Lkotlinx/serialization/modules/SerializersModule;
+	public final fun intProperty (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun intProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun optionalStringProperty (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun optionalStringProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun rawProperty (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun rawProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun reference (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/ITypedReferenceLink;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun reference (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedReferenceLink;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun referenceOrNull (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/ITypedReferenceLink;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun referenceOrNull (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedReferenceLink;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun setChild (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedSingleChildLink;Lorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun setProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedProperty;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun setReference (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedReferenceLink;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun setStringProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedProperty;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public final fun stringProperty (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IFluxStep;
+	public final fun stringProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedProperty;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/typed/TypedModelQLKt {
+	public static final fun conceptReference (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun conceptReference (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun descendants (Lorg/modelix/modelql/core/IFluxStep;Z)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun descendants (Lorg/modelix/modelql/core/IMonoStep;Z)Lorg/modelix/modelql/core/IFluxStep;
+	public static synthetic fun descendants$default (Lorg/modelix/modelql/core/IFluxStep;ZILjava/lang/Object;)Lorg/modelix/modelql/core/IFluxStep;
+	public static synthetic fun descendants$default (Lorg/modelix/modelql/core/IMonoStep;ZILjava/lang/Object;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun instanceOf (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun instanceOfExactly_typed_typed (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedConcept;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun instanceOfExactly_typed_untyped (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IConcept;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun instanceOfExactly_untyped_typed (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/ITypedConcept;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun instanceOfExactly_untyped_untyped (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IConcept;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun instanceOf_untyped (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun instanceOf_untyped_untyped (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IConcept;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun nodeReference (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun nodeReference (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun nodeReferenceAsString (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun nodeReferenceAsString (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun ofConcept (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun ofConcept (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun ofConcept_untyped (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun ofConcept_untyped (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/metamodel/IConceptOfTypedNode;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun query (Lorg/modelix/metamodel/ITypedNode;Lkotlin/reflect/KClass;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun typedUnsafe (Lorg/modelix/modelql/core/IFluxStep;Lkotlin/reflect/KClass;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun typedUnsafe (Lorg/modelix/modelql/core/IMonoStep;Lkotlin/reflect/KClass;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun untyped (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun untyped (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun untyped_nullable (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun untyped_nullable (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/typed/TypedNodeSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> (Lkotlin/reflect/KClass;Lkotlinx/serialization/KSerializer;)V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/metamodel/ITypedNode;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun getNodeClass ()Lkotlin/reflect/KClass;
+	public final fun getUntypedSerializer ()Lkotlinx/serialization/KSerializer;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/metamodel/ITypedNode;)V
+}
+
+public final class org/modelix/modelql/typed/TypedNodeStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> (Lkotlin/reflect/KClass;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getNodeClass ()Lkotlin/reflect/KClass;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/typed/UntypedNodeSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> (Lkotlinx/serialization/KSerializer;)V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/api/INode;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun getTypedSerializer ()Lkotlinx/serialization/KSerializer;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/api/INode;)V
+}
+
+public final class org/modelix/modelql/typed/UntypedNodeStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+

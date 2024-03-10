@@ -1,0 +1,78 @@
+public final class org/modelix/model/server/light/BulkModelQueryExecutorKt {
+	public static final fun execute (Lorg/modelix/model/server/api/ModelQuery;Lorg/modelix/model/api/INode;)Ljava/util/Set;
+}
+
+public final class org/modelix/model/server/light/IncrementalModelQueryExecutor {
+	public fun <init> (Lorg/modelix/model/api/INode;)V
+	public final fun getRootNode ()Lorg/modelix/model/api/INode;
+	public final fun invalidate (Ljava/util/Set;)V
+	public final fun update (Lorg/modelix/model/server/api/ModelQuery;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class org/modelix/model/server/light/LightModelServer {
+	public static final field Companion Lorg/modelix/model/server/light/LightModelServer$Companion;
+	public fun <init> (ILkotlin/jvm/functions/Function0;)V
+	public fun <init> (ILkotlin/jvm/functions/Function0;Ljava/util/Set;)V
+	public fun <init> (ILkotlin/jvm/functions/Function0;Ljava/util/Set;Ljava/util/List;)V
+	public synthetic fun <init> (ILkotlin/jvm/functions/Function0;Ljava/util/Set;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILorg/modelix/model/api/INode;Ljava/util/Set;Ljava/util/List;)V
+	public synthetic fun <init> (ILorg/modelix/model/api/INode;Ljava/util/Set;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getIgnoredRoles ()Ljava/util/Set;
+	public final fun getPort ()I
+	public final fun getRootNode ()Lorg/modelix/model/api/INode;
+	public final fun getRootNodeProvider ()Lkotlin/jvm/functions/Function0;
+	public final fun installHandlers (Lio/ktor/server/application/Application;)V
+	public final fun nodeChanged (Lorg/modelix/model/api/INode;)V
+	public final fun sendUpdate ()V
+	public final fun start ()V
+	public final fun start (Z)V
+	public static synthetic fun start$default (Lorg/modelix/model/server/light/LightModelServer;ZILjava/lang/Object;)V
+	public final fun stop ()V
+}
+
+public final class org/modelix/model/server/light/LightModelServer$Companion {
+	public final fun builder ()Lorg/modelix/model/server/light/LightModelServerBuilder;
+}
+
+public abstract interface class org/modelix/model/server/light/LightModelServer$IHealthCheck {
+	public abstract fun getEnabledByDefault ()Z
+	public abstract fun getId ()Ljava/lang/String;
+	public fun getValidParameterNames ()Ljava/util/Set;
+	public abstract fun run (Ljava/lang/StringBuilder;)Z
+	public fun run (Ljava/lang/StringBuilder;Ljava/util/Map;)Z
+}
+
+public final class org/modelix/model/server/light/LightModelServer$IHealthCheck$DefaultImpls {
+	public static fun getValidParameterNames (Lorg/modelix/model/server/light/LightModelServer$IHealthCheck;)Ljava/util/Set;
+	public static fun run (Lorg/modelix/model/server/light/LightModelServer$IHealthCheck;Ljava/lang/StringBuilder;Ljava/util/Map;)Z
+}
+
+public final class org/modelix/model/server/light/LightModelServer$SessionData {
+	public fun <init> (Lorg/modelix/model/server/light/LightModelServer;Lio/ktor/server/websocket/DefaultWebSocketServerSession;)V
+	public final fun applyUpdate (Ljava/util/List;Ljava/lang/Integer;)Lorg/modelix/model/server/api/MessageFromServer;
+	public final fun createUpdate ()Lorg/modelix/model/server/api/VersionData;
+	public final fun createUpdateMessage ()Lorg/modelix/model/server/api/MessageFromServer;
+	public final fun getWebsocketSession ()Lio/ktor/server/websocket/DefaultWebSocketServerSession;
+	public final fun nodeChanged (Lorg/modelix/model/api/INode;)V
+	public final fun replaceQuery (Lorg/modelix/model/server/api/ModelQuery;)V
+	public final fun sendMessage (Lorg/modelix/model/server/api/MessageFromServer;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun sendUpdate (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/server/light/LightModelServerBuilder {
+	public fun <init> ()V
+	public final fun build ()Lorg/modelix/model/server/light/LightModelServer;
+	public final fun healthCheck (Lorg/modelix/model/server/light/LightModelServer$IHealthCheck;)Lorg/modelix/model/server/light/LightModelServerBuilder;
+	public final fun ignoreRole (Lorg/modelix/model/api/IRole;)Lorg/modelix/model/server/light/LightModelServerBuilder;
+	public final fun port (I)Lorg/modelix/model/server/light/LightModelServerBuilder;
+	public final fun rootNode (Lkotlin/jvm/functions/Function0;)Lorg/modelix/model/server/light/LightModelServerBuilder;
+	public final fun rootNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/server/light/LightModelServerBuilder;
+}
+
+public final class org/modelix/model/server/light/QueryImplementationKt {
+	public static final fun apply (Lorg/modelix/model/server/api/Filter;Lorg/modelix/model/api/INode;)Z
+	public static final fun apply (Lorg/modelix/model/server/api/StringOperator;Ljava/lang/String;)Z
+	public static final fun applyFilters (Lorg/modelix/model/server/api/RootOrSubquery;Lorg/modelix/model/api/INode;)Z
+	public static final fun queryNodes (Lorg/modelix/model/server/api/RootOrSubquery;Lorg/modelix/model/api/INode;)Lkotlin/sequences/Sequence;
+}
+

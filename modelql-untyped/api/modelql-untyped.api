@@ -1,0 +1,825 @@
+public final class org/modelix/modelql/untyped/AddNewChildNodeStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> (Ljava/lang/String;ILorg/modelix/model/api/ConceptReference;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getConcept ()Lorg/modelix/model/api/ConceptReference;
+	public final fun getIndex ()I
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getRole ()Ljava/lang/String;
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/modelql/untyped/AddNewChildNodeStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/AddNewChildNodeStep$Descriptor$Companion;
+	public fun <init> (Ljava/lang/String;ILorg/modelix/model/api/ConceptReference;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getConcept ()Lorg/modelix/model/api/ConceptReference;
+	public final fun getIndex ()I
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/AddNewChildNodeStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/AddNewChildNodeStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/AddNewChildNodeStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/AddNewChildNodeStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/AddNewChildNodeStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/AddNewChildNodeStepKt {
+	public static final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;I)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;ILorg/modelix/model/api/ConceptReference;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;Lorg/modelix/model/api/ConceptReference;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IChildLink;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IChildLink;I)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/ConceptReference;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun addNewChild (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IChildLink;Lorg/modelix/model/api/ConceptReference;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/AllChildrenTraversalStep : org/modelix/modelql/core/FluxTransformingStep {
+	public fun <init> ()V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/AllChildrenTraversalStep$AllChildrenStepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/AllChildrenTraversalStep$AllChildrenStepDescriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/AllChildrenTraversalStep$AllChildrenStepDescriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/AllChildrenTraversalStep$AllChildrenStepDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/AllChildrenTraversalStep$AllChildrenStepDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/AllChildrenTraversalStep$AllChildrenStepDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/AllChildrenTraversalStep$AllChildrenStepDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/AllChildrenTraversalStep$AllChildrenStepDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/AllChildrenTraversalStepKt {
+	public static final fun allChildren (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/untyped/AllReferencesTraversalStep : org/modelix/modelql/core/FluxTransformingStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> ()V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/AllReferencesTraversalStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/AllReferencesTraversalStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/AllReferencesTraversalStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/AllReferencesTraversalStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/AllReferencesTraversalStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/AllReferencesTraversalStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/AllReferencesTraversalStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/AllReferencesTraversalStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/AllReferencesTraversalStepKt {
+	public static final fun allReferences (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/untyped/ChildrenTraversalStep : org/modelix/modelql/core/FluxTransformingStep, org/modelix/modelql/core/IFluxStep {
+	public fun <init> (Ljava/lang/String;)V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/ChildrenTraversalStep$ChildrenStepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getRole ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/ChildrenTraversalStep$ChildrenStepDescriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/ChildrenTraversalStep$ChildrenStepDescriptor$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/ChildrenTraversalStep$ChildrenStepDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/ChildrenTraversalStep$ChildrenStepDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/ChildrenTraversalStep$ChildrenStepDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/ChildrenTraversalStep$ChildrenStepDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ChildrenTraversalStep$ChildrenStepDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ChildrenTraversalStepKt {
+	public static final fun children (Lorg/modelix/modelql/core/IProducingStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceTraversalStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/ConceptReferenceTraversalStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/ConceptReference;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceTraversalStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/ConceptReferenceTraversalStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceTraversalStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/ConceptReferenceTraversalStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/ConceptReferenceTraversalStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/ConceptReferenceTraversalStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceTraversalStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceTraversalStepKt {
+	public static final fun conceptReference (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun conceptReference (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/model/api/ConceptReference;)Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceUIDTraversalStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ConceptReferenceUIDTraversalStepKt {
+	public static final fun getUID (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun getUID (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun getUID_nullable (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun getUID_nullable (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/DescendantsTraversalStep : org/modelix/modelql/core/FluxTransformingStep, org/modelix/modelql/core/IFluxStep {
+	public fun <init> (Z)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getIncludeSelf ()Z
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/DescendantsTraversalStep$WithSelfDescriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/DescendantsTraversalStep$WithSelfDescriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/DescendantsTraversalStep$WithSelfDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/DescendantsTraversalStep$WithSelfDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/DescendantsTraversalStep$WithSelfDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/DescendantsTraversalStep$WithSelfDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/DescendantsTraversalStep$WithSelfDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/DescendantsTraversalStep$WithoutSelfDescriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/DescendantsTraversalStep$WithoutSelfDescriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/DescendantsTraversalStep$WithoutSelfDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/DescendantsTraversalStep$WithoutSelfDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/DescendantsTraversalStep$WithoutSelfDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/DescendantsTraversalStep$WithoutSelfDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/DescendantsTraversalStep$WithoutSelfDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/DescendantsTraversalStepKt {
+	public static final fun descendants (Lorg/modelix/modelql/core/IProducingStep;Z)Lorg/modelix/modelql/core/IFluxStep;
+	public static synthetic fun descendants$default (Lorg/modelix/modelql/core/IProducingStep;ZILjava/lang/Object;)Lorg/modelix/modelql/core/IFluxStep;
+}
+
+public abstract interface class org/modelix/modelql/untyped/ISupportsModelQL : org/modelix/model/api/INode {
+	public abstract fun createQueryExecutor ()Lorg/modelix/modelql/core/IQueryExecutor;
+}
+
+public final class org/modelix/modelql/untyped/ISupportsModelQL$DefaultImpls {
+	public static fun addNewChild (Lorg/modelix/modelql/untyped/ISupportsModelQL;Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChildren (Lorg/modelix/modelql/untyped/ISupportsModelQL;Ljava/lang/String;ILjava/util/List;)Ljava/util/List;
+	public static fun getAllChildrenAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllProperties (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefs (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefsAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllReferenceTargets (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Ljava/util/List;
+	public static fun getAllReferenceTargetsAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getChildren (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public static fun getChildrenAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IChildLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getContainmentLink (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Lorg/modelix/model/api/IChildLink;
+	public static fun getDescendantsAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;Z)Lkotlinx/coroutines/flow/Flow;
+	public static fun getOriginalReference (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Ljava/lang/String;
+	public static fun getParentAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getPropertyLinks (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Ljava/util/List;
+	public static fun getPropertyValue (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public static fun getPropertyValueAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IProperty;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceLinks (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Ljava/util/List;
+	public static fun getReferenceTarget (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public static fun getReferenceTargetAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceTargetRef (Lorg/modelix/modelql/untyped/ISupportsModelQL;Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRef (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRefAsFlow (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun moveChild (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public static fun removeReference (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IReferenceLink;)V
+	public static fun setPropertyValue (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public static fun setReferenceTarget (Lorg/modelix/modelql/untyped/ISupportsModelQL;Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public static fun setReferenceTarget (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public static fun setReferenceTarget (Lorg/modelix/modelql/untyped/ISupportsModelQL;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public static fun tryGetConcept (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Lorg/modelix/model/api/IConcept;
+	public static fun usesRoleIds (Lorg/modelix/modelql/untyped/ISupportsModelQL;)Z
+}
+
+public final class org/modelix/modelql/untyped/MoveNodeStep : org/modelix/modelql/core/TransformingStepWithParameter {
+	public fun <init> (Ljava/lang/String;I)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public final fun getIndex ()I
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getRole ()Ljava/lang/String;
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+	public fun validate ()V
+}
+
+public final class org/modelix/modelql/untyped/MoveNodeStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/MoveNodeStep$Descriptor$Companion;
+	public fun <init> (Ljava/lang/String;I)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getIndex ()I
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/MoveNodeStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/MoveNodeStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/MoveNodeStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/MoveNodeStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/MoveNodeStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/MoveNodeStepKt {
+	public static final fun moveChild (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;ILorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun moveChild (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IChildLink;ILorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static synthetic fun moveChild$default (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;ILorg/modelix/modelql/core/IMonoStep;ILjava/lang/Object;)Lorg/modelix/modelql/core/IMonoStep;
+	public static synthetic fun moveChild$default (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IChildLink;ILorg/modelix/modelql/core/IMonoStep;ILjava/lang/Object;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public class org/modelix/modelql/untyped/NodeKSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> ()V
+	protected fun createNode (Lorg/modelix/model/api/NodeReference;)Lorg/modelix/model/api/INode;
+	protected fun createNode (Lorg/modelix/model/api/NodeReference;Lorg/modelix/model/api/ConceptReference;)Lorg/modelix/model/api/INode;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/api/INode;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/api/INode;)V
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/model/api/INodeReference;)Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceAsStringTraversalStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceAsStringTraversalStepKt {
+	public static final fun nodeReferenceAsString (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun nodeReferenceAsString (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun serialize (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun serialize (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceSourceStep : org/modelix/modelql/core/ConstantSourceStep {
+	public fun <init> (Lorg/modelix/model/api/INodeReference;)V
+	public fun canEvaluateStatically ()Z
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/NodeReferenceSourceStep$Descriptor;
+	public synthetic fun evaluateStatically ()Ljava/lang/Object;
+	public fun evaluateStatically ()Lorg/modelix/model/api/INodeReference;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceSourceStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/NodeReferenceSourceStep$Descriptor$Companion;
+	public fun <init> (Lorg/modelix/model/api/INodeReference;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getElement ()Lorg/modelix/model/api/INodeReference;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceSourceStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/NodeReferenceSourceStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/NodeReferenceSourceStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/NodeReferenceSourceStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceSourceStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceSourceStepKt {
+	public static final fun asMono (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun asMonoNullable (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceTraversalStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/NodeReferenceTraversalStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/INodeReference;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceTraversalStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/NodeReferenceTraversalStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceTraversalStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/NodeReferenceTraversalStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/NodeReferenceTraversalStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/NodeReferenceTraversalStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceTraversalStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/NodeReferenceTraversalStepKt {
+	public static final fun nodeReference (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun nodeReference (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/OfConceptStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> (Ljava/util/Set;)V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/OfConceptStep$Descriptor;
+	public final fun getConceptUIDs ()Ljava/util/Set;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/OfConceptStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/OfConceptStep$Descriptor$Companion;
+	public fun <init> (Ljava/util/Set;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getConceptUIDs ()Ljava/util/Set;
+}
+
+public final class org/modelix/modelql/untyped/OfConceptStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/OfConceptStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/OfConceptStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/OfConceptStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/OfConceptStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/OfConceptStepKt {
+	public static final fun ofConcept (Lorg/modelix/modelql/core/IFluxStep;Lorg/modelix/model/api/IConcept;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun ofConcept (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IConcept;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/ParentTraversalStep : org/modelix/modelql/core/MonoTransformingStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> ()V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/ParentTraversalStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/ParentTraversalStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/ParentTraversalStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/ParentTraversalStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/ParentTraversalStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/ParentTraversalStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/ParentTraversalStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ParentTraversalStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ParentTraversalStepKt {
+	public static final fun parent (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun parent (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/PropertyTraversalStep : org/modelix/modelql/core/SimpleMonoTransformingStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> (Ljava/lang/String;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/PropertyTraversalStep$PropertyStepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getRole ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/model/api/INode;)Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/PropertyTraversalStep$PropertyStepDescriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/PropertyTraversalStep$PropertyStepDescriptor$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/PropertyTraversalStep$PropertyStepDescriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/PropertyTraversalStep$PropertyStepDescriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/PropertyTraversalStep$PropertyStepDescriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/PropertyTraversalStep$PropertyStepDescriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/PropertyTraversalStep$PropertyStepDescriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/PropertyTraversalStepKt {
+	public static final fun property (Lorg/modelix/modelql/core/IFluxStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun property (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/ReferenceTraversalStep : org/modelix/modelql/core/MonoTransformingStep, org/modelix/modelql/core/IMonoStep {
+	public fun <init> (Ljava/lang/String;)V
+	public fun canBeEmpty ()Z
+	public fun canBeMultiple ()Z
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/ReferenceTraversalStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getRole ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/ReferenceTraversalStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/ReferenceTraversalStep$Descriptor$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/ReferenceTraversalStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/ReferenceTraversalStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/ReferenceTraversalStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/ReferenceTraversalStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ReferenceTraversalStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ReferenceTraversalStepKt {
+	public static final fun reference (Lorg/modelix/modelql/core/IFluxStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun reference (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun referenceOrNull (Lorg/modelix/modelql/core/IFluxStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun referenceOrNull (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/RemoveNodeStep : org/modelix/modelql/core/AggregationStep {
+	public fun <init> ()V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/RemoveNodeStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/RemoveNodeStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/RemoveNodeStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/RemoveNodeStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/RemoveNodeStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/RemoveNodeStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/RemoveNodeStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/RemoveNodeStepKt {
+	public static final fun remove (Lorg/modelix/modelql/core/IProducingStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/ResolveNodeStep : org/modelix/modelql/core/MonoTransformingStep {
+	public fun <init> ()V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/ResolveNodeStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/ResolveNodeStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/ResolveNodeStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/ResolveNodeStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/ResolveNodeStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/ResolveNodeStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/ResolveNodeStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ResolveNodeStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/ResolveNodeStepKt {
+	public static final fun resolve (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun resolve (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/RoleInParentTraversalStep : org/modelix/modelql/core/SimpleMonoTransformingStep {
+	public fun <init> ()V
+	public synthetic fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/untyped/RoleInParentTraversalStep$Descriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public fun toString ()Ljava/lang/String;
+	public synthetic fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun transform (Lorg/modelix/modelql/core/QueryEvaluationContext;Lorg/modelix/model/api/INode;)Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/RoleInParentTraversalStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/RoleInParentTraversalStep$Descriptor$Companion;
+	public fun <init> ()V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+}
+
+public final class org/modelix/modelql/untyped/RoleInParentTraversalStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/RoleInParentTraversalStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/RoleInParentTraversalStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/RoleInParentTraversalStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/RoleInParentTraversalStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/RoleInParentTraversalStepKt {
+	public static final fun roleInParent (Lorg/modelix/modelql/core/IFluxStep;)Lorg/modelix/modelql/core/IFluxStep;
+	public static final fun roleInParent (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/SetPropertyStep : org/modelix/modelql/core/TransformingStepWithParameter {
+	public fun <init> (Ljava/lang/String;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getRole ()Ljava/lang/String;
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/SetPropertyStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/SetPropertyStep$Descriptor$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/SetPropertyStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/SetPropertyStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/SetPropertyStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/SetPropertyStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/SetPropertyStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/SetPropertyStepKt {
+	public static final fun setProperty (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun setProperty (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun setProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IProperty;Ljava/lang/String;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun setProperty (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IProperty;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/SetReferenceStep : org/modelix/modelql/core/TransformingStepWithParameter {
+	public fun <init> (Ljava/lang/String;)V
+	public fun createDescriptor (Lorg/modelix/modelql/core/QueryGraphDescriptorBuilder;)Lorg/modelix/modelql/core/StepDescriptor;
+	public fun getOutputSerializer (Lorg/modelix/modelql/core/SerializationContext;)Lkotlinx/serialization/KSerializer;
+	public final fun getRole ()Ljava/lang/String;
+	public fun requiresWriteAccess ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/SetReferenceStep$Descriptor : org/modelix/modelql/core/StepDescriptor {
+	public static final field Companion Lorg/modelix/modelql/untyped/SetReferenceStep$Descriptor$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun createStep (Lorg/modelix/modelql/core/QueryDeserializationContext;)Lorg/modelix/modelql/core/IStep;
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/untyped/SetReferenceStep$Descriptor$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/SetReferenceStep$Descriptor$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/modelql/untyped/SetReferenceStep$Descriptor;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/modelql/untyped/SetReferenceStep$Descriptor;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/SetReferenceStep$Descriptor$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/modelql/untyped/SetReferenceStepKt {
+	public static final fun setReference (Lorg/modelix/modelql/core/IMonoStep;Ljava/lang/String;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public static final fun setReference (Lorg/modelix/modelql/core/IMonoStep;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+}
+
+public final class org/modelix/modelql/untyped/UntypedModelQL {
+	public static final field INSTANCE Lorg/modelix/modelql/untyped/UntypedModelQL;
+	public final fun getJson ()Lkotlinx/serialization/json/Json;
+	public final fun getSerializersModule ()Lkotlinx/serialization/modules/SerializersModule;
+}
+
+public final class org/modelix/modelql/untyped/UntypedModelQLKt {
+	public static final fun buildFluxQuery (Lorg/modelix/model/api/INode;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IFluxQuery;
+	public static final fun buildQuery (Lorg/modelix/model/api/INode;Lkotlin/jvm/functions/Function1;)Lorg/modelix/modelql/core/IMonoQuery;
+	public static final fun createQueryExecutor (Lorg/modelix/model/api/INode;)Lorg/modelix/modelql/core/IQueryExecutor;
+	public static final fun query (Lorg/modelix/model/api/INode;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun queryFlux (Lorg/modelix/model/api/INode;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

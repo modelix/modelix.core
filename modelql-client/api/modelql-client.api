@@ -1,0 +1,134 @@
+public final class org/modelix/modelql/client/ModelQLArea : org/modelix/model/area/IArea {
+	public fun <init> (Lorg/modelix/modelql/client/ModelQLClient;)V
+	public fun addListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun collectAreas ()Ljava/util/List;
+	public final fun component1 ()Lorg/modelix/modelql/client/ModelQLClient;
+	public final fun copy (Lorg/modelix/modelql/client/ModelQLClient;)Lorg/modelix/modelql/client/ModelQLArea;
+	public static synthetic fun copy$default (Lorg/modelix/modelql/client/ModelQLArea;Lorg/modelix/modelql/client/ModelQLClient;ILjava/lang/Object;)Lorg/modelix/modelql/client/ModelQLArea;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun executeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun executeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun getClient ()Lorg/modelix/modelql/client/ModelQLClient;
+	public fun getReference ()Lorg/modelix/model/area/IAreaReference;
+	public fun getRoot ()Lorg/modelix/model/api/INode;
+	public fun hashCode ()I
+	public fun removeListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun resolveArea (Lorg/modelix/model/area/IAreaReference;)Lorg/modelix/model/area/IArea;
+	public fun resolveBranch (Ljava/lang/String;)Lorg/modelix/model/api/IBranch;
+	public fun resolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun resolveOriginalNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/modelql/client/ModelQLClient {
+	public static final field Companion Lorg/modelix/modelql/client/ModelQLClient$Companion;
+	public fun <init> (Ljava/lang/String;Lio/ktor/client/HttpClient;Lkotlinx/serialization/modules/SerializersModule;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/ktor/client/HttpClient;Lkotlinx/serialization/modules/SerializersModule;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getArea ()Lorg/modelix/model/area/IArea;
+	public final fun getClient ()Lio/ktor/client/HttpClient;
+	public final fun getJson ()Lkotlinx/serialization/json/Json;
+	public final fun getNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/modelql/client/ModelQLNodeWithConceptQuery;
+	public final fun getRootNode ()Lorg/modelix/model/api/INode;
+	public final fun getSerializersModule ()Lkotlinx/serialization/modules/SerializersModule;
+	public final fun getUrl ()Ljava/lang/String;
+	public final fun query (Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun runQuery (Lorg/modelix/modelql/core/IUnboundQuery;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/modelix/modelql/client/ModelQLClient$Companion {
+	public final fun builder ()Lorg/modelix/modelql/client/ModelQLClientBuilder;
+}
+
+public abstract class org/modelix/modelql/client/ModelQLClientBuilder {
+	public fun <init> ()V
+	public final fun build ()Lorg/modelix/modelql/client/ModelQLClient;
+	protected abstract fun getDefaultEngineFactory ()Lio/ktor/client/engine/HttpClientEngineFactory;
+	public final fun httpClient (Lio/ktor/client/HttpClient;)Lorg/modelix/modelql/client/ModelQLClientBuilder;
+	public final fun httpEngine (Lio/ktor/client/engine/HttpClientEngine;)Lorg/modelix/modelql/client/ModelQLClientBuilder;
+	public final fun httpEngine (Lio/ktor/client/engine/HttpClientEngineFactory;)Lorg/modelix/modelql/client/ModelQLClientBuilder;
+	public final fun serializersModule (Lkotlinx/serialization/modules/SerializersModule;)Lorg/modelix/modelql/client/ModelQLClientBuilder;
+	public final fun url (Ljava/lang/String;)Lorg/modelix/modelql/client/ModelQLClientBuilder;
+}
+
+public final class org/modelix/modelql/client/ModelQLClientKt {
+	public static final fun blockingQuery (Lorg/modelix/modelql/client/ModelQLClient;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public abstract class org/modelix/modelql/client/ModelQLNode : org/modelix/model/api/INode, org/modelix/modelql/core/IQueryExecutor, org/modelix/modelql/untyped/ISupportsModelQL {
+	public fun <init> (Lorg/modelix/modelql/client/ModelQLClient;)V
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public final fun blockingQuery (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public fun createFlow (Lorg/modelix/modelql/core/IUnboundQuery;)Lkotlinx/coroutines/flow/Flow;
+	public fun createQueryExecutor ()Lorg/modelix/modelql/core/IQueryExecutor;
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Ljava/lang/String;)Ljava/lang/Iterable;
+	public fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public final fun getClient ()Lorg/modelix/modelql/client/ModelQLClient;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyRoles ()Ljava/util/List;
+	public fun getPropertyValue (Ljava/lang/String;)Ljava/lang/String;
+	public fun getReferenceRoles ()Ljava/util/List;
+	public fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetRef (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRoleInParent ()Ljava/lang/String;
+	public fun isValid ()Z
+	public fun moveChild (Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public fun moveChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	protected fun replaceQueryRoot (Lorg/modelix/modelql/core/IMonoStep;)Lorg/modelix/modelql/core/IMonoStep;
+	public fun setPropertyValue (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setPropertyValue (Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public fun usesRoleIds ()Z
+}
+
+public final class org/modelix/modelql/client/ModelQLNodeSerializer : org/modelix/modelql/untyped/NodeKSerializer {
+	public fun <init> (Lorg/modelix/modelql/client/ModelQLClient;)V
+	public final fun getClient ()Lorg/modelix/modelql/client/ModelQLClient;
+}
+
+public abstract class org/modelix/modelql/client/ModelQLNodeWithConceptCache : org/modelix/modelql/client/ModelQLNode {
+	public fun <init> (Lorg/modelix/modelql/client/ModelQLClient;)V
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference ()Lorg/modelix/model/api/ConceptReference;
+	public synthetic fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+}
+
+public final class org/modelix/modelql/client/ModelQLNodeWithConceptQuery : org/modelix/modelql/client/ModelQLNodeWithConceptCache {
+	public fun <init> (Lorg/modelix/modelql/client/ModelQLClient;Lorg/modelix/model/api/NodeReference;)V
+	public synthetic fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReference ()Lorg/modelix/model/api/NodeReference;
+}
+
+public final class org/modelix/modelql/client/ModelQLNodeWithKnownConcept : org/modelix/modelql/client/ModelQLNode {
+	public fun <init> (Lorg/modelix/modelql/client/ModelQLClient;Lorg/modelix/model/api/NodeReference;Lorg/modelix/model/api/ConceptReference;)V
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference ()Lorg/modelix/model/api/ConceptReference;
+	public synthetic fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public synthetic fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReference ()Lorg/modelix/model/api/NodeReference;
+}
+
+public final class org/modelix/modelql/client/ModelQLRootNode : org/modelix/modelql/client/ModelQLNodeWithConceptCache {
+	public fun <init> (Lorg/modelix/modelql/client/ModelQLClient;)V
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+}
+
+public final class org/modelix/modelql/client/ModelQLRootNodeReference : org/modelix/model/api/INodeReference {
+	public fun <init> ()V
+	public fun resolveNode (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/modelql/client/PlatformSpecificModelQLClientBuilder : org/modelix/modelql/client/ModelQLClientBuilder {
+	public fun <init> ()V
+}
+

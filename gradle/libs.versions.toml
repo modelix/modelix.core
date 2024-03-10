@@ -23,6 +23,7 @@ test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
 intellij = { id = "org.jetbrains.intellij", version = "1.17.2" }
 openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
+kotlin-binary-compatibility = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.14.0" }
 
 [versions]
 kotlin = "1.9.23"

@@ -1,0 +1,24 @@
+public final class org/modelix/modelql/server/ModelQLServer {
+	public static final field Companion Lorg/modelix/modelql/server/ModelQLServer$Companion;
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lorg/modelix/model/area/IArea;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getArea ()Lorg/modelix/model/area/IArea;
+	public final fun getRootNodeProvider ()Lkotlin/jvm/functions/Function0;
+	public final fun installHandler (Lio/ktor/server/routing/Route;)V
+}
+
+public final class org/modelix/modelql/server/ModelQLServer$Builder {
+	public fun <init> ()V
+	public final fun area (Lorg/modelix/model/area/IArea;)Lorg/modelix/modelql/server/ModelQLServer$Builder;
+	public final fun build ()Lorg/modelix/modelql/server/ModelQLServer;
+	public final fun rootNode (Lkotlin/jvm/functions/Function0;)Lorg/modelix/modelql/server/ModelQLServer$Builder;
+	public final fun rootNode (Lorg/modelix/model/api/INode;)Lorg/modelix/modelql/server/ModelQLServer$Builder;
+}
+
+public final class org/modelix/modelql/server/ModelQLServer$Companion {
+	public final fun builder (Lkotlin/jvm/functions/Function0;)Lorg/modelix/modelql/server/ModelQLServer$Builder;
+	public final fun builder (Lorg/modelix/model/api/INode;)Lorg/modelix/modelql/server/ModelQLServer$Builder;
+	public final fun handleCall (Lio/ktor/server/application/ApplicationCall;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun handleCall (Lio/ktor/server/application/ApplicationCall;Lorg/modelix/model/api/INode;Lorg/modelix/model/area/IArea;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun handleCall$default (Lorg/modelix/modelql/server/ModelQLServer$Companion;Lio/ktor/server/application/ApplicationCall;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+

@@ -1,0 +1,1519 @@
+public final class org/modelix/api/deprecated/DefaultApiKt {
+	public static final fun DefaultApi (Lio/ktor/server/routing/Route;)V
+}
+
+public final class org/modelix/api/deprecated/Paths {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonGenerateIdsPost {
+	public static final field Companion Lorg/modelix/api/deprecated/Paths$jsonGenerateIdsPost$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getQuantity ()Ljava/lang/Integer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonGenerateIdsPost$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths$jsonGenerateIdsPost$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/deprecated/Paths$jsonGenerateIdsPost;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/deprecated/Paths$jsonGenerateIdsPost;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonGenerateIdsPost$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonGet {
+	public static final field Companion Lorg/modelix/api/deprecated/Paths$jsonGet$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths$jsonGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/deprecated/Paths$jsonGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/deprecated/Paths$jsonGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdGet {
+	public static final field Companion Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdGet$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getRepositoryId ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdInitPost {
+	public static final field Companion Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdInitPost$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getRepositoryId ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdInitPost$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdInitPost$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdInitPost;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdInitPost;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdInitPost$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashGet {
+	public static final field Companion Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashGet$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getRepositoryId ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashPollGet {
+	public static final field Companion Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashPollGet$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getRepositoryId ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashPollGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashPollGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashPollGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashPollGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashPollGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashUpdatePost {
+	public static final field Companion Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashUpdatePost$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getRepositoryId ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashUpdatePost$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashUpdatePost$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashUpdatePost;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashUpdatePost;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdVersionHashUpdatePost$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdWsGet {
+	public static final field Companion Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdWsGet$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getConnection ()Ljava/lang/String;
+	public final fun getRepositoryId ()Ljava/lang/String;
+	public final fun getSecWebSocketKey ()Ljava/lang/String;
+	public final fun getUpgrade ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdWsGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdWsGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdWsGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/deprecated/Paths$jsonRepositoryIdWsGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/deprecated/Paths$jsonRepositoryIdWsGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/ContentExplorerExpandedNodes {
+	public static final field Companion Lorg/modelix/api/html/ContentExplorerExpandedNodes$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/util/List;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/util/List;Ljava/lang/Boolean;)Lorg/modelix/api/html/ContentExplorerExpandedNodes;
+	public static synthetic fun copy$default (Lorg/modelix/api/html/ContentExplorerExpandedNodes;Ljava/util/List;Ljava/lang/Boolean;ILjava/lang/Object;)Lorg/modelix/api/html/ContentExplorerExpandedNodes;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getExpandAll ()Ljava/lang/Boolean;
+	public final fun getExpandedNodeIds ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/html/ContentExplorerExpandedNodes$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/ContentExplorerExpandedNodes$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/ContentExplorerExpandedNodes;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/ContentExplorerExpandedNodes;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/ContentExplorerExpandedNodes$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/DefaultApiKt {
+	public static final fun DefaultApi (Lio/ktor/server/routing/Route;)V
+}
+
+public final class org/modelix/api/html/Paths {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths;
+}
+
+public final class org/modelix/api/html/Paths$getContent {
+	public static final field Companion Lorg/modelix/api/html/Paths$getContent$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/html/Paths$getContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$getContent$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$getContent;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$getContent;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getContent$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getContentRepositoryBranchLatest {
+	public static final field Companion Lorg/modelix/api/html/Paths$getContentRepositoryBranchLatest$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/html/Paths$getContentRepositoryBranchLatest$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$getContentRepositoryBranchLatest$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$getContentRepositoryBranchLatest;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$getContentRepositoryBranchLatest;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getContentRepositoryBranchLatest$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getHistory {
+	public static final field Companion Lorg/modelix/api/html/Paths$getHistory$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/html/Paths$getHistory$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$getHistory$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$getHistory;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$getHistory;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getHistory$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getIndex {
+	public static final field Companion Lorg/modelix/api/html/Paths$getIndex$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/html/Paths$getIndex$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$getIndex$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$getIndex;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$getIndex;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getIndex$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getNodeIdForVersionHash {
+	public static final field Companion Lorg/modelix/api/html/Paths$getNodeIdForVersionHash$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getNodeId ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/html/Paths$getNodeIdForVersionHash$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$getNodeIdForVersionHash$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$getNodeIdForVersionHash;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$getNodeIdForVersionHash;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getNodeIdForVersionHash$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getRepoAndBranch {
+	public static final field Companion Lorg/modelix/api/html/Paths$getRepoAndBranch$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getHead ()Ljava/lang/String;
+	public final fun getLimit ()Ljava/lang/String;
+	public final fun getRepoId ()Ljava/lang/String;
+	public final fun getSkip ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/html/Paths$getRepoAndBranch$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$getRepoAndBranch$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$getRepoAndBranch;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$getRepoAndBranch;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getRepoAndBranch$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getRepos {
+	public static final field Companion Lorg/modelix/api/html/Paths$getRepos$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/html/Paths$getRepos$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$getRepos$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$getRepos;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$getRepos;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getRepos$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getVersionHash {
+	public static final field Companion Lorg/modelix/api/html/Paths$getVersionHash$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/html/Paths$getVersionHash$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$getVersionHash$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$getVersionHash;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$getVersionHash;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$getVersionHash$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$postVersionHash {
+	public static final field Companion Lorg/modelix/api/html/Paths$postVersionHash$Companion;
+	public fun <init> (Ljava/lang/String;Lorg/modelix/api/html/ContentExplorerExpandedNodes;)V
+	public final fun getContentExplorerExpandedNodes ()Lorg/modelix/api/html/ContentExplorerExpandedNodes;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/html/Paths$postVersionHash$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$postVersionHash$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$postVersionHash;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$postVersionHash;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$postVersionHash$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$revertBranch {
+	public static final field Companion Lorg/modelix/api/html/Paths$revertBranch$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getFrom ()Ljava/lang/String;
+	public final fun getRepoId ()Ljava/lang/String;
+	public final fun getTo ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/html/Paths$revertBranch$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/html/Paths$revertBranch$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/html/Paths$revertBranch;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/html/Paths$revertBranch;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/html/Paths$revertBranch$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/light/DefaultApiKt {
+	public static final fun DefaultApi (Lio/ktor/server/routing/Route;)V
+}
+
+public final class org/modelix/api/light/Paths {
+	public static final field INSTANCE Lorg/modelix/api/light/Paths;
+}
+
+public final class org/modelix/api/light/Paths$jsonV2RepositoryIdWsGet {
+	public static final field Companion Lorg/modelix/api/light/Paths$jsonV2RepositoryIdWsGet$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getConnection ()Ljava/lang/String;
+	public final fun getRepositoryId ()Ljava/lang/String;
+	public final fun getSecWebSocketKey ()Ljava/lang/String;
+	public final fun getUpgrade ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/light/Paths$jsonV2RepositoryIdWsGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/light/Paths$jsonV2RepositoryIdWsGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/light/Paths$jsonV2RepositoryIdWsGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/light/Paths$jsonV2RepositoryIdWsGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/light/Paths$jsonV2RepositoryIdWsGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/operative/DefaultApiKt {
+	public static final fun DefaultApi (Lio/ktor/server/routing/Route;)V
+}
+
+public final class org/modelix/api/operative/Paths {
+	public static final field INSTANCE Lorg/modelix/api/operative/Paths;
+}
+
+public final class org/modelix/api/operative/Paths$getMetrics {
+	public static final field Companion Lorg/modelix/api/operative/Paths$getMetrics$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/operative/Paths$getMetrics$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/operative/Paths$getMetrics$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/operative/Paths$getMetrics;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/operative/Paths$getMetrics;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/operative/Paths$getMetrics$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/DefaultApiKt {
+	public static final fun DefaultApi (Lio/ktor/server/routing/Route;)V
+}
+
+public final class org/modelix/api/public/MapItem {
+	public static final field Companion Lorg/modelix/api/public/MapItem$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lorg/modelix/api/public/MapItem;
+	public static synthetic fun copy$default (Lorg/modelix/api/public/MapItem;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/api/public/MapItem;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue1 ()Ljava/lang/String;
+	public final fun getValue2 ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/MapItem$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/MapItem$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/MapItem;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/MapItem;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/MapItem$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths;
+}
+
+public final class org/modelix/api/public/Paths$counterKeyPost {
+	public static final field Companion Lorg/modelix/api/public/Paths$counterKeyPost$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getKey ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$counterKeyPost$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$counterKeyPost$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$counterKeyPost;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$counterKeyPost;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$counterKeyPost$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$deleteRepository {
+	public static final field Companion Lorg/modelix/api/public/Paths$deleteRepository$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$deleteRepository$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$deleteRepository$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$deleteRepository;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$deleteRepository;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$deleteRepository$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getAllPut {
+	public static final field Companion Lorg/modelix/api/public/Paths$getAllPut$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$getAllPut$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getAllPut$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getAllPut;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getAllPut;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getAllPut$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getEmailGet {
+	public static final field Companion Lorg/modelix/api/public/Paths$getEmailGet$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$getEmailGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getEmailGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getEmailGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getEmailGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getEmailGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getHeaders {
+	public static final field Companion Lorg/modelix/api/public/Paths$getHeaders$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$getHeaders$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getHeaders$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getHeaders;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getHeaders;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getHeaders$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getHealth {
+	public static final field Companion Lorg/modelix/api/public/Paths$getHealth$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$getHealth$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getHealth$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getHealth;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getHealth;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getHealth$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getKeyGet {
+	public static final field Companion Lorg/modelix/api/public/Paths$getKeyGet$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getKey ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getKeyGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getKeyGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getKeyGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getKeyGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getKeyGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getOldestVersionHash {
+	public static final field Companion Lorg/modelix/api/public/Paths$getOldestVersionHash$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getOldestVersionHash ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getOldestVersionHash$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getOldestVersionHash$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getOldestVersionHash;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getOldestVersionHash;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getOldestVersionHash$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getOldestVersionHashForVersion {
+	public static final field Companion Lorg/modelix/api/public/Paths$getOldestVersionHashForVersion$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getOldestVersionHash ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getOldestVersionHashForVersion$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getOldestVersionHashForVersion$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getOldestVersionHashForVersion;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getOldestVersionHashForVersion;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getOldestVersionHashForVersion$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRecursivelyKeyGet {
+	public static final field Companion Lorg/modelix/api/public/Paths$getRecursivelyKeyGet$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getKey ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getRecursivelyKeyGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getRecursivelyKeyGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getRecursivelyKeyGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getRecursivelyKeyGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRecursivelyKeyGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositories {
+	public static final field Companion Lorg/modelix/api/public/Paths$getRepositories$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$getRepositories$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getRepositories$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getRepositories;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getRepositories;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositories$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranch {
+	public static final field Companion Lorg/modelix/api/public/Paths$getRepositoryBranch$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getLastKnown ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranch$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getRepositoryBranch$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getRepositoryBranch;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getRepositoryBranch;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranch$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranchHash {
+	public static final field Companion Lorg/modelix/api/public/Paths$getRepositoryBranchHash$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranchHash$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getRepositoryBranchHash$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getRepositoryBranchHash;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getRepositoryBranchHash;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranchHash$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranches {
+	public static final field Companion Lorg/modelix/api/public/Paths$getRepositoryBranches$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranches$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getRepositoryBranches$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getRepositoryBranches;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getRepositoryBranches;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryBranches$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryVersionHash {
+	public static final field Companion Lorg/modelix/api/public/Paths$getRepositoryVersionHash$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getLastKnown ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryVersionHash$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getRepositoryVersionHash$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getRepositoryVersionHash;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getRepositoryVersionHash;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getRepositoryVersionHash$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getServerId {
+	public static final field Companion Lorg/modelix/api/public/Paths$getServerId$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$getServerId$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getServerId$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getServerId;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getServerId;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getServerId$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getUserId {
+	public static final field Companion Lorg/modelix/api/public/Paths$getUserId$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$getUserId$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getUserId$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getUserId;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getUserId;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getUserId$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getVersionHash {
+	public static final field Companion Lorg/modelix/api/public/Paths$getVersionHash$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getLastKnown ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$getVersionHash$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$getVersionHash$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$getVersionHash;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$getVersionHash;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$getVersionHash$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$initializeRepository {
+	public static final field Companion Lorg/modelix/api/public/Paths$initializeRepository$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getRepository ()Ljava/lang/String;
+	public final fun getUseRoleIds ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$initializeRepository$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$initializeRepository$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$initializeRepository;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$initializeRepository;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$initializeRepository$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$listenRepositoryBranch {
+	public static final field Companion Lorg/modelix/api/public/Paths$listenRepositoryBranch$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getConnection ()Ljava/lang/String;
+	public final fun getLastKnown ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+	public final fun getSecWebSocketKey ()Ljava/lang/String;
+	public final fun getUpgrade ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$listenRepositoryBranch$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$listenRepositoryBranch$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$listenRepositoryBranch;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$listenRepositoryBranch;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$listenRepositoryBranch$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$pollKeyGet {
+	public static final field Companion Lorg/modelix/api/public/Paths$pollKeyGet$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getLastKnownValue ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$pollKeyGet$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$pollKeyGet$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$pollKeyGet;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$pollKeyGet;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$pollKeyGet$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$pollRepositoryBranch {
+	public static final field Companion Lorg/modelix/api/public/Paths$pollRepositoryBranch$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getLastKnown ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$pollRepositoryBranch$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$pollRepositoryBranch$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$pollRepositoryBranch;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$pollRepositoryBranch;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$pollRepositoryBranch$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$pollRepositoryBranchHash {
+	public static final field Companion Lorg/modelix/api/public/Paths$pollRepositoryBranchHash$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getLastKnown ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$pollRepositoryBranchHash$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$pollRepositoryBranchHash$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$pollRepositoryBranchHash;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$pollRepositoryBranchHash;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$pollRepositoryBranchHash$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$postGenerateClientId {
+	public static final field Companion Lorg/modelix/api/public/Paths$postGenerateClientId$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$postGenerateClientId$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$postGenerateClientId$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$postGenerateClientId;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$postGenerateClientId;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$postGenerateClientId$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryBranch {
+	public static final field Companion Lorg/modelix/api/public/Paths$postRepositoryBranch$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryBranch$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$postRepositoryBranch$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$postRepositoryBranch;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$postRepositoryBranch;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryBranch$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryBranchQuery {
+	public static final field Companion Lorg/modelix/api/public/Paths$postRepositoryBranchQuery$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getBranch ()Ljava/lang/String;
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryBranchQuery$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$postRepositoryBranchQuery$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$postRepositoryBranchQuery;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$postRepositoryBranchQuery;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryBranchQuery$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryVersionHashQuery {
+	public static final field Companion Lorg/modelix/api/public/Paths$postRepositoryVersionHashQuery$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getRepository ()Ljava/lang/String;
+	public final fun getVersionHash ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryVersionHashQuery$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$postRepositoryVersionHashQuery$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$postRepositoryVersionHashQuery;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$postRepositoryVersionHashQuery;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$postRepositoryVersionHashQuery$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$putAllPut {
+	public static final field Companion Lorg/modelix/api/public/Paths$putAllPut$Companion;
+	public fun <init> ()V
+}
+
+public final class org/modelix/api/public/Paths$putAllPut$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$putAllPut$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$putAllPut;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$putAllPut;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$putAllPut$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$putKeyPut {
+	public static final field Companion Lorg/modelix/api/public/Paths$putKeyPut$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getKey ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$putKeyPut$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$putKeyPut$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$putKeyPut;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$putKeyPut;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$putKeyPut$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$putRepositoryObjects {
+	public static final field Companion Lorg/modelix/api/public/Paths$putRepositoryObjects$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getRepository ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/Paths$putRepositoryObjects$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/Paths$putRepositoryObjects$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/Paths$putRepositoryObjects;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/Paths$putRepositoryObjects;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/Paths$putRepositoryObjects$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/VersionDelta {
+	public static final field Companion Lorg/modelix/api/public/VersionDelta$Companion;
+	public fun <init> (Ljava/lang/String;Lorg/modelix/api/public/MapItem;Lorg/modelix/api/public/MapItem;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lorg/modelix/api/public/MapItem;Lorg/modelix/api/public/MapItem;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lorg/modelix/api/public/MapItem;
+	public final fun component3 ()Lorg/modelix/api/public/MapItem;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lorg/modelix/api/public/MapItem;Lorg/modelix/api/public/MapItem;Ljava/lang/String;)Lorg/modelix/api/public/VersionDelta;
+	public static synthetic fun copy$default (Lorg/modelix/api/public/VersionDelta;Ljava/lang/String;Lorg/modelix/api/public/MapItem;Lorg/modelix/api/public/MapItem;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/api/public/VersionDelta;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBaseVersion ()Ljava/lang/String;
+	public final fun getObjects ()Lorg/modelix/api/public/MapItem;
+	public final fun getObjectsMap ()Lorg/modelix/api/public/MapItem;
+	public final fun getVersionHash ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/api/public/VersionDelta$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/api/public/VersionDelta$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/api/public/VersionDelta;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/api/public/VersionDelta;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/api/public/VersionDelta$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/server/FileConverter : com/beust/jcommander/IStringConverter {
+	public fun <init> ()V
+	public fun convert (Ljava/lang/String;)Ljava/io/File;
+	public synthetic fun convert (Ljava/lang/String;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/server/Main {
+	public static final field DEFAULT_PORT I
+	public static final field INSTANCE Lorg/modelix/model/server/Main;
+	public static final fun main ([Ljava/lang/String;)V
+}
+
+public final class org/modelix/model/server/handlers/ContainmentData {
+	public fun <init> (JLjava/lang/String;I)V
+	public final fun getIndex ()I
+	public final fun getParent ()J
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/server/handlers/ContentExplorer {
+	public fun <init> (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/server/handlers/RepositoriesManager;)V
+	public final fun init (Lio/ktor/server/application/Application;)V
+}
+
+public final class org/modelix/model/server/handlers/ContentExplorerExpandedNodes {
+	public static final field Companion Lorg/modelix/model/server/handlers/ContentExplorerExpandedNodes$Companion;
+	public fun <init> (Ljava/util/Set;Z)V
+	public final fun component1 ()Ljava/util/Set;
+	public final fun component2 ()Z
+	public final fun copy (Ljava/util/Set;Z)Lorg/modelix/model/server/handlers/ContentExplorerExpandedNodes;
+	public static synthetic fun copy$default (Lorg/modelix/model/server/handlers/ContentExplorerExpandedNodes;Ljava/util/Set;ZILjava/lang/Object;)Lorg/modelix/model/server/handlers/ContentExplorerExpandedNodes;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getExpandAll ()Z
+	public final fun getExpandedNodeIds ()Ljava/util/Set;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/server/handlers/ContentExplorerExpandedNodes$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/server/handlers/ContentExplorerExpandedNodes$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/server/handlers/ContentExplorerExpandedNodes;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/server/handlers/ContentExplorerExpandedNodes;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/server/handlers/ContentExplorerExpandedNodes$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/server/handlers/DeprecatedLightModelServer {
+	public fun <init> (Lorg/modelix/model/server/store/LocalModelClient;)V
+	public final fun getClient ()Lorg/modelix/model/server/store/LocalModelClient;
+	public final fun getStore ()Lorg/modelix/model/lazy/IDeserializingKeyValueStore;
+	public final fun init (Lio/ktor/server/application/Application;)V
+}
+
+public final class org/modelix/model/server/handlers/HistoryHandler {
+	public fun <init> (Lorg/modelix/model/client/IModelClient;Lorg/modelix/model/server/handlers/RepositoriesManager;)V
+	public final fun getClient ()Lorg/modelix/model/client/IModelClient;
+	public final fun init (Lio/ktor/server/application/Application;)V
+	public final fun revert (Lorg/modelix/model/lazy/BranchReference;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+}
+
+public final class org/modelix/model/server/handlers/JsonUtilsKt {
+	public static final fun arrayEntries (Lorg/json/JSONObject;)Ljava/util/Map;
+	public static final fun asLongList (Lorg/json/JSONArray;)Ljava/util/List;
+	public static final fun asObjectList (Lorg/json/JSONArray;)Ljava/util/List;
+	public static final fun buildJSONArray ([Ljava/lang/Object;)Lorg/json/JSONArray;
+	public static final fun buildJSONObject (Lkotlin/jvm/functions/Function1;)Lorg/json/JSONObject;
+	public static final fun entries (Lorg/json/JSONObject;)Ljava/util/Map;
+	public static final fun jsonNullToJavaNull (Ljava/lang/Object;)Ljava/lang/Object;
+	public static final fun longEntries (Lorg/json/JSONObject;)Ljava/util/Map;
+	public static final fun stringEntries (Lorg/json/JSONObject;)Ljava/util/Map;
+	public static final fun toJsonArray (Ljava/lang/Iterable;)Lorg/json/JSONArray;
+}
+
+public final class org/modelix/model/server/handlers/KeyValueLikeModelServer {
+	public static final field Companion Lorg/modelix/model/server/handlers/KeyValueLikeModelServer$Companion;
+	public static final field PROTECTED_PREFIX Ljava/lang/String;
+	public fun <init> (Lorg/modelix/model/server/handlers/RepositoriesManager;)V
+	public final fun collect (Ljava/lang/String;)Lorg/json/JSONArray;
+	public final fun getRepositoriesManager ()Lorg/modelix/model/server/handlers/RepositoriesManager;
+	public final fun getStoreClient ()Lorg/modelix/model/server/store/IStoreClient;
+	public final fun init (Lio/ktor/server/application/Application;)V
+	public final fun isHealthy ()Z
+	public final fun setSharedSecret (Ljava/lang/String;)V
+}
+
+public final class org/modelix/model/server/handlers/KeyValueLikeModelServer$Companion {
+	public final fun getHASH_PATTERN ()Ljava/util/regex/Pattern;
+	public final fun getHEALTH_KEY ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/server/handlers/KeyValueLikeModelServerKt {
+	public static final fun getMODEL_SERVER_ENTRY ()Lorg/modelix/authorization/KeycloakResourceType;
+	public static final fun getPERMISSION_MODEL_SERVER ()Lorg/modelix/authorization/KeycloakResource;
+}
+
+public final class org/modelix/model/server/handlers/LightModelServer {
+	public static final field Companion Lorg/modelix/model/server/handlers/LightModelServer$Companion;
+	public fun <init> (Lorg/modelix/model/server/store/LocalModelClient;)V
+	public final fun getClient ()Lorg/modelix/model/server/store/LocalModelClient;
+	public final fun getStore ()Lorg/modelix/model/lazy/IDeserializingKeyValueStore;
+	public final fun init (Lio/ktor/server/application/Application;)V
+}
+
+public final class org/modelix/model/server/handlers/LightModelServer$Companion {
+}
+
+public final class org/modelix/model/server/handlers/MetricsHandler {
+	public fun <init> ()V
+	public final fun init (Lio/ktor/server/application/Application;)V
+}
+
+public final class org/modelix/model/server/handlers/ModelReplicationServer {
+	public static final field Companion Lorg/modelix/model/server/handlers/ModelReplicationServer$Companion;
+	public fun <init> (Lorg/modelix/model/server/handlers/RepositoriesManager;)V
+	public fun <init> (Lorg/modelix/model/server/store/IStoreClient;)V
+	public fun <init> (Lorg/modelix/model/server/store/LocalModelClient;)V
+	public final fun getRepositoriesManager ()Lorg/modelix/model/server/handlers/RepositoriesManager;
+	public final fun init (Lio/ktor/server/application/Application;)V
+}
+
+public final class org/modelix/model/server/handlers/ModelReplicationServer$Companion {
+}
+
+public final class org/modelix/model/server/handlers/RepositoriesManager {
+	public static final field Companion Lorg/modelix/model/server/handlers/RepositoriesManager$Companion;
+	public static final field KEY_PREFIX Ljava/lang/String;
+	public static final field LEGACY_SERVER_ID_KEY Ljava/lang/String;
+	public static final field LEGACY_SERVER_ID_KEY2 Ljava/lang/String;
+	public static final field SERVER_ID_KEY Ljava/lang/String;
+	public fun <init> (Lorg/modelix/model/server/store/LocalModelClient;)V
+	public final fun computeDelta (Ljava/lang/String;Ljava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public final fun createRepository (Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;Z)Lorg/modelix/model/lazy/CLVersion;
+	public static synthetic fun createRepository$default (Lorg/modelix/model/server/handlers/RepositoriesManager;Lorg/modelix/model/lazy/RepositoryId;Ljava/lang/String;ZILjava/lang/Object;)Lorg/modelix/model/lazy/CLVersion;
+	public final fun dispose ()V
+	public final fun generateClientId (Lorg/modelix/model/lazy/RepositoryId;)J
+	public final fun getBranchNames (Lorg/modelix/model/lazy/RepositoryId;)Ljava/util/Set;
+	public final fun getBranches (Lorg/modelix/model/lazy/RepositoryId;)Ljava/util/Set;
+	public final fun getClient ()Lorg/modelix/model/server/store/LocalModelClient;
+	public final fun getInMemoryModels ()Lorg/modelix/model/InMemoryModels;
+	public final fun getRepositories ()Ljava/util/Set;
+	public final fun getVersion (Lorg/modelix/model/lazy/BranchReference;)Lorg/modelix/model/lazy/CLVersion;
+	public final fun getVersionHash (Lorg/modelix/model/lazy/BranchReference;)Ljava/lang/String;
+	public final fun maybeInitAndGetSeverId ()Ljava/lang/String;
+	public final fun mergeChanges (Lorg/modelix/model/lazy/BranchReference;Ljava/lang/String;)Ljava/lang/String;
+	public final fun migrateLegacyRepositoriesList ()V
+	public final fun pollVersionHash (Lorg/modelix/model/lazy/BranchReference;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun removeBranches (Lorg/modelix/model/lazy/RepositoryId;Ljava/util/Set;)V
+	public final fun removeRepository (Lorg/modelix/model/lazy/RepositoryId;)Z
+}
+
+public final class org/modelix/model/server/handlers/RepositoriesManager$Companion {
+}
+
+public final class org/modelix/model/server/handlers/RepositoryAlreadyExistsException : java/lang/IllegalStateException {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getName ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/server/handlers/RepositoryOverview {
+	public fun <init> (Lorg/modelix/model/server/handlers/RepositoriesManager;)V
+	public final fun init (Lio/ktor/server/application/Application;)V
+}
+
+public final class org/modelix/model/server/handlers/RepositoryOverviewKt {
+	public static final fun buildHistoryLink (Lkotlinx/html/FlowOrInteractiveOrPhrasingContent;Ljava/lang/String;Ljava/lang/String;)V
+}
+
+public final class org/modelix/model/server/store/ChangeNotifier {
+	public fun <init> (Lorg/modelix/model/server/store/IStoreClient;)V
+	public final fun addListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public final fun getStore ()Lorg/modelix/model/server/store/IStoreClient;
+	public final fun notifyListeners (Ljava/lang/String;)V
+	public final fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+}
+
+public final class org/modelix/model/server/store/ClientIdProcessor : javax/cache/processor/EntryProcessor {
+	public fun <init> ()V
+	public fun process (Ljavax/cache/processor/MutableEntry;[Ljava/lang/Object;)Ljava/lang/Long;
+	public synthetic fun process (Ljavax/cache/processor/MutableEntry;[Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/model/server/store/IStoreClient : java/lang/AutoCloseable {
+	public abstract fun generateId (Ljava/lang/String;)J
+	public abstract fun get (Ljava/lang/String;)Ljava/lang/String;
+	public abstract fun getAll ()Ljava/util/Map;
+	public abstract fun getAll (Ljava/util/List;)Ljava/util/List;
+	public abstract fun getAll (Ljava/util/Set;)Ljava/util/Map;
+	public abstract fun listen (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public abstract fun put (Ljava/lang/String;Ljava/lang/String;Z)V
+	public static synthetic fun put$default (Lorg/modelix/model/server/store/IStoreClient;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)V
+	public abstract fun putAll (Ljava/util/Map;Z)V
+	public static synthetic fun putAll$default (Lorg/modelix/model/server/store/IStoreClient;Ljava/util/Map;ZILjava/lang/Object;)V
+	public abstract fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public abstract fun runTransaction (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/server/store/IStoreClient$DefaultImpls {
+	public static synthetic fun put$default (Lorg/modelix/model/server/store/IStoreClient;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)V
+	public static synthetic fun putAll$default (Lorg/modelix/model/server/store/IStoreClient;Ljava/util/Map;ZILjava/lang/Object;)V
+}
+
+public final class org/modelix/model/server/store/IStoreClientKt {
+	public static final fun loadDump (Lorg/modelix/model/server/store/IStoreClient;Ljava/io/File;)I
+	public static final fun pollEntry (Lorg/modelix/model/server/store/IStoreClient;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun writeDump (Lorg/modelix/model/server/store/IStoreClient;Ljava/io/File;)V
+}
+
+public final class org/modelix/model/server/store/IgniteStoreClient : java/lang/AutoCloseable, org/modelix/model/server/store/IStoreClient {
+	public fun <init> ()V
+	public fun <init> (Ljava/io/File;Z)V
+	public synthetic fun <init> (Ljava/io/File;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public final fun dispose ()V
+	public fun generateId (Ljava/lang/String;)J
+	public fun get (Ljava/lang/String;)Ljava/lang/String;
+	public fun getAll ()Ljava/util/Map;
+	public fun getAll (Ljava/util/List;)Ljava/util/List;
+	public fun getAll (Ljava/util/Set;)Ljava/util/Map;
+	public fun listen (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun put (Ljava/lang/String;Ljava/lang/String;Z)V
+	public fun putAll (Ljava/util/Map;Z)V
+	public fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun runTransaction (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/server/store/InMemoryStoreClient : org/modelix/model/server/store/IStoreClient {
+	public static final field Companion Lorg/modelix/model/server/store/InMemoryStoreClient$Companion;
+	public fun <init> ()V
+	public fun close ()V
+	public fun generateId (Ljava/lang/String;)J
+	public fun get (Ljava/lang/String;)Ljava/lang/String;
+	public fun getAll ()Ljava/util/Map;
+	public fun getAll (Ljava/util/List;)Ljava/util/List;
+	public fun getAll (Ljava/util/Set;)Ljava/util/Map;
+	public fun listen (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun put (Ljava/lang/String;Ljava/lang/String;Z)V
+	public fun putAll (Ljava/util/Map;Z)V
+	public fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun runTransaction (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/server/store/InMemoryStoreClient$Companion {
+}
+
+public final class org/modelix/model/server/store/InMemoryStoreClientKt {
+	public static final fun generateId (Ljava/lang/String;)J
+}
+
+public final class org/modelix/model/server/store/LocalModelClient : org/modelix/model/client/IModelClient {
+	public fun <init> (Lorg/modelix/model/server/store/IStoreClient;)V
+	public fun get (Ljava/lang/String;)Ljava/lang/String;
+	public fun getAll (Ljava/lang/Iterable;)Ljava/util/Map;
+	public fun getAsyncStore ()Lorg/modelix/model/IKeyValueStore;
+	public fun getClientId ()I
+	public fun getIdGenerator ()Lorg/modelix/model/api/IIdGenerator;
+	public fun getPendingSize ()I
+	public final fun getStore ()Lorg/modelix/model/server/store/IStoreClient;
+	public fun getStoreCache ()Lorg/modelix/model/lazy/IDeserializingKeyValueStore;
+	public fun listen (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+	public fun prefetch (Ljava/lang/String;)V
+	public fun put (Ljava/lang/String;Ljava/lang/String;)V
+	public fun putAll (Ljava/util/Map;)V
+	public fun removeListener (Ljava/lang/String;Lorg/modelix/model/IKeyListener;)V
+}
+
+public final class org/modelix/model/server/store/PendingChangeMessages {
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public final fun entryChanged (Ljava/lang/String;)V
+	public final fun flushChangeMessages ()V
+}
+
+public final class org/modelix/model/server/store/PostgresDialect : org/apache/ignite/cache/store/jdbc/dialect/BasicJdbcDialect {
+	public fun <init> ()V
+	public fun hasMerge ()Z
+	public fun mergeQuery (Ljava/lang/String;Ljava/util/Collection;Ljava/util/Collection;)Ljava/lang/String;
+}
+
+public final class org/modelix/model/server/templates/PageWithMenuBar : io/ktor/server/html/Template {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun apply (Ljava/lang/Object;)V
+	public fun apply (Lkotlinx/html/HTML;)V
+	public final fun getActivePage ()Ljava/lang/String;
+	public final fun getBaseUrl ()Ljava/lang/String;
+	public final fun getBodyContent ()Lio/ktor/server/html/Placeholder;
+	public final fun getHeadContent ()Lio/ktor/server/html/Placeholder;
+}
+

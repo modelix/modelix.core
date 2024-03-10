@@ -1,0 +1,2055 @@
+public final class org/modelix/model/api/BuiltinLanguages {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages;
+	public final fun getAllLanguages ()Ljava/util/List;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts : org/modelix/model/api/SimpleLanguage {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$DevKit : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$DevKit;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$DevkitDependency : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$DevkitDependency;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$JavaModuleFacet : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$JavaModuleFacet;
+	public final fun getGenerated ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getPath ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Language : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Language;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$LanguageDependency : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$LanguageDependency;
+	public final fun getName ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getUuid ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Model : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Model;
+	public final fun getId ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getModelImports ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getRootNodes ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getStereotype ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getUsedLanguages ()Lorg/modelix/model/api/SimpleChildLink;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ModelReference : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ModelReference;
+	public final fun getModel ()Lorg/modelix/model/api/SimpleReferenceLink;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Module : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Module;
+	public final fun getCompileInMPS ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getDependencies ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getFacets ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getId ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getLanguageDependencies ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getModels ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getModuleVersion ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ModuleDependency : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ModuleDependency;
+	public final fun getExplicit ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getName ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getReexport ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getScope ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getUuid ()Lorg/modelix/model/api/SimpleProperty;
+	public final fun getVersion ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ModuleFacet : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ModuleFacet;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ModuleReference : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ModuleReference;
+	public final fun getModule ()Lorg/modelix/model/api/SimpleReferenceLink;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Project : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Project;
+	public final fun getModules ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getProjectModules ()Lorg/modelix/model/api/SimpleChildLink;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ProjectModule : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$ProjectModule;
+	public final fun getVirtualFolder ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Repository : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Repository;
+	public final fun getModules ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getProjects ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getTempModules ()Lorg/modelix/model/api/SimpleChildLink;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$SingleLanguageDependency : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$SingleLanguageDependency;
+	public final fun getVersion ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Solution : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$MPSRepositoryConcepts$Solution;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$ModelixRuntimelang : org/modelix/model/api/SimpleLanguage {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$ModelixRuntimelang;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$ModelixRuntimelang$BranchInfo : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$ModelixRuntimelang$BranchInfo;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$ModelixRuntimelang$ModelServerInfo : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$ModelixRuntimelang$ModelServerInfo;
+	public final fun getRepositories ()Lorg/modelix/model/api/SimpleChildLink;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$ModelixRuntimelang$RepositoryInfo : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$ModelixRuntimelang$RepositoryInfo;
+	public final fun getBranches ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getId ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core : org/modelix/model/api/SimpleLanguage {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core$Attribute : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core$Attribute;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core$BaseConcept : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core$BaseConcept;
+	public final fun getSmodelAttribute ()Lorg/modelix/model/api/SimpleChildLink;
+	public final fun getVirtualPackage ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core$INamedConcept : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core$INamedConcept;
+	public final fun getName ()Lorg/modelix/model/api/SimpleProperty;
+}
+
+public final class org/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core$NodeAttribute : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/api/BuiltinLanguages$jetbrains_mps_lang_core$NodeAttribute;
+}
+
+public final class org/modelix/model/api/ChildLinkFromName : org/modelix/model/api/LinkFromName, org/modelix/model/api/IChildLink {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/model/api/ChildLinkFromName;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/ChildLinkFromName;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/api/ChildLinkFromName;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getChildConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isMultiple ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/CompositeNodeResolutionScope : org/modelix/model/api/INodeResolutionScope {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getScopes ()Ljava/util/List;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/model/api/ConceptReference : org/modelix/model/api/IConceptReference {
+	public static final field Companion Lorg/modelix/model/api/ConceptReference$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/model/api/ConceptReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/ConceptReference;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/api/ConceptReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getUID ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun resolve (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/IConcept;
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/ConceptReference$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/api/ConceptReferenceKSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> ()V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/api/ConceptReference;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/api/ConceptReference;)V
+}
+
+public final class org/modelix/model/api/ConceptUtilKt {
+	public static final fun getAllConcepts (Lorg/modelix/model/api/IConcept;)Ljava/util/List;
+}
+
+public final class org/modelix/model/api/ContextValue {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun computeWith (Ljava/lang/Object;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun getAllValues ()Ljava/lang/Iterable;
+	public final fun getValue ()Ljava/lang/Object;
+}
+
+public final class org/modelix/model/api/DefaultLanguageRepository : org/modelix/model/api/ILanguageRepository {
+	public static final field INSTANCE Lorg/modelix/model/api/DefaultLanguageRepository;
+	public fun getAllConcepts ()Ljava/util/List;
+	public fun getPriority ()I
+	public final fun registerConcept (Lorg/modelix/model/api/IConcept;)V
+	public final fun registerLanguage (Lorg/modelix/model/api/ILanguage;)V
+	public fun resolveConcept (Ljava/lang/String;)Lorg/modelix/model/api/IConcept;
+	public final fun unregisterLanguage (Lorg/modelix/model/api/ILanguage;)V
+}
+
+public abstract interface class org/modelix/model/api/IBranch {
+	public abstract fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	public abstract fun canRead ()Z
+	public abstract fun canWrite ()Z
+	public abstract fun computeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeReadT (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public abstract fun computeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeWriteT (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public abstract fun getId ()Ljava/lang/String;
+	public abstract fun getReadTransaction ()Lorg/modelix/model/api/IReadTransaction;
+	public abstract fun getTransaction ()Lorg/modelix/model/api/ITransaction;
+	public abstract fun getWriteTransaction ()Lorg/modelix/model/api/IWriteTransaction;
+	public abstract fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+	public abstract fun runRead (Lkotlin/jvm/functions/Function0;)V
+	public fun runReadT (Lkotlin/jvm/functions/Function1;)V
+	public abstract fun runWrite (Lkotlin/jvm/functions/Function0;)V
+	public fun runWriteT (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class org/modelix/model/api/IBranch$DefaultImpls {
+	public static fun computeReadT (Lorg/modelix/model/api/IBranch;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static fun computeWriteT (Lorg/modelix/model/api/IBranch;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static fun runReadT (Lorg/modelix/model/api/IBranch;Lkotlin/jvm/functions/Function1;)V
+	public static fun runWriteT (Lorg/modelix/model/api/IBranch;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class org/modelix/model/api/IBranchKt {
+	public static final fun deepUnwrap (Lorg/modelix/model/api/IBranch;)Lorg/modelix/model/api/IBranch;
+}
+
+public abstract interface class org/modelix/model/api/IBranchListener {
+	public abstract fun treeChanged (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/ITree;)V
+}
+
+public abstract interface class org/modelix/model/api/IBranchWrapper : org/modelix/model/api/IBranch {
+	public abstract fun unwrapBranch ()Lorg/modelix/model/api/IBranch;
+}
+
+public final class org/modelix/model/api/IBranchWrapper$DefaultImpls {
+	public static fun computeReadT (Lorg/modelix/model/api/IBranchWrapper;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static fun computeWriteT (Lorg/modelix/model/api/IBranchWrapper;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static fun runReadT (Lorg/modelix/model/api/IBranchWrapper;Lkotlin/jvm/functions/Function1;)V
+	public static fun runWriteT (Lorg/modelix/model/api/IBranchWrapper;Lkotlin/jvm/functions/Function1;)V
+}
+
+public abstract interface class org/modelix/model/api/IChildLink : org/modelix/model/api/ILink {
+	public static final field Companion Lorg/modelix/model/api/IChildLink$Companion;
+	public abstract fun getChildConcept ()Lorg/modelix/model/api/IConcept;
+	public abstract fun isMultiple ()Z
+	public fun isOrdered ()Z
+}
+
+public final class org/modelix/model/api/IChildLink$Companion {
+	public final fun fromName (Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+}
+
+public final class org/modelix/model/api/IChildLink$DefaultImpls {
+	public static fun getName (Lorg/modelix/model/api/IChildLink;)Ljava/lang/String;
+	public static fun isOrdered (Lorg/modelix/model/api/IChildLink;)Z
+}
+
+public abstract interface class org/modelix/model/api/IConcept {
+	public abstract fun getAllChildLinks ()Ljava/util/List;
+	public abstract fun getAllProperties ()Ljava/util/List;
+	public abstract fun getAllReferenceLinks ()Ljava/util/List;
+	public abstract fun getChildLink (Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public abstract fun getDirectSuperConcepts ()Ljava/util/List;
+	public abstract fun getLanguage ()Lorg/modelix/model/api/ILanguage;
+	public abstract fun getLongName ()Ljava/lang/String;
+	public abstract fun getOwnChildLinks ()Ljava/util/List;
+	public abstract fun getOwnProperties ()Ljava/util/List;
+	public abstract fun getOwnReferenceLinks ()Ljava/util/List;
+	public abstract fun getProperty (Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public abstract fun getReference ()Lorg/modelix/model/api/IConceptReference;
+	public abstract fun getReferenceLink (Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public abstract fun getShortName ()Ljava/lang/String;
+	public abstract fun getUID ()Ljava/lang/String;
+	public abstract fun isAbstract ()Z
+	public abstract fun isExactly (Lorg/modelix/model/api/IConcept;)Z
+	public abstract fun isSubConceptOf (Lorg/modelix/model/api/IConcept;)Z
+}
+
+public final class org/modelix/model/api/IConceptKt {
+	public static final fun isSubConceptOf (Lorg/modelix/model/api/IConcept;Lorg/modelix/model/api/IConcept;)Z
+}
+
+public abstract interface class org/modelix/model/api/IConceptReference {
+	public static final field Companion Lorg/modelix/model/api/IConceptReference$Companion;
+	public abstract fun getUID ()Ljava/lang/String;
+	public abstract fun resolve (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/IConcept;
+	public abstract fun serialize ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/IConceptReference$Companion {
+	public final fun deserialize (Ljava/lang/String;)Lorg/modelix/model/api/ConceptReference;
+	public final fun registerDeserializer (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)V
+	public final fun unregisterSerializer (Ljava/lang/Object;)V
+}
+
+public final class org/modelix/model/api/IConceptReferenceKt {
+	public static final fun resolve (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public static final fun tryResolve (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+}
+
+public abstract interface class org/modelix/model/api/IDeprecatedNodeDefaults : org/modelix/model/api/INode {
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public abstract fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public abstract fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public fun getChildren (Ljava/lang/String;)Ljava/lang/Iterable;
+	public abstract fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public abstract fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public abstract fun getPropertyLinks ()Ljava/util/List;
+	public fun getPropertyRoles ()Ljava/util/List;
+	public fun getPropertyValue (Ljava/lang/String;)Ljava/lang/String;
+	public abstract fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public abstract fun getReferenceLinks ()Ljava/util/List;
+	public fun getReferenceRoles ()Ljava/util/List;
+	public fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public abstract fun getReferenceTarget (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetRef (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public abstract fun getReferenceTargetRef (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public fun getRoleInParent ()Ljava/lang/String;
+	public fun moveChild (Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public abstract fun moveChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public fun setPropertyValue (Ljava/lang/String;Ljava/lang/String;)V
+	public abstract fun setPropertyValue (Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public abstract fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public abstract fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public fun usesRoleIds ()Z
+}
+
+public final class org/modelix/model/api/IDeprecatedNodeDefaults$DefaultImpls {
+	public static fun addNewChild (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChildren (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;ILjava/util/List;)Ljava/util/List;
+	public static fun getAllChildrenAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllProperties (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefs (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefsAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllReferenceTargets (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Ljava/util/List;
+	public static fun getAllReferenceTargetsAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getChildren (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;)Ljava/lang/Iterable;
+	public static fun getChildrenAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Lorg/modelix/model/api/IChildLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getDescendantsAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Z)Lkotlinx/coroutines/flow/Flow;
+	public static fun getOriginalReference (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Ljava/lang/String;
+	public static fun getParentAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getPropertyRoles (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Ljava/util/List;
+	public static fun getPropertyValue (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;)Ljava/lang/String;
+	public static fun getPropertyValueAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Lorg/modelix/model/api/IProperty;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceRoles (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Ljava/util/List;
+	public static fun getReferenceTarget (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public static fun getReferenceTargetAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRefAsFlow (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getRoleInParent (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Ljava/lang/String;
+	public static fun moveChild (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public static fun removeReference (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Lorg/modelix/model/api/IReferenceLink;)V
+	public static fun setPropertyValue (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;Ljava/lang/String;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/IDeprecatedNodeDefaults;Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public static fun tryGetConcept (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Lorg/modelix/model/api/IConcept;
+	public static fun usesRoleIds (Lorg/modelix/model/api/IDeprecatedNodeDefaults;)Z
+}
+
+public abstract interface class org/modelix/model/api/IIdGenerator {
+	public abstract fun generate ()J
+}
+
+public abstract interface class org/modelix/model/api/ILanguage {
+	public abstract fun getConcepts ()Ljava/util/List;
+	public abstract fun getName ()Ljava/lang/String;
+	public abstract fun getUID ()Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/api/ILanguageRepository {
+	public static final field Companion Lorg/modelix/model/api/ILanguageRepository$Companion;
+	public abstract fun getAllConcepts ()Ljava/util/List;
+	public fun getPriority ()I
+	public abstract fun resolveConcept (Ljava/lang/String;)Lorg/modelix/model/api/IConcept;
+}
+
+public final class org/modelix/model/api/ILanguageRepository$Companion {
+	public final fun getDefault ()Lorg/modelix/model/api/DefaultLanguageRepository;
+	public final fun getDirectSubConcepts (Lorg/modelix/model/api/IConcept;)Ljava/util/Set;
+	public final fun register (Lorg/modelix/model/api/ILanguageRepository;)V
+	public final fun resolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public final fun tryResolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public final fun unregister (Lorg/modelix/model/api/ILanguageRepository;)V
+}
+
+public final class org/modelix/model/api/ILanguageRepository$DefaultImpls {
+	public static fun getPriority (Lorg/modelix/model/api/ILanguageRepository;)I
+}
+
+public final class org/modelix/model/api/ILanguageRepositoryKt {
+	public static final fun getAllSubConcepts (Lorg/modelix/model/api/IConcept;Z)Ljava/util/Set;
+	public static final fun getDirectSubConcepts (Lorg/modelix/model/api/IConcept;)Ljava/util/Set;
+	public static final fun getInstantiatableSubConcepts (Lorg/modelix/model/api/IConcept;)Ljava/util/List;
+}
+
+public abstract interface class org/modelix/model/api/ILink : org/modelix/model/api/IRole {
+	public abstract fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+}
+
+public final class org/modelix/model/api/ILink$DefaultImpls {
+	public static fun getName (Lorg/modelix/model/api/ILink;)Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/api/INode {
+	public abstract fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public fun addNewChildren (Ljava/lang/String;ILjava/util/List;)Ljava/util/List;
+	public abstract fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getAllChildrenAsFlow ()Lkotlinx/coroutines/flow/Flow;
+	public fun getAllProperties ()Ljava/util/List;
+	public fun getAllReferenceTargetRefs ()Ljava/util/List;
+	public fun getAllReferenceTargetRefsAsFlow ()Lkotlinx/coroutines/flow/Flow;
+	public fun getAllReferenceTargets ()Ljava/util/List;
+	public fun getAllReferenceTargetsAsFlow ()Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getArea ()Lorg/modelix/model/area/IArea;
+	public abstract fun getChildren (Ljava/lang/String;)Ljava/lang/Iterable;
+	public fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public fun getChildrenAsFlow (Lorg/modelix/model/api/IChildLink;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public abstract fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public fun getDescendantsAsFlow (Z)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun getDescendantsAsFlow$default (Lorg/modelix/model/api/INode;ZILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public fun getOriginalReference ()Ljava/lang/String;
+	public abstract fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getParentAsFlow ()Lkotlinx/coroutines/flow/Flow;
+	public fun getPropertyLinks ()Ljava/util/List;
+	public abstract fun getPropertyRoles ()Ljava/util/List;
+	public abstract fun getPropertyValue (Ljava/lang/String;)Ljava/lang/String;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getPropertyValueAsFlow (Lorg/modelix/model/api/IProperty;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceLinks ()Ljava/util/List;
+	public abstract fun getReferenceRoles ()Ljava/util/List;
+	public abstract fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTarget (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetAsFlow (Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public fun getReferenceTargetRef (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceTargetRef (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceTargetRefAsFlow (Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getRoleInParent ()Ljava/lang/String;
+	public abstract fun isValid ()Z
+	public abstract fun moveChild (Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public fun moveChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public abstract fun removeChild (Lorg/modelix/model/api/INode;)V
+	public fun removeReference (Lorg/modelix/model/api/IReferenceLink;)V
+	public abstract fun setPropertyValue (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setPropertyValue (Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public abstract fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public fun tryGetConcept ()Lorg/modelix/model/api/IConcept;
+	public fun usesRoleIds ()Z
+}
+
+public final class org/modelix/model/api/INode$DefaultImpls {
+	public static fun addNewChild (Lorg/modelix/model/api/INode;Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChildren (Lorg/modelix/model/api/INode;Ljava/lang/String;ILjava/util/List;)Ljava/util/List;
+	public static fun getAllChildrenAsFlow (Lorg/modelix/model/api/INode;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllProperties (Lorg/modelix/model/api/INode;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefs (Lorg/modelix/model/api/INode;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefsAsFlow (Lorg/modelix/model/api/INode;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllReferenceTargets (Lorg/modelix/model/api/INode;)Ljava/util/List;
+	public static fun getAllReferenceTargetsAsFlow (Lorg/modelix/model/api/INode;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getChildren (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public static fun getChildrenAsFlow (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getContainmentLink (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/IChildLink;
+	public static fun getDescendantsAsFlow (Lorg/modelix/model/api/INode;Z)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun getDescendantsAsFlow$default (Lorg/modelix/model/api/INode;ZILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getOriginalReference (Lorg/modelix/model/api/INode;)Ljava/lang/String;
+	public static fun getParentAsFlow (Lorg/modelix/model/api/INode;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getPropertyLinks (Lorg/modelix/model/api/INode;)Ljava/util/List;
+	public static fun getPropertyValue (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public static fun getPropertyValueAsFlow (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceLinks (Lorg/modelix/model/api/INode;)Ljava/util/List;
+	public static fun getReferenceTarget (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public static fun getReferenceTargetAsFlow (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRefAsFlow (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun moveChild (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public static fun removeReference (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;)V
+	public static fun setPropertyValue (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INode;Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public static fun tryGetConcept (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/IConcept;
+	public static fun usesRoleIds (Lorg/modelix/model/api/INode;)Z
+}
+
+public abstract interface class org/modelix/model/api/INodeEx : org/modelix/model/api/INode {
+}
+
+public final class org/modelix/model/api/INodeEx$DefaultImpls {
+	public static fun addNewChild (Lorg/modelix/model/api/INodeEx;Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChildren (Lorg/modelix/model/api/INodeEx;Ljava/lang/String;ILjava/util/List;)Ljava/util/List;
+	public static fun getAllChildrenAsFlow (Lorg/modelix/model/api/INodeEx;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllProperties (Lorg/modelix/model/api/INodeEx;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefs (Lorg/modelix/model/api/INodeEx;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefsAsFlow (Lorg/modelix/model/api/INodeEx;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllReferenceTargets (Lorg/modelix/model/api/INodeEx;)Ljava/util/List;
+	public static fun getAllReferenceTargetsAsFlow (Lorg/modelix/model/api/INodeEx;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getChildren (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public static fun getChildrenAsFlow (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IChildLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getContainmentLink (Lorg/modelix/model/api/INodeEx;)Lorg/modelix/model/api/IChildLink;
+	public static fun getDescendantsAsFlow (Lorg/modelix/model/api/INodeEx;Z)Lkotlinx/coroutines/flow/Flow;
+	public static fun getOriginalReference (Lorg/modelix/model/api/INodeEx;)Ljava/lang/String;
+	public static fun getParentAsFlow (Lorg/modelix/model/api/INodeEx;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getPropertyLinks (Lorg/modelix/model/api/INodeEx;)Ljava/util/List;
+	public static fun getPropertyValue (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public static fun getPropertyValueAsFlow (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IProperty;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceLinks (Lorg/modelix/model/api/INodeEx;)Ljava/util/List;
+	public static fun getReferenceTarget (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public static fun getReferenceTargetAsFlow (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/api/INodeEx;Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRefAsFlow (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun moveChild (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public static fun removeReference (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IReferenceLink;)V
+	public static fun setPropertyValue (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INodeEx;Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INodeEx;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public static fun tryGetConcept (Lorg/modelix/model/api/INodeEx;)Lorg/modelix/model/api/IConcept;
+	public static fun usesRoleIds (Lorg/modelix/model/api/INodeEx;)Z
+}
+
+public final class org/modelix/model/api/INodeKt {
+	public static final fun addNewChild (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public static final fun addNewChild (Lorg/modelix/model/api/INode;Ljava/lang/String;I)Lorg/modelix/model/api/INode;
+	public static final fun addNewChild (Lorg/modelix/model/api/INode;Ljava/lang/String;Lorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static final fun addNewChild (Lorg/modelix/model/api/INode;Ljava/lang/String;Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static final fun addNewChild (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static final fun filterSecondNotNull (Ljava/util/List;)Ljava/util/List;
+	public static final fun getChildren (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public static final fun getConcept (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/IConcept;
+	public static final fun getContainmentLink (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/IChildLink;
+	public static final fun getPropertyValue (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public static final fun getReferenceTarget (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public static final fun getReferenceTargetRef (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public static final fun getResolvedConcept (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/IConcept;
+	public static final fun getResolvedReferenceTarget (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public static final fun getRoot (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/INode;
+	public static final fun index (Lorg/modelix/model/api/INode;)I
+	public static final fun isChildRoleOrdered (Lorg/modelix/model/api/INode;Ljava/lang/String;)Z
+	public static final fun isInstanceOf (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IConcept;)Z
+	public static final fun isInstanceOfSafe (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IConcept;)Z
+	public static final fun key (Lorg/modelix/model/api/IRole;)Ljava/lang/String;
+	public static final fun key (Lorg/modelix/model/api/IRole;Lorg/modelix/model/api/INode;)Ljava/lang/String;
+	public static final fun moveChild (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public static final fun remove (Lorg/modelix/model/api/INode;)V
+	public static final fun resolveChildLink (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public static final fun resolveChildLinkOrFallback (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public static final fun resolveProperty (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public static final fun resolvePropertyOrFallback (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public static final fun resolveReferenceLink (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public static final fun resolveReferenceLinkOrFallback (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public static final fun setPropertyValue (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public static final fun setReferenceTarget (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public static final fun setReferenceTarget (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public static final fun tryResolveChildLink (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public static final fun tryResolveProperty (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public static final fun tryResolveReferenceLink (Lorg/modelix/model/api/INode;Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public static final fun usesRoleIds (Lorg/modelix/model/api/INode;)Z
+}
+
+public abstract interface class org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/api/INodeReference$Companion;
+	public fun resolveNode (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+	public fun serialize ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/INodeReference$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/api/INodeReference$DefaultImpls {
+	public static fun resolveNode (Lorg/modelix/model/api/INodeReference;Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+	public static fun serialize (Lorg/modelix/model/api/INodeReference;)Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/INodeReferenceKt {
+	public static final fun resolveIn (Lorg/modelix/model/api/INodeReference;Lorg/modelix/model/api/INodeResolutionScope;)Lorg/modelix/model/api/INode;
+	public static final fun resolveInCurrentContext (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+}
+
+public abstract interface class org/modelix/model/api/INodeReferenceSerializer {
+	public static final field Companion Lorg/modelix/model/api/INodeReferenceSerializer$Companion;
+	public abstract fun deserialize (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public abstract fun serialize (Lorg/modelix/model/api/INodeReference;)Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/INodeReferenceSerializer$Companion {
+	public final fun deserialize (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public final fun register (Lorg/modelix/model/api/INodeReferenceSerializer;)V
+	public final fun register (Lorg/modelix/model/api/INodeReferenceSerializer;Z)V
+	public final fun serialize (Lorg/modelix/model/api/INodeReference;)Ljava/lang/String;
+	public final fun tryDeserialize (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public final fun unregister (Lorg/modelix/model/api/INodeReferenceSerializer;)V
+}
+
+public abstract interface class org/modelix/model/api/INodeReferenceSerializerEx : org/modelix/model/api/INodeReferenceSerializer {
+	public static final field Companion Lorg/modelix/model/api/INodeReferenceSerializerEx$Companion;
+	public static final field SEPARATOR Ljava/lang/String;
+	public abstract fun deserialize (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public abstract fun getPrefix ()Ljava/lang/String;
+	public abstract fun getSupportedReferenceClasses ()Ljava/util/Set;
+	public abstract fun serialize (Lorg/modelix/model/api/INodeReference;)Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/INodeReferenceSerializerEx$Companion {
+	public static final field SEPARATOR Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/INodeReferenceSerializerKt {
+	public static final fun serialize (Lorg/modelix/model/api/INodeReference;)Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/api/INodeResolutionScope {
+	public static final field Companion Lorg/modelix/model/api/INodeResolutionScope$Companion;
+	public abstract fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun runWith (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun runWithAdditionalScope (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun runWithAdditionalScopeInCoroutine (Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun runWithAdditionalScopeInCoroutine$suspendImpl (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun runWithInCoroutine (Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun runWithInCoroutine$suspendImpl (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/api/INodeResolutionScope$Companion {
+	public final fun ensureInContext (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun getCurrentScope ()Lorg/modelix/model/api/INodeResolutionScope;
+	public final fun getCurrentScopes ()Ljava/util/List;
+	public final fun runWithAdditionalScope (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun runWithAdditionalScopeInCoroutine (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/api/INodeResolutionScope$DefaultImpls {
+	public static fun runWith (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static fun runWithAdditionalScope (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static fun runWithAdditionalScopeInCoroutine (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun runWithInCoroutine (Lorg/modelix/model/api/INodeResolutionScope;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/model/api/INodeWrapper : org/modelix/model/api/INode {
+	public abstract fun getWrappedNode ()Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/model/api/INodeWrapper$DefaultImpls {
+	public static fun addNewChild (Lorg/modelix/model/api/INodeWrapper;Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChildren (Lorg/modelix/model/api/INodeWrapper;Ljava/lang/String;ILjava/util/List;)Ljava/util/List;
+	public static fun getAllChildrenAsFlow (Lorg/modelix/model/api/INodeWrapper;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllProperties (Lorg/modelix/model/api/INodeWrapper;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefs (Lorg/modelix/model/api/INodeWrapper;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefsAsFlow (Lorg/modelix/model/api/INodeWrapper;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllReferenceTargets (Lorg/modelix/model/api/INodeWrapper;)Ljava/util/List;
+	public static fun getAllReferenceTargetsAsFlow (Lorg/modelix/model/api/INodeWrapper;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getChildren (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public static fun getChildrenAsFlow (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IChildLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getContainmentLink (Lorg/modelix/model/api/INodeWrapper;)Lorg/modelix/model/api/IChildLink;
+	public static fun getDescendantsAsFlow (Lorg/modelix/model/api/INodeWrapper;Z)Lkotlinx/coroutines/flow/Flow;
+	public static fun getOriginalReference (Lorg/modelix/model/api/INodeWrapper;)Ljava/lang/String;
+	public static fun getParentAsFlow (Lorg/modelix/model/api/INodeWrapper;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getPropertyLinks (Lorg/modelix/model/api/INodeWrapper;)Ljava/util/List;
+	public static fun getPropertyValue (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public static fun getPropertyValueAsFlow (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IProperty;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceLinks (Lorg/modelix/model/api/INodeWrapper;)Ljava/util/List;
+	public static fun getReferenceTarget (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public static fun getReferenceTargetAsFlow (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/api/INodeWrapper;Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRefAsFlow (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun moveChild (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public static fun removeReference (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IReferenceLink;)V
+	public static fun setPropertyValue (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INodeWrapper;Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/api/INodeWrapper;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public static fun tryGetConcept (Lorg/modelix/model/api/INodeWrapper;)Lorg/modelix/model/api/IConcept;
+	public static fun usesRoleIds (Lorg/modelix/model/api/INodeWrapper;)Z
+}
+
+public abstract interface class org/modelix/model/api/IProperty : org/modelix/model/api/IRole {
+	public static final field Companion Lorg/modelix/model/api/IProperty$Companion;
+}
+
+public final class org/modelix/model/api/IProperty$Companion {
+	public final fun fromName (Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+}
+
+public final class org/modelix/model/api/IProperty$DefaultImpls {
+	public static fun getName (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/api/IReadTransaction : org/modelix/model/api/ITransaction {
+}
+
+public abstract interface class org/modelix/model/api/IReferenceLink : org/modelix/model/api/ILink {
+	public static final field Companion Lorg/modelix/model/api/IReferenceLink$Companion;
+}
+
+public final class org/modelix/model/api/IReferenceLink$Companion {
+	public final fun fromName (Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+}
+
+public final class org/modelix/model/api/IReferenceLink$DefaultImpls {
+	public static fun getName (Lorg/modelix/model/api/IReferenceLink;)Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/api/IRole {
+	public abstract fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getName ()Ljava/lang/String;
+	public abstract fun getSimpleName ()Ljava/lang/String;
+	public abstract fun getUID ()Ljava/lang/String;
+	public abstract fun isOptional ()Z
+}
+
+public final class org/modelix/model/api/IRole$DefaultImpls {
+	public static fun getName (Lorg/modelix/model/api/IRole;)Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/api/ITransaction {
+	public abstract fun containsNode (J)Z
+	public abstract fun getAllChildren (J)Ljava/lang/Iterable;
+	public abstract fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public abstract fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public abstract fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public abstract fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public abstract fun getParent (J)J
+	public abstract fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public abstract fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public abstract fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public abstract fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public abstract fun getRole (J)Ljava/lang/String;
+	public abstract fun getTree ()Lorg/modelix/model/api/ITree;
+	public abstract fun getUserObject (Ljava/lang/Object;)Ljava/lang/Object;
+	public abstract fun putUserObject (Ljava/lang/Object;Ljava/lang/Object;)V
+}
+
+public final class org/modelix/model/api/ITransactionKt {
+	public static final fun key (Lorg/modelix/model/api/IRole;Lorg/modelix/model/api/ITransaction;)Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/api/ITree {
+	public static final field Companion Lorg/modelix/model/api/ITree$Companion;
+	public static final field DETACHED_NODES_ROLE Ljava/lang/String;
+	public static final field ROOT_ID J
+	public abstract fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/ITree;
+	public abstract fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/ITree;
+	public abstract fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/ITree;
+	public abstract fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/ITree;
+	public abstract fun containsNode (J)Z
+	public abstract fun deleteNode (J)Lorg/modelix/model/api/ITree;
+	public abstract fun deleteNodes ([J)Lorg/modelix/model/api/ITree;
+	public abstract fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getAllChildrenAsFlow (J)Lkotlinx/coroutines/flow/Flow;
+	public fun getAllReferenceTargetsAsFlow (J)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getChildRoles (J)Ljava/lang/Iterable;
+	public abstract fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getChildrenAsFlow (JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public abstract fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getDescendantsAsFlow (JZ)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun getDescendantsAsFlow$default (Lorg/modelix/model/api/ITree;JZILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getId ()Ljava/lang/String;
+	public abstract fun getParent (J)J
+	public fun getParentAsFlow (J)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public abstract fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getPropertyValueAsFlow (JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public abstract fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceTargetAsFlow (JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getRole (J)Ljava/lang/String;
+	public abstract fun moveChild (JLjava/lang/String;IJ)Lorg/modelix/model/api/ITree;
+	public abstract fun setProperty (JLjava/lang/String;Ljava/lang/String;)Lorg/modelix/model/api/ITree;
+	public fun setReferenceTarget (JLjava/lang/String;J)Lorg/modelix/model/api/ITree;
+	public abstract fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/ITree;
+	public abstract fun usesRoleIds ()Z
+	public abstract fun visitChanges (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/ITreeChangeVisitor;)V
+}
+
+public final class org/modelix/model/api/ITree$Companion {
+	public static final field DETACHED_NODES_ROLE Ljava/lang/String;
+	public static final field ROOT_ID J
+}
+
+public final class org/modelix/model/api/ITree$DefaultImpls {
+	public static fun getAllChildrenAsFlow (Lorg/modelix/model/api/ITree;J)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllReferenceTargetsAsFlow (Lorg/modelix/model/api/ITree;J)Lkotlinx/coroutines/flow/Flow;
+	public static fun getChildrenAsFlow (Lorg/modelix/model/api/ITree;JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getDescendantsAsFlow (Lorg/modelix/model/api/ITree;JZ)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun getDescendantsAsFlow$default (Lorg/modelix/model/api/ITree;JZILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getParentAsFlow (Lorg/modelix/model/api/ITree;J)Lkotlinx/coroutines/flow/Flow;
+	public static fun getPropertyValueAsFlow (Lorg/modelix/model/api/ITree;JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceTargetAsFlow (Lorg/modelix/model/api/ITree;JLjava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+	public static fun setReferenceTarget (Lorg/modelix/model/api/ITree;JLjava/lang/String;J)Lorg/modelix/model/api/ITree;
+}
+
+public abstract interface class org/modelix/model/api/ITreeChangeVisitor {
+	public abstract fun childrenChanged (JLjava/lang/String;)V
+	public abstract fun containmentChanged (J)V
+	public abstract fun propertyChanged (JLjava/lang/String;)V
+	public abstract fun referenceChanged (JLjava/lang/String;)V
+}
+
+public abstract interface class org/modelix/model/api/ITreeChangeVisitorEx : org/modelix/model/api/ITreeChangeVisitor {
+	public abstract fun nodeAdded (J)V
+	public abstract fun nodeRemoved (J)V
+}
+
+public final class org/modelix/model/api/ITreeKt {
+	public static final fun key (Lorg/modelix/model/api/IRole;Lorg/modelix/model/api/ITree;)Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/api/IWriteTransaction : org/modelix/model/api/ITransaction {
+	public abstract fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)V
+	public abstract fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)V
+	public abstract fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConcept;)J
+	public abstract fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConceptReference;)J
+	public abstract fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)V
+	public abstract fun addNewChildren (JLjava/lang/String;I[Lorg/modelix/model/api/IConceptReference;)[J
+	public abstract fun deleteNode (J)V
+	public abstract fun getTree ()Lorg/modelix/model/api/ITree;
+	public abstract fun moveChild (JLjava/lang/String;IJ)V
+	public abstract fun setProperty (JLjava/lang/String;Ljava/lang/String;)V
+	public abstract fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public abstract fun setTree (Lorg/modelix/model/api/ITree;)V
+}
+
+public final class org/modelix/model/api/IdGeneratorDummy : org/modelix/model/api/IIdGenerator {
+	public fun <init> ()V
+	public fun generate ()J
+}
+
+public abstract class org/modelix/model/api/LinkFromName : org/modelix/model/api/RoleFromName, org/modelix/model/api/ILink {
+	public fun <init> ()V
+	public fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+}
+
+public final class org/modelix/model/api/LocalPNodeReference : org/modelix/model/api/INodeReference {
+	public fun <init> (J)V
+	public final fun component1 ()J
+	public final fun copy (J)Lorg/modelix/model/api/LocalPNodeReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/LocalPNodeReference;JILjava/lang/Object;)Lorg/modelix/model/api/LocalPNodeReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()J
+	public fun hashCode ()I
+	public fun resolveNode (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+	public final fun toGlobal (Ljava/lang/String;)Lorg/modelix/model/api/PNodeReference;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/NodeReference : org/modelix/model/api/INodeReference {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/model/api/NodeReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/NodeReference;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/api/NodeReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSerialized ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/NodeReferenceById : org/modelix/model/api/INodeReference {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/model/api/NodeReferenceById;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/NodeReferenceById;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/api/NodeReferenceById;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNodeId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun resolveNode (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/NodeReferenceKSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> ()V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/api/INodeReference;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/api/INodeReference;)V
+}
+
+public final class org/modelix/model/api/NodeUtilKt {
+	public static final fun deepUnwrapNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/INode;
+	public static final fun getAncestor (Lorg/modelix/model/api/INode;Lorg/modelix/model/api/IConcept;Z)Lorg/modelix/model/api/INode;
+	public static final fun getAncestors (Lorg/modelix/model/api/INode;Z)Lkotlin/sequences/Sequence;
+	public static synthetic fun getAncestors$default (Lorg/modelix/model/api/INode;ZILjava/lang/Object;)Lkotlin/sequences/Sequence;
+	public static final fun getDescendants (Lorg/modelix/model/api/INode;Z)Lkotlin/sequences/Sequence;
+}
+
+public final class org/modelix/model/api/NullChildLink : org/modelix/model/api/IChildLink {
+	public static final field INSTANCE Lorg/modelix/model/api/NullChildLink;
+	public fun getChildConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getUID ()Ljava/lang/String;
+	public fun isMultiple ()Z
+	public fun isOptional ()Z
+}
+
+public final class org/modelix/model/api/NullNodeResolutionScope : org/modelix/model/api/INodeResolutionScope {
+	public static final field INSTANCE Lorg/modelix/model/api/NullNodeResolutionScope;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/model/api/PBranch : org/modelix/model/api/IBranch {
+	public fun <init> (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/IIdGenerator;)V
+	public fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun computeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun getId ()Ljava/lang/String;
+	public fun getReadTransaction ()Lorg/modelix/model/api/IReadTransaction;
+	public fun getTransaction ()Lorg/modelix/model/api/ITransaction;
+	public fun getWriteTransaction ()Lorg/modelix/model/api/IWriteTransaction;
+	public fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun runRead (Lkotlin/jvm/functions/Function0;)V
+	public fun runWrite (Lkotlin/jvm/functions/Function0;)V
+}
+
+public class org/modelix/model/api/PNodeAdapter : org/modelix/model/api/INode, org/modelix/model/api/INodeEx {
+	public static final field Companion Lorg/modelix/model/api/PNodeAdapter$Companion;
+	public fun <init> (JLorg/modelix/model/api/IBranch;)V
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public fun addNewChildren (Ljava/lang/String;ILjava/util/List;)Ljava/util/List;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getAllChildrenAsFlow ()Lkotlinx/coroutines/flow/Flow;
+	public fun getAllReferenceTargetRefsAsFlow ()Lkotlinx/coroutines/flow/Flow;
+	public fun getAllReferenceTargetsAsFlow ()Lkotlinx/coroutines/flow/Flow;
+	public synthetic fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getArea ()Lorg/modelix/model/area/PArea;
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getChildren (Ljava/lang/String;)Ljava/lang/Iterable;
+	public fun getChildrenAsFlow (Lorg/modelix/model/api/IChildLink;)Lkotlinx/coroutines/flow/Flow;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getDescendantsAsFlow (Z)Lkotlinx/coroutines/flow/Flow;
+	public final fun getNodeId ()J
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getParentAsFlow ()Lkotlinx/coroutines/flow/Flow;
+	public fun getPropertyRoles ()Ljava/util/List;
+	public fun getPropertyValue (Ljava/lang/String;)Ljava/lang/String;
+	public fun getPropertyValueAsFlow (Lorg/modelix/model/api/IProperty;)Lkotlinx/coroutines/flow/Flow;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceRoles ()Ljava/util/List;
+	public fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetAsFlow (Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public fun getReferenceTargetRef (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceTargetRefAsFlow (Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public fun getRoleInParent ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isValid ()Z
+	public fun moveChild (Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	protected final fun notifyAccess ()V
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	public fun setPropertyValue (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public fun toString ()Ljava/lang/String;
+	protected final fun unwrap (Lorg/modelix/model/api/INode;)J
+	public fun usesRoleIds ()Z
+}
+
+public final class org/modelix/model/api/PNodeAdapter$Companion {
+	public final fun wrap (JLorg/modelix/model/api/IBranch;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/model/api/PNodeAdapterKt {
+	public static final fun getNode (Lorg/modelix/model/api/IBranch;J)Lorg/modelix/model/api/INode;
+	public static final fun getRootNode (Lorg/modelix/model/api/IBranch;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/model/api/PNodeReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/api/PNodeReference$Companion;
+	public fun <init> (JLjava/lang/String;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (JLjava/lang/String;)Lorg/modelix/model/api/PNodeReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/PNodeReference;JLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/api/PNodeReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranchId ()Ljava/lang/String;
+	public final fun getId ()J
+	public fun hashCode ()I
+	public fun resolveNode (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+	public fun serialize ()Ljava/lang/String;
+	public final fun toLocal ()Lorg/modelix/model/api/LocalPNodeReference;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/PNodeReference$Companion {
+	public final fun deserialize (Ljava/lang/String;)Lorg/modelix/model/api/PNodeReference;
+	public final fun tryDeserialize (Ljava/lang/String;)Lorg/modelix/model/api/PNodeReference;
+}
+
+public final class org/modelix/model/api/PNodeReferenceSerializer : org/modelix/model/api/INodeReferenceSerializerEx {
+	public static final field INSTANCE Lorg/modelix/model/api/PNodeReferenceSerializer;
+	public fun deserialize (Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public final fun ensureRegistered ()V
+	public fun getPrefix ()Ljava/lang/String;
+	public fun getSupportedReferenceClasses ()Ljava/util/Set;
+	public fun serialize (Lorg/modelix/model/api/INodeReference;)Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/PlatformSpecificKt {
+	public static final fun runSynchronized (Ljava/lang/Object;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public final class org/modelix/model/api/PropertyFromName : org/modelix/model/api/RoleFromName, org/modelix/model/api/IProperty {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/model/api/PropertyFromName;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/PropertyFromName;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/api/PropertyFromName;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isOptional ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/ReadTransaction : org/modelix/model/api/Transaction, org/modelix/model/api/IReadTransaction {
+	public fun <init> (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/IBranch;)V
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+}
+
+public final class org/modelix/model/api/ReferenceLinkFromName : org/modelix/model/api/LinkFromName, org/modelix/model/api/IReferenceLink {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/model/api/ReferenceLinkFromName;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/ReferenceLinkFromName;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/api/ReferenceLinkFromName;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/RoleAccessContext {
+	public static final field INSTANCE Lorg/modelix/model/api/RoleAccessContext;
+	public final fun getKey (Lorg/modelix/model/api/IRole;)Ljava/lang/String;
+	public final fun isUsingRoleIds ()Z
+	public final fun runWith (ZLkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public abstract class org/modelix/model/api/RoleFromName : org/modelix/model/api/IRole {
+	public fun <init> ()V
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun isOptional ()Z
+}
+
+public final class org/modelix/model/api/SimpleChildLink : org/modelix/model/api/IChildLink {
+	public fun <init> (Ljava/lang/String;ZZLorg/modelix/model/api/IConcept;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;ZZLorg/modelix/model/api/IConcept;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getChildConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public final fun getOwner ()Lorg/modelix/model/api/SimpleConcept;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getUID ()Ljava/lang/String;
+	public fun isMultiple ()Z
+	public fun isOptional ()Z
+	public fun isOrdered ()Z
+	public final fun setOwner (Lorg/modelix/model/api/SimpleConcept;)V
+}
+
+public class org/modelix/model/api/SimpleConcept : org/modelix/model/api/IConcept {
+	public fun <init> (Ljava/lang/String;ZLjava/lang/Iterable;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ZLjava/lang/Iterable;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun addChildLink (Lorg/modelix/model/api/SimpleChildLink;)Lorg/modelix/model/api/SimpleConcept;
+	public final fun addProperty (Lorg/modelix/model/api/SimpleProperty;)Lorg/modelix/model/api/SimpleConcept;
+	public final fun addReferenceLink (Lorg/modelix/model/api/SimpleReferenceLink;)Lorg/modelix/model/api/SimpleConcept;
+	public fun getAllChildLinks ()Ljava/util/List;
+	public fun getAllProperties ()Ljava/util/List;
+	public fun getAllReferenceLinks ()Ljava/util/List;
+	public fun getChildLink (Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public final fun getChildLinks ()Ljava/util/List;
+	public fun getDirectSuperConcepts ()Ljava/util/List;
+	public fun getLanguage ()Lorg/modelix/model/api/ILanguage;
+	public fun getLongName ()Ljava/lang/String;
+	public fun getOwnChildLinks ()Ljava/util/List;
+	public fun getOwnProperties ()Ljava/util/List;
+	public fun getOwnReferenceLinks ()Ljava/util/List;
+	public final fun getProperties ()Ljava/util/List;
+	public fun getProperty (Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public fun getReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getReferenceLink (Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public final fun getReferenceLinks ()Ljava/util/List;
+	public fun getShortName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun isAbstract ()Z
+	public fun isExactly (Lorg/modelix/model/api/IConcept;)Z
+	public fun isSubConceptOf (Lorg/modelix/model/api/IConcept;)Z
+	public fun setLanguage (Lorg/modelix/model/api/ILanguage;)V
+}
+
+public class org/modelix/model/api/SimpleLanguage : org/modelix/model/api/ILanguage {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun addConcept (Lorg/modelix/model/api/SimpleConcept;)V
+	public fun getConcepts ()Ljava/util/List;
+	protected fun getIncludedConcepts ()[Lorg/modelix/model/api/SimpleConcept;
+	public fun getName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public final fun register ()V
+	protected fun setIncludedConcepts ([Lorg/modelix/model/api/SimpleConcept;)V
+	public final fun unregister ()V
+}
+
+public final class org/modelix/model/api/SimpleProperty : org/modelix/model/api/IProperty {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Z)V
+	public fun <init> (Ljava/lang/String;ZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component2 ()Z
+	public final fun copy (Ljava/lang/String;ZLjava/lang/String;)Lorg/modelix/model/api/SimpleProperty;
+	public static synthetic fun copy$default (Lorg/modelix/model/api/SimpleProperty;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/api/SimpleProperty;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public final fun getOwner ()Lorg/modelix/model/api/SimpleConcept;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isOptional ()Z
+	public final fun setOwner (Lorg/modelix/model/api/SimpleConcept;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/api/SimpleReferenceLink : org/modelix/model/api/IReferenceLink {
+	public fun <init> (Ljava/lang/String;ZLorg/modelix/model/api/IConcept;)V
+	public fun <init> (Ljava/lang/String;ZLorg/modelix/model/api/IConcept;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ZLorg/modelix/model/api/IConcept;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public final fun getOwner ()Lorg/modelix/model/api/SimpleConcept;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getUID ()Ljava/lang/String;
+	public fun isOptional ()Z
+	public final fun setOwner (Lorg/modelix/model/api/SimpleConcept;)V
+	public fun setTargetConcept (Lorg/modelix/model/api/IConcept;)V
+}
+
+public abstract class org/modelix/model/api/Transaction : org/modelix/model/api/ITransaction {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public fun containsNode (J)Z
+	public fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getParent (J)J
+	public fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRole (J)Ljava/lang/String;
+	public fun getUserObject (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun putUserObject (Ljava/lang/Object;Ljava/lang/Object;)V
+}
+
+public final class org/modelix/model/api/TreePointer : org/modelix/model/api/IBranch, org/modelix/model/api/IReadTransaction, org/modelix/model/api/IWriteTransaction {
+	public fun <init> (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/IIdGenerator;)V
+	public synthetic fun <init> (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/IIdGenerator;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun addListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConcept;)J
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConceptReference;)J
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChildren (JLjava/lang/String;I[Lorg/modelix/model/api/IConceptReference;)[J
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun computeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun computeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun containsNode (J)Z
+	public fun deleteNode (J)V
+	public fun getAllChildren (J)Ljava/lang/Iterable;
+	public fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public fun getChildren (JLjava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept (J)Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference (J)Lorg/modelix/model/api/IConceptReference;
+	public fun getId ()Ljava/lang/String;
+	public final fun getIdGenerator ()Lorg/modelix/model/api/IIdGenerator;
+	public fun getParent (J)J
+	public fun getProperty (JLjava/lang/String;)Ljava/lang/String;
+	public fun getPropertyRoles (J)Ljava/lang/Iterable;
+	public fun getReadTransaction ()Lorg/modelix/model/api/IReadTransaction;
+	public fun getReferenceRoles (J)Ljava/lang/Iterable;
+	public fun getReferenceTarget (JLjava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public fun getRole (J)Ljava/lang/String;
+	public fun getTransaction ()Lorg/modelix/model/api/ITransaction;
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun getUserObject (Ljava/lang/Object;)Ljava/lang/Object;
+	public fun getWriteTransaction ()Lorg/modelix/model/api/IWriteTransaction;
+	public fun moveChild (JLjava/lang/String;IJ)V
+	public fun putUserObject (Ljava/lang/Object;Ljava/lang/Object;)V
+	public fun removeListener (Lorg/modelix/model/api/IBranchListener;)V
+	public fun runRead (Lkotlin/jvm/functions/Function0;)V
+	public fun runWrite (Lkotlin/jvm/functions/Function0;)V
+	public fun setProperty (JLjava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public fun setTree (Lorg/modelix/model/api/ITree;)V
+}
+
+public final class org/modelix/model/api/WriteTransaction : org/modelix/model/api/Transaction, org/modelix/model/api/IWriteTransaction {
+	public fun <init> (Lorg/modelix/model/api/ITree;Lorg/modelix/model/api/IBranch;Lorg/modelix/model/api/IIdGenerator;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConcept;)V
+	public fun addNewChild (JLjava/lang/String;IJLorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConcept;)J
+	public fun addNewChild (JLjava/lang/String;ILorg/modelix/model/api/IConceptReference;)J
+	public fun addNewChildren (JLjava/lang/String;I[J[Lorg/modelix/model/api/IConceptReference;)V
+	public fun addNewChildren (JLjava/lang/String;I[Lorg/modelix/model/api/IConceptReference;)[J
+	public final fun close ()V
+	public fun deleteNode (J)V
+	public fun getTree ()Lorg/modelix/model/api/ITree;
+	public fun moveChild (JLjava/lang/String;IJ)V
+	public fun setProperty (JLjava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (JLjava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public fun setTree (Lorg/modelix/model/api/ITree;)V
+}
+
+public abstract class org/modelix/model/area/AbstractArea : org/modelix/model/area/IArea {
+	public fun <init> ()V
+	public fun addListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun collectAreas ()Ljava/util/List;
+	public fun executeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun executeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun removeListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun resolveArea (Lorg/modelix/model/area/IAreaReference;)Lorg/modelix/model/area/IArea;
+	public fun resolveBranch (Ljava/lang/String;)Lorg/modelix/model/api/IBranch;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/model/area/AreaListenerRegistry {
+	public static final field INSTANCE Lorg/modelix/model/area/AreaListenerRegistry;
+	public final fun getListeners (Lorg/modelix/model/area/IArea;)Ljava/util/List;
+	public final fun registerListener (Lorg/modelix/model/area/IArea;Lorg/modelix/model/area/IAreaListener;)V
+	public final fun unregisterArea (Lorg/modelix/model/area/IArea;)V
+	public final fun unregisterListener (Lorg/modelix/model/area/IArea;Lorg/modelix/model/area/IAreaListener;)V
+	public final fun unregisterWrappedListener (Lorg/modelix/model/area/IArea;Lorg/modelix/model/area/IAreaListener;)V
+}
+
+public final class org/modelix/model/area/AreaListenerRegistry$Entry {
+	public fun <init> (Lorg/modelix/model/area/IArea;Lorg/modelix/model/area/IAreaListener;)V
+	public final fun getArea ()Lorg/modelix/model/area/IArea;
+	public final fun getListener ()Lorg/modelix/model/area/IAreaListener;
+}
+
+public abstract class org/modelix/model/area/AreaListenerWrapper : org/modelix/model/area/IAreaListener {
+	public fun <init> (Lorg/modelix/model/area/IAreaListener;)V
+	public final fun getWrappedListener ()Lorg/modelix/model/area/IAreaListener;
+}
+
+public final class org/modelix/model/area/AreaWithMounts : org/modelix/model/area/IArea {
+	public fun <init> (Lorg/modelix/model/area/IArea;Ljava/util/Map;)V
+	public fun addListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun collectAreas ()Ljava/util/List;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun executeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun executeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun getHiddenNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/INode;
+	public final fun getMountedArea (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/IArea;
+	public final fun getMountedAreaRoot (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/INode;
+	public fun getReference ()Lorg/modelix/model/area/IAreaReference;
+	public fun getRoot ()Lorg/modelix/model/api/INode;
+	public final fun getRootArea ()Lorg/modelix/model/area/IArea;
+	public fun hashCode ()I
+	public final fun isVisible (Lorg/modelix/model/api/INode;)Z
+	public fun removeListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun resolveArea (Lorg/modelix/model/area/IAreaReference;)Lorg/modelix/model/area/IArea;
+	public fun resolveBranch (Ljava/lang/String;)Lorg/modelix/model/api/IBranch;
+	public fun resolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun resolveOriginalNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public final fun unwrapNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/model/area/AreaWithMounts$AreaReference : org/modelix/model/area/IAreaReference {
+	public fun <init> (Lorg/modelix/model/area/IAreaReference;Ljava/util/List;Ljava/util/List;)V
+	public final fun component1 ()Lorg/modelix/model/area/IAreaReference;
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Lorg/modelix/model/area/IAreaReference;Ljava/util/List;Ljava/util/List;)Lorg/modelix/model/area/AreaWithMounts$AreaReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/area/AreaWithMounts$AreaReference;Lorg/modelix/model/area/IAreaReference;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lorg/modelix/model/area/AreaWithMounts$AreaReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMountKeys ()Ljava/util/List;
+	public final fun getMountValues ()Ljava/util/List;
+	public final fun getRootArea ()Lorg/modelix/model/area/IAreaReference;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/area/AreaWithMounts$NodeWrapper : org/modelix/model/api/INode, org/modelix/model/api/INodeWrapper {
+	public fun <init> (Lorg/modelix/model/area/AreaWithMounts;Lorg/modelix/model/api/INode;)V
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Ljava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyRoles ()Ljava/util/List;
+	public fun getPropertyValue (Ljava/lang/String;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceRoles ()Ljava/util/List;
+	public fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public fun getRoleInParent ()Ljava/lang/String;
+	public fun getWrappedNode ()Lorg/modelix/model/api/INode;
+	public fun hashCode ()I
+	public fun isValid ()Z
+	public fun moveChild (Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	public fun setPropertyValue (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+}
+
+public final class org/modelix/model/area/ChildrenChangeEvent : org/modelix/model/area/RoleChangeEvent {
+	public fun <init> (Lorg/modelix/model/api/INode;Ljava/lang/String;)V
+	public fun withNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/ChildrenChangeEvent;
+	public synthetic fun withNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/NodeChangeEvent;
+}
+
+public final class org/modelix/model/area/CompositeArea : org/modelix/model/area/IArea {
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> ([Lorg/modelix/model/area/IArea;)V
+	public fun addListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun collectAreas ()Ljava/util/List;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun executeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun executeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun flatten ()Ljava/util/List;
+	public final fun getAreas ()Ljava/util/List;
+	public fun getReference ()Lorg/modelix/model/area/CompositeArea$AreaReference;
+	public synthetic fun getReference ()Lorg/modelix/model/area/IAreaReference;
+	public fun getRoot ()Lorg/modelix/model/api/INode;
+	public fun hashCode ()I
+	public fun removeListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun resolveArea (Lorg/modelix/model/area/IAreaReference;)Lorg/modelix/model/area/IArea;
+	public fun resolveBranch (Ljava/lang/String;)Lorg/modelix/model/api/IBranch;
+	public fun resolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun resolveOriginalNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public final fun unwrapNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/api/INode;
+	public final fun unwrapNodeRef (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INodeReference;
+	public final fun wrapNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/CompositeArea$NodeWrapper;
+}
+
+public final class org/modelix/model/area/CompositeArea$AreaReference : org/modelix/model/area/IAreaReference {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lorg/modelix/model/area/CompositeArea$AreaReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/area/CompositeArea$AreaReference;Ljava/util/List;ILjava/lang/Object;)Lorg/modelix/model/area/CompositeArea$AreaReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAreaRefs ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/area/CompositeArea$ListenerWrapper : org/modelix/model/area/AreaListenerWrapper {
+	public fun <init> (Lorg/modelix/model/area/CompositeArea;Lorg/modelix/model/area/IAreaListener;)V
+	public fun areaChanged (Lorg/modelix/model/area/IAreaChangeList;)V
+	public final fun translateEvent (Lorg/modelix/model/area/IAreaChangeEvent;)Lorg/modelix/model/area/IAreaChangeEvent;
+}
+
+public final class org/modelix/model/area/CompositeArea$NodeWrapper : org/modelix/model/api/INode, org/modelix/model/api/INodeWrapper {
+	public fun <init> (Lorg/modelix/model/area/CompositeArea;Lorg/modelix/model/api/INode;)V
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/CompositeArea;
+	public synthetic fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Ljava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyRoles ()Ljava/util/List;
+	public fun getPropertyValue (Ljava/lang/String;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceRoles ()Ljava/util/List;
+	public fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public fun getRoleInParent ()Ljava/lang/String;
+	public fun getWrappedNode ()Lorg/modelix/model/api/INode;
+	public fun hashCode ()I
+	public fun isValid ()Z
+	public fun moveChild (Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	public fun setPropertyValue (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/area/CompositeArea$NodeWrapperReference : org/modelix/model/api/INodeReference {
+	public fun <init> (Lorg/modelix/model/api/INodeReference;Lorg/modelix/model/area/CompositeArea$AreaReference;)V
+	public final fun component1 ()Lorg/modelix/model/api/INodeReference;
+	public final fun component2 ()Lorg/modelix/model/area/CompositeArea$AreaReference;
+	public final fun copy (Lorg/modelix/model/api/INodeReference;Lorg/modelix/model/area/CompositeArea$AreaReference;)Lorg/modelix/model/area/CompositeArea$NodeWrapperReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/area/CompositeArea$NodeWrapperReference;Lorg/modelix/model/api/INodeReference;Lorg/modelix/model/area/CompositeArea$AreaReference;ILjava/lang/Object;)Lorg/modelix/model/area/CompositeArea$NodeWrapperReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAreaRef ()Lorg/modelix/model/area/CompositeArea$AreaReference;
+	public final fun getNodeRef ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun resolveNode (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/area/CompositeArea$Root : org/modelix/model/api/INode {
+	public fun <init> (Lorg/modelix/model/area/CompositeArea;)V
+	public fun addNewChild (Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/CompositeArea;
+	public synthetic fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Ljava/lang/String;)Ljava/lang/Iterable;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyRoles ()Ljava/util/List;
+	public fun getPropertyValue (Ljava/lang/String;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceRoles ()Ljava/util/List;
+	public fun getReferenceTarget (Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public fun getRoleInParent ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isValid ()Z
+	public fun moveChild (Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	public fun setPropertyValue (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setReferenceTarget (Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+}
+
+public final class org/modelix/model/area/CompositeArea$RootNodeReference : org/modelix/model/api/INodeReference {
+	public fun <init> (Lorg/modelix/model/area/CompositeArea$AreaReference;)V
+	public final fun component1 ()Lorg/modelix/model/area/CompositeArea$AreaReference;
+	public final fun copy (Lorg/modelix/model/area/CompositeArea$AreaReference;)Lorg/modelix/model/area/CompositeArea$RootNodeReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/area/CompositeArea$RootNodeReference;Lorg/modelix/model/area/CompositeArea$AreaReference;ILjava/lang/Object;)Lorg/modelix/model/area/CompositeArea$RootNodeReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAreaRef ()Lorg/modelix/model/area/CompositeArea$AreaReference;
+	public fun hashCode ()I
+	public fun resolveNode (Lorg/modelix/model/area/IArea;)Lorg/modelix/model/api/INode;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/area/ContextArea {
+	public static final field INSTANCE Lorg/modelix/model/area/ContextArea;
+	public final fun getArea ()Lorg/modelix/model/area/IArea;
+	public final fun offer (Lorg/modelix/model/area/IArea;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun withAdditionalContext (Lorg/modelix/model/area/IArea;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/model/area/IArea : org/modelix/model/api/INodeResolutionScope {
+	public abstract fun addListener (Lorg/modelix/model/area/IAreaListener;)V
+	public abstract fun canRead ()Z
+	public abstract fun canWrite ()Z
+	public abstract fun collectAreas ()Ljava/util/List;
+	public abstract fun executeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public abstract fun executeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun getLockOrderingPriority ()J
+	public abstract fun getReference ()Lorg/modelix/model/area/IAreaReference;
+	public abstract fun getRoot ()Lorg/modelix/model/api/INode;
+	public abstract fun removeListener (Lorg/modelix/model/area/IAreaListener;)V
+	public abstract fun resolveArea (Lorg/modelix/model/area/IAreaReference;)Lorg/modelix/model/area/IArea;
+	public abstract fun resolveBranch (Ljava/lang/String;)Lorg/modelix/model/api/IBranch;
+	public abstract fun resolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public abstract fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public abstract fun resolveOriginalNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+}
+
+public final class org/modelix/model/area/IArea$DefaultImpls {
+	public static fun getLockOrderingPriority (Lorg/modelix/model/area/IArea;)J
+	public static fun runWith (Lorg/modelix/model/area/IArea;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static fun runWithAdditionalScope (Lorg/modelix/model/area/IArea;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static fun runWithAdditionalScopeInCoroutine (Lorg/modelix/model/area/IArea;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun runWithInCoroutine (Lorg/modelix/model/area/IArea;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class org/modelix/model/area/IAreaChangeEvent {
+}
+
+public abstract interface class org/modelix/model/area/IAreaChangeList {
+	public abstract fun visitChanges (Lkotlin/jvm/functions/Function1;)V
+}
+
+public abstract interface class org/modelix/model/area/IAreaListener {
+	public abstract fun areaChanged (Lorg/modelix/model/area/IAreaChangeList;)V
+}
+
+public abstract interface class org/modelix/model/area/IAreaReference {
+}
+
+public abstract class org/modelix/model/area/NodeChangeEvent : org/modelix/model/area/IAreaChangeEvent {
+	public fun <init> (Lorg/modelix/model/api/INode;)V
+	public final fun getNode ()Lorg/modelix/model/api/INode;
+	public abstract fun withNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/NodeChangeEvent;
+}
+
+public final class org/modelix/model/area/PArea : org/modelix/model/area/IArea {
+	public fun <init> (Lorg/modelix/model/api/IBranch;)V
+	public fun addListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun collectAreas ()Ljava/util/List;
+	public final fun component1 ()Lorg/modelix/model/api/IBranch;
+	public final fun containsNode (J)Z
+	public final fun copy (Lorg/modelix/model/api/IBranch;)Lorg/modelix/model/area/PArea;
+	public static synthetic fun copy$default (Lorg/modelix/model/area/PArea;Lorg/modelix/model/api/IBranch;ILjava/lang/Object;)Lorg/modelix/model/area/PArea;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun executeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun executeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun getBranch ()Lorg/modelix/model/api/IBranch;
+	public synthetic fun getReference ()Lorg/modelix/model/area/IAreaReference;
+	public fun getReference ()Lorg/modelix/model/area/PArea$AreaReference;
+	public fun getRoot ()Lorg/modelix/model/api/INode;
+	public fun hashCode ()I
+	public fun removeListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun resolveArea (Lorg/modelix/model/area/IAreaReference;)Lorg/modelix/model/area/IArea;
+	public fun resolveBranch (Ljava/lang/String;)Lorg/modelix/model/api/IBranch;
+	public fun resolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun resolveOriginalNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/area/PArea$AreaReference : org/modelix/model/area/IAreaReference {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/model/area/PArea$AreaReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/area/PArea$AreaReference;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/area/PArea$AreaReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBranchId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/area/PAreaKt {
+	public static final fun getArea (Lorg/modelix/model/api/IBranch;)Lorg/modelix/model/area/PArea;
+}
+
+public final class org/modelix/model/area/PropertyChangeEvent : org/modelix/model/area/RoleChangeEvent {
+	public fun <init> (Lorg/modelix/model/api/INode;Ljava/lang/String;)V
+	public synthetic fun withNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/NodeChangeEvent;
+	public fun withNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/PropertyChangeEvent;
+}
+
+public final class org/modelix/model/area/ReferenceChangeEvent : org/modelix/model/area/RoleChangeEvent {
+	public fun <init> (Lorg/modelix/model/api/INode;Ljava/lang/String;)V
+	public synthetic fun withNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/NodeChangeEvent;
+	public fun withNode (Lorg/modelix/model/api/INode;)Lorg/modelix/model/area/ReferenceChangeEvent;
+}
+
+public abstract class org/modelix/model/area/RoleChangeEvent : org/modelix/model/area/NodeChangeEvent {
+	public fun <init> (Lorg/modelix/model/api/INode;Ljava/lang/String;)V
+	public final fun getRole ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/ChildLinkData : org/modelix/model/data/IConceptFeatureData, org/modelix/model/data/IDeprecatable {
+	public static final field Companion Lorg/modelix/model/data/ChildLinkData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/String;)Lorg/modelix/model/data/ChildLinkData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/ChildLinkData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/data/ChildLinkData;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getDeprecationMessage ()Ljava/lang/String;
+	public final fun getMultiple ()Z
+	public fun getName ()Ljava/lang/String;
+	public final fun getOptional ()Z
+	public final fun getType ()Ljava/lang/String;
+	public fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/ChildLinkData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/ChildLinkData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/ChildLinkData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/ChildLinkData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/ChildLinkData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/ConceptData : org/modelix/model/data/IDeprecatable {
+	public static final field ALIAS_KEY Ljava/lang/String;
+	public static final field Companion Lorg/modelix/model/data/ConceptData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Ljava/util/List;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun component9 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;)Lorg/modelix/model/data/ConceptData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/ConceptData;Ljava/lang/String;Ljava/lang/String;ZLjava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lorg/modelix/model/data/ConceptData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAbstract ()Z
+	public final fun getChildren ()Ljava/util/List;
+	public fun getDeprecationMessage ()Ljava/lang/String;
+	public final fun getExtends ()Ljava/util/List;
+	public final fun getMetaProperties ()Ljava/util/Map;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getProperties ()Ljava/util/List;
+	public final fun getReferences ()Ljava/util/List;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/ConceptData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/ConceptData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/ConceptData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/ConceptData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/ConceptData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/EnumData : org/modelix/model/data/IDeprecatable {
+	public static final field Companion Lorg/modelix/model/data/EnumData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()I
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/String;)Lorg/modelix/model/data/EnumData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/EnumData;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/data/EnumData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefaultIndex ()I
+	public fun getDeprecationMessage ()Ljava/lang/String;
+	public final fun getMembers ()Ljava/util/List;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/EnumData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/EnumData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/EnumData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/EnumData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/EnumData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/EnumMemberData {
+	public static final field Companion Lorg/modelix/model/data/EnumMemberData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lorg/modelix/model/data/EnumMemberData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/EnumMemberData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/data/EnumMemberData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getPresentation ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/EnumMemberData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/EnumMemberData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/EnumMemberData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/EnumMemberData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/EnumMemberData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/EnumPropertyType : org/modelix/model/data/PropertyType {
+	public static final field Companion Lorg/modelix/model/data/EnumPropertyType$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lorg/modelix/model/data/EnumPropertyType;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/EnumPropertyType;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/data/EnumPropertyType;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEnumName ()Ljava/lang/String;
+	public final fun getPckg ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/EnumPropertyType$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/EnumPropertyType$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/EnumPropertyType;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/EnumPropertyType;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/EnumPropertyType$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class org/modelix/model/data/IConceptFeatureData {
+	public abstract fun getName ()Ljava/lang/String;
+	public abstract fun getUid ()Ljava/lang/String;
+}
+
+public abstract interface class org/modelix/model/data/IDeprecatable {
+	public abstract fun getDeprecationMessage ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/LanguageData {
+	public static final field Companion Lorg/modelix/model/data/LanguageData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)Lorg/modelix/model/data/LanguageData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/LanguageData;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lorg/modelix/model/data/LanguageData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConcepts ()Ljava/util/List;
+	public final fun getEnums ()Ljava/util/List;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toCompactJson ()Ljava/lang/String;
+	public final fun toJson ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/LanguageData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/LanguageData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/LanguageData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/LanguageData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/LanguageData$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lorg/modelix/model/data/LanguageData;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/ModelData {
+	public static final field Companion Lorg/modelix/model/data/ModelData$Companion;
+	public fun <init> (Ljava/lang/String;Lorg/modelix/model/data/NodeData;)V
+	public synthetic fun <init> (Ljava/lang/String;Lorg/modelix/model/data/NodeData;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lorg/modelix/model/data/NodeData;
+	public final fun copy (Ljava/lang/String;Lorg/modelix/model/data/NodeData;)Lorg/modelix/model/data/ModelData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/ModelData;Ljava/lang/String;Lorg/modelix/model/data/NodeData;ILjava/lang/Object;)Lorg/modelix/model/data/ModelData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getRoot ()Lorg/modelix/model/data/NodeData;
+	public fun hashCode ()I
+	public final fun load (Lorg/modelix/model/api/IBranch;)V
+	public final fun toCompactJson ()Ljava/lang/String;
+	public final fun toJson ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/ModelData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/ModelData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/ModelData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/ModelData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/ModelData$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lorg/modelix/model/data/ModelData;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/ModelDataKt {
+	public static final fun asData (Lorg/modelix/model/api/INode;)Lorg/modelix/model/data/NodeData;
+	public static final fun associateWithNotNull (Ljava/lang/Iterable;Lkotlin/jvm/functions/Function1;)Ljava/util/Map;
+	public static final fun nodeUID (Lorg/modelix/model/data/ModelData;Lorg/modelix/model/data/NodeData;)Ljava/lang/String;
+	public static final fun uid (Lorg/modelix/model/data/NodeData;Lorg/modelix/model/data/ModelData;)Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/NodeData {
+	public static final field Companion Lorg/modelix/model/data/NodeData$Companion;
+	public static final field ID_PROPERTY_KEY Ljava/lang/String;
+	public static final field idPropertyKey Ljava/lang/String;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun component6 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;)Lorg/modelix/model/data/NodeData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/NodeData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;ILjava/lang/Object;)Lorg/modelix/model/data/NodeData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChildren ()Ljava/util/List;
+	public final fun getConcept ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getProperties ()Ljava/util/Map;
+	public final fun getReferences ()Ljava/util/Map;
+	public final fun getRole ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/NodeData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/NodeData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/NodeData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/NodeData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/NodeData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/Primitive : java/lang/Enum {
+	public static final field BOOLEAN Lorg/modelix/model/data/Primitive;
+	public static final field INT Lorg/modelix/model/data/Primitive;
+	public static final field STRING Lorg/modelix/model/data/Primitive;
+	public static fun valueOf (Ljava/lang/String;)Lorg/modelix/model/data/Primitive;
+	public static fun values ()[Lorg/modelix/model/data/Primitive;
+}
+
+public final class org/modelix/model/data/PrimitivePropertyType : org/modelix/model/data/PropertyType {
+	public static final field Companion Lorg/modelix/model/data/PrimitivePropertyType$Companion;
+	public fun <init> (Lorg/modelix/model/data/Primitive;)V
+	public final fun component1 ()Lorg/modelix/model/data/Primitive;
+	public final fun copy (Lorg/modelix/model/data/Primitive;)Lorg/modelix/model/data/PrimitivePropertyType;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/PrimitivePropertyType;Lorg/modelix/model/data/Primitive;ILjava/lang/Object;)Lorg/modelix/model/data/PrimitivePropertyType;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPrimitive ()Lorg/modelix/model/data/Primitive;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/PrimitivePropertyType$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/PrimitivePropertyType$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/PrimitivePropertyType;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/PrimitivePropertyType;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/PrimitivePropertyType$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/PropertyData : org/modelix/model/data/IConceptFeatureData, org/modelix/model/data/IDeprecatable {
+	public static final field Companion Lorg/modelix/model/data/PropertyData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/model/data/PropertyType;ZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/model/data/PropertyType;ZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lorg/modelix/model/data/PropertyType;
+	public final fun component4 ()Z
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lorg/modelix/model/data/PropertyType;ZLjava/lang/String;)Lorg/modelix/model/data/PropertyData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/PropertyData;Ljava/lang/String;Ljava/lang/String;Lorg/modelix/model/data/PropertyType;ZLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/data/PropertyData;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getDeprecationMessage ()Ljava/lang/String;
+	public fun getName ()Ljava/lang/String;
+	public final fun getOptional ()Z
+	public final fun getType ()Lorg/modelix/model/data/PropertyType;
+	public fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/PropertyData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/PropertyData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/PropertyData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/PropertyData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/PropertyData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class org/modelix/model/data/PropertyType {
+	public static final field Companion Lorg/modelix/model/data/PropertyType$Companion;
+}
+
+public final class org/modelix/model/data/PropertyType$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/PropertyTypeSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> ()V
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/PropertyType;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/PropertyType;)V
+}
+
+public final class org/modelix/model/data/ReferenceLinkData : org/modelix/model/data/IConceptFeatureData, org/modelix/model/data/IDeprecatable {
+	public static final field Companion Lorg/modelix/model/data/ReferenceLinkData$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;)Lorg/modelix/model/data/ReferenceLinkData;
+	public static synthetic fun copy$default (Lorg/modelix/model/data/ReferenceLinkData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/data/ReferenceLinkData;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getDeprecationMessage ()Ljava/lang/String;
+	public fun getName ()Ljava/lang/String;
+	public final fun getOptional ()Z
+	public final fun getType ()Ljava/lang/String;
+	public fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/data/ReferenceLinkData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lorg/modelix/model/data/ReferenceLinkData$$serializer;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lorg/modelix/model/data/ReferenceLinkData;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lorg/modelix/model/data/ReferenceLinkData;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/data/ReferenceLinkData$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class org/modelix/model/test/RandomModelChangeGenerator {
+	public fun <init> (Lorg/modelix/model/api/INode;Lkotlin/random/Random;)V
+	public final fun addOperationOnly ()Lorg/modelix/model/test/RandomModelChangeGenerator;
+	public final fun applyRandomChange ()V
+	public final fun getAddNewOp ()Lkotlin/jvm/functions/Function0;
+	public final fun getChildRoles ()Ljava/util/List;
+	public final fun getDeleteOp ()Lkotlin/jvm/functions/Function0;
+	public final fun getMoveOp ()Lkotlin/jvm/functions/Function0;
+	public final fun getOperations ()Ljava/util/List;
+	public final fun getPropertyRoles ()Ljava/util/List;
+	public final fun getReferenceRoles ()Ljava/util/List;
+	public final fun getRootNode ()Lorg/modelix/model/api/INode;
+	public final fun getSetPropertyOp ()Lkotlin/jvm/functions/Function0;
+	public final fun getSetReferenceOp ()Lkotlin/jvm/functions/Function0;
+	public final fun growingOperationsOnly ()Lorg/modelix/model/test/RandomModelChangeGenerator;
+	public final fun setOperations (Ljava/util/List;)V
+	public final fun withoutMove ()Lorg/modelix/model/test/RandomModelChangeGenerator;
+}
+

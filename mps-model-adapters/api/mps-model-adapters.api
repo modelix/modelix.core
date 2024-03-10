@@ -1,0 +1,665 @@
+public class org/modelix/model/mpsadapters/ConceptWorkaround {
+	public field concept Lorg/jetbrains/mps/openapi/language/SAbstractConcept;
+	public fun <init> (Lorg/jetbrains/mps/openapi/language/SAbstractConcept;)V
+	public fun getSuperConcept ()Lorg/jetbrains/mps/openapi/language/SConcept;
+	public fun getSuperInterfaces ()Ljava/lang/Iterable;
+}
+
+public abstract interface class org/modelix/model/mpsadapters/IDefaultNodeAdapter : org/modelix/model/api/IDeprecatedNodeDefaults {
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getOriginalReference ()Ljava/lang/String;
+	public fun getPropertyLinks ()Ljava/util/List;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReferenceLinks ()Ljava/util/List;
+	public fun getReferenceTarget (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetRef (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public fun isValid ()Z
+	public fun moveChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	public fun setPropertyValue (Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public fun tryGetConcept ()Lorg/modelix/model/api/IConcept;
+}
+
+public final class org/modelix/model/mpsadapters/IDefaultNodeAdapter$DefaultImpls {
+	public static fun addNewChild (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public static fun addNewChild (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public static fun addNewChildren (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;ILjava/util/List;)Ljava/util/List;
+	public static fun getAllChildren (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/lang/Iterable;
+	public static fun getAllChildrenAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllProperties (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefs (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/util/List;
+	public static fun getAllReferenceTargetRefsAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getAllReferenceTargets (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/util/List;
+	public static fun getAllReferenceTargetsAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getChildren (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;)Ljava/lang/Iterable;
+	public static fun getChildren (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public static fun getChildrenAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IChildLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getConceptReference (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Lorg/modelix/model/api/IConceptReference;
+	public static fun getDescendantsAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Z)Lkotlinx/coroutines/flow/Flow;
+	public static fun getOriginalReference (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/lang/String;
+	public static fun getParentAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getPropertyLinks (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/util/List;
+	public static fun getPropertyRoles (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/util/List;
+	public static fun getPropertyValue (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;)Ljava/lang/String;
+	public static fun getPropertyValue (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public static fun getPropertyValueAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IProperty;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceLinks (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/util/List;
+	public static fun getReferenceRoles (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/util/List;
+	public static fun getReferenceTarget (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;)Lorg/modelix/model/api/INode;
+	public static fun getReferenceTarget (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public static fun getReferenceTargetAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRef (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public static fun getReferenceTargetRefAsFlow (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IReferenceLink;)Lkotlinx/coroutines/flow/Flow;
+	public static fun getRoleInParent (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Ljava/lang/String;
+	public static fun isValid (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Z
+	public static fun moveChild (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;ILorg/modelix/model/api/INode;)V
+	public static fun moveChild (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public static fun removeChild (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/INode;)V
+	public static fun removeReference (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IReferenceLink;)V
+	public static fun setPropertyValue (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;Ljava/lang/String;)V
+	public static fun setPropertyValue (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;Lorg/modelix/model/api/INode;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Ljava/lang/String;Lorg/modelix/model/api/INodeReference;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public static fun setReferenceTarget (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public static fun tryGetConcept (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Lorg/modelix/model/api/IConcept;
+	public static fun usesRoleIds (Lorg/modelix/model/mpsadapters/IDefaultNodeAdapter;)Z
+}
+
+public final class org/modelix/model/mpsadapters/MPSArea : org/modelix/model/area/IArea, org/modelix/model/area/IAreaReference {
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SRepository;)V
+	public fun addListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun canRead ()Z
+	public fun canWrite ()Z
+	public fun collectAreas ()Ljava/util/List;
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SRepository;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SRepository;)Lorg/modelix/model/mpsadapters/MPSArea;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSArea;Lorg/jetbrains/mps/openapi/module/SRepository;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSArea;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun executeRead (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun executeWrite (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public fun getReference ()Lorg/modelix/model/area/IAreaReference;
+	public final fun getRepository ()Lorg/jetbrains/mps/openapi/module/SRepository;
+	public fun getRoot ()Lorg/modelix/model/api/INode;
+	public fun hashCode ()I
+	public fun removeListener (Lorg/modelix/model/area/IAreaListener;)V
+	public fun resolveArea (Lorg/modelix/model/area/IAreaReference;)Lorg/modelix/model/area/IArea;
+	public fun resolveBranch (Ljava/lang/String;)Lorg/modelix/model/api/IBranch;
+	public fun resolveConcept (Lorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/IConcept;
+	public fun resolveNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun resolveOriginalNode (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/api/INode;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSChildLink : org/modelix/model/api/IChildLink {
+	public fun <init> (Ljetbrains/mps/smodel/adapter/structure/link/SContainmentLinkAdapter;)V
+	public fun <init> (Lorg/jetbrains/mps/openapi/language/SContainmentLink;)V
+	public final fun component1 ()Ljetbrains/mps/smodel/adapter/structure/link/SContainmentLinkAdapter;
+	public final fun copy (Ljetbrains/mps/smodel/adapter/structure/link/SContainmentLinkAdapter;)Lorg/modelix/model/mpsadapters/MPSChildLink;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSChildLink;Ljetbrains/mps/smodel/adapter/structure/link/SContainmentLinkAdapter;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSChildLink;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getChildConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public final fun getLink ()Ljetbrains/mps/smodel/adapter/structure/link/SContainmentLinkAdapter;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getUID ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isMultiple ()Z
+	public fun isOptional ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSConcept : org/modelix/model/api/IConcept {
+	public fun <init> (Ljetbrains/mps/smodel/adapter/structure/concept/SAbstractConceptAdapter;)V
+	public fun <init> (Lorg/jetbrains/mps/openapi/language/SAbstractConcept;)V
+	public final fun component1 ()Ljetbrains/mps/smodel/adapter/structure/concept/SAbstractConceptAdapter;
+	public final fun copy (Ljetbrains/mps/smodel/adapter/structure/concept/SAbstractConceptAdapter;)Lorg/modelix/model/mpsadapters/MPSConcept;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSConcept;Ljetbrains/mps/smodel/adapter/structure/concept/SAbstractConceptAdapter;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSConcept;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildLinks ()Ljava/util/List;
+	public fun getAllProperties ()Ljava/util/List;
+	public fun getAllReferenceLinks ()Ljava/util/List;
+	public fun getChildLink (Ljava/lang/String;)Lorg/modelix/model/api/IChildLink;
+	public final fun getConcept ()Ljetbrains/mps/smodel/adapter/structure/concept/SAbstractConceptAdapter;
+	public fun getDirectSuperConcepts ()Ljava/util/List;
+	public fun getLanguage ()Lorg/modelix/model/api/ILanguage;
+	public fun getLongName ()Ljava/lang/String;
+	public fun getOwnChildLinks ()Ljava/util/List;
+	public fun getOwnProperties ()Ljava/util/List;
+	public fun getOwnReferenceLinks ()Ljava/util/List;
+	public fun getProperty (Ljava/lang/String;)Lorg/modelix/model/api/IProperty;
+	public fun getReference ()Lorg/modelix/model/api/ConceptReference;
+	public synthetic fun getReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getReferenceLink (Ljava/lang/String;)Lorg/modelix/model/api/IReferenceLink;
+	public fun getShortName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isAbstract ()Z
+	public fun isExactly (Lorg/modelix/model/api/IConcept;)Z
+	public fun isSubConceptOf (Lorg/modelix/model/api/IConcept;)Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSDevKitDependencyAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/model/SModel;)V
+	public synthetic fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/model/SModel;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun component2 ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public final fun component3 ()Lorg/jetbrains/mps/openapi/model/SModel;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/model/SModel;)Lorg/modelix/model/mpsadapters/MPSDevKitDependencyAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSDevKitDependencyAsNode;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/model/SModel;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSDevKitDependencyAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getModelImporter ()Lorg/jetbrains/mps/openapi/model/SModel;
+	public final fun getModuleImporter ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public final fun getModuleReference ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSDevKitDependencyReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSDevKitDependencyReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/model/SModelReference;)V
+	public synthetic fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/model/SModelReference;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleId;
+	public final fun component2 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun component3 ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/model/SModelReference;)Lorg/modelix/model/mpsadapters/MPSDevKitDependencyReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSDevKitDependencyReference;Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/model/SModelReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSDevKitDependencyReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUsedModuleId ()Lorg/jetbrains/mps/openapi/module/SModuleId;
+	public final fun getUserModel ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public final fun getUserModule ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSDevKitDependencyReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSJavaModuleFacetAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Ljetbrains/mps/project/facets/JavaModuleFacet;)V
+	public final fun component1 ()Ljetbrains/mps/project/facets/JavaModuleFacet;
+	public final fun copy (Ljetbrains/mps/project/facets/JavaModuleFacet;)Lorg/modelix/model/mpsadapters/MPSJavaModuleFacetAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSJavaModuleFacetAsNode;Ljetbrains/mps/project/facets/JavaModuleFacet;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSJavaModuleFacetAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getFacet ()Ljetbrains/mps/project/facets/JavaModuleFacet;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSJavaModuleFacetReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSJavaModuleFacetReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleReference;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleReference;)Lorg/modelix/model/mpsadapters/MPSJavaModuleFacetReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSJavaModuleFacetReference;Lorg/jetbrains/mps/openapi/module/SModuleReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSJavaModuleFacetReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getModuleReference ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSJavaModuleFacetReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSLanguage : org/modelix/model/api/ILanguage {
+	public fun <init> (Lorg/jetbrains/mps/openapi/language/SLanguage;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/language/SLanguage;
+	public final fun copy (Lorg/jetbrains/mps/openapi/language/SLanguage;)Lorg/modelix/model/mpsadapters/MPSLanguage;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSLanguage;Lorg/jetbrains/mps/openapi/language/SLanguage;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSLanguage;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getConcepts ()Ljava/util/List;
+	public final fun getLanguage ()Lorg/jetbrains/mps/openapi/language/SLanguage;
+	public fun getName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSLanguageRepository : org/modelix/model/api/ILanguageRepository {
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SRepository;)V
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SRepository;)Lorg/modelix/model/mpsadapters/MPSLanguageRepository;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSLanguageRepository;Lorg/jetbrains/mps/openapi/module/SRepository;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSLanguageRepository;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllConcepts ()Ljava/util/List;
+	public fun getPriority ()I
+	public fun hashCode ()I
+	public synthetic fun resolveConcept (Ljava/lang/String;)Lorg/modelix/model/api/IConcept;
+	public fun resolveConcept (Ljava/lang/String;)Lorg/modelix/model/mpsadapters/MPSConcept;
+	public final fun resolveMPSConcept (Ljava/lang/String;)Lorg/jetbrains/mps/openapi/language/SAbstractConcept;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSModelAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Lorg/jetbrains/mps/openapi/model/SModel;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/model/SModel;
+	public final fun copy (Lorg/jetbrains/mps/openapi/model/SModel;)Lorg/modelix/model/mpsadapters/MPSModelAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSModelAsNode;Lorg/jetbrains/mps/openapi/model/SModel;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSModelAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getModel ()Lorg/jetbrains/mps/openapi/model/SModel;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSModelImportAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Lorg/jetbrains/mps/openapi/model/SModel;Lorg/jetbrains/mps/openapi/model/SModel;)V
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getImportedModel ()Lorg/jetbrains/mps/openapi/model/SModel;
+	public final fun getImportingModel ()Lorg/jetbrains/mps/openapi/model/SModel;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceTarget (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetRef (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public fun setPropertyValue (Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+}
+
+public final class org/modelix/model/mpsadapters/MPSModelImportReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSModelImportReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/model/SModelReference;Lorg/jetbrains/mps/openapi/model/SModelReference;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public final fun component2 ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/model/SModelReference;Lorg/jetbrains/mps/openapi/model/SModelReference;)Lorg/modelix/model/mpsadapters/MPSModelImportReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSModelImportReference;Lorg/jetbrains/mps/openapi/model/SModelReference;Lorg/jetbrains/mps/openapi/model/SModelReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSModelImportReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getImportedModel ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public final fun getImportingModel ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSModelImportReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSModelReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSModelReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/model/SModelReference;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/model/SModelReference;)Lorg/modelix/model/mpsadapters/MPSModelReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSModelReference;Lorg/jetbrains/mps/openapi/model/SModelReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSModelReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getModelReference ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSModelReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSModuleAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSModuleAsNode$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModule;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModule;)Lorg/modelix/model/mpsadapters/MPSModuleAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSModuleAsNode;Lorg/jetbrains/mps/openapi/module/SModule;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSModuleAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getModule ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSModuleAsNode$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSModuleDependencyAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleReference;IZZLorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/module/SDependencyScope;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun component2 ()I
+	public final fun component3 ()Z
+	public final fun component4 ()Z
+	public final fun component5 ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public final fun component6 ()Lorg/jetbrains/mps/openapi/module/SDependencyScope;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleReference;IZZLorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/module/SDependencyScope;)Lorg/modelix/model/mpsadapters/MPSModuleDependencyAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSModuleDependencyAsNode;Lorg/jetbrains/mps/openapi/module/SModuleReference;IZZLorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/module/SDependencyScope;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSModuleDependencyAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getDependencyScope ()Lorg/jetbrains/mps/openapi/module/SDependencyScope;
+	public final fun getExplicit ()Z
+	public final fun getImporter ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public final fun getModuleReference ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun getModuleVersion ()I
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public final fun getReexport ()Z
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSModuleDependencyReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSModuleDependencyReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleId;
+	public final fun component2 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;)Lorg/modelix/model/mpsadapters/MPSModuleDependencyReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSModuleDependencyReference;Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSModuleDependencyReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUsedModuleId ()Lorg/jetbrains/mps/openapi/module/SModuleId;
+	public final fun getUserModuleReference ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSModuleDependencyReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSModuleReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSModuleReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleReference;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleReference;)Lorg/modelix/model/mpsadapters/MPSModuleReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSModuleReference;Lorg/jetbrains/mps/openapi/module/SModuleReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSModuleReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getModuleReference ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSModuleReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Lorg/jetbrains/mps/openapi/model/SNode;)V
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConcept;)Lorg/modelix/model/api/INode;
+	public fun addNewChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/IConceptReference;)Lorg/modelix/model/api/INode;
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/model/SNode;
+	public final fun copy (Lorg/jetbrains/mps/openapi/model/SNode;)Lorg/modelix/model/mpsadapters/MPSNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSNode;Lorg/jetbrains/mps/openapi/model/SNode;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getConceptReference ()Lorg/modelix/model/api/ConceptReference;
+	public synthetic fun getConceptReference ()Lorg/modelix/model/api/IConceptReference;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getNode ()Lorg/jetbrains/mps/openapi/model/SNode;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyLinks ()Ljava/util/List;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceLinks ()Ljava/util/List;
+	public fun getReferenceTarget (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetRef (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun isValid ()Z
+	public fun moveChild (Lorg/modelix/model/api/IChildLink;ILorg/modelix/model/api/INode;)V
+	public fun removeChild (Lorg/modelix/model/api/INode;)V
+	public fun setPropertyValue (Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INode;)V
+	public fun setReferenceTarget (Lorg/modelix/model/api/IReferenceLink;Lorg/modelix/model/api/INodeReference;)V
+	public fun toString ()Ljava/lang/String;
+	public fun tryGetConcept ()Lorg/modelix/model/api/IConcept;
+}
+
+public final class org/modelix/model/mpsadapters/MPSNodeReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSNodeReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/model/SNodeReference;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/model/SNodeReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/model/SNodeReference;)Lorg/modelix/model/mpsadapters/MPSNodeReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSNodeReference;Lorg/jetbrains/mps/openapi/model/SNodeReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSNodeReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRef ()Lorg/jetbrains/mps/openapi/model/SNodeReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSNodeReference$Companion {
+	public final fun tryConvert (Lorg/modelix/model/api/INodeReference;)Lorg/modelix/model/mpsadapters/MPSNodeReference;
+}
+
+public final class org/modelix/model/mpsadapters/MPSProjectAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Ljetbrains/mps/project/ProjectBase;)V
+	public final fun component1 ()Ljetbrains/mps/project/ProjectBase;
+	public final fun copy (Ljetbrains/mps/project/ProjectBase;)Lorg/modelix/model/mpsadapters/MPSProjectAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSProjectAsNode;Ljetbrains/mps/project/ProjectBase;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSProjectAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public final fun getProject ()Ljetbrains/mps/project/ProjectBase;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSProjectModuleAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Ljetbrains/mps/project/ProjectBase;Lorg/jetbrains/mps/openapi/module/SModule;)V
+	public final fun component1 ()Ljetbrains/mps/project/ProjectBase;
+	public final fun component2 ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public final fun copy (Ljetbrains/mps/project/ProjectBase;Lorg/jetbrains/mps/openapi/module/SModule;)Lorg/modelix/model/mpsadapters/MPSProjectModuleAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSProjectModuleAsNode;Ljetbrains/mps/project/ProjectBase;Lorg/jetbrains/mps/openapi/module/SModule;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSProjectModuleAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getModule ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public final fun getProject ()Ljetbrains/mps/project/ProjectBase;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun getReferenceTarget (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INode;
+	public fun getReferenceTargetRef (Lorg/modelix/model/api/IReferenceLink;)Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun setPropertyValue (Lorg/modelix/model/api/IProperty;Ljava/lang/String;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSProjectModuleReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSProjectModuleReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/modelix/model/mpsadapters/MPSProjectReference;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun component2 ()Lorg/modelix/model/mpsadapters/MPSProjectReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/modelix/model/mpsadapters/MPSProjectReference;)Lorg/modelix/model/mpsadapters/MPSProjectModuleReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSProjectModuleReference;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/modelix/model/mpsadapters/MPSProjectReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSProjectModuleReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getModuleRef ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun getProjectRef ()Lorg/modelix/model/mpsadapters/MPSProjectReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSProjectModuleReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSProjectReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSProjectReference$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lorg/modelix/model/mpsadapters/MPSProjectReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSProjectReference;Ljava/lang/String;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSProjectReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getProjectName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSProjectReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/MPSProperty : org/modelix/model/api/IProperty {
+	public fun <init> (Ljetbrains/mps/smodel/adapter/structure/property/SPropertyAdapter;)V
+	public fun <init> (Lorg/jetbrains/mps/openapi/language/SProperty;)V
+	public final fun component1 ()Ljetbrains/mps/smodel/adapter/structure/property/SPropertyAdapter;
+	public final fun copy (Ljetbrains/mps/smodel/adapter/structure/property/SPropertyAdapter;)Lorg/modelix/model/mpsadapters/MPSProperty;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSProperty;Ljetbrains/mps/smodel/adapter/structure/property/SPropertyAdapter;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSProperty;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public final fun getProperty ()Ljetbrains/mps/smodel/adapter/structure/property/SPropertyAdapter;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getUID ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isOptional ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSReferenceLink : org/modelix/model/api/IReferenceLink {
+	public fun <init> (Ljetbrains/mps/smodel/adapter/structure/ref/SReferenceLinkAdapter;)V
+	public fun <init> (Lorg/jetbrains/mps/openapi/language/SReferenceLink;)V
+	public final fun component1 ()Ljetbrains/mps/smodel/adapter/structure/ref/SReferenceLinkAdapter;
+	public final fun copy (Ljetbrains/mps/smodel/adapter/structure/ref/SReferenceLinkAdapter;)Lorg/modelix/model/mpsadapters/MPSReferenceLink;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSReferenceLink;Ljetbrains/mps/smodel/adapter/structure/ref/SReferenceLinkAdapter;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSReferenceLink;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public final fun getLink ()Ljetbrains/mps/smodel/adapter/structure/ref/SReferenceLinkAdapter;
+	public fun getSimpleName ()Ljava/lang/String;
+	public fun getTargetConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getUID ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun isOptional ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSRepositoryAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SRepository;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SRepository;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SRepository;)Lorg/modelix/model/mpsadapters/MPSRepositoryAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSRepositoryAsNode;Lorg/jetbrains/mps/openapi/module/SRepository;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSRepositoryAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAllChildren ()Ljava/lang/Iterable;
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getChildren (Lorg/modelix/model/api/IChildLink;)Ljava/lang/Iterable;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public final fun getRepository ()Lorg/jetbrains/mps/openapi/module/SRepository;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSRepositoryReference : org/modelix/model/api/INodeReference {
+	public static final field INSTANCE Lorg/modelix/model/mpsadapters/MPSRepositoryReference;
+	public fun serialize ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSSingleLanguageDependencyAsNode : org/modelix/model/mpsadapters/IDefaultNodeAdapter {
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleReference;ILorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/model/SModel;)V
+	public synthetic fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleReference;ILorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/model/SModel;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun component2 ()I
+	public final fun component3 ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public final fun component4 ()Lorg/jetbrains/mps/openapi/model/SModel;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleReference;ILorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/model/SModel;)Lorg/modelix/model/mpsadapters/MPSSingleLanguageDependencyAsNode;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSSingleLanguageDependencyAsNode;Lorg/jetbrains/mps/openapi/module/SModuleReference;ILorg/jetbrains/mps/openapi/module/SModule;Lorg/jetbrains/mps/openapi/model/SModel;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSSingleLanguageDependencyAsNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getArea ()Lorg/modelix/model/area/IArea;
+	public fun getConcept ()Lorg/modelix/model/api/IConcept;
+	public fun getContainmentLink ()Lorg/modelix/model/api/IChildLink;
+	public final fun getLanguageVersion ()I
+	public final fun getModelImporter ()Lorg/jetbrains/mps/openapi/model/SModel;
+	public final fun getModuleImporter ()Lorg/jetbrains/mps/openapi/module/SModule;
+	public final fun getModuleReference ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public fun getParent ()Lorg/modelix/model/api/INode;
+	public fun getPropertyValue (Lorg/modelix/model/api/IProperty;)Ljava/lang/String;
+	public fun getReference ()Lorg/modelix/model/api/INodeReference;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSSingleLanguageDependencyReference : org/modelix/model/api/INodeReference {
+	public static final field Companion Lorg/modelix/model/mpsadapters/MPSSingleLanguageDependencyReference$Companion;
+	public fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/model/SModelReference;)V
+	public synthetic fun <init> (Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/model/SModelReference;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lorg/jetbrains/mps/openapi/module/SModuleId;
+	public final fun component2 ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public final fun component3 ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public final fun copy (Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/model/SModelReference;)Lorg/modelix/model/mpsadapters/MPSSingleLanguageDependencyReference;
+	public static synthetic fun copy$default (Lorg/modelix/model/mpsadapters/MPSSingleLanguageDependencyReference;Lorg/jetbrains/mps/openapi/module/SModuleId;Lorg/jetbrains/mps/openapi/module/SModuleReference;Lorg/jetbrains/mps/openapi/model/SModelReference;ILjava/lang/Object;)Lorg/modelix/model/mpsadapters/MPSSingleLanguageDependencyReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUsedModuleId ()Lorg/jetbrains/mps/openapi/module/SModuleId;
+	public final fun getUserModel ()Lorg/jetbrains/mps/openapi/model/SModelReference;
+	public final fun getUserModule ()Lorg/jetbrains/mps/openapi/module/SModuleReference;
+	public fun hashCode ()I
+	public fun serialize ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/modelix/model/mpsadapters/MPSSingleLanguageDependencyReference$Companion {
+}
+
+public final class org/modelix/model/mpsadapters/Model : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/mpsadapters/Model;
+	public final fun getRootNodes ()Lorg/modelix/model/api/SimpleChildLink;
+}
+
+public final class org/modelix/model/mpsadapters/Module : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/mpsadapters/Module;
+	public final fun getModels ()Lorg/modelix/model/api/SimpleChildLink;
+}
+
+public final class org/modelix/model/mpsadapters/Repository : org/modelix/model/api/SimpleConcept {
+	public static final field INSTANCE Lorg/modelix/model/mpsadapters/Repository;
+	public final fun getModules ()Lorg/modelix/model/api/SimpleChildLink;
+}
+
+public final class org/modelix/model/mpsadapters/RepositoryLanguage : org/modelix/model/api/SimpleLanguage {
+	public static final field INSTANCE Lorg/modelix/model/mpsadapters/RepositoryLanguage;
+	public final fun getBaseConcept ()Lorg/modelix/model/mpsadapters/MPSConcept;
+	public final fun getINamedConcept ()Lorg/modelix/model/mpsadapters/MPSConcept;
+	public final fun getModel ()Lorg/modelix/model/mpsadapters/Model;
+	public final fun getModule ()Lorg/modelix/model/mpsadapters/Module;
+	public final fun getNamePropertyUID ()Ljava/lang/String;
+	public final fun getRepository ()Lorg/modelix/model/mpsadapters/Repository;
+	public final fun getVirtualPackagePropertyUID ()Ljava/lang/String;
+}
+

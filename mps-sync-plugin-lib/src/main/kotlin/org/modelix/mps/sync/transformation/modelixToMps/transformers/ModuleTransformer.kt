@@ -101,6 +101,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
 
                 val modelBindings = bindingsRegistry.getModelBindings(module)!!
                 val bindings = mutableSetOf<IBinding>()
+                @Suppress("UNCHECKED_CAST")
                 bindings.addAll(dependencyBindings as Iterable<IBinding>)
                 bindings.add(moduleBinding)
                 bindings.addAll(modelBindings)

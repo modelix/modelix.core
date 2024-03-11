@@ -106,6 +106,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                          * consecutive SyncTask via the predecessor's return and the successors input parameter, because
                          * this CF will always be unpacked until no more CFs are found.
                          */
+                        @Suppress("UNCHECKED_CAST")
                         val cfPredecessors = predecessors.filter { it.get() is CompletableFuture<*> }
                             .map { it.get() as CompletableFuture<Any?> }
                         if (cfPredecessors.isNotEmpty()) {

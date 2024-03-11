@@ -64,6 +64,8 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
 
         isActivated = true
 
+        bindingsRegistry.bindingActivated(this)
+
         logger.info { "${name()} is activated." }
 
         callback?.run()

@@ -61,6 +61,9 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
         model.addModelListener(modelChangeListener)
 
         isActivated = true
+
+        bindingsRegistry.bindingActivated(this)
+
         logger.info { "${name()} is activated." }
 
         callback?.run()

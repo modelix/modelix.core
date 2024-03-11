@@ -18,7 +18,7 @@ package org.modelix.mps.sync.plugin.gui
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.bindings.BindingRegistryOperation
+import org.modelix.mps.sync.bindings.BindingLifecycleState
 import org.modelix.mps.sync.bindings.BindingSortComparator
 import org.modelix.mps.sync.bindings.BindingsRegistry
 
@@ -30,12 +30,13 @@ class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGu
 
     override fun run() {
         while (!isInterrupted) {
-            val bindingWithOperation = BindingsRegistry.changedBindings.take()
-            val binding = bindingWithOperation.binding
+            val bindingState = BindingsRegistry.changedBindings.take()
+            val binding = bindingState.binding
 
-            when (bindingWithOperation.operation) {
-                BindingRegistryOperation.ADD -> existingBindings.add(binding)
-                BindingRegistryOperation.REMOVE -> existingBindings.remove(binding)
+            when (bindingState.state) {
+                BindingLifecycleState.ACTIVATE -> existingBindings.add(binding)
+                BindingLifecycleState.REMOVE -> existingBindings.remove(binding)
+                else -> {}
             }
 
             val sorted = existingBindings.sortedWith(bindingsComparator)

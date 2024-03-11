@@ -43,13 +43,19 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
         continuation: CompletableFuture<Any?>,
         predecessors: Set<CompletableFuture<Any?>>,
         fillContinuation: Boolean = false,
+        collectResults: Boolean = false,
     ) {
         if (predecessors.isEmpty()) {
             continuation.completeWithDefault()
             return
         }
 
-        continuations.add(FutureWithPredecessors(predecessors, FillableFuture(continuation, fillContinuation)))
+        continuations.add(
+            FutureWithPredecessors(
+                predecessors,
+                FillableFuture(continuation, fillContinuation, collectResults),
+            ),
+        )
         notifyThread()
     }
 
@@ -114,12 +120,22 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
 
                         val fillContinuation = fillableFuture.shallBeFilled
                         val result = if (fillContinuation) {
-                            val candidate = predecessors.first()
-                            if (candidate.isCompletedExceptionally) {
-                                candidate.exceptionally { continuation.completeExceptionally(it) }
-                                continue
+                            if (fillableFuture.shallCollectResults) {
+                                try {
+                                    Iterable { predecessors.flatMap { it.get() as Iterable<Any?> }.stream().iterator() }
+                                } catch (ex: Exception) {
+                                    logger.error(ex) { "Error while collecting results from predecessors. Failing continuation." }
+                                    continuation.completeExceptionally(ex)
+                                    continue
+                                }
+                            } else {
+                                val candidate = predecessors.first()
+                                if (candidate.isCompletedExceptionally) {
+                                    candidate.exceptionally { continuation.completeExceptionally(it) }
+                                    continue
+                                }
+                                candidate.get()
                             }
-                            candidate.get()
                         } else {
                             null
                         }
@@ -168,4 +184,8 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
 data class FutureWithPredecessors(val predecessors: Set<CompletableFuture<Any?>>, val future: FillableFuture)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-data class FillableFuture(val future: CompletableFuture<Any?>, val shallBeFilled: Boolean = false)
+data class FillableFuture(
+    val future: CompletableFuture<Any?>,
+    val shallBeFilled: Boolean = false,
+    val shallCollectResults: Boolean = false,
+)

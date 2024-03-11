@@ -49,10 +49,10 @@ import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.BooleanUtil
 import org.modelix.mps.sync.util.bindTo
-import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.text.ParseException
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -78,16 +78,21 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
 
     fun transformToModuleCompletely(nodeId: Long) =
         transformToModule(nodeId, true)
-            .continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+            .continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) { dependencyBindings ->
+
                 // transform models
                 val module = branch.getNode(nodeId)
                 module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).waitForCompletionOfEachTask {
                     modelTransformer.transformToModelCompletely(it.nodeIdAsLong(), branch, bindingsRegistry)
                 }
-            }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+
+                dependencyBindings
+            }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) { dependencyBindings ->
                 // resolve cross-model references (and node references)
                 modelTransformer.resolveCrossModelReferences(project.repository)
-            }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) {
+
+                dependencyBindings
+            }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) { dependencyBindings ->
                 // register binding
                 val iNode = branch.getNode(nodeId)
                 val module = nodeMap.getModule(iNode.nodeIdAsLong()) as AbstractModule
@@ -95,7 +100,9 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 bindingsRegistry.addModuleBinding(moduleBinding)
 
                 val modelBindings = bindingsRegistry.getModelBindings(module)!!
-                val bindings = mutableSetOf<IBinding>(moduleBinding)
+                val bindings = mutableSetOf<IBinding>()
+                bindings.addAll(dependencyBindings as Iterable<IBinding>)
+                bindings.add(moduleBinding)
                 bindings.addAll(modelBindings)
 
                 bindings
@@ -114,10 +121,11 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
             nodeMap.put(sModule, iNode.nodeIdAsLong())
 
-            // transform dependencies
-            iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).waitForCompletionOfEachTask {
-                transformModuleDependency(it.nodeIdAsLong(), sModule, fetchTargetModule)
-            }
+            // transform dependencies and collect its bindings (implicitly via the tasks' return value)
+            iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
+                .waitForCompletionOfEachTask(collectResults = true) {
+                    transformModuleDependency(it.nodeIdAsLong(), sModule, fetchTargetModule)
+                }
         }
 
     fun transformModuleDependency(
@@ -130,6 +138,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
 
             val future = CompletableFuture<Any?>()
+            val emptyBindings = Collections.emptySet<IBinding>()
             val targetModuleIsNotMapped = nodeMap.getModule(targetModuleId) == null
             if (targetModuleIsNotMapped && fetchTargetModule) {
                 // find target module in modelix
@@ -142,24 +151,25 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 }
 
                 if (targetModule != null) {
-                    // TODO in this case we have to collect all ModuleBindings and ModelBindings that were created
-                    // and we have to pass it on to the caller side, so in the end all bindings can be correctly activated
                     transformToModuleCompletely(targetModule.nodeIdAsLong()).getResult().bindTo(future)
                 } else {
                     logger.error { "Target Module of ModuleDependency ($nodeId) not found on the server." }
-                    future.completeWithDefault()
+                    future.complete(emptyBindings)
                 }
             } else {
-                future.completeWithDefault()
+                future.complete(emptyBindings)
             }
+
             future
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE),
+            SyncDirection.MODELIX_TO_MPS,
+        ) { dependencyBindings ->
             val iNode = branch.getNode(nodeId)
             val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
 
             val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
             val moduleReference = ModuleReference(moduleName, targetModuleId)
-
             val reexport = (
                 iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
                     ?: "false"
@@ -167,6 +177,8 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             parentModule.addDependency(moduleReference, reexport)
 
             nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
+
+            dependencyBindings
         }
 
     fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?) {

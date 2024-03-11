@@ -29,16 +29,17 @@ import java.util.stream.Collectors
 private val LOG = KotlinLogging.logger { }
 
 class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) : IStoreClient, AutoCloseable {
-    private val ENTRY_CHANGED_TOPIC = "entryChanged"
-    private lateinit var ignite: Ignite
-    private val cache: IgniteCache<String, String?>
-    private val changeNotifier = ChangeNotifier(this)
-    private val pendingChangeMessages = PendingChangeMessages {
-        ignite.message().send(ENTRY_CHANGED_TOPIC, it)
+    companion object {
+        private val threadLocalPendingChangeMessages: ThreadLocal<PendingChangeMessages> = ThreadLocal()
     }
 
+    private val ENTRY_CHANGED_TOPIC = "entryChanged"
+    private var ignite: Ignite
+    private val cache: IgniteCache<String, String?>
+    private val changeNotifier = ChangeNotifier(this)
+
     /**
-     * Istantiate an IgniteStoreClient
+     * Instantiate an IgniteStoreClient
      *
      * @param jdbcConfFile adopt the configuration specified. If it is not specified, configuration
      * from ignite.xml is used
@@ -112,7 +113,7 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
             if (!silent) {
                 for (key in entries.keys) {
                     if (HashUtil.isSha256(key)) continue
-                    pendingChangeMessages.entryChanged(key)
+                    threadLocalPendingChangeMessages.get().entryChanged(key)
                 }
             }
         }
@@ -137,10 +138,18 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
         val transactions = ignite.transactions()
         if (transactions.tx() == null) {
             transactions.txStart().use { tx ->
-                val result = body()
-                tx.commit()
-                pendingChangeMessages.flushChangeMessages()
-                return result
+                try {
+                    val pendingChangeMessages = PendingChangeMessages {
+                        ignite.message().send(ENTRY_CHANGED_TOPIC, it)
+                    }
+                    threadLocalPendingChangeMessages.set(pendingChangeMessages)
+                    val result = body()
+                    tx.commit()
+                    pendingChangeMessages.flushChangeMessages()
+                    return result
+                } finally {
+                    threadLocalPendingChangeMessages.remove()
+                }
             }
         } else {
             // already in a transaction

@@ -13,6 +13,7 @@
  */
 package org.modelix.model.area
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -157,6 +158,10 @@ class AreaWithMounts(val rootArea: IArea, mounts: Map<INode, IArea>) : IArea {
 
         override fun getChildren(role: String?): Iterable<INode> {
             return node.getChildren(role).map { NodeWrapper(getMountedArea(it)?.getRoot() ?: it) }
+        }
+
+        override fun replaceNode(concept: ConceptReference): INode {
+            return NodeWrapper(node.replaceNode(concept))
         }
 
         override fun removeChild(child: INode) {

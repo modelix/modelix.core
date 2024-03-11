@@ -106,6 +106,14 @@ interface IWriteTransaction : ITransaction {
     fun addNewChildren(parentId: Long, role: String?, index: Int, childIds: LongArray, concepts: Array<IConceptReference?>)
 
     /**
+     * Sets the concept of the node identified by the given id.
+     *
+     * @param nodeId id of the node
+     * @param concept the new concept, or null to remove the concept
+     */
+    fun setConcept(nodeId: Long, concept: IConceptReference?)
+
+    /**
      * Deletes the given node.
      *
      * @param nodeId id of the node to be deleted

@@ -149,6 +149,10 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
         return addNewChild(resolveChildLinkOrFallback(role), index, concept)
     }
 
+    override fun replaceNode(concept: ConceptReference): INode {
+        throw UnsupportedOperationException("ModelQL currently does not support replacing nodes.")
+    }
+
     override fun removeChild(child: INode) {
         blockingQuery { child.reference.asMono().resolve().remove() }
     }

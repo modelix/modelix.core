@@ -48,6 +48,15 @@ interface INode {
     fun tryGetConcept(): IConcept? = getConceptReference()?.tryResolve()
 
     /**
+     * Replaces this node with a new node of the given concept that uses the same id as this node.
+     * Properties, references and children will be the same.
+     *
+     * @param concept the concept of the new node
+     * @return replacement for this node with the new given concept
+     */
+    fun replaceNode(concept: ConceptReference): INode
+
+    /**
      * Role of this node in its parent node if it exists,or null otherwise.
      */
     @Deprecated("use getContainmentLink()")

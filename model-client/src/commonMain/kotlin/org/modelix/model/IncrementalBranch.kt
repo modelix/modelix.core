@@ -326,6 +326,15 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
             modified(UnclassifiedNodeDependency(this@IncrementalBranch, childId)) // see .containsNode
         }
 
+        override fun setConcept(nodeId: Long, concept: IConceptReference?) {
+            val oldParentId = transaction.getParent(nodeId)
+            val oldRole = transaction.getRole(nodeId)
+            transaction.setConcept(nodeId, concept)
+            modified(ChildrenDependency(this@IncrementalBranch, oldParentId, oldRole))
+            modified(ContainmentDependency(this@IncrementalBranch, nodeId))
+            modified(UnclassifiedNodeDependency(this@IncrementalBranch, nodeId))
+        }
+
         override fun deleteNode(nodeId: Long) {
             val oldParentId = transaction.getParent(nodeId)
             val oldRole = transaction.getRole(nodeId)
@@ -461,6 +470,11 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
         ): ITree {
             // No modification event, because the branch doesn't change
             return tree.addNewChildren(parentId, role, index, newIds, concepts).wrap()
+        }
+
+        override fun setConcept(nodeId: Long, concept: IConceptReference?): ITree {
+            // No modification event, because the branch doesn't change
+            return tree.setConcept(nodeId, concept)
         }
 
         override fun deleteNode(nodeId: Long): ITree {

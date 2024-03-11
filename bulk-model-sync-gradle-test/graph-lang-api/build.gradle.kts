@@ -36,6 +36,7 @@ kotlin {
     sourceSets.named("main") {
         kotlin.srcDir(kotlinGenDir)
     }
+    jvmToolchain(11)
 }
 
 metamodel {

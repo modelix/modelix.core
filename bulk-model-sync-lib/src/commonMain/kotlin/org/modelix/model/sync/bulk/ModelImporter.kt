@@ -185,8 +185,10 @@ class ModelImporter(
                     .forEach { (newChild, expected) ->
                         val expectedId = expected.originalId()
                         checkNotNull(expectedId) { "Specified node '$expected' has no ID." }
-                        newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
-                        originalIdToExisting[expectedId] = newChild.reference
+                        if (newChild.originalId() == null) {
+                            newChild.setPropertyValue(NodeData.ID_PROPERTY_KEY, expectedId)
+                        }
+                        originalIdToExisting[newChild.originalId() ?: expectedId] = newChild.reference
                         syncNode(newChild, expected, progressReporter)
                     }
                 continue
@@ -224,7 +226,9 @@ class ModelImporter(
                     val existingNodeReference = originalIdToExisting[expectedId]
                     if (existingNodeReference == null) {
                         val newChild = existingParent.addNewChild(role, newIndex, expectedConcept)
-                        newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                        if (newChild.originalId() == null) {
+                            newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                        }
                         originalIdToExisting[expectedId] = newChild.reference
                         newChild
                     } else {

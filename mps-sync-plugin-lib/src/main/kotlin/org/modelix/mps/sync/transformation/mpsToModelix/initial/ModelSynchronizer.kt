@@ -28,6 +28,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -83,10 +84,15 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             // synchronize devKits
             model.importedDevkits().waitForCompletionOfEachTask { addDevKitDependency(model, it) }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
-            // register binding
-            val binding = ModelBinding(model, branch)
-            bindingsRegistry.addModelBinding(binding)
-            binding
+            val isDescriptorModel = model.name.value.endsWith("@descriptor")
+            if (isDescriptorModel) {
+                EmptyBinding()
+            } else {
+                // register binding
+                val binding = ModelBinding(model, branch)
+                bindingsRegistry.addModelBinding(binding)
+                binding
+            }
         }
 
     private fun synchronizeModelProperties(cloudModel: INode, model: SModel) {

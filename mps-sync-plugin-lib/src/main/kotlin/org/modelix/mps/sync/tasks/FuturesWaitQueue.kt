@@ -19,6 +19,7 @@ package org.modelix.mps.sync.tasks
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.util.completeWithDefault
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
@@ -46,14 +47,18 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
         collectResults: Boolean = false,
     ) {
         if (predecessors.isEmpty()) {
-            continuation.completeWithDefault()
+            if (collectResults) {
+                continuation.complete(Collections.emptyList<Any?>())
+            } else {
+                continuation.completeWithDefault()
+            }
             return
         }
 
         continuations.add(
             FutureWithPredecessors(
                 predecessors,
-                FillableFuture(continuation, fillContinuation, collectResults),
+                FillableFuture(continuation, fillContinuation || collectResults, collectResults),
             ),
         )
         notifyThread()
@@ -123,7 +128,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                         val result = if (fillContinuation) {
                             if (fillableFuture.shallCollectResults) {
                                 try {
-                                    Iterable { predecessors.flatMap { it.get() as Iterable<Any?> }.stream().iterator() }
+                                    predecessors.map { it.get() }
                                 } catch (ex: Exception) {
                                     logger.error(ex) { "Error while collecting results from predecessors. Failing continuation." }
                                     continuation.completeExceptionally(ex)

@@ -35,7 +35,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
-import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,7 +47,6 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
-import java.net.ConnectException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -108,12 +106,8 @@ class ModelSyncService : Disposable {
                     BranchReference(RepositoryId(repositoryID), branchName),
                     module,
                 ).forEach { it.activate() }
-            } catch (e: ConnectException) {
-                logger.error(e) { "Unable to connect: ${e.message} / ${e.cause}" }
-            } catch (e: ClientRequestException) {
-                logger.error(e) { "Illegal request: ${e.message} / ${e.cause}" }
             } catch (e: Exception) {
-                logger.error(e) { "Pokemon Exception Catching: ${e.message} / ${e.cause}" }
+                logger.error(e) { "Error while binding module" }
             }
         }
     }

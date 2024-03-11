@@ -35,9 +35,11 @@ import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.mps.util.ModelRenameHelper
 import org.modelix.mps.sync.mps.util.createModel
@@ -51,6 +53,7 @@ import org.modelix.mps.sync.transformation.cache.ModelWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.getModule
+import org.modelix.mps.sync.util.isModel
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
@@ -79,12 +82,17 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                     .waitForCompletionOfEachTask {
                         nodeTransformer.transformLanguageOrDevKitDependency(it)
                     }
-            }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) {
-                // register binding
-                val model = nodeMap.getModel(branch.getNode(nodeId).nodeIdAsLong()) as SModelBase
-                val binding = ModelBinding(model, branch)
-                bindingsRegistry.addModelBinding(binding)
-                binding
+            }.continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+                val iNode = branch.getNode(nodeId)
+                if (isDescriptorModel(iNode)) {
+                    EmptyBinding()
+                } else {
+                    // register binding
+                    val model = nodeMap.getModel(iNode.nodeIdAsLong()) as SModelBase
+                    val binding = ModelBinding(model, branch)
+                    bindingsRegistry.addModelBinding(binding)
+                    binding
+                }
             }
 
     fun transformToModel(nodeId: Long) =
@@ -101,8 +109,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
             check(serializedId.isNotEmpty()) { "Model's ($iNode) ID is empty" }
             val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
-            val modelDoesNotExist = module.getModel(modelId) == null
-            if (modelDoesNotExist) {
+            if (!isDescriptorModel(iNode)) {
                 val sModel = module.createModel(name, modelId) as EditableSModel
                 sModel.save()
                 nodeMap.put(sModel, iNode.nodeIdAsLong())
@@ -252,6 +259,11 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                 logger.error { "Target module referred by $targetModuleReference is neither a Language nor DevKit. Therefore the dependency for it cannot be deleted. Corresponding Modelix Node ID is $nodeId." }
             }
         }
+    }
+
+    private fun isDescriptorModel(iNode: INode): Boolean {
+        val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+        return iNode.isModel() && name?.endsWith("@descriptor") == true
     }
 }
 

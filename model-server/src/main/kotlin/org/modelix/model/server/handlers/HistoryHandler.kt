@@ -68,6 +68,8 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                 val params = call.request.queryParameters
                 val limit = toInt(params["limit"], 500)
                 val skip = toInt(params["skip"], 0)
+                val latestVersion = repositoriesManager.getVersion(branch)
+                checkNotNull(latestVersion) { "Branch not found: $branch" }
                 call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../..")) {
                     headContent {
                         style {
@@ -80,7 +82,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                         repositoryPageStyle()
                     }
                     bodyContent {
-                        buildRepositoryPage(branch, params["head"], skip, limit)
+                        buildRepositoryPage(branch, latestVersion, params["head"], skip, limit)
                     }
                 }
             }
@@ -105,7 +107,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         }
     }
 
-    fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
+    suspend fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
         val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch doesn't exist: $repositoryAndBranch")
         val branch = OTBranch(PBranch(version.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.runWriteT { t ->
@@ -160,8 +162,13 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         }
     }
 
-    private fun FlowContent.buildRepositoryPage(repositoryAndBranch: BranchReference, headHash: String?, skip: Int, limit: Int) {
-        val latestVersion = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch not found: $repositoryAndBranch")
+    private fun FlowContent.buildRepositoryPage(
+        repositoryAndBranch: BranchReference,
+        latestVersion: CLVersion,
+        headHash: String?,
+        skip: Int,
+        limit: Int,
+    ) {
         val headVersion = if (headHash == null || headHash.length == 0) latestVersion else CLVersion(headHash, client.storeCache!!)
         var rowIndex = 0
         h1 {

@@ -27,6 +27,7 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
+import kotlinx.coroutines.runBlocking
 import kotlinx.html.br
 import kotlinx.html.div
 import kotlinx.html.h1
@@ -48,12 +49,12 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
+import org.modelix.model.server.store.runTransactionSuspendable
 import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.*
 import java.util.regex.Pattern
-import kotlin.collections.LinkedHashMap
 
 val PERMISSION_MODEL_SERVER = "model-server".asResource()
 val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
@@ -85,7 +86,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         // request to initialize it lazily, would make the code less robust.
         // Each change in the logic of RepositoriesManager#maybeInitAndGetSeverId would need
         // the special conditions in the affected requests to be updated.
-        repositoriesManager.maybeInitAndGetSeverId()
+        runBlocking { repositoriesManager.maybeInitAndGetSeverId() }
         application.apply {
             modelServerModule()
         }
@@ -111,7 +112,11 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                 if (isHealthy()) {
                     call.respondText(text = "healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
                 } else {
-                    call.respondText(text = "not healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.InternalServerError)
+                    call.respondText(
+                        text = "not healthy",
+                        contentType = ContentType.Text.Plain,
+                        status = HttpStatusCode.InternalServerError,
+                    )
                 }
             }
             get<Paths.getHeaders> {
@@ -283,7 +288,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         return result
     }
 
-    protected fun CallContext.putEntries(newEntries: Map<String, String?>) {
+    protected suspend fun CallContext.putEntries(newEntries: Map<String, String?>) {
         val referencedKeys: MutableSet<String> = HashSet()
         for ((key, value) in newEntries) {
             checkKeyPermission(key, EPermissionType.WRITE)
@@ -316,18 +321,23 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                 HashUtil.isSha256(key) -> {
                     hashedObjects[key] = value ?: throw IllegalArgumentException("No value provided for $key")
                 }
+
                 BranchReference.tryParseBranch(key) != null -> {
                     branchChanges[BranchReference.tryParseBranch(key)!!] = value
                 }
+
                 key.startsWith(PROTECTED_PREFIX) -> {
                     throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
                 }
+
                 key.startsWith(RepositoriesManager.KEY_PREFIX) -> {
                     throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
                 }
+
                 key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2 -> {
                     throw NoPermissionException("'$key' is read-only.")
                 }
+
                 else -> {
                     userDefinedEntries[key] = value
                 }
@@ -336,14 +346,14 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
 
         HashUtil.checkObjectHashes(hashedObjects)
 
-        repositoriesManager.client.store.runTransaction {
+        repositoriesManager.client.store.runTransactionSuspendable {
             storeClient.putAll(hashedObjects)
             storeClient.putAll(userDefinedEntries)
             for ((branch, value) in branchChanges) {
                 if (value == null) {
-                    repositoriesManager.removeBranches(branch.repositoryId, setOf(branch.branchName))
+                    repositoriesManager.removeBranchesBlocking(branch.repositoryId, setOf(branch.branchName))
                 } else {
-                    repositoriesManager.mergeChanges(branch, value)
+                    repositoriesManager.mergeChangesBlocking(branch, value)
                 }
             }
         }
@@ -365,7 +375,10 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         if (key.startsWith(RepositoriesManager.KEY_PREFIX)) {
             throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
         }
-        if ((key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2) && type.includes(EPermissionType.WRITE)) {
+        if ((key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2) && type.includes(
+                EPermissionType.WRITE,
+            )
+        ) {
             throw NoPermissionException("'$key' is read-only.")
         }
         if (HashUtil.isSha256(key)) {

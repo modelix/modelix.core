@@ -39,7 +39,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
@@ -61,7 +60,6 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
-import org.modelix.model.server.api.v2.toMap
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.server.ModelQLServer
@@ -231,9 +229,8 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                     val delta = VersionDelta(
                         newVersionHash,
                         lastVersionHash,
-                        objectsMap = repositoriesManager.computeDelta(newVersionHash, lastVersionHash).toMap(),
+                        objectsMap = repositoriesManager.computeDelta(newVersionHash, lastVersionHash).asMap(),
                     )
-                    delta.checkObjectHashes()
                     send(Json.encodeToString(delta))
                     lastVersionHash = newVersionHash
                 }
@@ -370,16 +367,14 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         val delta = VersionDelta(
             versionHash,
             baseVersionHash,
-            objectsMap = repositoriesManager.computeDelta(versionHash, baseVersionHash).toMap(),
+            objectsMap = repositoriesManager.computeDelta(versionHash, baseVersionHash).asMap(),
         )
-        delta.checkObjectHashes()
         respond(delta)
     }
 
     private suspend fun ApplicationCall.respondDeltaAsObjectStream(versionHash: String, baseVersionHash: String?, plainText: Boolean) {
         respondTextWriter(contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE) {
-            repositoriesManager.computeDelta(versionHash, baseVersionHash)
-                .checkObjectHashes()
+            repositoriesManager.computeDelta(versionHash, baseVersionHash).asFlow()
                 .flatten()
                 .withSeparator("\n")
                 .onEmpty { emit(versionHash) }
@@ -409,8 +404,4 @@ private fun Flow<String>.withSeparator(separator: String) = flow {
         }
         emit(it)
     }
-}
-
-private fun <V : String?> Flow<Pair<String, V>>.checkObjectHashes(): Flow<Pair<String, V>> {
-    return onEach { HashUtil.checkObjectHash(it.first, it.second) }
 }

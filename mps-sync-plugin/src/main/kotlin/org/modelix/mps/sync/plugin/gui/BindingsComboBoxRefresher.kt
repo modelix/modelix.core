@@ -30,7 +30,7 @@ class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGu
 
     override fun run() {
         while (!isInterrupted) {
-            val bindingWithOperation = BindingsRegistry.bindings.take()
+            val bindingWithOperation = BindingsRegistry.changedBindings.take()
             val binding = bindingWithOperation.binding
 
             when (bindingWithOperation.operation) {

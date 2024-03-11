@@ -32,17 +32,14 @@ import org.modelix.mps.sync.util.waitForCompletionOfEach
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleBinding(
-    val module: AbstractModule,
-    branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
-) : IBinding {
+class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
 
     private val logger = KotlinLogging.logger {}
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val bindingsRegistry = BindingsRegistry
 
-    private val changeListener = ModuleChangeListener(branch, nodeMap, bindingsRegistry, syncQueue)
+    private val changeListener = ModuleChangeListener(branch)
 
     @Volatile
     private var isDisposed = false

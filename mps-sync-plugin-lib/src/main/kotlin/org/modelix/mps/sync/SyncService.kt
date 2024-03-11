@@ -5,8 +5,6 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.INode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
-import org.modelix.mps.sync.bindings.ModelBinding
-import org.modelix.mps.sync.bindings.ModuleBinding
 import java.net.URL
 import java.util.concurrent.CompletableFuture
 
@@ -25,10 +23,6 @@ interface SyncService {
     fun disconnectModelServer(client: ModelClientV2, callback: (() -> Unit)? = null)
 
     fun setActiveProject(project: Project)
-
-    fun getModelBindings(): List<ModelBinding>
-
-    fun getModuleBindings(): List<ModuleBinding>
 
     fun dispose()
 }

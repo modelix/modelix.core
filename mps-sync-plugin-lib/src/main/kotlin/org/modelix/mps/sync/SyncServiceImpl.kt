@@ -23,20 +23,15 @@ import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.RepositoryChangeListener
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
 import java.net.ConnectException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class SyncServiceImpl(
-    private val nodeMap: MpsToModelixMap = MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry = BindingsRegistry,
-    private val syncQueue: SyncQueue = SyncQueue,
-    private val mpsProjectInjector: ActiveMpsProjectInjector = ActiveMpsProjectInjector,
-) : SyncService {
+class SyncServiceImpl : SyncService {
 
     private val logger = KotlinLogging.logger {}
+    private val mpsProjectInjector = ActiveMpsProjectInjector
 
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     val activeClients = mutableSetOf<ModelClientV2>()
@@ -129,32 +124,16 @@ class SyncServiceImpl(
             val languageRepository = registerLanguages(targetProject)
 
             // transform the model
-            val bindings = ITreeToSTreeTransformer(
-                bindingsRegistry,
-                nodeMap,
-                syncQueue,
-                targetProject,
-                languageRepository,
-                branch,
-            ).transform(module)
+            val bindings = ITreeToSTreeTransformer(branch, languageRepository).transform(module)
 
             // register replicated model change listener
-            val listener =
-                ModelixBranchListener(
-                    replicatedModel,
-                    targetProject,
-                    languageRepository,
-                    nodeMap,
-                    syncQueue,
-                    branch,
-                    bindingsRegistry,
-                )
+            val listener = ModelixBranchListener(replicatedModel, languageRepository, branch)
             branch.addListener(listener)
             changeListenerByReplicatedModel[replicatedModel] = listener
 
             // register MPS project change listener
             if (projectWithChangeListener == null) {
-                val repositoryChangeListener = RepositoryChangeListener(branch, nodeMap, bindingsRegistry, syncQueue)
+                val repositoryChangeListener = RepositoryChangeListener(branch)
                 targetProject.repository.addRepositoryListener(repositoryChangeListener)
                 projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
             }
@@ -172,10 +151,6 @@ class SyncServiceImpl(
         mpsProjectInjector.setActiveProject(project)
     }
 
-    override fun getModelBindings() = bindingsRegistry.getModelBindings()
-
-    override fun getModuleBindings() = bindingsRegistry.getModuleBindings()
-
     override fun dispose() {
         // cancel all running coroutines
         coroutineScope.cancel()
@@ -187,8 +162,8 @@ class SyncServiceImpl(
         // dispose the clients
         activeClients.forEach { it.close() }
         // dispose all bindings
-        bindingsRegistry.getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
-        bindingsRegistry.getModelBindings().forEach { it.deactivate(removeFromServer = false) }
+        BindingsRegistry.getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
+        BindingsRegistry.getModelBindings().forEach { it.deactivate(removeFromServer = false) }
     }
 
     private fun registerLanguages(project: MPSProject): MPSLanguageRepository {

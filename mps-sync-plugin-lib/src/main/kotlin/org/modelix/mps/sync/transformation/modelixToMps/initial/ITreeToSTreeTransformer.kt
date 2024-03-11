@@ -16,35 +16,23 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.initial
 
-import jetbrains.mps.project.MPSProject
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.Collections
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ITreeToSTreeTransformer(
-    private val bindingsRegistry: BindingsRegistry,
-    nodeMap: MpsToModelixMap,
-    syncQueue: SyncQueue,
-    project: MPSProject,
-    mpsLanguageRepository: MPSLanguageRepository,
-    branch: IBranch,
-) {
+class ITreeToSTreeTransformer(branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
 
     private val logger = KotlinLogging.logger {}
 
-    private val moduleTransformer =
-        ModuleTransformer(nodeMap, syncQueue, project, branch, bindingsRegistry, mpsLanguageRepository)
+    private val moduleTransformer = ModuleTransformer(branch, mpsLanguageRepository)
 
     fun transform(entryPoint: INode): Iterable<IBinding> {
         require(entryPoint.isModule()) { "Transformation entry point (Node $entryPoint) must be a Module" }

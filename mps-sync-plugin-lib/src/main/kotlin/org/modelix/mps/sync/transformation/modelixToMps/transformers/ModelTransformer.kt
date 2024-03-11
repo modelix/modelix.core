@@ -55,17 +55,13 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelTransformer(
-    private val nodeMap: MpsToModelixMap,
-    private val syncQueue: SyncQueue,
-    private val branch: IBranch,
-    mpsLanguageRepository: MPSLanguageRepository,
-) {
+class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
 
     private val logger = KotlinLogging.logger {}
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
 
-    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, branch, mpsLanguageRepository)
-
+    private val nodeTransformer = NodeTransformer(branch, mpsLanguageRepository)
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
     fun transformToModelCompletely(nodeId: Long, branch: IBranch, bindingsRegistry: BindingsRegistry) =
@@ -86,7 +82,7 @@ class ModelTransformer(
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) {
                 // register binding
                 val model = nodeMap.getModel(branch.getNode(nodeId).nodeIdAsLong()) as SModelBase
-                val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
+                val binding = ModelBinding(model, branch)
                 bindingsRegistry.addModelBinding(binding)
                 binding
             }

@@ -47,16 +47,15 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleChangeListener(
-    private val branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
-) : SModuleListener {
+class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
 
-    private val moduleSynchronizer = ModuleSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
-    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val bindingsRegistry = BindingsRegistry
+
+    private val moduleSynchronizer = ModuleSynchronizer(branch)
+    private val modelSynchronizer = ModelSynchronizer(branch)
+    private val nodeSynchronizer = NodeSynchronizer(branch)
 
     private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModule>()
 

@@ -53,14 +53,12 @@ import java.util.concurrent.CompletableFuture
 import kotlin.reflect.KFunction2
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class NodeTransformer(
-    private val nodeMap: MpsToModelixMap,
-    private val syncQueue: SyncQueue,
-    private val branch: IBranch,
-    mpsLanguageRepository: MPSLanguageRepository,
-) {
+class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
 
     private val logger = KotlinLogging.logger {}
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+
     private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue, branch)
 
     fun transformToNode(iNode: INode): ContinuableSyncTask {

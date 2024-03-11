@@ -38,18 +38,16 @@ import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelSynchronizer(
-    private val branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
-    postponeReferenceResolution: Boolean = false,
-) {
+class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution: Boolean = false) {
+
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val bindingsRegistry = BindingsRegistry
 
     private val nodeSynchronizer = if (postponeReferenceResolution) {
-        NodeSynchronizer(branch, nodeMap, syncQueue, synchronizedLinkedHashSet())
+        NodeSynchronizer(branch, synchronizedLinkedHashSet())
     } else {
-        NodeSynchronizer(branch, nodeMap, syncQueue)
+        NodeSynchronizer(branch)
     }
 
     private val resolvableModelImports = synchronizedLinkedHashSet<CloudResolvableModelImport>()
@@ -86,7 +84,7 @@ class ModelSynchronizer(
             model.importedDevkits().waitForCompletionOfEachTask { addDevKitDependency(model, it) }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             // register binding
-            val binding = ModelBinding(model, branch, nodeMap, bindingsRegistry, syncQueue)
+            val binding = ModelBinding(model, branch)
             bindingsRegistry.addModelBinding(binding)
             binding
         }

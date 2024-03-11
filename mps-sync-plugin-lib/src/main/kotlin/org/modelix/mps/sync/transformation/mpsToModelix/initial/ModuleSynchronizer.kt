@@ -45,15 +45,13 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleSynchronizer(
-    private val branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
-) {
+class ModuleSynchronizer(private val branch: IBranch) {
 
-    private val modelSynchronizer =
-        ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue, postponeReferenceResolution = true)
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val bindingsRegistry = BindingsRegistry
+
+    private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
 
     fun addModule(module: AbstractModule): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
@@ -76,7 +74,7 @@ class ModuleSynchronizer(
             modelSynchronizer.resolveCrossModelReferences()
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             // register binding
-            val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
+            val binding = ModuleBinding(module, branch)
             bindingsRegistry.addModuleBinding(binding)
             binding.activate()
         }

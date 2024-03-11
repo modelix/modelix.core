@@ -25,8 +25,6 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -55,7 +53,7 @@ class ModuleSyncAction : AnAction {
             require(replicatedModel != null) { "Synchronization to server has not been established yet" }
 
             val branch = replicatedModel.getBranch()
-            ModuleSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModule(module)
+            ModuleSynchronizer(branch).addModule(module)
         } catch (ex: Exception) {
             logger.error(ex) { "Module sync error occurred" }
         }

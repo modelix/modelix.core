@@ -19,7 +19,6 @@ package org.modelix.mps.sync.transformation.modelixToMps.transformers
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
-import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Project
 import jetbrains.mps.project.structure.modules.ModuleReference
@@ -57,14 +56,7 @@ import java.text.ParseException
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleTransformer(
-    private val nodeMap: MpsToModelixMap,
-    private val syncQueue: SyncQueue,
-    private val project: MPSProject,
-    private val branch: IBranch,
-    private val bindingsRegistry: BindingsRegistry,
-    mpsLanguageRepository: MPSLanguageRepository,
-) {
+class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
 
     companion object {
         fun getTargetModuleIdFromModuleDependency(moduleDependency: INode): SModuleId {
@@ -74,10 +66,15 @@ class ModuleTransformer(
     }
 
     private val logger = KotlinLogging.logger {}
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val bindingsRegistry = BindingsRegistry
+    private val project
+        get() = ActiveMpsProjectInjector.activeMpsProject!!
 
-    private val solutionProducer = SolutionProducer(project)
+    private val solutionProducer = SolutionProducer()
 
-    private val modelTransformer = ModelTransformer(nodeMap, syncQueue, branch, mpsLanguageRepository)
+    private val modelTransformer = ModelTransformer(branch, mpsLanguageRepository)
 
     fun transformToModuleCompletely(nodeId: Long) =
         transformToModule(nodeId, true)
@@ -94,7 +91,7 @@ class ModuleTransformer(
                 // register binding
                 val iNode = branch.getNode(nodeId)
                 val module = nodeMap.getModule(iNode.nodeIdAsLong()) as AbstractModule
-                val moduleBinding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
+                val moduleBinding = ModuleBinding(module, branch)
                 bindingsRegistry.addModuleBinding(moduleBinding)
 
                 val modelBindings = bindingsRegistry.getModelBindings(module)!!

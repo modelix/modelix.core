@@ -32,7 +32,7 @@ object BindingsRegistry {
     private val modelBindingsByModule = synchronizedMap<SModule, MutableSet<ModelBinding>>()
     private val moduleBindings = synchronizedLinkedHashSet<ModuleBinding>()
 
-    val bindings = LinkedBlockingQueue<BindingWithOperation>()
+    val changedBindings = LinkedBlockingQueue<BindingWithOperation>()
 
     fun addModelBinding(binding: ModelBinding) {
         modelBindingsByModule.computeIfAbsent(binding.model.module!!) { synchronizedLinkedHashSet() }.add(binding)
@@ -74,10 +74,10 @@ object BindingsRegistry {
     fun getModuleBinding(module: AbstractModule) = moduleBindings.find { it.module == module }
 
     private fun bindingAdded(binding: IBinding) =
-        bindings.put(BindingWithOperation(binding, BindingRegistryOperation.ADD))
+        changedBindings.put(BindingWithOperation(binding, BindingRegistryOperation.ADD))
 
     private fun bindingRemoved(binding: IBinding) =
-        bindings.put(BindingWithOperation(binding, BindingRegistryOperation.REMOVE))
+        changedBindings.put(BindingWithOperation(binding, BindingRegistryOperation.REMOVE))
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

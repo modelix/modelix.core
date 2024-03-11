@@ -24,18 +24,12 @@ import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.mpsadapters.MPSProperty
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class NodeChangeListener(
-    branch: IBranch,
-    nodeMap: MpsToModelixMap,
-    syncQueue: SyncQueue,
-) : SNodeChangeListener {
+class NodeChangeListener(branch: IBranch) : SNodeChangeListener {
 
-    private val synchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
+    private val synchronizer = NodeSynchronizer(branch)
 
     override fun nodeAdded(event: SNodeAddEvent) {
         synchronizer.addNode(event.child)

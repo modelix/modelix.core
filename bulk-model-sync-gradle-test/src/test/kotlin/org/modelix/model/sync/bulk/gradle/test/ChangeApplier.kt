@@ -16,6 +16,7 @@
 
 package org.modelix.model.sync.bulk.gradle.test
 
+import GraphLang.C_Node
 import GraphLang.L_GraphLang
 import GraphLang.N_Edge
 import GraphLang.N_Graph
@@ -27,6 +28,7 @@ import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import kotlinx.coroutines.runBlocking
 import org.modelix.metamodel.TypedLanguagesRegistry
 import org.modelix.metamodel.typed
+import org.modelix.metamodel.untyped
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
@@ -62,6 +64,11 @@ class ChangeApplier {
                 graphNodes[0].name = "X"
                 graphNodes[1].name = "Y"
                 graphNodes[2].name = "Z"
+
+                val graph = graphNodes[0].untyped().parent?.typed<N_Graph>() ?: error("parent not found")
+                graph.nodes.addNew(3, C_Node).apply {
+                    name = "NewNode"
+                }
 
                 val edges = rootNode
                     .getDescendants(false)

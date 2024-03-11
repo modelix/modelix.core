@@ -21,6 +21,7 @@ import org.junit.jupiter.api.TestInstance
 import org.xmlunit.builder.Input
 import org.xmlunit.xpath.JAXPXPathEngine
 import java.io.File
+import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
@@ -46,9 +47,21 @@ class PullTest {
             .selectNodes("model/node/node[@concept='1DmExO']/property", solution1Xml)
 
         val actual = properties.map { it.attributes.getNamedItem("value").nodeValue }
-        val expected = listOf("X", "Y", "Z", "D", "E")
+        val expected = listOf("X", "Y", "Z", "NewNode", "D", "E")
 
         assertContentEquals(expected, actual)
+    }
+
+    @Test
+    fun `added child was synced to local`() {
+        val xpath = JAXPXPathEngine()
+        val nodes = xpath.selectNodes("model/node/node[@concept='1DmExO']", solution1Xml)
+
+        val nodeNames = nodes.flatMap { xpath.selectNodes("property", it) }
+            .map { it.attributes.getNamedItem("value").nodeValue }
+
+        assertEquals(6, nodes.count())
+        assertContains(nodeNames, "NewNode")
     }
 
     @Test

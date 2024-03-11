@@ -13,6 +13,7 @@
  */
 package org.modelix.model.area
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -163,6 +164,10 @@ class CompositeArea : IArea {
             throw UnsupportedOperationException("Read only. Create a new CompositeArea instance instead.")
         }
 
+        override fun replaceNode(concept: ConceptReference): INode {
+            throw UnsupportedOperationException("Root cannot have a concept.")
+        }
+
         override fun removeChild(child: INode) {
             throw UnsupportedOperationException("Read only. Create a new CompositeArea instance instead.")
         }
@@ -218,6 +223,8 @@ class CompositeArea : IArea {
         override fun getChildren(role: String?): Iterable<INode> {
             return node.getChildren(role).map { NodeWrapper(it) }
         }
+
+        override fun replaceNode(concept: ConceptReference): INode = NodeWrapper(node.replaceNode(concept))
 
         override fun removeChild(child: INode) {
             node.removeChild(unwrapNode(child))

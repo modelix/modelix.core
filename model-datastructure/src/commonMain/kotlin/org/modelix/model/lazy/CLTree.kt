@@ -28,7 +28,6 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.tryResolve
-import org.modelix.model.lazy.COWArrays.add
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.lazy.RepositoryId.Companion.random
@@ -255,6 +254,25 @@ class CLTree : ITree, IBulkTree {
         val newNodeData = source.withReferenceTarget(role, refData)
         newIdToHash = newIdToHash!!.put(newNodeData, store)
         return CLTree(data.id, newIdToHash!!, store, data.usesRoleIds)
+    }
+
+    override fun setConcept(nodeId: Long, concept: IConceptReference?): ITree {
+        val node = checkNotNull(resolveElement(nodeId)) { "nodeId could not be resolved. id=$nodeId" }
+        val newData = create(
+            node.id,
+            concept?.getUID(),
+            node.parentId,
+            node.roleInParent,
+            node.childrenIdArray,
+            node.propertyRoles,
+            node.propertyValues,
+            node.referenceRoles,
+            node.referenceTargets,
+        )
+        val nodesMap = checkNotNull(nodesMap) { "nodesMap not found" }
+
+        val newIdToHash = checkNotNull(nodesMap.put(newData, store)) { "could not put new data" }
+        return CLTree(data.id, newIdToHash, store, data.usesRoleIds)
     }
 
     override fun deleteNode(nodeId: Long): ITree {

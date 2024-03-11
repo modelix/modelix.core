@@ -77,7 +77,12 @@ object SyncQueue : AutoCloseable {
 
     private fun enqueueAndFlush(task: SyncTask) {
         tasks.add(task)
-        scheduleFlush()
+        try {
+            scheduleFlush()
+        } catch (ex: Exception) {
+            logger.warn(ex) { "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue. If ThreadPool is shut down (isShutdown=${threadPool.isShutdown}), then it might be normal." }
+            task.result.completeExceptionally(ex)
+        }
     }
 
     private fun scheduleFlush() {

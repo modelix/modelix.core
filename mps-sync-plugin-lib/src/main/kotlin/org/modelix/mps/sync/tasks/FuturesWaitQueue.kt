@@ -161,11 +161,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                 waitForNotification()
             }
         } catch (t: Throwable) {
-            /**
-             * TODO this might be normal (i.e. if it's an InterruptedException), but in other cases we have to
-             * notify the user, because synchronization does not work without this class!
-             */
-            logger.error(t) { "BusyWaitQueue is shutting down, because it got an Exception" }
+            logger.warn(t) { "BusyWaitQueue is shutting down, because it got an Exception. If ThreadPool is shut down (isShutdown=${threadPool.isShutdown}) then it might be normal." }
             continuations.forEach { it.future.future.completeExceptionally(t) }
             return
         }

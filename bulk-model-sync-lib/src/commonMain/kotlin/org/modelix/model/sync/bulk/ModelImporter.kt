@@ -203,6 +203,8 @@ class ModelImporter(
 
             val isOrdered = existingParent.isChildRoleOrdered(role)
 
+            val newlyCreatedIds = mutableSetOf<String>()
+
             expectedNodes.forEachIndexed { indexInImport, expected ->
                 val existingChildren = existingParent.getChildren(role).toList()
                 val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
@@ -229,6 +231,7 @@ class ModelImporter(
                         if (newChild.originalId() == null) {
                             newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
                         }
+                        newChild.originalId()?.let { newlyCreatedIds.add(it) }
                         originalIdToExisting[expectedId] = newChild.reference
                         newChild
                     } else {
@@ -257,7 +260,10 @@ class ModelImporter(
             val expectedNodesIds = expectedNodes.map(NodeData::originalId).toSet()
             // Do not use existingNodes, but call node.getChildren(role) because
             // the recursive synchronization in the meantime already removed some nodes from node.getChildren(role).
-            nodesToRemove += existingParent.getChildren(role).filterNot { existingNode -> expectedNodesIds.contains(existingNode.originalId()) }
+            nodesToRemove += existingParent.getChildren(role).filterNot { existingNode ->
+                val id = existingNode.originalId()
+                expectedNodesIds.contains(id) || newlyCreatedIds.contains(id)
+            }
         }
     }
 

@@ -184,8 +184,21 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 if (targetModule != null) {
                     transformToModuleCompletely(targetModule.nodeIdAsLong()).getResult().bindTo(future)
                 } else {
-                    logger.error { "Target Module of ModuleDependency ($nodeId) not found on the server." }
-                    future.complete(defaultBinding)
+                    /**
+                     * A manual quick-fix would be if the module is available on another model server and its ID is
+                     * the same as what is used in the ModuleDependency, then just upload that module to this server
+                     * and rerun the transformation.
+                     * TODO (1) Show it as a suggestion to the user?
+                     * TODO (2) As a final fallback, the user could remove the module dependency. In this case, we have
+                     * to implement the corresponding feature (e.g., as an action by clicking on a button). Maybe this
+                     * direction would be easier for the user and for us too.
+                     */
+                    val targetModuleName =
+                        iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+                    val ex =
+                        NoSuchElementException("Target Module ($targetModuleName) of ModuleDependency ($nodeId) that goes out from Module ${parentModule.moduleName} is not found on the server.")
+                    logger.error(ex) { ex.message }
+                    future.completeExceptionally(ex)
                 }
             } else {
                 future.complete(defaultBinding)

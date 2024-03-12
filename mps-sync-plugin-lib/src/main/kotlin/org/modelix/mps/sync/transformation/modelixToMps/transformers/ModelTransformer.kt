@@ -140,7 +140,22 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
     fun resolveModelImports(repository: SRepository) {
         resolvableModelImports.forEach {
             val id = PersistenceFacade.getInstance().createModelId(it.targetModelId)
-            val targetModel = (nodeMap.getModel(it.targetModelModelixId) ?: repository.getModel(id))!!
+            val targetModel = (nodeMap.getModel(it.targetModelModelixId) ?: repository.getModel(id))
+            if (targetModel == null) {
+                /**
+                 * A manual quick-fix would be if the user downloads the target model (+ its container module) into
+                 * their MPS project, then create a module dependency between the source module and the target model's
+                 * module, because that is the most probable cause of the problem.
+                 * TODO (1) Show it as a suggestion to the user?
+                 * TODO (2) If the model is not on the server then there is no 100% sure way to fix the issue, unless
+                 * the model has the same ModelId as what is in the ModelImport and that model can be uploaded to the
+                 * server. After that see suggestion above TODO (1) to fix the issue.
+                 * TODO (3) As a final fallback, the user could remove the model import. In this case, we have to
+                 * implement the corresponding feature (e.g., as an action by clicking on a button). Maybe this
+                 * direction would be easier for the user and for us too.
+                 */
+                throw NoSuchElementException("ModelImport from Model ${it.source.modelId}(${it.source.name}) to Model $id cannot be resolved, because target model is not found.")
+            }
             nodeMap.put(targetModel, it.targetModelModelixId)
 
             val targetModule = targetModel.module

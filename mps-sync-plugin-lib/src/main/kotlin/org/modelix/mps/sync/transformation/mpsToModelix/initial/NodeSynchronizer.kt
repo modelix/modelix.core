@@ -31,7 +31,6 @@ import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSReferenceLink
-import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -46,7 +45,6 @@ class NodeSynchronizer(
 
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
-    private val bindingsRegistry = BindingsRegistry
 
     fun addNode(node: SNode) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {

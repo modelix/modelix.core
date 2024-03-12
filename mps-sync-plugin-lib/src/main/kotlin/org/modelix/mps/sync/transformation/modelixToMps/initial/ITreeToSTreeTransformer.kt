@@ -39,7 +39,7 @@ class ITreeToSTreeTransformer(branch: IBranch, mpsLanguageRepository: MPSLanguag
 
         return try {
             @Suppress("UNCHECKED_CAST")
-            moduleTransformer.transformToModuleCompletely(entryPoint.nodeIdAsLong())
+            moduleTransformer.transformToModuleCompletely(entryPoint.nodeIdAsLong(), true)
                 .getResult().get() as Iterable<IBinding>
         } catch (ex: Exception) {
             logger.error(ex) { "Transformation of Node tree starting from Node $entryPoint failed." }

@@ -78,7 +78,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
 
     private val modelTransformer = ModelTransformer(branch, mpsLanguageRepository)
 
-    fun transformToModuleCompletely(nodeId: Long) =
+    fun transformToModuleCompletely(nodeId: Long, isTransformationStartingModule: Boolean = false) =
         transformToModule(nodeId, true)
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) { dependencyBindings ->
                 // transform models
@@ -106,8 +106,11 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 dependencyAndModelBindingsFuture
             }
             .continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
-                // resolve cross-model references (and node references)
-                modelTransformer.resolveCrossModelReferences(project.repository)
+                // resolve references only after all dependent (and contained) modules and models have been transformed
+                if (isTransformationStartingModule) {
+                    // resolve cross-model references (and node references)
+                    modelTransformer.resolveCrossModelReferences(project.repository)
+                }
 
                 dependencyAndModelBindings
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->

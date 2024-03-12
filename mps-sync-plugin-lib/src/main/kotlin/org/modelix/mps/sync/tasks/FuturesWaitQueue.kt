@@ -96,7 +96,8 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                         continue
                     }
 
-                    val allCompleted = predecessors.all { predecessor -> predecessor.isDone }
+                    val allCompleted =
+                        predecessors.all { predecessor -> predecessor.isDone && !predecessor.isCompletedExceptionally }
                     if (allCompleted) {
                         /**
                          * Check if there is any predecessor whose result (.get()) is a CompletableFuture. Replace such
@@ -135,12 +136,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                                     continue
                                 }
                             } else {
-                                val candidate = predecessors.first()
-                                if (candidate.isCompletedExceptionally) {
-                                    candidate.exceptionally { continuation.completeExceptionally(it) }
-                                    continue
-                                }
-                                candidate.get()
+                                predecessors.first().get()
                             }
                         } else {
                             null

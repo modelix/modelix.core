@@ -24,7 +24,7 @@ class SyncTask(
     requiredLocks: LinkedHashSet<SyncLock>,
     val syncDirection: SyncDirection,
     val action: SyncTaskAction,
-    val previousTaskResult: Any? = null,
+    val previousTaskResultHolder: CompletableFuture<Any?>? = null,
     val result: CompletableFuture<Any?> = CompletableFuture(),
 ) {
     val sortedLocks = LinkedHashSet<SyncLock>(requiredLocks.sortedWith(SnycLockComparator()))
@@ -36,32 +36,26 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
     fun continueWith(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
-        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
-        /**
-         * WARNING: if you change enqueueBlocking to enqueue, then keep in mind that MPS might get frozen, because
-         * a non-running, but queued task might have taken the lock that is needed by the task (that is expected
-         * to be run next)
-         *
-         * UPDATE: I'm (@benedekh) not entirely sure if we have to use enqueue or enqueueBlocking, because different
-         * tasks are blocked depending on which one we use.
-         */
-        val result = SyncQueue.enqueue(linkedSetOf(SyncLock.NONE), syncDirection) {
-            // blocking wait for the result of the previous task
-            val previousResult = waitForResult()
-            val task = SyncTask(requiredLocks, syncDirection, action, previousResult)
-            SyncQueue.enqueue(task, inspectionMode)
+        val continuation = CompletableFuture<Any?>()
+        FuturesWaitQueue.add(continuation, setOf(getResult()), true)
 
-            task.result.get()
+        val task = SyncTask(requiredLocks, syncDirection, action, continuation)
+        continuation.thenRun {
+            // this will only run if previousTask is completed according to the FuturesWaitQueue
+            SyncQueue.enqueue(task)
+        }
+        continuation.exceptionally {
+            // if a predecessor failed then we have to fail the next task
+            task.result.completeExceptionally(it)
         }
 
-        return result
+        return ContinuableSyncTask(task)
     }
 
     fun getResult() = previousTask.result
-
-    private fun waitForResult() = getResult().get()
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 typealias SyncTaskAction = (Any?) -> Any?

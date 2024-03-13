@@ -57,9 +57,6 @@ object MpsToModelixMap {
     private val objectsRelatedToAModel = synchronizedMap<SModel, MutableSet<Any>>()
     private val objectsRelatedToAModule = synchronizedMap<SModule, MutableSet<Any>>()
 
-    val models = modelixIdToModel.values
-    val modules = modelixIdToModule.values
-
     fun put(node: SNode, modelixId: Long) {
         nodeToModelixId[node] = modelixId
         modelixIdToNode[modelixId] = node
@@ -140,6 +137,8 @@ object MpsToModelixMap {
     fun getModel(modelixId: Long?) = modelixIdToModel[modelixId]
 
     fun getModule(modelixId: Long?) = modelixIdToModule[modelixId]
+
+    fun getModule(moduleId: SModuleId) = objectsRelatedToAModule.keys.firstOrNull { it.moduleId == moduleId }
 
     fun getOutgoingModelReference(modelixId: Long?) = modelixIdToModelWithOutgoingModelReference[modelixId]
 

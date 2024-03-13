@@ -32,17 +32,14 @@ import org.modelix.mps.sync.util.waitForCompletionOfEach
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleBinding(
-    val module: AbstractModule,
-    branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
-) : IBinding {
+class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
 
     private val logger = KotlinLogging.logger {}
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val bindingsRegistry = BindingsRegistry
 
-    private val changeListener = ModuleChangeListener(branch, nodeMap, bindingsRegistry, syncQueue)
+    private val changeListener = ModuleChangeListener(branch)
 
     @Volatile
     private var isDisposed = false
@@ -67,12 +64,14 @@ class ModuleBinding(
 
         isActivated = true
 
+        bindingsRegistry.bindingActivated(this)
+
         logger.info { "${name()} is activated." }
 
         callback?.run()
     }
 
-    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<Any?> {
         if (isDisposed) {
             return CompletableFuture.completedFuture(null)
         }
@@ -85,25 +84,32 @@ class ModuleBinding(
 
                     val modelBindings = bindingsRegistry.getModelBindings(module)
 
-                    // deactivate child models' bindings and wait for their successful completion
-                    // throws ExecutionException if any deactivation failed
-                    modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }?.get()
-
-                    // delete the binding, because if binding exists then module is assumed to exist, i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
-                    bindingsRegistry.removeModuleBinding(this)
-
-                    isActivated = false
+                    /*
+                     * deactivate child models' bindings and wait for their successful completion
+                     * throws ExecutionException if any deactivation failed
+                     */
+                    return@enqueue modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }
                 }
+            }
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+            synchronized(this) {
+                /*
+                 * delete the binding, because if binding exists then module is assumed to exist,
+                 * i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
+                 */
+                bindingsRegistry.removeModuleBinding(this)
+                isActivated = false
             }
         }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
             synchronized(this) {
                 // delete module
                 try {
                     if (!removeFromServer && !moduleDeletedLocally) {
-                        /**
+                        /*
                          * if we just delete it locally, then we have to call ModuleDeleteHelper manually.
                          * otherwise, MPS will call us via the event-handler chain starting from
-                         * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener --> moduleListener.deactivate(removeFromServer = true)
+                         * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener -->
+                         * moduleListener.deactivate(removeFromServer = true)
                          */
                         ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!)
                             .deleteModules(listOf(module), false, true)
@@ -111,7 +117,10 @@ class ModuleBinding(
                     }
                 } catch (ex: Exception) {
                     logger.error(ex) { "Exception occurred while deactivating ${name()}." }
-                    // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                    /*
+                     * if any error occurs, then we put the binding back to let the rest of the application know that
+                     * it exists
+                     */
                     bindingsRegistry.addModuleBinding(this)
                     activate()
                     throw ex

@@ -32,26 +32,28 @@ import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModuleBinding
-import org.modelix.mps.sync.tasks.InspectionMode
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.bindTo
+import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleSynchronizer(
-    private val branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
-) {
+class ModuleSynchronizer(private val branch: IBranch) {
 
-    private val modelSynchronizer =
-        ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue, postponeReferenceResolution = true)
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val bindingsRegistry = BindingsRegistry
 
-    fun addModule(module: AbstractModule) {
+    private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
+
+    fun addModule(module: AbstractModule, isTransformationStartingModule: Boolean = false): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val rootNode = branch.getRootNode()
             val childLink = ChildLinkFromName("modules")
@@ -61,37 +63,49 @@ class ModuleSynchronizer(
             nodeMap.put(module, cloudModule.nodeIdAsLong())
 
             synchronizeModuleProperties(cloudModule, module)
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+
             // synchronize dependencies
             module.declaredDependencies.waitForCompletionOfEachTask { addDependency(module, it) }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // synchronize models
             module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
         }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            // resolve cross-model references
-            modelSynchronizer.resolveCrossModelReferences()
+            // resolve references only after all dependent (and contained) modules and models have been transformed
+            if (isTransformationStartingModule) {
+                // resolve cross-model references
+                modelSynchronizer.resolveCrossModelReferences()
+            }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             // register binding
-            val binding = ModuleBinding(module, branch, nodeMap, bindingsRegistry, syncQueue)
+            val binding = ModuleBinding(module, branch)
             bindingsRegistry.addModuleBinding(binding)
             binding.activate()
         }
-    }
 
     fun addDependency(module: SModule, dependency: SDependency) =
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
-            SyncDirection.MPS_TO_MODELIX,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+            val repository = ActiveMpsProjectInjector.activeMpsProject?.repository!!
+            val targetModule = dependency.targetModule.resolve(repository)
+            val isMappedToMps = nodeMap[targetModule] != null
+
+            val future = CompletableFuture<Any?>()
+            if (!isMappedToMps) {
+                require(targetModule is AbstractModule) { "Dependency target module ($targetModule) of Module ($module) must be an AbstractModule." }
+                // connect the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
+                addModule(targetModule).getResult().bindTo(future)
+            } else {
+                future.completeWithDefault()
+            }
+            future
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
-            val moduleReference = dependency.targetModule
 
             val cloudModule = branch.getNode(moduleModelixId)
             val cloudDependency =
                 cloudModule.addNewChild(dependencies, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
 
+            val moduleReference = dependency.targetModule
             nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the properties by hand

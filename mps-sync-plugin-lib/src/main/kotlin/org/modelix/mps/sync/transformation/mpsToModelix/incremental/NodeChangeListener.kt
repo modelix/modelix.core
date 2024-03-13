@@ -24,36 +24,33 @@ import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.mpsadapters.MPSProperty
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class NodeChangeListener(
-    branch: IBranch,
-    nodeMap: MpsToModelixMap,
-    syncQueue: SyncQueue,
-) : SNodeChangeListener {
+class NodeChangeListener(branch: IBranch) : SNodeChangeListener {
 
-    private val synchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
+    private val synchronizer = NodeSynchronizer(branch)
 
     override fun nodeAdded(event: SNodeAddEvent) {
         synchronizer.addNode(event.child)
     }
 
-    override fun nodeRemoved(event: SNodeRemoveEvent) = synchronizer.removeNode(
-        parentNodeIdProducer = {
-            if (event.isRoot) {
-                it[event.model]!!
-            } else {
-                it[event.parent!!]!!
-            }
-        },
-        childNodeIdProducer = { it[event.child]!! },
-    )
+    override fun nodeRemoved(event: SNodeRemoveEvent) {
+        synchronizer.removeNode(
+            parentNodeIdProducer = {
+                if (event.isRoot) {
+                    it[event.model]!!
+                } else {
+                    it[event.parent!!]!!
+                }
+            },
+            childNodeIdProducer = { it[event.child]!! },
+        )
+    }
 
-    override fun propertyChanged(event: SPropertyChangeEvent) =
+    override fun propertyChanged(event: SPropertyChangeEvent) {
         synchronizer.setProperty(MPSProperty(event.property), event.newValue) { it[event.node]!! }
+    }
 
     override fun referenceChanged(event: SReferenceChangeEvent) {
         // TODO fix me: it does not work correctly, if event.newValue.targetNode points to a node that is in a different model, that has not been synced yet to model server...

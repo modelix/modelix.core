@@ -40,7 +40,7 @@ object ActiveMpsProjectInjector {
     }
 
     private fun subscribeForApplicationClosing(project: Project) {
-        /**
+        /*
          * Subscribe for application closing event and do not delete the modules and models in that case.
          * Explanation: when closing MPS, MPS unregisters all modules from the repository then it calls the
          * moduleRemoved and modelRemoved methods after the module was unregistered. At that point of time,

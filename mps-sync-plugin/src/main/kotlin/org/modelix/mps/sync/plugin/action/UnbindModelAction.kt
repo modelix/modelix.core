@@ -43,7 +43,11 @@ class UnbindModelAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-            BindingsRegistry.getModelBinding(model)?.deactivate(removeFromServer = false)
+
+            val binding = BindingsRegistry.getModelBinding(model)
+            require(binding != null) { "Model is not synchronized to the server yet." }
+
+            binding.deactivate(removeFromServer = false)
         } catch (ex: Exception) {
             logger.error(ex) { "Model unbind error occurred" }
         }

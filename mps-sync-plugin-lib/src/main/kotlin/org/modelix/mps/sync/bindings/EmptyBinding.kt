@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.tasks
+package org.modelix.mps.sync.bindings
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.util.completeWithDefault
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-enum class InspectionMode {
-    CHECK_EXECUTION_THREAD,
-    OFF,
+class EmptyBinding : IBinding {
+    override fun activate(callback: Runnable?) {}
+
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?) =
+        CompletableFuture<Any?>().completeWithDefault()
+
+    override fun name(): String = this.javaClass.name
 }

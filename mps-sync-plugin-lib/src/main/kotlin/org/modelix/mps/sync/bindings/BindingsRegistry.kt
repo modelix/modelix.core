@@ -32,7 +32,7 @@ object BindingsRegistry {
     private val modelBindingsByModule = synchronizedMap<SModule, MutableSet<ModelBinding>>()
     private val moduleBindings = synchronizedLinkedHashSet<ModuleBinding>()
 
-    val bindings = LinkedBlockingQueue<BindingWithOperation>()
+    val changedBindings = LinkedBlockingQueue<BindingState>()
 
     fun addModelBinding(binding: ModelBinding) {
         modelBindingsByModule.computeIfAbsent(binding.model.module!!) { synchronizedLinkedHashSet() }.add(binding)
@@ -73,21 +73,25 @@ object BindingsRegistry {
 
     fun getModuleBinding(module: AbstractModule) = moduleBindings.find { it.module == module }
 
+    fun bindingActivated(binding: IBinding) =
+        changedBindings.put(BindingState(binding, BindingLifecycleState.ACTIVATE))
+
     private fun bindingAdded(binding: IBinding) =
-        bindings.put(BindingWithOperation(binding, BindingRegistryOperation.ADD))
+        changedBindings.put(BindingState(binding, BindingLifecycleState.ADD))
 
     private fun bindingRemoved(binding: IBinding) =
-        bindings.put(BindingWithOperation(binding, BindingRegistryOperation.REMOVE))
+        changedBindings.put(BindingState(binding, BindingLifecycleState.REMOVE))
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-data class BindingWithOperation(
+data class BindingState(
     val binding: IBinding,
-    val operation: BindingRegistryOperation,
+    val state: BindingLifecycleState,
 )
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-enum class BindingRegistryOperation {
+enum class BindingLifecycleState {
     ADD,
     REMOVE,
+    ACTIVATE,
 }

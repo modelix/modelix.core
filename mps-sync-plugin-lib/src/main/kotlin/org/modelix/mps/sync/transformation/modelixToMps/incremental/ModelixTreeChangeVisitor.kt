@@ -17,15 +17,15 @@
 package org.modelix.mps.sync.transformation.modelixToMps.incremental
 
 import jetbrains.mps.project.AbstractModule
-import jetbrains.mps.project.MPSProject
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
-import org.modelix.mps.sync.tasks.InspectionMode
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -45,24 +45,22 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelixTreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
-    private val project: MPSProject,
+    branch: IBranch,
     languageRepository: MPSLanguageRepository,
-    private val nodeMap: MpsToModelixMap,
-    private val syncQueue: SyncQueue,
 ) : ITreeChangeVisitorEx {
 
     private val logger = KotlinLogging.logger {}
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val project
+        get() = ActiveMpsProjectInjector.activeMpsProject!!
 
-    private val nodeTransformer = NodeTransformer(nodeMap, syncQueue, languageRepository)
-    private val modelTransformer = ModelTransformer(nodeMap, syncQueue)
-    private val moduleTransformer = ModuleTransformer(nodeMap, syncQueue, project)
+    private val nodeTransformer = NodeTransformer(branch, languageRepository)
+    private val modelTransformer = ModelTransformer(branch, languageRepository)
+    private val moduleTransformer = ModuleTransformer(branch, languageRepository)
 
     override fun referenceChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val sNode = nodeMap.getNode(nodeId)
             if (sNode == null) {
                 logger.info { "Node ($nodeId) is not mapped to MPS yet." }
@@ -90,11 +88,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun propertyChanged(nodeId: Long, role: String) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
                 logger.info { "Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore its $role property cannot be changed." }
@@ -130,11 +124,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeRemoved(nodeId: Long) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
                 logger.info { "Element represented by Modelix Node ($nodeId) is already removed from MPS." }
@@ -184,11 +174,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeAdded(nodeId: Long) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (isMapped) {
                 logger.info { "Node ($nodeId) is already mapped to MPS." }
@@ -197,25 +183,23 @@ class ModelixTreeChangeVisitor(
 
             val iNode = getNode(nodeId)
             if (iNode.isModule()) {
-                moduleTransformer.transformToModule(iNode)
+                moduleTransformer.transformToModule(nodeId)
             } else if (iNode.isModuleDependency()) {
                 val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
                 val parentModule = nodeMap.getModule(moduleNodeId)!!
                 require(parentModule is AbstractModule) { "Parent Module ($moduleNodeId) of INode (${iNode.nodeIdAsLong()}) is not an AbstractModule." }
-                moduleTransformer.transformModuleDependency(iNode, parentModule)
+                moduleTransformer.transformModuleDependency(nodeId, parentModule)
             } else if (iNode.isModel()) {
-                modelTransformer.transformToModel(iNode)
+                modelTransformer.transformToModel(nodeId)
             } else if (iNode.isModelImport()) {
-                modelTransformer.transformModelImport(iNode)
+                modelTransformer.transformModelImport(nodeId)
             } else if (iNode.isSingleLanguageDependency()) {
-                nodeTransformer.transformLanguageDependency(iNode)
+                nodeTransformer.transformLanguageDependency(nodeId)
             } else if (iNode.isDevKitDependency()) {
-                nodeTransformer.transformDevKitDependency(iNode)
+                nodeTransformer.transformDevKitDependency(nodeId)
             } else {
-                nodeTransformer.transformToNode(iNode)
+                nodeTransformer.transformNode(nodeId)
             }
-
-            null
         }
     }
 
@@ -226,24 +210,15 @@ class ModelixTreeChangeVisitor(
      * (Moreover, there is no guarantee in which order the method of this class will be called, due to the undefined order of changes after the Diff calculation.)
      */
     override fun childrenChanged(nodeId: Long, role: String?) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             modelTransformer.resolveModelImports(project.repository)
             nodeTransformer.resolveReferences()
-
             null
         }
     }
 
     override fun containmentChanged(nodeId: Long) {
-        syncQueue.enqueue(
-            linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ),
-            SyncDirection.MODELIX_TO_MPS,
-            InspectionMode.CHECK_EXECUTION_THREAD,
-        ) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val nodeIsMapped = nodeMap.isMappedToMps(nodeId)
             if (!nodeIsMapped) {
                 logger.info { "Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore it cannot be moved to a new parent." }

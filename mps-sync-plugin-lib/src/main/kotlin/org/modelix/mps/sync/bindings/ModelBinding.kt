@@ -31,18 +31,15 @@ import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeLi
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelBinding(
-    val model: SModelBase,
-    branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
-) : IBinding {
+class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
 
     private val logger = KotlinLogging.logger {}
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+    private val bindingsRegistry = BindingsRegistry
 
-    private val modelChangeListener = ModelChangeListener(branch, nodeMap, bindingsRegistry, syncQueue, this)
-    private val nodeChangeListener = NodeChangeListener(branch, nodeMap, syncQueue)
+    private val modelChangeListener = ModelChangeListener(branch, this)
+    private val nodeChangeListener = NodeChangeListener(branch)
 
     @Volatile
     private var isDisposed = false
@@ -64,12 +61,15 @@ class ModelBinding(
         model.addModelListener(modelChangeListener)
 
         isActivated = true
+
+        bindingsRegistry.bindingActivated(this)
+
         logger.info { "${name()} is activated." }
 
         callback?.run()
     }
 
-    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<*> {
+    override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<Any?> {
         if (isDisposed) {
             return CompletableFuture.completedFuture(null)
         }
@@ -82,7 +82,11 @@ class ModelBinding(
                     model.removeModelListener(modelChangeListener)
 
                     if (removeFromServer) {
-                        // remove from bindings, so when removing the model from the module we'll know that this model is not assumed to exist, therefore we'll not delete it in the cloud (see ModuleChangeListener's modelRemoved method)
+                        /*
+                         * remove from bindings, so when removing the model from the module we'll know that this model
+                         * is not assumed to exist, therefore we'll not delete it in the cloud
+                         * (see ModuleChangeListener's modelRemoved method)
+                         */
                         bindingsRegistry.removeModelBinding(model.module!!, this)
                     }
 
@@ -94,7 +98,7 @@ class ModelBinding(
                 try {
                     // delete model
                     if (!removeFromServer && !modelDeletedLocally) {
-                        /**
+                        /*
                          * to delete the files locally, otherwise MPS takes care of calling
                          * ModelDeleteHelper(model).delete() to delete the model (if removeFromServer is true)
                          */
@@ -103,7 +107,10 @@ class ModelBinding(
                     }
                 } catch (ex: Exception) {
                     logger.error(ex) { "Exception occurred while deactivating ${name()}." }
-                    // if any error occurs, then we put the binding back to let the rest of the application know that it exists
+                    /*
+                     * if any error occurs, then we put the binding back to let the rest of the application know that
+                     * it exists
+                     */
                     bindingsRegistry.addModelBinding(this)
                     activate()
 
@@ -114,7 +121,10 @@ class ModelBinding(
             bindingsRegistry.removeModelBinding(model.module!!, this)
 
             if (!removeFromServer) {
-                // when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes care of the node deletion
+                /*
+                 * when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes
+                 * care of the node deletion
+                 */
                 nodeMap.remove(model)
             }
 

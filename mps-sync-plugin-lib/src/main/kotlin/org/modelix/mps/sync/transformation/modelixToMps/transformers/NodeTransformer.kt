@@ -26,17 +26,22 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
+import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SNodeFactory
 import org.modelix.mps.sync.mps.util.addDevKit
 import org.modelix.mps.sync.mps.util.addLanguageImport
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.bindTo
+import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.isDevKitDependency
 import org.modelix.mps.sync.util.isModel
@@ -44,42 +49,68 @@ import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import kotlin.reflect.KFunction2
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class NodeTransformer(
-    private val nodeMap: MpsToModelixMap,
-    private val syncQueue: SyncQueue,
-    mpsLanguageRepository: MPSLanguageRepository,
-) {
+class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue)
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
 
-    fun transformToNode(iNode: INode) {
-        if (iNode.isDevKitDependency()) {
-            transformDevKitDependency(iNode)
+    private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue, branch)
+
+    fun transformToNode(iNode: INode): ContinuableSyncTask {
+        val nodeId = iNode.nodeIdAsLong()
+        return if (iNode.isDevKitDependency()) {
+            transformDevKitDependency(nodeId)
         } else if (iNode.isSingleLanguageDependency()) {
-            transformLanguageDependency(iNode)
+            transformLanguageDependency(nodeId)
         } else {
-            try {
-                val modelId = iNode.getModel()?.nodeIdAsLong()
-                val model = nodeMap.getModel(modelId)
-                val isTransformed = nodeMap.isMappedToMps(iNode.nodeIdAsLong())
-                if (!isTransformed) {
-                    if (model == null) {
-                        logger.info { "Node ${iNode.nodeIdAsLong()}(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null." }
-                    } else {
-                        nodeFactory.createNode(iNode, model)
-                    }
-                }
-            } catch (ex: Exception) {
-                logger.error(ex) { "Transformation of Node ($iNode) failed." }
-            }
+            transformNode(nodeId, nodeFactory::createNodeRecursively)
         }
     }
 
-    fun transformLanguageDependency(iNode: INode) {
+    fun transformNode(
+        nodeId: Long,
+        nodeFactoryMethod: KFunction2<Long, SModel?, ContinuableSyncTask> = nodeFactory::createNode,
+    ) = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+        val iNode = branch.getNode(nodeId)
+        val future = CompletableFuture<Any?>()
+
+        val modelId = iNode.getModel()?.nodeIdAsLong()
+        val model = nodeMap.getModel(modelId)
+        val isTransformed = nodeMap.isMappedToMps(nodeId)
+        if (isTransformed) {
+            logger.info { "Node $nodeId is already transformed." }
+            future.completeWithDefault()
+        } else {
+            if (model == null) {
+                logger.info { "Node $nodeId(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null." }
+                future.completeWithDefault()
+            } else {
+                nodeFactoryMethod.invoke(nodeId, model).getResult().bindTo(future)
+            }
+        }
+
+        future
+    }
+
+    fun transformLanguageOrDevKitDependency(iNode: INode): ContinuableSyncTask {
+        val nodeId = iNode.nodeIdAsLong()
+        return if (iNode.isDevKitDependency()) {
+            transformDevKitDependency(nodeId)
+        } else if (iNode.isSingleLanguageDependency()) {
+            transformLanguageDependency(nodeId)
+        } else {
+            throw IllegalStateException("iNode $nodeId is neither DevKit nor SingleLanguageDependency")
+        }
+    }
+
+    fun transformLanguageDependency(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val dependentModule = getDependentModule(iNode)
             val languageModuleReference = (dependentModule as Language).moduleReference
             val sLanguage = MetaAdapterFactory.getLanguage(languageModuleReference)
@@ -106,10 +137,10 @@ class NodeTransformer(
                 logger.error { "Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus the Language Dependency is not added to the model/module." }
             }
         }
-    }
 
-    fun transformDevKitDependency(iNode: INode) {
+    fun transformDevKitDependency(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
             val dependentModule = getDependentModule(iNode)
             val devKitModuleReference = (dependentModule as DevKit).moduleReference
 
@@ -132,7 +163,6 @@ class NodeTransformer(
                 logger.error { "Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus DevKit is not added to the model/module." }
             }
         }
-    }
 
     fun resolveReferences() {
         nodeFactory.resolveReferences()

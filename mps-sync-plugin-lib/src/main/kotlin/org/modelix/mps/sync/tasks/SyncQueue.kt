@@ -19,85 +19,74 @@ package org.modelix.mps.sync.tasks
 import com.intellij.util.containers.headTail
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.client.SharedExecutors
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
+import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.Executors
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-object SyncQueue {
+object SyncQueue : AutoCloseable {
 
     private val logger = KotlinLogging.logger {}
+    private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
 
+    override fun close() {
+        threadPool.shutdownNow()
+    }
+
     fun enqueue(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
-        inspectionMode: InspectionMode = InspectionMode.OFF,
         action: SyncTaskAction,
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
-        enqueue(task, inspectionMode)
+        enqueue(task)
         return ContinuableSyncTask(task)
     }
 
-    fun enqueueBlocking(
-        requiredLocks: LinkedHashSet<SyncLock>,
-        syncDirection: SyncDirection,
-        inspectionMode: InspectionMode = InspectionMode.OFF,
-        action: SyncTaskAction,
-    ): ContinuableSyncTask {
-        val task = SyncTask(requiredLocks, syncDirection, action)
-        enqueueBlocking(task, inspectionMode)
-        return ContinuableSyncTask(task)
-    }
-
-    fun enqueue(task: SyncTask, inspectionMode: InspectionMode) {
-        /**
-         * If we have to check the execution thread, then do not schedule Task if it is initiated on a Thread that is
-         * running a synchronization and the sync direction is the opposite of what is running on the thread already.
-         * This might be a symptom of a "Table tennis" (ping-pong) effect in which a change in MPS triggers a change
-         * in Modelix which triggers a change in MPS again via the *ChangeListener and ModelixTreeChangeVisitor chains
-         * registered in MPS and in Modelix, respectively.
+    fun enqueue(task: SyncTask) {
+        /*
+         * Do not schedule Task if it is initiated on a Thread that is  running a synchronization and the sync direction
+         * is the opposite of what is running on the thread already. This might be a symptom of a "table tennis"
+         * (ping-pong) effect in which a change in MPS triggers a change in Modelix which triggers a change in MPS again
+         * via the *ChangeListener and ModelixTreeChangeVisitor chains registered in MPS and in Modelix, respectively.
          *
-         * Because the SyncTasks are executed on separate threads by the ExecutorService (see SharedExecutors.FIXED),
+         * Because the SyncTasks are executed on separate threads by the ExecutorService (see SyncTaskExecutors),
          * there is a very little chance of missing an intended change on other side. With other words: there is very
          * little chance that it makes sense that on the same thread two SyncTasks occur.
          */
-        if (inspectionMode == InspectionMode.CHECK_EXECUTION_THREAD) {
-            val taskSyncDirection = task.syncDirection
-            val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
+        val taskSyncDirection = task.syncDirection
+        val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
 
-            val noTaskIsRunning = runningSyncDirection == null
-            val runningTaskDirectionIsTheSame = taskSyncDirection == runningSyncDirection
-            val isNoneDirection = taskSyncDirection == SyncDirection.NONE || runningSyncDirection == SyncDirection.NONE
-            if (noTaskIsRunning || isNoneDirection || runningTaskDirectionIsTheSame) {
-                enqueueAndFlush(task)
-            } else {
-                task.result.complete(null)
-            }
-        } else {
+        val noTaskIsRunning = runningSyncDirection == null
+        val runningTaskDirectionIsTheSame = taskSyncDirection == runningSyncDirection
+        val isNoneDirection = taskSyncDirection == SyncDirection.NONE || runningSyncDirection == SyncDirection.NONE
+        if (noTaskIsRunning || isNoneDirection || runningTaskDirectionIsTheSame) {
             enqueueAndFlush(task)
+        } else {
+            task.result.completeWithDefault()
         }
-    }
-
-    private fun enqueueBlocking(task: SyncTask, inspectionMode: InspectionMode) {
-        enqueue(task, inspectionMode)
-        task.result.get()
     }
 
     private fun enqueueAndFlush(task: SyncTask) {
         tasks.add(task)
-        scheduleFlush()
+        try {
+            scheduleFlush()
+        } catch (ex: Exception) {
+            logger.warn(ex) { "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue. If ThreadPool is shut down (isShutdown=${threadPool.isShutdown}), then it might be normal." }
+            task.result.completeExceptionally(ex)
+        }
     }
 
     private fun scheduleFlush() {
-        SharedExecutors.FIXED.submit {
+        threadPool.submit {
             doFlush()
         }
     }
@@ -113,9 +102,13 @@ object SyncQueue {
         val taskResult = task.result
 
         if (locks.isEmpty()) {
-            val result = task.action.invoke(task.previousTaskResult)
+            // warning blocking call: if MPS gets frozen, this might be the reason
+            val previousTaskResult = task.previousTaskResultHolder?.get()
+            val result = task.action.invoke(previousTaskResult)
             if (result is CompletableFuture<*> && result.isCompletedExceptionally) {
                 result.handle { _, throwable -> taskResult.completeExceptionally(throwable) }
+            } else if (result == null) {
+                taskResult.completeWithDefault()
             } else {
                 taskResult.complete(result)
             }
@@ -139,8 +132,6 @@ object SyncQueue {
                     if (!taskResult.isCompletedExceptionally) {
                         taskResult.completeExceptionally(t)
                     }
-
-                    throw t
                 } finally {
                     if (wasAddedHere) {
                         // do not remove threads that were registered somewhere else

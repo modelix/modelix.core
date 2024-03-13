@@ -30,7 +30,9 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
@@ -39,7 +41,6 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.bindTo
-import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
@@ -53,7 +54,17 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
     private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
 
-    fun addModule(module: AbstractModule, isTransformationStartingModule: Boolean = false): ContinuableSyncTask =
+    fun addModuleAndActivate(module: AbstractModule) {
+        addModule(module, true).continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+            @Suppress("UNCHECKED_CAST")
+            (it as? Iterable<IBinding>)?.forEach(IBinding::activate)
+        }
+    }
+
+    private fun addModule(
+        module: AbstractModule,
+        isTransformationStartingModule: Boolean = false,
+    ): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val rootNode = branch.getRootNode()
             val childLink = ChildLinkFromName("modules")
@@ -65,21 +76,43 @@ class ModuleSynchronizer(private val branch: IBranch) {
             synchronizeModuleProperties(cloudModule, module)
 
             // synchronize dependencies
-            module.declaredDependencies.waitForCompletionOfEachTask { addDependency(module, it) }
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+            module.declaredDependencies.waitForCompletionOfEachTask(collectResults = true) { addDependency(module, it) }
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
+            @Suppress("UNCHECKED_CAST")
+            (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
             // synchronize models
-            module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+            val modelSynchedFuture =
+                module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
+
+            // pass on the dependencyBindings after the modelSynchedFuture is completed
+            val passedOnDependencyBindingsFuture = CompletableFuture<Any?>()
+            modelSynchedFuture.whenComplete { _, throwable ->
+                if (throwable != null) {
+                    passedOnDependencyBindingsFuture.completeExceptionally(throwable)
+                } else {
+                    passedOnDependencyBindingsFuture.complete(dependencyBindings)
+                }
+            }
+            passedOnDependencyBindingsFuture
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+        ) { dependencyBindings ->
             // resolve references only after all dependent (and contained) modules and models have been transformed
             if (isTransformationStartingModule) {
-                // resolve cross-model references
-                modelSynchronizer.resolveCrossModelReferences()
+                resolveCrossModelReferences()
             }
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+            dependencyBindings
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
             // register binding
             val binding = ModuleBinding(module, branch)
             bindingsRegistry.addModuleBinding(binding)
-            binding.activate()
+
+            val bindings = mutableSetOf<IBinding>(binding)
+            @Suppress("UNCHECKED_CAST")
+            bindings.addAll(dependencyBindings as Iterable<IBinding>)
+            bindings
         }
 
     fun addDependency(module: SModule, dependency: SDependency) =
@@ -94,10 +127,13 @@ class ModuleSynchronizer(private val branch: IBranch) {
                 // connect the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
                 addModule(targetModule).getResult().bindTo(future)
             } else {
-                future.completeWithDefault()
+                future.complete(setOf(EmptyBinding()))
             }
             future
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(
+            linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
+            SyncDirection.MPS_TO_MODELIX,
+        ) { dependencyBindings ->
             val moduleModelixId = nodeMap[module]!!
             val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
 
@@ -148,6 +184,8 @@ class ModuleSynchronizer(private val branch: IBranch) {
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.scope,
                 dependency.scope.toString(),
             )
+
+            dependencyBindings
         }
 
     private fun synchronizeModuleProperties(cloudModule: INode, module: SModule) {
@@ -172,4 +210,6 @@ class ModuleSynchronizer(private val branch: IBranch) {
             module.moduleName,
         )
     }
+
+    fun resolveCrossModelReferences() = modelSynchronizer.resolveCrossModelReferences()
 }

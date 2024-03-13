@@ -43,6 +43,7 @@ import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SolutionProducer
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
+import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -54,8 +55,6 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.text.ParseException
 import java.util.concurrent.CompletableFuture
-import java.util.stream.Stream
-import java.util.stream.StreamSupport
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
@@ -83,35 +82,28 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) { dependencyBindings ->
                 // transform models
                 val module = branch.getNode(nodeId)
-                val modelsFuture = module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models)
+                val modelBindingsFuture = module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models)
                     .waitForCompletionOfEachTask(collectResults = true) {
                         modelTransformer.transformToModelCompletely(it.nodeIdAsLong(), branch, bindingsRegistry)
                     }
 
-                val dependencyAndModelBindingsFuture = CompletableFuture<Any?>()
-                modelsFuture.whenComplete { modelBindings, throwable ->
-                    if (throwable != null) {
-                        dependencyAndModelBindingsFuture.completeExceptionally(throwable)
-                    } else {
-                        val bindings = Iterable {
-                            @Suppress("UNCHECKED_CAST")
-                            Stream.concat(
-                                StreamSupport.stream((modelBindings as Iterable<IBinding>).spliterator(), false),
-                                StreamSupport.stream((dependencyBindings as Iterable<IBinding>).spliterator(), false),
-                            ).iterator()
-                        }
-                        dependencyAndModelBindingsFuture.complete(bindings)
-                    }
-                }
-                dependencyAndModelBindingsFuture
-            }
-            .continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
+                // join the newly added model bindings with the existing bindings
+                val collectedBindingsFuture = CompletableFuture<Any?>()
+                FuturesWaitQueue.add(
+                    collectedBindingsFuture,
+                    setOf(modelBindingsFuture, CompletableFuture.completedFuture(dependencyBindings)),
+                    collectResults = true,
+                )
+                collectedBindingsFuture
+            }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
+                @Suppress("UNCHECKED_CAST")
+                (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
+            }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
                 // resolve references only after all dependent (and contained) modules and models have been transformed
                 if (isTransformationStartingModule) {
                     // resolve cross-model references (and node references)
                     modelTransformer.resolveCrossModelReferences(project.repository)
                 }
-
                 dependencyAndModelBindings
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
                 // register binding
@@ -124,7 +116,6 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 @Suppress("UNCHECKED_CAST")
                 bindings.addAll(dependencyAndModelBindings as Iterable<IBinding>)
                 bindings.add(moduleBinding)
-
                 bindings
             }
 
@@ -142,21 +133,13 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             nodeMap.put(sModule, iNode.nodeIdAsLong())
 
             // transform dependencies and collect its bindings (implicitly via the tasks' return value)
-            val dependencyBindingsFuture = iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
+            iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
                 .waitForCompletionOfEachTask(collectResults = true) {
                     transformModuleDependency(it.nodeIdAsLong(), sModule, fetchTargetModule)
                 }
-
-            val realDependencyBindingsFuture = CompletableFuture<Iterable<IBinding>>()
-            dependencyBindingsFuture.whenComplete { bindings, throwable ->
-                if (throwable != null) {
-                    realDependencyBindingsFuture.completeExceptionally(throwable)
-                } else {
-                    @Suppress("UNCHECKED_CAST")
-                    realDependencyBindingsFuture.complete((bindings as Iterable<Iterable<IBinding>>).flatten())
-                }
-            }
-            realDependencyBindingsFuture
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
+            @Suppress("UNCHECKED_CAST")
+            (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
         }
 
     fun transformModuleDependency(
@@ -169,7 +152,6 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
 
             val future = CompletableFuture<Any?>()
-            val defaultBinding = setOf<IBinding>(EmptyBinding())
             val targetModuleIsNotMapped = nodeMap.getModule(targetModuleId) == null
             if (targetModuleIsNotMapped && fetchTargetModule) {
                 // find target module in modelix
@@ -202,7 +184,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                     future.completeExceptionally(ex)
                 }
             } else {
-                future.complete(defaultBinding)
+                future.complete(setOf(EmptyBinding()))
             }
 
             future

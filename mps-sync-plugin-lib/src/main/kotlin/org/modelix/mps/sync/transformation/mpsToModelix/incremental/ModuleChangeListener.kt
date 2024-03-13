@@ -28,6 +28,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.getNode
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -110,7 +111,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
                 }
                 future
             }
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { it ->
             errorHandlerWrapper(it, module) {
                 // add new dependencies
                 val iModuleNodeId = nodeMap[module]!!
@@ -125,12 +126,25 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
                         ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == targetModuleId
                     }
                 }
-                addedDependencies.waitForCompletionOfEachTask { dependency ->
+                addedDependencies.waitForCompletionOfEachTask(collectResults = true) { dependency ->
                     moduleSynchronizer.addDependency(
                         module,
                         dependency,
                     )
                 }
+            }
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+            // resolve cross-model references that we might have created by adding new dependencies
+            errorHandlerWrapper(it, module) { bindings ->
+                moduleSynchronizer.resolveCrossModelReferences()
+                CompletableFuture.completedFuture(bindings)
+            }
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+            // activate the bindings of the newly added dependencies
+            errorHandlerWrapper(it, module) { bindings ->
+                @Suppress("UNCHECKED_CAST")
+                (bindings as Iterable<Iterable<IBinding>>).flatten().forEach(IBinding::activate)
+                CompletableFuture<Any?>().completeWithDefault()
             }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // resolve model imports (that had not been resolved, because the corresponding module/model were not uploaded yet)
@@ -206,7 +220,8 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
             return func.invoke(input).exceptionally { removeModuleFromSyncInProgressAndRethrow(module, it) }
         } catch (t: Throwable) {
             removeModuleFromSyncInProgressAndRethrow(module, t)
-            return null
+            // should never reach beyond this point, because the method above rethrows the throwable anyway
+            throw t
         }
     }
 

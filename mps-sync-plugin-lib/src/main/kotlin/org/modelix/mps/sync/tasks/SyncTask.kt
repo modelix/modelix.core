@@ -42,13 +42,14 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
         FuturesWaitQueue.add(continuation, setOf(getResult()), true)
 
         val task = SyncTask(requiredLocks, syncDirection, action, continuation)
-        continuation.thenRun {
-            // this will only run if previousTask is completed according to the FuturesWaitQueue
-            SyncQueue.enqueue(task)
-        }
-        continuation.exceptionally {
-            // if a predecessor failed then we have to fail the next task
-            task.result.completeExceptionally(it)
+        continuation.whenComplete { _, throwable ->
+            if (throwable != null) {
+                // if a predecessor failed then we have to fail the next task
+                task.result.completeExceptionally(throwable)
+            } else {
+                // this will only run if previousTask is completed according to the FuturesWaitQueue
+                SyncQueue.enqueue(task)
+            }
         }
 
         return ContinuableSyncTask(task)

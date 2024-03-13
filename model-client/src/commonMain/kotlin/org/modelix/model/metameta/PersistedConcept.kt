@@ -13,6 +13,7 @@
  */
 package org.modelix.model.metameta
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -42,7 +43,8 @@ data class PersistedConcept(val id: Long, val uid: String?) : IConcept, IConcept
     }
 
     override fun getReference(): IConceptReference {
-        throw UnsupportedOperationException()
+        // The reference uses the ID and not the UID because of how MetaModelSynchronizer works.
+        return ConceptReference(id.toString(16))
     }
 
     override fun getReferenceLink(name: String): IReferenceLink {

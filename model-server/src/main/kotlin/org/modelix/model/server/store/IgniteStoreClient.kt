@@ -18,6 +18,7 @@ import mu.KotlinLogging
 import org.apache.ignite.Ignite
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.Ignition
+import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IKeyListener
 import org.modelix.model.persistent.HashUtil
 import java.io.File
@@ -29,14 +30,14 @@ import java.util.stream.Collectors
 private val LOG = KotlinLogging.logger { }
 
 class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) : IStoreClient, AutoCloseable {
-    companion object {
-        private val threadLocalPendingChangeMessages: ThreadLocal<PendingChangeMessages> = ThreadLocal()
-    }
 
     private val ENTRY_CHANGED_TOPIC = "entryChanged"
-    private var ignite: Ignite
+    private lateinit var ignite: Ignite
     private val cache: IgniteCache<String, String?>
     private val changeNotifier = ChangeNotifier(this)
+    private val pendingChangeMessages = PendingChangeMessages {
+        ignite.message().send(ENTRY_CHANGED_TOPIC, it)
+    }
 
     /**
      * Instantiate an IgniteStoreClient
@@ -113,7 +114,7 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
             if (!silent) {
                 for (key in entries.keys) {
                     if (HashUtil.isSha256(key)) continue
-                    threadLocalPendingChangeMessages.get().entryChanged(key)
+                    pendingChangeMessages.entryChanged(key)
                 }
             }
         }
@@ -138,17 +139,10 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
         val transactions = ignite.transactions()
         if (transactions.tx() == null) {
             transactions.txStart().use { tx ->
-                try {
-                    val pendingChangeMessages = PendingChangeMessages {
-                        ignite.message().send(ENTRY_CHANGED_TOPIC, it)
-                    }
-                    threadLocalPendingChangeMessages.set(pendingChangeMessages)
+                return pendingChangeMessages.runAndFlush {
                     val result = body()
                     tx.commit()
-                    pendingChangeMessages.flushChangeMessages()
-                    return result
-                } finally {
-                    threadLocalPendingChangeMessages.remove()
+                    result
                 }
             }
         } else {
@@ -167,19 +161,20 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
 }
 
 class PendingChangeMessages(private val notifier: (String) -> Unit) {
-    private val pendingChangeMessages = Collections.synchronizedSet(HashSet<String>())
+    private val pendingChangeMessages = ContextValue<MutableSet<String>>()
 
-    @Synchronized
-    fun flushChangeMessages() {
-        for (pendingChangeMessage in pendingChangeMessages) {
-            notifier(pendingChangeMessage)
+    fun <R> runAndFlush(body: () -> R): R {
+        val messages = HashSet<String>()
+        return pendingChangeMessages.computeWith(messages) {
+            val result = body()
+            messages.forEach { notifier(it) }
+            result
         }
-        pendingChangeMessages.clear()
     }
 
-    @Synchronized
     fun entryChanged(key: String) {
-        pendingChangeMessages += key
+        val messages = checkNotNull(pendingChangeMessages.getValueOrNull()) { "Only allowed inside PendingChangeMessages.runAndFlush" }
+        messages.add(key)
     }
 }
 

@@ -20,19 +20,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.modelix.model.IKeyListener
+import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
+import org.modelix.model.server.store.InMemoryStoreClient
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class IgniteStoreClientParallelTransactionsTest {
+@Ignore("Doesn't support parallel transactions (yet)")
+class MabBasedStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(InMemoryStoreClient())
 
-    // This test is currently not relevant for the InMemoryClient,
-    // because the in memory client does not open multiple transactions in parallel.
-    val store = IgniteStoreClient(inmemory = true)
+class IgniteStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(IgniteStoreClient(inmemory = true))
+
+abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
 
     @AfterTest
     fun cleanup() {

@@ -168,6 +168,10 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
         override fun getConcept(nodeId: Long): IConcept? {
             return transaction.getConceptReference(nodeId)?.let { resolveConcept(it, transaction.tree) }
         }
+
+        override fun getConceptReference(nodeId: Long): IConceptReference? {
+            return getConcept(nodeId)?.getReference()
+        }
     }
 
     inner class MMWriteTransaction(val transaction: IWriteTransaction) : IWriteTransaction by transaction, ITransactionWrapper {
@@ -184,6 +188,11 @@ class MetaModelBranch(val branch: IBranch) : IBranch by branch {
         override fun getConcept(nodeId: Long): IConcept? {
             return transaction.getConceptReference(nodeId)?.let { resolveConcept(it, transaction.tree) }
         }
+
+        override fun getConceptReference(nodeId: Long): IConceptReference? {
+            return getConcept(nodeId)?.getReference()
+        }
+
         override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?) {
             transaction.addNewChild(parentId, role, index, childId, concept?.let { toLocalConcept(it) })
         }

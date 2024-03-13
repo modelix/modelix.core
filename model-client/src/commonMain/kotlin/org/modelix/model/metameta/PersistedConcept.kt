@@ -13,6 +13,7 @@
  */
 package org.modelix.model.metameta
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -42,7 +43,25 @@ data class PersistedConcept(val id: Long, val uid: String?) : IConcept, IConcept
     }
 
     override fun getReference(): IConceptReference {
-        throw UnsupportedOperationException()
+        // The reference uses the ID and not the UID because of
+        // how MetaModelSynchronizer, MetaModelBranch and CLTree work together.
+        //
+        // `MetaModelSynchronizer#storeConcept` creates a `PersistedConcept`.
+        // `PersistedConcept#uid` is the UID of the original concept.
+        // `PersistedConcept#id` is the node ID for the node that holds metadata for the original concept.
+        //
+        // CLTree#createNewNodes uses the value `IConceptReference#getUID(): String` for `CPNode.concept`.
+        //
+        // `MetaModelBranch#resolveConcept` checks if `IConceptReference#getUID()` is hexadecimal value.
+        // If that is the case, it tries to resolve the node with the original concepts metadata
+        // and read UID of the original concept to find the original concept by UID.
+        // The `MetaModelSynchronizer#storeConcept` stored the node with metadata with the ID `this.id`.
+        //
+        // So for `MetaModelBranch#resolveConcept` to attempt the resolution,
+        // we need `this.getReference().getUID()`
+        // to return the hexadecimal value `idAsHexString` and not the actual `this.uid`.
+        val idAsHexString = id.toString(16)
+        return ConceptReference(idAsHexString)
     }
 
     override fun getReferenceLink(name: String): IReferenceLink {

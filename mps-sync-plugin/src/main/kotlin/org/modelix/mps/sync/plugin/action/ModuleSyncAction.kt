@@ -53,7 +53,7 @@ class ModuleSyncAction : AnAction {
             require(replicatedModel != null) { "Synchronization to server has not been established yet" }
 
             val branch = replicatedModel.getBranch()
-            ModuleSynchronizer(branch).addModule(module)
+            ModuleSynchronizer(branch).addModule(module, true)
         } catch (ex: Exception) {
             logger.error(ex) { "Module sync error occurred" }
         }

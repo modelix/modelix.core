@@ -53,7 +53,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
     private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
 
-    fun addModule(module: AbstractModule): ContinuableSyncTask =
+    fun addModule(module: AbstractModule, isTransformationStartingModule: Boolean = false): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val rootNode = branch.getRootNode()
             val childLink = ChildLinkFromName("modules")
@@ -70,8 +70,11 @@ class ModuleSynchronizer(private val branch: IBranch) {
             // synchronize models
             module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
         }.continueWith(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            // resolve cross-model references
-            modelSynchronizer.resolveCrossModelReferences()
+            // resolve references only after all dependent (and contained) modules and models have been transformed
+            if (isTransformationStartingModule) {
+                // resolve cross-model references
+                modelSynchronizer.resolveCrossModelReferences()
+            }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
             // register binding
             val binding = ModuleBinding(module, branch)

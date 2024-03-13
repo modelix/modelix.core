@@ -82,7 +82,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
                     model.removeModelListener(modelChangeListener)
 
                     if (removeFromServer) {
-                        /**
+                        /*
                          * remove from bindings, so when removing the model from the module we'll know that this model
                          * is not assumed to exist, therefore we'll not delete it in the cloud
                          * (see ModuleChangeListener's modelRemoved method)
@@ -98,7 +98,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
                 try {
                     // delete model
                     if (!removeFromServer && !modelDeletedLocally) {
-                        /**
+                        /*
                          * to delete the files locally, otherwise MPS takes care of calling
                          * ModelDeleteHelper(model).delete() to delete the model (if removeFromServer is true)
                          */
@@ -107,7 +107,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
                     }
                 } catch (ex: Exception) {
                     logger.error(ex) { "Exception occurred while deactivating ${name()}." }
-                    /**
+                    /*
                      * if any error occurs, then we put the binding back to let the rest of the application know that
                      * it exists
                      */
@@ -121,7 +121,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
             bindingsRegistry.removeModelBinding(model.module!!, this)
 
             if (!removeFromServer) {
-                /**
+                /*
                  * when deleting the model (modelix Node) from the cloud, then the NodeSynchronizer.removeNode takes
                  * care of the node deletion
                  */

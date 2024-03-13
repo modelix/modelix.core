@@ -84,7 +84,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
 
                     val modelBindings = bindingsRegistry.getModelBindings(module)
 
-                    /**
+                    /*
                      * deactivate child models' bindings and wait for their successful completion
                      * throws ExecutionException if any deactivation failed
                      */
@@ -93,7 +93,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
             }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
             synchronized(this) {
-                /**
+                /*
                  * delete the binding, because if binding exists then module is assumed to exist,
                  * i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
                  */
@@ -105,7 +105,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
                 // delete module
                 try {
                     if (!removeFromServer && !moduleDeletedLocally) {
-                        /**
+                        /*
                          * if we just delete it locally, then we have to call ModuleDeleteHelper manually.
                          * otherwise, MPS will call us via the event-handler chain starting from
                          * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener -->
@@ -117,7 +117,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
                     }
                 } catch (ex: Exception) {
                     logger.error(ex) { "Exception occurred while deactivating ${name()}." }
-                    /**
+                    /*
                      * if any error occurs, then we put the binding back to let the rest of the application know that
                      * it exists
                      */

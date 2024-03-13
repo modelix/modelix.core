@@ -79,7 +79,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
 
     override fun moduleChanged(module: SModule) {
         synchronized(module) {
-            /**
+            /*
              * in some cases MPS might call this method multiple times consecutively(e.g. when we add the new
              * dependency), and we want to avoid breaking an ongoing synchronizations.
              */

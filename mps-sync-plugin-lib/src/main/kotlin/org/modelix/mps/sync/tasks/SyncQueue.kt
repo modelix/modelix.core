@@ -52,7 +52,7 @@ object SyncQueue : AutoCloseable {
     }
 
     fun enqueue(task: SyncTask) {
-        /**
+        /*
          * Do not schedule Task if it is initiated on a Thread that is  running a synchronization and the sync direction
          * is the opposite of what is running on the thread already. This might be a symptom of a "table tennis"
          * (ping-pong) effect in which a change in MPS triggers a change in Modelix which triggers a change in MPS again

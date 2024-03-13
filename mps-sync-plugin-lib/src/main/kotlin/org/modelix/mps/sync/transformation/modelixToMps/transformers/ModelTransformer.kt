@@ -142,7 +142,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
             val id = PersistenceFacade.getInstance().createModelId(it.targetModelId)
             val targetModel = (nodeMap.getModel(it.targetModelModelixId) ?: repository.getModel(id))
             if (targetModel == null) {
-                /**
+                /*
                  * Issue MODELIX-819:
                  * A manual quick-fix would be if the user downloads the target model (+ its container module) into
                  * their MPS project, then create a module dependency between the source module and the target model's

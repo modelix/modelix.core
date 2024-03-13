@@ -184,7 +184,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 if (targetModule != null) {
                     transformToModuleCompletely(targetModule.nodeIdAsLong()).getResult().bindTo(future)
                 } else {
-                    /**
+                    /*
                      * Issue MODELIX-820:
                      * A manual quick-fix would be if the module is available on another model server and its ID is
                      * the same as what is used in the ModuleDependency, then just upload that module to this server

@@ -99,7 +99,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                     val allCompleted =
                         predecessors.all { predecessor -> predecessor.isDone && !predecessor.isCompletedExceptionally }
                     if (allCompleted) {
-                        /**
+                        /*
                          * Check if there is any predecessor whose result (.get()) is a CompletableFuture. Replace such
                          * CompletableFutures with their result and put them at the end of the queue.
                          *

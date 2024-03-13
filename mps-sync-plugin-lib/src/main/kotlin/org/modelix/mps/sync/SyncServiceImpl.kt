@@ -103,7 +103,7 @@ class SyncServiceImpl : SyncService {
         val bindings = runBlocking(coroutineScope.coroutineContext) {
             // TODO how to handle multiple replicated models at the same time?
             val replicatedModel = client.getReplicatedModel(branchReference)
-            /**
+            /*
              * TODO fixme:
              * (1) How to propagate replicated model to other places of code?
              * (2) How to know to which replicated model we want to upload? (E.g. when connecting to multiple model servers?)

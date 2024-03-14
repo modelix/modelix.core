@@ -49,7 +49,7 @@ object TypedLanguagesRegistry : ILanguageRepository {
     override fun getPriority(): Int = 2000
 }
 
-fun <NodeT : ITypedNode> INode.typed(nodeClass: KClass<NodeT>): NodeT = nodeClass.cast(TypedLanguagesRegistry.wrapNode(this))
+fun <NodeT : ITypedNode> INode.typed(nodeClass: KClass<out NodeT>): NodeT = nodeClass.cast(TypedLanguagesRegistry.wrapNode(this))
 inline fun <reified NodeT : ITypedNode> INode.typed(): NodeT = TypedLanguagesRegistry.wrapNode(this) as NodeT
 fun <NodeT : ITypedNode> INode.typedUnsafe(): NodeT = TypedLanguagesRegistry.wrapNode(this) as NodeT
 

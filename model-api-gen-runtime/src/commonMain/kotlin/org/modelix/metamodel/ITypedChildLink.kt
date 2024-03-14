@@ -17,7 +17,7 @@ import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.remove
 
-interface ITypedChildLink<ChildT : ITypedNode> : ITypedConceptFeature {
+interface ITypedChildLink<out ChildT : ITypedNode> : ITypedConceptFeature {
     fun untyped(): IChildLink
     fun castChild(childNode: INode): ChildT
     fun getTypedChildConcept(): IConceptOfTypedNode<ChildT>

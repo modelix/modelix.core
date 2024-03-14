@@ -16,7 +16,7 @@ package org.modelix.metamodel
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
 
-interface ITypedReferenceLink<TargetT : ITypedNode> : ITypedConceptFeature {
+interface ITypedReferenceLink<out TargetT : ITypedNode> : ITypedConceptFeature {
     fun untyped(): IReferenceLink
     fun castTarget(target: INode): TargetT
     fun getTypedTargetConcept(): IConceptOfTypedNode<TargetT>

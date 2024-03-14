@@ -130,10 +130,6 @@ tasks.register<Copy>("copyApis") {
     sourceSets["main"].resources.srcDir(project.layout.buildDirectory.dir("openapi/src/main/resources/"))
 }
 
-tasks.named("runKtlintCheckOverMainSourceSet") {
-    dependsOn("copyApis")
-}
-
 tasks.named("compileKotlin") {
     dependsOn("copyApis")
 }
@@ -281,18 +277,6 @@ openApiFiles.forEach {
     }
     tasks.named("compileKotlin") {
         dependsOn(targetTaskName)
-    }
-    tasks.named("runKtlintCheckOverMainSourceSet") {
-        dependsOn(targetTaskName)
-    }
-
-    // do not apply ktlint on the generated files
-    ktlint {
-        filter {
-            exclude {
-                it.file.toPath().toAbsolutePath().startsWith(outputPath)
-            }
-        }
     }
 
     // add openAPI generated artifacts to the sourceSets

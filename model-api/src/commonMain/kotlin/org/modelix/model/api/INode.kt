@@ -307,6 +307,7 @@ fun INode.setReferenceTarget(link: IReferenceLink, target: INodeReference?): Uni
 fun INode.getPropertyValue(property: IProperty): String? = if (this is INodeEx) getPropertyValue(property) else getPropertyValue(property.key(this))
 fun INode.setPropertyValue(property: IProperty, value: String?): Unit = if (this is INodeEx) setPropertyValue(property, value) else setPropertyValue(property.key(this), value)
 
+@Deprecated("use INode.concept", ReplaceWith("concept"))
 fun INode.getConcept(): IConcept? = getConceptReference()?.resolve()
 fun INode.getResolvedReferenceTarget(role: String): INode? = getReferenceTargetRef(role)?.resolveIn(getArea()!!)
 fun INode.getResolvedConcept(): IConcept? = getConceptReference()?.resolve()

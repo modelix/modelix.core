@@ -38,6 +38,7 @@ import io.ktor.websocket.send
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
@@ -64,6 +65,7 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.server.ModelQLServer
 import org.slf4j.LoggerFactory
+import io.ktor.server.routing.post as normalPost
 
 /**
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
@@ -201,6 +203,26 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
             call.respondDelta(newVersionHash, lastKnownVersionHash)
+        }
+        normalPost("/v2/repositories/{repository}/objects/getAll") {
+            val repository = RepositoryId(call.parameters["repository"]!!)
+            val keys = call.receiveStream().bufferedReader().use { reader ->
+                reader.lineSequence().toHashSet()
+            }
+            val objects = withContext(Dispatchers.IO) { repositoriesManager.client.store.getAll(keys) }
+            call.respondTextWriter(contentType = VersionDeltaStream.CONTENT_TYPE) {
+                var isFirst = true
+                objects.forEach {
+                    if (isFirst) {
+                        isFirst = false
+                    } else {
+                        append("\n")
+                    }
+                    append(it.key)
+                    append("\n")
+                    append(it.value)
+                }
+            }
         }
         get<Paths.pollRepositoryBranchHash> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)

@@ -32,6 +32,7 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
+import org.modelix.model.client2.lazyLoadVersion
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelExporter
@@ -95,9 +96,9 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
 
     private suspend fun loadDataAsBranch(client: ModelClientV2): PBranch {
         val version = if (revision.isPresent) {
-            client.loadVersion(revision.get(), null)
+            client.lazyLoadVersion(RepositoryId(repositoryId.get()), revision.get())
         } else {
-            client.pull(getBranchReference(), null)
+            client.lazyLoadVersion(getBranchReference())
         }
         val branch = PBranch(version.getTree(), client.getIdGenerator())
         return branch

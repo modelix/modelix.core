@@ -83,18 +83,10 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
                                         buildHistoryLink(branch.repositoryId.id, branch.branchName)
                                     }
                                     td {
-                                        a("../content/$repository/${branch.branchName}/latest/") {
-                                            +"Explore Latest Version"
-                                        }
+                                        buildExploreLatestLink(branch.repositoryId.id, branch.branchName)
                                     }
                                     td {
-                                        form {
-                                            postButton {
-                                                name = "delete"
-                                                formAction = "../v2/repositories/${branch.repositoryId.id}/delete"
-                                                +"Delete Repository"
-                                            }
-                                        }
+                                        buildDeleteForm(branch.repositoryId.id)
                                     }
                                 }
                             }
@@ -109,5 +101,21 @@ class RepositoryOverview(private val repoManager: RepositoriesManager) {
 fun FlowOrInteractiveOrPhrasingContent.buildHistoryLink(repositoryId: String, branchName: String) {
     a("../history/${repositoryId.encodeURLPathPart()}/${branchName.encodeURLPathPart()}/") {
         +"Show History"
+    }
+}
+
+fun FlowOrInteractiveOrPhrasingContent.buildExploreLatestLink(repositoryId: String, branchName: String) {
+    a("../content/${repositoryId.encodeURLPathPart()}/${branchName.encodeURLPathPart()}/latest/") {
+        +"Explore Latest Version"
+    }
+}
+
+fun FlowContent.buildDeleteForm(repositoryId: String) {
+    form {
+        postButton {
+            name = "delete"
+            formAction = "../v2/repositories/${repositoryId.encodeURLPathPart()}/delete"
+            +"Delete Repository"
+        }
     }
 }

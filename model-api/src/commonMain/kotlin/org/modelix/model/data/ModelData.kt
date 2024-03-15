@@ -18,7 +18,15 @@ data class ModelData(
     fun toJson(): String = prettyJson.encodeToString(this)
     fun toCompactJson(): String = Json.encodeToString(this)
 
-    fun load(branch: IBranch) {
+    /**
+     * The [idStrategy] can be provided if nodes should be created with a specific ID.
+     * [setOriginalIdProperty] whether to safe the original ID in [NodeData.ID_PROPERTY_KEY].
+     */
+    fun load(
+        branch: IBranch,
+        idStrategy: ((NodeData) -> Long)? = null,
+        setOriginalIdProperty: Boolean = true,
+    ) {
         branch.computeWriteT { t ->
             val createdNodes = HashMap<String, Long>()
             val pendingReferences = ArrayList<() -> Unit>()
@@ -26,9 +34,11 @@ data class ModelData(
             if (root.id != null) {
                 createdNodes[root.id] = parentId
             }
-            setOriginalId(root, t, parentId)
+            if (setOriginalIdProperty) {
+                setOriginalId(root, t, parentId)
+            }
             for (nodeData in root.children) {
-                loadNode(nodeData, t, parentId, createdNodes, pendingReferences)
+                loadNode(nodeData, t, parentId, createdNodes, pendingReferences, idStrategy, setOriginalIdProperty)
             }
             pendingReferences.forEach { it() }
         }
@@ -40,12 +50,22 @@ data class ModelData(
         parentId: Long,
         createdNodes: HashMap<String, Long>,
         pendingReferences: ArrayList<() -> Unit>,
+        idStrategy: ((NodeData) -> Long)?,
+        setOriginalIdProperty: Boolean,
     ) {
         val conceptRef = nodeData.concept?.let { ConceptReference(it) }
-        val createdId = t.addNewChild(parentId, nodeData.role, -1, conceptRef)
+        val createdId = if (idStrategy == null) {
+            t.addNewChild(parentId, nodeData.role, -1, conceptRef)
+        } else {
+            val id = idStrategy(nodeData)
+            t.addNewChild(parentId, nodeData.role, -1, id, conceptRef)
+            id
+        }
         if (nodeData.id != null) {
             createdNodes[nodeData.id] = createdId
-            setOriginalId(nodeData, t, createdId)
+            if (setOriginalIdProperty) {
+                setOriginalId(nodeData, t, createdId)
+            }
         }
         for (propertyData in nodeData.properties) {
             t.setProperty(createdId, propertyData.key, propertyData.value)
@@ -57,7 +77,7 @@ data class ModelData(
             }
         }
         for (childData in nodeData.children) {
-            loadNode(childData, t, createdId, createdNodes, pendingReferences)
+            loadNode(childData, t, createdId, createdNodes, pendingReferences, idStrategy, setOriginalIdProperty)
         }
     }
 

@@ -31,7 +31,6 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.loadFromHash
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
@@ -50,9 +49,6 @@ actual open class ReplicatedRepository actual constructor(
 ) {
     private val localBranch: IBranch
     private val localOTBranch: OTBranch
-
-    @Deprecated("MetaModelBranch is deprecated")
-    private val localMMBranch: IBranch
     private val mergeLock = Any()
     private val merger: VersionMerger
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
@@ -74,7 +70,7 @@ actual open class ReplicatedRepository actual constructor(
     actual val branch: IBranch
         get() {
             checkDisposed()
-            return localMMBranch
+            return localOTBranch
         }
 
     /**
@@ -267,7 +263,6 @@ actual open class ReplicatedRepository actual constructor(
         remoteVersion = initialVersion
         localBranch = PBranch(initialTree.value, client.idGenerator)
         localOTBranch = OTBranch(localBranch, client.idGenerator, store)
-        localMMBranch = MetaModelBranch(localOTBranch)
         merger = VersionMerger(store, client.idGenerator)
         versionChangeDetector = object : VersionChangeDetector(client, branchReference.getKey(), coroutineScope) {
             override fun processVersionChange(oldVersionHash: String?, newVersionHash: String?) {

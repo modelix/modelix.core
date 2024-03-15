@@ -16,7 +16,6 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.MapBaseStore
@@ -92,9 +91,7 @@ object ModelFacade {
         body: (IWriteTransaction) -> Unit,
     ): CLVersion {
         val otBranch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache)
-        MetaModelBranch(otBranch).computeWriteT { t ->
-            body(t)
-        }
+        otBranch.computeWriteT { t -> body(t) }
 
         val operationsAndTree = otBranch.operationsAndTree
         val newVersion = CLVersion.createRegularVersion(

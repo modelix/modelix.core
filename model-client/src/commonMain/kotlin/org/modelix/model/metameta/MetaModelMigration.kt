@@ -35,9 +35,6 @@ internal object MetaModelMigration {
     )
 
     fun useResolvedConceptsFromMetaModel(rawBranch: IBranch) {
-        require(rawBranch !is MetaModelBranch) {
-            "Pass the underlying branch and not the `MetaModelBranch` for migration."
-        }
         LOG.info { "Start migration for `$rawBranch`." }
         rawBranch.runWriteT { transaction ->
             val root = rawBranch.getRootNode()

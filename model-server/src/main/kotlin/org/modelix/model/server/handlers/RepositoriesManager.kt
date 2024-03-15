@@ -25,8 +25,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.apache.commons.collections4.map.LRUMap
-import org.modelix.model.IKeyValueStore
 import org.modelix.model.InMemoryModels
+import org.modelix.model.ModelMigrations
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IReadTransaction
@@ -40,7 +40,6 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
-import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.v2.toMap
@@ -55,25 +54,33 @@ import java.util.UUID
 class RepositoriesManager(val client: LocalModelClient) {
 
     init {
-        fun migrateLegacyRepositoriesList() {
-            val legacyRepositories = listLegacyRepositories().groupBy { it.repositoryId }
+        fun migrateLegacyRepositoriesList(infoBranch: IBranch) {
+            val legacyRepositories = listLegacyRepositories(infoBranch).groupBy { it.repositoryId }
             if (legacyRepositories.isNotEmpty()) {
                 // To not use `runTransactionSuspendable` like everywhere else,
                 // because this is blocking initialization code anyways.
-                store.runTransaction {
-                    ensureRepositoriesAreInList(legacyRepositories.keys)
-                    for ((legacyRepository, legacyBranches) in legacyRepositories) {
-                        ensureBranchesAreInList(legacyRepository, legacyBranches.map { it.branchName }.toSet())
-                    }
+                ensureRepositoriesAreInList(legacyRepositories.keys)
+                for ((legacyRepository, legacyBranches) in legacyRepositories) {
+                    ensureBranchesAreInList(legacyRepository, legacyBranches.map { it.branchName }.toSet())
                 }
             }
         }
 
-        migrateLegacyRepositoriesList()
+        fun doMigrations() {
+            store.runTransaction {
+                val infoVersionHash = client[RepositoryId("info").getBranchReference().getKey()] ?: return@runTransaction
+                val infoVersion = CLVersion(infoVersionHash, client.storeCache)
+                val infoBranch: IBranch = PBranch(infoVersion.getTree(), IdGeneratorDummy())
+
+                ModelMigrations.useResolvedConceptsFromMetaModel(infoBranch)
+                migrateLegacyRepositoriesList(infoBranch)
+            }
+        }
+
+        doMigrations()
     }
 
     private val store: IStoreClient get() = client.store
-    private val kvStore: IKeyValueStore get() = client.asyncStore
     private val objectStore: IDeserializingKeyValueStore get() = client.storeCache
     val inMemoryModels = InMemoryModels()
 
@@ -353,11 +360,8 @@ class RepositoriesManager(val client: LocalModelClient) {
 
     private fun branchListKey(repositoryId: RepositoryId) = "$KEY_PREFIX:repositories:${repositoryId.id}:branches"
 
-    private fun listLegacyRepositories(): Set<BranchReference> {
+    private fun listLegacyRepositories(infoBranch: IBranch): Set<BranchReference> {
         val result: MutableSet<BranchReference> = HashSet()
-        val infoVersionHash = client[RepositoryId("info").getBranchReference().getKey()] ?: return emptySet()
-        val infoVersion = CLVersion(infoVersionHash, client.storeCache)
-        val infoBranch: IBranch = MetaModelBranch(PBranch(infoVersion.getTree(), IdGeneratorDummy()))
         infoBranch.runReadT { t: IReadTransaction ->
             for (infoNodeId in t.getChildren(ITree.ROOT_ID, "info")) {
                 for (repositoryNodeId in t.getChildren(infoNodeId, "repositories")) {

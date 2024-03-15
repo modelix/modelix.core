@@ -29,6 +29,7 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
+import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
@@ -215,5 +216,25 @@ class ModelClientV2Test {
             }
         }
         checkAllReferencedEntriesExistInStore(versionPulled.data!!)
+    }
+
+    @Test
+    fun `writing no data does not create empty versions`() = runTest {
+        // Arrange
+        val url = "http://localhost/v2"
+        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val repositoryId = RepositoryId("repo1")
+        val branchId = repositoryId.getBranchReference("master")
+        modelClient.initRepository(repositoryId)
+        val versionAfterBeforeWrite = modelClient.pullIfExists(branchId)!!
+
+        // Act
+        modelClient.runWriteOnBranch(branchId) {
+            // do nothing
+        }
+
+        // Assert
+        val versionAfterRunWrite = modelClient.pullIfExists(branchId)!!
+        assertEquals(versionAfterBeforeWrite.getContentHash(), versionAfterRunWrite.getContentHash())
     }
 }

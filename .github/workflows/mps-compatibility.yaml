@@ -16,10 +16,10 @@ jobs:
     strategy:
       matrix:
         version:
-          - "2020.3.6"
-          - "2021.1.4"
-          - "2021.2.6"
-          - "2021.3.3"
+#          - "2020.3.6" # not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
+          - "2021.1"
+          - "2021.2"
+          - "2021.3"
           - "2022.2"
           - "2022.3"
           - "2023.2"
@@ -40,4 +40,4 @@ jobs:
           :metamodel-export:build
           :mps-model-adapters:build
           :mps-model-server-plugin:build
-          -Pmps.version=${{ matrix.version }}
+          -Pmps.version.major=${{ matrix.version }}

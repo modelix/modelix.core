@@ -222,6 +222,7 @@ interface INode {
     fun moveChild(role: IChildLink, index: Int, child: INode) = moveChild(role.key(this), index, child)
     fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode = addNewChild(role.key(this), index, concept)
     fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode = addNewChild(role.key(this), index, concept)
+    fun addNewChild(role: IChildLink, index: Int, templateNode: INode): INode = addNewChild(role, index, templateNode.concept)
     fun getReferenceTarget(link: IReferenceLink): INode? = getReferenceTarget(link.key(this))
     fun setReferenceTarget(link: IReferenceLink, target: INode?) = setReferenceTarget(link.key(this), target)
     fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) = setReferenceTarget(role.key(this), target)

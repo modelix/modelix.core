@@ -6,9 +6,14 @@ val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.is
 
 val mpsZip by configurations.creating
 
+kotlin {
+    jvmToolchain(11)
+}
+
 dependencies {
     implementation(project(":bulk-model-sync-lib"))
     implementation(project(":mps-model-adapters"))
+    implementation(project(":model-client", configuration = "jvmRuntimeElements"))
 
     mpsZip("com.jetbrains:mps:$mpsVersion")
     compileOnly(

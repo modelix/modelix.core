@@ -27,18 +27,28 @@ import jetbrains.mps.smodel.language.ConceptRegistry
 import jetbrains.mps.smodel.language.StructureRegistry
 import jetbrains.mps.smodel.runtime.ConceptDescriptor
 import jetbrains.mps.smodel.runtime.illegal.IllegalConceptDescriptor
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
+import org.modelix.model.api.ITreeChangeVisitorEx
+import org.modelix.model.api.TreePointer
+import org.modelix.model.api.ancestorsAndSelf
+import org.modelix.model.api.getRootNode
+import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.lazyLoadVersion
 import org.modelix.model.data.ModelData
+import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.sync.bulk.ExistingAndExpectedNode
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.ModelImporter
+import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.isModuleIncluded
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
@@ -129,6 +139,118 @@ object MPSBulkSynchronizer {
 
                 println("Import finished.")
             }
+        }
+
+        ApplicationManager.getApplication().invokeAndWait {
+            println("Persisting changes...")
+            repository.modelAccess.runWriteAction {
+                enableWorkaroundForFilePerRootPersistence(repository)
+                repository.saveAll()
+            }
+            println("Changes persisted.")
+        }
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    @JvmStatic
+    fun importRepositoryFromModelServer() {
+        val repository = getRepository()
+
+        val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules"))
+        val includedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.prefixes"))
+        val continueOnError = System.getProperty("modelix.mps.model.sync.bulk.input.continueOnError", "false").toBoolean()
+
+        val modelServerUrl = System.getProperty("modelix.mps.model.sync.bulk.server.url")
+        val repositoryId = RepositoryId(requireNotNull(System.getProperty("modelix.mps.model.sync.bulk.server.repository")) { "modelix.mps.model.sync.bulk.server.repository not specified" })
+        val branchName = System.getProperty("modelix.mps.model.sync.bulk.server.branch")
+        val branchRef = repositoryId.getBranchReference(branchName)
+        val versionHash: String? = System.getProperty("modelix.mps.model.sync.bulk.server.version.hash")
+        val baseVersionHash: String? = System.getProperty("modelix.mps.model.sync.bulk.server.version.base.hash")
+        val client = ModelClientV2.builder().url(modelServerUrl).build()
+        val version = runBlocking {
+            if (versionHash == null) client.lazyLoadVersion(branchRef) else client.lazyLoadVersion(repositoryId, versionHash)
+        }
+        val baseVersion = baseVersionHash?.let {
+            runBlocking {
+                client.lazyLoadVersion(repositoryId, it)
+            }
+        }
+        println("Loading version ${version.getContentHash()}")
+
+        val access = repository.modelAccess
+        access.executeCommandInEDT {
+            if (baseVersion != null) {
+                val invalidationTree = InvalidationTree(1_000_000)
+                val newTree = version.getTree()
+                fun ancestorsAsArray(nodeId: Long) = newTree.ancestorsAndSelf(nodeId).toList().asReversed().toLongArray()
+                newTree.visitChanges(baseVersion.getTree(), object : ITreeChangeVisitorEx {
+                    override fun containmentChanged(nodeId: Long) {
+                        // Containment can only change if also the children of the parent changed.
+                        // Synchronizing the parent will automatically update the containment of the children.
+                    }
+
+                    override fun childrenChanged(nodeId: Long, role: String?) {
+                        invalidationTree.invalidate(ancestorsAsArray(nodeId))
+                    }
+
+                    override fun referenceChanged(nodeId: Long, role: String) {
+                        invalidationTree.invalidate(ancestorsAsArray(nodeId))
+                    }
+
+                    override fun propertyChanged(nodeId: Long, role: String) {
+                        invalidationTree.invalidate(ancestorsAsArray(nodeId))
+                    }
+
+                    override fun nodeRemoved(nodeId: Long) {
+                        // same reason as in containmentChanged
+                    }
+
+                    override fun nodeAdded(nodeId: Long) {
+                        invalidationTree.invalidate(ancestorsAsArray(nodeId))
+                    }
+                })
+                val treePointer = TreePointer(newTree)
+                treePointer.runRead {
+                    ModelSynchronizer(
+                        invalidationTree,
+                        treePointer.getRootNode(),
+                        MPSRepositoryAsNode(repository),
+                        NodeAssociationFromMPS2Server(true, MPSArea(repository), treePointer)
+                    ).synchronize()
+                }
+            }
+
+            val allModules = repository.modules
+            val includedModules: Iterable<SModule> = allModules.filter {
+                isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
+            }
+            val numIncludedModules = includedModules.count()
+            val repoAsNode = MPSRepositoryAsNode(repository)
+            println("Importing modules...")
+            try {
+                println("Importing modules...")
+                // `modulesToImport` lazily produces modules to import
+                // so that loaded model data can be garbage collected.
+                val modulesToImport = includedModules.asSequence().flatMapIndexed { index, module ->
+                    println("Importing module ${index + 1} of $numIncludedModules: '${module.moduleName}'")
+                    val fileName = inputPath + File.separator + module.moduleName + ".json"
+                    val moduleFile = File(fileName)
+                    if (moduleFile.exists()) {
+                        val expectedData: ModelData = moduleFile.inputStream().use(Json::decodeFromStream)
+                        sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module), expectedData))
+                    } else {
+                        println("Skip importing ${module.moduleName}} because $fileName does not exist.")
+                        sequenceOf()
+                    }
+                }
+                ModelImporter(repoAsNode, continueOnError).importIntoNodes(modulesToImport)
+                println("Import finished.")
+            } catch (ex: Exception) {
+                // Exceptions are only visible in the MPS log file by default
+                ex.printStackTrace()
+            }
+
+            println("Import finished.")
         }
 
         ApplicationManager.getApplication().invokeAndWait {

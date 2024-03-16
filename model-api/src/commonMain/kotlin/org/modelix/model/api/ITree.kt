@@ -282,3 +282,7 @@ interface ITree {
  *          the role name otherwise
  */
 fun IRole.key(tree: ITree): String = if (tree.usesRoleIds()) getUID() else getSimpleName()
+
+fun ITree.ancestorsAndSelf(nodeId: Long): Sequence<Long> {
+    return generateSequence(nodeId) { getParent(it).takeIf { it != 0L } }
+}

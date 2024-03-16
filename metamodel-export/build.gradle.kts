@@ -1,4 +1,6 @@
+import org.gradle.internal.jvm.Jvm
 import org.modelix.gradle.mpsbuild.MPSBuildSettings
+import org.modelix.mpsHomeDir
 
 plugins {
     base
@@ -6,8 +8,6 @@ plugins {
 }
 
 group = "org.modelix.mps"
-
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2021.1.4"
 
 val generatorLibs by configurations.creating
 
@@ -33,8 +33,8 @@ val copyLibs by tasks.registering(Sync::class) {
 }
 
 extensions.configure<MPSBuildSettings> {
+    mpsHome(mpsHomeDir.get().asFile.absolutePath)
     dependsOn(copyLibs)
-    mpsVersion(mpsVersion)
     search(".")
     disableParentPublication()
 

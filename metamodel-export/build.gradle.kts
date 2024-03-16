@@ -33,6 +33,7 @@ val copyLibs by tasks.registering(Sync::class) {
 }
 
 extensions.configure<MPSBuildSettings> {
+    javaHome = Jvm.current().javaHome
     mpsHome(mpsHomeDir.get().asFile.absolutePath)
     dependsOn(copyLibs)
     search(".")

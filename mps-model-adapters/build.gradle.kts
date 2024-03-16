@@ -1,18 +1,16 @@
+import org.modelix.mpsHomeDir
+
 plugins {
     kotlin("jvm")
     `maven-publish`
 }
 
-val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2021.1.4"
-
 dependencies {
     api(project(":model-api"))
     implementation(libs.modelix.incremental)
 
-    val mpsZip by configurations.creating
-    mpsZip("com.jetbrains:mps:$mpsVersion")
     compileOnly(
-        zipTree({ mpsZip.singleFile }).matching {
+        fileTree(mpsHomeDir).matching {
             include("lib/*.jar")
         },
     )

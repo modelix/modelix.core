@@ -126,6 +126,9 @@ subprojects {
 
     subproject.plugins.withType<JavaPlugin> {
         subproject.extensions.configure<JavaPluginExtension> {
+            toolchain {
+                languageVersion.set(JavaLanguageVersion.of(11))
+            }
             sourceCompatibility = JavaVersion.VERSION_11
             targetCompatibility = JavaVersion.VERSION_11
         }
@@ -133,6 +136,7 @@ subprojects {
 
     subproject.plugins.withType<KotlinPlatformJvmPlugin> {
         subproject.extensions.configure<KotlinJvmProjectExtension> {
+            jvmToolchain(11)
             compilerOptions {
                 jvmTarget.set(JvmTarget.JVM_11)
             }
@@ -141,6 +145,7 @@ subprojects {
 
     subproject.plugins.withType<KotlinMultiplatformPluginWrapper> {
         subproject.extensions.configure<KotlinMultiplatformExtension> {
+            jvmToolchain(11)
             sourceSets.all {
                 if (!name.lowercase().contains("test")) {
                     languageSettings {

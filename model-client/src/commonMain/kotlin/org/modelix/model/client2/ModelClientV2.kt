@@ -542,6 +542,9 @@ suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body
         body(branch)
     }
     val (ops, newTree) = branch.getPendingChanges()
+    if (ops.isEmpty()) {
+        return result
+    }
     val newVersion = CLVersion.createRegularVersion(
         id = client.getIdGenerator().generate(),
         author = client.getUserId(),

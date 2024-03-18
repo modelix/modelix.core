@@ -3,13 +3,14 @@ The modelix project develops an open source platform for (meta-)models on the we
 
 For general information on modelix, please refer to the [official modelix homepage](https://modelix.org) as well as the [platform documentation](https://docs.modelix.org).
 
-For individual component specific documentation, see https://docs.modelix.org/modelix/latest/reference/components.html
+A list of individual components and links to component-specific documentation can be found [in our documentation](https://docs.modelix.org/modelix/main/reference/components-table.html).
 
 # modelix.core
 
 This repository contains the core components of the modelix platform.
 All components in this repository have no dependencies to JetBrains MPS.
-If you are looking for MPS related modelix components, see https://github.com/modelix/modelix.
+If you are looking for MPS-related modelix components,
+see https://github.com/modelix/modelix.mps and https://github.com/modelix/modelix.mps-plugins.
 
 
 ## Development

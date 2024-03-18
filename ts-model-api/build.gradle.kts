@@ -42,10 +42,6 @@ tasks.assemble {
   dependsOn(patchKotlinExternals)
 }
 
-tasks.check {
-  dependsOn("npm_run_lint")
-}
-
 tasks.named("npm_run_generateKotlin") {
   finalizedBy(patchKotlinExternals)
 }

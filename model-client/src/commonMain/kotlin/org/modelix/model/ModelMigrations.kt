@@ -21,6 +21,7 @@ import org.modelix.model.area.PArea
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.PrefetchCache
 import org.modelix.model.lazy.unwrap
+import org.modelix.model.metameta.MetaModelMigration
 
 object ModelMigrations {
 
@@ -45,5 +46,19 @@ object ModelMigrations {
         for (child in t.getAllChildren(node)) {
             useCanonicalReferences(t, area, child)
         }
+    }
+
+    /**
+     * Migrates data created with a metamodel to data
+     * that is readable without the metamodel.
+     *
+     * The migration is skipped if no metamodel information exists.
+     * In a migration, the concept references of all nodes that relied on metamodel information to be resolved
+     * are changed to concept references that do not need the metamodel.
+     * In a migration, nodes are recreated with the same ID.
+     * After the migration, the metamodel is kept for future reference.
+     */
+    fun useResolvedConceptsFromMetaModel(rawBranch: IBranch) {
+        MetaModelMigration.useResolvedConceptsFromMetaModel(rawBranch)
     }
 }

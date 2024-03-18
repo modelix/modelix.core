@@ -13,6 +13,11 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # Cf. https://github.com/marketplace/actions/publish-test-results#permissions
+    permissions:
+      checks: write
+      pull-requests: write
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 11
@@ -26,8 +31,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --build-cache build detekt -PciBuild=true
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Also report in case the build failed
+        if: always()
+        with:
+          files: |
+            **/test-results/**/*.xml
       - name: Archive test report
         uses: actions/upload-artifact@v4
+        # Archive test reports for introspection even if the build failed. They are most useful in this situation.
         if: always()
         with:
           name: test-report

@@ -18,6 +18,7 @@ import mu.KotlinLogging
 import org.apache.ignite.Ignite
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.Ignition
+import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IKeyListener
 import org.modelix.model.persistent.HashUtil
 import java.io.File
@@ -29,6 +30,7 @@ import java.util.stream.Collectors
 private val LOG = KotlinLogging.logger { }
 
 class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) : IStoreClient, AutoCloseable {
+
     private val ENTRY_CHANGED_TOPIC = "entryChanged"
     private lateinit var ignite: Ignite
     private val cache: IgniteCache<String, String?>
@@ -38,7 +40,7 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
     }
 
     /**
-     * Istantiate an IgniteStoreClient
+     * Instantiate an IgniteStoreClient
      *
      * @param jdbcConfFile adopt the configuration specified. If it is not specified, configuration
      * from ignite.xml is used
@@ -137,10 +139,11 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
         val transactions = ignite.transactions()
         if (transactions.tx() == null) {
             transactions.txStart().use { tx ->
-                val result = body()
-                tx.commit()
-                pendingChangeMessages.flushChangeMessages()
-                return result
+                return pendingChangeMessages.runAndFlush {
+                    val result = body()
+                    tx.commit()
+                    result
+                }
             }
         } else {
             // already in a transaction
@@ -158,19 +161,20 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
 }
 
 class PendingChangeMessages(private val notifier: (String) -> Unit) {
-    private val pendingChangeMessages = Collections.synchronizedSet(HashSet<String>())
+    private val pendingChangeMessages = ContextValue<MutableSet<String>>()
 
-    @Synchronized
-    fun flushChangeMessages() {
-        for (pendingChangeMessage in pendingChangeMessages) {
-            notifier(pendingChangeMessage)
+    fun <R> runAndFlush(body: () -> R): R {
+        val messages = HashSet<String>()
+        return pendingChangeMessages.computeWith(messages) {
+            val result = body()
+            messages.forEach { notifier(it) }
+            result
         }
-        pendingChangeMessages.clear()
     }
 
-    @Synchronized
     fun entryChanged(key: String) {
-        pendingChangeMessages += key
+        val messages = checkNotNull(pendingChangeMessages.getValueOrNull()) { "Only allowed inside PendingChangeMessages.runAndFlush" }
+        messages.add(key)
     }
 }
 

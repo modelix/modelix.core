@@ -100,14 +100,15 @@ class InMemoryStoreClient : IStoreClient {
     @Synchronized
     override fun <T> runTransaction(body: () -> T): T {
         if (transactionValues == null) {
-            try {
-                transactionValues = HashMap()
-                val result = body()
-                values.putAll(transactionValues!!)
-                return result
-            } finally {
-                transactionValues = null
-                pendingChangeMessages.flushChangeMessages()
+            return pendingChangeMessages.runAndFlush {
+                try {
+                    transactionValues = HashMap()
+                    val result = body()
+                    values.putAll(transactionValues!!)
+                    result
+                } finally {
+                    transactionValues = null
+                }
             }
         } else {
             return body()

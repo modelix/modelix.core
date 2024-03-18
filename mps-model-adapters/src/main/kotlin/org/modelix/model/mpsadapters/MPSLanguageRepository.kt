@@ -20,7 +20,6 @@ import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.smodel.language.ConceptRegistry
 import jetbrains.mps.smodel.language.LanguageRegistry
-import jetbrains.mps.smodel.runtime.illegal.IllegalConceptDescriptor
 import org.jetbrains.mps.openapi.language.SAbstractConcept
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.IConcept
@@ -38,8 +37,6 @@ data class MPSLanguageRepository(private val repository: SRepository) : ILanguag
         } catch (e: NumberFormatException) { return null } ?: return null // in case the id cannot be parsed
 
         val conceptDescriptor = ConceptRegistry.getInstance().getConceptDescriptor(conceptId)
-
-        if (conceptDescriptor is IllegalConceptDescriptor) return null
 
         return MPSConcept(MetaAdapterFactory.getAbstractConcept(conceptDescriptor))
     }

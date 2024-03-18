@@ -95,45 +95,42 @@ object MPSBulkSynchronizer {
 
         println("Found ${jsonFiles.size} modules to be imported")
         val access = repository.modelAccess
-        access.runWriteInEDT {
+        access.executeCommandInEDT {
             val allModules = repository.modules
             val includedModules: Iterable<SModule> = allModules.filter {
                 isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
             }
             val numIncludedModules = includedModules.count()
-            access.executeCommand {
-                val repoAsNode = MPSRepositoryAsNode(repository)
+            val repoAsNode = MPSRepositoryAsNode(repository)
+            println("Importing modules...")
+            try {
                 println("Importing modules...")
-                try {
-                    println("Importing modules...")
-                    // `modulesToImport` lazily produces modules to import
-                    // so that loaded model data can be garbage collected.
-                    val modulesToImport = includedModules.asSequence().flatMapIndexed { index, module ->
-                        println("Importing module ${index + 1} of $numIncludedModules: '${module.moduleName}'")
-                        val fileName = inputPath + File.separator + module.moduleName + ".json"
-                        val moduleFile = File(fileName)
-                        if (moduleFile.exists()) {
-                            val expectedData: ModelData = moduleFile.inputStream().use(Json::decodeFromStream)
-                            sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module), expectedData))
-                        } else {
-                            println("Skip importing ${module.moduleName}} because $fileName does not exist.")
-                            sequenceOf()
-                        }
+                // `modulesToImport` lazily produces modules to import
+                // so that loaded model data can be garbage collected.
+                val modulesToImport = includedModules.asSequence().flatMapIndexed { index, module ->
+                    println("Importing module ${index + 1} of $numIncludedModules: '${module.moduleName}'")
+                    val fileName = inputPath + File.separator + module.moduleName + ".json"
+                    val moduleFile = File(fileName)
+                    if (moduleFile.exists()) {
+                        val expectedData: ModelData = moduleFile.inputStream().use(Json::decodeFromStream)
+                        sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module), expectedData))
+                    } else {
+                        println("Skip importing ${module.moduleName}} because $fileName does not exist.")
+                        sequenceOf()
                     }
-                    ModelImporter(repoAsNode, continueOnError).importIntoNodes(modulesToImport)
-                    println("Import finished.")
-                } catch (ex: Exception) {
-                    // Exceptions are only visible in the MPS log file by default
-                    ex.printStackTrace()
                 }
-
+                ModelImporter(repoAsNode, continueOnError).importIntoNodes(modulesToImport)
                 println("Import finished.")
+            } catch (ex: Exception) {
+                // Exceptions are only visible in the MPS log file by default
+                ex.printStackTrace()
             }
+            println("Import finished.")
         }
 
         ApplicationManager.getApplication().invokeAndWait {
             println("Persisting changes...")
-            repository.modelAccess.runWriteAction {
+            access.executeCommandInEDT {
                 enableWorkaroundForFilePerRootPersistence(repository)
                 repository.saveAll()
             }

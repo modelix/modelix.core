@@ -185,8 +185,10 @@ class ModelImporter(
                     .forEach { (newChild, expected) ->
                         val expectedId = expected.originalId()
                         checkNotNull(expectedId) { "Specified node '$expected' has no ID." }
-                        newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
-                        originalIdToExisting[expectedId] = newChild.reference
+                        if (newChild.originalId() == null) {
+                            newChild.setPropertyValue(NodeData.ID_PROPERTY_KEY, expectedId)
+                        }
+                        originalIdToExisting[newChild.originalId() ?: expectedId] = newChild.reference
                         syncNode(newChild, expected, progressReporter)
                     }
                 continue
@@ -200,6 +202,8 @@ class ModelImporter(
             }
 
             val isOrdered = existingParent.isChildRoleOrdered(role)
+
+            val newlyCreatedIds = mutableSetOf<String>()
 
             expectedNodes.forEachIndexed { indexInImport, expected ->
                 val existingChildren = existingParent.getChildren(role).toList()
@@ -224,7 +228,10 @@ class ModelImporter(
                     val existingNodeReference = originalIdToExisting[expectedId]
                     if (existingNodeReference == null) {
                         val newChild = existingParent.addNewChild(role, newIndex, expectedConcept)
-                        newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                        if (newChild.originalId() == null) {
+                            newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
+                        }
+                        newChild.originalId()?.let { newlyCreatedIds.add(it) }
                         originalIdToExisting[expectedId] = newChild.reference
                         newChild
                     } else {
@@ -253,7 +260,10 @@ class ModelImporter(
             val expectedNodesIds = expectedNodes.map(NodeData::originalId).toSet()
             // Do not use existingNodes, but call node.getChildren(role) because
             // the recursive synchronization in the meantime already removed some nodes from node.getChildren(role).
-            nodesToRemove += existingParent.getChildren(role).filterNot { existingNode -> expectedNodesIds.contains(existingNode.originalId()) }
+            nodesToRemove += existingParent.getChildren(role).filterNot { existingNode ->
+                val id = existingNode.originalId()
+                expectedNodesIds.contains(id) || newlyCreatedIds.contains(id)
+            }
         }
     }
 

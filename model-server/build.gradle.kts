@@ -114,9 +114,18 @@ val cucumber = task("cucumber") {
         javaexec {
             mainClass.set("io.cucumber.core.cli.Main")
             classpath = cucumberRuntime + sourceSets.main.get().output + sourceSets.test.get().output
-            // Change glue for your project package where the step definitions are.
-            // And where the feature files are.
-            args = listOf("--plugin", "pretty", "--glue", "org.modelix.model.server.functionaltests", "src/test/resources/functionaltests")
+            args = listOf(
+                "--plugin",
+                "pretty",
+                // Enable junit reporting so that GitHub actions can report on these tests, too
+                "--plugin",
+                "junit:${project.layout.buildDirectory.dir("test-results/cucumber.xml").get()}",
+                // Change glue for your project package where the step definitions are.
+                "--glue",
+                "org.modelix.model.server.functionaltests",
+                // Specify where the feature files are.
+                "src/test/resources/functionaltests",
+            )
         }
     }
 }

@@ -197,7 +197,10 @@ class ModelImporter(
             // optimization for when there is no change in the child list
             // size check first to avoid querying the original ID
             if (expectedNodes.size == existingNodes.size && expectedNodes.map { it.originalId() } == existingNodes.map { it.originalId() }) {
-                existingNodes.zip(expectedNodes).forEach { syncNode(it.first, it.second, progressReporter) }
+                existingNodes.zip(expectedNodes).forEach {
+                    checkAndHandleConceptChange(it.first, it.second)
+                    syncNode(it.first, it.second, progressReporter)
+                }
                 continue
             }
 
@@ -252,8 +255,7 @@ class ModelImporter(
                 } else {
                     nodeAtIndex
                 }
-                check(childNode.getConceptReference() == expectedConcept) { "Unexpected concept change" }
-
+                checkAndHandleConceptChange(childNode, expected)
                 syncNode(childNode, expected, progressReporter)
             }
 
@@ -265,6 +267,15 @@ class ModelImporter(
                 expectedNodesIds.contains(id) || newlyCreatedIds.contains(id)
             }
         }
+    }
+
+    private fun checkAndHandleConceptChange(existingNode: INode, expectedNode: NodeData) {
+        val newConcept = expectedNode.concept?.let { ConceptReference(it) }
+        if (existingNode.getConceptReference() == newConcept) {
+            return
+        }
+        requireNotNull(newConcept) { "Unexpected null concept" }
+        existingNode.replaceNode(newConcept)
     }
 
     private fun buildExistingIndex(): MutableMap<String, INodeReference> {

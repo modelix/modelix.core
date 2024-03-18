@@ -18,26 +18,22 @@ package org.modelix.mps.sync.plugin.listeners
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.project.Project
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class MPSSynchronizationAppLifecycleListener : AppLifecycleListener {
 
-    private val logger = logger<MPSSynchronizationAppLifecycleListener>()
+    private val logger = KotlinLogging.logger {}
 
 //    not supported in MPS >= 2022.3
 //    override fun appStarting(projectFromCommandLine: Project?) {
 //        service<ModelSyncService>().ensureStarted()
 //    }
 
-    override fun appStarting(project: Project?) {
-    }
-
     override fun appStarted() {
-        logger.info("============================================ app started")
+        logger.info { "============================================ app started" }
         service<ModelSyncService>().ensureStarted()
     }
 }

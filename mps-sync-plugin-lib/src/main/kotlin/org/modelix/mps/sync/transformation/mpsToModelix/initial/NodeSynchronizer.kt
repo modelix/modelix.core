@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.transformation.mpsToModelix.initial
 
 import org.jetbrains.mps.openapi.language.SConcept
-import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -31,23 +30,24 @@ import org.modelix.model.api.getNode
 import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
-import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.SyncLock
-import org.modelix.mps.sync.util.SyncQueue
 import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeSynchronizer(
     private val branch: IBranch,
-    private val nodeMap: MpsToModelixMap,
-    private val syncQueue: SyncQueue,
-    private val resolvableReferences: MutableList<CloudResolvableReference>? = null,
+    private val resolvableReferences: MutableCollection<CloudResolvableReference>? = null,
 ) {
 
-    fun addNode(node: SNode) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
+    private val nodeMap = MpsToModelixMap
+    private val syncQueue = SyncQueue
+
+    fun addNode(node: SNode) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val parentNodeId = if (node.parent != null) {
                 nodeMap[node.parent]!!
             } else {
@@ -70,7 +70,6 @@ class NodeSynchronizer(
 
             synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
         }
-    }
 
     private fun synchronizeNodeToCloud(
         mpsConcept: SConcept,
@@ -121,53 +120,31 @@ class NodeSynchronizer(
         cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
     }
 
-    fun setProperty(mpsProperty: SProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) =
-        setProperty(MPSProperty(mpsProperty), newValue, sourceNodeIdProducer)
-
-    fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), true) {
-            runSetPropertyAction(property, newValue, sourceNodeIdProducer)
+    fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX) {
+            val nodeId = sourceNodeIdProducer.invoke(nodeMap)
+            val cloudNode = branch.getNode(nodeId)
+            cloudNode.setPropertyValue(property, newValue)
         }
-    }
 
-    /**
-     * WARNING: call this method only in a SyncTask, otherwise the necessary Modelix write transaction is missing
-     */
-    fun runSetPropertyAction(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) {
-        val nodeId = sourceNodeIdProducer.invoke(nodeMap)
-        val cloudNode = branch.getNode(nodeId)
-        cloudNode.setPropertyValue(property, newValue)
-    }
+    fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), SyncDirection.MPS_TO_MODELIX) {
+            val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
+            val nodeId = childNodeIdProducer.invoke(nodeMap)
 
-    fun removeNode(parentNodeIdProducer: (MpsToModelixMap) -> Long, childNodeIdProducer: (MpsToModelixMap) -> Long) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE), true) {
-            runRemoveNodeAction(parentNodeIdProducer, childNodeIdProducer)
+            val cloudParentNode = branch.getNode(parentNodeId)
+            val cloudChildNode = branch.getNode(nodeId)
+            cloudParentNode.removeChild(cloudChildNode)
+
+            nodeMap.remove(nodeId)
         }
-    }
-
-    /**
-     * WARNING: call this method only in a SyncTask, otherwise the necessary Modelix write transaction is missing
-     */
-    fun runRemoveNodeAction(
-        parentNodeIdProducer: (MpsToModelixMap) -> Long,
-        childNodeIdProducer: (MpsToModelixMap) -> Long,
-    ) {
-        val parentNodeId = parentNodeIdProducer.invoke(nodeMap)
-        val nodeId = childNodeIdProducer.invoke(nodeMap)
-
-        val cloudParentNode = branch.getNode(parentNodeId)
-        val cloudChildNode = branch.getNode(nodeId)
-        cloudParentNode.removeChild(cloudChildNode)
-
-        nodeMap.remove(nodeId)
-    }
 
     fun setReference(
         mpsReferenceLink: SReferenceLink,
         sourceNodeIdProducer: (MpsToModelixMap) -> Long,
         targetNodeIdProducer: (MpsToModelixMap) -> Long?,
     ) {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), true) {
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val sourceNodeId = sourceNodeIdProducer.invoke(nodeMap)
             val targetNodeId = targetNodeIdProducer.invoke(nodeMap)
             val reference = MPSReferenceLink(mpsReferenceLink)
@@ -179,12 +156,9 @@ class NodeSynchronizer(
     }
 
     fun resolveReferences() {
-        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE)) {
-            resolvableReferences?.forEach { setReferenceInTheCloud(it.sourceNode, it.referenceLink, it.mpsTargetNode) }
-        }
+        resolvableReferences?.forEach { setReferenceInTheCloud(it.sourceNode, it.referenceLink, it.mpsTargetNode) }
+        resolvableReferences?.clear()
     }
-
-    fun clearResolvableReferences() = resolvableReferences?.clear()
 }
 
 @UnstableModelixFeature(

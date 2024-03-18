@@ -19,15 +19,13 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.project.AbstractModule
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
-import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleSyncAction : AnAction {
@@ -38,7 +36,7 @@ class ModuleSyncAction : AnAction {
         fun create() = ModuleSyncAction("Synchronize module to server")
     }
 
-    private val logger = logger<ModuleSyncAction>()
+    private val logger = KotlinLogging.logger {}
 
     constructor() : super()
 
@@ -47,10 +45,17 @@ class ModuleSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-            val branch = ReplicatedModelRegistry.model!!.getBranch()
-            ModuleSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModule(module)
+
+            val binding = BindingsRegistry.getModuleBinding(module)
+            require(binding == null) { "Module is already synchronized to server." }
+
+            val replicatedModel = ReplicatedModelRegistry.model
+            require(replicatedModel != null) { "Synchronization to server has not been established yet" }
+
+            val branch = replicatedModel.getBranch()
+            ModuleSynchronizer(branch).addModuleAndActivate(module)
         } catch (ex: Exception) {
-            logger.error("Module sync error occurred", ex)
+            logger.error(ex) { "Module sync error occurred" }
         }
     }
 }

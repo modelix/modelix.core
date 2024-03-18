@@ -44,6 +44,8 @@ interface INode {
      */
     val concept: IConcept?
 
+    fun tryGetConcept(): IConcept? = getConceptReference()?.tryResolve()
+
     /**
      * Role of this node in its parent node if it exists,or null otherwise.
      */
@@ -329,11 +331,7 @@ fun INode.resolveProperty(role: String): IProperty {
  *         or null, if this concept has no child link or an exception was thrown during concept resolution
  */
 fun INode.tryResolveChildLink(role: String): IChildLink? {
-    val c = try {
-        this.concept ?: return null
-    } catch (e: RuntimeException) {
-        return null
-    }
+    val c = this.tryGetConcept() ?: return null
     val allLinks = c.getAllChildLinks()
     return allLinks.find { it.key(this) == role }
         ?: allLinks.find { it.getSimpleName() == role }
@@ -350,11 +348,7 @@ fun INode.resolveChildLinkOrFallback(role: String?): IChildLink {
  *         or null, if this node has no reference link or an exception was thrown during concept resolution
  */
 fun INode.tryResolveReferenceLink(role: String): IReferenceLink? {
-    val c = try {
-        this.concept ?: return null
-    } catch (e: RuntimeException) {
-        return null
-    }
+    val c = this.tryGetConcept() ?: return null
     val allLinks = c.getAllReferenceLinks()
     return allLinks.find { it.key(this) == role }
         ?: allLinks.find { it.getSimpleName() == role }
@@ -370,16 +364,27 @@ fun INode.resolveReferenceLinkOrFallback(role: String): IReferenceLink {
  *         or null, if this node has no concept or an exception was thrown during concept resolution
  */
 fun INode.tryResolveProperty(role: String): IProperty? {
-    val c = try {
-        this.concept ?: return null
-    } catch (e: RuntimeException) {
-        return null
-    }
+    val c = this.tryGetConcept() ?: return null
     val allLinks = c.getAllProperties()
     return allLinks.find { it.key(this) == role }
         ?: allLinks.find { it.getSimpleName() == role }
         ?: allLinks.find { it.getUID() == role }
 }
+
+/**
+ * Resolves whether the child link is ordered or not.
+ *
+ * Assume children to be ordered by default.
+ * Unordered children are the special case that can be declared by setting [[IChildLink.isOrdered]] to `false`.
+ */
+fun INode.isChildRoleOrdered(role: String?): Boolean {
+    return if (role == null) {
+        true
+    } else {
+        this.tryResolveChildLink(role)?.isOrdered ?: true
+    }
+}
+
 fun INode.resolvePropertyOrFallback(role: String): IProperty {
     return tryResolveProperty(role) ?: IProperty.fromName(role)
 }
@@ -402,4 +407,3 @@ fun INode.getContainmentLink() = if (this is INodeEx) {
 fun INode.getRoot(): INode = parent?.getRoot() ?: this
 fun INode.isInstanceOf(superConcept: IConcept?): Boolean = concept.let { it != null && it.isSubConceptOf(superConcept) }
 fun INode.isInstanceOfSafe(superConcept: IConcept): Boolean = tryGetConcept()?.isSubConceptOf(superConcept) ?: false
-fun INode.tryGetConcept(): IConcept? = getConceptReference()?.tryResolve()

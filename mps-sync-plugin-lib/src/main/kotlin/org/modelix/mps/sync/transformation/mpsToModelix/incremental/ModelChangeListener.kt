@@ -30,54 +30,56 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
-import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelChangeListener(
-    branch: IBranch,
-    nodeMap: MpsToModelixMap,
-    bindingsRegistry: BindingsRegistry,
-    syncQueue: SyncQueue,
-    private val binding: ModelBinding,
-) : SModelListener {
+class ModelChangeListener(branch: IBranch, private val binding: ModelBinding) : SModelListener {
 
-    private val modelSynchronizer = ModelSynchronizer(branch, nodeMap, bindingsRegistry, syncQueue)
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
+    private val modelSynchronizer = ModelSynchronizer(branch)
+    private val nodeSynchronizer = NodeSynchronizer(branch)
 
-    override fun importAdded(event: SModelImportEvent) = modelSynchronizer.addModelImport(event.model, event.modelUID)
+    override fun importAdded(event: SModelImportEvent) {
+        modelSynchronizer.addModelImport(event.model, event.modelUID)
+    }
 
-    override fun importRemoved(event: SModelImportEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { it[event.model]!! },
-        childNodeIdProducer = { it[event.model, event.modelUID]!! },
-    )
+    override fun importRemoved(event: SModelImportEvent) {
+        nodeSynchronizer.removeNode(
+            parentNodeIdProducer = { it[event.model]!! },
+            childNodeIdProducer = { it[event.model, event.modelUID]!! },
+        )
+    }
 
-    override fun languageAdded(event: SModelLanguageEvent) =
+    override fun languageAdded(event: SModelLanguageEvent) {
         modelSynchronizer.addLanguageDependency(event.model, event.eventLanguage)
+    }
 
-    override fun languageRemoved(event: SModelLanguageEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { it[event.model]!! },
-        childNodeIdProducer = { it[event.model, event.eventLanguage.sourceModuleReference]!! },
-    )
+    override fun languageRemoved(event: SModelLanguageEvent) {
+        nodeSynchronizer.removeNode(
+            parentNodeIdProducer = { it[event.model]!! },
+            childNodeIdProducer = { it[event.model, event.eventLanguage.sourceModuleReference]!! },
+        )
+    }
 
-    override fun devkitAdded(event: SModelDevKitEvent) =
+    override fun devkitAdded(event: SModelDevKitEvent) {
         modelSynchronizer.addDevKitDependency(event.model, event.devkitNamespace)
+    }
 
-    override fun devkitRemoved(event: SModelDevKitEvent) = nodeSynchronizer.removeNode(
-        parentNodeIdProducer = { it[event.model]!! },
-        childNodeIdProducer = { it[event.model, event.devkitNamespace]!! },
-    )
+    override fun devkitRemoved(event: SModelDevKitEvent) {
+        nodeSynchronizer.removeNode(
+            parentNodeIdProducer = { it[event.model]!! },
+            childNodeIdProducer = { it[event.model, event.devkitNamespace]!! },
+        )
+    }
 
-    override fun modelRenamed(event: SModelRenamedEvent) =
+    override fun modelRenamed(event: SModelRenamedEvent) {
         nodeSynchronizer.setProperty(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
             event.newName,
         ) { it[event.model]!! }
+    }
 
     override fun beforeModelDisposed(model: SModel) {
         if (!ApplicationLifecycleTracker.applicationClosing) {
@@ -122,4 +124,6 @@ class ModelChangeListener(
     override fun beforeModelRenamed(event: SModelRenamedEvent) {}
     override fun modelSaved(model: SModel) {}
     override fun modelLoadingStateChanged(model: SModel?, state: ModelLoadingState) {}
+
+    fun resolveModelImports() = modelSynchronizer.resolveModelImportsInTask()
 }

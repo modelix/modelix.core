@@ -19,15 +19,13 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.diagnostic.logger
 import jetbrains.mps.extapi.model.SModelBase
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
-import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncAction : AnAction {
@@ -38,7 +36,7 @@ class ModelSyncAction : AnAction {
         fun create() = ModelSyncAction("Synchronize model to server")
     }
 
-    private val logger = logger<ModelSyncAction>()
+    private val logger = KotlinLogging.logger {}
 
     constructor() : super()
 
@@ -47,11 +45,17 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-            val branch = ReplicatedModelRegistry.model!!.getBranch()
-            // TODO fixme: warn the user if the model imports another model that is not on the model server yet
-            ModelSynchronizer(branch, MpsToModelixMap, BindingsRegistry, SyncQueue).addModelAndActivate(model)
+
+            val binding = BindingsRegistry.getModelBinding(model)
+            require(binding == null) { "Model is already synchronized to server." }
+
+            val replicatedModel = ReplicatedModelRegistry.model
+            require(replicatedModel != null) { "Synchronization to server has not been established yet" }
+
+            val branch = replicatedModel.getBranch()
+            ModelSynchronizer(branch).addModelAndActivate(model)
         } catch (ex: Exception) {
-            logger.error("Model sync error occurred", ex)
+            logger.error(ex) { "Model sync error occurred" }
         }
     }
 }

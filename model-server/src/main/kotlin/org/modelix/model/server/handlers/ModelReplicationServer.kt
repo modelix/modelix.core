@@ -47,6 +47,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.api.public.Paths
 import org.modelix.authorization.getUserName
+import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
@@ -264,30 +265,39 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             TODO()
         }
 
-        post<Paths.postRepositoryBranchQuery> {
-            fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
-
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
-            val branchRef = branchRef()
+        post<Paths.postRepositoryBranchQuery> { parameters ->
+            val branchRef = RepositoryId(parameters.repository).getBranchReference(parameters.branch)
             val version = repositoriesManager.getVersion(branchRef)
+            LOG.trace("Running query on {} @ {}", branchRef, version)
             val initialTree = version!!.getTree()
-            val branch = OTBranch(PBranch(initialTree, repositoriesManager.client.idGenerator), repositoriesManager.client.idGenerator, repositoriesManager.client.storeCache)
-            ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
+            val branch = OTBranch(
+                PBranch(initialTree, repositoriesManager.client.idGenerator),
+                repositoriesManager.client.idGenerator,
+                repositoriesManager.client.storeCache,
+            )
 
-            val (ops, newTree) = branch.operationsAndTree
-            if (newTree != initialTree) {
-                val newVersion = CLVersion.createRegularVersion(
-                    id = repositoriesManager.client.idGenerator.generate(),
-                    author = getUserName(),
-                    tree = newTree as CLTree,
-                    baseVersion = version,
-                    operations = ops.map { it.getOriginalOp() }.toTypedArray(),
-                )
-                repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
-            }
+            ModelQLServer.handleCall(call, { writeAccess ->
+                if (writeAccess) {
+                    branch.getRootNode() to branch.getArea()
+                } else {
+                    val model = repositoriesManager.inMemoryModels.getModel(initialTree)
+                    model.getNode(ITree.ROOT_ID) to model.getArea()
+                }
+            }, {
+                // writing the new version has to happen before call.respond is invoked, otherwise subsequent queries
+                // from the same client may still be executed on the old version.
+                val (ops, newTree) = branch.getPendingChanges()
+                if (newTree != initialTree) {
+                    val newVersion = CLVersion.createRegularVersion(
+                        id = repositoriesManager.client.idGenerator.generate(),
+                        author = getUserName(),
+                        tree = newTree as CLTree,
+                        baseVersion = version,
+                        operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+                    )
+                    repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
+                }
+            })
         }
 
         post<Paths.postRepositoryVersionHashQuery> {

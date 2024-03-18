@@ -32,6 +32,8 @@ interface IDefaultNodeAdapter : IDeprecatedNodeDefaults {
     override val isValid: Boolean
         get() = true
 
+    override fun tryGetConcept(): IConcept? = concept
+
     override fun getConceptReference(): IConceptReference? {
         return concept?.getReference()
     }

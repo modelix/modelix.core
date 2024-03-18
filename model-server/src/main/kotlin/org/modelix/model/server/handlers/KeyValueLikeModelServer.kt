@@ -44,6 +44,7 @@ import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.authorization.toKeycloakScope
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
@@ -93,6 +94,20 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
     private fun Application.modelServerModule() {
         routing {
             get<Paths.getHealth> {
+                // eagerly load model into memory to speed up ModelQL queries
+                val branchRef = System.getenv("MODELIX_SERVER_MODELQL_WARMUP_REPOSITORY")?.let { RepositoryId(it) }
+                    ?.getBranchReference(System.getenv("MODELIX_SERVER_MODELQL_WARMUP_BRANCH"))
+                if (branchRef != null) {
+                    val version = repositoriesManager.getVersion(branchRef)
+                    if (!repositoriesManager.inMemoryModels.loadModelAsync(version!!.getTree())) {
+                        call.respondText(
+                            status = HttpStatusCode.ServiceUnavailable,
+                            text = "Waiting for version $version to be loaded into memory",
+                        )
+                        return@get
+                    }
+                }
+
                 if (isHealthy()) {
                     call.respondText(text = "healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
                 } else {

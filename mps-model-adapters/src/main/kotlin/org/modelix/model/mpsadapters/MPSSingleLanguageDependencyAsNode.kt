@@ -35,7 +35,9 @@ data class MPSSingleLanguageDependencyAsNode(
 ) : IDefaultNodeAdapter {
 
     override fun getPropertyValue(property: IProperty): String? {
-        return if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)) {
+        return if (property.isIdProperty()) {
+            reference.serialize()
+        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version)) {
             languageVersion.toString()
         } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name)) {
             moduleReference.moduleName

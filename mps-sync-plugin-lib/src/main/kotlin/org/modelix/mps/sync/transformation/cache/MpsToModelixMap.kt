@@ -25,6 +25,8 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.util.synchronizedLinkedHashSet
+import org.modelix.mps.sync.util.synchronizedMap
 
 /**
  * WARNING:
@@ -34,29 +36,26 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object MpsToModelixMap {
 
-    private val nodeToModelixId = mutableMapOf<SNode, Long>()
-    private val modelixIdToNode = mutableMapOf<Long, SNode>()
+    private val nodeToModelixId = synchronizedMap<SNode, Long>()
+    private val modelixIdToNode = synchronizedMap<Long, SNode>()
 
-    private val modelToModelixId = mutableMapOf<SModel, Long>()
-    private val modelixIdToModel = mutableMapOf<Long, SModel>()
+    private val modelToModelixId = synchronizedMap<SModel, Long>()
+    private val modelixIdToModel = synchronizedMap<Long, SModel>()
 
-    private val moduleToModelixId = mutableMapOf<SModule, Long>()
-    private val modelixIdToModule = mutableMapOf<Long, SModule>()
+    private val moduleToModelixId = synchronizedMap<SModule, Long>()
+    private val modelixIdToModule = synchronizedMap<Long, SModule>()
 
-    private val moduleWithOutgoingModuleReferenceToModelixId = mutableMapOf<ModuleWithModuleReference, Long>()
-    private val modelixIdToModuleWithOutgoingModuleReference = mutableMapOf<Long, ModuleWithModuleReference>()
+    private val moduleWithOutgoingModuleReferenceToModelixId = synchronizedMap<ModuleWithModuleReference, Long>()
+    private val modelixIdToModuleWithOutgoingModuleReference = synchronizedMap<Long, ModuleWithModuleReference>()
 
-    private val modelWithOutgoingModuleReferenceToModelixId = mutableMapOf<ModelWithModuleReference, Long>()
-    private val modelixIdToModelWithOutgoingModuleReference = mutableMapOf<Long, ModelWithModuleReference>()
+    private val modelWithOutgoingModuleReferenceToModelixId = synchronizedMap<ModelWithModuleReference, Long>()
+    private val modelixIdToModelWithOutgoingModuleReference = synchronizedMap<Long, ModelWithModuleReference>()
 
-    private val modelWithOutgoingModelReferenceToModelixId = mutableMapOf<ModelWithModelReference, Long>()
-    private val modelixIdToModelWithOutgoingModelReference = mutableMapOf<Long, ModelWithModelReference>()
+    private val modelWithOutgoingModelReferenceToModelixId = synchronizedMap<ModelWithModelReference, Long>()
+    private val modelixIdToModelWithOutgoingModelReference = synchronizedMap<Long, ModelWithModelReference>()
 
-    private val objectsRelatedToAModel = mutableMapOf<SModel, MutableSet<Any>>()
-    private val objectsRelatedToAModule = mutableMapOf<SModule, MutableSet<Any>>()
-
-    val models = modelixIdToModel.values
-    val modules = modelixIdToModule.values
+    private val objectsRelatedToAModel = synchronizedMap<SModel, MutableSet<Any>>()
+    private val objectsRelatedToAModule = synchronizedMap<SModule, MutableSet<Any>>()
 
     fun put(node: SNode, modelixId: Long) {
         nodeToModelixId[node] = modelixId
@@ -104,13 +103,13 @@ object MpsToModelixMap {
     }
 
     private fun putObjRelatedToAModel(model: SModel, obj: Any?) {
-        objectsRelatedToAModel.computeIfAbsent(model) { mutableSetOf() }.add(obj!!)
+        objectsRelatedToAModel.computeIfAbsent(model) { synchronizedLinkedHashSet() }.add(obj!!)
         // just in case, the model has not been tracked yet. E.g. @descriptor models that are created locally but were not synchronized to the model server.
         putObjRelatedToAModule(model.module, model)
     }
 
     private fun putObjRelatedToAModule(module: SModule, obj: Any?) =
-        objectsRelatedToAModule.computeIfAbsent(module) { mutableSetOf() }.add(obj!!)
+        objectsRelatedToAModule.computeIfAbsent(module) { synchronizedLinkedHashSet() }.add(obj!!)
 
     operator fun get(node: SNode?) = nodeToModelixId[node]
 
@@ -138,6 +137,14 @@ object MpsToModelixMap {
     fun getModel(modelixId: Long?) = modelixIdToModel[modelixId]
 
     fun getModule(modelixId: Long?) = modelixIdToModule[modelixId]
+
+    fun getModule(moduleId: SModuleId) = objectsRelatedToAModule.keys.firstOrNull { it.moduleId == moduleId }
+
+    fun getOutgoingModelReference(modelixId: Long?) = modelixIdToModelWithOutgoingModelReference[modelixId]
+
+    fun getOutgoingModuleReferenceFromModel(modelixId: Long?) = modelixIdToModelWithOutgoingModuleReference[modelixId]
+
+    fun getOutgoingModuleReferenceFromModule(modelixId: Long?) = modelixIdToModuleWithOutgoingModuleReference[modelixId]
 
     fun remove(modelixId: Long) {
         // is related to node
@@ -209,10 +216,10 @@ object MpsToModelixMap {
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-data class ModelWithModelReference(private val model: SModel, private val modelReference: SModelReference)
+data class ModelWithModelReference(val source: SModel, val modelReference: SModelReference)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-data class ModelWithModuleReference(private val model: SModel, private val moduleReference: SModuleReference)
+data class ModelWithModuleReference(val source: SModel, val moduleReference: SModuleReference)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-data class ModuleWithModuleReference(private val module: SModule, private val moduleReference: SModuleReference)
+data class ModuleWithModuleReference(val source: SModule, val moduleReference: SModuleReference)

@@ -35,11 +35,10 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.logger
-import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
@@ -48,28 +47,27 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
-import java.net.ConnectException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable {
 
-    private val logger = logger<ModelSyncService>()
+    private val logger = KotlinLogging.logger {}
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     private var server: String? = null
     val syncService: SyncServiceImpl
 
     init {
-        logger.info("============================================ ModelSyncService init")
+        logger.info { "============================================ ModelSyncService init" }
         syncService = SyncServiceImpl()
 
-        logger.info("============================================ Registering sync actions")
+        logger.info { "============================================ Registering sync actions" }
         registerSyncActions()
 
-        logger.info("============================================ Registration finished")
+        logger.info { "============================================ Registration finished" }
 
-        logger.info("============================================ Sync Service initialized $syncService")
+        logger.info { "============================================ Sync Service initialized $syncService" }
     }
 
     fun connectModelServer(
@@ -78,9 +76,9 @@ class ModelSyncService : Disposable {
         callback: (() -> Unit),
     ) {
         coroutineScope.launch {
-            logger.info("Connection to server: $url with JWT $jwt")
+            logger.info { "Connection to server: $url" }
             syncService.connectModelServer(URL(url), jwt, callback)
-            logger.info("Connected to server: $url with JWT $jwt")
+            logger.info { "Connected to server: $url" }
         }
     }
 
@@ -89,9 +87,9 @@ class ModelSyncService : Disposable {
         callback: (() -> Unit),
     ) {
         coroutineScope.launch {
-            logger.info("disconnecting to server: ${modelClient.baseUrl}")
+            logger.info { "disconnecting to server: ${modelClient.baseUrl}" }
             syncService.disconnectModelServer(modelClient, callback)
-            logger.info("disconnected server: ${modelClient.baseUrl}")
+            logger.info { "disconnected server: ${modelClient.baseUrl}" }
         }
     }
 
@@ -108,31 +106,27 @@ class ModelSyncService : Disposable {
                     BranchReference(RepositoryId(repositoryID), branchName),
                     module,
                 ).forEach { it.activate() }
-            } catch (e: ConnectException) {
-                logger.warn("Unable to connect: ${e.message} / ${e.cause}")
-            } catch (e: ClientRequestException) {
-                logger.warn("Illegal request: ${e.message} / ${e.cause}")
             } catch (e: Exception) {
-                logger.warn("Pokemon Exception Catching: ${e.message} / ${e.cause}")
+                logger.error(e) { "Error while binding module" }
             }
         }
     }
 
     fun ensureStarted() {
-        logger.info("============================================  ensureStarted")
+        logger.info { "============================================  ensureStarted" }
     }
 
     override fun dispose() {
-        logger.info("============================================  dispose")
+        logger.info { "============================================  dispose" }
         syncService.dispose()
         ensureStopped()
     }
 
     private fun ensureStopped() {
-        logger.info("============================================  ensureStopped")
+        logger.info { "============================================  ensureStopped" }
         runSynchronized(this) {
             if (server == null) return
-            logger.info("stopping modelix server")
+            logger.info { "stopping modelix server" }
             server = null
         }
     }
@@ -149,7 +143,7 @@ class ModelSyncService : Disposable {
                     add(ModelixActionGroup())
                 }
             } else {
-                logger.error("Action Group $it was not found, thus the UI actions are not registered there.")
+                logger.error { "Action Group $it was not found, thus the UI actions are not registered there." }
             }
         }
     }

@@ -24,6 +24,8 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object ActiveMpsProjectInjector {
+
+    // TODO what shall happen if we switch MPSProjects? Some threads might still be working on the old MPSProject. (with other words: search for all places where this field is referred to and think about if it can cause trouble if we change this reference to another one suddenly..)
     var activeMpsProject: MPSProject? = null
         private set
 
@@ -38,7 +40,7 @@ object ActiveMpsProjectInjector {
     }
 
     private fun subscribeForApplicationClosing(project: Project) {
-        /**
+        /*
          * Subscribe for application closing event and do not delete the modules and models in that case.
          * Explanation: when closing MPS, MPS unregisters all modules from the repository then it calls the
          * moduleRemoved and modelRemoved methods after the module was unregistered. At that point of time,

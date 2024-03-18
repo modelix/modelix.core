@@ -67,7 +67,7 @@ class CPHamtLeaf(
         return bulkQuery.constant(if (key == this.key) value else null)
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>?) -> Unit): IBulkQuery.Value<Unit> {
+    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
         return bulkQuery.constant(visitor(key, value))
     }
 
@@ -83,17 +83,18 @@ class CPHamtLeaf(
             }
         } else {
             var oldValue: KVEntryReference<CPNode>? = null
-            val bp = { k: Long?, v: KVEntryReference<CPNode>? ->
+            val bp = { k: Long, v: KVEntryReference<CPNode> ->
                 if (k == key) {
                     oldValue = v
                 } else {
-                    visitor.entryRemoved(k!!, v)
+                    visitor.entryRemoved(k, v)
                 }
             }
             oldNode!!.visitEntries(bulkQuery, bp).onSuccess {
+                val oldValue = oldValue
                 if (oldValue == null) {
                     visitor.entryAdded(key, value)
-                } else if (oldValue?.getHash() !== value.getHash()) {
+                } else if (oldValue.getHash() !== value.getHash()) {
                     visitor.entryChanged(key, oldValue, value)
                 }
             }

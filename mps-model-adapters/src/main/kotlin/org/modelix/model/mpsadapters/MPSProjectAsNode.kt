@@ -49,10 +49,13 @@ data class MPSProjectAsNode(val project: ProjectBase) : IDefaultNodeAdapter {
     }
 
     override fun getPropertyValue(property: IProperty): String? {
-        if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)) {
-            return project.name
+        return if (property.isIdProperty()) {
+            reference.serialize()
+        } else if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)) {
+            project.name
+        } else {
+            null
         }
-        return null
     }
 
     override fun getContainmentLink(): IChildLink {

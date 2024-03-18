@@ -24,6 +24,7 @@
     </language>
   </registry>
   <node concept="1DmExM" id="pSCM1J8y9y">
+    <property role="TrG5h" value="GraphFromSolution1" />
     <node concept="1DmExR" id="pSCM1J8Fg1" role="1DmEKd">
       <ref role="1DmyQl" node="pSCM1J8FfW" resolve="A" />
       <ref role="1DmyQm" node="pSCM1J8FfX" resolve="B" />

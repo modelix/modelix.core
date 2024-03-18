@@ -22,19 +22,14 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import org.modelix.mps.sync.util.SyncQueue
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class RepositoryChangeListener(
-    branch: IBranch,
-    nodeMap: MpsToModelixMap,
-    private val bindingsRegistry: BindingsRegistry,
-    private val syncQueue: SyncQueue,
-) : SRepositoryListenerBase() {
+class RepositoryChangeListener(branch: IBranch) : SRepositoryListenerBase() {
 
-    private val nodeSynchronizer = NodeSynchronizer(branch, nodeMap, syncQueue)
+    private val bindingsRegistry = BindingsRegistry
+
+    private val nodeSynchronizer = NodeSynchronizer(branch)
 
     override fun moduleRemoved(module: SModuleReference) {
         if (ApplicationLifecycleTracker.applicationClosing) {

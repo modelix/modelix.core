@@ -18,6 +18,7 @@ package org.modelix.model.lazy
 import org.modelix.model.persistent.IKVValue
 
 interface IBulkQuery {
+    fun process()
     fun <I, O> map(input_: Iterable<I>, f: (I) -> Value<O>): Value<List<O>>
     fun <T> constant(value: T): Value<T>
     operator fun <T : IKVValue> get(hash: KVEntryReference<T>): Value<T?>

@@ -18,14 +18,17 @@ package org.modelix.model.sync.bulk.gradle.test
 
 import GraphLang.L_GraphLang
 import GraphLang.N_Edge
+import GraphLang.N_Graph
 import GraphLang.N_Node
 import GraphLang._C_UntypedImpl_Edge
+import GraphLang._C_UntypedImpl_Graph
 import GraphLang._C_UntypedImpl_Node
 import jetbrains.mps.lang.core.L_jetbrains_mps_lang_core
 import kotlinx.coroutines.runBlocking
 import org.modelix.metamodel.TypedLanguagesRegistry
 import org.modelix.metamodel.typed
 import org.modelix.model.ModelFacade
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
@@ -68,6 +71,20 @@ class ChangeApplier {
 
                 edges[0].source = graphNodes[1]
                 edges[0].target = graphNodes[3]
+
+                val solution1Graph = rootNode.allChildren
+                    .find { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "GraphSolution" }
+                    ?.getDescendants(false)
+                    ?.find { it.getConceptReference() == ConceptReference(_C_UntypedImpl_Graph.getUID()) }
+                    ?.typed<N_Graph>()
+
+                val solution2Graph = rootNode.allChildren
+                    .find { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "GraphSolution2" }
+                    ?.getDescendants(false)
+                    ?.find { it.getConceptReference() == ConceptReference(_C_UntypedImpl_Graph.getUID()) }
+                    ?.typed<N_Graph>()
+
+                solution1Graph?.relatedGraph = solution2Graph
             }
         }
     }

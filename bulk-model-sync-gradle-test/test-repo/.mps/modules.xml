@@ -4,6 +4,7 @@
     <projectModules>
       <modulePath path="$PROJECT_DIR$/languages/GraphLang/GraphLang.mpl" folder="" />
       <modulePath path="$PROJECT_DIR$/solutions/GraphSolution/GraphSolution.msd" folder="" />
+      <modulePath path="$PROJECT_DIR$/solutions/GraphSolution2/GraphSolution2.msd" folder="my.virtual.folder" />
     </projectModules>
   </component>
 </project>

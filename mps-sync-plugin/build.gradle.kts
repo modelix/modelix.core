@@ -25,6 +25,7 @@ println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion"
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation(libs.logback.classic)
 
     implementation(project(":model-api", configuration = "jvmRuntimeElements"))
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))

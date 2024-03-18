@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+*'
+  # Allows building SNAPSHOT releases with the commit SHA inlcuded for testing purposes
   workflow_dispatch:
   # Test this workflow in PRs in case it changed
   pull_request:
@@ -30,16 +31,31 @@ jobs:
           java-version: '11'
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3
+
       - name: Configure the project version
-        env:
-          IS_PR: ${{ github.event_name == 'pull_request' }}
+        id: version
         run: |-
-          if [[ "$IS_PR" = 'true' ]]; then
-            echo "0.0.1-SNAPSHOT" > version.txt
+          if [[ "${{ github.event_name }}" == 'pull_request' || "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+            version="0.0.1-${GITHUB_SHA:0:7}-SNAPSHOT"
           else
-            echo "${GITHUB_REF#refs/*/}" > version.txt
+            version="${GITHUB_REF#refs/*/}"
           fi
+
+          echo "${version}" > version.txt
           cat version.txt
+
+          echo "VERSION=${version}" >> $GITHUB_OUTPUT
+      - name: Determine Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            modelix/model-server
+            modelix/modelix-model
+          tags: |
+            type=raw,value=${{ steps.version.outputs.VERSION }},enable=true
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+
         # Perform the build in a separate call to avoid trying to publish
         # something where the build already failed partially. This could happen
         # due to the use of the --continue flag in the publish step.
@@ -78,18 +94,28 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTS_ITEMIS_CLOUD_NPM_TOKEN }}
           IS_PR: ${{ github.event_name == 'pull_request' }}
+      # Try to log in early. If this fails, there's no reason to perform the remaining steps
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_KEY }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           platforms: linux/amd64,linux/arm64
-      - name: Build and Publish Docker
-        # As publishing is currently baked into the scripts, we can't test this
-        # in PRs
-        if: ${{ github.event_name != 'pull_request' }}
+      - name: Build and publish model-server Docker image
+        uses: docker/build-push-action@v5
         env:
-          DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-          DOCKER_HUB_KEY: ${{ secrets.DOCKER_HUB_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./docker-ci.sh
+          # We only push the resulting image when we are on release tag (i.e., the only time we have a push event) or on
+          # manual request via the workflow_dispatch event.
+          PUSH: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
+        with:
+          context: ./model-server
+          file: ./model-server/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.PUSH }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

@@ -149,6 +149,10 @@ class TreeDiffTest {
             changedContainments.add(nodeId)
         }
 
+        override fun conceptChanged(nodeId: Long) {
+            TODO("Not yet implemented")
+        }
+
         override fun propertyChanged(nodeId: Long, role: String) {
             changedRoles.add(RoleInNode(nodeId, role))
         }

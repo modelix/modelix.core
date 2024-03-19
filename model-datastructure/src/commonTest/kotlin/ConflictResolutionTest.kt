@@ -825,6 +825,10 @@ fun assertSameTree(tree1: ITree, tree2: ITree) {
                 fail("containmentChanged ${nodeId.toString(16)}")
             }
 
+            override fun conceptChanged(nodeId: Long) {
+                fail("conceptChanged ${nodeId.toString(16)}")
+            }
+
             override fun childrenChanged(nodeId: Long, role: String?) {
                 fail("childrenChanged ${nodeId.toString(16)}, $role")
             }

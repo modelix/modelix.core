@@ -27,6 +27,13 @@ interface ITreeChangeVisitor {
     fun containmentChanged(nodeId: Long)
 
     /**
+     * Called when the concept of a node has changed.
+     *
+     * @param nodeId id of the affected node
+     */
+    fun conceptChanged(nodeId: Long)
+
+    /**
      * Called when the children of a node have changed.
      *
      * @param nodeId id of the affected parent

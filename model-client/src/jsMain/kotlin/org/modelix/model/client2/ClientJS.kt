@@ -171,6 +171,10 @@ class ChangeListener(private val branch: IBranch, private val changeCallback: (C
                     changeCallback(ContainmentChanged(nodeIdToInode(nodeId)))
                 }
 
+                override fun conceptChanged(nodeId: Long) {
+                    changeCallback(ConceptChanged(nodeIdToInode(nodeId)))
+                }
+
                 override fun childrenChanged(nodeId: Long, role: String?) {
                     changeCallback(ChildrenChanged(nodeIdToInode(nodeId), role))
                 }

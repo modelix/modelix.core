@@ -16,21 +16,21 @@ jobs:
     strategy:
       matrix:
         version:
-          - "2020.3.6"
-          - "2021.1.4"
-          - "2021.2.6"
-          - "2021.3.3"
+          - "2020.3"
+          - "2021.1"
+          - "2021.2"
+          - "2021.3"
           - "2022.2"
           - "2022.3"
           - "2023.2"
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3
       - name: Build with ${{ matrix.version }}
@@ -40,4 +40,4 @@ jobs:
           :metamodel-export:build
           :mps-model-adapters:build
           :mps-model-server-plugin:build
-          -Pmps.version=${{ matrix.version }}
+          -Pmps.version.major=${{ matrix.version }}

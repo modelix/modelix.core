@@ -14,6 +14,7 @@
 package org.modelix.model.server.mps
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbService
@@ -31,11 +32,11 @@ import java.util.Collections
 class MPSModelServerForProject(private val project: Project) : Disposable {
 
     init {
-        service<MPSModelServer>().registerProject(project)
+        ApplicationManager.getApplication().getService(MPSModelServer::class.java).registerProject(project)
     }
 
     override fun dispose() {
-        service<MPSModelServer>().unregisterProject(project)
+        ApplicationManager.getApplication().getService(MPSModelServer::class.java).unregisterProject(project)
     }
 }
 

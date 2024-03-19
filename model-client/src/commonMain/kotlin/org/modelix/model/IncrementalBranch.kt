@@ -45,6 +45,10 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
                     modified(ContainmentDependency(this@IncrementalBranch, nodeId))
                 }
 
+                override fun conceptChanged(nodeId: Long) {
+                    modified(ConceptDependency(this@IncrementalBranch, nodeId))
+                }
+
                 override fun childrenChanged(nodeId: Long, role: String?) {
                     modified(ChildrenDependency(this@IncrementalBranch, nodeId, role))
                 }
@@ -331,7 +335,6 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
             val oldRole = transaction.getRole(nodeId)
             transaction.setConcept(nodeId, concept)
             modified(ChildrenDependency(this@IncrementalBranch, oldParentId, oldRole))
-            modified(ContainmentDependency(this@IncrementalBranch, nodeId))
             modified(UnclassifiedNodeDependency(this@IncrementalBranch, nodeId))
         }
 
@@ -539,6 +542,10 @@ data class AllPropertiesDependency(val branch: IBranch, val nodeId: Long) : Depe
 
 data class ContainmentDependency(val branch: IBranch, val nodeId: Long) : DependencyBase() {
     override fun getGroup() = UnclassifiedNodeDependency(branch, nodeId)
+}
+
+data class ConceptDependency(val branch: IBranch, val nodeId: Long) : DependencyBase() {
+    override fun getGroup(): IStateVariableGroup = UnclassifiedNodeDependency(branch, nodeId)
 }
 
 fun IBranch.withIncrementalComputationSupport() = IncrementalBranch(this)

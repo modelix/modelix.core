@@ -20,6 +20,10 @@ class FailingVisitor : ITreeChangeVisitorEx {
         fail("Tree expected to be the same")
     }
 
+    override fun conceptChanged(nodeId: Long) {
+        fail("Tree expected to be the same")
+    }
+
     override fun childrenChanged(nodeId: Long, role: String?) {
         fail("Tree expected to be the same")
     }

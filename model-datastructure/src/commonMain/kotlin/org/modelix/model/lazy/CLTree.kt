@@ -486,6 +486,8 @@ class CLTree : ITree, IBulkTree {
                             }
                             if (oldElement.parentId != newElement.parentId) {
                                 visitor.containmentChanged(key)
+                            } else if (oldElement.concept != newElement.concept) {
+                                visitor.conceptChanged(key)
                             } else if (oldElement.roleInParent != newElement.roleInParent) {
                                 visitor.containmentChanged(key)
                                 notifyChildrenChange(oldElement.parentId, oldElement.roleInParent)

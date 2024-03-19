@@ -77,7 +77,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         val baseDir = project.layout.buildDirectory.dir("model-sync").get().asFile.apply { mkdirs() }
         val jsonDir = baseDir.resolve(syncDirection.name).apply { mkdir() }
         val sourceTask = when (syncDirection.source) {
-            is LocalSource -> registerTasksForLocalSource(syncDirection, project, previousTask, jsonDir)
+            is LocalSource -> registerTasksForLocalSource(syncDirection, previousTask, jsonDir)
             is ServerSource -> registerTasksForServerSource(syncDirection, project, previousTask, jsonDir)
             else -> error("Unknown sync direction source")
         }
@@ -113,7 +113,6 @@ class ModelSyncGradlePlugin : Plugin<Project> {
 
     private fun registerTasksForLocalSource(
         syncDirection: SyncDirection,
-        project: Project,
         previousTask: TaskProvider<*>,
         jsonDir: File,
     ): TaskProvider<*> {
@@ -210,10 +209,6 @@ class ModelSyncGradlePlugin : Plugin<Project> {
 
     private fun getBaseDir(project: Project): File {
         return project.layout.buildDirectory.dir("model-sync").get().asFile
-    }
-
-    private fun getDependenciesDir(project: Project): File {
-        return getBaseDir(project).resolve("dependencies")
     }
 
     private fun readModelixCoreVersion(): String? {

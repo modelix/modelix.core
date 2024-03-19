@@ -2,82 +2,69 @@ package org.modelix.metamodel.gradle
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.tasks.JavaExec
-import org.gradle.api.tasks.Sync
+import org.gradle.api.internal.provider.DefaultProvider
+import org.gradle.api.provider.Provider
+import org.modelix.buildtools.runner.MPSRunnerConfig
+import org.modelix.gradle.mpsbuild.MPSBuildPlugin
+import org.modelix.gradle.mpsbuild.MPSBuildSettings
+import org.modelix.gradle.mpsbuild.RunMPSTask
 import java.io.File
 import java.net.URL
 import java.util.Enumeration
 import java.util.Properties
+import javax.inject.Inject
 
-class MetaModelGradlePlugin : Plugin<Project> {
-    private lateinit var project: Project
+class MetaModelGradlePlugin @Inject constructor(val project: Project) : Plugin<Project> {
     private lateinit var settings: MetaModelGradleSettings
-    private lateinit var buildDir: File
+    private var buildDir = project.layout.buildDirectory
 
     override fun apply(project: Project) {
-        this.project = project
         this.settings = project.extensions.create("metamodel", MetaModelGradleSettings::class.java)
-        this.buildDir = project.layout.buildDirectory.get().asFile
+        val mpsBuildPlugin: MPSBuildPlugin = project.plugins.apply(MPSBuildPlugin::class.java)
 
         val exporterDependencies = project.configurations.create("metamodel-mps-dependencies")
-        val exporterDir = getBuildOutputDir().resolve("mpsExporter")
         val modelixCoreVersion = readModelixCoreVersion() ?: throw RuntimeException("modelix.core version not found")
         project.dependencies.add(exporterDependencies.name, "org.modelix.mps:metamodel-export:$modelixCoreVersion")
-        val downloadExporterDependencies = project.tasks.register("downloadMetaModelExporter", Sync::class.java) { task ->
-            task.enabled = settings.jsonDir == null
-            task.from(exporterDependencies.resolve().map { project.zipTree(it) })
-            task.into(exporterDir)
-        }
 
-        val generateAntScriptForMpsMetaModelExport = project.tasks.register("generateAntScriptForMpsMetaModelExport", GenerateAntScriptForMpsMetaModelExport::class.java) { task ->
-            task.enabled = settings.jsonDir == null
-            task.dependsOn(downloadExporterDependencies)
-            task.dependsOn(*settings.taskDependencies.toTypedArray())
-            task.mpsHome.set(getMpsHome()?.absolutePath)
-            task.heapSize.set(settings.mpsHeapSize)
-            if (settings.includedModules.isNotEmpty()) task.exportModulesFilter.set(settings.includedModules.joinToString(","))
-            task.antScriptFile.set(getAntScriptFile())
-            task.exporterDir.set(exporterDir.absolutePath)
-            task.moduleFolders.addAll(settings.moduleFolders.map { it.absolutePath })
-            task.inputs.property("coreVersion", modelixCoreVersion)
-        }
-
-        val antDependencies = project.configurations.create("metamodel-ant-dependencies")
-        project.dependencies.add(antDependencies.name, "org.apache.ant:ant-junit:1.10.12")
-
-        val exportedLanguagesDir = getBuildOutputDir().resolve("exported-languages")
-        val exportMetaModelFromMps = project.tasks.register("exportMetaModelFromMps", JavaExec::class.java) { task ->
-            task.enabled = settings.jsonDir == null
-            task.inputs.property("coreVersion", modelixCoreVersion)
-            task.outputs.cacheIf { task.enabled }
-            task.workingDir = getBuildOutputDir()
-            task.mainClass.set("org.apache.tools.ant.launch.Launcher")
-            task.classpath(antDependencies)
-
-            val mpsHome = getMpsHome()
-            val antVariables = listOf(
-                "mps.home" to mpsHome?.absolutePath,
-                "mps_home" to mpsHome?.absolutePath,
-                "build.dir" to getBuildOutputDir().absolutePath,
-            ).map { (key, value) -> "-D$key=$value" }
-            task.args(antVariables)
-            task.args("-buildfile", getAntScriptFile())
-            task.args("export-languages")
-
-            settings.moduleFolders.forEach { task.inputs.dir(it) }
-            task.outputs.dir(exportedLanguagesDir)
-
-            task.dependsOn(generateAntScriptForMpsMetaModelExport)
-            task.dependsOn(downloadExporterDependencies)
-        }
-        project.afterEvaluate {
-            exportMetaModelFromMps.configure { task ->
-                val javaExecutable = settings.javaExecutable
-                if (javaExecutable != null) {
-                    task.executable(javaExecutable.absoluteFile)
+        val configProvider: Provider<MPSRunnerConfig> = DefaultProvider {
+            getMpsHome()?.let { mpsHome ->
+                project.extensions.configure(MPSBuildSettings::class.java) { mpsBuildSettings ->
+                    mpsBuildSettings.mpsHome = mpsHome.absolutePath
                 }
-                settings.moduleFolders.forEach { task.inputs.dir(it) }
-                task.inputs.dir(getMpsHome())
+            }
+            MPSRunnerConfig(
+                mainClassName = "org.modelix.metamodel.export.CommandlineExporter",
+                mainMethodName = if (settings.includedModules.isNotEmpty()) "exportBoth" else "exportLanguages",
+                classPathElements = exporterDependencies.resolvedConfiguration.files.toList(),
+                mpsHome = getMpsHome(),
+                additionalModuleDependencies = listOf(
+                    "c72da2b9-7cce-4447-8389-f407dc1158b7(jetbrains.mps.lang.structure)",
+                    "ceab5195-25ea-4f22-9b92-103b95ca8c0c(jetbrains.mps.lang.core)",
+                ),
+                additionalModuleDirs = settings.moduleFolders,
+                workDir = getBuildOutputDir().get().asFile,
+                buildDir = getBuildOutputDir().get().asFile,
+                jvmArgs = listOfNotNull(
+                    "-Xmx${settings.mpsHeapSize}",
+                    ("-Dmodelix.export.includedModules=" + settings.includedModules.joinToString(",")).takeIf { settings.includedModules.isNotEmpty() },
+                ),
+            )
+        }
+        val exportedLanguagesDir = getBuildOutputDir().map { it.dir("exported-languages") }
+        val exportMetaModelFromMps = configProvider.map { config ->
+            mpsBuildPlugin.createRunMPSTask(
+                "exportMetaModelFromMps",
+                config,
+                (settings.taskDependencies).toTypedArray(),
+                RunMPSTask::class.java,
+            ).also {
+                it.configure { task ->
+                    task.enabled = settings.jsonDir == null
+                    task.workingDir(getBuildOutputDir())
+                    task.inputs.property("coreVersion", modelixCoreVersion)
+                    task.outputs.dir(project.layout.buildDirectory.dir("metamodel/exported-languages"))
+                    task.outputs.dir(project.layout.buildDirectory.dir("metamodel/exported-modules"))
+                }
             }
         }
         val generateMetaModelSources = project.tasks.register("generateMetaModelSources", GenerateMetaModelSources::class.java) { task ->
@@ -118,9 +105,9 @@ class MetaModelGradlePlugin : Plugin<Project> {
         }
     }
 
-    private fun getBuildOutputDir() = buildDir.resolve("metamodel")
+    private fun getBuildOutputDir() = buildDir.map { it.dir("metamodel") }
 
-    private fun getAntScriptFile() = getBuildOutputDir().resolve("export-languages.xml")
+    private fun getAntScriptFile() = getBuildOutputDir().map { it.file("export-languages.xml") }
 
     private fun getMpsHome(checkExistence: Boolean = false): File? {
         val mpsHome = this.settings.mpsHome

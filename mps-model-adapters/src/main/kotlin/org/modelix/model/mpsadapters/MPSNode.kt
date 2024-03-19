@@ -16,9 +16,11 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
+import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
 import jetbrains.mps.smodel.adapter.ids.SPropertyId
 import jetbrains.mps.smodel.adapter.ids.SReferenceLinkId
+import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
 import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapterById
 import jetbrains.mps.smodel.adapter.structure.property.SPropertyAdapterById
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapterById
@@ -70,6 +72,23 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
             DependencyTracking.accessed(MPSAllChildrenDependency(node))
             return node.children.map { MPSNode(it) }
         }
+
+    override fun replaceNode(concept: ConceptReference): INode {
+        val id = node.nodeId
+        val model = checkNotNull(node.model) { "Node is not part of a model" }
+        val newNode = model.createNode(SConceptAdapterById(SConceptId.deserialize(concept.uid), ""), id)
+        node.properties.forEach { newNode.setProperty(it, node.getProperty(it)) }
+        node.references.forEach { newNode.setReference(it.link, it.targetNodeReference) }
+        node.children.forEach { child ->
+            val link = checkNotNull(child.containmentLink) { "Containment link of child node not found" }
+            newNode.addChild(link, child)
+        }
+
+        val parent = checkNotNull(node.parent) { "Cannot replace node without a parent" }
+        parent.insertChildBefore(getMPSContainmentLink(getContainmentLink()), node, newNode)
+        node.delete()
+        return MPSNode(newNode)
+    }
 
     override fun removeChild(child: INode) {
         require(child is MPSNode) { "child must be an MPSNode" }

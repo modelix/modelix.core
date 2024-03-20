@@ -16,6 +16,7 @@
 package org.modelix.model.persistent
 
 import org.modelix.kotlin.utils.createMemoryEfficientMap
+import org.modelix.kotlin.utils.toSynchronizedMap
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IBulkQuery
@@ -26,7 +27,7 @@ import org.modelix.model.lazy.NonBulkQuery
 open class MapBaseStore : MapBasedStore()
 
 open class MapBasedStore : IKeyValueStore {
-    private val map: MutableMap<String?, String?> = createMemoryEfficientMap()
+    private val map = createMemoryEfficientMap<String?, String?>().toSynchronizedMap()
     override fun get(key: String): String? {
         return map[key]
     }

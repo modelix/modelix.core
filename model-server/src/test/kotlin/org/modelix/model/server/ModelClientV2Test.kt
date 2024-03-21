@@ -61,10 +61,15 @@ class ModelClientV2Test {
         block()
     }
 
+    private suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
+        val url = "http://localhost/v2"
+        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        return modelClient
+    }
+
     @Test
     fun test_t1() = runTest {
-        val url = "http://localhost/v2"
-        val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val client = createModelClient()
 
         val repositoryId = RepositoryId("repo1")
         val initialVersion = client.initRepository(repositoryId)
@@ -101,9 +106,7 @@ class ModelClientV2Test {
 
     @Test
     fun modelqlSmokeTest() = runTest {
-        val url = "http://localhost/v2"
-        val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
-
+        val client = createModelClient()
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
         val initialVersion = client.initRepository(repositoryId)
@@ -116,9 +119,7 @@ class ModelClientV2Test {
 
     @Test
     fun testSlashesInPathSegmentsFromRepositoryIdAndBranchId() = runTest {
-        val url = "http://localhost/v2"
-        val client = ModelClientV2.builder().url(url).client(client).build()
-        client.init()
+        val client = createModelClient()
         val repositoryId = RepositoryId("repo/v1")
         val initialVersion = client.initRepository(repositoryId)
         val branchId = repositoryId.getBranchReference("my-branch/v1")
@@ -131,14 +132,7 @@ class ModelClientV2Test {
 
     @Test
     fun `user id can be provided to client after creation`() = runTest {
-        val url = "http://localhost/v2"
-        val modelClient = ModelClientV2
-            .builder()
-            .url(url)
-            .client(client)
-            .build()
-            .also { it.init() }
-
+        val modelClient = createModelClient()
         val userId = "a_user_id"
         modelClient.setClientProvideUserId(userId)
 
@@ -148,14 +142,16 @@ class ModelClientV2Test {
     @Test
     fun `user id provided by client can be removed`() = runTest {
         val url = "http://localhost/v2"
+        val userId = "a_user_id"
         val modelClient = ModelClientV2
             .builder()
             .url(url)
             .client(client)
-            .userId("a_user_id")
+            .userId(userId)
             .build()
-            .also { it.init() }
+        modelClient.init()
 
+        assertEquals(userId, modelClient.getUserId())
         modelClient.setClientProvideUserId(null)
 
         assertEquals("localhost", modelClient.getUserId())
@@ -163,8 +159,7 @@ class ModelClientV2Test {
 
     @Test
     fun `newly created repository can be removed`() = runTest {
-        val url = "http://localhost/v2"
-        val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val client = createModelClient()
         val repositoryId = RepositoryId(UUID.randomUUID().toString())
         client.initRepository(repositoryId)
 
@@ -177,8 +172,7 @@ class ModelClientV2Test {
 
     @Test
     fun `non-existing repository cannot be removed`() = runTest {
-        val url = "http://localhost/v2"
-        val client = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val client = createModelClient()
         val repositoryId = RepositoryId(UUID.randomUUID().toString())
 
         val success = client.deleteRepository(repositoryId)
@@ -191,9 +185,8 @@ class ModelClientV2Test {
     @Test
     fun `pulling existing versions pulls all referenced objects`() = runTest {
         // Arrange
-        val url = "http://localhost/v2"
-        val modelClientForArrange = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
-        val modelClientForAssert = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val modelClientForArrange = createModelClient()
+        val modelClientForAssert = createModelClient()
         val repositoryId = RepositoryId("repo1")
         val branchId = repositoryId.getBranchReference("my-branch")
         modelClientForArrange.runWrite(branchId) { root ->
@@ -221,8 +214,7 @@ class ModelClientV2Test {
     @Test
     fun `writing no data does not create empty versions`() = runTest {
         // Arrange
-        val url = "http://localhost/v2"
-        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val modelClient = createModelClient()
         val repositoryId = RepositoryId("repo1")
         val branchId = repositoryId.getBranchReference("master")
         modelClient.initRepository(repositoryId)
@@ -236,5 +228,27 @@ class ModelClientV2Test {
         // Assert
         val versionAfterRunWrite = modelClient.pullIfExists(branchId)!!
         assertEquals(versionAfterBeforeWrite.getContentHash(), versionAfterRunWrite.getContentHash())
+    }
+
+    @Test
+    fun `client can load version`() = runTest {
+        val modelClient = createModelClient()
+        val repositoryId = RepositoryId("aRepo")
+        val initialVersion = modelClient.initRepository(repositoryId)
+
+        val loadedVersion = modelClient.loadVersion(repositoryId, initialVersion.getContentHash(), initialVersion)
+
+        assertEquals(initialVersion.getContentHash(), loadedVersion.getContentHash())
+    }
+
+    @Test
+    fun `client can load version (deprecated endpoint without repository)`() = runTest {
+        val modelClient = createModelClient()
+        val repositoryId = RepositoryId("aRepo")
+        val initialVersion = modelClient.initRepository(repositoryId)
+
+        val loadedVersion = modelClient.loadVersion(initialVersion.getContentHash(), initialVersion)
+
+        assertEquals(initialVersion.getContentHash(), loadedVersion.getContentHash())
     }
 }

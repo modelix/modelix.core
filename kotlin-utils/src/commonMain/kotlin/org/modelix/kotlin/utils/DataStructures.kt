@@ -29,3 +29,5 @@ package org.modelix.kotlin.utils
  * Therefore, the memory efficient maps are used sparingly for only the very big maps.
  */
 expect fun <K, V> createMemoryEfficientMap(): MutableMap<K, V>
+
+expect fun <K, V> MutableMap<K, V>.toSynchronizedMap(): MutableMap<K, V>

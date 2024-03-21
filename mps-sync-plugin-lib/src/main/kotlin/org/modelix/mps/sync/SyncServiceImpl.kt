@@ -1,11 +1,14 @@
 package org.modelix.mps.sync
 
 import com.intellij.openapi.project.Project
+import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -19,6 +22,8 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.ModelixBranchListener
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
@@ -28,6 +33,7 @@ import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
 import java.net.ConnectException
 import java.net.URL
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class SyncServiceImpl : SyncService {
@@ -158,9 +164,10 @@ class SyncServiceImpl : SyncService {
         module: SModule,
         lastKnownVersion: CLVersion,
         callback: (() -> Unit)? = null,
-    ) {
-        if (replicatedModelByBranchReference.containsKey(branchReference)) { return }
+    ): Iterable<IBinding> {
+        if (replicatedModelByBranchReference.containsKey(branchReference)) { return emptyList() }
 
+        val futureBindings = CompletableFuture<Iterable<IBinding>>()
         // set up a client, a replicated model and an implementation of a binding (to MPS)
         runBlocking(coroutineScope.coroutineContext) {
             // TODO how to handle multiple replicated models at the same time?
@@ -184,12 +191,6 @@ class SyncServiceImpl : SyncService {
 
             // TODO when and how to dispose the replicated model and everything that depends on it?
             replicatedModel.start(lastKnownVersion) { branch ->
-                // transform the model
-                // TODO noooooo T.T my typesafety xD
-                ITreeToSTreeTransformer(branch, languageRepository).transform(module as INode).forEach { binding ->
-                    binding.activate()
-                }
-
                 // register replicated model change listener
                 // TODO branch or replicatedModel probably not needed
                 val listener = ModelixBranchListener(replicatedModel, languageRepository, branch)
@@ -202,9 +203,27 @@ class SyncServiceImpl : SyncService {
                     targetProject.repository.addRepositoryListener(repositoryChangeListener)
                     projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
                 }
+
+                // create bindings
+                val moduleBinding = ModuleBinding(module as AbstractModule, branch)
+                val bindings: MutableList<IBinding> = mutableListOf(moduleBinding)
+                BindingsRegistry.addModuleBinding(moduleBinding)
+                ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction {
+                    for (model in module.models) {
+                        val modelBinding = ModelBinding(model as SModelBase, branch)
+                        bindings.add(modelBinding)
+                        BindingsRegistry.addModelBinding(modelBinding)
+                    }
+                }
+
+                futureBindings.complete(bindings)
             }
         }
+        val bindings = withContext(Dispatchers.IO) {
+            futureBindings.get()
+        }
         callback?.invoke()
+        return bindings
     }
 
     override fun setActiveProject(project: Project) {

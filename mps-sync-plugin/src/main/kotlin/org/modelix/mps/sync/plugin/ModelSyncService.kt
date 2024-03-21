@@ -121,19 +121,22 @@ class ModelSyncService : Disposable {
         repositoryId: String,
         lastKnownVersionHash: String,
     ) {
-        connectModelServer(url, "") {}
-        val client = syncService.activeClients.filter { it.baseUrl == url }.first()
+        connectModelServer(url, "") {
+            val client = syncService.activeClients.filter { it.baseUrl == url }.first()
 
-        val repository = RepositoryId(repositoryId)
-        val branchReference = BranchReference(repository, branchName)
-        CoroutineScope(Dispatchers.IO).launch {
-            val lastKnownVersion = client.loadVersion(repository, lastKnownVersionHash, null)
-            syncService.rebindModue(
-                client,
-                branchReference,
-                module,
-                lastKnownVersion as CLVersion,
-            )
+            val repository = RepositoryId(repositoryId)
+            val branchReference = BranchReference(repository, branchName)
+            CoroutineScope(Dispatchers.IO).launch {
+                // TODO after bug #MODELIX-841 is fixed, hand over repository argument again
+                // https://issues.modelix.org/issue/MODELIX-841/loadVersionrepositoryId-RepositoryId-versionHash-String-baseVersion-IVersion-uses-wrong-HTTP-Method
+                val lastKnownVersion = client.loadVersion(repository, lastKnownVersionHash, null)
+                syncService.rebindModue(
+                    client,
+                    branchReference,
+                    module,
+                    lastKnownVersion as CLVersion,
+                ).forEach { it.activate() }
+            }
         }
     }
 

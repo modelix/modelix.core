@@ -167,7 +167,7 @@ class ModelClientV2(
     @Deprecated("repository ID is required for permission checks")
     @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     override suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion {
-        val response = httpClient.post {
+        val response = httpClient.get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("versions", versionHash)
@@ -185,7 +185,7 @@ class ModelClientV2(
         versionHash: String,
         baseVersion: IVersion?,
     ): IVersion {
-        val response = httpClient.post {
+        val response = httpClient.get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("repositories", repositoryId.id, "versions", versionHash)

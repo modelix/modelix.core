@@ -26,7 +26,6 @@ import jetbrains.mps.project.ModuleId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -34,6 +33,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.plugin.ModelSyncService
+import java.util.concurrent.CompletableFuture
 
 /**
  * This component handles the storage of the cloud configuration.
@@ -109,20 +109,29 @@ class CloudResourcesConfigurationComponent():
 
         fun load() {
             val sRepository = ActiveMpsProjectInjector.activeMpsProject!!.repository
-            val modules: MutableList<SModule> = mutableListOf()
-            for (moduleId in moduleIds) {
-                val id = PersistenceFacade.getInstance().createModuleId(moduleId)
-                val module = sRepository.getModule(id as ModuleId)
-                assert(module != null) { "Could not restore module from id. [id = ${id}]" }
-                modules.add(module!!)
+            val futureModules = CompletableFuture<List<SModule>>()
+            //val futureModels = CompletableFuture<List<SModel>>()
+            ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction {
+                val modules: MutableList<SModule> = mutableListOf()
+                for (moduleId in moduleIds) {
+                    val id = PersistenceFacade.getInstance().createModuleId(moduleId)
+                    val module = sRepository.getModule(id as ModuleId)
+                    assert(module != null) { "Could not restore module from id. [id = ${id}]" }
+                    modules.add(module!!)
+                }
+                futureModules.complete(modules)
+                /*val models: MutableList<SModel> = mutableListOf()
+                for (modelId in modelIds) {
+                    val id = PersistenceFacade.getInstance().createModelId(modelId)
+                    val model = sRepository.getModel(id)
+                    assert(model != null) { "Could not restore model from id. [id = ${id}]" }
+                    models.add(model!!)
+                }*/
+                //futureModels.complete(models)
             }
-            val models: MutableList<SModel> = mutableListOf()
-            for (modelId in modelIds) {
-                val id = PersistenceFacade.getInstance().createModelId(modelId)
-                val model = sRepository.getModel(id)
-                assert(model != null) { "Could not restore model from id. [id = ${id}]" }
-                models.add(model!!)
-            }
+            val modules = futureModules.get()
+            //val models = futureModels.get()
+
 
             val syncService = service<ModelSyncService>()
             CoroutineScope(Dispatchers.IO).launch {

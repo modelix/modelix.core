@@ -46,11 +46,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             return
         }
         val model = SNodeOperations.getModel(nodeInLanguage) ?: return
-        val language = as_y4kbwa_a0a3a8(
-            model.module,
-            Language::class.java,
-        )
-            ?: return
+        val language = model.module as? Language ?: return
         exportLanguage(language)
     }
 
@@ -63,139 +59,68 @@ class MPSMetaModelExporter(private val outputFolder: File) {
         val structureModel = LanguageAspect.STRUCTURE[languageModule]
         val rootNodes = structureModel!!.rootNodes
 
-        val concepts = SNodeOperations.ofConcept(rootNodes, CONCEPTS.`AbstractConceptDeclaration$KA`).map { concept: SNode ->
-            val properties =
-                SLinkOperations.getChildren(concept, LINKS.`propertyDeclaration$YUgg`)
-                    .map { it: SNode ->
-                        var type: PropertyType? = PrimitivePropertyType(Primitive.STRING)
-                        if ((
-                            SLinkOperations.getPointer(
-                                it,
-                                LINKS.`dataType$5j5Y`,
-                            ) == SNodePointer(
-                                "r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)",
-                                "1082983657062",
-                            )
-                            )
-                        ) {
-                            type = PrimitivePropertyType(Primitive.INT)
-                        } else if ((
-                            SLinkOperations.getPointer(
-                                it,
-                                LINKS.`dataType$5j5Y`,
-                            ) == SNodePointer(
-                                "r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)",
-                                "1082983657063",
-                            )
-                            )
-                        ) {
-                            type = PrimitivePropertyType(Primitive.BOOLEAN)
-                        } else if (SNodeOperations.isInstanceOf(
-                                SLinkOperations.getTarget(
-                                    it,
-                                    LINKS.`dataType$5j5Y`,
-                                ),
-                                CONCEPTS.`EnumerationDeclaration$hv`,
-                            )
-                        ) {
-                            val pckg: String? = SLinkOperations.getTarget(it, LINKS.`dataType$5j5Y`).model!!
-                                .module.moduleName
-                            type = EnumPropertyType(
-                                (pckg)!!,
-                                SPropertyOperations.getString(
-                                    SLinkOperations.getTarget(
-                                        it,
-                                        LINKS.`dataType$5j5Y`,
-                                    ),
-                                    PROPS.`name$MnvL`,
-                                ),
-                            )
-                        }
-                        PropertyData(
-                            MetaIdByDeclaration.getPropId(it).toString(),
-                            SPropertyOperations.getString(it, PROPS.`name$MnvL`),
-                            (type)!!,
-                            true,
-                            deprecationMsg(it),
-                        )
-                    }.toList()
-            val childLinks =
-                SLinkOperations.getChildren(concept, LINKS.`linkDeclaration$YU1f`)
-                    .filter { it: SNode? -> (SLinkOperations.getTarget(it, LINKS.`specializedLink$7ZCN`) == null) }
-                    .filter { it: SNode? ->
-                        SEnumOperations.isMember(
-                            SPropertyOperations.getEnum(
-                                it,
-                                PROPS.`metaClass$PeKc`,
-                            ),
-                            0xfc6f4e95b9L,
-                        )
-                    }.map<SNode, ChildLinkData> { it: SNode ->
-                        exportLanguage(SLinkOperations.getTarget(it, LINKS.`target$m40F`))
-                        ChildLinkData(
-                            MetaIdByDeclaration.getLinkId(it).toString(),
-                            SPropertyOperations.getString(it, PROPS.`name$MnvL`),
-                            linkTargetFqName(it),
-                            !(LinkDeclaration__BehaviorDescriptor.isSingular_idhEwIfAt.invoke(it) as Boolean),
-                            !(
-                                LinkDeclaration__BehaviorDescriptor.isAtLeastOneCardinality_id2VYdUfnkjmB.invoke(
-                                    it,
-                                ) as Boolean
-                                ),
-                            deprecationMsg(it),
-                        )
-                    }.toList()
-            val referenceLinks =
-                SLinkOperations.getChildren(concept, LINKS.`linkDeclaration$YU1f`)
-                    .filter { it: SNode? -> (SLinkOperations.getTarget(it, LINKS.`specializedLink$7ZCN`) == null) }
-                    .filter { it: SNode? ->
-                        SEnumOperations.isMember(
-                            SPropertyOperations.getEnum(
-                                it,
-                                PROPS.`metaClass$PeKc`,
-                            ),
-                            0xfc6f4e95b8L,
-                        )
-                    }.map<SNode, ReferenceLinkData> { it: SNode ->
-                        exportLanguage(SLinkOperations.getTarget(it, LINKS.`target$m40F`))
-                        ReferenceLinkData(
-                            MetaIdByDeclaration.getLinkId(it).toString(),
-                            SPropertyOperations.getString(it, PROPS.`name$MnvL`),
-                            linkTargetFqName(it),
-                            !(
-                                LinkDeclaration__BehaviorDescriptor.isAtLeastOneCardinality_id2VYdUfnkjmB.invoke(
-                                    it,
-                                ) as Boolean
-                                ),
-                            deprecationMsg(it),
-                        )
-                    }.toList()
+        val concepts = SNodeOperations.ofConcept(rootNodes, CONCEPTS.AbstractConceptDeclaration).map { concept: SNode ->
+            val properties = SLinkOperations.getChildren(concept, LINKS.propertyDeclaration)
+                .map { it: SNode ->
+                    var type: PropertyType? = PrimitivePropertyType(Primitive.STRING)
+                    if (SLinkOperations.getPointer(it, LINKS.dataType) == SNodePointer("r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)", "1082983657062")) {
+                        type = PrimitivePropertyType(Primitive.INT)
+                    } else if (SLinkOperations.getPointer(it, LINKS.dataType) == SNodePointer("r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)", "1082983657063")) {
+                        type = PrimitivePropertyType(Primitive.BOOLEAN)
+                    } else if (SNodeOperations.isInstanceOf(SLinkOperations.getTarget(it, LINKS.dataType), CONCEPTS.EnumerationDeclaration)) {
+                        val pckg = SLinkOperations.getTarget(it, LINKS.dataType).model?.module?.moduleName ?: ""
+                        type = EnumPropertyType(pckg, SPropertyOperations.getString(SLinkOperations.getTarget(it, LINKS.dataType), PROPS.name))
+                    }
+                    PropertyData(MetaIdByDeclaration.getPropId(it).toString(), SPropertyOperations.getString(it, PROPS.name), (type)!!, true, deprecationMsg(it))
+                }.toList()
+            val childLinks = SLinkOperations.getChildren(concept, LINKS.linkDeclaration)
+                .filter { SLinkOperations.getTarget(it, LINKS.specializedLink) == null }
+                .filter { SEnumOperations.isMember(SPropertyOperations.getEnum(it, PROPS.metaClass), 0xfc6f4e95b9L) }
+                .map<SNode, ChildLinkData> {
+                    exportLanguage(SLinkOperations.getTarget(it, LINKS.target))
+                    ChildLinkData(
+                        MetaIdByDeclaration.getLinkId(it).toString(),
+                        SPropertyOperations.getString(it, PROPS.name),
+                        linkTargetFqName(it),
+                        !(LinkDeclaration__BehaviorDescriptor.isSingular_idhEwIfAt.invoke(it) as Boolean),
+                        !(LinkDeclaration__BehaviorDescriptor.isAtLeastOneCardinality_id2VYdUfnkjmB.invoke(it) as Boolean),
+                        deprecationMsg(it),
+                    )
+                }
+                .toList()
+            val referenceLinks = SLinkOperations.getChildren(concept, LINKS.linkDeclaration)
+                .filter { SLinkOperations.getTarget(it, LINKS.specializedLink) == null }
+                .filter { SEnumOperations.isMember(SPropertyOperations.getEnum(it, PROPS.metaClass), 0xfc6f4e95b8L) }
+                .map<SNode, ReferenceLinkData> {
+                    exportLanguage(SLinkOperations.getTarget(it, LINKS.target))
+                    ReferenceLinkData(
+                        MetaIdByDeclaration.getLinkId(it).toString(),
+                        SPropertyOperations.getString(it, PROPS.name),
+                        linkTargetFqName(it),
+                        !(LinkDeclaration__BehaviorDescriptor.isAtLeastOneCardinality_id2VYdUfnkjmB.invoke(it) as Boolean),
+                        deprecationMsg(it),
+                    )
+                }.toList()
             val is_abstract =
-                SPropertyOperations.getBoolean(concept, PROPS.`abstract$ibpT`) || SNodeOperations.isInstanceOf(
-                    concept,
-                    CONCEPTS.`InterfaceConceptDeclaration$CG`,
-                )
+                SPropertyOperations.getBoolean(concept, PROPS.abstract) || SNodeOperations.isInstanceOf(concept, CONCEPTS.InterfaceConceptDeclaration)
             val superConcepts: List<String> = AbstractConceptDeclaration__BehaviorDescriptor.getImmediateSuperconcepts_idhMuxyK2.invoke(concept)
                 .distinct()
                 .filterNotNull()
                 .map { it: SNode ->
-                    val superLanguage = as_y4kbwa_a0a0a0a0a0f0a0a0a6a01(
-                        SNodeOperations.getModel(it).module,
-                        Language::class.java,
-                    )
+                    val superLanguage = SNodeOperations.getModel(it).module as? Language
                     if (superLanguage != null) {
                         exportLanguage(superLanguage)
                     }
                     fqName(it)
                 }
             val metaProperties: MutableMap<String, String> = HashMap()
-            if (SPropertyOperations.getString(concept, PROPS.`conceptAlias$OL_L`) != null) {
+            if (SPropertyOperations.getString(concept, PROPS.conceptAlias) != null) {
                 metaProperties[ConceptData.ALIAS_KEY] =
-                    SPropertyOperations.getString(concept, PROPS.`conceptAlias$OL_L`)
+                    SPropertyOperations.getString(concept, PROPS.conceptAlias)
             }
             ConceptData(
                 "mps:" + MetaIdByDeclaration.getConceptId(concept).toString(),
-                SPropertyOperations.getString(concept, PROPS.`name$MnvL`),
+                SPropertyOperations.getString(concept, PROPS.name),
                 is_abstract,
                 properties,
                 childLinks,
@@ -206,52 +131,30 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             )
         }
 
-        val enums = SNodeOperations.ofConcept(rootNodes, CONCEPTS.`EnumerationDeclaration$hv`)
-            .map<SNode, EnumData> { it: SNode ->
-                val members = SLinkOperations.getChildren(it, LINKS.`members$wmsL`)
+        val enums = SNodeOperations.ofConcept(rootNodes, CONCEPTS.EnumerationDeclaration)
+            .map<SNode, EnumData> {
+                val members = SLinkOperations.getChildren(it, LINKS.members)
                     .map<SNode, EnumMemberData> {
-                        val presentation = (
-                            if ((
-                                SPropertyOperations.getString(
-                                    it,
-                                    PROPS.`name$MnvL`,
-                                ) == SPropertyOperations.getString(it, PROPS.`presentation$BjyV`)
-                                )
-                            ) {
+                        val presentation =
+                            if (SPropertyOperations.getString(it, PROPS.name) == SPropertyOperations.getString(it, PROPS.presentation)) {
                                 null
                             } else {
-                                SPropertyOperations.getString(it, PROPS.`presentation$BjyV`)
+                                SPropertyOperations.getString(it, PROPS.presentation)
                             }
-                            )
                         EnumMemberData(
-                            JavaFriendlyBase64().toString(
-                                SPropertyOperations.getString(
-                                    it,
-                                    PROPS.`memberId$LVXV`,
-                                ).toLong(),
-                            ),
-                            SPropertyOperations.getString(it, PROPS.`name$MnvL`),
+                            JavaFriendlyBase64().toString(SPropertyOperations.getString(it, PROPS.memberId).toLong()),
+                            SPropertyOperations.getString(it, PROPS.name),
                             presentation,
                         )
                     }.toList()
-                val defaultIndex = (
-                    if ((
-                        SLinkOperations.getTarget(
-                            it,
-                            LINKS.`defaultMember$vlmG`,
-                        ) != null
-                        )
-                    ) {
-                        SNodeOperations.getIndexInParent(
-                            SLinkOperations.getTarget(it, LINKS.`defaultMember$vlmG`),
-                        )
-                    } else {
-                        0
-                    }
-                    )
+                val defaultIndex = if (SLinkOperations.getTarget(it, LINKS.defaultMember) != null) {
+                    SNodeOperations.getIndexInParent(SLinkOperations.getTarget(it, LINKS.defaultMember))
+                } else {
+                    0
+                }
                 EnumData(
                     "mps:" + MetaIdByDeclaration.getDatatypeId(it).toString(),
-                    SPropertyOperations.getString(it, PROPS.`name$MnvL`),
+                    SPropertyOperations.getString(it, PROPS.name),
                     members,
                     defaultIndex,
                     deprecationMsg(it),
@@ -273,25 +176,19 @@ class MPSMetaModelExporter(private val outputFolder: File) {
         get() = producedData.values.toList()
 
     fun linkTargetFqName(link: SNode?): String {
-        var target = SLinkOperations.getTarget(link, LINKS.`target$m40F`)
+        var target = SLinkOperations.getTarget(link, LINKS.target)
         if (target == null) {
             println(
-                "Link " + SPropertyOperations.getString(
-                    SNodeOperations.`as`(
-                        SNodeOperations.getParent(link),
-                        CONCEPTS.`INamedConcept$Kd`,
-                    ),
-                    PROPS.`name$MnvL`,
-                ) + "." + SPropertyOperations.getString(
-                    link,
-                    PROPS.`name$MnvL`,
-                ) + " has no target concept. Using BaseConcept instead.",
+                buildString {
+                    append("Link ")
+                    append(SPropertyOperations.getString(SNodeOperations.`as`(SNodeOperations.getParent(link), CONCEPTS.INamedConcept), PROPS.name))
+                    append(".")
+                    append(SPropertyOperations.getString(link, PROPS.name))
+                    append(" has no target concept. Using BaseConcept instead.")
+                },
             )
             target = SPointerOperations.resolveNode(
-                SNodePointer(
-                    "r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)",
-                    "1133920641626",
-                ),
+                SNodePointer("r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)", "1133920641626"),
                 SNodeOperations.getModel(link).module.repository,
             )
         }
@@ -299,10 +196,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
     }
 
     private fun fqName(element: SNode?): String {
-        return SNodeOperations.getModel(element).module.moduleName + "." + SPropertyOperations.getString(
-            element,
-            PROPS.`name$MnvL`,
-        )
+        return SNodeOperations.getModel(element).module.moduleName + "." + SPropertyOperations.getString(element, PROPS.name)
     }
 
     private fun deprecationMsg(node: SNode): String? {
@@ -310,36 +204,33 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             return null
         }
         val msg: String? = IDeprecatable__BehaviorDescriptor.getMessage_idhP43_8K.invoke(node)
-        return (msg ?: "")
+        return msg ?: ""
     }
 
     private object CONCEPTS {
-        /*package*/
-        val `AbstractConceptDeclaration$KA`: SConcept = MetaAdapterFactory.getConcept(
+
+        val AbstractConceptDeclaration: SConcept = MetaAdapterFactory.getConcept(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x1103553c5ffL,
             "jetbrains.mps.lang.structure.structure.AbstractConceptDeclaration",
         )
 
-        /*package*/
-        val `EnumerationDeclaration$hv`: SConcept = MetaAdapterFactory.getConcept(
+        val EnumerationDeclaration: SConcept = MetaAdapterFactory.getConcept(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x2e770ca32c607c5fL,
             "jetbrains.mps.lang.structure.structure.EnumerationDeclaration",
         )
 
-        /*package*/
-        val `InterfaceConceptDeclaration$CG`: SConcept = MetaAdapterFactory.getConcept(
+        val InterfaceConceptDeclaration: SConcept = MetaAdapterFactory.getConcept(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x1103556dcafL,
             "jetbrains.mps.lang.structure.structure.InterfaceConceptDeclaration",
         )
 
-        /*package*/
-        val `INamedConcept$Kd`: SInterfaceConcept = MetaAdapterFactory.getInterfaceConcept(
+        val INamedConcept: SInterfaceConcept = MetaAdapterFactory.getInterfaceConcept(
             -0x3154ae6ada15b0deL,
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
@@ -348,8 +239,8 @@ class MPSMetaModelExporter(private val outputFolder: File) {
     }
 
     private object LINKS {
-        /*package*/
-        val `propertyDeclaration$YUgg`: SContainmentLink = MetaAdapterFactory.getContainmentLink(
+
+        val propertyDeclaration: SContainmentLink = MetaAdapterFactory.getContainmentLink(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x1103553c5ffL,
@@ -357,8 +248,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "propertyDeclaration",
         )
 
-        /*package*/
-        val `dataType$5j5Y`: SReferenceLink = MetaAdapterFactory.getReferenceLink(
+        val dataType: SReferenceLink = MetaAdapterFactory.getReferenceLink(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0xf979bd086bL,
@@ -366,8 +256,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "dataType",
         )
 
-        /*package*/
-        val `linkDeclaration$YU1f`: SContainmentLink = MetaAdapterFactory.getContainmentLink(
+        val linkDeclaration: SContainmentLink = MetaAdapterFactory.getContainmentLink(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x1103553c5ffL,
@@ -375,8 +264,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "linkDeclaration",
         )
 
-        /*package*/
-        val `specializedLink$7ZCN`: SReferenceLink = MetaAdapterFactory.getReferenceLink(
+        val specializedLink: SReferenceLink = MetaAdapterFactory.getReferenceLink(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0xf979bd086aL,
@@ -384,8 +272,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "specializedLink",
         )
 
-        /*package*/
-        val `target$m40F`: SReferenceLink = MetaAdapterFactory.getReferenceLink(
+        val target: SReferenceLink = MetaAdapterFactory.getReferenceLink(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0xf979bd086aL,
@@ -393,8 +280,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "target",
         )
 
-        /*package*/
-        val `members$wmsL`: SContainmentLink = MetaAdapterFactory.getContainmentLink(
+        val members: SContainmentLink = MetaAdapterFactory.getContainmentLink(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x2e770ca32c607c5fL,
@@ -402,8 +288,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "members",
         )
 
-        /*package*/
-        val `defaultMember$vlmG`: SReferenceLink = MetaAdapterFactory.getReferenceLink(
+        val defaultMember: SReferenceLink = MetaAdapterFactory.getReferenceLink(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x2e770ca32c607c5fL,
@@ -413,8 +298,8 @@ class MPSMetaModelExporter(private val outputFolder: File) {
     }
 
     private object PROPS {
-        /*package*/
-        val `name$MnvL`: SProperty = MetaAdapterFactory.getProperty(
+
+        val name: SProperty = MetaAdapterFactory.getProperty(
             -0x3154ae6ada15b0deL,
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
@@ -422,8 +307,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "name",
         )
 
-        /*package*/
-        val `metaClass$PeKc`: SProperty = MetaAdapterFactory.getProperty(
+        val metaClass: SProperty = MetaAdapterFactory.getProperty(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0xf979bd086aL,
@@ -431,8 +315,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "metaClass",
         )
 
-        /*package*/
-        val `abstract$ibpT`: SProperty = MetaAdapterFactory.getProperty(
+        val abstract: SProperty = MetaAdapterFactory.getProperty(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x1103553c5ffL,
@@ -440,8 +323,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "abstract",
         )
 
-        /*package*/
-        val `conceptAlias$OL_L`: SProperty = MetaAdapterFactory.getProperty(
+        val conceptAlias: SProperty = MetaAdapterFactory.getProperty(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x1103553c5ffL,
@@ -449,8 +331,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "conceptAlias",
         )
 
-        /*package*/
-        val `presentation$BjyV`: SProperty = MetaAdapterFactory.getProperty(
+        val presentation: SProperty = MetaAdapterFactory.getProperty(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x2e770ca32c607c60L,
@@ -458,23 +339,12 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             "presentation",
         )
 
-        /*package*/
-        val `memberId$LVXV`: SProperty = MetaAdapterFactory.getProperty(
+        val memberId: SProperty = MetaAdapterFactory.getProperty(
             -0x38d25d468331bbb9L,
             -0x7c760bf823eea749L,
             0x2e770ca32c607c60L,
             0x13b8f6fdce540e38L,
             "memberId",
         )
-    }
-
-    companion object {
-        private fun <T> as_y4kbwa_a0a3a8(o: Any, type: Class<T>): T? {
-            return (if (type.isInstance(o)) o as T else null)
-        }
-
-        private fun <T> as_y4kbwa_a0a0a0a0a0f0a0a0a6a01(o: Any, type: Class<T>): T? {
-            return (if (type.isInstance(o)) o as T else null)
-        }
     }
 }

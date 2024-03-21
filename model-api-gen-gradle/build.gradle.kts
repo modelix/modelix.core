@@ -17,6 +17,9 @@ dependencies {
 
     implementation(project(":model-api-gen"))
     implementation(project(":model-api"))
+
+    implementation(libs.modelix.buildtools.gradle)
+    implementation(libs.modelix.buildtools.lib)
 }
 
 gradlePlugin {

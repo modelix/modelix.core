@@ -25,6 +25,7 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -123,14 +124,15 @@ class ModelClientV2(
     override fun getUserId(): String? = clientProvidedUserId ?: serverProvidedUserId
 
     override suspend fun initRepository(repository: RepositoryId): IVersion {
-        val response = httpClient.post {
+        return httpClient.preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "init")
             }
             useVersionStreamFormat()
+        }.execute { response ->
+            createVersion(null, response.readVersionDelta())
         }
-        return createVersion(null, response.readVersionDelta())
     }
 
     override suspend fun listRepositories(): List<RepositoryId> {
@@ -168,7 +170,7 @@ class ModelClientV2(
     @Deprecated("repository ID is required for permission checks")
     @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     override suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion {
-        val response = httpClient.get {
+        return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("versions", versionHash)
@@ -177,8 +179,9 @@ class ModelClientV2(
                 }
             }
             useVersionStreamFormat()
+        }.execute { response ->
+            createVersion(baseVersion as CLVersion?, response.readVersionDelta())
         }
-        return createVersion(baseVersion as CLVersion?, response.readVersionDelta())
     }
 
     override suspend fun loadVersion(
@@ -186,7 +189,7 @@ class ModelClientV2(
         versionHash: String,
         baseVersion: IVersion?,
     ): IVersion {
-        val response = httpClient.get {
+        return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("repositories", repositoryId.id, "versions", versionHash)
@@ -195,8 +198,9 @@ class ModelClientV2(
                 }
             }
             useVersionStreamFormat()
+        }.execute { response ->
+            createVersion(baseVersion as CLVersion?, response.readVersionDelta())
         }
-        return createVersion(baseVersion as CLVersion?, response.readVersionDelta())
     }
 
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
@@ -213,7 +217,7 @@ class ModelClientV2(
         } else {
             VersionDelta(version.getContentHash(), null, objectsMap = objects)
         }
-        val response = httpClient.post {
+        return httpClient.preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
@@ -221,8 +225,9 @@ class ModelClientV2(
             useVersionStreamFormat()
             contentType(ContentType.Application.Json)
             setBody(delta)
+        }.execute { response ->
+            createVersion(version, response.readVersionDelta())
         }
-        return createVersion(version, response.readVersionDelta())
     }
 
     private suspend fun uploadObjects(repository: RepositoryId, objects: Sequence<Pair<String, String>>) {

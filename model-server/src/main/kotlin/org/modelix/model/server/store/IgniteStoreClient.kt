@@ -31,7 +31,10 @@ private val LOG = KotlinLogging.logger { }
 
 class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) : IStoreClient, AutoCloseable {
 
-    private val ENTRY_CHANGED_TOPIC = "entryChanged"
+    companion object {
+        private const val ENTRY_CHANGED_TOPIC = "entryChanged"
+    }
+
     private lateinit var ignite: Ignite
     private val cache: IgniteCache<String, String?>
     private val changeNotifier = ChangeNotifier(this)

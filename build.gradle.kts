@@ -45,6 +45,7 @@ plugins {
     alias(libs.plugins.dokka)
     alias(libs.plugins.node) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.kotlinx.kover)
 }
 
 group = "org.modelix"
@@ -69,6 +70,11 @@ fun computeVersion(): Any {
 
 dependencies {
     dokkaPlugin(libs.dokka.versioning)
+
+    // Generate a combined coverage report
+    project.subprojects.forEach {
+        kover(it)
+    }
 }
 
 val parentProject = project
@@ -78,6 +84,7 @@ subprojects {
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
     apply(plugin = "io.gitlab.arturbosch.detekt")
+    apply(plugin = "org.jetbrains.kotlinx.kover")
 
     version = rootProject.version
     group = rootProject.group

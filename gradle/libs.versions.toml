@@ -23,6 +23,7 @@ test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
 intellij = { id = "org.jetbrains.intellij", version = "1.17.2" }
 openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
+kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.7.5" }
 
 [versions]
 kotlin = "1.9.23"

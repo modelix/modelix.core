@@ -107,7 +107,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         }
     }
 
-    suspend fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
+    private suspend fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
         val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch doesn't exist: $repositoryAndBranch")
         val branch = OTBranch(PBranch(version.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
         branch.runWriteT { t ->

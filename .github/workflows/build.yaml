@@ -32,7 +32,7 @@ jobs:
       - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --build-cache build detekt -PciBuild=true
+        run: ./gradlew --build-cache build detekt :koverHtmlReport :koverXmlReport -PciBuild=true
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         # Also report in case the build failed
@@ -49,6 +49,13 @@ jobs:
           path: |
             */build/test-results
             */build/reports
+      - name: Report test coverage
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: ${{ github.workspace }}/build/reports/kover/report.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: JVM coverage report
+          update-comment: true
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
         with:

@@ -131,7 +131,11 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             urlPanel.add(serverURL)
 
             val refreshButton = JButton("Refresh All")
-            refreshButton.addActionListener { triggerRefresh() }
+            refreshButton.addActionListener {
+                // TODO workaround
+                ProjectManager.getInstance().openProjects.first().service<CloudResourcesConfigurationComponent>()
+                triggerRefresh()
+            }
             urlPanel.add(refreshButton)
             inputBox.add(urlPanel)
 
@@ -139,16 +143,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwtPanel.add(JLabel("JWT:           "))
             jwtPanel.add(jwt)
 
-            // todo remove
-            val testLabel = JLabel("test")
-            jwtPanel.add(testLabel)
-
             val connectProjectButton = JButton("Connect")
             connectProjectButton.addActionListener {
-                // todo find correct way to access project / service
-                val service = ProjectManager.getInstance().openProjects.first().service<CloudResourcesConfigurationComponent>()
-                service.state.addSomeData()
-                testLabel.text = service.state.modelServers.joinToString { it }
                 modelSyncService.connectModelServer(
                     serverURL.text,
                     jwt.text,

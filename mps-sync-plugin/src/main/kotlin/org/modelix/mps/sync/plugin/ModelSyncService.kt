@@ -39,11 +39,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.INode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
@@ -111,6 +113,32 @@ class ModelSyncService : Disposable {
             }
         }
     }
+
+    fun rebindModule(
+        url: String,
+        branchName: String,
+        module: SModule,
+        repositoryId: String,
+        lastKnownVersionHash: String,
+    ) {
+        connectModelServer(url, "") {}
+        val client = syncService.activeClients.filter { it.baseUrl == url }.first()
+
+        val repository = RepositoryId(repositoryId)
+        val branchReference = BranchReference(repository, branchName)
+        CoroutineScope(Dispatchers.IO).launch {
+            val lastKnownVersion = client.loadVersion(repository, lastKnownVersionHash, null)
+            syncService.rebindModue(
+                client,
+                branchReference,
+                module,
+                lastKnownVersion as CLVersion,
+            )
+        }
+    }
+
+
+
 
     fun ensureStarted() {
         logger.info { "============================================  ensureStarted" }

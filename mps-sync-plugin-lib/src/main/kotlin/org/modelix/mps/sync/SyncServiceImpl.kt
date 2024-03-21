@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ILanguageRepository
@@ -15,6 +16,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.ModelixBranchListener
@@ -127,6 +129,7 @@ class SyncServiceImpl : SyncService {
             val bindings = ITreeToSTreeTransformer(branch, languageRepository).transform(module)
 
             // register replicated model change listener
+            // TODO branch probably not needed
             val listener = ModelixBranchListener(replicatedModel, languageRepository, branch)
             branch.addListener(listener)
             changeListenerByReplicatedModel[replicatedModel] = listener
@@ -145,6 +148,63 @@ class SyncServiceImpl : SyncService {
         callback?.invoke()
 
         return bindings
+    }
+
+    // This will already activate the bindings (different to bindModule) and therefore not return the list of bindings
+    // TODO almost duplicated code with bindModule. Maybe we can merge the code and only have one method
+    /*TODO override*/ suspend fun rebindModue(
+        client: ModelClientV2,
+        branchReference: BranchReference,
+        module: SModule,
+        lastKnownVersion: CLVersion,
+        callback: (() -> Unit)? = null,
+    ) {
+        if (replicatedModelByBranchReference.containsKey(branchReference)) { return }
+
+        // set up a client, a replicated model and an implementation of a binding (to MPS)
+        runBlocking(coroutineScope.coroutineContext) {
+            // TODO how to handle multiple replicated models at the same time?
+            val replicatedModel = client.getReplicatedModel(branchReference)
+            /*
+             * TODO fixme:
+             * (1) How to propagate replicated model to other places of code?
+             * (2) How to know to which replicated model we want to upload? (E.g. when connecting to multiple model servers?)
+             * (3) How to replace the outdated replicated models that are already used from the registry?
+             *
+             * Possible answers:
+             * (1) via the registry
+             * (2) Base the selection on the parent project and the active model server connections we have. E.g. let the user select to which model server they want to upload the changes and so they get the corresponding replicated model.
+             * (3) We don't. We have to make sure that the places always have the latest replicated models from the registry. E.g. if we disconnect from the model server then we remove the replicated model (and thus break the registered event handlers), otherwise the event handlers as for the replicated model from the registry (based on some identifying metainfo for example, so to know which replicated model they need).
+             */
+            ReplicatedModelRegistry.model = replicatedModel
+            replicatedModelByBranchReference[branchReference] = replicatedModel
+
+            val targetProject = mpsProjectInjector.activeMpsProject!!
+            val languageRepository = registerLanguages(targetProject)
+
+            // TODO when and how to dispose the replicated model and everything that depends on it?
+            replicatedModel.start(lastKnownVersion) { branch ->
+                // transform the model
+                // TODO noooooo T.T my typesafety xD
+                ITreeToSTreeTransformer(branch, languageRepository).transform(module as INode).forEach { binding ->
+                    binding.activate()
+                }
+
+                // register replicated model change listener
+                // TODO branch or replicatedModel probably not needed
+                val listener = ModelixBranchListener(replicatedModel, languageRepository, branch)
+                branch.addListener(listener)
+                changeListenerByReplicatedModel[replicatedModel] = listener
+
+                // register MPS project change listener
+                if (projectWithChangeListener == null) {
+                    val repositoryChangeListener = RepositoryChangeListener(branch)
+                    targetProject.repository.addRepositoryListener(repositoryChangeListener)
+                    projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
+                }
+            }
+        }
+        callback?.invoke()
     }
 
     override fun setActiveProject(project: Project) {
@@ -180,5 +240,9 @@ class SyncServiceImpl : SyncService {
             project.repository.removeRepositoryListener(listener)
             projectWithChangeListener = null
         }
+    }
+
+    fun get_ReplicatedModels(): Collection<ReplicatedModel> {
+        return replicatedModelByBranchReference.values
     }
 }

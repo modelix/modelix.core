@@ -31,7 +31,7 @@ import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeLi
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
+class ModelBinding(val model: SModelBase, val branch: IBranch) : IBinding {
 
     private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap

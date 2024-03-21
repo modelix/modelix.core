@@ -40,12 +40,19 @@ class ReplicatedModel(
         return localModel.otBranch
     }
 
-    suspend fun start(): IBranch {
+    suspend fun start(providedInitialVersion: CLVersion? = null, onBeforeSync: (IBranch) -> Unit = {_->} ): IBranch {
         if (state != State.New) throw IllegalStateException("already started")
         state = State.Starting
 
-        val initialVersion = remoteVersion.pull()
+        val initialVersion: CLVersion = if (providedInitialVersion == null) {
+            remoteVersion.pull()
+        } else {
+            remoteVersion.lastKnownRemoteVersion = providedInitialVersion
+            providedInitialVersion
+        }
+
         localModel = LocalModel(initialVersion, client.getIdGenerator(), { client.getUserId() })
+        onBeforeSync(localModel.otBranch)
 
         // receive changes from the server
         pollingJob = scope.launch {
@@ -251,7 +258,7 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
 }
 
 private class RemoteVersion(val client: IModelClientV2, val branchRef: BranchReference) {
-    private var lastKnownRemoteVersion: CLVersion? = null
+    var lastKnownRemoteVersion: CLVersion? = null
     private val unconfirmedVersions: MutableSet<String> = LinkedHashSet()
 
     fun getNumberOfUnconfirmed() = runSynchronized(unconfirmedVersions) { unconfirmedVersions.size }

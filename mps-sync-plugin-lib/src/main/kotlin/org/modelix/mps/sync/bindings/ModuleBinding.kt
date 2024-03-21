@@ -32,7 +32,7 @@ import org.modelix.mps.sync.util.waitForCompletionOfEach
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
+class ModuleBinding(val module: AbstractModule, val branch: IBranch) : IBinding {
 
     private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap

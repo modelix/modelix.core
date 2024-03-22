@@ -3,20 +3,18 @@ plugins {
     id("org.modelix.model-api-gen") apply false
 }
 
-val modelixCoreVersion: String = projectDir.resolve("../../version.txt").readText()
-
 dependencies {
-    implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
-    implementation("org.modelix:modelql-typed:$modelixCoreVersion")
-    implementation("org.modelix:modelql-untyped:$modelixCoreVersion")
+    implementation("org.modelix:model-api-gen-runtime")
+    implementation("org.modelix:modelql-typed")
+    implementation("org.modelix:modelql-untyped")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("reflect"))
 
-    testImplementation("org.modelix:model-api:$modelixCoreVersion")
-    testImplementation("org.modelix:model-client:$modelixCoreVersion")
-    testImplementation("org.modelix:model-server-lib:$modelixCoreVersion")
-    testImplementation("org.modelix:modelql-client:$modelixCoreVersion")
+    testImplementation("org.modelix:model-api")
+    testImplementation("org.modelix", "model-client", "", "jvmRuntimeElements")
+    testImplementation("org.modelix:model-server-lib")
+    testImplementation("org.modelix:modelql-client")
 
     testImplementation(libs.ktor.server.core)
     testImplementation(libs.ktor.server.cors)

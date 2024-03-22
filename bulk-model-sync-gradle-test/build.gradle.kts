@@ -19,17 +19,8 @@ plugins {
     id("org.modelix.bulk-model-sync")
 }
 
-val modelixCoreVersion: String = file("../version.txt").readText()
-
-version = modelixCoreVersion
-
 repositories {
     val modelixRegex = "org\\.modelix.*"
-    mavenLocal {
-        content {
-            includeGroupByRegex(modelixRegex)
-        }
-    }
     gradlePluginPortal {
         content {
             excludeGroupByRegex(modelixRegex)
@@ -52,13 +43,12 @@ repositories {
 val kotlinGenDir = project.layout.buildDirectory.dir("metamodel/kotlin").get().asFile.apply { mkdirs() }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
-    implementation("org.modelix:model-server:$modelixCoreVersion")
-    implementation("org.modelix:model-api-gen-runtime:$modelixCoreVersion")
-    testImplementation("org.modelix:model-client:$modelixCoreVersion")
-    testImplementation("org.modelix:bulk-model-sync-lib:$modelixCoreVersion")
-    testImplementation("org.modelix.mps:model-adapters:$modelixCoreVersion")
-    testImplementation("org.modelix:graph-lang-api:$modelixCoreVersion")
+    implementation(libs.kotlin.coroutines.core)
+    implementation("org.modelix:model-server")
+    implementation("org.modelix:model-api-gen-runtime")
+    testImplementation(project(":graph-lang-api"))
+    testImplementation("org.modelix", "model-client", "", "jvmRuntimeElements")
+    testImplementation("org.modelix:bulk-model-sync-lib")
     testImplementation(kotlin("test"))
     testImplementation(libs.xmlunit.core)
 }

@@ -15,18 +15,9 @@
  */
 
 pluginManagement {
-    val modelixCoreVersion: String = file("../version.txt").readText()
+    includeBuild("..")
     val modelixRegex = "org\\.modelix.*"
-    plugins {
-        id("org.modelix.bulk-model-sync") version modelixCoreVersion
-        id("org.modelix.model-api-gen") version modelixCoreVersion
-    }
     repositories {
-        mavenLocal {
-            content {
-                includeGroupByRegex(modelixRegex)
-            }
-        }
         gradlePluginPortal {
             content {
                 excludeGroupByRegex(modelixRegex)
@@ -45,12 +36,12 @@ pluginManagement {
         }
     }
     dependencyResolutionManagement {
-        repositories {
-            mavenLocal {
-                content {
-                    includeGroupByRegex(modelixRegex)
-                }
+        versionCatalogs {
+            create("libs") {
+                from(files("../gradle/libs.versions.toml"))
             }
+        }
+        repositories {
             gradlePluginPortal {
                 content {
                     excludeGroupByRegex(modelixRegex)
@@ -69,10 +60,8 @@ pluginManagement {
                 }
             }
         }
-        versionCatalogs {
-            create("libs") {
-                from("org.modelix:core-version-catalog:$modelixCoreVersion")
-            }
-        }
     }
 }
+
+includeBuild("..")
+include("graph-lang-api")

@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.kotlin.coroutines.core)
     implementation("org.modelix:model-server")
     implementation("org.modelix:model-api-gen-runtime")
+    testImplementation(project(":graph-lang-api"))
     testImplementation("org.modelix", "model-client", "", "jvmRuntimeElements")
     testImplementation("org.modelix:bulk-model-sync-lib")
     testImplementation(kotlin("test"))

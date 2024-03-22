@@ -1,0 +1,195 @@
+# WARNING - EXPERIMENTAL
+# This file was auto generated from the existing API using an IntelliJ plugin,
+# see https://www.jetbrains.com/help/idea/openapi.html#generate_openapi
+#
+# Manual changes were done for this 'spec' to work in-place with the
+# model-server for now. A lot of changes were done and are still necessary
+# to make this OpenAPI a viable artifact. It will most likely be split
+# into multiple OpenAPI files.
+
+openapi: "3.0.3"
+info:
+  title: "model-server public API"
+  description: "modelix public API"
+  version: "1.0.0"
+servers:
+  - url: '/'
+    description: model-server
+paths:
+  /headers:
+    get:
+      operationId: getHeaders
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+        "500":
+          $ref: '#/components/responses/500'
+  /counter/{key}:
+    post:
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "200":
+          $ref: '#/components/responses/200'
+  /get/{key}:
+    get:
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "404":
+          $ref: '#/components/responses/404'
+        "200":
+          $ref: '#/components/responses/200'
+  /getAll:
+    put:
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "200":
+          $ref: '#/components/responses/200json'
+  /getEmail:
+    get:
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+  /getRecursively/{key}:
+    get:
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+  /poll/{key}:
+    get:
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: lastKnownValue
+          in: "query"
+          required: false
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "404":
+          $ref: '#/components/responses/404'
+        "200":
+          $ref: '#/components/responses/200'
+  /put/{key}:
+    put:
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "200":
+          $ref: '#/components/responses/200'
+        "404":
+          $ref: '#/components/responses/404'
+  /putAll:
+    put:
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "500":
+          $ref: '#/components/responses/500'
+        "200":
+          $ref: '#/components/responses/200'
+        "404":
+          $ref: '#/components/responses/404'
+components:
+  responses:
+    "200":
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string
+    "200json":
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: string
+    "400":
+      description: "Bad Request"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "401":
+      description: "Unauthorized"
+      content:
+        text/plain:
+          schema:
+            type: string
+    403:
+      description: "Forbidden"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "404":
+      description: "Not Found"
+      content:
+        text/plain:
+          schema:
+            type: string
+    "500":
+      description: "Internal Server Error"
+      content:
+        text/plain:
+          schema:
+            type: string

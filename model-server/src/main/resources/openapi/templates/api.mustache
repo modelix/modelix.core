@@ -16,6 +16,7 @@ import io.ktor.server.resources.head
 import io.ktor.server.resources.patch
 {{/featureResources}}
 import io.ktor.server.routing.*
+import io.ktor.util.pipeline.PipelineContext
 {{#imports}}import {{import}}
 {{/imports}}
 
@@ -41,3 +42,40 @@ fun Route.{{classname}}() {
 {{/operation}}
 }
 {{/operations}}
+
+abstract class ApiBase {
+{{#operations}}
+    {{#operation}}
+    /**
+     * {{httpMethod}} {{path}}
+     */
+    {{#isDeprecated}}
+    @Deprecated("deprecated flag is set in the OpenAPI specification")
+    {{/isDeprecated}}
+    abstract suspend fun PipelineContext<Unit, ApplicationCall>.{{operationId}}({{#allParams}}{{paramName}}: {{{dataType}}}{{^required}}?{{/required}}{{#required}}{{#isNullable}}?{{/isNullable}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
+
+    {{/operation}}
+{{/operations}}
+
+    open fun installRoutes(route: Route) {
+        route.apply { installGeneratedRoutes() }
+    }
+
+    private fun Route.installGeneratedRoutes() {
+        {{#operations}}
+            {{#operation}}
+            install_{{operationId}}()
+            {{/operation}}
+        {{/operations}}
+    }
+
+    {{#operations}}
+    {{#operation}}
+    open protected fun Route.install_{{operationId}}() {
+        {{#lambda.lowercase}}{{httpMethod}}{{/lambda.lowercase}}<Paths.{{operationId}}> { parameters ->
+            {{#lambda.indented_8}}{{operationId}}({{#allParams}}parameters.{{paramName}}{{^-last}}, {{/-last}}{{/allParams}}){{/lambda.indented_8}}
+        }
+    }
+    {{/operation}}
+    {{/operations}}
+}

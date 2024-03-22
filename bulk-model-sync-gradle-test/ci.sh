@@ -3,8 +3,7 @@
 set -e
 set -x
 
-TEST_DIR="$(dirname "$(readlink -f "$0")")"
-cd "${TEST_DIR}"
+cd "$(dirname "$(readlink -f "$0")")"
 
 ./gradlew assemble --console=plain
 
@@ -16,11 +15,8 @@ if [ "${CI}" != "true" ]; then
   }
 fi
 
-cd "${TEST_DIR}/.."
-./gradlew :model-server:run --console=plain --args="-inmemory -port 28309" &
+./gradlew :modelix.core:model-server:run --console=plain --args="-inmemory -port 28309" &
 MODEL_SERVER_PID=$!
-
-cd "${TEST_DIR}"
 
 curl -X GET --retry 30 --retry-connrefused --retry-delay 1 http://localhost:28309/health
 

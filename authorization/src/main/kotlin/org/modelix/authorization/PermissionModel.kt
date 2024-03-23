@@ -33,7 +33,10 @@ data class Definition(
     val permissions: Map<String, Permission>
 )
 class Relation()
-data class Permission(val name: String)
+data class Permission(
+    val name: String,
+    val includedIn: List<PermissionReference>
+)
 
 sealed interface Policy {
 
@@ -74,7 +77,9 @@ abstract class PermissionEvaluator<Input>(val schema: Schema<Input>, val input: 
     }
 
     private fun evaluate(permission: Permission, definitionInstance: DefinitionInstance): Boolean {
-        return false
+        return permission.includedIn.map {
+            definitionInstance.resolveDefinitionInstance(it.definitionName).toString() + "/" + it.permissionName
+        }.any { hasPermission(it) }
     }
 
     protected abstract fun getPermissionIdsFromInput(): List<String>
@@ -90,6 +95,10 @@ abstract class PermissionEvaluator<Input>(val schema: Schema<Input>, val input: 
             // TODO schema.relations.filter {  }
 
             return parent?.resolveDefinitionInstance(name)
+        }
+
+        override fun toString(): String {
+            return (listOfNotNull(parent?.toString()) + definition.name + parameterValues).joinToString("/")
         }
     }
 }
@@ -112,7 +121,7 @@ class SchemaBuilder<Input> {
     }
 
     fun build() = Schema<Input>(
-        definitions = inheritedSchemas.fold(emptyMap<String, Definition>()) { acc, it -> acc + it.definitions } + definitionBuilders.mapValues { it.value.build() },
+        definitions = definitionBuilders.mapValues { it.value.build() },
         relations = relationBuilders.map { it.build() }
     )
 
@@ -128,12 +137,12 @@ class SchemaBuilder<Input> {
         return RelationBuilder().also { relationBuilders += it }.also(body)
     }
 
-    inner class DefinitionBuilder(private val name: String) {
+    inner class DefinitionBuilder(private val definitionName: String) {
         private val permissionBuilders: MutableMap<String, PermissionBuilder> = HashMap()
         private val parameters: MutableMap<String, DefinitionParameter<*>> = HashMap()
         private val innerDefinitionBuilders: MutableMap<String, DefinitionBuilder> = mutableMapOf()
         fun build(): Definition = Definition(
-            name,
+            definitionName,
             parameters.map { it.value.name },
             innerDefinitionBuilders.mapValues { it.value.build() },
             permissionBuilders.mapValues { it.value.build() }
@@ -157,20 +166,25 @@ class SchemaBuilder<Input> {
             return checkNotNull(parameters[name]) { "Parameter not found: $name" } as DefinitionParameter<T>
         }
 
-        inner class PermissionBuilder(private val name: String) {
+        inner class PermissionBuilder(private val permissionName: String) {
             private var description: String? = null
+            private val includedIn: MutableList<PermissionReference> = ArrayList()
 
             fun build(): Permission {
-                return Permission(name)
+                return Permission(permissionName, includedIn)
             }
 
-            fun includes(permissionName: String) {  }
-            fun includes(definitionName: String, permissionName: String) {  }
+            fun permission(name: String, body: PermissionBuilder.() -> Unit = {}) {
+                this@DefinitionBuilder.permission(name, body).also { it.includedIn(definitionName, permissionName) }
+            }
+
             fun description(newDescription: String) {
                 description = newDescription
             }
-            fun includedIn(permissionName: String) {}
-            fun includedIn(definitionName: String, permissionName: String) {}
+            fun includedIn(permissionName: String) = includedIn(definitionName, permissionName)
+            fun includedIn(definitionName: String, permissionName: String) {
+                includedIn += PermissionReference(definitionName, permissionName)
+            }
             fun grantIf(condition: IPermissionContext<Input>.() -> Boolean) {  }
         }
     }
@@ -222,6 +236,7 @@ interface IPermissionContext<Input> {
 
 class DefinitionParameter<E>(val name: String)
 
+class PermissionReference(val definitionName: String, val permissionName: String)
 
 fun <Input> buildSchema(body: SchemaBuilder<Input>.() -> Unit): Schema<Input> {
     return SchemaBuilder<Input>().also(body).build()
@@ -264,36 +279,36 @@ val modelServerSchema = buildSchemaForDefaultInput {
 
             relation("repository").to("repository", "branches")
 
-            permission("owner") {
-                includes("rewrite")
+            permission("admin") {
+                permission("rewrite") {
+                    includedIn("repository", "rewrite")
+                    description("Destructive write operations that change the history and loses previously pushed changes.")
+
+                    permission("force-push") {
+                        description("Overwrite the current version. Don't do any merges and don't prevent losing history.")
+                    }
+                    permission("delete")
+                    permission("write") {
+                        description("Non-destructive write operations that preserve the history.")
+                        includedIn("repository", "write")
+                        permission("create") {
+                            description("Can create a branch with this name, if it doesn't exist yet.")
+                        }
+                        permission("push") {
+                            description("Add changes to a branch and merge it with the current version ")
+                        }
+                        permission("read") {
+                            permission("list") {
+                                description("Allowed to know its existence and name, but not the content.")
+                            }
+                            permission("pull") {
+                                description("Allowed reading the version hash. Permissions on objects is checked on repository level, which mean if a client knows the hash it can still read the content.")
+                            }
+                        }
+                    }
+                }
             }
 
-            permission("rewrite") {
-                includedIn("repository", "admin")
-                description("Destructive write operations that change the history and loses previously pushed changes.")
-
-                permission("force-push") {
-                    description("Overwrite the current version. Don't do any merges and don't prevent losing history.")
-                }
-                permission("delete")
-                permission("write") {
-                    description("Non-destructive write operations that preserve the history.")
-                    permission("create") {
-                        description("Can create a branch with this name, if it doesn't exist yet.")
-                    }
-                    permission("push") {
-                        description("Add changes to a branch and merge it with the current version ")
-                    }
-                    permission("read") {
-                        permission("list") {
-                            description("Allowed to know its existence and name, but not the content.")
-                        }
-                        permission("pull") {
-                            description("Allowed reading the version hash. Permissions on objects is checked on repository level, which mean if a client knows the hash it can still read the content.")
-                        }
-                    }
-                }
-            }
         }
     }
 

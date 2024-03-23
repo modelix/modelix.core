@@ -17,6 +17,12 @@
 package org.modelix.authorization
 
 import com.auth0.jwt.interfaces.DecodedJWT
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 
 
 data class Schema<Input>(
@@ -24,22 +30,23 @@ data class Schema<Input>(
     val relations: List<Relation>
 )
 data class Definition(
-    val parameters: List<String>,
     val name: String,
+    val parameters: List<String>,
     val definitions: Map<String, Definition>,
     val permissions: Map<String, Permission>
 )
 class Relation()
 data class Permission(val name: String)
 
-data class DefinitionInstance(
-    val parent: DefinitionInstance?,
-    val definition: Definition,
-    val parameterValues: List<String>,
-)
+sealed interface Policy {
 
-class PermissionEngine<Input>(val schema: Schema<Input>) {
-    fun hasPermission(permissionReference: String, input: Input): Boolean {
+}
+
+
+abstract class PermissionEvaluator<Input>(val schema: Schema<Input>, val input: Input) {
+    fun hasPermission(permissionReference: String): Boolean {
+        val explicitPermissions = getPermissionIdsFromInput().toSet()
+        if (explicitPermissions.contains(permissionReference)) return true
         val parts = permissionReference.split('/')
         return evaluate(parts)
     }
@@ -48,7 +55,7 @@ class PermissionEngine<Input>(val schema: Schema<Input>) {
         val definition = requireNotNull(schema.definitions[remainingParts.first()]) {
             "Unknown permission part: ${remainingParts.first()}"
         }
-        evaluate(remainingParts.drop(1), definition, null)
+        return evaluate(remainingParts.drop(1), definition, null)
     }
 
     private fun evaluate(remainingParts: List<String>, definition: Definition, parent: DefinitionInstance?): Boolean {
@@ -60,7 +67,7 @@ class PermissionEngine<Input>(val schema: Schema<Input>) {
     private fun evaluate(remainingParts: List<String>, definitionInstance: DefinitionInstance): Boolean {
         val permission = definitionInstance.definition.permissions[remainingParts.first()]
         if (permission != null) {
-
+            return evaluate(permission, definitionInstance)
         }
 
         val childDefinition = requireNotNull(definitionInstance.definition.definitions[remainingParts.first()]) {
@@ -69,12 +76,34 @@ class PermissionEngine<Input>(val schema: Schema<Input>) {
         return evaluate(remainingParts.drop(1), childDefinition, definitionInstance)
     }
 
-    private fun evaluate(permission: Permission, definitionInstance: DefinitionInstance) {
-
+    private fun evaluate(permission: Permission, definitionInstance: DefinitionInstance): Boolean {
+        return false
     }
 
+    protected abstract fun getPermissionIdsFromInput(): List<String>
+
+    inner class DefinitionInstance(
+        val parent: DefinitionInstance?,
+        val definition: Definition,
+        val parameterValues: List<String>,
+    ) {
+        fun resolveDefinitionInstance(name: String): DefinitionInstance? {
+            if (definition.name == name) return this
+
+            // TODO schema.relations.filter {  }
+
+            return parent?.resolveDefinitionInstance(name)
+        }
+    }
 }
 
+class DefaultPermissionEvaluator(schema: Schema<DefaultAuthorizationInput>, input: DefaultAuthorizationInput) : PermissionEvaluator<DefaultAuthorizationInput>(schema, input) {
+    override fun getPermissionIdsFromInput(): List<String> {
+        return (input.jwt["permission"] as? JsonArray)?.toList()
+            ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+            ?: emptyList()
+    }
+}
 
 class SchemaBuilder<Input> {
     private val inheritedSchemas: MutableList<Schema<Input>> = mutableListOf()
@@ -90,6 +119,10 @@ class SchemaBuilder<Input> {
         relations = relationBuilders.map { it.build() }
     )
 
+    fun policy(name: String, body: PolicyBuilder.() -> Unit) {
+        TODO()
+    }
+
     fun definition(name: String, body: DefinitionBuilder.() -> Unit = {}) {
         definitionBuilders[name] = DefinitionBuilder(name).also(body)
     }
@@ -98,31 +131,50 @@ class SchemaBuilder<Input> {
         return RelationBuilder().also { relationBuilders += it }.also(body)
     }
 
-    inner class DefinitionBuilder(val name: String) {
+    inner class DefinitionBuilder(private val name: String) {
         private val permissionBuilders: MutableMap<String, PermissionBuilder> = HashMap()
-        fun build() = Definition(name)
-
+        private val parameters: MutableMap<String, DefinitionParameter<*>> = HashMap()
+        private val innerDefinitionBuilders: MutableMap<String, DefinitionBuilder> = mutableMapOf()
+        fun build(): Definition = Definition(
+            name,
+            parameters.map { it.value.name },
+            innerDefinitionBuilders.mapValues { it.value.build() },
+            permissionBuilders.mapValues { it.value.build() }
+        )
+        fun definition(name: String, body: DefinitionBuilder.() -> Unit = {}) {
+            innerDefinitionBuilders[name] = DefinitionBuilder(name).also(body)
+        }
         fun relation(name: String, body: RelationBuilder.() -> Unit = {}): RelationBuilder {
             return RelationBuilder().also { relationBuilders += it }.also(body)
         }
 
         fun permission(name: String, body: PermissionBuilder.() -> Unit = {}): PermissionBuilder {
-            return permissionBuilders.getOrPut(name) { PermissionBuilder() }.also(body)
+            return permissionBuilders.getOrPut(name) { PermissionBuilder(name) }.also(body)
         }
 
-        fun <T> parameter(name: String): DefinitionParameter<T> { TODO() }
-        fun <T> existingParameter(name: String): DefinitionParameter<T> { TODO() }
+        fun <T> parameter(name: String): DefinitionParameter<T> {
+            return DefinitionParameter<T>(name).also { parameters[name] = it }
+        }
 
-        inner class PermissionBuilder {
+        fun <T> existingParameter(name: String): DefinitionParameter<T> {
+            return checkNotNull(parameters[name]) { "Parameter not found: $name" } as DefinitionParameter<T>
+        }
+
+        inner class PermissionBuilder(private val name: String) {
             private var description: String? = null
-            fun includes(permissionName: String) { TODO() }
-            fun includes(definitionName: String, permissionName: String) { TODO() }
+
+            fun build(): Permission {
+                return Permission(name)
+            }
+
+            fun includes(permissionName: String) {  }
+            fun includes(definitionName: String, permissionName: String) {  }
             fun description(newDescription: String) {
                 description = newDescription
             }
-            fun includedIn(permissionName: String): Unit = TODO()
-            fun includedIn(definitionName: String, permissionName: String): Unit = TODO()
-            fun grantIf(condition: IPermissionContext<Input>.() -> Boolean) { TODO() }
+            fun includedIn(permissionName: String) {}
+            fun includedIn(definitionName: String, permissionName: String) {}
+            fun grantIf(condition: IPermissionContext<Input>.() -> Boolean) {  }
         }
     }
 
@@ -143,16 +195,20 @@ class SchemaBuilder<Input> {
             this.toRole = role
         }
 
-        fun target(definition: String, body: TargetBuilder.() -> Unit) { TODO() }
+        fun target(definition: String, body: TargetBuilder.() -> Unit) {  }
         inner class TargetBuilder {
-            fun <T : Any> parameterValue(parameterName: String, parameterValue: IDefinitionContext<Input>.() -> T?) { TODO() }
+            fun <T : Any> parameterValue(parameterName: String, parameterValue: IDefinitionContext<Input>.() -> T?) {  }
             fun role(role: String) { TODO() }
         }
     }
 
+    inner class PolicyBuilder {
+
+    }
+
 }
 
-class DefaultAuthorizationInput(val jwt: DecodedJWT) {
+class DefaultAuthorizationInput(val jwt: JsonObject) {
 
 }
 
@@ -246,7 +302,7 @@ val modelServerSchema = buildSchemaForDefaultInput {
 
 }
 
-val workspacesSchema = buildSchemaForDefaultInput {
+/*val workspacesSchema = buildSchemaForDefaultInput {
     extends(modelServerSchema)
     val repositoryNamePrefix = "workspace-"
     definition("workspace") {
@@ -268,6 +324,6 @@ val workspacesSchema = buildSchemaForDefaultInput {
             }
         }
     }
-}
+}*/
 
 

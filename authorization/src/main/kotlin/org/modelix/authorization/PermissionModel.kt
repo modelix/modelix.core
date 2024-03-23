@@ -75,7 +75,11 @@ abstract class PermissionEvaluator<Input>(val schema: Schema<Input>, val input: 
         if (parts.remainingSize() == 1) {
             val permission = definitionInstance.definition.permissions[parts.current()]
             if (permission != null) {
-                return evaluate(permission, definitionInstance)
+                try {
+                    return evaluate(parts.next(), permission, definitionInstance)
+                } catch (ex: UnknownPermissionException) {
+                    throw UnknownPermissionException(parts.fullId, parts.current(), ex)
+                }
             }
 
         }
@@ -89,9 +93,11 @@ abstract class PermissionEvaluator<Input>(val schema: Schema<Input>, val input: 
         throw UnknownPermissionException(parts.fullId, parts.current())
     }
 
-    private fun evaluate(permission: Permission, definitionInstance: DefinitionInstance): Boolean {
+    private fun evaluate(parts: PermissionParts, permission: Permission, definitionInstance: DefinitionInstance): Boolean {
         return permission.includedIn.map {
-            definitionInstance.resolveDefinitionInstance(it.definitionName).toString() + "/" + it.permissionName
+            val resolved = definitionInstance.resolveDefinitionInstance(it.definitionName)
+                ?: error("Cannot resolve definition '${it.definitionName}' from ${parts.fullId}")
+            resolved.toString() + "/" + it.permissionName
         }.any { hasPermission(it) }
     }
 
@@ -282,8 +288,16 @@ val modelServerSchema = buildSchemaForDefaultInput {
             permission("write") {
                 permission("create")
                 permission("read") {
-                    permission("list")
+                    permission("list") {
+                        includedIn("branch", "list")
+                    }
                 }
+            }
+        }
+
+        definition("objects") {
+            permission("read") {
+                includedIn("branch", "pull")
             }
         }
 

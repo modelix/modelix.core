@@ -45,7 +45,10 @@ import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
 import org.modelix.api.public.Paths
+import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
+import org.modelix.authorization.hasPermission
+import org.modelix.authorization.requiresLogin
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
@@ -92,7 +95,9 @@ class ModelReplicationServer(
     fun init(application: Application) {
         application.apply {
             routing {
-                installHandlers()
+                requiresLogin {
+                    installHandlers()
+                }
             }
         }
     }
@@ -105,6 +110,7 @@ class ModelReplicationServer(
 
     private fun Route.installHandlers() {
         post<Paths.postGenerateClientId> {
+            // checkPermission("model-server", "generate-client-id")
             call.respondText(storeClient.generateId("clientId").toString())
         }
         get<Paths.getServerId> {
@@ -121,21 +127,34 @@ class ModelReplicationServer(
             call.respondText(call.getUserName() ?: call.request.origin.remoteHost)
         }
         get<Paths.getRepositories> {
-            call.respondText(repositoriesManager.getRepositories().joinToString("\n") { it.id })
+            call.respondText(
+                repositoriesManager.getRepositories()
+                    .filter { call.hasPermission("repository", it.id, "list") }
+                    .joinToString("\n") { it.id },
+            )
         }
 
         get<Paths.getRepositoryBranches> {
-            call.respondText(repositoriesManager.getBranchNames(repositoryId()).joinToString("\n"))
+            call.respondText(
+                repositoriesManager
+                    .getBranchNames(repositoryId())
+                    .filter { call.hasPermission("repository", repositoryId().id, "branch", it, "list") }
+                    .joinToString("\n"),
+            )
         }
 
         get<Paths.getRepositoryBranch> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
+            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameter("branch"))
             fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
 
+            val baseVersionHash = call.request.queryParameters["lastKnown"]
+            val branch = branchRef()
+
+            checkPermission("repository", branch.repositoryId.id, "branch", branch.branchName, "pull")
+
             runWithRepository {
-                val baseVersionHash = call.request.queryParameters["lastKnown"]
-                val branch = branchRef()
-                val versionHash = repositoriesManager.getVersionHash(branch) ?: throw BranchNotFoundException(branch)
+                val versionHash = repositoriesManager.getVersionHash(branch)
+                    ?: throw BranchNotFoundException(branch)
                 call.respondDelta(versionHash, baseVersionHash)
             }
         }
@@ -153,6 +172,8 @@ class ModelReplicationServer(
                 "Request lacks branch name", "missing-branch-name",
             )
 
+            checkPermission("repository", repositoryId.id, "branch", branch, "delete")
+
             if (!repositoriesManager.getBranchNames(repositoryId).contains(branch)) {
                 throw BranchNotFoundException(branch, repositoryId.id)
             }
@@ -163,18 +184,21 @@ class ModelReplicationServer(
         }
 
         get<Paths.getRepositoryBranchHash> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
+            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameter("branch"))
             fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
+            val branch = branchRef()
+            checkPermission("repository", branch.repositoryId.id, "branch", branch.branchName, "pull")
             runWithRepository {
-                val branch = branchRef()
-                val versionHash = repositoriesManager.getVersionHash(branch) ?: throw BranchNotFoundException(branch)
+                val versionHash = repositoriesManager.getVersionHash(branch)
+                    ?: throw BranchNotFoundException(branch)
                 call.respondText(versionHash)
             }
         }
 
         post<Paths.initializeRepository> {
             runWithRepository {
+                checkPermission("repository", repositoryId().id, "create")
+
                 val useRoleIds = call.request.queryParameters["useRoleIds"] != "false"
                 val legacyGlobalStorage = call.request.queryParameters["legacyGlobalStorage"] == "true"
                 val initialVersion = repositoriesManager.createRepository(repositoryId(), call.getUserName(), useRoleIds, legacyGlobalStorage)
@@ -184,6 +208,9 @@ class ModelReplicationServer(
 
         post<Paths.deleteRepository> {
             val repositoryId = repositoryId()
+
+            checkPermission("repository", repositoryId.id, "delete")
+
             runWithRepository {
                 val foundAndDeleted = repositoriesManager.removeRepository(repositoryId)
                 if (foundAndDeleted) {
@@ -195,8 +222,11 @@ class ModelReplicationServer(
         }
 
         post<Paths.postRepositoryBranch> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
+            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameter("branch"))
             fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
+
+            val branch = branchRef()
+            checkPermission("repository", branch.repositoryId.id, "branch", branch.branchName, "push")
 
             runWithRepository {
                 val deltaFromClient = call.receive<VersionDelta>()
@@ -208,8 +238,11 @@ class ModelReplicationServer(
         }
 
         get<Paths.pollRepositoryBranch> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
+            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameter("branch"))
             fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
+
+            val branch = branchRef()
+            checkPermission("repository", branch.repositoryId.id, "branch", branch.branchName, "pull")
 
             runWithRepository {
                 val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
@@ -218,8 +251,11 @@ class ModelReplicationServer(
             }
         }
         get<Paths.pollRepositoryBranchHash> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
+            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameter("branch"))
             fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
+
+            val branch = branchRef()
+            checkPermission("repository", branch.repositoryId.id, "branch", branch.branchName, "pull")
 
             runWithRepository {
                 val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
@@ -229,11 +265,13 @@ class ModelReplicationServer(
         }
 
         get<Paths.getRepositoryVersionHash> {
+            checkPermission("repository", repositoryId().id, "objects", "read")
+
             // TODO permission check on the repository ID is not sufficient, because the client could
             //      provide any repository ID to access a version inside a different repository.
             //      A check if the version belongs to the repository is required.
             val baseVersionHash = call.request.queryParameters["lastKnown"]
-            val versionHash = call.parameters["versionHash"]!!
+            val versionHash = parameter("versionHash")
             runWithRepository {
                 if (repositoriesManager.getVersion(repositoryId(), versionHash) == null) {
                     throw VersionNotFoundException(versionHash)
@@ -245,6 +283,7 @@ class ModelReplicationServer(
 
         post<Paths.postRepositoryBranchQuery> { parameters ->
             val branchRef = RepositoryId(parameters.repository).getBranchReference(parameters.branch)
+            checkPermission("repository", branchRef.repositoryId.id, "branch", branchRef.branchName, "query")
             runWithRepository {
                 val version = repositoriesManager.getVersion(branchRef)
                 LOG.trace("Running query on {} @ {}", branchRef, version)
@@ -281,8 +320,9 @@ class ModelReplicationServer(
         }
 
         post<Paths.postRepositoryVersionHashQuery> {
+            checkPermission("repository", parameter("repository"), "objects", "read")
             runWithRepository {
-                val versionHash = call.parameters["versionHash"]!!
+                val versionHash = parameter("versionHash")
                 val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
                 val initialTree = version.getTree()
                 val branch = TreePointer(initialTree)
@@ -291,6 +331,7 @@ class ModelReplicationServer(
         }
 
         put<Paths.putRepositoryObjects> {
+            checkPermission("repository", parameter("repository"), "objects", "add")
             runWithRepository {
                 val writtenEntries = withContext(Dispatchers.IO) {
                     val entries = call.receiveStream().bufferedReader().use { reader ->
@@ -318,13 +359,10 @@ class ModelReplicationServer(
         }
 
         get<Paths.getVersionHash> {
-            // TODO versions should be stored inside a repository with permission checks.
-            //      Knowing a version hash should not give you access to the content.
-            //      This handler was already moved to the 'repositories' route. Removing it here would be a breaking
-            //      change, but should be done in some future version.
+            checkPermission("legacy-global-objects", "read")
             storeClient.withGlobalRepositoryInCoroutine {
                 val baseVersionHash = call.request.queryParameters["lastKnown"]
-                val versionHash = call.parameters["versionHash"]!!
+                val versionHash = parameter("versionHash")
                 if (storeClient[versionHash] == null) {
                     throw VersionNotFoundException(versionHash)
                 }
@@ -422,4 +460,12 @@ private fun Flow<String>.withSeparator(separator: String) = flow {
         }
         emit(it)
     }
+}
+
+private fun PipelineContext<Unit, ApplicationCall>.parameter(name: String): String {
+    return call.parameter(name)
+}
+
+private fun ApplicationCall.parameter(name: String): String {
+    return requireNotNull(parameters[name]) { "Unknown parameter '$name'" }
 }

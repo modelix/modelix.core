@@ -55,7 +55,7 @@ class ContentExplorerTest {
 
     private fun runTest(body: suspend (ApplicationTestBuilder.() -> Unit)) = testApplication {
         application {
-            installDefaultServerPlugins()
+            installDefaultServerPlugins(unitTestMode = true)
             ModelReplicationServer(repoManager).init(this)
             ContentExplorer(modelClient, repoManager).init(this)
         }

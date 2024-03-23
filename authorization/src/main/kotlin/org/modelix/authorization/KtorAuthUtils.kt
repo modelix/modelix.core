@@ -14,11 +14,9 @@
 package org.modelix.authorization
 
 import com.auth0.jwt.JWT
+import com.auth0.jwt.JWTCreator
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.auth.AuthScheme
 import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.Application
@@ -26,91 +24,24 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
 import io.ktor.server.application.install
-import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.AuthenticationContext
-import io.ktor.server.auth.AuthenticationProvider
+import io.ktor.server.application.plugin
 import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.auth.principal
-import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.request.header
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.routing
-import io.ktor.util.AttributeKey
 import io.ktor.util.pipeline.PipelineContext
-import java.security.interfaces.RSAPublicKey
+import org.modelix.authorization.permissions.PermissionEvaluator
+import org.modelix.authorization.permissions.PermissionParts
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
-private const val jwtAuth = "jwtAuth"
-private val httpClient = HttpClient(CIO)
-private val UNIT_TEST_MODE_KEY = AttributeKey<Boolean>("unit-test-mode")
+internal const val jwtAuth = "jwtAuth"
 
+@Deprecated("Install the ModelixAuthorization plugin", replaceWith = ReplaceWith("install(ModelixAuthorization) { if (unitTestMode) configureForUnitTests() }"))
 fun Application.installAuthentication(unitTestMode: Boolean = false) {
-    install(XForwardedHeaders)
-    install(Authentication) {
-        if (unitTestMode) {
-            register(object : AuthenticationProvider(object : Config(jwtAuth) {}) {
-                override suspend fun onAuthenticate(context: AuthenticationContext) {
-                    context.call.attributes.put(UNIT_TEST_MODE_KEY, true)
-                    val token = JWT.create()
-                        .withClaim("email", "unit-tests@example.com")
-                        .sign(Algorithm.HMAC256("unit-tests"))
-                    context.principal(AccessTokenPrincipal(JWT.decode(token)))
-                }
-            })
-        } else {
-            // "Authorization: Bearer ..." header is provided in the header by OAuth proxy
-            jwt(jwtAuth) {
-                verifier(KeycloakUtils.jwkProvider) {
-                    acceptLeeway(60L)
-                }
-                challenge { _, _ ->
-                    call.respond(status = HttpStatusCode.Unauthorized, "No or invalid JWT token provided")
-                } // login and token generation is done by OAuth proxy. Only validation is required here.
-                validate {
-                    try {
-                        // OAuth proxy passes the ID token as the bearer token, but we need the access token
-                        val token = jwtFromHeaders()
-                        if (token != null) {
-                            return@validate token.nullIfInvalid()?.let { AccessTokenPrincipal(it) }
-                        }
-                    } catch (e: Exception) {
-                    }
-                    null
-                }
-            }
-        }
-    }
-    routing {
-        authenticate(jwtAuth) {
-            get("/user") {
-                val jwt = call.principal<AccessTokenPrincipal>()?.jwt ?: call.jwtFromHeaders()
-                if (jwt == null) {
-                    call.respondText("No JWT token available")
-                } else {
-                    val claims = jwt.claims.map { "${it.key}: ${it.value}" }.joinToString("\n")
-                    val validationError = try {
-                        verifyTokenSignature(jwt)
-                        "Valid"
-                    } catch (e: Exception) {
-                        e.message
-                    }
-                    call.respondText(
-                        """
-                                |Token: ${jwt.token}
-                                |
-                                |Validation result: $validationError
-                                |
-                                |$claims
-                                |
-                        """.trimMargin(),
-                    )
-                }
-            }
-        }
+    install(ModelixAuthorization) {
+        if (unitTestMode) configureForUnitTests()
     }
 }
 
@@ -146,11 +77,54 @@ fun Route.requiresLogin(body: Route.() -> Unit) {
 }
 
 fun ApplicationCall.checkPermission(resource: KeycloakResource, scope: KeycloakScope) {
-    if (attributes.getOrNull(UNIT_TEST_MODE_KEY) == true) return
+    if (!application.getModelixAuthorizationConfig().permissionCheckingEnabled()) return
     val principal = principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
     if (!KeycloakUtils.hasPermission(principal.jwt, resource, scope)) {
         throw NoPermissionException(principal, resource.name, scope.name)
     }
+}
+
+fun PipelineContext<*, ApplicationCall>.checkPermission(vararg permissionParts: String) {
+    call.checkPermission(*permissionParts)
+}
+
+fun ApplicationCall.checkPermission(vararg permissionParts: String) {
+    checkPermission(PermissionParts(*permissionParts))
+}
+
+fun ApplicationCall.checkPermission(permissionToCheck: PermissionParts) {
+    if (!hasPermission(permissionToCheck)) {
+        val principal = principal<AccessTokenPrincipal>()
+        throw NoPermissionException(principal, null, null, "${principal?.getUserName()} has no permission '$permissionToCheck'")
+    }
+}
+
+fun ApplicationCall.hasPermission(vararg permissionParts: String): Boolean {
+    return hasPermission(PermissionParts(*permissionParts))
+}
+
+fun ApplicationCall.hasPermission(permissionToCheck: PermissionParts): Boolean {
+    return application.plugin(ModelixAuthorization).hasPermission(this, permissionToCheck)
+}
+
+fun ApplicationCall.getPermissionEvaluator(): PermissionEvaluator {
+    return application.plugin(ModelixAuthorization).getPermissionEvaluator(this)
+}
+
+fun createModelixAccessToken(hmac512key: String, user: String, grantedPermissions: List<String>, additionalTokenContent: (JWTCreator.Builder) -> Unit = {}): String {
+    return createModelixAccessToken(Algorithm.HMAC512(hmac512key), user, grantedPermissions, additionalTokenContent)
+}
+
+/**
+ * Creates a valid JWT token that is compatible to servers with the [ModelixAuthorization] plugin installed.
+ */
+fun createModelixAccessToken(algorithm: Algorithm, user: String, grantedPermissions: List<String>, additionalTokenContent: (JWTCreator.Builder) -> Unit = {}): String {
+    return JWT.create()
+        .withClaim("preferred_username", user)
+        .withClaim("permissions", grantedPermissions)
+        .withExpiresAt(Instant.now().plus(12, ChronoUnit.HOURS))
+        .also(additionalTokenContent)
+        .sign(algorithm)
 }
 
 private fun Map<String, Any>?.readRolesArray(): List<String> {
@@ -182,28 +156,14 @@ fun ApplicationCall.getUserName(): String? {
     return principal<AccessTokenPrincipal>()?.getUserName()
 }
 
+@Deprecated("Use ModelixAuthorizationConfig.verifyTokenSignature")
 fun verifyTokenSignature(token: DecodedJWT) {
-    val jwk = KeycloakUtils.jwkProvider.get(token.keyId)
-    val publicKey = jwk.publicKey as? RSAPublicKey ?: throw RuntimeException("Invalid key type")
-    val algorithm = when (jwk.algorithm) {
-        "RS256" -> Algorithm.RSA256(publicKey, null)
-        "RSA384" -> Algorithm.RSA384(publicKey, null)
-        "RS512" -> Algorithm.RSA512(publicKey, null)
-        else -> throw Exception("Unsupported Algorithm")
-    }
-    val verifier = JWT.require(algorithm)
-        .acceptLeeway(0L)
-        .build()
-    verifier.verify(token)
+    return ModelixAuthorizationConfig.DEFAULT.verifyTokenSignature(token)
 }
 
+@Deprecated("Use ModelixAuthorizationConfig.nullIfInvalid")
 fun DecodedJWT.nullIfInvalid(): DecodedJWT? {
-    return try {
-        verifyTokenSignature(this)
-        this
-    } catch (e: Exception) {
-        null
-    }
+    return ModelixAuthorizationConfig.DEFAULT.nullIfInvalid(this)
 }
 
 private var cachedServiceAccountToken: DecodedJWT? = null

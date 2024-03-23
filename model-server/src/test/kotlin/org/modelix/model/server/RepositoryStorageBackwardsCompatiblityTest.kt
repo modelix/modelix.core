@@ -18,7 +18,6 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.lazy.CLTree
@@ -39,8 +38,7 @@ import kotlin.test.assertFails
 class RepositoryStorageBackwardsCompatiblityTest {
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installDefaultServerPlugins()
-            installAuthentication(unitTestMode = true)
+            installDefaultServerPlugins(unitTestMode = true)
             val store = InMemoryStoreClient()
             val repositoriesManager = RepositoriesManager(LocalModelClient(store.forContextRepository()))
             KeyValueLikeModelServer(repositoriesManager, store.forGlobalRepository(), InMemoryModels()).init(this)

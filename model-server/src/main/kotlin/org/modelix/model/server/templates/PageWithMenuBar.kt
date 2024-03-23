@@ -40,7 +40,8 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
                     "repos/" to "Repositories",
                     "json/" to "JSON API",
                     "headers" to "HTTP Headers",
-                    "user" to "JWT token and permissions",
+                    "user" to "JWT token",
+                    "permissions" to "Permissions",
                     "swagger" to "SwaggerUI",
                 )
                 var classes = "menuItem"

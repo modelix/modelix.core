@@ -54,10 +54,10 @@ import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.api.public.Problem
-import org.modelix.authorization.KeycloakUtils
+import org.modelix.authorization.ModelixAuthorization
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
-import org.modelix.authorization.installAuthentication
+import org.modelix.authorization.permissions.modelServerSchema
 import org.modelix.model.InMemoryModels
 import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.HistoryHandler
@@ -184,7 +184,9 @@ object Main {
 
             val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port, configure = configureNetty) {
                 install(Routing)
-                installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
+                install(ModelixAuthorization) {
+                    permissionSchema = modelServerSchema
+                }
                 install(ForwardedHeaders)
                 install(Resources)
                 // https://opensource.zalando.com/restful-api-guidelines/#136

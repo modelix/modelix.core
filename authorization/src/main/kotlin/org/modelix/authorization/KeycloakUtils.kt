@@ -31,6 +31,7 @@ import java.net.URL
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
+@Deprecated("Permission are not managed in keycloak anymore")
 object KeycloakUtils {
     val BASE_URL = System.getenv("KEYCLOAK_BASE_URL")
     val REALM = System.getenv("KEYCLOAK_REALM")

@@ -17,7 +17,6 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
@@ -49,7 +48,6 @@ class ModelClientV2Test {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             val storeClient = InMemoryStoreClient().forContextRepository()
             ModelReplicationServer(storeClient).init(this)
@@ -145,7 +143,7 @@ class ModelClientV2Test {
         assertEquals(userId, modelClient.getUserId())
         modelClient.setClientProvideUserId(null)
 
-        assertEquals("localhost", modelClient.getUserId())
+        assertEquals("unit-tests@example.com", modelClient.getUserId())
     }
 
     @Test

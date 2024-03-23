@@ -42,11 +42,11 @@ import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.asResource
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
-import org.modelix.authorization.requiresPermission
-import org.modelix.authorization.toKeycloakScope
+import org.modelix.authorization.requiresLogin
 import org.modelix.model.InMemoryModels
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.store.ContextScopedStoreClient
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.ObjectInRepository
@@ -100,23 +100,23 @@ class KeyValueLikeModelServer(
 
     private fun Application.modelServerModule() {
         routing {
-            get<Paths.getHeaders> {
-                val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
-                call.respondHtmlTemplate(PageWithMenuBar("headers", ".")) {
-                    bodyContent {
-                        h1 { +"HTTP Headers" }
-                        div {
-                            headers.forEach {
-                                span {
-                                    +"${it.first}: ${it.second}"
+            requiresLogin {
+                get<Paths.getHeaders> {
+                    val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
+                    call.respondHtmlTemplate(PageWithMenuBar("headers", ".")) {
+                        bodyContent {
+                            h1 { +"HTTP Headers" }
+                            div {
+                                headers.forEach {
+                                    span {
+                                        +"${it.first}: ${it.second}"
+                                    }
+                                    br { }
                                 }
-                                br { }
                             }
                         }
                     }
                 }
-            }
-            requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.READ) {
                 get<Paths.getKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
@@ -143,7 +143,8 @@ class KeyValueLikeModelServer(
 
                 get<Paths.getRecursivelyKeyGet> {
                     val key = call.parameters["key"]!!
-                    call.respondText(collect(key).toString(2), contentType = ContentType.Application.Json)
+                    checkKeyPermission(key, EPermissionType.READ)
+                    call.respondText(collect(key, this).toString(2), contentType = ContentType.Application.Json)
                 }
 
                 put<Paths.putKeyPut> {
@@ -198,8 +199,6 @@ class KeyValueLikeModelServer(
                     call.respondText(respJson.toString(), contentType = ContentType.Application.Json)
                 }
             }
-            requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.WRITE) {
-            }
         }
     }
 
@@ -231,7 +230,7 @@ class KeyValueLikeModelServer(
         return sorted
     }
 
-    fun collect(rootKey: String): JSONArray {
+    fun collect(rootKey: String, callContext: CallContext?): JSONArray {
         val result = JSONArray()
         val processed: MutableSet<String> = HashSet()
         val pending: MutableSet<String> = HashSet()
@@ -239,6 +238,9 @@ class KeyValueLikeModelServer(
         while (pending.isNotEmpty()) {
             val keys: List<String> = ArrayList(pending)
             pending.clear()
+            if (callContext != null) {
+                keys.forEach { callContext.checkKeyPermission(it, EPermissionType.READ) }
+            }
             val values = storeClient.getAll(keys)
             for (i in keys.indices) {
                 val key = keys[i]
@@ -298,31 +300,21 @@ class KeyValueLikeModelServer(
         val userDefinedEntries = LinkedHashMap<String, String?>()
 
         for ((key, value) in newEntries) {
-            when {
-                HashUtil.isSha256(key) -> {
+            switchKeyType(
+                key = key,
+                immutableObject = {
                     hashedObjects[key] = value ?: throw IllegalArgumentException("No value provided for $key")
-                }
-
-                BranchReference.tryParseBranch(key) != null -> {
-                    branchChanges[BranchReference.tryParseBranch(key)!!] = value
-                }
-
-                key.startsWith(PROTECTED_PREFIX) -> {
-                    throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
-                }
-
-                key.startsWith(RepositoriesManager.KEY_PREFIX) -> {
-                    throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
-                }
-
-                key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2 -> {
+                },
+                branch = {
+                    branchChanges[it] = value
+                },
+                serverId = {
                     throw NoPermissionException("'$key' is read-only.")
-                }
-
-                else -> {
+                },
+                unknown = {
                     userDefinedEntries[key] = value
-                }
-            }
+                },
+            )
         }
 
         HashUtil.checkObjectHashes(hashedObjects)
@@ -341,8 +333,10 @@ class KeyValueLikeModelServer(
             storeClient.getGenericStore().putAll(userDefinedEntries.mapKeys { ObjectInRepository.global(it.key) })
             for ((branch, value) in branchChanges) {
                 if (value == null) {
+                    checkPermission(ModelServerPermissionSchema.branch(branch).delete)
                     repositoriesManager.removeBranchesBlocking(branch.repositoryId, setOf(branch.branchName))
                 } else {
+                    checkPermission(ModelServerPermissionSchema.branch(branch).push)
                     repositoriesManager.mergeChangesBlocking(branch, value)
                 }
             }
@@ -359,24 +353,39 @@ class KeyValueLikeModelServer(
 
     @Throws(IOException::class)
     private fun CallContext.checkKeyPermission(key: String, type: EPermissionType) {
-        if (key.startsWith(PROTECTED_PREFIX)) {
-            throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
+        val isWrite = type == EPermissionType.WRITE
+        switchKeyType(
+            key = key,
+            immutableObject = {
+                call.checkPermission(ModelServerPermissionSchema.legacyGlobalObjects.run { if (isWrite) add else read })
+                return
+            },
+            branch = {
+                call.checkPermission(ModelServerPermissionSchema.branch(it).run { if (isWrite) push else pull })
+            },
+            serverId = {
+                if (isWrite) throw NoPermissionException("'$key' is read-only.")
+            },
+            unknown = {
+                call.checkPermission(ModelServerPermissionSchema.legacyUserDefinedObjects.run { if (isWrite) write else read })
+            },
+        )
+    }
+
+    private inline fun <R> switchKeyType(
+        key: String,
+        immutableObject: () -> R,
+        branch: (branch: BranchReference) -> R,
+        serverId: () -> R,
+        unknown: () -> R,
+    ): R {
+        return when {
+            HashUtil.isSha256(key) -> immutableObject()
+            BranchReference.tryParseBranch(key) != null -> branch(BranchReference.tryParseBranch(key)!!)
+            key.startsWith(PROTECTED_PREFIX) -> throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
+            key.startsWith(RepositoriesManager.KEY_PREFIX) -> throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
+            key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2 -> serverId()
+            else -> unknown()
         }
-        if (key.startsWith(RepositoriesManager.KEY_PREFIX)) {
-            throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
-        }
-        if ((key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2) && type.includes(
-                EPermissionType.WRITE,
-            )
-        ) {
-            throw NoPermissionException("'$key' is read-only.")
-        }
-        if (HashUtil.isSha256(key)) {
-            // Reading entries with a hash key is equivalent to uncompressing data that the user already has access to.
-            // If he isn't allowed to read the entry then he shouldn't be allowed to know the hash.
-            // A permission check has happened somewhere earlier.
-            return
-        }
-        call.checkPermission(MODEL_SERVER_ENTRY.createInstance(key), type.toKeycloakScope())
     }
 }

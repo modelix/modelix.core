@@ -50,10 +50,8 @@ import kotlinx.html.thead
 import kotlinx.html.tr
 import kotlinx.html.ul
 import kotlinx.html.unsafe
-import org.modelix.authorization.KeycloakScope
-import org.modelix.authorization.asResource
+import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
-import org.modelix.authorization.requiresPermission
 import org.modelix.model.LinearHistory
 import org.modelix.model.api.PBranch
 import org.modelix.model.client.IModelClient
@@ -67,6 +65,7 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RevertToOp
 import org.modelix.model.operations.applyOperation
 import org.modelix.model.persistent.CPVersion.Companion.DESERIALIZER
+import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.templates.PageWithMenuBar
 import java.time.LocalDateTime
@@ -82,6 +81,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
             get("/history/{repoId}/{branch}") {
                 val repositoryId = RepositoryId(call.parameters["repoId"]!!)
                 val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
+                call.checkPermission(ModelServerPermissionSchema.branch(branch).pull)
                 val params = call.request.queryParameters
                 val limit = toInt(params["limit"], 500)
                 val skip = toInt(params["skip"], 0)
@@ -107,24 +107,23 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                     }
                 }
             }
-            requiresPermission("history".asResource(), KeycloakScope.WRITE) {
-                post("/history/{repoId}/{branch}/revert") {
-                    val repositoryId = RepositoryId(call.parameters["repoId"]!!)
-                    val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
-                    val params = call.receiveParameters()
-                    val fromVersion = params["from"]!!
-                    val toVersion = params["to"]!!
-                    val user = getUserName()
-                    revert(branch, fromVersion, toVersion, user)
-                    call.respondRedirect(".")
-                }
+            post("/history/{repoId}/{branch}/revert") {
+                val repositoryId = RepositoryId(call.parameters["repoId"]!!)
+                val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
+                call.checkPermission(ModelServerPermissionSchema.branch(branch).write)
+                val params = call.receiveParameters()
+                val fromVersion = params["from"]!!
+                val toVersion = params["to"]!!
+                val user = getUserName()
+                revert(branch, fromVersion, toVersion, user)
+                call.respondRedirect(".")
+            }
 //                post("/history/{repoId}/{branch}/delete") {
 //                    val repositoryId = call.parameters["repoId"]!!
 //                    val branch = call.parameters["branch"]!!
 //                    client.put(RepositoryId(repositoryId).getBranchKey(branch), null)
 //                    call.respondRedirect(".")
 //                }
-            }
         }
     }
 

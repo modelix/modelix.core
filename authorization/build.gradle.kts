@@ -15,7 +15,11 @@ dependencies {
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.sessions)
     implementation(libs.ktor.server.forwarded.header)
+    implementation(libs.ktor.server.html.builder)
     implementation(libs.ktor.client.cio)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlin.logging)
+    testImplementation(kotlin("test"))
 }
 
 tasks.getByName<Test>("test") {

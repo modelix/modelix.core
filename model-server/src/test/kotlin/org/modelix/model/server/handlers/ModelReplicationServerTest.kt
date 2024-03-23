@@ -153,7 +153,7 @@ class ModelReplicationServerTest {
         runWithTestModelServer { _, _ ->
             val response = client.delete {
                 url {
-                    appendPathSegments("v2", "repositories", "doesnotexist", "branches", "does not exist")
+                    appendPathSegments("v2", "repositories", "doesnotexist", "branches", "does_not_exist")
                 }
             }
 
@@ -171,7 +171,7 @@ class ModelReplicationServerTest {
 
             val response = client.delete {
                 url {
-                    appendPathSegments("v2", "repositories", repositoryId.id, "branches", "does not exist")
+                    appendPathSegments("v2", "repositories", repositoryId.id, "branches", "does_not_exist")
                 }
             }
 

@@ -42,38 +42,51 @@ sealed interface Policy {
 
 }
 
+class PermissionParts(val fullId: String, val parts: List<String>, val currentIndex: Int) {
+    constructor(id: String) : this(id, id.split('/'), 0)
+    fun next() = next(1)
+    fun next(n: Int) = PermissionParts(fullId, parts, currentIndex + n)
+    fun current() = parts[currentIndex]
+    fun take(n: Int) = parts.drop(currentIndex).take(n)
+    fun remainingSize() = parts.size - currentIndex
+}
 
 abstract class PermissionEvaluator<Input>(val schema: Schema<Input>, val input: Input) {
     fun hasPermission(permissionReference: String): Boolean {
         val explicitPermissions = getPermissionIdsFromInput().toSet()
         if (explicitPermissions.contains(permissionReference)) return true
-        val parts = permissionReference.split('/')
-        return evaluate(parts)
+        return evaluate(PermissionParts(permissionReference))
     }
 
-    private fun evaluate(remainingParts: List<String>): Boolean {
-        val definition = requireNotNull(schema.definitions[remainingParts.first()]) {
-            "Unknown permission part: ${remainingParts.first()}"
-        }
-        return evaluate(remainingParts.drop(1), definition, null)
+    private fun evaluate(parts: PermissionParts): Boolean {
+        val definition = schema.definitions[parts.current()]
+            ?: throw UnknownPermissionException(parts.fullId, parts.current())
+        return evaluate(parts.next(), definition, null)
     }
 
-    private fun evaluate(remainingParts: List<String>, definition: Definition, parent: DefinitionInstance?): Boolean {
-        val parameterValues = remainingParts.take(definition.parameters.size)
+    private fun evaluate(parts: PermissionParts, definition: Definition, parent: DefinitionInstance?): Boolean {
+        val parameterValues = parts.take(definition.parameters.size)
         val instance = DefinitionInstance(parent, definition, parameterValues)
-        return evaluate(remainingParts.drop(parameterValues.size), instance)
+        return evaluate(parts.next(parameterValues.size), instance)
     }
 
-    private fun evaluate(remainingParts: List<String>, definitionInstance: DefinitionInstance): Boolean {
-        val permission = definitionInstance.definition.permissions[remainingParts.first()]
-        if (permission != null) {
-            return evaluate(permission, definitionInstance)
+    private fun evaluate(parts: PermissionParts, definitionInstance: DefinitionInstance): Boolean {
+        if (parts.remainingSize() == 0) throw UnknownPermissionException(parts.fullId, null)
+        if (parts.remainingSize() == 1) {
+            val permission = definitionInstance.definition.permissions[parts.current()]
+            if (permission != null) {
+                return evaluate(permission, definitionInstance)
+            }
+
         }
 
-        val childDefinition = requireNotNull(definitionInstance.definition.definitions[remainingParts.first()]) {
-            "Unknown permission part: ${remainingParts.first()}"
+        val childDefinition = definitionInstance.definition.definitions[parts.current()]
+        if (childDefinition != null) {
+            return evaluate(parts.next(), childDefinition, definitionInstance)
         }
-        return evaluate(remainingParts.drop(1), childDefinition, definitionInstance)
+
+
+        throw UnknownPermissionException(parts.fullId, parts.current())
     }
 
     private fun evaluate(permission: Permission, definitionInstance: DefinitionInstance): Boolean {

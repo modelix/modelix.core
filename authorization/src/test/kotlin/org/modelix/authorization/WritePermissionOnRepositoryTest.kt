@@ -21,27 +21,17 @@ import com.auth0.jwt.algorithms.Algorithm
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.assertThrows
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 
-class WritePermissionOnRepositoryTest {
-    val token = JWT.create()
-        .withClaim("permissions", listOf("repository/myFirstRepo/write"))
-        .sign(Algorithm.HMAC256("my-secret-key-8774567"))
-        .let { JWT.decode(it) }
-    val payloadJson = String(Base64.getUrlDecoder().decode(token.payload), StandardCharsets.UTF_8)
-        .let { Json.parseToJsonElement(it).jsonObject }
-    val input = DefaultAuthorizationInput(payloadJson)
-    val evaluator = DefaultPermissionEvaluator(modelServerSchema, input)
-
-    @BeforeTest
-    fun beforeTest() {
-
-    }
+class WritePermissionOnRepositoryTest : PermissionTestBase(listOf("repository/myFirstRepo/write")) {
 
     @Test
     fun `can list the repository`() {
@@ -54,8 +44,40 @@ class WritePermissionOnRepositoryTest {
     }
 
     @Test
+    fun `can pull from main branch`() {
+        assertTrue(evaluator.hasPermission("repository/myFirstRepo/branch/main/pull"))
+    }
+
+    @Test
     fun `can write to repository`() {
         assertTrue(evaluator.hasPermission("repository/myFirstRepo/write"))
+    }
+
+    @Test
+    fun `cannot force-push to main branch`() {
+        assertFalse(evaluator.hasPermission("repository/myFirstRepo/branch/main/force-push"))
+    }
+
+    @Test
+    fun `unknown permission throws exception`() {
+        assertThrows<UnknownPermissionException> {
+            evaluator.hasPermission("repository/myFirstRepo/branch/main/push/some-non-existent-permission")
+        }
+        assertThrows<UnknownPermissionException> {
+            evaluator.hasPermission("repository/myFirstRepo/branch/main/some-non-existent-permission")
+        }
+        assertThrows<UnknownPermissionException> {
+            evaluator.hasPermission("repository/myFirstRepo/branch/some-non-existent-permission")
+        }
+        assertThrows<UnknownPermissionException> {
+            evaluator.hasPermission("repository/myFirstRepo/some-non-existent-permission")
+        }
+        assertThrows<UnknownPermissionException> {
+            evaluator.hasPermission("repository/some-non-existent-permission")
+        }
+        assertThrows<UnknownPermissionException> {
+            evaluator.hasPermission("some-non-existent-permission")
+        }
     }
 
 }

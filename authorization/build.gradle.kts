@@ -16,6 +16,8 @@ dependencies {
     implementation(libs.ktor.server.sessions)
     implementation(libs.ktor.server.forwarded.header)
     implementation(libs.ktor.client.cio)
+    implementation(libs.kotlin.reflect)
+    testImplementation(kotlin("test"))
 }
 
 tasks.getByName<Test>("test") {

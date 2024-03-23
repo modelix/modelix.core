@@ -46,7 +46,6 @@ import io.ktor.util.pipeline.PipelineContext
 import java.security.interfaces.RSAPublicKey
 
 private const val jwtAuth = "jwtAuth"
-private val httpClient = HttpClient(CIO)
 private val UNIT_TEST_MODE_KEY = AttributeKey<Boolean>("unit-test-mode")
 
 fun Application.installAuthentication(unitTestMode: Boolean = false) {

@@ -16,13 +16,10 @@
 
 package org.modelix.authorization
 
-import com.auth0.jwt.interfaces.DecodedJWT
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonPrimitive
 
 
 data class Schema<Input>(
@@ -99,7 +96,7 @@ abstract class PermissionEvaluator<Input>(val schema: Schema<Input>, val input: 
 
 class DefaultPermissionEvaluator(schema: Schema<DefaultAuthorizationInput>, input: DefaultAuthorizationInput) : PermissionEvaluator<DefaultAuthorizationInput>(schema, input) {
     override fun getPermissionIdsFromInput(): List<String> {
-        return (input.jwt["permission"] as? JsonArray)?.toList()
+        return (input.jwt["permissions"] as? JsonArray)?.toList()
             ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
             ?: emptyList()
     }

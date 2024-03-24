@@ -16,20 +16,9 @@
 
 package org.modelix.authorization
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.assertThrows
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-
 
 class ReadPermissionOnBranchTest : PermissionTestBase(listOf("repository/myFirstRepo/branch/myFeatureBranch/read")) {
 

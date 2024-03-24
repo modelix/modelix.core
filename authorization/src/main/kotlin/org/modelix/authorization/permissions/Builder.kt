@@ -52,7 +52,7 @@ class SchemaBuilder {
 
     fun build() = Schema(
         definitions = definitionBuilders.mapValues { it.value.build() },
-        relations = relationBuilders.map { it.build() }
+        relations = relationBuilders.map { it.build() },
     )
 
     fun definition(name: String, body: DefinitionBuilder.() -> Unit = {}) {
@@ -72,7 +72,7 @@ class SchemaBuilder {
             definitionName,
             parameters.map { it.value.parameterName },
             innerDefinitionBuilders.mapValues { it.value.build() },
-            permissionBuilders.mapValues { it.value.build() }
+            permissionBuilders.mapValues { it.value.build() },
         )
 
         fun load(definition: Definition) {
@@ -160,7 +160,7 @@ class SchemaBuilder {
                 fromDefinition!!,
                 fromRole,
                 toDefinition!!,
-                toRole
+                toRole,
             )
         }
 
@@ -180,13 +180,10 @@ class SchemaBuilder {
         }
 
         inner class TargetBuilder {
-            fun parameterValue(parameterName: String, parameterValue: IDefinitionContext.() -> String?) {  }
+            fun parameterValue(parameterName: String, parameterValue: IDefinitionContext.() -> String?) { }
             fun role(role: String) { toRole = role }
         }
     }
-
 }
 
-class DefaultAuthorizationInput(val jwt: JsonObject) {
-
-}
+class DefaultAuthorizationInput(val jwt: JsonObject)

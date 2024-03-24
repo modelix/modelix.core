@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Schema(
     val definitions: Map<String, Definition>,
-    val relations: List<Relation>
+    val relations: List<Relation>,
 )
 
 @Serializable
@@ -32,7 +32,7 @@ data class Definition(
     val name: String,
     val parameters: List<String>,
     val definitions: Map<String, Definition>,
-    val permissions: Map<String, Permission>
+    val permissions: Map<String, Permission>,
 )
 
 @Serializable
@@ -40,7 +40,7 @@ data class Relation(
     val fromDefinition: String,
     val fromRole: String?,
     val toDefinition: String,
-    val toRole: String?
+    val toRole: String?,
 )
 
 @Serializable
@@ -48,7 +48,7 @@ data class Permission(
     val name: String,
     val description: String? = null,
     val includedIn: List<ScopedPermissionName>,
-    val includes: List<ScopedPermissionName>
+    val includes: List<ScopedPermissionName>,
 )
 
 @Serializable

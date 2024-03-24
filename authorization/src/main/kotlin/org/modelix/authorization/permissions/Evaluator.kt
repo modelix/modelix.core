@@ -16,11 +16,7 @@
 
 package org.modelix.authorization.permissions
 
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 import org.modelix.authorization.UnknownPermissionException
-
 
 class PermissionParts(val fullId: String, val parts: List<String>, val currentIndex: Int) {
     constructor(id: String) : this(id, id.split('/'), 0)
@@ -30,7 +26,6 @@ class PermissionParts(val fullId: String, val parts: List<String>, val currentIn
     fun take(n: Int) = parts.drop(currentIndex).take(n)
     fun remainingSize() = parts.size - currentIndex
 }
-
 
 class PermissionParser(val schema: Schema) {
     fun parse(id: String): PermissionInstanceReference {
@@ -62,7 +57,6 @@ class PermissionParser(val schema: Schema) {
         if (childDefinition != null) {
             return parse(parts.next(), childDefinition, definitionInstance)
         }
-
 
         throw UnknownPermissionException(parts.fullId, parts.current())
     }

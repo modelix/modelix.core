@@ -22,23 +22,13 @@ interface IAuthToken {
     fun hasPermission(id: String)
 }
 
-class JwtTokenAdapter(val jwt: DecodedJWT) {
+class JwtTokenAdapter(val jwt: DecodedJWT)
 
-}
+interface IJwtAuthorization
 
-interface IJwtAuthorization {
-
-}
-
-class KeycloakBasedAuthorization : IJwtAuthorization {
-
-}
+class KeycloakBasedAuthorization : IJwtAuthorization
 
 class PermissionModel {
 
-    class Permission(val id: String) {
-
-    }
+    class Permission(val id: String)
 }
-
-

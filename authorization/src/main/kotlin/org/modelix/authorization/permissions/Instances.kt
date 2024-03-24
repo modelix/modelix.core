@@ -39,7 +39,7 @@ class SchemaInstance(val schema: Schema) {
         val newInstance = DefinitionInstance(
             parentInstance,
             definitionSchema,
-            ref
+            ref,
         )
         definitions[ref] = newInstance
         parentInstance?.let { it.childDefinitions[ref] = newInstance }
@@ -129,7 +129,7 @@ class SchemaInstance(val schema: Schema) {
 data class DefinitionInstanceReference(
     val name: String,
     val parameterValues: List<String>,
-    val parent: DefinitionInstanceReference?
+    val parent: DefinitionInstanceReference?,
 ) {
     override fun toString(): String {
         return (listOfNotNull(parent?.toString()) + name + parameterValues).joinToString("/")
@@ -141,7 +141,3 @@ data class PermissionInstanceReference(val permissionName: String, val definitio
         return "$definition/$permissionName"
     }
 }
-
-
-
-

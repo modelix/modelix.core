@@ -25,10 +25,6 @@ import org.modelix.authorization.permissions.SchemaInstance
 import org.modelix.authorization.permissions.modelServerSchema
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertTrue
-
 
 abstract class PermissionTestBase(private val explicitlyGrantedPermissions: List<String>) {
     val token = JWT.create()

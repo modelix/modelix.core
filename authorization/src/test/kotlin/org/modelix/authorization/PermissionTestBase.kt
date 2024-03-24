@@ -20,6 +20,9 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import org.modelix.authorization.permissions.PermissionEvaluator
+import org.modelix.authorization.permissions.SchemaInstance
+import org.modelix.authorization.permissions.modelServerSchema
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import kotlin.test.BeforeTest
@@ -34,6 +37,7 @@ abstract class PermissionTestBase(private val explicitlyGrantedPermissions: List
         .let { JWT.decode(it) }
     val payloadJson = String(Base64.getUrlDecoder().decode(token.payload), StandardCharsets.UTF_8)
         .let { Json.parseToJsonElement(it).jsonObject }
-    val input = DefaultAuthorizationInput(payloadJson)
-    val evaluator = DefaultPermissionEvaluator(modelServerSchema, input)
+    val evaluator = PermissionEvaluator(SchemaInstance(modelServerSchema)).also { evaluator ->
+        explicitlyGrantedPermissions.forEach { evaluator.grantPermission(it) }
+    }
 }

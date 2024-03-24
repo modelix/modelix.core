@@ -77,6 +77,7 @@ class PermissionEvaluator(val schemaInstance: SchemaInstance) {
     }
 
     fun grantPermission(permissionRef: PermissionInstanceReference) {
+        schemaInstance.getOrCreatePermissionInstance(permissionRef)
         allGrantedPermissions += permissionRef
     }
 

@@ -22,23 +22,36 @@ package org.modelix.authorization.permissions
 class SchemaInstance(val schema: Schema) {
     val definitions: MutableMap<DefinitionInstanceReference, DefinitionInstance> = HashMap()
 
-    fun getOrCreateDefinitionInstance(ref: DefinitionInstanceReference): DefinitionInstance {
-        return definitions.getOrPut(ref) {
-            val parentInstance = ref.parent?.let { getOrCreateDefinitionInstance(it) }
-            val definitionSchema = requireNotNull(
-                (parentInstance?.definitionSchema?.definitions ?: schema.definitions)[ref.name]
-            ) { "Definition not found: ${ref.name}" }
-            DefinitionInstance(
-                parentInstance,
-                definitionSchema,
-                ref
-            ).also { child ->
-                parentInstance?.let { it.childDefinitions[ref] = child }
-                definitionSchema.permissions.forEach { child.getOrCreatePermissionInstance(it.key) }
-            }
-        }.also {
-            updateIncludes() // TODO only execute on put
+    init {
+        // definitions without parameters can be instantiated directly without waiting for additional information
+        schema.definitions.filter { it.value.parameters.isEmpty() }.forEach {
+            getOrCreateDefinitionInstance(DefinitionInstanceReference(it.key, emptyList(), null))
         }
+    }
+
+    fun getOrCreateDefinitionInstance(ref: DefinitionInstanceReference): DefinitionInstance {
+        definitions[ref]?.let { return it }
+
+        val parentInstance = ref.parent?.let { getOrCreateDefinitionInstance(it) }
+        val definitionSchema = requireNotNull((parentInstance?.definitionSchema?.definitions ?: schema.definitions)[ref.name]) {
+            "Definition not found: ${ref.name}"
+        }
+        val newInstance = DefinitionInstance(
+            parentInstance,
+            definitionSchema,
+            ref
+        )
+        definitions[ref] = newInstance
+        parentInstance?.let { it.childDefinitions[ref] = newInstance }
+        definitionSchema.permissions.forEach { newInstance.getOrCreatePermissionInstance(it.key) }
+
+        // definitions without parameters can be instantiated directly without waiting for additional information
+        definitionSchema.definitions.filter { it.value.parameters.isEmpty() }.forEach {
+            getOrCreateDefinitionInstance(DefinitionInstanceReference(it.key, emptyList(), ref))
+        }
+
+        updateIncludes()
+        return newInstance
     }
 
     fun getOrCreatePermissionInstance(ref: PermissionInstanceReference): DefinitionInstance.PermissionInstance {
@@ -77,7 +90,12 @@ class SchemaInstance(val schema: Schema) {
 
             // TODO relations
 
-            return parent?.resolveDefinitionInstance(name)
+            childDefinitions.values.firstOrNull { it.definitionSchema.name == name && it.definitionSchema.parameters.isEmpty() }?.let { return it }
+            return if (parent != null) {
+                parent.resolveDefinitionInstance(name)
+            } else {
+                definitions.values.firstOrNull { it.definitionSchema.name == name && it.definitionSchema.parameters.isEmpty() }
+            }
         }
 
         override fun toString() = reference.toString()
@@ -92,6 +110,13 @@ class SchemaInstance(val schema: Schema) {
                         val targetPermission = it.getOrCreatePermissionInstance(target.permissionName)
                         includedIn += targetPermission
                         targetPermission.includes += this
+                    }
+                }
+                permissionSchema.includes.forEach { target ->
+                    resolveDefinitionInstance(target.definitionName)?.let {
+                        val targetPermission = it.getOrCreatePermissionInstance(target.permissionName)
+                        includes += targetPermission
+                        targetPermission.includedIn += this
                     }
                 }
             }

@@ -119,9 +119,10 @@ class SchemaBuilder {
         inner class PermissionBuilder(private val permissionName: String) {
             private var description: String? = null
             private val includedIn: MutableList<ScopedPermissionName> = ArrayList()
+            private val includes: MutableList<ScopedPermissionName> = ArrayList()
 
             fun build(): Permission {
-                return Permission(permissionName, description, includedIn)
+                return Permission(permissionName, description, includedIn, includes)
             }
 
             fun permission(name: String, body: PermissionBuilder.() -> Unit = {}) {
@@ -136,6 +137,12 @@ class SchemaBuilder {
 
             fun includedIn(definitionName: String, permissionName: String) {
                 includedIn += ScopedPermissionName(definitionName, permissionName)
+            }
+
+            fun includes(permissionName: String) = includes(definitionName, permissionName)
+
+            fun includes(definitionName: String, permissionName: String) {
+                includes += ScopedPermissionName(definitionName, permissionName)
             }
         }
     }

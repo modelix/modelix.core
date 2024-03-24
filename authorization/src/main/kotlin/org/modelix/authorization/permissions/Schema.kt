@@ -47,7 +47,8 @@ data class Relation(
 data class Permission(
     val name: String,
     val description: String? = null,
-    val includedIn: List<ScopedPermissionName>
+    val includedIn: List<ScopedPermissionName>,
+    val includes: List<ScopedPermissionName>
 )
 
 @Serializable

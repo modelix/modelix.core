@@ -49,7 +49,7 @@ val modelServerSchema = buildSchema {
 
         definition("objects") {
             permission("read") {
-                includedIn("branch", "pull")
+
             }
         }
 
@@ -78,10 +78,12 @@ val modelServerSchema = buildSchema {
                         }
                         permission("read") {
                             permission("list") {
+                                includes("repository", "list")
                                 description("Allowed to know its existence and name, but not the content.")
                             }
                             permission("pull") {
                                 description("Allowed reading the version hash. Permissions on objects is checked on repository level, which mean if a client knows the hash it can still read the content.")
+                                includes("objects", "read")
                             }
                         }
                     }

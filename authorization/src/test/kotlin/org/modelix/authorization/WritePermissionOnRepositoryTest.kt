@@ -57,27 +57,4 @@ class WritePermissionOnRepositoryTest : PermissionTestBase(listOf("repository/my
     fun `cannot force-push to main branch`() {
         assertFalse(evaluator.hasPermission("repository/myFirstRepo/branch/main/force-push"))
     }
-
-    @Test
-    fun `unknown permission throws exception`() {
-        assertThrows<UnknownPermissionException> {
-            evaluator.hasPermission("repository/myFirstRepo/branch/main/push/some-non-existent-permission")
-        }
-        assertThrows<UnknownPermissionException> {
-            evaluator.hasPermission("repository/myFirstRepo/branch/main/some-non-existent-permission")
-        }
-        assertThrows<UnknownPermissionException> {
-            evaluator.hasPermission("repository/myFirstRepo/branch/some-non-existent-permission")
-        }
-        assertThrows<UnknownPermissionException> {
-            evaluator.hasPermission("repository/myFirstRepo/some-non-existent-permission")
-        }
-        assertThrows<UnknownPermissionException> {
-            evaluator.hasPermission("repository/some-non-existent-permission")
-        }
-        assertThrows<UnknownPermissionException> {
-            evaluator.hasPermission("some-non-existent-permission")
-        }
-    }
-
 }

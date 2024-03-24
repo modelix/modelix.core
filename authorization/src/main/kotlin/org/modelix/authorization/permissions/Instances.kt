@@ -25,12 +25,16 @@ class SchemaInstance(val schema: Schema) {
     fun getOrCreateDefinitionInstance(ref: DefinitionInstanceReference): DefinitionInstance {
         return definitions.getOrPut(ref) {
             val parentInstance = ref.parent?.let { getOrCreateDefinitionInstance(it) }
+            val definitionSchema = requireNotNull(
+                (parentInstance?.definitionSchema?.definitions ?: schema.definitions)[ref.name]
+            ) { "Definition not found: ${ref.name}" }
             DefinitionInstance(
                 parentInstance,
-                requireNotNull((parentInstance?.definitionSchema?.definitions ?: schema.definitions)[ref.name]) { "Definition not found: ${ref.name}" },
+                definitionSchema,
                 ref
             ).also { child ->
                 parentInstance?.let { it.childDefinitions[ref] = child }
+                definitionSchema.permissions.forEach { child.getOrCreatePermissionInstance(it.key) }
             }
         }.also {
             updateIncludes() // TODO only execute on put
@@ -91,6 +95,8 @@ class SchemaInstance(val schema: Schema) {
                     }
                 }
             }
+
+            override fun toString() = ref.toString()
         }
     }
 }

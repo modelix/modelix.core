@@ -81,10 +81,7 @@ class SchemaBuilder {
             }
             definition.permissions.forEach { (permissionName, permission) ->
                 permission(permissionName) {
-                    permission.description?.let { description(it) }
-                    permission.includedIn.forEach { includedIn ->
-                        includedIn(includedIn.definitionName, includedIn.permissionName)
-                    }
+                    load(permission)
                 }
             }
             definition.definitions.forEach { (childName, child) ->
@@ -123,6 +120,16 @@ class SchemaBuilder {
 
             fun build(): Permission {
                 return Permission(permissionName, description, includedIn, includes)
+            }
+
+            fun load(permission: Permission) {
+                permission.description?.let { description(it) }
+                permission.includedIn.forEach { target ->
+                    includedIn(target.definitionName, target.permissionName)
+                }
+                permission.includes.forEach { target ->
+                    includes(target.definitionName, target.permissionName)
+                }
             }
 
             fun permission(name: String, body: PermissionBuilder.() -> Unit = {}) {
@@ -185,5 +192,3 @@ class SchemaBuilder {
         }
     }
 }
-
-class DefaultAuthorizationInput(val jwt: JsonObject)

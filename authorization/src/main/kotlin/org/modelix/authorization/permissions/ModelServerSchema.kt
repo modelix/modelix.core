@@ -25,24 +25,40 @@ val baseSchema = buildSchema {
 
 val modelServerSchema = buildSchema {
     extends(baseSchema)
+
+    definition("model-server") {
+
+        permission("admin") {
+
+        }
+
+    }
+
+    definition("permission-schema") {
+        permission("write") {
+            includedIn("model-server", "admin")
+            permission("read")
+        }
+    }
+
     definition("repository") {
         parameter("name")
 
         permission("admin") {
-            permission("rewrite")
-        }
-
-        permission("rewrite") {
-            permission("delete")
-            permission("write") {
-                permission("create")
-                permission("read") {
-                    permission("list") {
-                        includedIn("branch", "list")
+            includedIn("model-server", "admin")
+            permission("rewrite") {
+                permission("delete")
+                permission("write") {
+                    permission("create")
+                    permission("read") {
+                        permission("list") {
+                            includedIn("branch", "list")
+                        }
                     }
                 }
             }
         }
+
 
         definition("objects") {
             permission("read") {
@@ -52,9 +68,8 @@ val modelServerSchema = buildSchema {
         definition("branch") {
             parameter("name")
 
-            relation("repository").to("repository", "branches")
-
             permission("admin") {
+                includedIn("repository", "admin")
                 permission("rewrite") {
                     includedIn("repository", "rewrite")
                     description("Destructive write operations that change the history and loses previously pushed changes.")
@@ -87,17 +102,44 @@ val modelServerSchema = buildSchema {
             }
         }
     }
+
 }
 
 val workspacesSchema = buildSchema {
     extends(modelServerSchema)
     val repositoryNamePrefix = "workspace-"
+
+    definition("workspaces") {
+        permission("admin") {
+            permission("manage") {
+                permission("create")
+            }
+        }
+    }
+
     definition("workspace") {
         val workspaceId = parameter("id")
-        relation("repository") {
+        relation("model-repository") {
             target("repository") {
                 role("owning-workspace")
                 parameterValue("name") { repositoryNamePrefix + workspaceId.get() }
+            }
+        }
+
+        permission("manage") {
+            permission("create")
+            permission("read-config")
+            permission("write-config")
+            permission("edit") {
+                permission("write-model") {
+                    includes("repository", "write")
+                }
+                permission("view") {
+                    permission("start")
+                    permission("read-model") {
+                        includes("repository", "read")
+                    }
+                }
             }
         }
     }

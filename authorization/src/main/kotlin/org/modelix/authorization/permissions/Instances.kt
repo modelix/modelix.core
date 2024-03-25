@@ -20,6 +20,9 @@ package org.modelix.authorization.permissions
  * Instantiates the abstract schema with data from an actual system.
  */
 class SchemaInstance(val schema: Schema) {
+    /**
+     * Also contains child instances
+     */
     val definitions: MutableMap<DefinitionInstanceReference, DefinitionInstance> = HashMap()
 
     init {
@@ -28,6 +31,8 @@ class SchemaInstance(val schema: Schema) {
             instantiateDefinition(DefinitionInstanceReference(it.key, emptyList(), null))
         }
     }
+
+    fun getAllPermissions() = definitions.values.flatMap { it.permissions.values }
 
     fun instantiateDefinition(ref: DefinitionInstanceReference): DefinitionInstance {
         definitions[ref]?.let { return it }
@@ -84,7 +89,7 @@ class SchemaInstance(val schema: Schema) {
         }
     }
 
-    fun getOrCreatePermissionInstance(ref: PermissionInstanceReference): DefinitionInstance.PermissionInstance {
+    fun instantiatePermission(ref: PermissionInstanceReference): DefinitionInstance.PermissionInstance {
         return instantiateDefinition(ref.definition)
             .getOrCreatePermissionInstance(ref.permissionName)
     }

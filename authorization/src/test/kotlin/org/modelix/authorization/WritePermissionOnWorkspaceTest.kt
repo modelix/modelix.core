@@ -18,6 +18,7 @@ package org.modelix.authorization
 
 import org.modelix.authorization.permissions.workspacesSchema
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -46,5 +47,32 @@ class WritePermissionOnWorkspaceTest : PermissionTestBase(listOf("workspace/1234
     @Test
     fun `cannot force-push to main branch`() {
         assertFalse(evaluator.hasPermission("repository/workspace-12345678/branch/main/force-push"))
+    }
+
+    @Test
+    fun `check all granted permissions`() {
+        evaluator.instantiatePermission("repository/workspace-12345678/branch/main/push")
+        val allGranted = evaluator.getAllGrantedPermissions().map { it.toString() }.toSet()
+        assertEquals(
+            setOf(
+                "repository/workspace-12345678/branch/main/create",
+                "repository/workspace-12345678/branch/main/list",
+                "repository/workspace-12345678/branch/main/pull",
+                "repository/workspace-12345678/branch/main/push",
+                "repository/workspace-12345678/branch/main/read",
+                "repository/workspace-12345678/branch/main/write",
+                "repository/workspace-12345678/create",
+                "repository/workspace-12345678/list",
+                "repository/workspace-12345678/objects/read",
+                "repository/workspace-12345678/read",
+                "repository/workspace-12345678/write",
+                "workspace/12345678/edit",
+                "workspace/12345678/read-model",
+                "workspace/12345678/start",
+                "workspace/12345678/view",
+                "workspace/12345678/write-model",
+            ),
+            allGranted
+        )
     }
 }

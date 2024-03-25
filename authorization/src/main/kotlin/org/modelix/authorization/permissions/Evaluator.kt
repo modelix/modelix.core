@@ -66,12 +66,14 @@ class PermissionEvaluator(val schemaInstance: SchemaInstance) {
     private val allGrantedPermissions: MutableSet<PermissionInstanceReference> = HashSet()
     private val parser = PermissionParser(schemaInstance.schema)
 
+    fun getAllGrantedPermissions(): Set<PermissionInstanceReference> = schemaInstance.getAllPermissions().map { it.ref }.filter { hasPermission(it) }.toSet()
+
     fun grantPermission(permissionId: String) {
         grantPermission(parser.parse(permissionId))
     }
 
     fun grantPermission(permissionRef: PermissionInstanceReference) {
-        schemaInstance.getOrCreatePermissionInstance(permissionRef)
+        schemaInstance.instantiatePermission(permissionRef)
         allGrantedPermissions += permissionRef
     }
 
@@ -79,10 +81,18 @@ class PermissionEvaluator(val schemaInstance: SchemaInstance) {
         return hasPermission(parser.parse(permissionId))
     }
 
+    fun instantiatePermission(permissionId: String) {
+        val permissionRef = parser.parse(permissionId)
+        schemaInstance.instantiatePermission(permissionRef)
+        hasPermission(permissionRef)
+    }
+
     fun hasPermission(permissionInstanceRef: PermissionInstanceReference): Boolean {
         if (allGrantedPermissions.contains(permissionInstanceRef)) return true
 
-        val permissionInstance = schemaInstance.getOrCreatePermissionInstance(permissionInstanceRef)
-        return permissionInstance.includedIn.any { hasPermission(it.ref) }
+        val permissionInstance = schemaInstance.instantiatePermission(permissionInstanceRef)
+        val indirectlyGranted = permissionInstance.includedIn.any { hasPermission(it.ref) }
+        if (indirectlyGranted) allGrantedPermissions.add(permissionInstanceRef)
+        return indirectlyGranted
     }
 }

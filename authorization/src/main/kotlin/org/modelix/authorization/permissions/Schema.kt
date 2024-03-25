@@ -50,7 +50,7 @@ data class Relation(
     val fromRole: String,
     val toDefinition: String,
     val toRole: String?,
-    val targetParameterValues: Map<String, IExpression>
+    val targetParameterValues: Map<String, IExpression>,
 )
 
 @Serializable

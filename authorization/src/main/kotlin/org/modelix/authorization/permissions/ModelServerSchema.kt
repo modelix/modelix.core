@@ -16,22 +16,20 @@
 
 package org.modelix.authorization.permissions
 
-val baseSchema = buildSchema {
+val baseSchema = buildPermissionSchema {
     definition("group") {
     }
     definition("user") {
     }
 }
 
-val modelServerSchema = buildSchema {
+val modelServerSchema = buildPermissionSchema {
     extends(baseSchema)
 
     definition("model-server") {
 
         permission("admin") {
-
         }
-
     }
 
     definition("permission-schema") {
@@ -58,7 +56,6 @@ val modelServerSchema = buildSchema {
                 }
             }
         }
-
 
         definition("objects") {
             permission("read") {
@@ -102,12 +99,10 @@ val modelServerSchema = buildSchema {
             }
         }
     }
-
 }
 
-val workspacesSchema = buildSchema {
+val workspacesSchema = buildPermissionSchema {
     extends(modelServerSchema)
-    val repositoryNamePrefix = "workspace-"
 
     definition("workspaces") {
         permission("admin") {

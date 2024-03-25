@@ -16,7 +16,7 @@
 
 package org.modelix.authorization.permissions
 
-fun buildSchema(body: SchemaBuilder.() -> Unit): Schema {
+fun buildPermissionSchema(body: SchemaBuilder.() -> Unit): Schema {
     return SchemaBuilder().also(body).build()
 }
 
@@ -172,7 +172,7 @@ class SchemaBuilder {
                 fromRole,
                 toDefinition!!,
                 toRole,
-                targetParameterValues
+                targetParameterValues,
             )
         }
 

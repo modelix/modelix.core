@@ -72,7 +72,7 @@ class WritePermissionOnWorkspaceTest : PermissionTestBase(listOf("workspace/1234
                 "workspace/12345678/view",
                 "workspace/12345678/write-model",
             ),
-            allGranted
+            allGranted,
         )
     }
 }

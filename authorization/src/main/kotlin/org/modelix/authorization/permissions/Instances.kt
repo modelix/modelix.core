@@ -75,7 +75,7 @@ class SchemaInstance(val schema: Schema) {
                 val expr = checkNotNull(relation.targetParameterValues[paramName]) { "Value for parameter ${targetSchema.name}.$paramName missing in relation ${relation.fromDefinition}.${relation.toRole}" }
                 evaluateExpression(expr, source)
             },
-            null
+            null,
         )
         val target = instantiateDefinition(targetRef)
         source.relationTargetInstances[relation.fromRole] = target

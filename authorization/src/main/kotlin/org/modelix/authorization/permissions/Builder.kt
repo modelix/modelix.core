@@ -181,5 +181,9 @@ class SchemaBuilder {
         fun targetParameterValue(parameterName: String, parameterValue: IExpression) {
             targetParameterValues[parameterName] = parameterValue
         }
+
+        fun sourceParameterValue(name: String) = SourceParameterValue(name)
+
+        fun IExpression.withPrefix(prefix: String) = AddPrefix(prefix, this)
     }
 }

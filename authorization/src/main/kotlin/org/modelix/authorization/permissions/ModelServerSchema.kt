@@ -122,13 +122,18 @@ val workspacesSchema = buildSchema {
 
         relation("model-repository") {
             targetDefinition("repository")
-            targetParameterValue("name", AddPrefix("workspace-", SourceParameterValue("id")))
+            targetParameterValue("name", sourceParameterValue("id").withPrefix("workspace-"))
+        }
+
+        definition("config") {
+            permission("write") {
+                permission("read")
+            }
         }
 
         permission("manage") {
+            includes("config", "write")
             permission("create")
-            permission("read-config")
-            permission("write-config")
             permission("edit") {
                 permission("write-model") {
                     includes("repository", "write")

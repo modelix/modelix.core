@@ -118,12 +118,11 @@ val workspacesSchema = buildSchema {
     }
 
     definition("workspace") {
-        val workspaceId = parameter("id")
+        parameter("id")
+
         relation("model-repository") {
-            target("repository") {
-                role("owning-workspace")
-                parameterValue("name") { repositoryNamePrefix + workspaceId.get() }
-            }
+            targetDefinition("repository")
+            targetParameterValue("name", AddPrefix("workspace-", SourceParameterValue("id")))
         }
 
         permission("manage") {
@@ -140,15 +139,6 @@ val workspacesSchema = buildSchema {
                         includes("repository", "read")
                     }
                 }
-            }
-        }
-    }
-
-    definition("repository") {
-        val repositoryName = existingParameter("name")
-        relation("owning-workspace") {
-            target("workspace") {
-                parameterValue("id") { repositoryName.get().substringAfter(repositoryNamePrefix).takeIf { repositoryName.get().startsWith(repositoryNamePrefix) } }
             }
         }
     }

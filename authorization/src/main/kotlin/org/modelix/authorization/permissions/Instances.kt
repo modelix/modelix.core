@@ -25,14 +25,14 @@ class SchemaInstance(val schema: Schema) {
     init {
         // definitions without parameters can be instantiated directly without waiting for additional information
         schema.definitions.filter { it.value.parameters.isEmpty() }.forEach {
-            getOrCreateDefinitionInstance(DefinitionInstanceReference(it.key, emptyList(), null))
+            instantiateDefinition(DefinitionInstanceReference(it.key, emptyList(), null))
         }
     }
 
-    fun getOrCreateDefinitionInstance(ref: DefinitionInstanceReference): DefinitionInstance {
+    fun instantiateDefinition(ref: DefinitionInstanceReference): DefinitionInstance {
         definitions[ref]?.let { return it }
 
-        val parentInstance = ref.parent?.let { getOrCreateDefinitionInstance(it) }
+        val parentInstance = ref.parent?.let { instantiateDefinition(it) }
         val definitionSchema = requireNotNull((parentInstance?.definitionSchema?.definitions ?: schema.definitions)[ref.name]) {
             "Definition not found: ${ref.name}"
         }
@@ -47,15 +47,45 @@ class SchemaInstance(val schema: Schema) {
 
         // definitions without parameters can be instantiated directly without waiting for additional information
         definitionSchema.definitions.filter { it.value.parameters.isEmpty() }.forEach {
-            getOrCreateDefinitionInstance(DefinitionInstanceReference(it.key, emptyList(), ref))
+            instantiateDefinition(DefinitionInstanceReference(it.key, emptyList(), ref))
         }
+
+        instantiateRelationTargets(newInstance)
 
         updateIncludes()
         return newInstance
     }
 
+    private fun instantiateRelationTargets(source: DefinitionInstance): Map<String, DefinitionInstance> {
+        return schema.relations.filter { it.fromDefinition == source.definitionSchema.name }.associate { relation ->
+            relation.fromRole to instantiateTarget(relation, source)
+        }
+    }
+
+    private fun instantiateTarget(relation: Relation, source: DefinitionInstance): DefinitionInstance {
+        val targetSchema = schema.findDefinition(relation.toDefinition)
+        val targetRef = DefinitionInstanceReference(
+            relation.toDefinition,
+            targetSchema.parameters.map { paramName ->
+                val expr = checkNotNull(relation.targetParameterValues[paramName]) { "Value for parameter ${targetSchema.name}.$paramName missing in relation ${relation.fromDefinition}.${relation.toRole}" }
+                evaluateExpression(expr, source)
+            },
+            null
+        )
+        val target = instantiateDefinition(targetRef)
+        source.relationTargetInstances[relation.fromRole] = target
+        return target
+    }
+
+    private fun evaluateExpression(expr: IExpression, source: DefinitionInstance): String {
+        return when (expr) {
+            is AddPrefix -> expr.prefix + evaluateExpression(expr.expr, source)
+            is SourceParameterValue -> source.reference.parameterValues[source.definitionSchema.parameters.indexOf(expr.name)]
+        }
+    }
+
     fun getOrCreatePermissionInstance(ref: PermissionInstanceReference): DefinitionInstance.PermissionInstance {
-        return getOrCreateDefinitionInstance(ref.definition)
+        return instantiateDefinition(ref.definition)
             .getOrCreatePermissionInstance(ref.permissionName)
     }
 
@@ -69,6 +99,7 @@ class SchemaInstance(val schema: Schema) {
         val reference: DefinitionInstanceReference,
     ) {
         val childDefinitions: MutableMap<DefinitionInstanceReference, DefinitionInstance> = HashMap()
+        val relationTargetInstances: MutableMap<String, DefinitionInstance> = HashMap()
         val permissions: MutableMap<String, PermissionInstance> = HashMap()
 
         fun getOrCreatePermissionInstance(name: String): PermissionInstance {
@@ -88,14 +119,16 @@ class SchemaInstance(val schema: Schema) {
         fun resolveDefinitionInstance(name: String): DefinitionInstance? {
             if (definitionSchema.name == name) return this
 
-            // TODO relations
-
             childDefinitions.values.firstOrNull { it.definitionSchema.name == name && it.definitionSchema.parameters.isEmpty() }?.let { return it }
-            return if (parent != null) {
+            if (parent != null) {
                 parent.resolveDefinitionInstance(name)
             } else {
                 definitions.values.firstOrNull { it.definitionSchema.name == name && it.definitionSchema.parameters.isEmpty() }
-            }
+            }?.let { return it }
+
+            relationTargetInstances.values.asSequence().map { it.resolveDefinitionInstance(name) }.firstOrNull()?.let { return it }
+
+            return null
         }
 
         override fun toString() = reference.toString()

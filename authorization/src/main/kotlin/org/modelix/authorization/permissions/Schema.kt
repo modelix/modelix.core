@@ -25,7 +25,11 @@ import kotlinx.serialization.Serializable
 data class Schema(
     val definitions: Map<String, Definition>,
     val relations: List<Relation>,
-)
+) {
+    fun findDefinition(name: String): Definition {
+        return requireNotNull(definitions.values.asSequence().mapNotNull { it.findDefinition(name) }.firstOrNull()) { "Schema not found: $name" }
+    }
+}
 
 @Serializable
 data class Definition(
@@ -33,14 +37,20 @@ data class Definition(
     val parameters: List<String>,
     val definitions: Map<String, Definition>,
     val permissions: Map<String, Permission>,
-)
+) {
+    fun findDefinition(name: String): Definition? {
+        if (name == this.name) return this
+        return definitions.values.asSequence().mapNotNull { it.findDefinition(name) }.firstOrNull()
+    }
+}
 
 @Serializable
 data class Relation(
     val fromDefinition: String,
-    val fromRole: String?,
+    val fromRole: String,
     val toDefinition: String,
     val toRole: String?,
+    val targetParameterValues: Map<String, IExpression>
 )
 
 @Serializable
@@ -53,3 +63,12 @@ data class Permission(
 
 @Serializable
 data class ScopedPermissionName(val definitionName: String, val permissionName: String)
+
+@Serializable
+sealed interface IExpression
+
+@Serializable
+data class SourceParameterValue(val name: String) : IExpression
+
+@Serializable
+data class AddPrefix(val prefix: String, val expr: IExpression) : IExpression

@@ -16,8 +16,6 @@
 
 package org.modelix.authorization.permissions
 
-import kotlinx.serialization.json.JsonObject
-
 fun buildSchema(body: SchemaBuilder.() -> Unit): Schema {
     return SchemaBuilder().also(body).build()
 }
@@ -59,10 +57,6 @@ class SchemaBuilder {
         definitionBuilders.getOrPut(name) { DefinitionBuilder(name) }.also(body)
     }
 
-    fun relation(body: RelationBuilder.() -> Unit = {}): RelationBuilder {
-        return RelationBuilder().also { relationBuilders += it }.also(body)
-    }
-
     inner class DefinitionBuilder(private val definitionName: String) {
         private val permissionBuilders: MutableMap<String, PermissionBuilder> = HashMap()
         private val parameters: MutableMap<String, ParameterBuilder> = HashMap()
@@ -96,7 +90,7 @@ class SchemaBuilder {
         }
 
         fun relation(name: String, body: RelationBuilder.() -> Unit = {}): RelationBuilder {
-            return RelationBuilder().also { it.from(definitionName, name) }.also { relationBuilders += it }.also(body)
+            return RelationBuilder(definitionName, name).also { relationBuilders += it }.also(body)
         }
 
         fun permission(name: String, body: PermissionBuilder.() -> Unit = {}): PermissionBuilder {
@@ -154,11 +148,10 @@ class SchemaBuilder {
         }
     }
 
-    inner class RelationBuilder {
-        private var fromDefinition: String? = null
-        private var fromRole: String? = null
+    inner class RelationBuilder(val fromDefinition: String, val fromRole: String) {
         private var toDefinition: String? = null
         private var toRole: String? = null
+        private val targetParameterValues: MutableMap<String, IExpression> = HashMap()
 
         fun build(): Relation {
             checkNotNull(fromDefinition)
@@ -168,12 +161,8 @@ class SchemaBuilder {
                 fromRole,
                 toDefinition!!,
                 toRole,
+                targetParameterValues
             )
-        }
-
-        fun from(definition: String, role: String) {
-            this.fromDefinition = definition
-            this.fromRole = role
         }
 
         fun to(definition: String, role: String) {
@@ -181,14 +170,16 @@ class SchemaBuilder {
             this.toRole = role
         }
 
-        fun target(definition: String, body: TargetBuilder.() -> Unit) {
-            toDefinition = definition
-            TargetBuilder().also(body)
+        fun targetDefinition(targetName: String) {
+            toDefinition = targetName
         }
 
-        inner class TargetBuilder {
-            fun parameterValue(parameterName: String, parameterValue: IDefinitionContext.() -> String?) { }
-            fun role(role: String) { toRole = role }
+        fun targetRole(roleName: String) {
+            toRole = roleName
+        }
+
+        fun targetParameterValue(parameterName: String, parameterValue: IExpression) {
+            targetParameterValues[parameterName] = parameterValue
         }
     }
 }

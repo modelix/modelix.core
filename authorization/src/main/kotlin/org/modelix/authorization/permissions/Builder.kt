@@ -46,6 +46,17 @@ class SchemaBuilder {
                 load(definition)
             }
         }
+        schema.relations.forEach { relation ->
+            definition(relation.fromDefinition) {
+                relation(relation.fromRole) {
+                    targetDefinition(relation.toDefinition)
+                    relation.toRole?.let { targetRole(it) }
+                    relation.targetParameterValues.forEach { param ->
+                        targetParameterValue(param.key, param.value)
+                    }
+                }
+            }
+        }
     }
 
     fun build() = Schema(

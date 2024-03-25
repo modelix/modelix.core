@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.modelix.authorization
+package org.modelix.authorization.permissions
 
 import org.junit.jupiter.api.assertThrows
+import org.modelix.authorization.UnknownPermissionException
 import kotlin.test.Test
 
 class UnknownPermissionTest : PermissionTestBase(listOf("repository/myFirstRepo/write")) {

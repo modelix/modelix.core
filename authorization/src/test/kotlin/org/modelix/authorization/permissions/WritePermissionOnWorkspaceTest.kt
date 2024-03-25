@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.modelix.authorization
+package org.modelix.authorization.permissions
 
-import org.modelix.authorization.permissions.workspacesSchema
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

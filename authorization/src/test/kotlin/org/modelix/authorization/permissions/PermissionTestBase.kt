@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package org.modelix.authorization
+package org.modelix.authorization.permissions
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import org.modelix.authorization.permissions.PermissionEvaluator
-import org.modelix.authorization.permissions.Schema
-import org.modelix.authorization.permissions.SchemaInstance
-import org.modelix.authorization.permissions.modelServerSchema
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 

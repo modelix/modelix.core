@@ -33,29 +33,29 @@ class PermissionParser(val schema: Schema) {
     }
 
     private fun parse(parts: PermissionParts): PermissionInstanceReference {
-        val definition = schema.definitions[parts.current()]
+        val resource = schema.resources[parts.current()]
             ?: throw UnknownPermissionException(parts.fullId, parts.current())
-        return parse(parts.next(), definition, null)
+        return parse(parts.next(), resource, null)
     }
 
-    private fun parse(parts: PermissionParts, definition: Definition, parent: Pair<Definition, DefinitionInstanceReference>?): PermissionInstanceReference {
-        val parameterValues = parts.take(definition.parameters.size)
-        val instance = DefinitionInstanceReference(definition.name, parameterValues, parent?.second)
-        return parse(parts.next(parameterValues.size), definition to instance)
+    private fun parse(parts: PermissionParts, resource: Resource, parent: Pair<Resource, ResourceInstanceReference>?): PermissionInstanceReference {
+        val parameterValues = parts.take(resource.parameters.size)
+        val instance = ResourceInstanceReference(resource.name, parameterValues, parent?.second)
+        return parse(parts.next(parameterValues.size), resource to instance)
     }
 
-    private fun parse(parts: PermissionParts, definitionInstance: Pair<Definition, DefinitionInstanceReference>): PermissionInstanceReference {
+    private fun parse(parts: PermissionParts, resourceInstance: Pair<Resource, ResourceInstanceReference>): PermissionInstanceReference {
         if (parts.remainingSize() == 0) throw UnknownPermissionException(parts.fullId, null)
         if (parts.remainingSize() == 1) {
-            val permission = definitionInstance.first.permissions[parts.current()]
+            val permission = resourceInstance.first.permissions[parts.current()]
             if (permission != null) {
-                return PermissionInstanceReference(permission.name, definitionInstance.second)
+                return PermissionInstanceReference(permission.name, resourceInstance.second)
             }
         }
 
-        val childDefinition = definitionInstance.first.definitions[parts.current()]
-        if (childDefinition != null) {
-            return parse(parts.next(), childDefinition, definitionInstance)
+        val childResource = resourceInstance.first.resources[parts.current()]
+        if (childResource != null) {
+            return parse(parts.next(), childResource, resourceInstance)
         }
 
         throw UnknownPermissionException(parts.fullId, parts.current())

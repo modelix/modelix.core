@@ -23,32 +23,32 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class Schema(
-    val definitions: Map<String, Definition>,
+    val resources: Map<String, Resource>,
     val relations: List<Relation>,
 ) {
-    fun findDefinition(name: String): Definition {
-        return requireNotNull(definitions.values.asSequence().mapNotNull { it.findDefinition(name) }.firstOrNull()) { "Schema not found: $name" }
+    fun findResource(name: String): Resource {
+        return requireNotNull(resources.values.asSequence().mapNotNull { it.findResource(name) }.firstOrNull()) { "Schema not found: $name" }
     }
 }
 
 @Serializable
-data class Definition(
+data class Resource(
     val name: String,
     val parameters: List<String>,
-    val definitions: Map<String, Definition>,
+    val resources: Map<String, Resource>,
     val permissions: Map<String, Permission>,
 ) {
-    fun findDefinition(name: String): Definition? {
+    fun findResource(name: String): Resource? {
         if (name == this.name) return this
-        return definitions.values.asSequence().mapNotNull { it.findDefinition(name) }.firstOrNull()
+        return resources.values.asSequence().mapNotNull { it.findResource(name) }.firstOrNull()
     }
 }
 
 @Serializable
 data class Relation(
-    val fromDefinition: String,
+    val fromResource: String,
     val fromRole: String,
-    val toDefinition: String,
+    val toResource: String,
     val toRole: String?,
     val targetParameterValues: Map<String, IExpression>,
 )
@@ -62,7 +62,7 @@ data class Permission(
 )
 
 @Serializable
-data class ScopedPermissionName(val definitionName: String, val permissionName: String)
+data class ScopedPermissionName(val resourceName: String, val permissionName: String)
 
 @Serializable
 sealed interface IExpression

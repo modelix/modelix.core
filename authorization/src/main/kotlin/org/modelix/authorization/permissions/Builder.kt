@@ -20,20 +20,11 @@ fun buildPermissionSchema(body: SchemaBuilder.() -> Unit): Schema {
     return SchemaBuilder().also(body).build()
 }
 
-interface IDefinitionContext {
-    fun SchemaBuilder.DefinitionBuilder.ParameterBuilder.get(): String
-}
-
-interface IPermissionContext {
-    val permissionId: String
-    fun <T> SchemaBuilder.DefinitionBuilder.ParameterBuilder.get(): T
-}
-
 /**
  * A Kotlin DSL for defining a [Schema].
  */
 class SchemaBuilder {
-    private val definitionBuilders: MutableMap<String, DefinitionBuilder> = mutableMapOf()
+    private val resourceBuilders: MutableMap<String, ResourceBuilder> = mutableMapOf()
     private val relationBuilders: MutableList<RelationBuilder> = mutableListOf()
 
     fun extends(schema: Schema) {
@@ -41,15 +32,15 @@ class SchemaBuilder {
     }
 
     private fun load(schema: Schema) {
-        schema.definitions.forEach { (definitionName, definition) ->
-            definition(definitionName) {
-                load(definition)
+        schema.resources.forEach { (resourceName, resource) ->
+            resource(resourceName) {
+                load(resource)
             }
         }
         schema.relations.forEach { relation ->
-            definition(relation.fromDefinition) {
+            resource(relation.fromResource) {
                 relation(relation.fromRole) {
-                    targetDefinition(relation.toDefinition)
+                    targetResource(relation.toResource)
                     relation.toRole?.let { targetRole(it) }
                     relation.targetParameterValues.forEach { param ->
                         targetParameterValue(param.key, param.value)
@@ -60,48 +51,48 @@ class SchemaBuilder {
     }
 
     fun build() = Schema(
-        definitions = definitionBuilders.mapValues { it.value.build() },
+        resources = resourceBuilders.mapValues { it.value.build() },
         relations = relationBuilders.map { it.build() },
     )
 
-    fun definition(name: String, body: DefinitionBuilder.() -> Unit = {}) {
-        definitionBuilders.getOrPut(name) { DefinitionBuilder(name) }.also(body)
+    fun resource(name: String, body: ResourceBuilder.() -> Unit = {}) {
+        resourceBuilders.getOrPut(name) { ResourceBuilder(name) }.also(body)
     }
 
-    inner class DefinitionBuilder(private val definitionName: String) {
+    inner class ResourceBuilder(private val resourceName: String) {
         private val permissionBuilders: MutableMap<String, PermissionBuilder> = HashMap()
         private val parameters: MutableMap<String, ParameterBuilder> = HashMap()
-        private val innerDefinitionBuilders: MutableMap<String, DefinitionBuilder> = mutableMapOf()
+        private val innerResourceBuilders: MutableMap<String, ResourceBuilder> = mutableMapOf()
 
-        fun build(): Definition = Definition(
-            definitionName,
+        fun build(): Resource = Resource(
+            resourceName,
             parameters.map { it.value.parameterName },
-            innerDefinitionBuilders.mapValues { it.value.build() },
+            innerResourceBuilders.mapValues { it.value.build() },
             permissionBuilders.mapValues { it.value.build() },
         )
 
-        fun load(definition: Definition) {
-            definition.parameters.forEach { parameterName ->
+        fun load(resource: Resource) {
+            resource.parameters.forEach { parameterName ->
                 parameter(parameterName)
             }
-            definition.permissions.forEach { (permissionName, permission) ->
+            resource.permissions.forEach { (permissionName, permission) ->
                 permission(permissionName) {
                     load(permission)
                 }
             }
-            definition.definitions.forEach { (childName, child) ->
-                definition(childName) {
+            resource.resources.forEach { (childName, child) ->
+                resource(childName) {
                     load(child)
                 }
             }
         }
 
-        fun definition(name: String, body: DefinitionBuilder.() -> Unit = {}) {
-            innerDefinitionBuilders[name] = DefinitionBuilder(name).also(body)
+        fun resource(name: String, body: ResourceBuilder.() -> Unit = {}) {
+            innerResourceBuilders[name] = ResourceBuilder(name).also(body)
         }
 
         fun relation(name: String, body: RelationBuilder.() -> Unit = {}): RelationBuilder {
-            return RelationBuilder(definitionName, name).also { relationBuilders += it }.also(body)
+            return RelationBuilder(resourceName, name).also { relationBuilders += it }.also(body)
         }
 
         fun permission(name: String, body: PermissionBuilder.() -> Unit = {}): PermissionBuilder {
@@ -130,59 +121,59 @@ class SchemaBuilder {
             fun load(permission: Permission) {
                 permission.description?.let { description(it) }
                 permission.includedIn.forEach { target ->
-                    includedIn(target.definitionName, target.permissionName)
+                    includedIn(target.resourceName, target.permissionName)
                 }
                 permission.includes.forEach { target ->
-                    includes(target.definitionName, target.permissionName)
+                    includes(target.resourceName, target.permissionName)
                 }
             }
 
             fun permission(name: String, body: PermissionBuilder.() -> Unit = {}) {
-                this@DefinitionBuilder.permission(name, body).also { it.includedIn(definitionName, permissionName) }
+                this@ResourceBuilder.permission(name, body).also { it.includedIn(resourceName, permissionName) }
             }
 
             fun description(newDescription: String) {
                 description = newDescription
             }
 
-            fun includedIn(permissionName: String) = includedIn(definitionName, permissionName)
+            fun includedIn(permissionName: String) = includedIn(resourceName, permissionName)
 
-            fun includedIn(definitionName: String, permissionName: String) {
-                includedIn += ScopedPermissionName(definitionName, permissionName)
+            fun includedIn(resourceName: String, permissionName: String) {
+                includedIn += ScopedPermissionName(resourceName, permissionName)
             }
 
-            fun includes(permissionName: String) = includes(definitionName, permissionName)
+            fun includes(permissionName: String) = includes(resourceName, permissionName)
 
-            fun includes(definitionName: String, permissionName: String) {
-                includes += ScopedPermissionName(definitionName, permissionName)
+            fun includes(resourceName: String, permissionName: String) {
+                includes += ScopedPermissionName(resourceName, permissionName)
             }
         }
     }
 
-    inner class RelationBuilder(val fromDefinition: String, val fromRole: String) {
-        private var toDefinition: String? = null
+    inner class RelationBuilder(val fromResource: String, val fromRole: String) {
+        private var toResource: String? = null
         private var toRole: String? = null
         private val targetParameterValues: MutableMap<String, IExpression> = HashMap()
 
         fun build(): Relation {
-            checkNotNull(fromDefinition)
-            checkNotNull(toDefinition) { "$fromDefinition.$fromRole -> $toDefinition.$toRole" }
+            checkNotNull(fromResource)
+            checkNotNull(toResource) { "$fromResource.$fromRole -> $toResource.$toRole" }
             return Relation(
-                fromDefinition!!,
+                fromResource,
                 fromRole,
-                toDefinition!!,
+                toResource!!,
                 toRole,
                 targetParameterValues,
             )
         }
 
-        fun to(definition: String, role: String) {
-            this.toDefinition = definition
+        fun to(resource: String, role: String) {
+            this.toResource = resource
             this.toRole = role
         }
 
-        fun targetDefinition(targetName: String) {
-            toDefinition = targetName
+        fun targetResource(targetName: String) {
+            toResource = targetName
         }
 
         fun targetRole(roleName: String) {

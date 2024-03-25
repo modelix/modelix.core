@@ -17,29 +17,29 @@
 package org.modelix.authorization.permissions
 
 val baseSchema = buildPermissionSchema {
-    definition("group") {
+    resource("group") {
     }
-    definition("user") {
+    resource("user") {
     }
 }
 
 val modelServerSchema = buildPermissionSchema {
     extends(baseSchema)
 
-    definition("model-server") {
+    resource("model-server") {
 
         permission("admin") {
         }
     }
 
-    definition("permission-schema") {
+    resource("permission-schema") {
         permission("write") {
             includedIn("model-server", "admin")
             permission("read")
         }
     }
 
-    definition("repository") {
+    resource("repository") {
         parameter("name")
 
         permission("admin") {
@@ -57,12 +57,12 @@ val modelServerSchema = buildPermissionSchema {
             }
         }
 
-        definition("objects") {
+        resource("objects") {
             permission("read") {
             }
         }
 
-        definition("branch") {
+        resource("branch") {
             parameter("name")
 
             permission("admin") {
@@ -104,7 +104,7 @@ val modelServerSchema = buildPermissionSchema {
 val workspacesSchema = buildPermissionSchema {
     extends(modelServerSchema)
 
-    definition("workspaces") {
+    resource("workspaces") {
         permission("admin") {
             permission("manage") {
                 permission("create")
@@ -112,15 +112,15 @@ val workspacesSchema = buildPermissionSchema {
         }
     }
 
-    definition("workspace") {
+    resource("workspace") {
         parameter("id")
 
         relation("model-repository") {
-            targetDefinition("repository")
+            targetResource("repository")
             targetParameterValue("name", sourceParameterValue("id").withPrefix("workspace-"))
         }
 
-        definition("config") {
+        resource("config") {
             permission("write") {
                 permission("read")
             }

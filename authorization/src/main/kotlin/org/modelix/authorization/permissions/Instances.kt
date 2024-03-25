@@ -23,36 +23,36 @@ class SchemaInstance(val schema: Schema) {
     /**
      * Also contains child instances
      */
-    val definitions: MutableMap<DefinitionInstanceReference, DefinitionInstance> = HashMap()
+    val resources: MutableMap<ResourceInstanceReference, ResourceInstance> = HashMap()
 
     init {
-        // definitions without parameters can be instantiated directly without waiting for additional information
-        schema.definitions.filter { it.value.parameters.isEmpty() }.forEach {
-            instantiateDefinition(DefinitionInstanceReference(it.key, emptyList(), null))
+        // resources without parameters can be instantiated directly without waiting for additional information
+        schema.resources.filter { it.value.parameters.isEmpty() }.forEach {
+            instantiateResource(ResourceInstanceReference(it.key, emptyList(), null))
         }
     }
 
-    fun getAllPermissions() = definitions.values.flatMap { it.permissions.values }
+    fun getAllPermissions() = resources.values.flatMap { it.permissions.values }
 
-    fun instantiateDefinition(ref: DefinitionInstanceReference): DefinitionInstance {
-        definitions[ref]?.let { return it }
+    fun instantiateResource(ref: ResourceInstanceReference): ResourceInstance {
+        resources[ref]?.let { return it }
 
-        val parentInstance = ref.parent?.let { instantiateDefinition(it) }
-        val definitionSchema = requireNotNull((parentInstance?.definitionSchema?.definitions ?: schema.definitions)[ref.name]) {
-            "Definition not found: ${ref.name}"
+        val parentInstance = ref.parent?.let { instantiateResource(it) }
+        val resourceSchema = requireNotNull((parentInstance?.resourceSchema?.resources ?: schema.resources)[ref.name]) {
+            "Resource not found: ${ref.name}"
         }
-        val newInstance = DefinitionInstance(
+        val newInstance = ResourceInstance(
             parentInstance,
-            definitionSchema,
+            resourceSchema,
             ref,
         )
-        definitions[ref] = newInstance
-        parentInstance?.let { it.childDefinitions[ref] = newInstance }
-        definitionSchema.permissions.forEach { newInstance.getOrCreatePermissionInstance(it.key) }
+        resources[ref] = newInstance
+        parentInstance?.let { it.childResources[ref] = newInstance }
+        resourceSchema.permissions.forEach { newInstance.getOrCreatePermissionInstance(it.key) }
 
-        // definitions without parameters can be instantiated directly without waiting for additional information
-        definitionSchema.definitions.filter { it.value.parameters.isEmpty() }.forEach {
-            instantiateDefinition(DefinitionInstanceReference(it.key, emptyList(), ref))
+        // resources without parameters can be instantiated directly without waiting for additional information
+        resourceSchema.resources.filter { it.value.parameters.isEmpty() }.forEach {
+            instantiateResource(ResourceInstanceReference(it.key, emptyList(), ref))
         }
 
         instantiateRelationTargets(newInstance)
@@ -61,55 +61,55 @@ class SchemaInstance(val schema: Schema) {
         return newInstance
     }
 
-    private fun instantiateRelationTargets(source: DefinitionInstance): Map<String, DefinitionInstance> {
-        return schema.relations.filter { it.fromDefinition == source.definitionSchema.name }.associate { relation ->
+    private fun instantiateRelationTargets(source: ResourceInstance): Map<String, ResourceInstance> {
+        return schema.relations.filter { it.fromResource == source.resourceSchema.name }.associate { relation ->
             relation.fromRole to instantiateTarget(relation, source)
         }
     }
 
-    private fun instantiateTarget(relation: Relation, source: DefinitionInstance): DefinitionInstance {
-        val targetSchema = schema.findDefinition(relation.toDefinition)
-        val targetRef = DefinitionInstanceReference(
-            relation.toDefinition,
+    private fun instantiateTarget(relation: Relation, source: ResourceInstance): ResourceInstance {
+        val targetSchema = schema.findResource(relation.toResource)
+        val targetRef = ResourceInstanceReference(
+            relation.toResource,
             targetSchema.parameters.map { paramName ->
-                val expr = checkNotNull(relation.targetParameterValues[paramName]) { "Value for parameter ${targetSchema.name}.$paramName missing in relation ${relation.fromDefinition}.${relation.toRole}" }
+                val expr = checkNotNull(relation.targetParameterValues[paramName]) { "Value for parameter ${targetSchema.name}.$paramName missing in relation ${relation.fromResource}.${relation.toRole}" }
                 evaluateExpression(expr, source)
             },
             null,
         )
-        val target = instantiateDefinition(targetRef)
+        val target = instantiateResource(targetRef)
         source.relationTargetInstances[relation.fromRole] = target
         return target
     }
 
-    private fun evaluateExpression(expr: IExpression, source: DefinitionInstance): String {
+    private fun evaluateExpression(expr: IExpression, source: ResourceInstance): String {
         return when (expr) {
             is AddPrefix -> expr.prefix + evaluateExpression(expr.expr, source)
-            is SourceParameterValue -> source.reference.parameterValues[source.definitionSchema.parameters.indexOf(expr.name)]
+            is SourceParameterValue -> source.reference.parameterValues[source.resourceSchema.parameters.indexOf(expr.name)]
         }
     }
 
-    fun instantiatePermission(ref: PermissionInstanceReference): DefinitionInstance.PermissionInstance {
-        return instantiateDefinition(ref.definition)
+    fun instantiatePermission(ref: PermissionInstanceReference): ResourceInstance.PermissionInstance {
+        return instantiateResource(ref.resource)
             .getOrCreatePermissionInstance(ref.permissionName)
     }
 
     fun updateIncludes() {
-        definitions.values.forEach { it.updateIncludes() }
+        resources.values.forEach { it.updateIncludes() }
     }
 
-    inner class DefinitionInstance(
-        val parent: DefinitionInstance?,
-        val definitionSchema: Definition,
-        val reference: DefinitionInstanceReference,
+    inner class ResourceInstance(
+        val parent: ResourceInstance?,
+        val resourceSchema: Resource,
+        val reference: ResourceInstanceReference,
     ) {
-        val childDefinitions: MutableMap<DefinitionInstanceReference, DefinitionInstance> = HashMap()
-        val relationTargetInstances: MutableMap<String, DefinitionInstance> = HashMap()
+        val childResources: MutableMap<ResourceInstanceReference, ResourceInstance> = HashMap()
+        val relationTargetInstances: MutableMap<String, ResourceInstance> = HashMap()
         val permissions: MutableMap<String, PermissionInstance> = HashMap()
 
         fun getOrCreatePermissionInstance(name: String): PermissionInstance {
             return permissions.getOrPut(name) {
-                val permissionSchema = requireNotNull(definitionSchema.permissions[name]) {
+                val permissionSchema = requireNotNull(resourceSchema.permissions[name]) {
                     "Permission '$name' not found in $reference"
                 }
                 PermissionInstance(permissionSchema, PermissionInstanceReference(name, reference))
@@ -117,21 +117,21 @@ class SchemaInstance(val schema: Schema) {
         }
 
         fun updateIncludes() {
-            childDefinitions.values.forEach { it.updateIncludes() }
+            childResources.values.forEach { it.updateIncludes() }
             permissions.values.forEach { it.updateIncludes() }
         }
 
-        fun resolveDefinitionInstance(name: String): DefinitionInstance? {
-            if (definitionSchema.name == name) return this
+        fun resolveResourceInstance(name: String): ResourceInstance? {
+            if (resourceSchema.name == name) return this
 
-            childDefinitions.values.firstOrNull { it.definitionSchema.name == name && it.definitionSchema.parameters.isEmpty() }?.let { return it }
+            childResources.values.firstOrNull { it.resourceSchema.name == name && it.resourceSchema.parameters.isEmpty() }?.let { return it }
             if (parent != null) {
-                parent.resolveDefinitionInstance(name)
+                parent.resolveResourceInstance(name)
             } else {
-                definitions.values.firstOrNull { it.definitionSchema.name == name && it.definitionSchema.parameters.isEmpty() }
+                resources.values.firstOrNull { it.resourceSchema.name == name && it.resourceSchema.parameters.isEmpty() }
             }?.let { return it }
 
-            relationTargetInstances.values.asSequence().map { it.resolveDefinitionInstance(name) }.firstOrNull()?.let { return it }
+            relationTargetInstances.values.asSequence().map { it.resolveResourceInstance(name) }.firstOrNull()?.let { return it }
 
             return null
         }
@@ -144,14 +144,14 @@ class SchemaInstance(val schema: Schema) {
 
             fun updateIncludes() {
                 permissionSchema.includedIn.forEach { target ->
-                    resolveDefinitionInstance(target.definitionName)?.let {
+                    resolveResourceInstance(target.resourceName)?.let {
                         val targetPermission = it.getOrCreatePermissionInstance(target.permissionName)
                         includedIn += targetPermission
                         targetPermission.includes += this
                     }
                 }
                 permissionSchema.includes.forEach { target ->
-                    resolveDefinitionInstance(target.definitionName)?.let {
+                    resolveResourceInstance(target.resourceName)?.let {
                         val targetPermission = it.getOrCreatePermissionInstance(target.permissionName)
                         includes += targetPermission
                         targetPermission.includedIn += this
@@ -164,18 +164,18 @@ class SchemaInstance(val schema: Schema) {
     }
 }
 
-data class DefinitionInstanceReference(
+data class ResourceInstanceReference(
     val name: String,
     val parameterValues: List<String>,
-    val parent: DefinitionInstanceReference?,
+    val parent: ResourceInstanceReference?,
 ) {
     override fun toString(): String {
         return (listOfNotNull(parent?.toString()) + name + parameterValues).joinToString("/")
     }
 }
 
-data class PermissionInstanceReference(val permissionName: String, val definition: DefinitionInstanceReference) {
+data class PermissionInstanceReference(val permissionName: String, val resource: ResourceInstanceReference) {
     override fun toString(): String {
-        return "$definition/$permissionName"
+        return "$resource/$permissionName"
     }
 }

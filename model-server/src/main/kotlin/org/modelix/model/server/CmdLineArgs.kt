@@ -8,6 +8,15 @@ import java.io.File
 import java.util.LinkedList
 
 internal class CmdLineArgs {
+
+    companion object {
+        // When this option was implemented, the default value was 10s
+        // in [NettyApplicationEngine.Configuration.responseWriteTimeoutSeconds].
+        // A higher default makes sense because an initial pull of the repository might take longer.
+        // Two minutes is a default to accommodate most use cases.
+        private const val DEFAULT_RESPONSE_WRITE_TIMEOUT_SECONDS: Int = 2 * 60
+    }
+
     @Parameter(names = ["-secret", "--secret"], description = "Path to the secretfile", converter = FileConverter::class)
     var secretFile = File("/secrets/modelsecret/modelsecret.txt")
 
@@ -32,6 +41,13 @@ internal class CmdLineArgs {
 
     @Parameter(names = ["-port", "--port"], description = "Set port", converter = IntegerConverter::class)
     var port: Int? = null
+
+    @Parameter(
+        names = ["-response-write-timeout-seconds", "--response-write-timeout-seconds"],
+        description = "Timeout in seconds for sending responses to clients. Values smaller or equal to 0 disable the timeout. Defaults to $DEFAULT_RESPONSE_WRITE_TIMEOUT_SECONDS seconds if unset.",
+        converter = IntegerConverter::class,
+    )
+    var responseWriteTimeoutSeconds: Int = DEFAULT_RESPONSE_WRITE_TIMEOUT_SECONDS
 
     @Parameter(names = ["-set", "--set"], description = "Set values", arity = 2)
     var setValues: List<String> = LinkedList<String>()

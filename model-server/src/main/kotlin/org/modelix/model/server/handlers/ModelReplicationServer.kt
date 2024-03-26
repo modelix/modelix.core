@@ -27,13 +27,14 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
-import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.webSocket
 import io.ktor.util.pipeline.PipelineContext
+import io.ktor.utils.io.writeStringUtf8
 import io.ktor.websocket.send
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -373,7 +374,8 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
     }
 
     private suspend fun ApplicationCall.respondDeltaAsObjectStream(versionHash: String, baseVersionHash: String?, plainText: Boolean) {
-        respondTextWriter(contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE) {
+        val contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE
+        respondBytesWriter(contentType) {
             repositoriesManager.computeDelta(versionHash, baseVersionHash).asFlow()
                 .flatten()
                 .withSeparator("\n")
@@ -381,7 +383,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 .withIndex()
                 .collect {
                     if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
-                    append(it.value)
+                    writeStringUtf8(it.value)
                 }
         }
     }

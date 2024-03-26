@@ -379,8 +379,11 @@ class ModelReplicationServer(
     }
 
     private suspend fun ApplicationCall.respondDeltaAsObjectStream(versionHash: String, baseVersionHash: String?, plainText: Boolean) {
+        // Call `computeDelta` before starting to respond.
+        // It could already throw an exception, and in that case we do not want a successful response status.
+        val objectData = repositoriesManager.computeDelta(versionHash, baseVersionHash)
         respondTextWriter(contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE) {
-            repositoriesManager.computeDelta(versionHash, baseVersionHash).asFlow()
+            objectData.asFlow()
                 .flatten()
                 .withSeparator("\n")
                 .onEmpty { emit(versionHash) }

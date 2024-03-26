@@ -16,6 +16,7 @@
 package org.modelix.model.server.handlers
 
 import io.ktor.client.request.get
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.appendPathSegments
 import io.ktor.http.takeFrom
 import io.ktor.server.testing.ApplicationTestBuilder
@@ -34,20 +35,26 @@ import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.fail
 
 class ModelReplicationServerTest {
 
-    private fun runTest(block: suspend ApplicationTestBuilder.(scope: CoroutineScope) -> Unit) = testApplication {
+    private fun getDefaultModelReplicationServer(): ModelReplicationServer {
+        val storeClient = InMemoryStoreClient()
+        val modelClient = LocalModelClient(storeClient)
+        val repositoriesManager = RepositoriesManager(modelClient)
+        return ModelReplicationServer(repositoriesManager, modelClient, InMemoryModels())
+    }
+
+    private fun runTest(
+        modelReplicationServer: ModelReplicationServer = getDefaultModelReplicationServer(),
+        block: suspend ApplicationTestBuilder.(scope: CoroutineScope) -> Unit,
+    ) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            val storeClient = InMemoryStoreClient()
-            val modelClient = LocalModelClient(storeClient)
-            val repositoriesManager = RepositoriesManager(modelClient)
-            val inMemoryModels = InMemoryModels()
-            ModelReplicationServer(repositoriesManager, modelClient, inMemoryModels).init(this)
-            KeyValueLikeModelServer(repositoriesManager, storeClient, inMemoryModels).init(this)
+            modelReplicationServer.init(this)
         }
 
         coroutineScope {
@@ -90,6 +97,40 @@ class ModelReplicationServerTest {
                 // even if we got with versions that share data.
                 fail("Hash $hash sent more than once.")
             }
+        }
+    }
+
+    @Test
+    fun `server responds with error when failing to compute delta before starting to respond`() {
+        // Arrange
+        val storeClient = InMemoryStoreClient()
+        val modelClient = LocalModelClient(storeClient)
+        val repositoriesManager = RepositoriesManager(modelClient)
+        val faultyRepositoriesManager = object :
+            IRepositoriesManager by repositoriesManager {
+            override suspend fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData {
+                error("Unexpected error.")
+            }
+        }
+        val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager, modelClient, InMemoryModels())
+        val url = "http://localhost/v2"
+        val repositoryId = RepositoryId("repo1")
+        val branchRef = repositoryId.getBranchReference()
+
+        runTest(modelReplicationServer) {
+            repositoriesManager.createRepository(repositoryId, null)
+
+            // Act
+            val response = client.get {
+                url {
+                    takeFrom(url)
+                    appendPathSegments("repositories", repositoryId.id, "branches", branchRef.branchName)
+                }
+                useVersionStreamFormat()
+            }
+
+            // Assert
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
         }
     }
 }

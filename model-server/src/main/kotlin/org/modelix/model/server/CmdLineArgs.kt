@@ -33,6 +33,14 @@ internal class CmdLineArgs {
     @Parameter(names = ["-port", "--port"], description = "Set port", converter = IntegerConverter::class)
     var port: Int? = null
 
+    // 10 seconds was the default value in NettyApplicationEngine when this option was implemented.
+    @Parameter(
+        names = ["-response-write-timeout-seconds", "--response-write-timeout-seconds"],
+        description = "Timeout in seconds for sending responses to client. Values smaller or equal to 0 disable the timeout. Defaults to 10 seconds if unset.",
+        converter = IntegerConverter::class,
+    )
+    var responseWriteTimeoutSeconds: Int = 10
+
     @Parameter(names = ["-set", "--set"], description = "Set values", arity = 2)
     var setValues: List<String> = LinkedList<String>()
 

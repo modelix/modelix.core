@@ -37,7 +37,7 @@
     "@reallyland/tsconfig": "^2.0.0",
     "@types/node": "^20.11.30",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^6.20.0",
+    "@typescript-eslint/parser": "^7.4.0",
     "dukat": "^0.5.8-rc.4",
     "eslint": "^8.56.0",
     "husky": "^9.0.11",

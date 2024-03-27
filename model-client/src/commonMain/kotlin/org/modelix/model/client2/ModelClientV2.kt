@@ -44,6 +44,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
@@ -65,6 +66,7 @@ import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
+import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.api.v2.asStream
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
@@ -351,7 +353,6 @@ class ModelClientV2(
 
     private suspend fun createVersion(baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
         delta.getObjectsAsFlow().collect {
-            HashUtil.checkObjectHash(it.first, it.second)
             store.keyValueStore.put(it.first, it.second)
         }
         return if (baseVersion == null) {
@@ -491,32 +492,55 @@ private fun URLBuilder.appendPathSegmentsEncodingSlash(vararg components: String
 fun VersionDelta.getAllObjects(): Map<String, String> = objectsMap + objects.associateBy { HashUtil.sha256(it) }
 
 suspend fun HttpResponse.readVersionDelta(): VersionDeltaStream {
-    return if (contentType()?.match(VersionDeltaStream.CONTENT_TYPE) == true) {
-        val content = bodyAsChannel()
-        val versionHash = checkNotNull(content.readUTF8Line()) { "No objects received" }
-        val versionObject = content.readUTF8Line()
-        return if (versionObject == null) {
-            VersionDeltaStream(versionHash, emptyFlow())
-        } else {
-            VersionDeltaStream(
-                versionHash,
-                flow {
-                    emit(versionHash to versionObject)
-                    while (true) {
-                        val key = content.readUTF8Line() ?: break
-                        val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
-                        emit(key to value)
-                    }
-                },
-            )
-        }
+    return if (contentType()?.match(VersionDeltaStreamV2.CONTENT_TYPE) == true) {
+        return readVersionDeltaStreamV2()
+    } else if (contentType()?.match(VersionDeltaStream.CONTENT_TYPE) == true) {
+        return readVersionDeltaStreamV1()
     } else {
-        body<VersionDelta>().asStream()
+        val versionDelta = body<VersionDelta>()
+        versionDelta.objectsMap.forEach {
+            HashUtil.checkObjectHash(it.key, it.value)
+        }
+        versionDelta.asStream()
     }
 }
 
 fun HttpRequestBuilder.useVersionStreamFormat() {
-    headers.set(HttpHeaders.Accept, VersionDeltaStream.CONTENT_TYPE.toString())
+    headers[HttpHeaders.Accept] = VersionDeltaStreamV2.CONTENT_TYPE.toString()
+    // Add CONTENT_TYPE_VERSION_DELTA_V1 so that newer clients cant talk with older servers.
+    headers.append(HttpHeaders.Accept, VersionDeltaStream.CONTENT_TYPE.toString())
+}
+
+private suspend fun HttpResponse.readVersionDeltaStreamV1(): VersionDeltaStream {
+    val content = bodyAsChannel()
+    val versionHash = checkNotNull(content.readUTF8Line()) { "No objects received" }
+    val versionObject = content.readUTF8Line()
+    return if (versionObject == null) {
+        VersionDeltaStream(versionHash, emptyFlow())
+    } else {
+        VersionDeltaStream(
+            versionHash,
+            flow {
+                emit(versionHash to versionObject)
+                while (true) {
+                    val key = content.readUTF8Line() ?: break
+                    val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
+                    HashUtil.checkObjectHash(key, value)
+                    emit(key to value)
+                }
+            },
+        )
+    }
+}
+
+private suspend fun HttpResponse.readVersionDeltaStreamV2(): VersionDeltaStream {
+    val content = bodyAsChannel()
+    return VersionDeltaStreamV2.decodeVersionDeltaStreamV2(content).toVersionDeltaStream()
+}
+
+fun VersionDeltaStreamV2.toVersionDeltaStream(): VersionDeltaStream {
+    val hashWithDeltaObject = deltaObjects.map { HashUtil.sha256(it) to it }
+    return VersionDeltaStream(versionHash, hashWithDeltaObject)
 }
 
 /**

@@ -39,7 +39,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-//                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutinesVersion")
+                implementation(libs.kotlin.coroutines.test)
                 implementation(kotlin("test"))
             }
         }

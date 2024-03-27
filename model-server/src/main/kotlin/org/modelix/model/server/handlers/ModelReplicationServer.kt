@@ -27,6 +27,7 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
 import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.Route
@@ -39,6 +40,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
@@ -60,6 +62,7 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
+import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.server.ModelQLServer
@@ -354,12 +357,14 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
 
     private suspend fun ApplicationCall.respondDelta(versionHash: String, baseVersionHash: String?) {
         val expectedTypes = request.acceptItems().map { ContentType.parse(it.value) }
-        return if (expectedTypes.any { it.match(VersionDeltaStream.CONTENT_TYPE) }) {
-            respondDeltaAsObjectStream(versionHash, baseVersionHash, false)
+        return if (expectedTypes.any { it.match(VersionDeltaStreamV2.CONTENT_TYPE) }) {
+            respondDeltaAsObjectStreamV2(versionHash, baseVersionHash)
+        } else if (expectedTypes.any { it.match(VersionDeltaStream.CONTENT_TYPE) }) {
+            respondDeltaAsObjectStreamV1(versionHash, baseVersionHash, false)
         } else if (expectedTypes.any { it.match(ContentType.Application.Json) }) {
             respondDeltaAsJson(versionHash, baseVersionHash)
         } else {
-            respondDeltaAsObjectStream(versionHash, baseVersionHash, true)
+            respondDeltaAsObjectStreamV1(versionHash, baseVersionHash, true)
         }
     }
 
@@ -372,7 +377,11 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         respond(delta)
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsObjectStream(versionHash: String, baseVersionHash: String?, plainText: Boolean) {
+    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV1(
+        versionHash: String,
+        baseVersionHash: String?,
+        plainText: Boolean,
+    ) {
         respondTextWriter(contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE) {
             repositoriesManager.computeDelta(versionHash, baseVersionHash).asFlow()
                 .flatten()
@@ -383,6 +392,14 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                     if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
                     append(it.value)
                 }
+        }
+    }
+
+    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV2(versionHash: String, baseVersionHash: String?) {
+        respondBytesWriter(VersionDeltaStreamV2.CONTENT_TYPE) {
+            val objectData = repositoriesManager.computeDelta(versionHash, baseVersionHash)
+            val objectWithoutHash = objectData.asFlow().map { it.second }
+            VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectWithoutHash)
         }
     }
 }

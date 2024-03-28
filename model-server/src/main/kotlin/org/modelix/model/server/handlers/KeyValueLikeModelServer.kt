@@ -27,6 +27,7 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.br
 import kotlinx.html.div
@@ -49,7 +50,6 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
-import org.modelix.model.server.store.runTransactionSuspendable
 import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -139,7 +139,9 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                 get<Paths.getKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
-                    val value = storeClient[key]
+                    val value = runBlocking(Dispatchers.IO) {
+                        storeClient[key]
+                    }
                     respondValue(key, value)
                 }
                 get<Paths.pollKeyGet> {
@@ -156,7 +158,9 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                 post<Paths.counterKeyPost> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.WRITE)
-                    val value = storeClient.generateId(key)
+                    val value = runBlocking(Dispatchers.IO) {
+                        storeClient.generateId(key)
+                    }
                     call.respondText(text = value.toString())
                 }
 
@@ -180,13 +184,16 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     val jsonStr = call.receiveText()
                     val json = JSONArray(jsonStr)
                     var entries: MutableMap<String, String?> = LinkedHashMap()
-                    for (entry_ in json) {
-                        val entry = entry_ as JSONObject
-                        val key = entry.getString("key")
-                        val value = entry.optString("value", null)
-                        entries[key] = value
+                    // TODO Olekz check which dispatcher is better
+                    runBlocking(Dispatchers.Default) {
+                        for (entry_ in json) {
+                            val entry = entry_ as JSONObject
+                            val key = entry.getString("key")
+                            val value = entry.optString("value", null)
+                            entries[key] = value
+                        }
+                        entries = sortByDependency(entries)
                     }
-                    entries = sortByDependency(entries)
                     try {
                         putEntries(entries)
                         call.respondText(entries.size.toString() + " entries written")
@@ -199,20 +206,23 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     // PUT is used, because a GET is not allowed to have a request body that changes the result of the
                     // request. It would be legal for an HTTP proxy to cache all /getAll requests and ignore the body.
                     val reqJsonStr = call.receiveText()
-                    val reqJson = JSONArray(reqJsonStr)
-                    val respJson = JSONArray()
-                    val keys: MutableList<String> = ArrayList(reqJson.length())
-                    for (entry_ in reqJson) {
-                        val key = entry_ as String
-                        checkKeyPermission(key, EPermissionType.READ)
-                        keys.add(key)
-                    }
-                    val values = storeClient.getAll(keys)
-                    for (i in keys.indices) {
-                        val respEntry = JSONObject()
-                        respEntry.put("key", keys[i])
-                        respEntry.put("value", values[i])
-                        respJson.put(respEntry)
+                    val respJson = runBlocking(Dispatchers.IO) {
+                        val reqJson = JSONArray(reqJsonStr)
+                        val respJson = JSONArray()
+                        val keys: MutableList<String> = ArrayList(reqJson.length())
+                        for (entry_ in reqJson) {
+                            val key = entry_ as String
+                            checkKeyPermission(key, EPermissionType.READ)
+                            keys.add(key)
+                        }
+                        val values = storeClient.getAll(keys)
+                        for (i in keys.indices) {
+                            val respEntry = JSONObject()
+                            respEntry.put("key", keys[i])
+                            respEntry.put("value", values[i])
+                            respJson.put(respEntry)
+                        }
+                        respJson
                     }
                     call.respondText(respJson.toString(), contentType = ContentType.Application.Json)
                 }
@@ -250,7 +260,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         return sorted
     }
 
-    fun collect(rootKey: String): JSONArray {
+    fun collect(rootKey: String) = runBlocking(Dispatchers.IO) {
         val result = JSONArray()
         val processed: MutableSet<String> = HashSet()
         val pending: MutableSet<String> = HashSet()
@@ -274,7 +284,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                 }
             }
         }
-        return result
+        result
     }
 
     private fun extractHashes(input: String?): List<String> {
@@ -288,7 +298,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         return result
     }
 
-    protected suspend fun CallContext.putEntries(newEntries: Map<String, String?>) {
+    protected fun CallContext.putEntries(newEntries: Map<String, String?>) = runBlocking(Dispatchers.IO) {
         val referencedKeys: MutableSet<String> = HashSet()
         for ((key, value) in newEntries) {
             checkKeyPermission(key, EPermissionType.WRITE)
@@ -346,7 +356,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
 
         HashUtil.checkObjectHashes(hashedObjects)
 
-        repositoriesManager.client.store.runTransactionSuspendable {
+        repositoriesManager.client.store.runTransaction {
             storeClient.putAll(hashedObjects)
             storeClient.putAll(userDefinedEntries)
             for ((branch, value) in branchChanges) {
@@ -390,9 +400,9 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
         call.checkPermission(MODEL_SERVER_ENTRY.createInstance(key), type.toKeycloakScope())
     }
 
-    fun isHealthy(): Boolean {
+    fun isHealthy(): Boolean = runBlocking(Dispatchers.IO) {
         val value = toLong(storeClient[HEALTH_KEY]) + 1
         storeClient.put(HEALTH_KEY, java.lang.Long.toString(value))
-        return toLong(storeClient[HEALTH_KEY]) >= value
+        toLong(storeClient[HEALTH_KEY]) >= value
     }
 }

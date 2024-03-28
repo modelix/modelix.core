@@ -91,6 +91,11 @@ class WriteTransaction(_tree: ITree, branch: IBranch, idGenerator: IIdGenerator)
         return newIds
     }
 
+    override fun setConcept(nodeId: Long, concept: IConceptReference?) {
+        checkNotClosed()
+        tree = tree.setConcept(nodeId, concept)
+    }
+
     override fun deleteNode(nodeId: Long) {
         checkNotClosed()
         tree.getAllChildren(nodeId).forEach { deleteNode(it) }

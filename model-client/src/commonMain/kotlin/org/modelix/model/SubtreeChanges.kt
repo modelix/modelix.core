@@ -52,6 +52,10 @@ class SubtreeChanges(val cacheSize: Int) {
                         // there is always a corresponding childrenChanged event for this
                     }
 
+                    override fun conceptChanged(nodeId: Long) {
+                        affectedNodes += nodeId
+                    }
+
                     override fun propertyChanged(nodeId: Long, role: String) {
                         affectedNodes += nodeId
                     }

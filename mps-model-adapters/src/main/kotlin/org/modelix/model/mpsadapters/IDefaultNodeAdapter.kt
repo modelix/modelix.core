@@ -16,6 +16,7 @@
 
 package org.modelix.model.mpsadapters
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -95,5 +96,9 @@ interface IDefaultNodeAdapter : IDeprecatedNodeDefaults {
     override fun removeChild(child: INode) {
         val link = child.getContainmentLink() ?: error("ContainmentLink not found for node $child")
         throw UnsupportedOperationException("Cannot remove child in link $link of concept $concept.")
+    }
+
+    override fun replaceNode(concept: ConceptReference): INode {
+        throw UnsupportedOperationException("Node replacement is not possible for node: $this")
     }
 }

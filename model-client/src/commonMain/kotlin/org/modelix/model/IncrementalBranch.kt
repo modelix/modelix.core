@@ -45,6 +45,10 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
                     modified(ContainmentDependency(this@IncrementalBranch, nodeId))
                 }
 
+                override fun conceptChanged(nodeId: Long) {
+                    modified(ConceptDependency(this@IncrementalBranch, nodeId))
+                }
+
                 override fun childrenChanged(nodeId: Long, role: String?) {
                     modified(ChildrenDependency(this@IncrementalBranch, nodeId, role))
                 }
@@ -326,6 +330,15 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
             modified(UnclassifiedNodeDependency(this@IncrementalBranch, childId)) // see .containsNode
         }
 
+        override fun setConcept(nodeId: Long, concept: IConceptReference?) {
+            val oldParentId = transaction.getParent(nodeId)
+            val oldRole = transaction.getRole(nodeId)
+            transaction.setConcept(nodeId, concept)
+            modified(ChildrenDependency(this@IncrementalBranch, oldParentId, oldRole))
+            modified(ContainmentDependency(this@IncrementalBranch, nodeId))
+            modified(UnclassifiedNodeDependency(this@IncrementalBranch, nodeId))
+        }
+
         override fun deleteNode(nodeId: Long) {
             val oldParentId = transaction.getParent(nodeId)
             val oldRole = transaction.getRole(nodeId)
@@ -463,6 +476,11 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
             return tree.addNewChildren(parentId, role, index, newIds, concepts).wrap()
         }
 
+        override fun setConcept(nodeId: Long, concept: IConceptReference?): ITree {
+            // TODO Modification Event?
+            return tree.setConcept(nodeId, concept)
+        }
+
         override fun deleteNode(nodeId: Long): ITree {
             // No modification event, because the branch doesn't change
             return tree.deleteNode(nodeId).wrap()
@@ -525,6 +543,10 @@ data class AllPropertiesDependency(val branch: IBranch, val nodeId: Long) : Depe
 
 data class ContainmentDependency(val branch: IBranch, val nodeId: Long) : DependencyBase() {
     override fun getGroup() = UnclassifiedNodeDependency(branch, nodeId)
+}
+
+data class ConceptDependency(val branch: IBranch, val nodeId: Long) : DependencyBase() {
+    override fun getGroup(): IStateVariableGroup = UnclassifiedNodeDependency(branch, nodeId)
 }
 
 fun IBranch.withIncrementalComputationSupport() = IncrementalBranch(this)

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReference
@@ -25,6 +26,17 @@ import kotlin.test.assertEquals
 import kotlin.test.fail
 
 class DiffTest {
+
+    @Test
+    fun changeConcept() {
+        runTest(
+            setOf(
+                TreeChangeCollector.ConceptChangedEvent(ITree.ROOT_ID),
+            ),
+        ) {
+            it.setConcept(ITree.ROOT_ID, BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.getReference())
+        }
+    }
 
     @Test
     fun changeProperty() {

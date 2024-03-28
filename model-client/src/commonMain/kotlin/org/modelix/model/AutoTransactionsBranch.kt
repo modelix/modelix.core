@@ -80,6 +80,9 @@ class AutoWriteTransaction(branch: IBranch) : AutoTransaction(branch), IWriteTra
         childId: Long,
         concept: IConceptReference?,
     ) = branch.computeWriteT { it.addNewChild(parentId, role, index, childId, concept) }
+    override fun setConcept(nodeId: Long, concept: IConceptReference?) =
+        branch.computeWriteT { it.setConcept(nodeId, concept) }
+
     override fun deleteNode(nodeId: Long) = branch.computeWriteT { it.deleteNode(nodeId) }
 
     override var tree: ITree

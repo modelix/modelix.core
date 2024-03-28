@@ -39,6 +39,10 @@ class TreeChangeCollector : ITreeChangeVisitorEx {
         events += ContainmentChangedEvent(nodeId)
     }
 
+    override fun conceptChanged(nodeId: Long) {
+        events += ConceptChangedEvent(nodeId)
+    }
+
     override fun childrenChanged(nodeId: Long, role: String?) {
         events += ChildrenChangedEvent(nodeId, role)
     }
@@ -61,6 +65,7 @@ class TreeChangeCollector : ITreeChangeVisitorEx {
 
     abstract class ChangeEvent
     data class ContainmentChangedEvent(val nodeId: Long) : ChangeEvent()
+    data class ConceptChangedEvent(val nodeId: Long) : ChangeEvent()
     data class ChildrenChangedEvent(val nodeId: Long, val role: String?) : ChangeEvent()
     data class ReferenceChangedEvent(val nodeId: Long, val role: String?) : ChangeEvent()
     data class PropertyChangedEvent(val nodeId: Long, val role: String?) : ChangeEvent()

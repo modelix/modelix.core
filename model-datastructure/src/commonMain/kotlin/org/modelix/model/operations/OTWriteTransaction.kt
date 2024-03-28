@@ -129,6 +129,10 @@ class OTWriteTransaction(
         }
     }
 
+    override fun setConcept(nodeId: Long, concept: IConceptReference?) {
+        apply(SetConceptOp(nodeId, concept))
+    }
+
     override fun containsNode(nodeId: Long): Boolean {
         return transaction.containsNode(nodeId)
     }
